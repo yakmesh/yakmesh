@@ -1,0 +1,52 @@
+{
+  "name": "yakmesh",
+  "version": "1.0.1",
+  "description": "YAKMESH: Yielding Atomic Kernel Modular Encryption Secured Hub - Post-quantum secure P2P mesh network for the 2026 threat landscape",
+  "type": "module",
+  "main": "server/index.js",
+  "bin": {
+    "yakmesh": "cli/index.js"
+  },
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node --watch server/index.js",
+    "test": "node --test oracle/tests/",
+    "test:time": "node oracle/tests/time-source.test.js",
+    "test:phase": "node oracle/tests/phase-epoch.test.js"
+  },
+  "dependencies": {
+    "@noble/hashes": "^2.0.0",
+    "@noble/post-quantum": "^0.5.4",
+    "chalk": "^5.3.0",
+    "commander": "^12.0.0",
+    "express": "^4.18.2",
+    "express-rate-limit": "^8.2.1",
+    "sql.js": "^1.10.0",
+    "ws": "^8.16.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "p2p",
+    "mesh",
+    "decentralized",
+    "yakmesh",
+    "yak",
+    "post-quantum",
+    "distributed-oracle"
+  ],
+  "author": "Yakmesh",
+  "license": "MIT",
+  "homepage": "https://yakmesh.dev",
+  "repository": {
+    "url": "git+https://github.com/peerquanta/yakmesh.git",
+    "type": "git"
+  },
+  "bugs": {
+    "url": "https://github.com/peerquanta/yakmesh/issues"
+  }
+}

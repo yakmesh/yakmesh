@@ -1,0 +1,16 @@
+# Pro-only modules (not included in MIT release)
+security/
+
+# Development files
+node_modules/
+docs/
+templates/
+*.test.js
+*.spec.js
+
+# Assets (keep logo for branding)
+# assets/
+
+# Build artifacts
+*.log
+.DS_Store

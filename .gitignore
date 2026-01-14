@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+
+# Data directories (generated at runtime)
+data/
+data-*/
+
+# Database files
+*.db
+*.sqlite
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Environment
+.env
+.env.local
+
+# Test coverage
+coverage/
+
+# Build artifacts
+dist/
+build/

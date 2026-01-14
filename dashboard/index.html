@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lantern Mesh Network Dashboard</title>
+  <style>
+    :root {
+      --bg-dark: #0a0a0f;
+      --bg-card: #12121a;
+      --bg-hover: #1a1a25;
+      --border: #2a2a35;
+      --text: #e0e0e5;
+      --text-dim: #888;
+      --accent: #f59e0b;
+      --accent-glow: rgba(245, 158, 11, 0.2);
+      --success: #10b981;
+      --warning: #f59e0b;
+      --error: #ef4444;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+      background: var(--bg-dark);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 2rem;
+    }
+    
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+    
+    .logo {
+      font-size: 2.5rem;
+    }
+    
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 500;
+      color: var(--accent);
+    }
+    
+    .subtitle {
+      font-size: 0.85rem;
+      color: var(--text-dim);
+    }
+    
+    .connection-bar {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 2rem;
+      padding: 1rem;
+      background: var(--bg-card);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+    
+    .connection-bar input {
+      flex: 1;
+      background: var(--bg-dark);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.75rem 1rem;
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 0.9rem;
+    }
+    
+    .connection-bar input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+    
+    .connection-bar button {
+      background: var(--accent);
+      color: #000;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 6px;
+      font-family: inherit;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .connection-bar button:hover {
+      background: #fbbf24;
+    }
+    
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--error);
+    }
+    
+    .status-dot.connected {
+      background: var(--success);
+      box-shadow: 0 0 10px var(--success);
+    }
+    
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 1.5rem;
+    }
+    
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.5rem;
+    }
+    
+    .card-title {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.9rem;
+      color: var(--text-dim);
+      margin-bottom: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    .node-id {
+      font-family: monospace;
+      font-size: 1.1rem;
+      color: var(--accent);
+      word-break: break-all;
+    }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+    }
+    
+    .stat {
+      padding: 1rem;
+      background: var(--bg-dark);
+      border-radius: 6px;
+      text-align: center;
+    }
+    
+    .stat-value {
+      font-size: 2rem;
+      font-weight: 600;
+      color: var(--accent);
+    }
+    
+    .stat-label {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      margin-top: 0.25rem;
+    }
+    
+    .peer-list {
+      list-style: none;
+    }
+    
+    .peer-item {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 0.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .peer-item:last-child {
+      border-bottom: none;
+    }
+    
+    .peer-status {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+    }
+    
+    .peer-name {
+      flex: 1;
+      font-weight: 500;
+    }
+    
+    .peer-id {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+    }
+    
+    .gossip-stats {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    
+    .gossip-stat {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .gossip-stat:last-child {
+      border-bottom: none;
+    }
+    
+    .replication-log {
+      font-size: 0.85rem;
+      background: var(--bg-dark);
+      padding: 1rem;
+      border-radius: 6px;
+      max-height: 200px;
+      overflow-y: auto;
+    }
+    
+    .log-entry {
+      padding: 0.25rem 0;
+      color: var(--text-dim);
+    }
+    
+    .log-entry.insert { color: var(--success); }
+    .log-entry.update { color: var(--warning); }
+    .log-entry.delete { color: var(--error); }
+    
+    .empty-state {
+      text-align: center;
+      color: var(--text-dim);
+      padding: 2rem;
+    }
+    
+    .refresh-btn {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-dim);
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.75rem;
+      margin-left: auto;
+    }
+    
+    .refresh-btn:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    
+    .topology {
+      min-height: 250px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .topology svg {
+      max-width: 100%;
+    }
+    
+    .topology-node {
+      fill: var(--accent);
+    }
+    
+    .topology-link {
+      stroke: var(--border);
+      stroke-width: 2;
+    }
+    
+    .topology-label {
+      fill: var(--text);
+      font-size: 10px;
+      text-anchor: middle;
+    }
+    
+    .auto-refresh {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+      color: var(--text-dim);
+    }
+    
+    .auto-refresh input {
+      accent-color: var(--accent);
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <span class="logo">🏮</span>
+    <div>
+      <h1>Lantern Mesh Network</h1>
+      <div class="subtitle">Post-Quantum Secure • Decentralized • Federated</div>
+    </div>
+  </div>
+  
+  <div class="connection-bar">
+    <input type="text" id="node-url" value="http://localhost:3000" placeholder="Node HTTP URL">
+    <button onclick="connect()">Connect</button>
+    <div class="status-indicator">
+      <div class="status-dot" id="status-dot"></div>
+      <span id="status-text">Disconnected</span>
+    </div>
+    <div class="auto-refresh">
+      <input type="checkbox" id="auto-refresh" checked>
+      <label for="auto-refresh">Auto-refresh (5s)</label>
+    </div>
+  </div>
+  
+  <div class="grid">
+    <!-- Node Identity -->
+    <div class="card">
+      <div class="card-title">🔐 Node Identity</div>
+      <div id="node-identity">
+        <div class="empty-state">Connect to a node to view identity</div>
+      </div>
+    </div>
+    
+    <!-- Network Stats -->
+    <div class="card">
+      <div class="card-title">📊 Network Stats</div>
+      <div class="stats-grid">
+        <div class="stat">
+          <div class="stat-value" id="peer-count">-</div>
+          <div class="stat-label">Connected Peers</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="discovered-count">-</div>
+          <div class="stat-label">Discovered Nodes</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="replication-log">-</div>
+          <div class="stat-label">Replication Log</div>
+        </div>
+        <div class="stat">
+          <div class="stat-value" id="gossip-messages">-</div>
+          <div class="stat-label">Gossip Messages</div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Connected Peers -->
+    <div class="card">
+      <div class="card-title">
+        📡 Connected Peers
+        <button class="refresh-btn" onclick="refresh()">Refresh</button>
+      </div>
+      <ul class="peer-list" id="peer-list">
+        <li class="empty-state">No peers connected</li>
+      </ul>
+    </div>
+    
+    <!-- Gossip Protocol -->
+    <div class="card">
+      <div class="card-title">🗣️ Gossip Protocol</div>
+      <div class="gossip-stats" id="gossip-stats">
+        <div class="gossip-stat">
+          <span>Known Peers</span>
+          <span id="gossip-known">-</span>
+        </div>
+        <div class="gossip-stat">
+          <span>Seen Messages</span>
+          <span id="gossip-seen">-</span>
+        </div>
+        <div class="gossip-stat">
+          <span>Pending Rumors</span>
+          <span id="gossip-pending">-</span>
+        </div>
+        <div class="gossip-stat">
+          <span>Bloom Filter Health</span>
+          <span id="gossip-bloom">-</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Discovered Nodes -->
+    <div class="card">
+      <div class="card-title">🌐 Discovered via Gossip</div>
+      <ul class="peer-list" id="discovered-list">
+        <li class="empty-state">No nodes discovered</li>
+      </ul>
+    </div>
+    
+    <!-- Replication -->
+    <div class="card">
+      <div class="card-title">🔄 Replication Engine</div>
+      <div class="replication-log" id="replication-info">
+        <div class="empty-state">Connect to view replication info</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let nodeUrl = 'http://localhost:3000';
+    let connected = false;
+    let refreshInterval = null;
+    
+    async function connect() {
+      nodeUrl = document.getElementById('node-url').value.trim();
+      
+      try {
+        const health = await fetch(`${nodeUrl}/health`).then(r => r.json());
+        connected = true;
+        
+        document.getElementById('status-dot').classList.add('connected');
+        document.getElementById('status-text').textContent = `Connected to ${health.nodeId.slice(0, 16)}...`;
+        
+        await refresh();
+        startAutoRefresh();
+      } catch (e) {
+        connected = false;
+        document.getElementById('status-dot').classList.remove('connected');
+        document.getElementById('status-text').textContent = 'Connection failed';
+        console.error('Connection failed:', e);
+      }
+    }
+    
+    async function refresh() {
+      if (!connected) return;
+      
+      try {
+        // Fetch all data in parallel
+        const [node, peers, replication, gossip, discovered] = await Promise.all([
+          fetch(`${nodeUrl}/node`).then(r => r.json()).catch(() => null),
+          fetch(`${nodeUrl}/peers`).then(r => r.json()).catch(() => []),
+          fetch(`${nodeUrl}/replication`).then(r => r.json()).catch(() => null),
+          fetch(`${nodeUrl}/gossip`).then(r => r.json()).catch(() => null),
+          fetch(`${nodeUrl}/discovered`).then(r => r.json()).catch(() => []),
+        ]);
+        
+        // Update node identity
+        if (node) {
+          document.getElementById('node-identity').innerHTML = `
+            <div class="node-id">${node.nodeId}</div>
+            <div style="margin-top: 1rem; color: var(--text-dim)">
+              <div>Name: ${node.name}</div>
+              <div>Region: ${node.region}</div>
+              <div>Algorithm: ${node.algorithm}</div>
+              <div>NIST Level: ${node.nistLevel}</div>
+              <div>Capabilities: ${node.capabilities?.join(', ') || 'N/A'}</div>
+            </div>
+          `;
+        }
+        
+        // Update stats
+        document.getElementById('peer-count').textContent = peers.length;
+        document.getElementById('discovered-count').textContent = discovered.length;
+        document.getElementById('replication-log').textContent = replication?.replicationLogSize ?? '-';
+        document.getElementById('gossip-messages').textContent = gossip?.seenMessages ?? '-';
+        
+        // Update peer list
+        const peerList = document.getElementById('peer-list');
+        if (peers.length === 0) {
+          peerList.innerHTML = '<li class="empty-state">No peers connected</li>';
+        } else {
+          peerList.innerHTML = peers.map(p => `
+            <li class="peer-item">
+              <div class="peer-status"></div>
+              <div>
+                <div class="peer-name">${p.name}</div>
+                <div class="peer-id">${p.nodeId.slice(0, 24)}...</div>
+              </div>
+            </li>
+          `).join('');
+        }
+        
+        // Update gossip stats
+        if (gossip) {
+          document.getElementById('gossip-known').textContent = gossip.knownPeers;
+          document.getElementById('gossip-seen').textContent = gossip.seenMessages;
+          document.getElementById('gossip-pending').textContent = gossip.pendingRumors;
+          document.getElementById('gossip-bloom').textContent = 
+            `${(gossip.bloomFilterHealth * 100).toFixed(1)}%`;
+        }
+        
+        // Update discovered list
+        const discoveredList = document.getElementById('discovered-list');
+        if (discovered.length === 0) {
+          discoveredList.innerHTML = '<li class="empty-state">No nodes discovered</li>';
+        } else {
+          discoveredList.innerHTML = discovered.map(p => `
+            <li class="peer-item">
+              <div class="peer-status" style="background: var(--warning)"></div>
+              <div>
+                <div class="peer-name">${p.name || 'Unknown'}</div>
+                <div class="peer-id">${p.nodeId.slice(0, 24)}... (${p.region || 'unknown'})</div>
+              </div>
+            </li>
+          `).join('');
+        }
+        
+        // Update replication info
+        if (replication) {
+          document.getElementById('replication-info').innerHTML = `
+            <div>Log Entries: ${replication.replicationLogSize}</div>
+            <div>Peer States: ${replication.peerStates}</div>
+            <div>Tables: ${replication.tables?.join(', ') || 'N/A'}</div>
+          `;
+        }
+        
+      } catch (e) {
+        console.error('Refresh failed:', e);
+      }
+    }
+    
+    function startAutoRefresh() {
+      if (refreshInterval) clearInterval(refreshInterval);
+      
+      const checkbox = document.getElementById('auto-refresh');
+      if (checkbox.checked) {
+        refreshInterval = setInterval(refresh, 5000);
+      }
+    }
+    
+    document.getElementById('auto-refresh').addEventListener('change', () => {
+      if (document.getElementById('auto-refresh').checked) {
+        startAutoRefresh();
+      } else if (refreshInterval) {
+        clearInterval(refreshInterval);
+        refreshInterval = null;
+      }
+    });
+    
+    // Auto-connect on load
+    setTimeout(connect, 500);
+  </script>
+</body>
+</html>
