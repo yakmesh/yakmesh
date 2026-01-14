@@ -1,14 +1,16 @@
-<![CDATA[<div align="center">
-  <img src="https://yakmesh.dev/assets/yakmesh-logo2.png" alt="Yakmesh" width="200">
+<div align="center">
+  <img src="https://yakmesh.dev/assets/yakmesh-logo2.png" alt="YAKMESH" width="200">
 
-  # 🏔️ YAKMESH™: Sturdy & Secure
+  <h1>🏔️ YAKMESH™: Sturdy & Secure</h1>
 
-  **Yielding Atomic Kernel Modular Encryption Secured Hub**
+  <p><strong>Yielding Atomic Kernel Modular Encryption Secured Hub</strong></p>
 
-  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-  [![Node.js](https://img.shields.io/badge/Node.js-18+-green.svg)](https://nodejs.org)
-  [![Post-Quantum](https://img.shields.io/badge/Crypto-Post--Quantum-blue.svg)](https://csrc.nist.gov/projects/post-quantum-cryptography)
-  [![npm version](https://img.shields.io/npm/v/yakmesh.svg)](https://www.npmjs.com/package/yakmesh)
+  <p>
+    <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
+    <a href="https://nodejs.org"><img src="https://img.shields.io/badge/Node.js-18+-green.svg" alt="Node.js"></a>
+    <a href="https://csrc.nist.gov/projects/post-quantum-cryptography"><img src="https://img.shields.io/badge/Crypto-Post--Quantum-blue.svg" alt="Post-Quantum"></a>
+    <a href="https://www.npmjs.com/package/yakmesh"><img src="https://img.shields.io/npm/v/yakmesh.svg" alt="npm version"></a>
+  </p>
 </div>
 
 ---
@@ -94,7 +96,6 @@ yakmesh/
 ├── identity/         # Post-quantum key management
 ├── database/         # SQLite replication engine
 ├── adapters/         # Platform integration plugins
-├── security/         # Pro authentication & encryption
 ├── webserver/        # Embedded Caddy web server
 └── server/           # HTTP/WS server
 ```
@@ -166,8 +167,10 @@ YAKMESH Pro includes additional security features:
 
 ## License
 
-- **Community Edition**: MIT License
+- **Community Edition**: MIT License (see [LICENSE](LICENSE))
 - **Pro Edition**: Proprietary License
+
+See [TRADEMARK.md](TRADEMARK.md) for trademark usage policy.
 
 ---
 
@@ -177,5 +180,6 @@ YAKMESH Pro includes additional security features:
   <strong><a href="https://yakmesh.dev">yakmesh.dev</a></strong>
   <br><br>
   <sub>© 2026 YAKMESH™ Project. Sturdy & Secure.</sub>
+  <br>
+  <sub>YAKMESH™ is a trademark of PeerQuanta, application pending (Serial No. 99594620).</sub>
 </div>
-]]>
