@@ -31,6 +31,7 @@ import { EventEmitter } from 'events';
  * Trust levels for time sources
  */
 export const TimeTrustLevel = {
+  QUANTUM: 'quantum',   // Quantum optical network (WR-PTP, optical atomic, entanglement-based)
   ATOMIC: 'atomic',     // PCIe atomic clock (CSAC, Rubidium)
   GPS: 'gps',           // GPS with PPS signal
   PTP: 'ptp',           // IEEE 1588 PTP synchronized
@@ -42,6 +43,7 @@ export const TimeTrustLevel = {
  * Phase tolerance in milliseconds per trust level
  */
 export const PhaseTolerance = {
+  [TimeTrustLevel.QUANTUM]: 1,    // ±1ms for quantum (sub-nanosecond capable)
   [TimeTrustLevel.ATOMIC]: 100,      // ±100ms for atomic
   [TimeTrustLevel.GPS]: 500,         // ±500ms for GPS
   [TimeTrustLevel.PTP]: 500,         // ±500ms for PTP
@@ -53,6 +55,7 @@ export const PhaseTolerance = {
  * Stratum equivalents for trust levels
  */
 export const StratumLevel = {
+  [TimeTrustLevel.QUANTUM]: 0, // Quantum reference (highest)
   [TimeTrustLevel.ATOMIC]: 0,  // Reference clock
   [TimeTrustLevel.GPS]: 1,     // Primary server
   [TimeTrustLevel.PTP]: 1,     // Primary server
@@ -822,5 +825,8 @@ export default {
   getTimeSourceDetector,
   detectTimeSources,
 };
+
+
+
 
 
