@@ -5,6 +5,24 @@ All notable changes to YAKMESH™ will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.3] - 2026-01-15
+
+### Fixed
+- **CRITICAL**: Fixed ML-DSA-65 signature verification parameter order (was: publicKey, message, signature → now: signature, message, publicKey)
+
+### Added
+- **Rate Limiter**: New `ConnectionRateLimiter` class for DoS protection
+  - Connection flood protection (30 connections/minute per IP)
+  - Handshake spam detection (100 handshakes/minute global)
+  - Gossip message throttling (500 messages/minute)
+  - Automatic cleanup of stale tracking data
+- Comprehensive test suite (17 tests covering crypto, security, performance)
+- Stress test suite (14 tests with edge cases)
+
+### Security
+- Integrated rate limiting into mesh/network.js WebSocket handling
+- Protection against 51% / network isolation attacks via message throttling
+
 ## [1.0.2] - 2026-01-14
 
 ### Fixed
@@ -39,6 +57,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+[1.0.3]: https://github.com/yakmesh/yakmesh/releases/tag/v1.0.3
 [1.0.2]: https://github.com/yakmesh/yakmesh/releases/tag/v1.0.2
 [1.0.1]: https://github.com/yakmesh/yakmesh/releases/tag/v1.0.1
 [1.0.0]: https://github.com/yakmesh/yakmesh/releases/tag/v1.0.0

@@ -4,6 +4,7 @@
  */
 
 import { WebSocketServer, WebSocket } from 'ws';
+import { ConnectionRateLimiter } from './rate-limiter.js';
 
 /**
  * Message types for mesh protocol
@@ -46,6 +47,9 @@ export class MeshNetwork {
     this.knownNodes = new Map();   // nodeId -> { endpoint, identity }
     this.messageHandlers = new Map();
     this.seenMessages = new Set(); // For gossip deduplication
+    
+    // Rate limiter for connection/message flood protection
+    this.rateLimiter = new ConnectionRateLimiter(config.rateLimiter || {});
     
     this._setupDefaultHandlers();
   }
@@ -327,7 +331,16 @@ export class MeshNetwork {
   }
 
   _handleIncomingConnection(ws, req) {
-    console.log(`← Incoming connection from ${req.socket.remoteAddress}`);
+    const clientIp = req.socket.remoteAddress || 'unknown';
+    console.log(`← Incoming connection from ${clientIp}`);
+    
+    // SECURITY: Rate limit check for connection flood protection
+    const connectionCheck = this.rateLimiter.checkConnection(clientIp);
+    if (!connectionCheck.allowed) {
+      console.warn(`⚠️ Connection rejected (rate limit): ${clientIp} - ${connectionCheck.reason}`);
+      ws.close(1008, connectionCheck.reason);
+      return;
+    }
     
     ws.on('message', (data) => {
       this._handleMessage(ws, data, req);
