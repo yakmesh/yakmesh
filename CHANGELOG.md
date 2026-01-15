@@ -5,6 +5,34 @@ All notable changes to YAKMESH™ will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2026-01-14
+
+### Added
+- **NAVR (Network Assimilation Validation Routine)**: Computational identity verification for new nodes
+  - Replaces traditional "Proof of Work" terminology to avoid blockchain confusion
+  - One-time puzzle solve during node registration (NOT mining)
+  - Configurable difficulty for network defense scaling
+- **Sybil Defense Module** (`mesh/sybil-defense.js`):
+  - NAVR computational puzzle for identity creation
+  - ReputationTracker for trust scoring (0.0 to 1.0 scale)
+  - SubnetDiversity to prevent eclipse attacks (max 3 connections per /24 subnet)
+- **Replay Defense Module** (`mesh/replay-defense.js`):
+  - NonceRegistry with cryptographic 32-byte nonces (1hr expiry)
+  - TimestampValidator (10-minute freshness window)
+  - SequenceTracker for per-sender message ordering
+  - ChallengeResponse for mutual node authentication
+- **Message Validator Module** (`mesh/message-validator.js`):
+  - Size limits per message type (1MB max, gossip 64KB, handshake 8KB)
+  - Nesting depth protection (max 10 levels)
+  - SafeJsonParser with prototype pollution protection
+- Expanded test suite: 24 security tests covering all attack vectors
+
+### Security
+- Protection against Sybil attacks via NAVR + reputation + subnet diversity
+- Protection against replay attacks via nonces + timestamps + sequences
+- Protection against amplification attacks via message size limits
+- Protection against eclipse attacks via subnet connection limits
+
 ## [1.0.3] - 2026-01-15
 
 ### Fixed
@@ -61,3 +89,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.0.2]: https://github.com/yakmesh/yakmesh/releases/tag/v1.0.2
 [1.0.1]: https://github.com/yakmesh/yakmesh/releases/tag/v1.0.1
 [1.0.0]: https://github.com/yakmesh/yakmesh/releases/tag/v1.0.0
+

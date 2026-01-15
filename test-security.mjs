@@ -3,7 +3,7 @@
  * Tests all attack defense mechanisms
  */
 
-import { SybilDefense, ProofOfWork, ReputationTracker, SubnetDiversity } from './mesh/sybil-defense.js';
+import { SybilDefense, NAVR, ReputationTracker, SubnetDiversity } from './mesh/sybil-defense.js';
 import { ReplayDefense, NonceRegistry, TimestampValidator, SequenceTracker } from './mesh/replay-defense.js';
 import { MessageValidator, SafeJsonParser, SIZE_LIMITS } from './mesh/message-validator.js';
 
@@ -31,28 +31,28 @@ console.log('╚═════════════════════�
 // ═══════════════════════════════════════════════════════════════
 console.log('─── Sybil Defense Tests ───\n');
 
-test('ProofOfWork creates valid challenge', () => {
-  const pow = new ProofOfWork({ difficulty: 8 }); // Low difficulty for testing
-  const challenge = pow.createChallenge('node123');
+test('NAVR creates valid challenge', () => {
+  const navr = new NAVR({ difficulty: 8 }); // Low difficulty for testing
+  const challenge = navr.createChallenge('node123');
   assert(challenge.nodeId === 'node123', 'nodeId mismatch');
   assert(challenge.challenge.length === 64, 'challenge should be 32 bytes hex');
   assert(challenge.difficulty === 8, 'difficulty mismatch');
   assert(challenge.expiresAt > Date.now(), 'should not be expired');
 });
 
-test('ProofOfWork solves and verifies challenge', () => {
-  const pow = new ProofOfWork({ difficulty: 8 });
-  const challenge = pow.createChallenge('testnode');
-  const solution = pow.solve(challenge);
+test('NAVR solves and verifies challenge', () => {
+  const navr = new NAVR({ difficulty: 8 });
+  const challenge = navr.createChallenge('testnode');
+  const solution = navr.solve(challenge);
   assert(solution !== null, 'should find solution with low difficulty');
-  assert(pow.verify(challenge, solution), 'should verify valid solution');
+  assert(navr.verify(challenge, solution), 'should verify valid solution');
 });
 
-test('ProofOfWork rejects invalid solution', () => {
-  const pow = new ProofOfWork({ difficulty: 8 });
-  const challenge = pow.createChallenge('testnode');
+test('NAVR rejects invalid solution', () => {
+  const navr = new NAVR({ difficulty: 8 });
+  const challenge = navr.createChallenge('testnode');
   const badSolution = { challenge: challenge.challenge, nonce: 0, hash: 'badhash' };
-  assert(!pow.verify(challenge, badSolution), 'should reject invalid hash');
+  assert(!navr.verify(challenge, badSolution), 'should reject invalid hash');
 });
 
 test('ReputationTracker starts nodes at low trust', () => {
@@ -216,5 +216,8 @@ console.log('║  RESULTS: ' + passed + ' passed, ' + failed + ' failed         
 console.log('╚═══════════════════════════════════════════════════════╝\n');
 
 process.exit(failed > 0 ? 1 : 0);
+
+
+
 
 

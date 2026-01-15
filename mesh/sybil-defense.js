@@ -6,7 +6,7 @@
 import { sha3_256 } from '@noble/hashes/sha3.js';
 import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js';
 
-export class ProofOfWork {
+export class NAVR {
   constructor(options = {}) {
     this.difficulty = options.difficulty || 16;
     this.maxAttempts = options.maxAttempts || 10_000_000;
@@ -47,9 +47,9 @@ export class ReputationTracker {
     this.thresholds = { trusted: 0.6, normal: 0.3, suspicious: 0.1, banned: 0.0 };
   }
 
-  registerNode(nodeId, powSolution = null) {
+  registerNode(nodeId, NAVRSolution = null) {
     if (this.nodes.has(nodeId)) return this.nodes.get(nodeId);
-    const record = { nodeId, reputation: powSolution ? 0.3 : 0.1, registeredAt: Date.now(), lastSeen: Date.now(), goodBehaviors: 0, badBehaviors: 0 };
+    const record = { nodeId, reputation: NAVRSolution ? 0.3 : 0.1, registeredAt: Date.now(), lastSeen: Date.now(), goodBehaviors: 0, badBehaviors: 0 };
     this.nodes.set(nodeId, record);
     return record;
   }
@@ -120,19 +120,19 @@ export class SubnetDiversity {
 
 export class SybilDefense {
   constructor(options = {}) {
-    this.pow = new ProofOfWork(options.pow || {});
+    this.NAVR = new NAVR(options.NAVR || {});
     this.reputation = new ReputationTracker(options.reputation || {});
     this.diversity = new SubnetDiversity(options.diversity || {});
   }
 
-  evaluateConnection(ip, nodeId, powSolution = null) {
+  evaluateConnection(ip, nodeId, NAVRSolution = null) {
     const divCheck = this.diversity.allowConnection(ip);
     if (!divCheck.allowed) return { allowed: false, reason: divCheck.reason };
     let record = this.reputation.nodes.get(nodeId);
-    if (!record) record = this.reputation.registerNode(nodeId, powSolution);
+    if (!record) record = this.reputation.registerNode(nodeId, NAVRSolution);
     const trustLevel = this.reputation.getTrustLevel(nodeId);
     if (trustLevel === 'banned') return { allowed: false, reason: 'Node is banned' };
-    if (trustLevel === 'unknown' && !powSolution) return { allowed: false, reason: 'PoW required', challenge: this.pow.createChallenge(nodeId) };
+    if (trustLevel === 'unknown' && !NAVRSolution) return { allowed: false, reason: 'NAVR required', challenge: this.NAVR.createChallenge(nodeId) };
     this.diversity.addConnection(ip, nodeId);
     return { allowed: true, trustLevel, reputation: record.reputation };
   }
@@ -148,3 +148,4 @@ export class SybilDefense {
 }
 
 export default SybilDefense;
+
