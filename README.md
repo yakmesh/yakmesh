@@ -23,7 +23,7 @@ In an era where traditional ECDSA is increasingly vulnerable and network jitter 
 
 🌿 **Yielding Resilience**: A self-healing mesh topology that adapts to node failure and adversarial interference without central authority.
 
-⚛️ **Atomic Precision**: Integrated support for PCIe atomic clock hardware, enabling nanosecond-level hardware timestamping for low-latency synchronization.
+⚛️ **Atomic Precision**: Integrated support for PCIe atomic clock hardware, enabling hardware timestamping with support for high-precision time sources for low-latency synchronization.
 
 🔐 **Quantum Hardened**: Fully compatible with Project Zond and the QRL (Quantum Resistant Ledger) ecosystem, utilizing stateless lattice-based signatures (ML-DSA) from Genesis.
 

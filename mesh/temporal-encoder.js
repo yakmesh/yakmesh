@@ -2,7 +2,7 @@
  * YAKMESH™ Temporal Mesh Encoding (TME)
  * 
  * A novel approach to packet resilience that exploits YAKMESH's unique capabilities:
- * - Atomic time synchronization (PTP/PCIe-level nanosecond precision)
+ * - Atomic time synchronization (configurable precision from NTP to PCIe atomic clock levels)
  * - Post-quantum ML-DSA-65 signatures for cryptographic time binding
  * - Mesh topology awareness for intelligent path diversity
  * 
