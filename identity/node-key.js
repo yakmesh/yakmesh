@@ -60,8 +60,8 @@ export function verifySignature(message, signatureHex, publicKeyHex) {
     const messageBytes = typeof message === 'string'
       ? new TextEncoder().encode(message)
       : message;
-    // ml_dsa65.verify takes (publicKey, message, signature)
-    return ml_dsa65.verify(publicKey, messageBytes, signature);
+    // ml_dsa65.verify takes (signature, message, publicKey)
+    return ml_dsa65.verify(signature, messageBytes, publicKey);
   } catch (e) {
     console.error('Signature verification failed:', e.message);
     return false;
