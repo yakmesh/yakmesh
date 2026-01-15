@@ -5,6 +5,37 @@ All notable changes to YAKMESH™ will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2026-01-15
+
+### Added
+- **TME (Temporal Mesh Encoding)**: Novel packet resilience system unique to YAKMESH
+  - Exploits atomic time synchronization as the redundancy dimension
+  - Cryptographic temporal chaining binds data to specific points in time
+  - Mesh topology-aware encoding for intelligent path diversity
+  - NOT erasure coding - a fundamentally new approach to packet loss recovery
+- **TemporalSlice**: Atomic unit of TME with cryptographic time binding
+  - Temporal hash includes: data + timestamp + sequence + mesh position
+  - Chain integrity via prevTemporalHash linking
+  - Tamper detection on deserialization
+- **TemporalStream**: Message slicing and reassembly with temporal properties
+  - Configurable slice size and timing intervals
+  - Completion tracking and missing slice detection
+  - Temporal chain validation
+- **TemporalReconstructor**: Recovery system using timing proofs
+  - Consensus verification from multiple mesh neighbors
+  - Missing slice attestation via timing proofs
+  - Partial reconstruction capabilities
+- **TemporalMeshEncoder**: High-level API for TME operations
+  - Full encode/decode lifecycle management
+  - Statistics tracking (slices sent/received, completion rates)
+  - Stream status monitoring
+- New test suite: 18 TME-specific tests (test-tme.mjs)
+
+### Philosophy
+- "Time IS the redundancy dimension" - unlike Walrus/Red Stuff 2D erasure coding
+- Designed for real-time mesh networks with atomic clock sync
+- Leverages YAKMESH's unique post-quantum + atomic timing combination
+
 ## [1.1.0] - 2026-01-14
 
 ### Added
@@ -89,4 +120,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 [1.0.2]: https://github.com/yakmesh/yakmesh/releases/tag/v1.0.2
 [1.0.1]: https://github.com/yakmesh/yakmesh/releases/tag/v1.0.1
 [1.0.0]: https://github.com/yakmesh/yakmesh/releases/tag/v1.0.0
+
 
