@@ -105,6 +105,16 @@ const client = new Client({
   ],
 });
 
+// Bot statistics tracking
+const stats = {
+  startTime: Date.now(),
+  messagesReceived: 0,
+  commandsProcessed: 0,
+  aiQueriesProcessed: 0,
+  mentionsProcessed: 0,
+  errors: 0,
+};
+
 // Initialize Gemini AI
 let genAI = null;
 let model = null;
@@ -482,8 +492,55 @@ const commands = {
         { name: '❓ `/ask <question>`', value: 'Ask YakBot about YAKMESH', inline: true },
         { name: '🔗 `/links`', value: 'All social and resource links', inline: true },
         { name: '🏓 `/ping`', value: 'Check bot latency', inline: true },
+        { name: '📈 `/botstats`', value: 'View bot performance metrics', inline: true },
       ],
       footer: 'YAKMESH™ - Sturdy & Secure',
+    });
+    await interaction.reply({ embeds: [embed] });
+  },
+  
+  // /botstats - Bot performance metrics
+  async botstats(interaction) {
+    const uptime = Date.now() - stats.startTime;
+    const days = Math.floor(uptime / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((uptime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((uptime % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((uptime % (1000 * 60)) / 1000);
+    
+    const uptimeStr = days > 0 
+      ? `${days}d ${hours}h ${minutes}m` 
+      : hours > 0 
+        ? `${hours}h ${minutes}m ${seconds}s`
+        : `${minutes}m ${seconds}s`;
+    
+    // Memory usage
+    const memUsage = process.memoryUsage();
+    const memMB = (memUsage.heapUsed / 1024 / 1024).toFixed(1);
+    const memTotal = (memUsage.heapTotal / 1024 / 1024).toFixed(1);
+    
+    // Calculate messages per hour
+    const hoursUp = uptime / (1000 * 60 * 60) || 1;
+    const msgsPerHour = (stats.messagesReceived / hoursUp).toFixed(1);
+    
+    const embed = createEmbed({
+      title: '📈 YakBot Performance',
+      description: 'Real-time bot statistics and metrics',
+      fields: [
+        { name: '⏱️ Uptime', value: uptimeStr, inline: true },
+        { name: '🏓 Latency', value: `${Math.round(client.ws.ping)}ms`, inline: true },
+        { name: '💾 Memory', value: `${memMB}/${memTotal} MB`, inline: true },
+        { name: '📨 Messages', value: `${stats.messagesReceived}`, inline: true },
+        { name: '⚡ Commands', value: `${stats.commandsProcessed}`, inline: true },
+        { name: '🤖 AI Queries', value: `${stats.aiQueriesProcessed}`, inline: true },
+        { name: '💬 Mentions', value: `${stats.mentionsProcessed}`, inline: true },
+        { name: '📊 Msgs/Hour', value: `${msgsPerHour}`, inline: true },
+        { name: '❌ Errors', value: `${stats.errors}`, inline: true },
+        { name: '🖥️ Servers', value: `${client.guilds.cache.size}`, inline: true },
+        { name: '👥 Users', value: `${client.guilds.cache.reduce((a, g) => a + g.memberCount, 0)}`, inline: true },
+        { name: '🟢 Status', value: 'Online', inline: true },
+      ],
+      color: config.colors.info,
+      footer: `YakBot v1.0 • Node.js ${process.version}`,
     });
     await interaction.reply({ embeds: [embed] });
   },
