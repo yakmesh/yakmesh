@@ -100,10 +100,8 @@ const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
-    // Note: MessageContent and GuildMembers are privileged intents
-    // Enable them in Discord Developer Portal if you want welcome messages
-    // GatewayIntentBits.MessageContent,
-    // GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.MessageContent,
+    GatewayIntentBits.GuildMembers,
   ],
 });
 
@@ -534,15 +532,117 @@ client.on(Events.GuildMemberAdd, async (member) => {
   }
 });
 
+// Handle @mentions and direct messages
+client.on(Events.MessageCreate, async (message) => {
+  // Ignore bot messages
+  if (message.author.bot) return;
+  
+  // Check if bot was mentioned or it's a DM
+  const isMentioned = message.mentions.has(client.user);
+  const isDM = message.channel.type === 1; // DM channel
+  
+  if (!isMentioned && !isDM) return;
+  
+  // Get the message content without the mention
+  let content = message.content
+    .replace(new RegExp(`<@!?${client.user.id}>`, 'g'), '')
+    .trim();
+  
+  // If empty after removing mention, send help
+  if (!content) {
+    const embed = createEmbed({
+      title: '🦬 Hey there! I\'m YakBot',
+      description: `I'm here to help with all things YAKMESH!\n\n` +
+        `**You can:**\n` +
+        `• Ask me anything: \`@YakBot how does gossip work?\`\n` +
+        `• Use slash commands: \`/status\`, \`/docs\`, \`/ask\`\n` +
+        `• Check node health: \`/nodes\`\n\n` +
+        `Try asking me a question about YAKMESH! 🚀`,
+      footer: 'YAKMESH™ - Sturdy & Secure',
+    });
+    await message.reply({ embeds: [embed] });
+    return;
+  }
+  
+  // Quick responses for common keywords
+  const lowerContent = content.toLowerCase();
+  
+  // Greetings
+  if (/^(hi|hello|hey|sup|yo|howdy|greetings)/i.test(lowerContent)) {
+    await message.reply(`Hey ${message.author.username}! 👋 How can I help you with YAKMESH today? Feel free to ask me anything!`);
+    return;
+  }
+  
+  // Thanks
+  if (/^(thanks|thank you|thx|ty)/i.test(lowerContent)) {
+    await message.reply(`You're welcome! 🦬 Let me know if you need anything else!`);
+    return;
+  }
+  
+  // Install/setup questions - quick response
+  if (/how.*(install|setup|start|begin|get started)/i.test(lowerContent)) {
+    const embed = createEmbed({
+      title: '📦 Quick Install Guide',
+      description: '```bash\n# Install YAKMESH\nnpm install yakmesh\n\n# Initialize a node\nnpx yakmesh init\n\n# Start your node\nnpx yakmesh start\n```',
+      fields: [
+        { name: '📋 Requirements', value: 'Node.js 18+', inline: true },
+        { name: '📚 Full Docs', value: `[Getting Started](${config.links.docs}/getting-started)`, inline: true },
+      ],
+      footer: 'YAKMESH™ - npm install yakmesh',
+    });
+    await message.reply({ embeds: [embed] });
+    return;
+  }
+  
+  // Version/status questions
+  if (/what.*(version|latest)/i.test(lowerContent) || lowerContent === 'version') {
+    const npm = await getNpmStats();
+    await message.reply(`📦 The latest YAKMESH version is **v${npm.version}**\n\nInstall with: \`npm install yakmesh\``);
+    return;
+  }
+  
+  // If AI is available, use it for complex questions
+  if (model) {
+    try {
+      await message.channel.sendTyping();
+      
+      const prompt = `${YAKMESH_CONTEXT}\n\nUser message: ${content}\n\nProvide a helpful, friendly, and concise response. Keep it under 1500 characters. Use Discord markdown formatting.`;
+      const result = await model.generateContent(prompt);
+      const response = result.response.text();
+      
+      // Truncate if needed
+      const truncated = response.length > 1900 
+        ? response.slice(0, 1900) + '...'
+        : response;
+      
+      await message.reply(truncated);
+    } catch (error) {
+      console.error('AI chat error:', error);
+      await message.reply(`🤔 I had trouble understanding that. Try using \`/ask ${content.slice(0, 50)}\` or rephrase your question!`);
+    }
+  } else {
+    // No AI, give helpful response
+    await message.reply(
+      `I'm not sure about that specific question. Here are some things I can help with:\n\n` +
+      `• \`/status\` - Check YAKMESH project status\n` +
+      `• \`/docs\` - Get documentation links\n` +
+      `• \`/nodes\` - Check node health\n` +
+      `• \`/install\` - Installation guide\n\n` +
+      `Or check the docs: ${config.links.docs}`
+    );
+  }
+});
+
 // Ready event
 client.once(Events.ClientReady, (c) => {
   console.log(`\n🦬 YakBot is online!`);
   console.log(`   Logged in as: ${c.user.tag}`);
   console.log(`   Servers: ${c.guilds.cache.size}`);
-  console.log(`   AI: ${model ? '✓ Gemini enabled' : '✗ Not configured'}\n`);
+  console.log(`   AI: ${model ? '✓ Gemini enabled' : '✗ Not configured'}`);
+  console.log(`   Chat: ✓ Mentions & DMs enabled\n`);
   
   // Set activity
-  client.user.setActivity('YAKMESH™ | /help', { type: 3 }); // Watching
+  client.user.setActivity('YAKMESH™ | @me or /help', { type: 3 }); // Watching
 });
 
 // Login
