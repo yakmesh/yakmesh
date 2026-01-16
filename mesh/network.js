@@ -42,6 +42,10 @@ export class MeshNetwork {
       ...config,
     };
     
+    // Network identity for code proof verification
+    this.networkId = config.networkId || null;
+    this.networkFingerprint = config.networkFingerprint || null;
+    
     this.server = null;
     this.peers = new Map();        // nodeId -> { ws, identity, lastSeen }
     this.knownNodes = new Map();   // nodeId -> { endpoint, identity }
@@ -92,10 +96,14 @@ export class MeshNetwork {
       const ws = new WebSocket(endpoint);
       
       ws.on('open', () => {
-        // Send HELLO with our identity
+        // Send HELLO with our identity AND network fingerprint for code proof verification
         this._send(ws, {
           type: MessageTypes.HELLO,
-          identity: this.identity.getPublicIdentity(),
+          identity: {
+            ...this.identity.getPublicIdentity(),
+            networkId: this.networkId,
+            networkFingerprint: this.networkFingerprint,
+          },
           timestamp: Date.now(),
         });
       });
@@ -259,6 +267,26 @@ export class MeshNetwork {
     this.on(MessageTypes.HELLO, (msg, ws) => {
       const nodeId = msg.identity.nodeId;
       
+      // CODE PROOF VERIFICATION: Check network fingerprint
+      // Nodes with different codebases will have different fingerprints
+      if (this.networkFingerprint && msg.identity.networkFingerprint) {
+        if (msg.identity.networkFingerprint !== this.networkFingerprint) {
+          console.warn(`✗ Rejected peer ${nodeId.slice(0, 20)}... - incompatible codebase`);
+          console.warn(`  Their network: ${msg.identity.networkId || 'unknown'}`);
+          console.warn(`  Our network:   ${this.networkId || 'unknown'}`);
+          
+          // Send rejection and close connection
+          this._send(ws, {
+            type: 'REJECT',
+            reason: 'INCOMPATIBLE_CODEBASE',
+            message: 'Your node is running a different codebase version',
+            ourNetworkId: this.networkId,
+          });
+          ws.close(1008, 'Incompatible codebase');
+          return;
+        }
+      }
+      
       // Store peer
       this.peers.set(nodeId, {
         ws,
@@ -266,10 +294,14 @@ export class MeshNetwork {
         lastSeen: Date.now(),
       });
       
-      // Send WELCOME back
+      // Send WELCOME back with our network info
       this._send(ws, {
         type: MessageTypes.WELCOME,
-        identity: this.identity.getPublicIdentity(),
+        identity: {
+          ...this.identity.getPublicIdentity(),
+          networkId: this.networkId,
+          networkFingerprint: this.networkFingerprint,
+        },
         peers: this.getPeers().filter(p => p.nodeId !== nodeId),
       });
       
@@ -279,6 +311,34 @@ export class MeshNetwork {
     // Handle WELCOME
     this.on(MessageTypes.WELCOME, (msg, ws) => {
       const nodeId = msg.identity.nodeId;
+      
+      // CODE PROOF VERIFICATION: Check network fingerprint on WELCOME too
+      // This protects the INITIATOR - even if remote accepts us, we reject them if mismatched
+      if (this.networkFingerprint && msg.identity.networkFingerprint) {
+        if (msg.identity.networkFingerprint !== this.networkFingerprint) {
+          console.warn(`✗ Rejecting peer ${nodeId.slice(0, 20)}... - incompatible codebase (on WELCOME)`);
+          console.warn(`  Their network: ${msg.identity.networkId || 'unknown'}`);
+          console.warn(`  Our network:   ${this.networkId || 'unknown'}`);
+          ws.close(1008, 'Incompatible codebase');
+          
+          // Signal rejection to pending promise
+          if (ws._pendingWelcome) {
+            ws._pendingWelcome({ rejected: true, reason: 'INCOMPATIBLE_CODEBASE' });
+            delete ws._pendingWelcome;
+          }
+          return;
+        }
+      } else if (this.networkFingerprint && !msg.identity.networkFingerprint) {
+        // Remote node didn't send fingerprint - they're running old code
+        console.warn(`✗ Rejecting peer ${nodeId.slice(0, 20)}... - no fingerprint (old codebase)`);
+        ws.close(1008, 'Missing network fingerprint');
+        
+        if (ws._pendingWelcome) {
+          ws._pendingWelcome({ rejected: true, reason: 'MISSING_FINGERPRINT' });
+          delete ws._pendingWelcome;
+        }
+        return;
+      }
       
       this.peers.set(nodeId, {
         ws,

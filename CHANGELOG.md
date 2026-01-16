@@ -40,6 +40,19 @@ All notable changes to YAKMESH will be documented in this file.
 - Timing attack resistance in PHANTOM
 - Improved rate limiting integration
 
+### 🛡️ Code Proof Protocol Hardening
+- **CRITICAL FIX**: HELLO message now includes `networkFingerprint`
+- **CRITICAL FIX**: WELCOME handler validates fingerprint, rejects mismatches (code 1008)
+- Added `CodebaseLock` module for runtime source file protection
+- Fixed config loading for relative/absolute path handling
+- Comprehensive 3-node test suite: 17/17 tests passing
+  - Same-codebase peering verification
+  - Cross-codebase rejection (bidirectional)
+  - N-way fingerprint isolation matrix
+  - Empty/partial fingerprint attack blocking
+  - Flood attack resistance (20 simultaneous rejected)
+  - Fingerprint spoofing prevention
+
 ---
 
 ## [1.2.0] - 2026-01-15

@@ -4,6 +4,10 @@
  * 
  * Security Level: NIST Level 3 (~192-bit classical security)
  * Quantum Resistant: Yes (lattice-based)
+ * 
+ * IMPORTANT: Node IDs use iO (indistinguishability obfuscation) style
+ * derivation to avoid exposing raw hashes. The internal hash is kept
+ * private while the public-facing ID is a human-readable derived name.
  */
 
 import { ml_dsa65 } from '@noble/post-quantum/ml-dsa.js';
@@ -12,14 +16,37 @@ import { bytesToHex, hexToBytes } from '@noble/hashes/utils.js';
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
 
+// Import iO network identity for obfuscated node IDs
+import { deriveNetworkName, deriveNetworkId } from '../oracle/network-identity.js';
+
 /**
- * Generate a unique node ID from public key
- * Uses SHA3-256 hash of public key, truncated to 16 bytes
+ * Generate a unique node ID from public key using iO obfuscation
+ * Instead of exposing raw hashes, we derive a human-readable name
+ * 
+ * @param {Uint8Array} publicKey - The node's public key
+ * @returns {string} iO-derived node ID like "qubit-lattice-prism"
  */
 export function generateNodeId(publicKey) {
   const hash = sha3_256(publicKey);
-  const idBytes = hash.slice(0, 16);
-  return 'lantern_' + bytesToHex(idBytes);
+  const hashHex = bytesToHex(hash);
+  
+  // Use iO to derive a human-readable, non-reversible ID
+  // The raw hash is never exposed externally
+  const networkName = deriveNetworkName(hashHex, 3);
+  const shortId = deriveNetworkId(hashHex);
+  
+  // Format: "node-[3-word-name]-[short-id]"
+  // e.g., "node-qubit-lattice-prism-pq-a7x9"
+  return `node-${networkName}-${shortId}`;
+}
+
+/**
+ * Generate internal hash for private operations (NOT exposed externally)
+ * This is kept for signature verification and internal lookups
+ */
+export function generateInternalHash(publicKey) {
+  const hash = sha3_256(publicKey);
+  return bytesToHex(hash.slice(0, 16));
 }
 
 /**

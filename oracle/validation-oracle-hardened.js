@@ -14,7 +14,7 @@
 import { sha3_256, sha3_512 } from '@noble/hashes/sha3.js';
 import { bytesToHex, hexToBytes, utf8ToBytes } from '@noble/hashes/utils.js';
 import { ml_dsa65 } from '@noble/post-quantum/ml-dsa.js';
-import { readFileSync } from 'fs';
+import { readFileSync, readdirSync, statSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
@@ -257,15 +257,36 @@ export class ValidationOracle {
   }
   
   /**
-   * Compute hash of our own source code
+   * Compute hash of all critical source files
+   * This ensures nodes with different codebases cannot peer
+   * 
+   * SECURITY: Hashes the ENTIRE codebase, not just selected files.
+   * Any modification to ANY source file will produce a different hash,
+   * making it impossible for nodes with different code to communicate.
+   * 
+   * This is the core of the Code Proof Protocol: mathematical certainty
+   * that all peering nodes run identical code.
    */
   #computeSelfHash() {
     try {
-      // Read our own source file
-      const sourcePath = join(__dirname, 'validation-oracle-hardened.js');
-      const source = readFileSync(sourcePath, 'utf-8');
-      return contentHash(source);
+      // Get the root directory (parent of oracle/)
+      const rootDir = join(__dirname, '..');
+      
+      // Collect ALL source files recursively
+      const allSources = [];
+      this.#walkDirectory(rootDir, allSources);
+      
+      // Sort for deterministic ordering across all platforms
+      allSources.sort((a, b) => a.path.localeCompare(b.path));
+      
+      // Compute hash of entire codebase
+      const codebaseContent = allSources
+        .map(f => `=== ${f.path} ===\n${f.content}`)
+        .join('\n');
+      
+      return contentHash(codebaseContent);
     } catch (e) {
+      console.error('⚠️ Failed to hash codebase:', e.message);
       // Fallback: hash the function definitions
       const functionSources = [
         this.validateListing.toString(),
@@ -275,6 +296,75 @@ export class ValidationOracle {
         this.resolveConflict.toString(),
       ];
       return contentHash(functionSources.join('\n'));
+    }
+  }
+  
+  /**
+   * Recursively walk directory and collect all source files
+   * @private
+   */
+  #walkDirectory(dir, results, baseDir = null) {
+    if (!baseDir) baseDir = dir;
+    
+    // Directories to EXCLUDE from hash (not part of codebase logic)
+    const EXCLUDE_DIRS = [
+      'node_modules',  // Dependencies (version-locked via package-lock.json)
+      '.git',          // Git metadata
+      'data',          // Runtime data
+      'database',      // User data
+      'logs',          // Runtime logs
+      '.vscode',       // Editor config
+      'coverage',      // Test coverage
+      'dist',          // Build output
+      'build',         // Build output
+    ];
+    
+    // File extensions that ARE part of the codebase
+    const SOURCE_EXTENSIONS = [
+      '.js', '.mjs', '.cjs',  // JavaScript
+      '.json',                 // Config (package.json matters!)
+      '.ts', '.tsx',          // TypeScript (if any)
+    ];
+    
+    // Files to explicitly EXCLUDE
+    const EXCLUDE_FILES = [
+      'package-lock.json',    // Too volatile, deps locked by package.json
+      '.env',                 // Environment-specific
+      '.env.local',
+    ];
+    
+    try {
+      const entries = readdirSync(dir, { withFileTypes: true });
+      
+      for (const entry of entries) {
+        const fullPath = join(dir, entry.name);
+        const relativePath = fullPath.replace(baseDir, '').replace(/^[/\\]/, '');
+        
+        if (entry.isDirectory()) {
+          // Skip excluded directories
+          if (EXCLUDE_DIRS.includes(entry.name)) continue;
+          // Recurse into subdirectory
+          this.#walkDirectory(fullPath, results, baseDir);
+        } else if (entry.isFile()) {
+          // Skip excluded files
+          if (EXCLUDE_FILES.includes(entry.name)) continue;
+          
+          // Check extension
+          const ext = entry.name.slice(entry.name.lastIndexOf('.'));
+          if (!SOURCE_EXTENSIONS.includes(ext)) continue;
+          
+          // Read and store file content
+          try {
+            const content = readFileSync(fullPath, 'utf-8');
+            results.push({ path: relativePath, content });
+          } catch (readErr) {
+            // Include read errors in hash (missing file = different hash)
+            results.push({ path: relativePath, content: `ERROR: ${readErr.message}` });
+          }
+        }
+      }
+    } catch (dirErr) {
+      console.warn(`⚠️ Cannot read directory ${dir}: ${dirErr.message}`);
     }
   }
   

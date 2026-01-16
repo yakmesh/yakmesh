@@ -24,7 +24,7 @@ export {
   getOracle,
   contentHash,
   deterministicStringify,
-} from './validation-oracle.js';
+} from './validation-oracle-hardened.js';
 
 export { 
   CodeProofProtocol, 
@@ -62,6 +62,15 @@ export {
   QUANTUM_WORDLIST,
 } from './network-identity.js';
 
+// Codebase lock - prevents source modification during runtime
+export {
+  CodebaseLock,
+  getCodebaseLock,
+  lockCodebase,
+  unlockCodebase,
+  setupUnlockOnExit,
+} from './codebase-lock.js';
+
 /**
  * Create a fully configured oracle system for a Lantern node
  * 
@@ -70,7 +79,7 @@ export {
  * @returns {Object} Configured oracle system
  */
 export function createOracleSystem(nodeIdentity, options = {}) {
-  const { getOracle } = require('./validation-oracle.js');
+  const { getOracle } = require('./validation-oracle-hardened.js');
   const { CodeProofProtocol } = require('./code-proof-protocol.js');
   const { ConsensusEngine } = require('./consensus-engine.js');
   

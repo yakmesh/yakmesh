@@ -31,3 +31,12 @@ coverage/
 # Build artifacts
 dist/
 build/
+
+# Temporary test/debug files
+test-verify-*.mjs
+test-full-hash.mjs
+test-hash-analysis.mjs
+php-timing-test.php
+
+# Config files with sensitive data
+test-nodes/data-*/

@@ -27,6 +27,9 @@ import {
   ContentState,
   GenesisNetworkV2,
   createGenesisNetworkV2,
+  lockCodebase,
+  unlockCodebase,
+  setupUnlockOnExit,
 } from '../oracle/index.js';
 
 // Time source imports
@@ -76,7 +79,12 @@ async function loadConfig() {
   
   // Try to load config file
   if (existsSync(configPath)) {
-    const { default: userConfig } = await import(`../${configPath.replace('./', '')}`);
+    // Handle both absolute and relative paths
+    const isAbsolute = configPath.startsWith('/') || /^[A-Z]:/i.test(configPath);
+    const importPath = isAbsolute 
+      ? `file://${configPath.replace(/\\/g, '/')}`
+      : `../${configPath.replace('./', '')}`;
+    const { default: userConfig } = await import(importPath);
     return { ...DEFAULT_CONFIG, ...userConfig };
   }
   
@@ -112,25 +120,45 @@ export class YakmeshNode {
     
     // iO Network Identity (hash obfuscation)
     this.genesisNetwork = null;
+    
+    // Codebase lock status
+    this.codebaseLocked = false;
   }
 
   async start() {
     console.log('\n🦬 Starting Yakmesh Node...\n');
 
+    // 0. LOCK THE CODEBASE - Prevent any modifications during runtime
+    // This is critical for Code Proof Protocol security
+    console.log('🔐 Securing codebase...');
+    const lockResult = lockCodebase();
+    if (lockResult.success) {
+      this.codebaseLocked = true;
+      setupUnlockOnExit();  // Ensure cleanup on process exit
+      console.log(`✓ Codebase locked: ${lockResult.fileCount} source files protected`);
+    } else {
+      console.warn(`⚠️ Codebase lock failed: ${lockResult.error}`);
+      console.warn('   Node will continue but source files are not protected');
+    }
+
     // 1. Initialize identity - extract directory from database path
-    const dbDir = this.config.database.path.replace(/[/\\]peerquanta\.db$/, '');
+    const dbDir = this.config.database.path.replace(/[/\\\\][^/\\\\]+\.db$/, '');
     this.identity = new NodeIdentity(dbDir);
     await this.identity.init(this.config.node.name, this.config.node.region);
 
     // 2. Initialize the Oracle system (self-verifying validation)
+    // This MUST happen before mesh starts so we can pass the network fingerprint
     this._initOracle();
     
     // 2b. Initialize time source detection
     this._initTimeSource();
 
-    // 3. Start mesh network
+    // 3. Start mesh network WITH network fingerprint for code proof verification
     this.mesh = new MeshNetwork(this.identity, {
       wsPort: this.config.network.wsPort,
+      // Pass network identity for peer verification
+      networkId: this.genesisNetwork?.networkId,
+      networkFingerprint: this.genesisNetwork?.fingerprint,
     });
     await this.mesh.start();
 
@@ -219,6 +247,12 @@ export class YakmeshNode {
     
     if (this.http) {
       this.http.close();
+    }
+    
+    // Unlock codebase - allow modifications again
+    if (this.codebaseLocked) {
+      unlockCodebase();
+      this.codebaseLocked = false;
     }
     
     console.log('✓ Yakmesh Node stopped\n');
