@@ -2,6 +2,26 @@
 
 All notable changes to YAKMESH will be documented in this file.
 
+## [1.3.2] - 2026-01-17
+
+### Added
+- **Public Content Delivery API** - Content-addressed storage for decentralized website hosting
+- `GET /content` - List available content with stats
+- `GET /content/:hash` - Fetch content by hash with optional proof
+- `POST /content` - Publish content with consensus verification
+- Content gossip via mesh for cross-node synchronization
+- Consensus proof system for verified content
+
+### Fixed
+- Gossip protocol method calls (use `spreadRumor()` instead of `broadcast()`)
+- Direct messaging via mesh instead of non-existent gossip.sendTo()
+
+### Community
+- Added social links: Discord, Telegram, X (Twitter)
+- Created Discord announcement template
+
+---
+
 ## [1.3.1] - 2026-01-16
 
 ### Security
