@@ -1,6 +1,6 @@
 {
   "name": "yakmesh",
-  "version": "1.3.2",
+  "version": "1.4.0",
   "description": "YAKMESH: Yielding Atomic Kernel Modular Encryption Secured Hub - Post-quantum secure P2P mesh network for the 2026 threat landscape",
   "type": "module",
   "main": "server/index.js",
