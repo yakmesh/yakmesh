@@ -2,15 +2,20 @@
  * Register YakBot slash commands with Discord
  * 
  * Run this once to register commands:
- * DISCORD_TOKEN=xxx DISCORD_CLIENT_ID=xxx node register-commands.js
+ * node register-commands.js
  */
 
 import { REST, Routes, SlashCommandBuilder } from 'discord.js';
+import 'dotenv/config';
 
 const commands = [
   new SlashCommandBuilder()
     .setName('status')
     .setDescription('Show YAKMESH current version and stats'),
+    
+  new SlashCommandBuilder()
+    .setName('nodes')
+    .setDescription('Check health status of official YAKMESH nodes'),
     
   new SlashCommandBuilder()
     .setName('docs')
@@ -54,6 +59,10 @@ const commands = [
   new SlashCommandBuilder()
     .setName('links')
     .setDescription('Get all YAKMESH social and resource links'),
+    
+  new SlashCommandBuilder()
+    .setName('help')
+    .setDescription('Show all available YakBot commands'),
 ];
 
 const token = process.env.DISCORD_TOKEN;
