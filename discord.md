@@ -52,12 +52,14 @@ const { slices } = encoder.encode('Hello mesh!');
 
 ---
 
-## 📦 Current Version: `1.2.0`
+## 📦 Current Version: `1.3.1`
 
-✅ TME (Temporal Matrix Encoding)
+✅ TME™ (Temporal Matrix Encoding)
 ✅ ML-DSA-65 Post-Quantum Signatures  
-✅ Full security hardening suite
-✅ 42+ tests passing
+✅ Code Proof Protocol (codebase verification)
+✅ Public Content Delivery API
+✅ ECHO™, PULSE™, PHANTOM™, BEACON™ protocols
+✅ 68+ tests passing
 
 ---
 
@@ -65,6 +67,9 @@ const { slices } = encoder.encode('Hello mesh!');
 🌐 Website: https://yakmesh.dev
 📦 npm: https://npmjs.com/package/yakmesh
 📖 GitHub: https://github.com/yakmesh/yakmesh
+💬 Discord: https://discord.gg/E62tAE2wGh
+📱 Telegram: https://t.me/yakmesh
+𝕏 Twitter: https://x.com/yakmesh
 📄 Whitepaper: `docs/WHITEPAPER.md`
 
 **USPTO Serial No. 99594620**
