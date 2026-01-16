@@ -63,6 +63,10 @@ const commands = [
   new SlashCommandBuilder()
     .setName('help')
     .setDescription('Show all available YakBot commands'),
+    
+  new SlashCommandBuilder()
+    .setName('botstats')
+    .setDescription('View YakBot performance metrics and statistics'),
 ];
 
 const token = process.env.DISCORD_TOKEN;
