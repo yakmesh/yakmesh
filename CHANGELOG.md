@@ -2,6 +2,24 @@
 
 All notable changes to YAKMESH will be documented in this file.
 
+## [1.3.1] - 2026-01-16
+
+### Security
+- Hardened peer handshake protocol validation
+- Enhanced network fingerprint verification in HELLO/WELCOME exchange
+- Added CodebaseLock module for runtime source integrity
+
+### Added
+- 3-node test infrastructure for protocol verification
+- iO-style (indistinguishability obfuscation) network identity derivation
+- Human-readable network names from codebase fingerprint
+
+### Fixed
+- Config path resolution for relative/absolute paths
+- Test suite node ID prefix assertion
+
+---
+
 ## [1.3.0] - 2026-01-15
 
 ### 🌟 Major New Systems - "A Beacon in the Darkness"
