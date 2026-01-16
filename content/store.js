@@ -446,7 +446,10 @@ export class ContentStore {
 
     // Gossip to mesh
     if (this.gossip) {
+      console.log(`📡 Gossiping content_announce for ${hash.slice(0, 16)}...`);
       this.gossip.spreadRumor('content', announcement);
+    } else {
+      console.log(`⚠️ No gossip protocol available for content announce`);
     }
 
     // Update status
@@ -499,12 +502,13 @@ export class ContentStore {
         // Peer has new content - request it if we don't have it
         if (!this.has(data.hash)) {
           console.log(`📦 New content announced: ${data.hash.slice(0, 16)}... from ${origin.slice(0, 16)}...`);
-          // Request full content via mesh
-          if (this.mesh) {
-            this.mesh.sendTo(origin, {
+          // Request full content via gossip
+          if (this.gossip) {
+            this.gossip.spreadRumor('content', {
               type: 'content_request',
               hash: data.hash,
               requestedBy: this.identity?.identity?.nodeId,
+              timestamp: Date.now(),
             });
           }
         }
@@ -514,13 +518,24 @@ export class ContentStore {
         // Peer wants content - send if we have it
         if (this.has(data.hash)) {
           const result = this.getWithProof(data.hash);
-          if (this.mesh && result) {
-            this.mesh.sendTo(origin, {
+          if (this.gossip && result) {
+            // Ensure content is properly encoded as base64
+            let contentBase64;
+            if (Buffer.isBuffer(result.content)) {
+              contentBase64 = result.content.toString('base64');
+            } else if (typeof result.content === 'string') {
+              contentBase64 = Buffer.from(result.content, 'utf8').toString('base64');
+            } else {
+              contentBase64 = Buffer.from(JSON.stringify(result.content), 'utf8').toString('base64');
+            }
+            
+            this.gossip.spreadRumor('content', {
               type: 'content_response',
               hash: data.hash,
-              content: result.content.toString('base64'),
+              content: contentBase64,
               meta: result.meta,
               proof: result.proof,
+              timestamp: Date.now(),
             });
           }
         }
@@ -536,9 +551,7 @@ export class ContentStore {
           if (computedHash !== data.hash) {
             console.warn(`⚠️ Content hash mismatch from ${origin.slice(0, 16)}...`);
             return;
-          }
-
-          // Store it
+          }          // Store it
           await this.store(content, {
             ...data.meta,
             publish: false,  // Don't re-gossip

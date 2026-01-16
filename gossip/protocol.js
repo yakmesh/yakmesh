@@ -369,13 +369,24 @@ export class GossipProtocol {
     const peers = this.mesh.getPeers()
       .filter(p => p.nodeId !== excludeNodeId && p.nodeId !== rumor.origin);
 
-    if (peers.length === 0) return;
+    if (peers.length === 0) {
+      console.log(`⚠️ No peers to propagate rumor to`);
+      return;
+    }
 
     // Select random subset based on fanout
     const targets = this._selectRandom(peers, this.config.fanout);
+    console.log(`📤 Propagating rumor to ${targets.length} peers: ${targets.map(t => t.nodeId.slice(0, 12)).join(', ')}`);
 
     for (const target of targets) {
-      this.mesh.sendTo(target.nodeId, { gossip: rumor });
+      // Use broadcast format so the mesh routes it correctly
+      this.mesh.sendTo(target.nodeId, {
+        type: 'gossip',  // This ensures the mesh routes it to gossip handlers
+        payload: { gossip: rumor },
+        id: rumor.messageId,
+        origin: rumor.origin,
+        ttl: rumor.ttl,
+      });
     }
 
     // Track for rumor mongering
