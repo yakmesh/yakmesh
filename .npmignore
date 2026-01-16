@@ -8,9 +8,24 @@ templates/
 *.test.js
 *.spec.js
 
+# SENSITIVE DATA - NEVER PUBLISH
+data/
+data-*/
+test-nodes/data-*/
+*.db
+node-key.json
+
+# Test/debug files
+test-*.mjs
+php-timing-test.php
+test-nodes/
+
 # Assets (keep logo for branding)
 # assets/
 
 # Build artifacts
 *.log
 .DS_Store
+.git/
+.github/
+
