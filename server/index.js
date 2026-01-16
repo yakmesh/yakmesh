@@ -19,6 +19,9 @@ import { MeshNetwork } from '../mesh/network.js';
 import { ReplicationEngine } from '../database/replication.js';
 import { GossipProtocol } from '../gossip/protocol.js';
 
+// Content store for public delivery
+import { ContentStore, createContentAPI } from '../content/index.js';
+
 // Oracle system imports
 import { 
   getOracle, 
@@ -115,6 +118,9 @@ export class YakmeshNode {
     this.codeProof = null;
     this.consensus = null;
     
+    // Content store for public delivery
+    this.contentStore = null;
+    
     // Time source detector
     this.timeSource = null;
     
@@ -206,12 +212,26 @@ export class YakmeshNode {
       if (topic === 'network_handshake') {
         this._handleNetworkHandshake(data, origin);
       }
+      
+      // Handle content gossip (for public content delivery)
+      if (topic === 'content') {
+        if (this.contentStore) {
+          this.contentStore._handleContentGossip(data, origin);
+        }
+      }
     });
 
-    // 5. Start HTTP server
+    // 5. Initialize content store for public delivery
+    this.contentStore = new ContentStore({
+      dataDir: this.config.database?.contentPath || './data/content',
+      quorumSize: 2,
+    });
+    await this.contentStore.init(this);
+    
+    // 6. Start HTTP server
     await this._startHttpServer();
 
-    // 6. Connect to bootstrap nodes
+    // 7. Connect to bootstrap nodes
     await this._connectToBootstrap();
 
     // 7. Initialize PeerQuanta integration (if enabled)
@@ -222,13 +242,18 @@ export class YakmeshNode {
     console.log('\n✓ Yakmesh Node is running!\n');
     console.log(`  Node ID:    ${this.identity.identity.nodeId}`);
     console.log(`  HTTP:       http://localhost:${this.config.network.httpPort}`);
+    console.log(`  Content:    http://localhost:${this.config.network.httpPort}/content`);
     console.log(`  Dashboard:  http://localhost:${this.config.network.httpPort}/dashboard`);
     console.log(`  WebSocket:  ws://localhost:${this.config.network.wsPort}`);
     console.log(`  Algorithm:  ML-DSA-65 (Post-Quantum)`);
     console.log(`  Oracle:     ✓ ${this.oracle.selfHash.slice(0, 16)}...`);
     console.log(`  Network:    ${this.genesisNetwork.networkName} (${this.genesisNetwork.networkId})`);
+    if (this.contentStore) {
+      const stats = this.contentStore.getStats();
+      console.log(`  Content:    ${stats.totalObjects} objects (${stats.verified} verified)`);
+    }
     if (this.adapter) {
-      console.log(`  Adapter: ✓ Enabled`);
+      console.log(`  Adapter:    ✓ Enabled`);
     }
     console.log('');
 
@@ -490,6 +515,18 @@ export class YakmeshNode {
     const validateObject = (obj) => {
       return obj && typeof obj === 'object' && !Array.isArray(obj);
     };
+    
+    // =========================================
+    // PUBLIC CONTENT API (No Auth for reads)
+    // =========================================
+    
+    // Mount content API at /content
+    const contentAPI = createContentAPI(this.contentStore, {
+      writeLimiter,
+      readLimiter: generalLimiter,
+      validateString,
+    });
+    app.use('/content', contentAPI);
     
     // Serve dashboard
     app.get('/dashboard', (req, res) => {

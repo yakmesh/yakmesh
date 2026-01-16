@@ -179,6 +179,12 @@ See [TRADEMARK.md](TRADEMARK.md) for trademark usage policy.
   <br><br>
   <strong><a href="https://yakmesh.dev">yakmesh.dev</a></strong>
   <br><br>
+  <p>
+    <a href="https://discord.gg/E62tAE2wGh">💬 Discord</a> •
+    <a href="https://t.me/yakmesh">📱 Telegram</a> •
+    <a href="https://x.com/yakmesh">𝕏 Twitter</a>
+  </p>
+  <br>
   <sub>© 2026 YAKMESH™ Project. Sturdy & Secure.</sub>
   <br>
   <sub>YAKMESH™ is a trademark of PeerQuanta, application pending (Serial No. 99594620).</sub>
