@@ -446,7 +446,7 @@ export class ContentStore {
 
     // Gossip to mesh
     if (this.gossip) {
-      this.gossip.broadcast('content', announcement);
+      this.gossip.spreadRumor('content', announcement);
     }
 
     // Update status
@@ -466,7 +466,7 @@ export class ContentStore {
 
     // Broadcast request
     if (this.gossip) {
-      this.gossip.broadcast('content', {
+      this.gossip.spreadRumor('content', {
         type: 'content_request',
         hash,
         requestedBy: this.identity?.identity?.nodeId,
@@ -499,9 +499,9 @@ export class ContentStore {
         // Peer has new content - request it if we don't have it
         if (!this.has(data.hash)) {
           console.log(`📦 New content announced: ${data.hash.slice(0, 16)}... from ${origin.slice(0, 16)}...`);
-          // Request full content
-          if (this.gossip) {
-            this.gossip.sendTo(origin, 'content', {
+          // Request full content via mesh
+          if (this.mesh) {
+            this.mesh.sendTo(origin, {
               type: 'content_request',
               hash: data.hash,
               requestedBy: this.identity?.identity?.nodeId,
@@ -514,8 +514,8 @@ export class ContentStore {
         // Peer wants content - send if we have it
         if (this.has(data.hash)) {
           const result = this.getWithProof(data.hash);
-          if (this.gossip && result) {
-            this.gossip.sendTo(origin, 'content', {
+          if (this.mesh && result) {
+            this.mesh.sendTo(origin, {
               type: 'content_response',
               hash: data.hash,
               content: result.content.toString('base64'),
@@ -572,7 +572,7 @@ export class ContentStore {
               signature: this.identity.sign(data.hash),
               timestamp: Date.now(),
             };
-            this.gossip.broadcast('content', vote);
+            this.gossip.spreadRumor('content', vote);
           }
         }
         break;
