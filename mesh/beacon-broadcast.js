@@ -1,5 +1,5 @@
 /**
- * YAKMESH™ BEACON - Broadcast Emergency Alert Channel Over Network
+ * Yakmesh Beacon - Broadcast Emergency Alert Channel Over Network
  * 
  * Priority message propagation with guaranteed delivery:
  * - Flood-based protocol with intelligent deduplication
@@ -8,14 +8,13 @@
  * - Emergency priority levels with preemption
  * 
  * Key Innovation: "When the message MUST get through"
- * - Combines TME temporal encoding with PULSE heartbeats
+ * - Combines temporal encoding with pulse heartbeats
  * - Cryptographic receipts prove delivery chain
  * - Multi-path redundancy ensures survivability
  * 
  * @module mesh/beacon-broadcast
  * @license MIT
- * @copyright 2026 YAKMESH Contributors
- * @trademark BEACON™ is a trademark of YAKMESH
+ * @copyright 2026 YAKMESH™ Contributors
  */
 
 import { randomBytes, createHash } from 'crypto';
