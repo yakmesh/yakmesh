@@ -1,5 +1,5 @@
 /**
- * YAKMESH™ PULSE - Precision Universal Latency Sync Engine
+ * Yakmesh Pulse - Precision Universal Latency Sync Engine
  * 
  * The heartbeat of the mesh network that provides:
  * - Distributed liveness detection with temporal proofs
@@ -14,8 +14,7 @@
  * 
  * @module mesh/pulse-sync
  * @license MIT
- * @copyright 2026 YAKMESH Contributors
- * @trademark PULSE™ is a trademark of YAKMESH
+ * @copyright 2026 YAKMESH™ Contributors
  */
 
 import { randomBytes, createHash } from 'crypto';

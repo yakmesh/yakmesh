@@ -1,5 +1,5 @@
 /**
- * YAKMESH™ ECHO - Encrypted Coordinate Heuristic Oracle
+ * Yakmesh Echo - Encrypted Coordinate Heuristic Oracle
  * 
  * A novel topology discovery and latency mapping system that:
  * - Maps mesh topology WITHOUT exposing node positions
@@ -14,8 +14,7 @@
  * 
  * @module mesh/echo-ranging
  * @license MIT
- * @copyright 2026 YAKMESH Contributors
- * @trademark ECHO™ is a trademark of YAKMESH
+ * @copyright 2026 YAKMESH™ Contributors
  */
 
 import { randomBytes, createHash, createCipheriv, createDecipheriv } from 'crypto';

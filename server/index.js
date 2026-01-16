@@ -22,6 +22,9 @@ import { GossipProtocol } from '../gossip/protocol.js';
 // Content store for public delivery
 import { ContentStore, createContentAPI } from '../content/index.js';
 
+// Annex - Autonomous Network Negotiated Encrypted eXchange
+import { Annex } from '../mesh/annex.js';
+
 // Oracle system imports
 import { 
   getOracle, 
@@ -120,6 +123,9 @@ export class YakmeshNode {
     
     // Content store for public delivery
     this.contentStore = null;
+    
+    // Annex - encrypted point-to-point messaging
+    this.annex = null;
     
     // Time source detector
     this.timeSource = null;
@@ -220,6 +226,13 @@ export class YakmeshNode {
         }
       }
     });
+    
+    // Handle Annex (encrypted direct messages) - separate from gossip
+    this.mesh.on('annex', (data, origin) => {
+      if (this.annex) {
+        this.annex._handleAnnexMessage(data.annex || data, origin);
+      }
+    });
 
     // 5. Initialize content store for public delivery
     this.contentStore = new ContentStore({
@@ -227,6 +240,13 @@ export class YakmeshNode {
       quorumSize: 2,
     });
     await this.contentStore.init(this);
+    
+    // 5b. Initialize Annex for encrypted point-to-point messaging
+    this.annex = new Annex({
+      identity: this.identity,
+      mesh: this.mesh,
+    });
+    console.log('✓ Annex channel initialized (encrypted P2P messaging)');
     
     // 6. Start HTTP server
     await this._startHttpServer();
@@ -252,6 +272,9 @@ export class YakmeshNode {
       const stats = this.contentStore.getStats();
       console.log(`  Content:    ${stats.totalObjects} objects (${stats.verified} verified)`);
     }
+    if (this.annex) {
+      console.log(`  Annex:      ✓ Encrypted P2P ready`);
+    }
     if (this.adapter) {
       console.log(`  Adapter:    ✓ Enabled`);
     }
@@ -266,6 +289,7 @@ export class YakmeshNode {
     this.adapter?.stopSync();
     this.timeSource?.stop();  // Stop time source monitoring
     this.consensus?.stop();  // Stop consensus engine
+    this.annex = null;  // Clear annex channels
     this.gossip?.stop();
     this.replication?.stopSync();
     await this.mesh?.stop();

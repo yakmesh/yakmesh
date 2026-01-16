@@ -1,5 +1,5 @@
 /**
- * YAKMESH™ PHANTOM - Post-quantum Hidden Anonymous Network Transmission Over Mesh
+ * Yakmesh Phantom Routing - Post-quantum Hidden Anonymous Network Transmission Over Mesh
  * 
  * The first post-quantum secure onion routing implementation featuring:
  * - ML-DSA-65 signatures at every routing layer
@@ -14,8 +14,7 @@
  * 
  * @module mesh/phantom-routing
  * @license MIT
- * @copyright 2026 YAKMESH Contributors
- * @trademark PHANTOM™ is a trademark of YAKMESH
+ * @copyright 2026 YAKMESH™ Contributors
  */
 
 import { randomBytes, createCipheriv, createDecipheriv, createHash } from 'crypto';
