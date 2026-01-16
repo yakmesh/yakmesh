@@ -1,0 +1,22 @@
+{
+  "name": "yakbot",
+  "version": "1.0.0",
+  "description": "YakBot - Interactive Discord bot for YAKMESH™ community",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js",
+    "register": "node register-commands.js"
+  },
+  "dependencies": {
+    "discord.js": "^14.14.1",
+    "@google/generative-ai": "^0.2.1",
+    "node-fetch": "^3.3.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "author": "YAKMESH Contributors",
+  "license": "MIT"
+}
