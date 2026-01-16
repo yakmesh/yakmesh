@@ -46,7 +46,7 @@ test('Node ID generation is deterministic', () => {
   const id1 = generateNodeId(pk);
   const id2 = generateNodeId(pk);
   assert(id1 === id2, 'Same public key should produce same node ID');
-  assert(id1.startsWith('lantern_'), 'Node ID should start with lantern_');
+  assert(id1.startsWith('node-'), 'Node ID should start with node-');
 });
 
 test('Different keys produce different node IDs', () => {

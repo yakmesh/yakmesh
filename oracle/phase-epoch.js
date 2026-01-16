@@ -480,3 +480,6 @@ export default {
 
 
 
+
+// Alias for backward compatibility
+export { setPhaseConfig as setTimeSourceConfig };

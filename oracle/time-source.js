@@ -24,6 +24,32 @@ import { platform } from 'os';
 import { EventEmitter } from 'events';
 
 // ============================================================
+// SILENT COMMAND EXECUTION HELPER
+// ============================================================
+
+/**
+ * Execute a command silently, returning null on any failure
+ * This prevents console spam from commands that don't exist or fail
+ * 
+ * @param {string} command - Command to execute
+ * @param {number} timeout - Timeout in ms (default 5000)
+ * @returns {string|null} - Command output or null on failure
+ */
+function execSilent(command, timeout = 5000) {
+  try {
+    return execSync(command, {
+      encoding: 'utf8',
+      timeout,
+      stdio: ['pipe', 'pipe', 'pipe'], // Capture all streams, don't inherit
+      windowsHide: true, // Hide window on Windows
+    });
+  } catch (e) {
+    // Silently return null - command not available or failed
+    return null;
+  }
+}
+
+// ============================================================
 // CONSTANTS
 // ============================================================
 
@@ -245,7 +271,7 @@ export class TimeSourceDetector extends EventEmitter {
       
       // 1. Check chrony sources for atomic reference
       try {
-        const chronyOutput = execSync('chronyc sources 2>/dev/null', { encoding: 'utf8', timeout: 5000 });
+        const chronyOutput = execSilent('chronyc sources 2>/dev/null', { encoding: 'utf8', timeout: 5000 });
         
         // Look for PPS or atomic sources (marked with * for selected, # for preferred)
         if (chronyOutput.includes('PPS') || chronyOutput.includes('ATOM')) {
@@ -292,7 +318,7 @@ export class TimeSourceDetector extends EventEmitter {
       
       // 3. Check for known PCIe atomic clock devices
       try {
-        const lspciOutput = execSync('lspci 2>/dev/null | grep -i "time\\|clock\\|atomic"', { encoding: 'utf8', timeout: 5000 });
+        const lspciOutput = execSilent('lspci 2>/dev/null | grep -i "time\\|clock\\|atomic"', { encoding: 'utf8', timeout: 5000 });
         if (lspciOutput.trim()) {
           result.detected = true;
           result.type = 'PCIe Time Card';
@@ -307,7 +333,7 @@ export class TimeSourceDetector extends EventEmitter {
       // Windows: Check for vendor-specific atomic clock software
       try {
         // Check for Jackson Labs CSAC driver
-        const tasklist = execSync('tasklist 2>nul | findstr /i "csac jacksonlabs rubidium"', { encoding: 'utf8', timeout: 5000 });
+        const tasklist = execSilent('tasklist 2>nul | findstr /i "csac jacksonlabs rubidium"', { encoding: 'utf8', timeout: 5000 });
         if (tasklist.trim()) {
           result.detected = true;
           result.type = 'CSAC (Windows)';
@@ -337,13 +363,13 @@ export class TimeSourceDetector extends EventEmitter {
     if (this.platform === 'linux') {
       // 1. Check if gpsd is running
       try {
-        const gpsdStatus = execSync('systemctl is-active gpsd 2>/dev/null || pgrep gpsd', { encoding: 'utf8', timeout: 5000 });
+        const gpsdStatus = execSilent('systemctl is-active gpsd 2>/dev/null || pgrep gpsd', { encoding: 'utf8', timeout: 5000 });
         if (gpsdStatus.trim()) {
           result.detected = true;
           
           // Try to get GPS info from gpsd
           try {
-            const gpsInfo = execSync('gpspipe -w -n 5 2>/dev/null | head -1', { encoding: 'utf8', timeout: 10000 });
+            const gpsInfo = execSilent('gpspipe -w -n 5 2>/dev/null | head -1', { encoding: 'utf8', timeout: 10000 });
             const data = JSON.parse(gpsInfo);
             if (data.class === 'TPV') {
               result.synchronized = data.mode >= 2;
@@ -377,7 +403,7 @@ export class TimeSourceDetector extends EventEmitter {
       
       // 4. Check chrony for GPS source
       try {
-        const chronyOutput = execSync('chronyc sources 2>/dev/null | grep -i gps', { encoding: 'utf8', timeout: 5000 });
+        const chronyOutput = execSilent('chronyc sources 2>/dev/null | grep -i gps', { encoding: 'utf8', timeout: 5000 });
         if (chronyOutput.trim()) {
           result.detected = true;
           result.synchronized = chronyOutput.includes('*');
@@ -413,48 +439,40 @@ export class TimeSourceDetector extends EventEmitter {
       }
       
       // 2. Check if ptp4l is running
-      try {
-        const ptp4lStatus = execSync('systemctl is-active ptp4l 2>/dev/null || pgrep ptp4l', { encoding: 'utf8', timeout: 5000 });
-        if (ptp4lStatus.trim()) {
+      {
+        const ptp4lStatus = execSilent('systemctl is-active ptp4l 2>/dev/null || pgrep ptp4l');
+        if (ptp4lStatus && ptp4lStatus.trim()) {
           result.detected = true;
           
           // Try to get PTP status
-          try {
-            const pmcOutput = execSync('pmc -u -b 0 "GET CURRENT_DATA_SET" 2>/dev/null', { encoding: 'utf8', timeout: 5000 });
-            if (pmcOutput.includes('offsetFromMaster')) {
-              const match = pmcOutput.match(/offsetFromMaster\s+(-?\d+)/);
-              if (match) {
-                result.offset = parseInt(match[1]);
-                result.synchronized = Math.abs(result.offset) < 1000000; // < 1ms
-              }
+          const pmcOutput = execSilent('pmc -u -b 0 "GET CURRENT_DATA_SET" 2>/dev/null');
+          if (pmcOutput && pmcOutput.includes('offsetFromMaster')) {
+            const match = pmcOutput.match(/offsetFromMaster\s+(-?\d+)/);
+            if (match) {
+              result.offset = parseInt(match[1]);
+              result.synchronized = Math.abs(result.offset) < 1000000; // < 1ms
             }
-          } catch (e) {
-            // pmc not available
           }
         }
-      } catch (e) {
-        // ptp4l not running
       }
       
       // 3. Check phc2sys (syncs PTP to system clock)
-      try {
-        const phc2sysStatus = execSync('pgrep phc2sys', { encoding: 'utf8', timeout: 5000 });
-        if (phc2sysStatus.trim()) {
+      {
+        const phc2sysStatus = execSilent('pgrep phc2sys');
+        if (phc2sysStatus && phc2sysStatus.trim()) {
           result.synchronized = true;
         }
-      } catch (e) {
-        // phc2sys not running
       }
     }
       // 4. Check for Meinberg PTP hardware (PTP270PEX, etc.)
       try {
-        const meinbergCheck = execSync('lspci 2>/dev/null | grep -i meinberg', { encoding: 'utf8', timeout: 5000 });
+        const meinbergCheck = execSilent('lspci 2>/dev/null | grep -i meinberg', { encoding: 'utf8', timeout: 5000 });
         if (meinbergCheck.trim()) {
           result.detected = true;
           result.device = 'Meinberg PTP';
           result.type = meinbergCheck.includes('270') ? 'PTP270PEX' : 'Meinberg PTP Card';
           try {
-            const mbgStatus = execSync('mbgstatus 2>/dev/null | head -20', { encoding: 'utf8', timeout: 5000 });
+            const mbgStatus = execSilent('mbgstatus 2>/dev/null | head -20', { encoding: 'utf8', timeout: 5000 });
             if (mbgStatus.includes('SYNC') || mbgStatus.includes('synchronized')) {
               result.synchronized = true;
             }
@@ -467,13 +485,13 @@ export class TimeSourceDetector extends EventEmitter {
       } catch (e) { /* Meinberg not found */ }
       // 4. Check for Meinberg PTP hardware (PTP270PEX, etc.)
       try {
-        const meinbergCheck = execSync('lspci 2>/dev/null | grep -i meinberg', { encoding: 'utf8', timeout: 5000 });
+        const meinbergCheck = execSilent('lspci 2>/dev/null | grep -i meinberg', { encoding: 'utf8', timeout: 5000 });
         if (meinbergCheck.trim()) {
           result.detected = true;
           result.device = 'Meinberg PTP';
           result.type = meinbergCheck.includes('270') ? 'PTP270PEX' : 'Meinberg PTP Card';
           try {
-            const mbgStatus = execSync('mbgstatus 2>/dev/null | head -20', { encoding: 'utf8', timeout: 5000 });
+            const mbgStatus = execSilent('mbgstatus 2>/dev/null | head -20', { encoding: 'utf8', timeout: 5000 });
             if (mbgStatus.includes('SYNC') || mbgStatus.includes('synchronized')) {
               result.synchronized = true;
             }
@@ -487,7 +505,7 @@ export class TimeSourceDetector extends EventEmitter {
       // 4. Check for Meinberg PTP hardware (PTP270PEX, etc.)
       try {
         // Check for Meinberg driver/software
-        const meinbergCheck = execSync('lspci 2>/dev/null | grep -i meinberg', { encoding: 'utf8', timeout: 5000 });
+        const meinbergCheck = execSilent('lspci 2>/dev/null | grep -i meinberg', { encoding: 'utf8', timeout: 5000 });
         if (meinbergCheck.trim()) {
           result.detected = true;
           result.device = 'Meinberg PTP';
@@ -495,7 +513,7 @@ export class TimeSourceDetector extends EventEmitter {
           
           // Try to get sync status from mbgstatus if available
           try {
-            const mbgStatus = execSync('mbgstatus 2>/dev/null | head -20', { encoding: 'utf8', timeout: 5000 });
+            const mbgStatus = execSilent('mbgstatus 2>/dev/null | head -20', { encoding: 'utf8', timeout: 5000 });
             if (mbgStatus.includes('SYNC') || mbgStatus.includes('synchronized')) {
               result.synchronized = true;
             }
@@ -515,7 +533,7 @@ export class TimeSourceDetector extends EventEmitter {
       // 5. Windows: Check for Meinberg driver
       if (this.platform === 'win32') {
         try {
-          const driverCheck = execSync('driverquery /v 2>nul | findstr /i meinberg', { encoding: 'utf8', timeout: 5000 });
+          const driverCheck = execSilent('driverquery /v 2>nul | findstr /i meinberg', { encoding: 'utf8', timeout: 5000 });
           if (driverCheck.trim()) {
             result.detected = true;
             result.type = 'Meinberg (Windows)';
@@ -544,7 +562,7 @@ export class TimeSourceDetector extends EventEmitter {
     if (this.platform === 'linux') {
       // 1. Check chrony
       try {
-        const chronyTracking = execSync('chronyc tracking 2>/dev/null', { encoding: 'utf8', timeout: 5000 });
+        const chronyTracking = execSilent('chronyc tracking 2>/dev/null', { encoding: 'utf8', timeout: 5000 });
         
         if (chronyTracking.includes('Reference ID')) {
           result.method = 'chrony';
@@ -575,7 +593,7 @@ export class TimeSourceDetector extends EventEmitter {
       // 2. Check systemd-timesyncd
       if (!result.synchronized) {
         try {
-          const timedatectl = execSync('timedatectl show 2>/dev/null', { encoding: 'utf8', timeout: 5000 });
+          const timedatectl = execSilent('timedatectl show 2>/dev/null', { encoding: 'utf8', timeout: 5000 });
           
           if (timedatectl.includes('NTPSynchronized=yes')) {
             result.synchronized = true;
@@ -590,7 +608,7 @@ export class TimeSourceDetector extends EventEmitter {
       // 3. Check ntpd
       if (!result.synchronized) {
         try {
-          const ntpq = execSync('ntpq -p 2>/dev/null | grep "^\\*"', { encoding: 'utf8', timeout: 5000 });
+          const ntpq = execSilent('ntpq -p 2>/dev/null | grep "^\\*"', { encoding: 'utf8', timeout: 5000 });
           if (ntpq.trim()) {
             result.synchronized = true;
             result.method = 'ntpd';
@@ -605,31 +623,27 @@ export class TimeSourceDetector extends EventEmitter {
     }
     
     if (this.platform === 'win32') {
-      try {
-        const w32tm = execSync('w32tm /query /status 2>nul', { encoding: 'utf8', timeout: 5000 });
+      const w32tm = execSilent('w32tm /query /status');
+      
+      if (w32tm && w32tm.includes('Source:') && !w32tm.includes('Free-running')) {
+        result.synchronized = true;
+        result.method = 'w32tm';
         
-        if (w32tm.includes('Source:') && !w32tm.includes('Free-running')) {
-          result.synchronized = true;
-          result.method = 'w32tm';
-          
-          const sourceMatch = w32tm.match(/Source:\s+(.+)/);
-          if (sourceMatch) {
-            result.server = sourceMatch[1].trim();
-          }
-          
-          const stratumMatch = w32tm.match(/Stratum:\s+(\d+)/);
-          if (stratumMatch) {
-            result.stratum = parseInt(stratumMatch[1]);
-          }
+        const sourceMatch = w32tm.match(/Source:\s+(.+)/);
+        if (sourceMatch) {
+          result.server = sourceMatch[1].trim();
         }
-      } catch (e) {
-        // w32tm not available
+        
+        const stratumMatch = w32tm.match(/Stratum:\s+(\d+)/);
+        if (stratumMatch) {
+          result.stratum = parseInt(stratumMatch[1]);
+        }
       }
     }
     
     if (this.platform === 'darwin') {
       try {
-        const sntp = execSync('sntp -d time.apple.com 2>&1 | head -5', { encoding: 'utf8', timeout: 10000 });
+        const sntp = execSilent('sntp -d time.apple.com 2>&1 | head -5', { encoding: 'utf8', timeout: 10000 });
         if (sntp.includes('offset')) {
           result.synchronized = true;
           result.method = 'sntp';

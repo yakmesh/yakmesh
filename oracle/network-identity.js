@@ -83,26 +83,7 @@ const QUANTUM_WORDLIST = [
 
 // Verify wordlist size
 if (QUANTUM_WORDLIST.length !== 256) {
-  throw new Error(`Wordlist must have exactly 256 words, got ${QUANTUM_WORDLIST.length}
-// ============================================================
-// CONFIGURABLE IDENTITY PARAMETERS
-// ============================================================
-
-let IDENTITY_CONFIG = {
-  networkPrefix: 'bcn',
-  identitySalt: 'yakmesh-network-identity-v1',
-  shortIdSalt: 'yakmesh-network-shortid-v1',
-  phraseSalt: 'yakmesh-verification-phrase-v1',
-  fingerprintSalt: 'yakmesh-fingerprint-v1',
-  baseSalt: 'quantum-mesh-salt-2025',
-};
-
-export function setIdentityConfig(config) {
-  IDENTITY_CONFIG = { ...IDENTITY_CONFIG, ...config };
-}
-
-export function getIdentityConfig() {
-  return { ...IDENTITY_CONFIG };
+  throw new Error(`Wordlist must have exactly 256 words, got ${QUANTUM_WORDLIST.length}`);
 }
 
 
@@ -137,8 +118,6 @@ export function setIdentityConfig(config) {
 
 export function getIdentityConfig() {
   return { ...IDENTITY_CONFIG };
-}
-`);
 }
 
 /**

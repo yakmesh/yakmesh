@@ -16,6 +16,7 @@
     "./oracle/identity": "./oracle/network-identity.js",
     "./oracle/code-proof": "./oracle/code-proof-protocol.js",
     "./oracle/module-sealer": "./oracle/module-sealer.js",
+    "./oracle/codebase-lock": "./oracle/codebase-lock.js",
     "./mesh/network": "./mesh/network.js",
     "./mesh/rate-limiter": "./mesh/rate-limiter.js",
     "./mesh/message-validator": "./mesh/message-validator.js",
