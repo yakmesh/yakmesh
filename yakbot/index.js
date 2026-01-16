@@ -6,6 +6,8 @@
  * - /docs [topic] - Quick documentation links
  * - /changelog - Recent changes
  * - /ask [question] - AI-powered Q&A about YAKMESH
+ * - /nodes - Check health of official YAKMESH nodes
+ * - /ping - Bot latency check
  * - Auto-greet new members
  * 
  * @copyright 2026 YAKMESH™ Contributors
@@ -13,7 +15,7 @@
 
 import { Client, GatewayIntentBits, EmbedBuilder, Events } from 'discord.js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import fetch from 'node-fetch';
+import 'dotenv/config';
 
 // Configuration
 const config = {
@@ -25,6 +27,13 @@ const config = {
   
   // Current version
   version: '1.4.0',
+  
+  // Official YAKMESH nodes for health checks
+  officialNodes: [
+    { name: 'Alpha (Primary)', url: 'https://alpha.yakmesh.dev', icon: '🅰️' },
+    { name: 'Beta (Backup)', url: 'https://beta.yakmesh.dev', icon: '🅱️' },
+    { name: 'PeerQuanta', url: 'https://peerquanta.com/yakmesh', icon: '🌐' },
+  ],
   
   // Links
   links: {
@@ -43,6 +52,7 @@ const config = {
     success: 0x10B981,
     warning: 0xF59E0B,
     error: 0xEF4444,
+    info: 0x3B82F6,
   },
 };
 
@@ -90,8 +100,10 @@ const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
-    GatewayIntentBits.GuildMembers,
+    // Note: MessageContent and GuildMembers are privileged intents
+    // Enable them in Discord Developer Portal if you want welcome messages
+    // GatewayIntentBits.MessageContent,
+    // GatewayIntentBits.GuildMembers,
   ],
 });
 
@@ -101,7 +113,7 @@ let model = null;
 
 if (config.geminiKey) {
   genAI = new GoogleGenerativeAI(config.geminiKey);
-  model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+  model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
   console.log('✓ Gemini AI initialized');
 }
 
@@ -116,6 +128,7 @@ function createEmbed(options) {
   if (options.fields) embed.addFields(options.fields);
   if (options.footer) embed.setFooter({ text: options.footer, iconURL: 'https://raw.githubusercontent.com/yakmesh/yakmesh/main/assets/yakmesh-logo2.png' });
   if (options.thumbnail) embed.setThumbnail(options.thumbnail);
+  if (options.url) embed.setURL(options.url);
   
   return embed;
 }
@@ -149,6 +162,67 @@ async function getGitHubStats() {
   }
 }
 
+// Check node health
+async function checkNodeHealth(nodeUrl) {
+  const start = Date.now();
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000); // 5s timeout
+    
+    // Try the /health or /status endpoint first, fallback to root
+    let response;
+    try {
+      response = await fetch(`${nodeUrl}/health`, { 
+        signal: controller.signal,
+        headers: { 'Accept': 'application/json' }
+      });
+    } catch {
+      response = await fetch(nodeUrl, { signal: controller.signal });
+    }
+    
+    clearTimeout(timeout);
+    const latency = Date.now() - start;
+    
+    if (response.ok) {
+      // Try to get version info if available
+      let version = null;
+      let peers = null;
+      let content = null;
+      
+      try {
+        const data = await response.json();
+        version = data.version;
+        peers = data.peers || data.peerCount;
+        content = data.content || data.contentCount;
+      } catch {
+        // Not JSON, that's OK
+      }
+      
+      return {
+        online: true,
+        latency,
+        version,
+        peers,
+        content,
+        status: response.status,
+      };
+    } else {
+      return {
+        online: false,
+        latency,
+        status: response.status,
+        error: `HTTP ${response.status}`,
+      };
+    }
+  } catch (error) {
+    return {
+      online: false,
+      latency: Date.now() - start,
+      error: error.name === 'AbortError' ? 'Timeout' : error.message,
+    };
+  }
+}
+
 // Command handlers
 const commands = {
   // /status - Show current status
@@ -171,6 +245,64 @@ const commands = {
         { name: '🔗 Links', value: `[Website](${config.links.website}) • [GitHub](${config.links.github}) • [npm](${config.links.npm}) • [Docs](${config.links.docs})`, inline: false },
       ],
       footer: 'YAKMESH™ - Yielding Atomic Kernel Modular Encryption Secured Hub',
+    });
+    
+    await interaction.editReply({ embeds: [embed] });
+  },
+  
+  // /nodes - Check official node health
+  async nodes(interaction) {
+    await interaction.deferReply();
+    
+    const results = await Promise.all(
+      config.officialNodes.map(async (node) => {
+        const health = await checkNodeHealth(node.url);
+        return { ...node, ...health };
+      })
+    );
+    
+    const fields = results.map(node => {
+      const statusIcon = node.online ? '🟢' : '🔴';
+      const latencyText = node.online ? `${node.latency}ms` : 'N/A';
+      
+      let value = `${statusIcon} **${node.online ? 'Online' : 'Offline'}**\n`;
+      value += `⏱️ Latency: ${latencyText}\n`;
+      
+      if (node.version) value += `📦 Version: \`${node.version}\`\n`;
+      if (node.peers !== null && node.peers !== undefined) value += `👥 Peers: ${node.peers}\n`;
+      if (node.content !== null && node.content !== undefined) value += `📄 Content: ${node.content}\n`;
+      if (!node.online && node.error) value += `❌ Error: ${node.error}\n`;
+      
+      value += `🔗 [Visit](${node.url})`;
+      
+      return {
+        name: `${node.icon} ${node.name}`,
+        value,
+        inline: true,
+      };
+    });
+    
+    const allOnline = results.every(n => n.online);
+    const someOnline = results.some(n => n.online);
+    
+    let statusText, statusColor;
+    if (allOnline) {
+      statusText = '✅ All nodes operational';
+      statusColor = config.colors.success;
+    } else if (someOnline) {
+      statusText = '⚠️ Partial outage - some nodes offline';
+      statusColor = config.colors.warning;
+    } else {
+      statusText = '🔴 All nodes offline';
+      statusColor = config.colors.error;
+    }
+    
+    const embed = createEmbed({
+      title: '🌐 YAKMESH Node Status',
+      description: statusText,
+      fields,
+      color: statusColor,
+      footer: 'Official YAKMESH nodes • Last checked',
     });
     
     await interaction.editReply({ embeds: [embed] });
@@ -223,6 +355,7 @@ const commands = {
     const embed = createEmbed({
       title: '📝 YAKMESH Changelog',
       description: `**Latest: v${config.version}**`,
+      url: `${config.links.github}/blob/main/CHANGELOG.md`,
       fields: [
         {
           name: '🔐 v1.4.0 - Annex Encrypted P2P',
@@ -243,7 +376,6 @@ const commands = {
       footer: 'View full changelog on GitHub',
     });
     
-    embed.setURL(`${config.links.github}/blob/main/CHANGELOG.md`);
     await interaction.reply({ embeds: [embed] });
   },
   
@@ -291,6 +423,7 @@ const commands = {
         fields: [
           { name: '❓ Question', value: question.slice(0, 200), inline: false },
         ],
+        color: config.colors.info,
         footer: 'Powered by Gemini AI • Always verify with official docs',
       });
       
@@ -306,7 +439,16 @@ const commands = {
   // /ping - Simple ping
   async ping(interaction) {
     const latency = Date.now() - interaction.createdTimestamp;
-    await interaction.reply(`🏓 Pong! Latency: ${latency}ms | API: ${Math.round(client.ws.ping)}ms`);
+    const embed = createEmbed({
+      title: '🏓 Pong!',
+      fields: [
+        { name: 'Bot Latency', value: `${latency}ms`, inline: true },
+        { name: 'API Latency', value: `${Math.round(client.ws.ping)}ms`, inline: true },
+      ],
+      color: latency < 200 ? config.colors.success : config.colors.warning,
+      footer: 'YakBot Status',
+    });
+    await interaction.reply({ embeds: [embed] });
   },
   
   // /links - All social links
@@ -322,6 +464,26 @@ const commands = {
         { name: '💬 Discord', value: `[Join Server](${config.links.discord})`, inline: true },
         { name: '🐦 Twitter/X', value: `[@yakmesh](${config.links.twitter})`, inline: true },
         { name: '📱 Telegram', value: `[@yakmesh](${config.links.telegram})`, inline: true },
+      ],
+      footer: 'YAKMESH™ - Sturdy & Secure',
+    });
+    await interaction.reply({ embeds: [embed] });
+  },
+  
+  // /help - Show all commands
+  async help(interaction) {
+    const embed = createEmbed({
+      title: '🦬 YakBot Commands',
+      description: 'Here are all available commands:',
+      fields: [
+        { name: '📊 `/status`', value: 'Show YAKMESH version and project stats', inline: true },
+        { name: '🌐 `/nodes`', value: 'Check official node health status', inline: true },
+        { name: '📚 `/docs [topic]`', value: 'Get documentation links', inline: true },
+        { name: '📝 `/changelog`', value: 'View recent changes', inline: true },
+        { name: '📦 `/install`', value: 'Quick installation guide', inline: true },
+        { name: '❓ `/ask <question>`', value: 'Ask YakBot about YAKMESH', inline: true },
+        { name: '🔗 `/links`', value: 'All social and resource links', inline: true },
+        { name: '🏓 `/ping`', value: 'Check bot latency', inline: true },
       ],
       footer: 'YAKMESH™ - Sturdy & Secure',
     });
