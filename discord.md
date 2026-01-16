@@ -52,12 +52,12 @@ const { slices } = encoder.encode('Hello mesh!');
 
 ---
 
-## 📦 Current Version: `1.3.1`
+## 📦 Current Version: `1.3.2`
 
 ✅ TME™ (Temporal Matrix Encoding)
 ✅ ML-DSA-65 Post-Quantum Signatures  
 ✅ Code Proof Protocol (codebase verification)
-✅ Public Content Delivery API
+✅ Public Content Delivery API (v1.3.2 - gossip integration)
 ✅ ECHO™, PULSE™, PHANTOM™, BEACON™ protocols
 ✅ 68+ tests passing
 
