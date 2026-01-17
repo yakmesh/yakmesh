@@ -1,13 +1,9 @@
-🦬 Yakmesh v1.5.0 Released
+🦬 Yakmesh v1.5.1
 
-Network Identity Unification - nodes now share network names when running identical code.
+• Fixed identity initialization order
+• Auto port fallback when ports busy
+• Process management script for deployments
 
-New ID format: node-[network-name]-[instance-id]
-
-• Same network name = same codebase = can peer
-• Automatic port fallback
-• Process management script
-
-npm install yakmesh@1.5.0
+npm install yakmesh@1.5.1
 
 https://yakmesh.dev

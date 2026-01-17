@@ -1,17 +1,11 @@
-🦬 Yakmesh v1.5.0: Network Identity Unification
+🦬 Yakmesh v1.5.1
 
-Node IDs now tell you if peers run the same code:
+• Fixed identity initialization order
+• Auto port fallback when ports busy  
+• Process management script for deployments
 
-node-grid-carbide-reveal-pq-QHZx
-     ^^^^^^^^^^^^^^^^^ unique
-     network name      instance
+npm install yakmesh@1.5.1
 
-✅ Same network name = same codebase = trustable peer
-✅ Auto port fallback when ports busy
-✅ Process management script included
-
-Breaking: Nodes regenerate identity on first run (expected)
-
-npm install yakmesh@1.5.0
+https://yakmesh.dev
 
 #PostQuantum #P2P #DecentralizedWeb #OpenSource
