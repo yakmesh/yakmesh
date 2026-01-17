@@ -30,9 +30,8 @@ const config = {
   
   // Official YAKMESH nodes for health checks
   officialNodes: [
-    { name: 'Alpha (Primary)', url: 'https://alpha.yakmesh.dev', icon: '🅰️' },
-    { name: 'Beta (Backup)', url: 'https://beta.yakmesh.dev', icon: '🅱️' },
-    { name: 'PeerQuanta', url: 'https://peerquanta.com/yakmesh', icon: '🌐' },
+    { name: 'Primary (Hostinger)', url: 'https://yakmesh.dev/node.php?e=health', icon: '🦬' },
+    { name: 'LAN (Abyss)', url: 'http://192.168.1.178:3000/health', icon: '🏠' },
   ],
   
   // Links
@@ -177,16 +176,11 @@ async function checkNodeHealth(nodeUrl) {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 5000); // 5s timeout
     
-    // Try the /health or /status endpoint first, fallback to root
-    let response;
-    try {
-      response = await fetch(`${nodeUrl}/health`, { 
-        signal: controller.signal,
-        headers: { 'Accept': 'application/json' }
-      });
-    } catch {
-      response = await fetch(nodeUrl, { signal: controller.signal });
-    }
+    // Use the URL directly (it may already include the health endpoint)
+    const response = await fetch(nodeUrl, { 
+      signal: controller.signal,
+      headers: { 'Accept': 'application/json' }
+    });
     
     clearTimeout(timeout);
     const latency = Date.now() - start;
@@ -196,12 +190,16 @@ async function checkNodeHealth(nodeUrl) {
       let version = null;
       let peers = null;
       let content = null;
+      let algorithm = null;
+      let networkName = null;
       
       try {
         const data = await response.json();
         version = data.version;
-        peers = data.peers || data.peerCount;
-        content = data.content || data.contentCount;
+        peers = data.peers ?? data.peerCount ?? null;
+        content = data.content ?? data.contentCount ?? null;
+        algorithm = data.algorithm;
+        networkName = data.network?.name;
       } catch {
         // Not JSON, that's OK
       }
@@ -212,6 +210,8 @@ async function checkNodeHealth(nodeUrl) {
         version,
         peers,
         content,
+        algorithm,
+        networkName,
         status: response.status,
       };
     } else {
@@ -276,12 +276,10 @@ const commands = {
       let value = `${statusIcon} **${node.online ? 'Online' : 'Offline'}**\n`;
       value += `⏱️ Latency: ${latencyText}\n`;
       
-      if (node.version) value += `📦 Version: \`${node.version}\`\n`;
+      if (node.algorithm) value += `🔐 ${node.algorithm}\n`;
+      if (node.networkName) value += `🌐 ${node.networkName}\n`;
       if (node.peers !== null && node.peers !== undefined) value += `👥 Peers: ${node.peers}\n`;
-      if (node.content !== null && node.content !== undefined) value += `📄 Content: ${node.content}\n`;
       if (!node.online && node.error) value += `❌ Error: ${node.error}\n`;
-      
-      value += `🔗 [Visit](${node.url})`;
       
       return {
         name: `${node.icon} ${node.name}`,
