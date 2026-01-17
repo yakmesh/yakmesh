@@ -41,8 +41,8 @@ const config = {
     npm: 'https://npmjs.com/package/yakmesh',
     docs: 'https://yakmesh.dev/docs',
     website: 'https://yakmesh.dev',
-    discord: 'https://discord.gg/E62tAE2wGh',
-    twitter: 'https://x.com/yakmesh',
+    discord: 'https://discord.gg/8mSPfbJB8N',
+    twitter: 'https://x.com/yakmesh_dev',
     telegram: 'https://t.me/yakmesh',
   },
   
