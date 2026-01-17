@@ -39,8 +39,12 @@ export class MeshNetwork {
       wsPort: config.wsPort || 9001,
       maxPeers: config.maxPeers || 10,
       pingInterval: config.pingInterval || 30000,
+      portRetries: config.portRetries || 10,  // Try up to 10 sequential ports
       ...config,
     };
+    
+    // Track actual bound port (may differ from config if fallback used)
+    this.boundPort = null;
     
     // Network identity for code proof verification
     this.networkId = config.networkId || null;
@@ -59,30 +63,58 @@ export class MeshNetwork {
   }
 
   /**
-   * Start the WebSocket server
+   * Start the WebSocket server with automatic port fallback
    */
   async start() {
-    return new Promise((resolve, reject) => {
-      this.server = new WebSocketServer({ 
-        port: this.config.wsPort,
-      });
+    const basePort = this.config.wsPort;
+    const maxRetries = this.config.portRetries;
+    
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      const port = basePort + attempt;
+      try {
+        await this._tryBindPort(port);
+        this.boundPort = port;
+        if (attempt > 0) {
+          console.log(`⚠️  Port ${basePort} was in use, bound to ${port} instead`);
+        }
+        console.log(`✓ Mesh server listening on ws://localhost:${port}`);
+        this._startPingLoop();
+        return;
+      } catch (err) {
+        if (err.code === 'EADDRINUSE' && attempt < maxRetries - 1) {
+          continue; // Try next port
+        }
+        throw err;
+      }
+    }
+    
+    throw new Error(`Could not bind to any port in range ${basePort}-${basePort + maxRetries - 1}`);
+  }
 
-      this.server.on('listening', () => {
-        console.log(`✓ Mesh server listening on ws://localhost:${this.config.wsPort}`);
+  /**
+   * Attempt to bind to a specific port
+   */
+  _tryBindPort(port) {
+    return new Promise((resolve, reject) => {
+      const server = new WebSocketServer({ port });
+
+      server.on('listening', () => {
+        this.server = server;
+        
+        server.on('connection', (ws, req) => {
+          this._handleIncomingConnection(ws, req);
+        });
+
+        server.on('error', (err) => {
+          console.error('Mesh server error:', err);
+        });
+        
         resolve();
       });
 
-      this.server.on('connection', (ws, req) => {
-        this._handleIncomingConnection(ws, req);
-      });
-
-      this.server.on('error', (err) => {
-        console.error('Mesh server error:', err);
+      server.on('error', (err) => {
         reject(err);
       });
-
-      // Start ping interval
-      this._startPingLoop();
     });
   }
 

@@ -2,6 +2,67 @@
 
 All notable changes to YAKMESH will be documented in this file.
 
+## [1.5.0] - 2026-01-17
+
+### 🔧 Critical Fix: Network Identity Unification
+
+This release fixes a fundamental issue where nodes running identical code were generating different node IDs, preventing them from recognizing each other as peers on the same network.
+
+#### The Problem (v1.4.0 and earlier)
+- Node IDs were derived from **random public key** entropy
+- Each node got a unique ID regardless of codebase
+- Nodes couldn't verify they were on the same network by comparing node IDs
+
+#### The Solution (v1.5.0)
+- Node IDs now composed of TWO parts:
+  1. **Network Name** - Derived from codebase hash (SAME for all nodes on network)
+  2. **Instance ID** - Derived from public key (UNIQUE per node)
+- Format: `node-[network-name]-[instance-id]`
+- Example: `node-qubit-lattice-prism-pq-a7x9`
+
+#### Human Verification
+- All nodes on the same network share the same **network name** and **verification phrase**
+- Users can verbally verify: "Are you on qubit-lattice-prism?"
+- If network names match = same code = can peer
+
+### Changed
+- `identity/node-key.js` - Node ID generation now uses codebase hash for network name
+- `server/index.js` - Oracle initialized BEFORE identity (provides codebase hash)
+- `node-key.json` now stores `networkName`, `verificationPhrase`, and `codebaseHash`
+- Identity automatically regenerates if codebase changes
+
+### Added
+- `setCodebaseHash()` / `getCodebaseHash()` exports from identity module
+- `getNetworkIdentity()` method on NodeIdentity class
+- Codebase change detection - warns and regenerates identity on code updates
+
+### Breaking Changes
+- Existing `node-key.json` files will trigger identity regeneration
+- Old node IDs are no longer compatible with v1.5.0 network naming
+
+---
+
+## [1.4.0] - 2026-01-16
+
+### 🔐 Yakmesh Annex - Post-Quantum Encrypted P2P Channels
+
+#### Annex: Autonomous Network Negotiated Encrypted eXchange
+- ML-KEM-768 (Kyber) key encapsulation for quantum-resistant key exchange
+- AES-256-GCM authenticated encryption for message confidentiality
+- Perfect Forward Secrecy - session keys rotate every 5 minutes or 10,000 messages
+- Replay protection via sequence numbers in AAD
+- Three-message handshake: INIT → ACCEPT → CONFIRM
+
+### Added
+- `mesh/annex.js` - Complete Annex implementation (744 lines)
+- AnnexEnvelope class for encrypted message wrapping
+- AnnexSession class for per-peer session management
+- Annex main class for channel orchestration
+- Documentation at `website/docs/annex.html`
+- Whitepaper section 3.4 for Yakmesh Annex
+
+---
+
 ## [1.3.2] - 2026-01-17
 
 ### Added

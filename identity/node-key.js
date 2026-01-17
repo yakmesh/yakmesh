@@ -1,13 +1,26 @@
 /**
- * Lantern Node Identity - Post-Quantum Secure
+ * Yakmesh Node Identity - Post-Quantum Secure
  * Uses ML-DSA-65 (Dilithium3) from FIPS 204
  * 
  * Security Level: NIST Level 3 (~192-bit classical security)
  * Quantum Resistant: Yes (lattice-based)
  * 
- * IMPORTANT: Node IDs use iO (indistinguishability obfuscation) style
- * derivation to avoid exposing raw hashes. The internal hash is kept
- * private while the public-facing ID is a human-readable derived name.
+ * IMPORTANT: Node IDs are composed of TWO parts:
+ * 1. NETWORK NAME - Derived from codebase hash (SAME for all nodes on network)
+ * 2. INSTANCE ID - Derived from public key hash (UNIQUE per node instance)
+ * 
+ * This design ensures:
+ * - Nodes running identical code share the same network name
+ * - Each node instance has a unique identifier
+ * - Human-readable verification: same network name = same code = can peer
+ * 
+ * Format: "node-[network-name]-[instance-id]"
+ * Example: "node-qubit-lattice-prism-pq-a7x9"
+ *          ^^^^^^^^^^^^^^^^^^^^^ ^^^^^^^^
+ *          Same for all nodes    Unique per instance
+ * 
+ * @module identity/node-key
+ * @version 1.5.0
  */
 
 import { ml_dsa65 } from '@noble/post-quantum/ml-dsa.js';
@@ -19,25 +32,65 @@ import { join } from 'path';
 // Import iO network identity for obfuscated node IDs
 import { deriveNetworkName, deriveNetworkId } from '../oracle/network-identity.js';
 
+// Cached codebase hash - set during first identity generation
+let cachedCodebaseHash = null;
+
 /**
- * Generate a unique node ID from public key using iO obfuscation
- * Instead of exposing raw hashes, we derive a human-readable name
+ * Set the codebase hash for node identity generation
+ * This MUST be called before generating any node IDs
+ * 
+ * @param {string} hash - The codebase hash from the validation oracle
+ */
+export function setCodebaseHash(hash) {
+  if (cachedCodebaseHash && cachedCodebaseHash !== hash) {
+    console.warn('⚠️ Codebase hash changed - network identity will change!');
+  }
+  cachedCodebaseHash = hash;
+}
+
+/**
+ * Get the current codebase hash
+ * @returns {string|null} The codebase hash or null if not set
+ */
+export function getCodebaseHash() {
+  return cachedCodebaseHash;
+}
+
+/**
+ * Generate a node ID using iO obfuscation
+ * 
+ * The node ID is composed of:
+ * 1. Network name - derived from CODEBASE hash (same for all nodes on network)
+ * 2. Instance ID - derived from PUBLIC KEY hash (unique per node)
  * 
  * @param {Uint8Array} publicKey - The node's public key
- * @returns {string} iO-derived node ID like "qubit-lattice-prism"
+ * @param {string} codebaseHash - The codebase hash (optional, uses cached if not provided)
+ * @returns {string} Node ID like "node-qubit-lattice-prism-pq-a7x9"
  */
-export function generateNodeId(publicKey) {
-  const hash = sha3_256(publicKey);
-  const hashHex = bytesToHex(hash);
+export function generateNodeId(publicKey, codebaseHash = null) {
+  const effectiveCodebaseHash = codebaseHash || cachedCodebaseHash;
   
-  // Use iO to derive a human-readable, non-reversible ID
-  // The raw hash is never exposed externally
-  const networkName = deriveNetworkName(hashHex, 3);
-  const shortId = deriveNetworkId(hashHex);
+  if (!effectiveCodebaseHash) {
+    throw new Error(
+      'Codebase hash not set! Call setCodebaseHash() with the oracle\'s selfHash ' +
+      'before generating node identities. This ensures all nodes on the same ' +
+      'network share the same network name.'
+    );
+  }
   
-  // Format: "node-[3-word-name]-[short-id]"
+  // NETWORK NAME: Derived from codebase hash
+  // This is the SAME for all nodes running identical code
+  const networkName = deriveNetworkName(effectiveCodebaseHash, 3);
+  
+  // INSTANCE ID: Derived from public key hash  
+  // This is UNIQUE per node instance
+  const publicKeyHash = sha3_256(publicKey);
+  const publicKeyHashHex = bytesToHex(publicKeyHash);
+  const instanceId = deriveNetworkId(publicKeyHashHex);
+  
+  // Format: "node-[network-name]-[instance-id]"
   // e.g., "node-qubit-lattice-prism-pq-a7x9"
-  return `node-${networkName}-${shortId}`;
+  return `node-${networkName}-${instanceId}`;
 }
 
 /**
@@ -98,51 +151,104 @@ export function verifySignature(message, signatureHex, publicKeyHex) {
 /**
  * Node Identity Manager
  * Handles persistent storage and management of node identity
+ * 
+ * IMPORTANT: The oracle must be initialized before creating node identities
+ * to ensure the codebase hash is available for network name derivation.
  */
 export class NodeIdentity {
   constructor(dataDir = './data') {
     this.dataDir = dataDir;
     this.keyPath = join(dataDir, 'node-key.json');
     this.identity = null;
+    this.networkName = null;
+    this.verificationPhrase = null;
   }
 
   /**
    * Initialize or load node identity
+   * 
+   * @param {string} nodeName - Human-readable node name
+   * @param {string} region - Node region/location
+   * @param {Object} oracle - The validation oracle instance (provides codebase hash)
    */
-  async init(nodeName = 'Lantern Node', region = 'local') {
+  async init(nodeName = 'Yakmesh Node', region = 'local', oracle = null) {
     // Ensure data directory exists
     if (!existsSync(this.dataDir)) {
       mkdirSync(this.dataDir, { recursive: true });
+    }
+
+    // Get codebase hash from oracle if provided
+    let codebaseHash = cachedCodebaseHash;
+    if (oracle) {
+      const proof = oracle.generateCodeProof();
+      codebaseHash = proof.selfHash;
+      setCodebaseHash(codebaseHash);
+      
+      // Import and store network identity info
+      const { deriveVerificationPhrase } = await import('../oracle/network-identity.js');
+      this.networkName = deriveNetworkName(codebaseHash, 3);
+      this.verificationPhrase = deriveVerificationPhrase(codebaseHash);
     }
 
     // Load existing identity or generate new one
     if (existsSync(this.keyPath)) {
       const data = JSON.parse(readFileSync(this.keyPath, 'utf8'));
       this.identity = data;
-      console.log(`✓ Loaded node identity: ${this.identity.nodeId}`);
-      console.log(`  Algorithm: ${this.identity.algorithm} (NIST Level ${this.identity.nistLevel})`);
-    } else {
-      console.log('⚙ Generating post-quantum keypair (ML-DSA-65)...');
-      const keyPair = generateKeyPair();
-      const publicKeyBytes = hexToBytes(keyPair.publicKey);
-      const nodeId = generateNodeId(publicKeyBytes);
+      
+      // Check if identity needs regeneration (codebase changed)
+      if (codebaseHash && this.identity.codebaseHash && 
+          this.identity.codebaseHash !== codebaseHash) {
+        console.log('⚠️ Codebase changed - regenerating node identity...');
+        console.log(`   Old network: ${this.identity.networkName || 'unknown'}`);
+        console.log(`   New network: ${this.networkName}`);
+        // Delete old identity and regenerate
+        this.identity = null;
+      } else {
+        console.log(`✓ Loaded node identity: ${this.identity.nodeId}`);
+        console.log(`  Network: ${this.identity.networkName || this.networkName || 'unknown'}`);
+        console.log(`  Algorithm: ${this.identity.algorithm} (NIST Level ${this.identity.nistLevel})`);
+        if (this.verificationPhrase) {
+          console.log(`  Verify: "${this.verificationPhrase}"`);
+        }
+        return this.identity;
+      }
+    }
+    
+    // Generate new identity
+    if (!codebaseHash) {
+      throw new Error(
+        'Cannot generate node identity: codebase hash not available. ' +
+        'Pass the oracle instance to init() or call setCodebaseHash() first.'
+      );
+    }
+    
+    console.log('⚙ Generating post-quantum keypair (ML-DSA-65)...');
+    const keyPair = generateKeyPair();
+    const publicKeyBytes = hexToBytes(keyPair.publicKey);
+    const nodeId = generateNodeId(publicKeyBytes, codebaseHash);
 
-      this.identity = {
-        nodeId,
-        name: nodeName,
-        region,
-        publicKey: keyPair.publicKey,
-        secretKey: keyPair.secretKey,
-        algorithm: keyPair.algorithm,
-        nistLevel: keyPair.nistLevel,
-        createdAt: Date.now(),
-        capabilities: ['listings', 'chat', 'forum', 'qcoa'],
-      };
+    this.identity = {
+      nodeId,
+      networkName: this.networkName,
+      verificationPhrase: this.verificationPhrase,
+      codebaseHash,  // Store for change detection
+      name: nodeName,
+      region,
+      publicKey: keyPair.publicKey,
+      secretKey: keyPair.secretKey,
+      algorithm: keyPair.algorithm,
+      nistLevel: keyPair.nistLevel,
+      createdAt: Date.now(),
+      capabilities: ['listings', 'chat', 'forum', 'qcoa'],
+    };
 
-      writeFileSync(this.keyPath, JSON.stringify(this.identity, null, 2));
-      console.log(`✓ Generated new node identity: ${nodeId}`);
-      console.log(`  Algorithm: ML-DSA-65 (FIPS 204, NIST Level 3)`);
-      console.log(`  Public Key Size: ${keyPair.publicKey.length / 2} bytes`);
+    writeFileSync(this.keyPath, JSON.stringify(this.identity, null, 2));
+    console.log(`✓ Generated new node identity: ${nodeId}`);
+    console.log(`  Network: ${this.networkName}`);
+    console.log(`  Algorithm: ML-DSA-65 (FIPS 204, NIST Level 3)`);
+    console.log(`  Public Key Size: ${keyPair.publicKey.length / 2} bytes`);
+    if (this.verificationPhrase) {
+      console.log(`  Verify: "${this.verificationPhrase}"`);
     }
 
     return this.identity;
@@ -150,12 +256,15 @@ export class NodeIdentity {
 
   /**
    * Get public identity (safe to share with other nodes)
+   * Includes network identity for peer verification
    */
   getPublicIdentity() {
     if (!this.identity) throw new Error('Identity not initialized');
     
     return {
       nodeId: this.identity.nodeId,
+      networkName: this.identity.networkName || this.networkName,
+      verificationPhrase: this.identity.verificationPhrase || this.verificationPhrase,
       name: this.identity.name,
       region: this.identity.region,
       publicKey: this.identity.publicKey,
@@ -163,6 +272,17 @@ export class NodeIdentity {
       nistLevel: this.identity.nistLevel,
       capabilities: this.identity.capabilities,
       createdAt: this.identity.createdAt,
+    };
+  }
+  
+  /**
+   * Get network identity info (for human verification)
+   * All nodes on the same network should have matching values
+   */
+  getNetworkIdentity() {
+    return {
+      networkName: this.identity?.networkName || this.networkName,
+      verificationPhrase: this.identity?.verificationPhrase || this.verificationPhrase,
     };
   }
 

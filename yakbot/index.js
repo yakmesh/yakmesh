@@ -26,7 +26,7 @@ const config = {
   geminiKey: process.env.GEMINI_API_KEY,
   
   // Current version
-  version: '1.4.0',
+  version: '1.5.0',
   
   // Official YAKMESH nodes for health checks
   officialNodes: [
@@ -364,18 +364,18 @@ const commands = {
       url: `${config.links.github}/blob/main/CHANGELOG.md`,
       fields: [
         {
+          name: '🔧 v1.5.0 - Network Identity Unification',
+          value: '• Fixed node IDs to derive from codebase hash\n• All nodes on same network share network name\n• Human-verifiable network identity\n• Auto-regenerate identity on code changes',
+          inline: false,
+        },
+        {
           name: '🔐 v1.4.0 - Annex Encrypted P2P',
-          value: '• Added Yakmesh Annex - encrypted point-to-point messaging\n• ML-KEM768 (Kyber) quantum-resistant key exchange\n• Perfect forward secrecy\n• Trademark cleanup',
+          value: '• Added Yakmesh Annex - encrypted point-to-point messaging\n• ML-KEM768 (Kyber) quantum-resistant key exchange\n• Perfect forward secrecy',
           inline: false,
         },
         {
-          name: '🐛 v1.3.2 - Bug Fixes',
-          value: '• Fixed gossip propagation for content distribution\n• Multi-node content sync improvements',
-          inline: false,
-        },
-        {
-          name: '🌐 v1.3.1 - Public Content Delivery',
-          value: '• Content-addressed storage API\n• First successful LAN mesh peering\n• Social channels launched',
+          name: '🌐 v1.3.x - Content & Fixes',
+          value: '• Public content delivery API\n• Fixed gossip propagation\n• Social channels launched',
           inline: false,
         },
       ],
