@@ -50,8 +50,8 @@ jobs:
                   "inline": false
                 },
                 {
-                  "name": "📖 Links",
-                  "value": "[npm](https://npmjs.com/package/yakmesh) • [GitHub]($URL) • [Docs](https://yakmesh.dev/docs) • [Discord](https://discord.gg/8mSPfbJB8N)",
+                  "name": "🔗 Links",
+                  "value": "[npm](https://npmjs.com/package/yakmesh) • [GitHub]($URL) • [Docs](https://yakmesh.dev/docs) • [Discord](https://discord.gg/8mSPfbJB8N) • [Telegram](https://t.me/yakmesh) • [X/Twitter](https://x.com/yakmesh_dev)",
                   "inline": false
                 }
               ],
