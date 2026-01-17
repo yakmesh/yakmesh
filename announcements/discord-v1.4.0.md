@@ -34,10 +34,10 @@ node.annex.onMessage(({ from, payload }) => {
 
 ### ⚖️ Trademark Cleanup
 We did a legal sweep and removed ™ claims from protocol names that conflict with existing trademarks:
-- Yakmesh Phantom (was PHANTOM™)
-- Yakmesh Beacon (was BEACON™)
-- Yakmesh Echo (was ECHO™)
-- Yakmesh Pulse (was PULSE™)
+- Yakmesh Phantom (was PHANTOM)
+- Yakmesh Beacon (was BEACON)
+- Yakmesh Echo (was ECHO)
+- Yakmesh Pulse (was PULSE)
 - Yakmesh Annex (new!)
 
 **YAKMESH™ remains our registered trademark** - we own the patent! 🎉

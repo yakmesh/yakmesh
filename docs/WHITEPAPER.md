@@ -42,7 +42,7 @@ YAKMESH introduces the **Yielding Atomic Kernel (YAK)**, a networking layer that
 
 - **Hardware-based atomic timing** (PCIe/PTP) for nanosecond synchronization
 - **Post-Quantum Cryptography** (ML-DSA-65, FIPS 204) for quantum resistance
-- **Temporal Matrix Encoding (TME™)** for zero-retransmit packet recovery
+- **Temporal Matrix Encoding (TME)** for zero-retransmit packet recovery
 
 The result: a "Synchronous Mesh" in an asynchronous world.
 
@@ -124,7 +124,7 @@ YAKMESH's PCIe-based timing interface establishes a **Universal Mesh Timebase**:
 
 ---
 
-### 3.2 Temporal Matrix Encoding (TME™)
+### 3.2 Temporal Matrix Encoding (TME)
 
 > *"Time IS the redundancy dimension."*
 
@@ -486,4 +486,4 @@ This whitepaper is provided for informational purposes. Implementation details m
 
 ---
 
-*Powered by TME™ — The world's first temporal-erasure protocol for atomically-synced mesh networks.*
+*Powered by TME — The world's first temporal-erasure protocol for atomically-synced mesh networks.*
