@@ -22,7 +22,7 @@ npm install yakmesh
 ### Links
 
 🌐 [yakmesh.dev](https://yakmesh.dev) · 📦 [npm](https://npmjs.com/package/yakmesh) · 📖 [GitHub](https://github.com/yakmesh/yakmesh)  
-💬 [Discord](https://discord.gg/E62tAE2wGh) · 📱 [Telegram](https://t.me/yakmesh) · 𝕏 [Twitter](https://x.com/yakmesh_dev)
+💬 [Discord](https://discord.gg/8mSPfbJB8N) · 📱 [Telegram](https://t.me/yakmesh) · 𝕏 [Twitter](https://x.com/yakmesh_dev)
 
 ---
 

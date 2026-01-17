@@ -180,7 +180,7 @@ See [TRADEMARK.md](TRADEMARK.md) for trademark usage policy.
   <strong><a href="https://yakmesh.dev">yakmesh.dev</a></strong>
   <br><br>
   <p>
-    <a href="https://discord.gg/E62tAE2wGh">💬 Discord</a> •
+    <a href="https://discord.gg/8mSPfbJB8N">💬 Discord</a> •
     <a href="https://t.me/yakmesh">📱 Telegram</a> •
     <a href="https://x.com/yakmesh_dev">𝕏 Twitter</a>
   </p>
