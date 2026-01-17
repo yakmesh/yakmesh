@@ -66,7 +66,7 @@ console.log('║     YAKMESH v1.3.0 NOVEL SYSTEMS TEST SUITE              ║');
 console.log('╚═══════════════════════════════════════════════════════════╝\n');
 
 // ─────────────────────────────────────────────────────────────────────
-console.log('─── ECHO™ (Encrypted Coordinate Heuristic Oracle) Tests ───\n');
+console.log('─── ECHO (Encrypted Coordinate Heuristic Oracle) Tests ───\n');
 
 test('VirtualCoordinates initializes with random values', () => {
   const vc = new VirtualCoordinates(8);
@@ -151,7 +151,7 @@ test('EchoRanging estimates latency to peer', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────
-console.log('\n─── PULSE™ (Precision Universal Latency Sync Engine) Tests ───\n');
+console.log('\n─── PULSE (Precision Universal Latency Sync Engine) Tests ───\n');
 
 test('Heartbeat creates with valid hash', () => {
   const hb = new Heartbeat({
@@ -256,7 +256,7 @@ test('PulseSync creates and receives heartbeats', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────
-console.log('\n─── BEACON™ (Broadcast Emergency Alert Channel) Tests ───\n');
+console.log('\n─── BEACON (Broadcast Emergency Alert Channel) Tests ───\n');
 
 test('BeaconMessage creates with valid hash', () => {
   const msg = new BeaconMessage({

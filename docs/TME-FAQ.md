@@ -1,4 +1,4 @@
-# TME™ Technical FAQ
+# TME Technical FAQ
 
 ## Frequently Asked Questions about Temporal Matrix Encoding
 
@@ -218,4 +218,4 @@ TME without YAK is like HTTPS without TLS — technically possible, but missing 
 
 ---
 
-*Powered by TME™ — The world's first temporal-erasure protocol for atomically-synced mesh networks.*
+*Powered by TME — The world's first temporal-erasure protocol for atomically-synced mesh networks.*

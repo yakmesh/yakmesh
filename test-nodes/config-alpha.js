@@ -23,6 +23,7 @@ export default {
   
   database: {
     path: './test-nodes/data-alpha/yakmesh.db',
+    contentPath: './test-nodes/data-alpha/content',
     replication: {
       enabled: true,
       syncInterval: 5000,

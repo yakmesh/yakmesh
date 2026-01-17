@@ -2,7 +2,7 @@
 
 **Post-quantum secure mesh networking for the 2026 threat landscape.**
 
-YAKMESH is a P2P mesh library that treats cryptographic security as non-negotiable. Every signature uses **ML-DSA-65** (NIST FIPS 204), every node proves its codebase integrity before peering, and our novel **TME™** protocol uses *time itself* as a redundancy dimension for packet resilience.
+YAKMESH is a P2P mesh library that treats cryptographic security as non-negotiable. Every signature uses **ML-DSA-65** (NIST FIPS 204), every node proves its codebase integrity before peering, and our novel **TME** protocol uses *time itself* as a redundancy dimension for packet resilience.
 
 ```
 npm install yakmesh
@@ -15,7 +15,7 @@ npm install yakmesh
 🔐 **Quantum-Resistant** — ML-DSA-65 signatures, ML-KEM-768 key exchange  
 ⏱️ **Atomic Precision** — Sub-millisecond mesh synchronization  
 🛡️ **Code Proof Protocol** — Nodes verify matching codebases before peering  
-📡 **TME™** — Temporal Matrix Encoding for zero-retransmit recovery  
+📡 **TME** — Temporal Matrix Encoding for zero-retransmit recovery  
 
 ---
 
