@@ -33,9 +33,9 @@
   "scripts": {
     "start": "node server/index.js",
     "dev": "node --watch server/index.js",
-    "test": "node --test oracle/tests/",
-    "test:time": "node oracle/tests/time-source.test.js",
-    "test:phase": "node oracle/tests/phase-epoch.test.js",
+    "test": "node --test oracle/tests/*.test.js",
+    "test:time": "node --test oracle/tests/time-source.test.js",
+    "test:phase": "node --test oracle/tests/phase-epoch.test.js",
     "test:all": "node test-novel-systems.mjs"
   },
   "dependencies": {
