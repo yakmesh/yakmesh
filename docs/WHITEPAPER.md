@@ -5,7 +5,7 @@
 **Author:** yakmesh.dev  
 **Date:** January 2026  
 **USPTO Serial No:** 99594620  
-**Version:** 1.2.0  
+**Version:** 1.5.0  
 
 ---
 
@@ -17,6 +17,7 @@
    - 3.1 [Physical Layer: Hardware Alignment](#31-physical-layer-hardware-alignment)
    - 3.2 [Temporal Matrix Encoding (TME)](#32-temporal-matrix-encoding-tme)
    - 3.3 [Security Hardening Modules](#33-security-hardening-modules)
+   - 3.4 [Yakmesh Annex: Encrypted P2P Channels](#34-yakmesh-annex-encrypted-p2p-channels)
 4. [Comparison: YAKMESH vs. Walrus (Red Stuff)](#4-comparison-yakmesh-vs-walrus-red-stuff)
 5. [Security & Cryptographic Hardening](#5-security--cryptographic-hardening)
 6. [Real-World Use Cases](#6-real-world-use-cases)
@@ -296,8 +297,136 @@ Amplification attack prevention:
 | Maximum | 1 MB |
 
 Additional protections:
+
 - Nesting depth limit: 10 levels
 - Prototype pollution protection (`__proto__` blocked)
+
+---
+
+### 3.4 Yakmesh Annex: Encrypted P2P Channels
+
+> *"Changes pass through math alone."*
+
+#### The Need for Sovereign Data Channels
+
+While the gossip protocol and TME handle public mesh communication, many use cases require **private, authenticated messaging** between specific peers:
+
+- Beacon acknowledgments that shouldn't reveal recipient identity
+- Application-specific payloads requiring confidentiality
+- Authentication tokens for CDN/site access
+- Direct peer-to-peer secure messaging
+
+#### ANNEX: Autonomous Network Negotiated Encrypted eXchange
+
+ANNEX establishes encrypted point-to-point channels using post-quantum cryptography:
+
+| Component | Algorithm | Purpose |
+|-----------|-----------|---------|
+| **Key Exchange** | ML-KEM-768 (Kyber) | NIST FIPS 203 post-quantum KEM |
+| **Encryption** | AES-256-GCM | Authenticated symmetric encryption |
+| **Authentication** | ML-DSA-65 | Signature verification on all messages |
+| **Replay Defense** | Sequence + AAD | Sequence numbers bound to session |
+
+#### How ANNEX Works
+
+**Step 1: Channel Opening (Key Exchange)**
+
+```text
+Initiator                                  Responder
+    │                                          │
+    │  KEY_EXCHANGE(sessionId, kemPublicKey)   │
+    │────────────────────────────────────────►│
+    │                                          │
+    │  KEY_RESPONSE(kemPublicKey, kemCiphertext)│
+    │◄────────────────────────────────────────│
+    │                                          │
+    ▼  Both derive shared secret via ML-KEM    ▼
+    [═══════ Encrypted Channel Established ═══════]
+```
+
+**Step 2: Message Encryption**
+
+Each message is encrypted with AES-256-GCM:
+
+```javascript
+// Additional Authenticated Data (AAD) includes session + sequence
+const aad = `${sessionId}:${sequenceNumber}`;
+
+// Encrypt with random nonce
+const { ciphertext, authTag, nonce } = encrypt(payload, key, aad);
+
+// Envelope is signed with ML-DSA-65
+envelope.signature = identity.sign(envelope);
+```
+
+**Step 3: Perfect Forward Secrecy**
+
+ANNEX automatically re-keys sessions:
+
+| Trigger | Action |
+|---------|--------|
+| 5 minutes elapsed | Generate new ephemeral KEM keys |
+| 10,000 messages sent | Force re-key |
+| Session expiry (1 hour) | Close and re-establish |
+
+This ensures that compromise of a session key doesn't expose past or future communications.
+
+#### Security Properties
+
+1. **Post-Quantum Confidentiality:** ML-KEM-768 is resistant to Shor's algorithm
+2. **Authentication:** Every envelope signed with ML-DSA-65
+3. **Replay Protection:** Sequence numbers + AAD verification
+4. **Forward Secrecy:** Automatic ephemeral key rotation
+5. **Integrity:** AES-GCM authenticated encryption
+
+#### API Usage
+
+```javascript
+import { Annex } from 'yakmesh/mesh/annex.js';
+
+// Initialize with node identity and mesh connection
+const annex = new Annex({ identity, mesh });
+
+// Open encrypted channel to peer
+await annex.openChannel(peerNodeId);
+
+// Send encrypted message
+await annex.send(peerNodeId, {
+  type: 'beacon_ack',
+  beaconId: 'emergency-123',
+  ack: true,
+});
+
+// Receive messages
+annex.onMessage(({ from, payload, sessionId }) => {
+  console.log(`Decrypted from ${from}:`, payload);
+});
+
+// Close channel
+await annex.closeChannel(peerNodeId);
+```
+
+#### Integration with Yakmesh Protocol Stack
+
+ANNEX slots into the protocol stack as the private messaging layer:
+
+```text
+┌─────────────────────────────────────────────────────────────┐
+│                    YAKMESH PROTOCOL STACK                   │
+├─────────────────────────────────────────────────────────────┤
+│  HTTP API          │ Public content delivery (CDN layer)    │
+├─────────────────────────────────────────────────────────────┤
+│  ANNEX             │ ML-KEM768 + AES-256-GCM encrypted P2P  │
+├─────────────────────────────────────────────────────────────┤
+│  Gossip            │ ML-DSA-65 signed message propagation   │
+├─────────────────────────────────────────────────────────────┤
+│  Beacon            │ Flood-based priority broadcasts        │
+├─────────────────────────────────────────────────────────────┤
+│  Phantom           │ Post-quantum onion routing             │
+├─────────────────────────────────────────────────────────────┤
+│  Mesh Core         │ WebSocket + Code Proof Protocol        │
+└─────────────────────────────────────────────────────────────┘
+```
 
 ---
 
@@ -445,6 +574,9 @@ The `yakmesh.dev` portal serves as:
 
 | Component | Status | npm Package |
 |-----------|--------|-------------|
+| Network Identity Unification | ✅ Complete | yakmesh@1.5.0 |
+| Yakmesh Annex (Encrypted P2P) | ✅ Complete | yakmesh@1.4.0 |
+| Content Delivery API | ✅ Complete | yakmesh@1.3.2 |
 | TME (Temporal Matrix Encoding) | ✅ Complete | yakmesh@1.2.0 |
 | NAVR (Sybil Defense) | ✅ Complete | yakmesh@1.1.0 |
 | Replay Defense | ✅ Complete | yakmesh@1.1.0 |

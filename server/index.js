@@ -114,6 +114,7 @@ export class YakmeshNode {
     this.gossip = null;
     this.adapter = null;
     this.http = null;
+    this.boundHttpPort = null;  // Actual bound port (may differ if fallback used)
     this.app = null;  // Store Express app for PeerQuanta endpoints
     
     // Oracle system
@@ -153,17 +154,23 @@ export class YakmeshNode {
       console.warn('   Node will continue but source files are not protected');
     }
 
-    // 1. Initialize identity - extract directory from database path
-    const dbDir = this.config.database.path.replace(/[/\\\\][^/\\\\]+\.db$/, '');
-    this.identity = new NodeIdentity(dbDir);
-    await this.identity.init(this.config.node.name, this.config.node.region);
-
-    // 2. Initialize the Oracle system (self-verifying validation)
-    // This MUST happen before mesh starts so we can pass the network fingerprint
+    // 1. Initialize the Oracle system FIRST (provides codebase hash for identity)
+    // This MUST happen before identity initialization
     this._initOracle();
     
-    // 2b. Initialize time source detection
+    // 1b. Initialize time source detection
     this._initTimeSource();
+
+    // 2. Initialize identity - extract directory from database path
+    // Pass the oracle so it can derive network name from codebase hash
+    const dbDir = this.config.database.path.replace(/[/\\\\][^/\\\\]+\.db$/, '');
+    this.identity = new NodeIdentity(dbDir);
+    await this.identity.init(this.config.node.name, this.config.node.region, this.oracle);
+    
+    // 2b. Update codeProof and consensus with the initialized identity
+    if (this.codeProof) {
+      this.codeProof.nodeId = this.identity.identity?.nodeId;
+    }
 
     // 3. Start mesh network WITH network fingerprint for code proof verification
     this.mesh = new MeshNetwork(this.identity, {
@@ -261,10 +268,10 @@ export class YakmeshNode {
 
     console.log('\n✓ Yakmesh Node is running!\n');
     console.log(`  Node ID:    ${this.identity.identity.nodeId}`);
-    console.log(`  HTTP:       http://localhost:${this.config.network.httpPort}`);
-    console.log(`  Content:    http://localhost:${this.config.network.httpPort}/content`);
-    console.log(`  Dashboard:  http://localhost:${this.config.network.httpPort}/dashboard`);
-    console.log(`  WebSocket:  ws://localhost:${this.config.network.wsPort}`);
+    console.log(`  HTTP:       http://localhost:${this.boundHttpPort || this.config.network.httpPort}`);
+    console.log(`  Content:    http://localhost:${this.boundHttpPort || this.config.network.httpPort}/content`);
+    console.log(`  Dashboard:  http://localhost:${this.boundHttpPort || this.config.network.httpPort}/dashboard`);
+    console.log(`  WebSocket:  ws://localhost:${this.mesh.boundPort || this.config.network.wsPort}`);
     console.log(`  Algorithm:  ML-DSA-65 (Post-Quantum)`);
     console.log(`  Oracle:     ✓ ${this.oracle.selfHash.slice(0, 16)}...`);
     console.log(`  Network:    ${this.genesisNetwork.networkName} (${this.genesisNetwork.networkId})`);
@@ -309,18 +316,20 @@ export class YakmeshNode {
 
   /**
    * Initialize the Oracle system
+   * NOTE: This is called BEFORE identity initialization so we can 
+   * derive the network name from the codebase hash for node identity.
    */
   _initOracle() {
     console.log('🔮 Initializing Oracle System...');
     
-    // Get the singleton oracle instance
+    // Get the singleton oracle instance (computes codebase hash)
     this.oracle = getOracle();
     
-    // Initialize code proof protocol
-    this.codeProof = new CodeProofProtocol(this.identity);
+    // Initialize code proof protocol (identity will be set later)
+    this.codeProof = new CodeProofProtocol({ identity: null });
     
-    // Initialize consensus engine
-    this.consensus = new ConsensusEngine(this.identity, {
+    // Initialize consensus engine (identity will be set later)  
+    this.consensus = new ConsensusEngine({ identity: null }, {
       minAttestations: this.config.oracle?.minAttestations || 1,
     });
     
@@ -956,11 +965,41 @@ export class YakmeshNode {
       });
     });
 
-    return new Promise((resolve) => {
-      this.http = app.listen(this.config.network.httpPort, () => {
-        console.log(`✓ HTTP server on http://localhost:${this.config.network.httpPort}`);
+    return new Promise(async (resolve, reject) => {
+      const basePort = this.config.network.httpPort;
+      const maxRetries = 10;
+      
+      for (let attempt = 0; attempt < maxRetries; attempt++) {
+        const port = basePort + attempt;
+        try {
+          await this._tryHttpBind(app, port);
+          this.boundHttpPort = port;
+          if (attempt > 0) {
+            console.log(`⚠️  Port ${basePort} was in use, HTTP bound to ${port} instead`);
+          }
+          console.log(`✓ HTTP server on http://localhost:${port}`);
+          resolve();
+          return;
+        } catch (err) {
+          if (err.code === 'EADDRINUSE' && attempt < maxRetries - 1) {
+            continue;
+          }
+          reject(err);
+          return;
+        }
+      }
+      reject(new Error(`Could not bind HTTP to any port in range ${basePort}-${basePort + maxRetries - 1}`));
+    });
+  }
+
+  _tryHttpBind(app, port) {
+    return new Promise((resolve, reject) => {
+      const server = app.listen(port);
+      server.on('listening', () => {
+        this.http = server;
         resolve();
       });
+      server.on('error', reject);
     });
   }
 

@@ -1,17 +1,17 @@
 // YAKMESH Production Node Configuration
-// LAN Server: WIN-LQH9ULSNBFU (Abyss)
+// Hostinger VPS
 export default {
-  nodeId: 'yakmesh-abyss',
+  nodeId: 'yakmesh-hostinger',
   
   // Content API server
   server: { 
-    port: 3000, 
+    port: 3080, 
     host: '0.0.0.0' 
   },
   
   // Mesh P2P networking
   mesh: { 
-    port: 9001, 
+    port: 9080, 
     host: '0.0.0.0' 
   },
   
