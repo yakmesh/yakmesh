@@ -1,27 +1,14 @@
-# Yakmesh v1.5.0 - Network Identity Unification
+# Yakmesh v1.5.1
 
-**🦬 Yakmesh v1.5.0 is here!**
+**🦬 Yakmesh v1.5.1 Released**
 
-This release introduces **Network Identity Unification** - a fundamental improvement to how nodes identify themselves and verify they're running the same code.
+## 🔧 Fixes & Improvements
 
-## 🔑 What's New
-
-### Network Identity Unification
-Node IDs now contain TWO components:
-- **Network Name** - Derived from codebase hash (SAME for all nodes on network)
-- **Instance ID** - Derived from public key (UNIQUE per node)
-
-Format: `node-[network-name]-[instance-id]`
-Example: `node-grid-carbide-reveal-pq-QHZx`
-
-**Why this matters:**
-✅ Nodes running identical code share the same network name
-✅ Visual verification: same network name = same code = can trust peer
-✅ Each node still has a unique instance identifier
-✅ Human-readable verification phrases for extra confirmation
+### Identity Initialization Fix
+Fixed oracle initialization order so node identity correctly derives from codebase hash as originally designed.
 
 ### Automatic Port Fallback
-No more "port in use" crashes! If default ports (3000, 9001) are occupied, the node automatically finds the next available port.
+Nodes now automatically find the next available port if default ports (3000, 9001) are occupied - no more crashes on busy systems.
 
 ### Process Management Script
 New `scripts/start.sh` for proper background process management:
@@ -33,12 +20,9 @@ New `scripts/start.sh` for proper background process management:
 ./scripts/start.sh logs    # View logs
 ```
 
-## ⚠️ Breaking Change
-Existing `node-key.json` files will trigger identity regeneration on first v1.5.0 startup. This is expected - the new format ensures network name derivation from codebase hash.
-
 ## 📦 Install/Upgrade
 ```bash
-npm install yakmesh@1.5.0
+npm install yakmesh@1.5.1
 ```
 
 ---
