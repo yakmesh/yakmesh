@@ -33,45 +33,36 @@ jobs:
           VERSION="${{ steps.release_info.outputs.version }}"
           URL="${{ steps.release_info.outputs.url }}"
           
-          # Create the embed JSON
-          cat > payload.json << 'EOF'
+          # Create the embed JSON with proper escaping
+          cat > payload.json << EOF
           {
             "username": "YakBot",
             "avatar_url": "https://raw.githubusercontent.com/yakmesh/yakmesh/main/assets/yakmesh-logo2.png",
             "embeds": [{
-              "title": "🦬 YAKMESH™ ${VERSION} Released!",
-              "description": "A new version of YAKMESH has been published!\n\n**Install:**\n```bash\nnpm install yakmesh@${VERSION}\n```",
-              "url": "${URL}",
+              "title": "🦬 YAKMESH™ $VERSION Released!",
+              "description": "A new version of YAKMESH has been published!",
+              "url": "$URL",
               "color": 1292035,
               "fields": [
                 {
-                  "name": "📦 npm",
-                  "value": "[View on npm](https://npmjs.com/package/yakmesh)",
-                  "inline": true
+                  "name": "📦 Install",
+                  "value": "\`npm install yakmesh@$VERSION\`",
+                  "inline": false
                 },
                 {
-                  "name": "📖 GitHub",
-                  "value": "[View Release](${URL})",
-                  "inline": true
-                },
-                {
-                  "name": "📚 Docs",
-                  "value": "[Documentation](https://yakmesh.dev/docs)",
-                  "inline": true
+                  "name": "📖 Links",
+                  "value": "[npm](https://npmjs.com/package/yakmesh) • [GitHub]($URL) • [Docs](https://yakmesh.dev/docs) • [Discord](https://discord.gg/8mSPfbJB8N)",
+                  "inline": false
                 }
               ],
               "footer": {
                 "text": "YAKMESH™ - Sturdy & Secure",
                 "icon_url": "https://raw.githubusercontent.com/yakmesh/yakmesh/main/assets/yakmesh-logo2.png"
               },
-              "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%SZ)'"
+              "timestamp": "$(date -u +%Y-%m-%dT%H:%M:%SZ)"
             }]
           }
           EOF
-          
-          # Replace variables in payload
-          sed -i "s|\${VERSION}|$VERSION|g" payload.json
-          sed -i "s|\${URL}|$URL|g" payload.json
           
           # Send to Discord
           curl -H "Content-Type: application/json" \
