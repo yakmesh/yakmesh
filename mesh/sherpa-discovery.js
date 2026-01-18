@@ -62,6 +62,8 @@ const SHERPA_CONFIG = {
 /**
  * Beacon message format for /.well-known/yakmesh/beacon
  * This is what nodes advertise to help others discover peers.
+ * 
+ * Enhanced with NAMCHE fields for certificate integration.
  */
 class BeaconMessage {
   constructor(options = {}) {
@@ -78,6 +80,36 @@ class BeaconMessage {
       supportsAnnex: options.supportsAnnex ?? true,
       supportsNakpak: options.supportsNakpak ?? true,
       supportsGossip: options.supportsGossip ?? true,
+      // NAMCHE capability flags
+      supportsKhata: options.supportsKhata ?? true,
+      canVerifyDomains: options.canVerifyDomains ?? false,
+      canRouteNakpak: options.canRouteNakpak ?? true,
+    };
+    
+    // ════════════════════════════════════════════════════════════════════
+    // NAMCHE Integration - Certificate & Trust Distribution
+    // ════════════════════════════════════════════════════════════════════
+    this.namche = {
+      // Hash of this node's current DOKO (for verification)
+      dokoHash: options.dokoHash || null,
+      
+      // SSL/TLS information (for hybrid trust with traditional PKI)
+      ssl: {
+        hasPublicCert: options.sslHasPublicCert ?? false,
+        certFingerprint: options.sslCertFingerprint || null,  // SHA256 of cert
+        issuer: options.sslIssuer || null,  // e.g., "letsencrypt", "zerossl"
+        domains: options.sslDomains || [],  // Domains covered by cert
+        expiresAt: options.sslExpiresAt || null,  // Cert expiry timestamp
+      },
+      
+      // Domain claims this node is asserting
+      domainClaims: options.domainClaims || [],
+      
+      // Verifier info (if this node can verify others' domains)
+      verifier: options.canVerifyDomains ? {
+        available: true,
+        queue: options.verifierQueue || 0,  // Pending verifications
+      } : null,
     };
     
     // Known peers (other nodes we know about)
@@ -136,6 +168,7 @@ class BeaconMessage {
       timestamp: this.timestamp,
       ttl: this.ttl,
       capabilities: this.capabilities,
+      namche: this.namche,  // NAMCHE integration fields
       peers: this.getPeersForDiscovery(),
       publicKey: this.publicKey,
       signature: this.signature,
@@ -152,6 +185,7 @@ class BeaconMessage {
       networkName: this.networkName,
       timestamp: this.timestamp,
       capabilities: this.capabilities,
+      namche: this.namche,  // Include NAMCHE in signature
     });
   }
 
@@ -169,6 +203,19 @@ class BeaconMessage {
       supportsAnnex: data.capabilities?.supportsAnnex,
       supportsNakpak: data.capabilities?.supportsNakpak,
       supportsGossip: data.capabilities?.supportsGossip,
+      // NAMCHE capabilities
+      supportsKhata: data.capabilities?.supportsKhata,
+      canVerifyDomains: data.capabilities?.canVerifyDomains,
+      canRouteNakpak: data.capabilities?.canRouteNakpak,
+      // NAMCHE integration
+      dokoHash: data.namche?.dokoHash,
+      sslHasPublicCert: data.namche?.ssl?.hasPublicCert,
+      sslCertFingerprint: data.namche?.ssl?.certFingerprint,
+      sslIssuer: data.namche?.ssl?.issuer,
+      sslDomains: data.namche?.ssl?.domains,
+      sslExpiresAt: data.namche?.ssl?.expiresAt,
+      domainClaims: data.namche?.domainClaims,
+      verifierQueue: data.namche?.verifier?.queue,
       publicKey: data.publicKey,
       signature: data.signature,
     });

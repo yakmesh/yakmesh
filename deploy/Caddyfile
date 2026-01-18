@@ -1,0 +1,208 @@
+# YAKMESH Caddyfile - Auto-SSL Integration
+# 
+# This Caddyfile demonstrates how to use Caddy as a reverse proxy
+# in front of a yakmesh node, providing automatic SSL certificates.
+#
+# Benefits:
+# - Automatic HTTPS via Let's Encrypt or ZeroSSL
+# - Automatic certificate renewal
+# - HTTP/2 and HTTP/3 support
+# - Serves SHERPA beacon at .well-known/yakmesh/beacon
+#
+# Usage:
+#   1. Install Caddy: https://caddyserver.com/docs/install
+#   2. Copy this file to /etc/caddy/Caddyfile (Linux) or appropriate location
+#   3. Replace YOUR_DOMAIN with your actual domain
+#   4. Run: caddy run --config /etc/caddy/Caddyfile
+#
+# For development/testing without a real domain:
+#   caddy run --config Caddyfile.dev
+#
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# Global options
+{
+	# Email for Let's Encrypt account (required for production)
+	email admin@yakmesh.dev
+	
+	# Use Let's Encrypt staging for testing (remove for production)
+	# acme_ca https://acme-staging-v02.api.letsencrypt.org/directory
+	
+	# Enable HTTP/3
+	servers {
+		protocols h1 h2 h2c h3
+	}
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# PRODUCTION CONFIGURATION
+# Replace YOUR_DOMAIN.com with your actual domain
+# ═══════════════════════════════════════════════════════════════════════════════
+
+YOUR_DOMAIN.com {
+	# ─────────────────────────────────────────────────────────────────────────
+	# SHERPA Beacon Endpoint
+	# Serves the yakmesh discovery beacon for peer-to-peer discovery
+	# ─────────────────────────────────────────────────────────────────────────
+	handle /.well-known/yakmesh/* {
+		reverse_proxy localhost:9000 {
+			header_up Host {host}
+			header_up X-Real-IP {remote_host}
+			header_up X-Forwarded-For {remote_host}
+			header_up X-Forwarded-Proto {scheme}
+		}
+	}
+	
+	# ─────────────────────────────────────────────────────────────────────────
+	# WebSocket Endpoint for Mesh Communication
+	# Handles persistent WebSocket connections for the mesh network
+	# ─────────────────────────────────────────────────────────────────────────
+	handle /ws {
+		reverse_proxy localhost:9001 {
+			header_up Host {host}
+			header_up X-Real-IP {remote_host}
+			header_up X-Forwarded-For {remote_host}
+			header_up X-Forwarded-Proto {scheme}
+			
+			# WebSocket upgrade
+			header_up Connection {>Connection}
+			header_up Upgrade {>Upgrade}
+		}
+	}
+	
+	# ─────────────────────────────────────────────────────────────────────────
+	# ANNEX Content Delivery Endpoint
+	# Serves authenticated content from the mesh network
+	# ─────────────────────────────────────────────────────────────────────────
+	handle /annex/* {
+		reverse_proxy localhost:9000 {
+			header_up Host {host}
+			header_up X-Real-IP {remote_host}
+			header_up X-Forwarded-For {remote_host}
+			header_up X-Forwarded-Proto {scheme}
+		}
+	}
+	
+	# ─────────────────────────────────────────────────────────────────────────
+	# API Endpoints
+	# REST API for node management and queries
+	# ─────────────────────────────────────────────────────────────────────────
+	handle /api/* {
+		reverse_proxy localhost:9000 {
+			header_up Host {host}
+			header_up X-Real-IP {remote_host}
+			header_up X-Forwarded-For {remote_host}
+			header_up X-Forwarded-Proto {scheme}
+		}
+	}
+	
+	# ─────────────────────────────────────────────────────────────────────────
+	# Static Files (Optional)
+	# Serve a static landing page or dashboard
+	# ─────────────────────────────────────────────────────────────────────────
+	handle {
+		root * /var/www/yakmesh
+		file_server
+		
+		# Fallback to index.html for SPA
+		try_files {path} /index.html
+	}
+	
+	# ─────────────────────────────────────────────────────────────────────────
+	# Security Headers
+	# ─────────────────────────────────────────────────────────────────────────
+	header {
+		# HSTS - Strict Transport Security
+		Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+		
+		# Prevent clickjacking
+		X-Frame-Options "SAMEORIGIN"
+		
+		# Prevent MIME type sniffing
+		X-Content-Type-Options "nosniff"
+		
+		# XSS Protection
+		X-XSS-Protection "1; mode=block"
+		
+		# Referrer Policy
+		Referrer-Policy "strict-origin-when-cross-origin"
+		
+		# Content Security Policy (adjust as needed)
+		# Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'"
+		
+		# Remove server identification
+		-Server
+	}
+	
+	# ─────────────────────────────────────────────────────────────────────────
+	# Logging
+	# ─────────────────────────────────────────────────────────────────────────
+	log {
+		output file /var/log/caddy/access.log {
+			roll_size 100mb
+			roll_keep 5
+		}
+		format json
+	}
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# DEVELOPMENT CONFIGURATION
+# Use this for local development without a real domain
+# Access via https://localhost:8443
+# ═══════════════════════════════════════════════════════════════════════════════
+
+:8443 {
+	# Use self-signed certificate for development
+	tls internal
+	
+	handle /.well-known/yakmesh/* {
+		reverse_proxy localhost:9000
+	}
+	
+	handle /ws {
+		reverse_proxy localhost:9001
+	}
+	
+	handle /annex/* {
+		reverse_proxy localhost:9000
+	}
+	
+	handle /api/* {
+		reverse_proxy localhost:9000
+	}
+	
+	handle {
+		respond "YAKMESH Node (Development Mode)" 200
+	}
+}
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# MULTI-NODE CONFIGURATION EXAMPLE
+# For running multiple nodes on different subdomains
+# ═══════════════════════════════════════════════════════════════════════════════
+
+# node1.yakmesh.dev {
+# 	import site_common
+# 	reverse_proxy localhost:9000
+# }
+
+# node2.yakmesh.dev {
+# 	import site_common
+# 	reverse_proxy localhost:9010
+# }
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# SNIPPET: Common site configuration (can be imported)
+# ═══════════════════════════════════════════════════════════════════════════════
+
+(site_common) {
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Frame-Options "SAMEORIGIN"
+		X-Content-Type-Options "nosniff"
+		-Server
+	}
+	
+	encode gzip zstd
+}
