@@ -103,9 +103,11 @@ Nodes select the highest mutually-supported level.
 | Algorithm | Type | Status | Notes |
 |-----------|------|--------|-------|
 | **X-Wing** | Hybrid KEM | Draft | ML-KEM + X25519 hybrid |
-| **SLH-DSA** | Signature | FIPS 205 | Hash-based, different assumptions |
+| **SLH-DSA** | Signature | ✅ **Implemented** | Hash-based backup signatures (v1.7.0) |
 | **HQC** | KEM | Round 4 | Code-based alternative to ML-KEM |
 | **BIKE** | KEM | Round 4 | Code-based alternative |
+
+> **Note (v1.7.0):** SLH-DSA is now implemented as backup signatures! Use `signDual()` and `verifyDual()` for defense-in-depth with both lattice-based (ML-DSA) and hash-based (SLH-DSA) algorithms.
 
 ### Hybrid Approach (Future)
 

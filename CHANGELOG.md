@@ -2,6 +2,64 @@
 
 All notable changes to YAKMESH will be documented in this file.
 
+## [1.7.0] - 2026-01-18
+
+### 🛡️ SLH-DSA Backup Signatures & Monitoring Dashboard
+
+This release adds defense-in-depth with FIPS 205 hash-based backup signatures and a comprehensive monitoring dashboard.
+
+#### New Features
+
+##### SLH-DSA Backup Signatures (FIPS 205)
+- **Dual Algorithm Support:** ML-DSA (lattice-based) + SLH-DSA (hash-based)
+- **Level 3:** SLH-DSA-SHA2-192f (hash-based, different cryptographic assumptions)
+- **Level 5:** SLH-DSA-SHA2-256f (hash-based, paranoid mode)
+- New functions: `signBackup()`, `verifyBackup()`, `signDual()`, `verifyDual()`
+- Generate dual keypairs with `generateDualSignatureKeyPairs()`
+- Defense-in-depth: if lattice assumptions break, hash-based signatures still hold
+
+##### Monitoring Dashboard
+- Updated `/dashboard` with YAKMESH branding
+- New `/metrics` endpoint aggregates all node status
+- **Oracle Status:** Health, network identity, verified peers
+- **Crypto Info:** Active algorithms, security level, NIST standards
+- **Time Source:** Trust level, stratum, precision indicators
+- **Uptime Tracking:** Human-readable uptime display
+
+##### Dev.to Automation
+- GitHub Actions now posts to Dev.to on major releases
+- Automated article creation with version info
+- Add `DEVTO_API_KEY` to GitHub secrets to enable
+
+#### Technical Details
+
+##### SLH-DSA Key/Signature Sizes
+| Level | Public Key | Secret Key | Signature |
+|-------|------------|------------|-----------|
+| 3 (192f) | 48 bytes | 96 bytes | ~35 KB |
+| 5 (256f) | 64 bytes | 128 bytes | ~50 KB |
+
+##### Performance (SLH-DSA is slower than ML-DSA)
+- Sign: ~100-160ms (vs 3ms for ML-DSA)
+- Verify: ~5-9ms (vs 1ms for ML-DSA)
+- Use dual signatures only for high-value operations
+
+#### Added
+- `signBackup()`, `verifyBackup()` - SLH-DSA standalone operations
+- `signDual()`, `verifyDual()` - Dual signature operations
+- `generateDualSignatureKeyPairs()` - Generate both ML-DSA and SLH-DSA keypairs
+- `getBackupSignatureAlgorithm()`, `getBackupSignatureName()` - Config accessors
+- `/metrics` endpoint for comprehensive node status
+- Dashboard cards for Oracle, Crypto, Time Source
+- Uptime tracking with human-readable formatting
+
+#### Changed
+- `getCryptoSummary()` now includes `backupSignatureAlgorithm` and FIPS 205 in standards
+- Dashboard rebranded from "Lantern Mesh" to "YAKMESH"
+- `discord-release.yml` now includes Dev.to posting job
+
+---
+
 ## [1.6.0] - 2026-01-17
 
 ### 🔐 NIST Level 5 (Paranoid Mode) & Cryptographic Unification
