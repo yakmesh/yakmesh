@@ -1,0 +1,51 @@
+name: Deploy to Hostinger
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Deploy to Hostinger via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: 156.67.75.34
+          port: 65002
+          username: u170268362
+          key: ${{ secrets.HOSTINGER_SSH_KEY }}
+          script: |
+            cd ~/yakmesh-node
+            git stash 2>/dev/null || true
+            git fetch origin main
+            git reset --hard origin/main
+            npm install --production
+            
+            # Restart PM2 services if running
+            if command -v pm2 &> /dev/null; then
+              pm2 restart yakmesh 2>/dev/null || echo "PM2 service not configured"
+            fi
+            
+            echo "✅ Deployed to Hostinger successfully"
+
+  deploy-website:
+    runs-on: ubuntu-latest
+    needs: deploy
+    if: github.event_name == 'workflow_dispatch'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Deploy website to yakmesh.dev
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: 156.67.75.34
+          port: 65002
+          username: u170268362
+          key: ${{ secrets.HOSTINGER_SSH_KEY }}
+          script: |
+            echo "Website deployment requires manual SCP - see README"
