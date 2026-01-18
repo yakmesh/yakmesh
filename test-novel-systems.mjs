@@ -1,6 +1,6 @@
 /**
- * YAKMESH™ v1.3.0 Novel Systems Test Suite
- * Tests for: ECHO, PULSE, NAKPAK, BEACON, SHERPA
+ * YAKMESH™ v1.8.0 Novel Systems Test Suite
+ * Tests for: ECHO, PULSE, BEACON, SHERPA
  */
 
 import {
@@ -30,6 +30,13 @@ import {
   PriorityMessageQueue,
   BeaconBroadcast,
 } from './mesh/beacon-broadcast.js';
+
+import {
+  SHERPA_CONFIG,
+  BeaconMessage as SherpaBeacon,
+  PeerRegistry,
+  SherpaDiscovery,
+} from './mesh/sherpa-discovery.js';
 
 // Test utilities
 let passed = 0;
@@ -62,7 +69,7 @@ function assertFalse(condition, msg = '') {
 
 // ═══════════════════════════════════════════════════════════════════
 console.log('\n╔═══════════════════════════════════════════════════════════╗');
-console.log('║     YAKMESH v1.3.0 NOVEL SYSTEMS TEST SUITE              ║');
+console.log('║     YAKMESH v1.8.0 NOVEL SYSTEMS TEST SUITE              ║');
 console.log('╚═══════════════════════════════════════════════════════════╝\n');
 
 // ─────────────────────────────────────────────────────────────────────
@@ -386,6 +393,261 @@ test('BeaconBroadcast sends emergency with max TTL', () => {
   assertTrue(result.messageId !== undefined);
   
   beacon.destroy();
+});
+
+// ─────────────────────────────────────────────────────────────────────
+console.log('\n─── SHERPA (Secure Hidden Endpoint Resolution Path Architecture) Tests ───\n');
+
+test('SherpaBeacon creates with required fields', () => {
+  const beacon = new SherpaBeacon({
+    nodeId: 'node-a',
+    networkName: 'test-network',
+    wsPort: 9001,
+    httpPort: 443,
+  });
+  
+  assertEqual(beacon.version, SHERPA_CONFIG.protocolVersion);
+  assertEqual(beacon.nodeId, 'node-a');
+  assertEqual(beacon.networkName, 'test-network');
+  assertTrue(beacon.timestamp > 0);
+  assertTrue(beacon.capabilities.wsPort === 9001);
+});
+
+test('SherpaBeacon adds peers with score', () => {
+  const beacon = new SherpaBeacon({
+    nodeId: 'node-a',
+    networkName: 'test-network',
+  });
+  
+  beacon.addPeer({
+    nodeId: 'peer-1',
+    endpoint: 'https://peer1.example.com',
+    wsEndpoint: 'wss://peer1.example.com:9001',
+    score: 0.9,
+  });
+  
+  assertEqual(beacon.peers.length, 1);
+  assertEqual(beacon.peers[0].nodeId, 'peer-1');
+});
+
+test('SherpaBeacon serializes and deserializes', () => {
+  const original = new SherpaBeacon({
+    nodeId: 'node-a',
+    networkName: 'test-network',
+    wsPort: 9001,
+    httpPort: 443,
+  });
+  original.addPeer({
+    nodeId: 'peer-1',
+    endpoint: 'https://peer1.example.com',
+  });
+  
+  const serialized = original.serialize();
+  const restored = SherpaBeacon.deserialize(serialized);
+  
+  assertEqual(restored.nodeId, original.nodeId);
+  assertEqual(restored.networkName, original.networkName);
+  assertEqual(restored.peers.length, 1);
+});
+
+test('SherpaBeacon limits peers per beacon', () => {
+  const beacon = new SherpaBeacon({
+    nodeId: 'node-a',
+    networkName: 'test-network',
+  });
+  
+  // Add more peers than limit
+  for (let i = 0; i < SHERPA_CONFIG.maxPeersPerBeacon + 10; i++) {
+    beacon.addPeer({
+      nodeId: `peer-${i}`,
+      endpoint: `https://peer${i}.example.com`,
+      score: Math.random(),
+    });
+  }
+  
+  assertTrue(beacon.peers.length <= SHERPA_CONFIG.maxPeersPerBeacon);
+});
+
+test('PeerRegistry upserts peers correctly', () => {
+  const registry = new PeerRegistry({ maxPeers: 100 });
+  
+  registry.upsert({
+    nodeId: 'peer-1',
+    endpoint: 'https://peer1.example.com',
+    networkName: 'test-network',
+  });
+  
+  assertEqual(registry.size(), 1);
+  assertTrue(registry.has('peer-1'));
+  
+  const peer = registry.get('peer-1');
+  assertEqual(peer.endpoint, 'https://peer1.example.com');
+});
+
+test('PeerRegistry updates existing peer score', () => {
+  const registry = new PeerRegistry({ maxPeers: 100 });
+  
+  registry.upsert({
+    nodeId: 'peer-1',
+    endpoint: 'https://peer1.example.com',
+    networkName: 'test-network',
+    score: 0.5,
+  });
+  
+  const initialScore = registry.get('peer-1').score;
+  
+  // Upsert again should boost score
+  registry.upsert({
+    nodeId: 'peer-1',
+    endpoint: 'https://peer1.example.com',
+    networkName: 'test-network',
+  });
+  
+  assertTrue(registry.get('peer-1').score >= initialScore);
+});
+
+test('PeerRegistry filters by network', () => {
+  const registry = new PeerRegistry({ 
+    maxPeers: 100,
+    networkFilter: 'my-network',
+  });
+  
+  const added = registry.upsert({
+    nodeId: 'peer-1',
+    endpoint: 'https://peer1.example.com',
+    networkName: 'other-network',
+  });
+  
+  assertFalse(added, 'Should reject peer from different network');
+  assertEqual(registry.size(), 0);
+});
+
+test('PeerRegistry marks failed peers', () => {
+  const registry = new PeerRegistry({ maxPeers: 100 });
+  
+  registry.upsert({
+    nodeId: 'peer-1',
+    endpoint: 'https://peer1.example.com',
+    networkName: 'test-network',
+    score: 0.5,
+  });
+  
+  // Mark as failed multiple times
+  registry.markFailed('peer-1');
+  registry.markFailed('peer-1');
+  
+  // Should be evicted when score drops below minimum
+  assertFalse(registry.has('peer-1'));
+});
+
+test('PeerRegistry gets best peers by score', () => {
+  const registry = new PeerRegistry({ maxPeers: 100 });
+  
+  for (let i = 0; i < 10; i++) {
+    registry.upsert({
+      nodeId: `peer-${i}`,
+      endpoint: `https://peer${i}.example.com`,
+      networkName: 'test-network',
+      score: i * 0.1, // Ascending scores
+    });
+  }
+  
+  const best = registry.getBestPeers(3);
+  assertEqual(best.length, 3);
+  // Should be in descending score order
+  assertTrue(best[0].score >= best[1].score);
+  assertTrue(best[1].score >= best[2].score);
+});
+
+test('PeerRegistry decays scores over time', () => {
+  const registry = new PeerRegistry({ maxPeers: 100 });
+  
+  registry.upsert({
+    nodeId: 'peer-1',
+    endpoint: 'https://peer1.example.com',
+    networkName: 'test-network',
+    score: 1.0,
+  });
+  
+  const initialScore = registry.get('peer-1').score;
+  registry.decayScores();
+  
+  assertTrue(registry.get('peer-1').score < initialScore);
+});
+
+test('SherpaDiscovery initializes correctly', () => {
+  const sherpa = new SherpaDiscovery({
+    nodeId: 'node-a',
+    networkName: 'test-network',
+    publicKey: 'test-public-key',
+    signFn: (data) => 'mock-signature',
+    verifyFn: () => true,
+  });
+  
+  assertEqual(sherpa.nodeId, 'node-a');
+  assertEqual(sherpa.networkName, 'test-network');
+  assertTrue(sherpa.registry instanceof PeerRegistry);
+});
+
+test('SherpaDiscovery adds seed endpoints', () => {
+  const sherpa = new SherpaDiscovery({
+    nodeId: 'node-a',
+    networkName: 'test-network',
+    signFn: (data) => 'mock-signature',
+    verifyFn: () => true,
+  });
+  
+  sherpa.addSeed('https://seed1.example.com');
+  sherpa.addSeed('https://seed2.example.com');
+  
+  assertEqual(sherpa.seedEndpoints.size, 2);
+});
+
+test('SherpaDiscovery generates beacon response', () => {
+  const sherpa = new SherpaDiscovery({
+    nodeId: 'node-a',
+    networkName: 'test-network',
+    publicKey: 'test-public-key',
+    selfEndpoint: 'https://node-a.example.com',
+    wsEndpoint: 'wss://node-a.example.com:9001',
+    signFn: (data) => 'mock-signature',
+    verifyFn: () => true,
+    capabilities: {
+      wsPort: 9001,
+      httpPort: 443,
+      supportsAnnex: true,
+      supportsNakpak: true,
+    },
+  });
+  
+  const beacon = sherpa.generateBeacon();
+  
+  assertEqual(beacon.nodeId, 'node-a');
+  assertEqual(beacon.networkName, 'test-network');
+  assertEqual(beacon.publicKey, 'test-public-key');
+  assertTrue(beacon.signature !== null);
+  assertTrue(beacon.capabilities.supportsAnnex);
+});
+
+test('SherpaDiscovery emits events', () => {
+  const sherpa = new SherpaDiscovery({
+    nodeId: 'node-a',
+    networkName: 'test-network',
+    signFn: (data) => 'mock-signature',
+    verifyFn: () => true,
+  });
+  
+  let startedCalled = false;
+  let stoppedCalled = false;
+  
+  sherpa.on('started', () => { startedCalled = true; });
+  sherpa.on('stopped', () => { stoppedCalled = true; });
+  
+  sherpa.start();
+  assertTrue(startedCalled);
+  
+  sherpa.stop();
+  assertTrue(stoppedCalled);
 });
 
 // ═══════════════════════════════════════════════════════════════════
