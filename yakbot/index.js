@@ -7,6 +7,7 @@
  * - /changelog - Recent changes
  * - /ask [question] - AI-powered Q&A about YAKMESH
  * - /nodes - Check health of official YAKMESH nodes
+ * - /faq - Frequently asked questions
  * - /ping - Bot latency check
  * - Auto-greet new members
  * 
@@ -489,10 +490,53 @@ const commands = {
         { name: '📦 `/install`', value: 'Quick installation guide', inline: true },
         { name: '❓ `/ask <question>`', value: 'Ask YakBot about YAKMESH', inline: true },
         { name: '🔗 `/links`', value: 'All social and resource links', inline: true },
+        { name: '❔ `/faq`', value: 'Frequently asked questions', inline: true },
         { name: '🏓 `/ping`', value: 'Check bot latency', inline: true },
         { name: '📈 `/botstats`', value: 'View bot performance metrics', inline: true },
       ],
       footer: 'YAKMESH™ - Sturdy & Secure',
+    });
+    await interaction.reply({ embeds: [embed] });
+  },
+  
+  // /faq - Frequently asked questions
+  async faq(interaction) {
+    const embed = createEmbed({
+      title: '❔ Frequently Asked Questions',
+      description: 'Common questions about YAKMESH',
+      fields: [
+        { 
+          name: '🦬 What is YAKMESH?', 
+          value: 'YAKMESH (Yielding Atomic Kernel Modular Encryption Secured Hub) is a post-quantum secure P2P mesh network designed for the 2026 threat landscape.',
+          inline: false,
+        },
+        { 
+          name: '🔐 What makes it "post-quantum"?', 
+          value: 'We use ML-DSA-65/87 (NIST FIPS 204) for signatures and ML-KEM-768/1024 (NIST FIPS 203) for key exchange. These algorithms are resistant to quantum computer attacks.',
+          inline: false,
+        },
+        { 
+          name: '💻 What are the requirements?', 
+          value: 'Node.js 18+ is required. Install with `npm install yakmesh`.',
+          inline: false,
+        },
+        { 
+          name: '🌐 How do nodes find each other?', 
+          value: 'Nodes with identical code share the same "network name" derived from the codebase hash. Gossip protocol handles peer discovery.',
+          inline: false,
+        },
+        { 
+          name: '🔒 Is traffic encrypted?', 
+          value: 'Yes! Annex provides ML-KEM768 key exchange + AES-256-GCM encryption with perfect forward secrecy for P2P channels.',
+          inline: false,
+        },
+        { 
+          name: '📦 Is it production ready?', 
+          value: 'YAKMESH is actively developed. Check releases for stable versions. Current: v' + config.version,
+          inline: false,
+        },
+      ],
+      footer: 'More questions? Use /ask <question> or check the docs!',
     });
     await interaction.reply({ embeds: [embed] });
   },

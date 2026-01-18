@@ -65,6 +65,10 @@ const commands = [
     .setDescription('Show all available YakBot commands'),
     
   new SlashCommandBuilder()
+    .setName('faq')
+    .setDescription('Frequently asked questions about YAKMESH'),
+    
+  new SlashCommandBuilder()
     .setName('botstats')
     .setDescription('View YakBot performance metrics and statistics'),
 ];
