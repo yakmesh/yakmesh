@@ -73,8 +73,6 @@ jobs:
 
   notify-telegram:
     runs-on: ubuntu-latest
-    # Only run if Telegram secrets are configured
-    if: ${{ secrets.TELEGRAM_BOT_TOKEN != '' }}
     steps:
       - name: Get release info
         id: release_info
