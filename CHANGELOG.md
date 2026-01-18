@@ -2,6 +2,68 @@
 
 All notable changes to YAKMESH will be documented in this file.
 
+## [1.6.0] - 2026-01-17
+
+### 🔐 NIST Level 5 (Paranoid Mode) & Cryptographic Unification
+
+This release adds support for NIST Level 5 security and unifies all hash operations to SHA3-256.
+
+#### New Features
+
+##### NIST Level 5 Support
+- Configurable security levels: Level 3 (default) or Level 5 (paranoid)
+- **Level 5 Algorithms:**
+  - ML-DSA-87 (Dilithium5) for signatures - 256-bit classical security
+  - ML-KEM-1024 (Kyber1024) for key encapsulation - 256-bit classical security
+- New `security/crypto-config.js` module for centralized crypto configuration
+- Runtime switchable via `setSecurityLevel(SecurityLevel.LEVEL_5)`
+
+##### Crypto Agility Documentation
+- New `docs/CRYPTO-AGILITY.md` formalizes algorithm upgrade procedures
+- Version negotiation protocol for future algorithm transitions
+- Monitoring list for future algorithm candidates (X-Wing, SLH-DSA, etc.)
+
+##### Post-Quantum Test Suite
+- Comprehensive cryptographic tests in `oracle/tests/crypto.test.js`
+- Tests for ML-DSA-65/87, ML-KEM-768/1024
+- Performance benchmarks for Level 3 vs Level 5 overhead
+- Run with `npm run test:crypto`
+
+#### Changed
+
+##### Unified SHA3-256 Hashing
+All hash operations now use SHA3-256 for post-quantum consistency:
+- `oracle/network-identity.js` - HKDF now uses SHA3-256
+- `oracle/phase-epoch.js` - Phase derivation uses SHA3-256
+- `gossip/protocol.js` - Bloom filters and message IDs use SHA3-256
+- `mesh/temporal-encoder.js` - Temporal hashes use SHA3-256
+- `mesh/phantom-routing.js` - Key derivation uses SHA3-256
+- `mesh/annex.js` - Session key derivation uses SHA3-256
+- `mesh/echo-ranging.js` - Probe key derivation uses SHA3-256
+
+### Added
+- `security/crypto-config.js` - Centralized crypto configuration module
+- `docs/CRYPTO-AGILITY.md` - Algorithm upgrade path documentation
+- `oracle/tests/crypto.test.js` - PQ cryptography test suite
+- `npm run test:crypto` script for running crypto tests
+
+### Technical Details
+- SHA3-256 provides 128-bit post-quantum security (Grover resistance)
+- All symmetric keys derived from PQ-safe shared secrets
+- No vulnerable classical asymmetric crypto in codebase
+
+---
+
+## [1.5.1] - 2026-01-17
+
+### 🔧 Maintenance Release
+- Port fallback system for WebSocket and HTTP servers
+- Process management script (`scripts/start.sh`)
+- Discord webhook integration for releases
+- Minor documentation updates
+
+---
+
 ## [1.5.0] - 2026-01-17
 
 ### 🔧 Critical Fix: Network Identity Unification

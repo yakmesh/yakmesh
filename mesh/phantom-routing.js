@@ -164,7 +164,7 @@ class PhantomLayer {
   }
 
   _deriveEncryptionKey(sharedSecret) {
-    return createHash('sha256')
+    return createHash('sha3-256')
       .update(sharedSecret)
       .update(PHANTOM_CONFIG.keyDerivationSalt)
       .update(Buffer.from([this.hopIndex]))

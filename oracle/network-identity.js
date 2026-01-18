@@ -21,7 +21,7 @@
 
 import { sha3_256 } from '@noble/hashes/sha3.js';
 import { hkdf } from '@noble/hashes/hkdf.js';
-import { sha256 } from '@noble/hashes/sha2.js';
+// Using sha3_256 for all hashing operations for post-quantum consistency
 import { bytesToHex, hexToBytes, utf8ToBytes } from '@noble/hashes/utils.js';
 
 // Phase modulation for rotating security
@@ -144,7 +144,7 @@ export function deriveNetworkName(codeHash, wordCount = 3) {
   const salt = utf8ToBytes('quantum-mesh-salt-2025');
   
   // Derive enough bytes for word indices (1 byte per word)
-  const derived = hkdf(sha256, hashBytes, salt, info, wordCount);
+  const derived = hkdf(sha3_256, hashBytes, salt, info, wordCount);
   
   // Map each byte to a word (256 words = 8 bits = 1 byte per word)
   const words = [];
@@ -170,7 +170,7 @@ export function deriveNetworkId(codeHash) {
   const info = utf8ToBytes(IDENTITY_CONFIG.shortIdSalt);
   const salt = utf8ToBytes('mesh-id-salt-2025');
   
-  const derived = hkdf(sha256, hashBytes, salt, info, 4);
+  const derived = hkdf(sha3_256, hashBytes, salt, info, 4);
   
   // Base58-like encoding (no 0, O, I, l to avoid confusion)
   const alphabet = '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz';
@@ -196,7 +196,7 @@ export function deriveVerificationPhrase(codeHash) {
   const salt = utf8ToBytes('verify-phrase-salt-2025');
   
   // Derive 5 bytes for a 5-word phrase
-  const derived = hkdf(sha256, hashBytes, salt, info, 5);
+  const derived = hkdf(sha3_256, hashBytes, salt, info, 5);
   
   const templates = [
     'The {0} {1} reflects the {2} {3}',
@@ -251,7 +251,7 @@ export class NetworkIdentity {
     // Stable fingerprint - one-way derivation for comparison
     // NOT the same as the code hash, NEVER changes
     const fpBytes = hkdf(
-      sha256,
+      sha3_256,
       hexToBytes(codeHash),
       utf8ToBytes('fingerprint-salt'),
       utf8ToBytes(IDENTITY_CONFIG.fingerprintSalt),

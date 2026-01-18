@@ -27,7 +27,7 @@ const TME_CONFIG = {
   maxSlicesPerStream: 256,
   reconstructionWindowNs: 500_000_000,
   timingToleranceNs: 5_000_000,
-  hashAlgorithm: 'sha256',
+  hashAlgorithm: 'sha3-256',  // Post-quantum consistent hashing
   temporalHashLength: 32,
   minSlicesForReconstruction: 0.6,
   maxMissingConsecutive: 3,

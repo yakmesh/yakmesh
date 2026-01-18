@@ -128,7 +128,7 @@ class EchoProbe {
   }
 
   _deriveKey(secret, context) {
-    return createHash('sha256')
+    return createHash('sha3-256')
       .update(secret)
       .update(context)
       .digest();
