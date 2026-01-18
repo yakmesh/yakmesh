@@ -47,6 +47,19 @@ import {
 } from '../oracle/time-source.js';
 import { setTimeSourceConfig, getActiveConfig } from '../oracle/phase-epoch.js';
 
+// Helper: Format uptime in human-readable format
+function formatUptime(seconds) {
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor((seconds % 86400) / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+  
+  if (days > 0) return `${days}d ${hours}h ${mins}m`;
+  if (hours > 0) return `${hours}h ${mins}m ${secs}s`;
+  if (mins > 0) return `${mins}m ${secs}s`;
+  return `${secs}s`;
+}
+
 // Optional adapter integration (loaded dynamically if enabled)
 let ActiveAdapter = null;
 
@@ -140,6 +153,9 @@ export class YakmeshNode {
 
   async start() {
     console.log('\n🦬 Starting Yakmesh Node...\n');
+    
+    // Record start time for uptime tracking
+    this._startTime = Date.now();
 
     // 0. LOCK THE CODEBASE - Prevent any modifications during runtime
     // This is critical for Code Proof Protocol security
@@ -895,6 +911,81 @@ export class YakmeshNode {
         success: true,
         resolved: resolved.length,
         details: resolved
+      });
+    });
+
+    // =========================================
+    // Metrics Endpoint - Dashboard Data
+    // =========================================
+    
+    app.get('/metrics', (req, res) => {
+      const startTime = this._startTime || Date.now();
+      const uptime = Math.floor((Date.now() - startTime) / 1000);
+      
+      // Crypto configuration (imported at top of file)
+      let cryptoInfo = null;
+      try {
+        // Dynamic import not needed - use the imported module
+        cryptoInfo = this._cryptoSummary || { 
+          levelName: 'NIST Level 3',
+          signatureAlgorithm: 'ML-DSA-65',
+          backupSignatureAlgorithm: 'SLH-DSA-SHA2-192f',
+          kemAlgorithm: 'ML-KEM-768',
+          classicalSecurity: '192-bit',
+          quantumSecurity: '128-bit',
+          nistStandards: ['FIPS 203 (ML-KEM)', 'FIPS 204 (ML-DSA)', 'FIPS 205 (SLH-DSA)'],
+        };
+      } catch (e) {
+        cryptoInfo = { error: 'Could not load crypto config' };
+      }
+      
+      // Time source info
+      let timeInfo = null;
+      if (this.timeSource) {
+        const status = this.timeSource.getStatus();
+        timeInfo = {
+          trustLevel: status.trustLevel,
+          stratum: status.stratum,
+          phaseTolerance: status.phaseTolerance,
+          hasAtomicTime: this.timeSource.hasAtomicTime(),
+          hasHighPrecisionTime: this.timeSource.hasHighPrecisionTime(),
+        };
+      }
+      
+      // Oracle status
+      let oracleInfo = null;
+      if (this.oracle) {
+        const integrity = this.oracle.verifySelfIntegrity();
+        oracleInfo = {
+          status: integrity.valid ? 'healthy' : 'compromised',
+          valid: integrity.valid,
+          networkName: this.genesisNetwork?.networkName || null,
+          networkId: this.genesisNetwork?.networkId || null,
+          fingerprint: this.genesisNetwork?.fingerprint || null,
+          verifiedPeers: this.codeProof?.getVerifiedPeers()?.length || 0,
+        };
+      }
+      
+      // Mesh stats
+      const peerCount = this.mesh?.getPeers()?.length || 0;
+      const gossipStats = this.gossip?.getStats() || null;
+      
+      res.json({
+        node: {
+          id: this.identity?.identity?.nodeId || null,
+          name: this.config?.node?.name || 'unknown',
+          version: '1.7.0',
+          uptime,
+          uptimeFormatted: formatUptime(uptime),
+        },
+        crypto: cryptoInfo,
+        time: timeInfo,
+        oracle: oracleInfo,
+        network: {
+          peers: peerCount,
+          gossip: gossipStats,
+        },
+        timestamp: new Date().toISOString(),
       });
     });
 

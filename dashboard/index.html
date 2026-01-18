@@ -3,20 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Lantern Mesh Network Dashboard</title>
+  <title>YAKMESH Dashboard</title>
   <style>
     :root {
-      --bg-dark: #0a0a0f;
-      --bg-card: #12121a;
-      --bg-hover: #1a1a25;
-      --border: #2a2a35;
-      --text: #e0e0e5;
-      --text-dim: #888;
-      --accent: #f59e0b;
-      --accent-glow: rgba(245, 158, 11, 0.2);
-      --success: #10b981;
-      --warning: #f59e0b;
-      --error: #ef4444;
+      --bg-dark: #0f1419;
+      --bg-card: #1a2027;
+      --bg-hover: #242d38;
+      --border: #2d3a47;
+      --text: #e6edf3;
+      --text-dim: #8b949e;
+      --accent: #4ade80;
+      --accent-glow: rgba(74, 222, 128, 0.2);
+      --mountain: #4ade80;
+      --frost: #38bdf8;
+      --success: #4ade80;
+      --warning: #fbbf24;
+      --error: #f87171;
     }
     
     * {
@@ -27,7 +29,7 @@
     
     body {
       font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
-      background: var(--bg-dark);
+      background: linear-gradient(135deg, var(--bg-dark) 0%, #0a1520 100%);
       color: var(--text);
       min-height: 100vh;
       padding: 2rem;
@@ -46,8 +48,9 @@
     
     h1 {
       font-size: 1.5rem;
-      font-weight: 500;
-      color: var(--accent);
+      font-weight: 600;
+      color: var(--mountain);
+      letter-spacing: 0.05em;
     }
     
     .subtitle {
@@ -306,10 +309,10 @@
 </head>
 <body>
   <div class="header">
-    <span class="logo">🏮</span>
+    <span class="logo">🦬</span>
     <div>
-      <h1>Lantern Mesh Network</h1>
-      <div class="subtitle">Post-Quantum Secure • Decentralized • Federated</div>
+      <h1>YAKMESH™ Dashboard</h1>
+      <div class="subtitle">Post-Quantum Secure • Sturdy & Secure • v1.7.0</div>
     </div>
   </div>
   
@@ -329,7 +332,7 @@
   <div class="grid">
     <!-- Node Identity -->
     <div class="card">
-      <div class="card-title">🔐 Node Identity</div>
+      <div class="card-title">🦬 Node Identity</div>
       <div id="node-identity">
         <div class="empty-state">Connect to a node to view identity</div>
       </div>
@@ -348,13 +351,37 @@
           <div class="stat-label">Discovered Nodes</div>
         </div>
         <div class="stat">
-          <div class="stat-value" id="replication-log">-</div>
-          <div class="stat-label">Replication Log</div>
+          <div class="stat-value" id="uptime">-</div>
+          <div class="stat-label">Uptime</div>
         </div>
         <div class="stat">
           <div class="stat-value" id="gossip-messages">-</div>
           <div class="stat-label">Gossip Messages</div>
         </div>
+      </div>
+    </div>
+    
+    <!-- Oracle Status -->
+    <div class="card">
+      <div class="card-title">🔮 Oracle Status</div>
+      <div id="oracle-status">
+        <div class="empty-state">Connect to view oracle status</div>
+      </div>
+    </div>
+    
+    <!-- Crypto Configuration -->
+    <div class="card">
+      <div class="card-title">🔐 Post-Quantum Cryptography</div>
+      <div id="crypto-info">
+        <div class="empty-state">Connect to view crypto configuration</div>
+      </div>
+    </div>
+    
+    <!-- Time Source -->
+    <div class="card">
+      <div class="card-title">⏱️ Time Source</div>
+      <div id="time-info">
+        <div class="empty-state">Connect to view time source</div>
       </div>
     </div>
     
@@ -399,14 +426,6 @@
         <li class="empty-state">No nodes discovered</li>
       </ul>
     </div>
-    
-    <!-- Replication -->
-    <div class="card">
-      <div class="card-title">🔄 Replication Engine</div>
-      <div class="replication-log" id="replication-info">
-        <div class="empty-state">Connect to view replication info</div>
-      </div>
-    </div>
   </div>
 
   <script>
@@ -439,10 +458,10 @@
       
       try {
         // Fetch all data in parallel
-        const [node, peers, replication, gossip, discovered] = await Promise.all([
+        const [node, peers, metrics, gossip, discovered] = await Promise.all([
           fetch(`${nodeUrl}/node`).then(r => r.json()).catch(() => null),
           fetch(`${nodeUrl}/peers`).then(r => r.json()).catch(() => []),
-          fetch(`${nodeUrl}/replication`).then(r => r.json()).catch(() => null),
+          fetch(`${nodeUrl}/metrics`).then(r => r.json()).catch(() => null),
           fetch(`${nodeUrl}/gossip`).then(r => r.json()).catch(() => null),
           fetch(`${nodeUrl}/discovered`).then(r => r.json()).catch(() => []),
         ]);
@@ -464,8 +483,72 @@
         // Update stats
         document.getElementById('peer-count').textContent = peers.length;
         document.getElementById('discovered-count').textContent = discovered.length;
-        document.getElementById('replication-log').textContent = replication?.replicationLogSize ?? '-';
+        document.getElementById('uptime').textContent = metrics?.node?.uptimeFormatted || '-';
         document.getElementById('gossip-messages').textContent = gossip?.seenMessages ?? '-';
+        
+        // Update Oracle status
+        if (metrics?.oracle) {
+          const oracle = metrics.oracle;
+          const statusColor = oracle.status === 'healthy' ? 'var(--success)' : 'var(--error)';
+          document.getElementById('oracle-status').innerHTML = `
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+              <div style="width: 12px; height: 12px; border-radius: 50%; background: ${statusColor}; box-shadow: 0 0 8px ${statusColor};"></div>
+              <span style="font-weight: 600; color: ${statusColor}">${oracle.status.toUpperCase()}</span>
+            </div>
+            <div style="color: var(--text-dim); font-size: 0.85rem;">
+              <div>Network: ${oracle.networkName || 'N/A'}</div>
+              <div>ID: ${oracle.networkId || 'N/A'}</div>
+              <div style="word-break: break-all;">Fingerprint: ${oracle.fingerprint?.slice(0, 24) || 'N/A'}...</div>
+              <div>Verified Peers: ${oracle.verifiedPeers}</div>
+            </div>
+          `;
+        }
+        
+        // Update Crypto info
+        if (metrics?.crypto) {
+          const crypto = metrics.crypto;
+          document.getElementById('crypto-info').innerHTML = `
+            <div style="color: var(--text-dim); font-size: 0.85rem;">
+              <div style="margin-bottom: 0.75rem;">
+                <span style="color: var(--frost)">Security Level:</span> 
+                <span style="color: var(--mountain); font-weight: 600;">${crypto.levelName}</span>
+              </div>
+              <div>Signature: <span style="color: var(--text)">${crypto.signatureAlgorithm}</span></div>
+              <div>Backup Sig: <span style="color: var(--text)">${crypto.backupSignatureAlgorithm || 'N/A'}</span></div>
+              <div>KEM: <span style="color: var(--text)">${crypto.kemAlgorithm}</span></div>
+              <div style="margin-top: 0.5rem;">
+                Classical: ${crypto.classicalSecurity} | Quantum: ${crypto.quantumSecurity}
+              </div>
+              <div style="margin-top: 0.5rem; font-size: 0.75rem;">
+                ${crypto.nistStandards?.join(' • ') || ''}
+              </div>
+            </div>
+          `;
+        }
+        
+        // Update Time info
+        if (metrics?.time) {
+          const time = metrics.time;
+          const trustColors = {
+            ATOMIC: 'var(--success)',
+            GPS: 'var(--success)', 
+            PTP: 'var(--warning)',
+            NTP: 'var(--text-dim)',
+          };
+          const trustColor = trustColors[time.trustLevel] || 'var(--text-dim)';
+          document.getElementById('time-info').innerHTML = `
+            <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;">
+              <div style="width: 12px; height: 12px; border-radius: 50%; background: ${trustColor}; box-shadow: 0 0 8px ${trustColor};"></div>
+              <span style="font-weight: 600; color: ${trustColor}">${time.trustLevel}</span>
+            </div>
+            <div style="color: var(--text-dim); font-size: 0.85rem;">
+              <div>Stratum: ${time.stratum ?? 'N/A'}</div>
+              <div>Phase Tolerance: ${time.phaseTolerance ? time.phaseTolerance + 'ms' : 'N/A'}</div>
+              <div>Atomic Time: ${time.hasAtomicTime ? '✅ Yes' : '❌ No'}</div>
+              <div>High Precision: ${time.hasHighPrecisionTime ? '✅ Yes' : '❌ No'}</div>
+            </div>
+          `;
+        }
         
         // Update peer list
         const peerList = document.getElementById('peer-list');
@@ -506,15 +589,6 @@
               </div>
             </li>
           `).join('');
-        }
-        
-        // Update replication info
-        if (replication) {
-          document.getElementById('replication-info').innerHTML = `
-            <div>Log Entries: ${replication.replicationLogSize}</div>
-            <div>Peer States: ${replication.peerStates}</div>
-            <div>Tables: ${replication.tables?.join(', ') || 'N/A'}</div>
-          `;
         }
         
       } catch (e) {

@@ -2,10 +2,10 @@
  * Post-Quantum Cryptography Test Suite
  * 
  * Comprehensive tests for all cryptographic operations in Yakmesh.
- * Verifies correct implementation of NIST FIPS 203/204 algorithms.
+ * Verifies correct implementation of NIST FIPS 203/204/205 algorithms.
  * 
  * @module oracle/tests/crypto.test.js
- * @version 1.6.0
+ * @version 1.7.0
  */
 
 import { test, describe, before, after } from 'node:test';
@@ -24,11 +24,22 @@ import {
   encapsulate,
   decapsulate,
   getCryptoSummary,
+  // SLH-DSA backup signatures (FIPS 205)
+  getBackupSignatureAlgorithm,
+  getBackupSignatureName,
+  generateBackupSignatureKeyPair,
+  signBackup,
+  verifyBackup,
+  // Dual signatures
+  generateDualSignatureKeyPairs,
+  signDual,
+  verifyDual,
 } from '../../security/crypto-config.js';
 
 // Direct algorithm imports for comparison
 import { ml_dsa65, ml_dsa87 } from '@noble/post-quantum/ml-dsa.js';
 import { ml_kem768, ml_kem1024 } from '@noble/post-quantum/ml-kem.js';
+import { slh_dsa_sha2_192f, slh_dsa_sha2_256f } from '@noble/post-quantum/slh-dsa.js';
 import { sha3_256 } from '@noble/hashes/sha3.js';
 import { bytesToHex, hexToBytes, randomBytes, utf8ToBytes } from '@noble/hashes/utils.js';
 
@@ -483,6 +494,268 @@ describe('Post-Quantum Cryptography Test Suite', () => {
       
       // Reset
       setSecurityLevel(SecurityLevel.LEVEL_3);
+    });
+  });
+  
+  // ============================================================
+  // SLH-DSA (SPHINCS+) BACKUP SIGNATURES - LEVEL 3 (FIPS 205)
+  // ============================================================
+  
+  describe('SLH-DSA-SHA2-192f Backup Signatures (Level 3)', () => {
+    let keyPair;
+    
+    before(() => {
+      setSecurityLevel(SecurityLevel.LEVEL_3);
+      keyPair = generateBackupSignatureKeyPair();
+    });
+    
+    test('generates valid SLH-DSA key pair', () => {
+      assert.ok(keyPair.publicKey instanceof Uint8Array);
+      assert.ok(keyPair.secretKey instanceof Uint8Array);
+      // SLH-DSA has much smaller keys than ML-DSA
+      assert.strictEqual(keyPair.publicKey.length, 48);
+      assert.strictEqual(keyPair.secretKey.length, 96);
+    });
+    
+    test('getBackupSignatureName returns correct algorithm', () => {
+      const name = getBackupSignatureName();
+      assert.strictEqual(name, 'SLH-DSA-SHA2-192f');
+    });
+    
+    test('signs and verifies message with SLH-DSA', () => {
+      const message = utf8ToBytes('Hello from hash-based signatures!');
+      const signature = signBackup(message, keyPair.secretKey);
+      
+      assert.ok(signature instanceof Uint8Array);
+      // SLH-DSA has larger signatures (~35KB for 192f)
+      assert.ok(signature.length > 30000, `Expected large signature, got ${signature.length}`);
+      
+      const isValid = verifyBackup(signature, message, keyPair.publicKey);
+      assert.strictEqual(isValid, true);
+    });
+    
+    test('rejects tampered message', () => {
+      const message = utf8ToBytes('Original hash-based message');
+      const signature = signBackup(message, keyPair.secretKey);
+      
+      const tamperedMessage = utf8ToBytes('Tampered hash-based message');
+      const isValid = verifyBackup(signature, tamperedMessage, keyPair.publicKey);
+      assert.strictEqual(isValid, false);
+    });
+    
+    test('rejects tampered signature', () => {
+      const message = utf8ToBytes('Test SLH-DSA message');
+      const signature = signBackup(message, keyPair.secretKey);
+      
+      // Tamper with signature
+      const tamperedSig = new Uint8Array(signature);
+      tamperedSig[100] ^= 0xFF;
+      
+      const isValid = verifyBackup(tamperedSig, message, keyPair.publicKey);
+      assert.strictEqual(isValid, false);
+    });
+    
+    test('crypto profile includes backup signature info', () => {
+      const profile = getCryptoProfile();
+      assert.ok(profile.backupSignature);
+      assert.strictEqual(profile.backupSignature.name, 'SLH-DSA-SHA2-192f');
+      assert.strictEqual(profile.backupSignature.type, 'hash-based');
+      assert.strictEqual(profile.backupSignature.fips, '205');
+    });
+  });
+  
+  // ============================================================
+  // SLH-DSA-SHA2-256f BACKUP SIGNATURES - LEVEL 5
+  // ============================================================
+  
+  describe('SLH-DSA-SHA2-256f Backup Signatures (Level 5)', () => {
+    let keyPair;
+    
+    before(() => {
+      setSecurityLevel(SecurityLevel.LEVEL_5);
+      keyPair = generateBackupSignatureKeyPair();
+    });
+    
+    after(() => {
+      setSecurityLevel(SecurityLevel.LEVEL_3);
+    });
+    
+    test('generates valid Level 5 SLH-DSA key pair', () => {
+      assert.ok(keyPair.publicKey instanceof Uint8Array);
+      assert.ok(keyPair.secretKey instanceof Uint8Array);
+      assert.strictEqual(keyPair.publicKey.length, 64);
+      assert.strictEqual(keyPair.secretKey.length, 128);
+    });
+    
+    test('getBackupSignatureName returns Level 5 algorithm', () => {
+      const name = getBackupSignatureName();
+      assert.strictEqual(name, 'SLH-DSA-SHA2-256f');
+    });
+    
+    test('signs and verifies message at Level 5', () => {
+      const message = utf8ToBytes('Level 5 hash-based signature');
+      const signature = signBackup(message, keyPair.secretKey);
+      
+      assert.ok(signature instanceof Uint8Array);
+      // SLH-DSA-256f has even larger signatures (~50KB)
+      assert.ok(signature.length > 40000, `Expected large signature, got ${signature.length}`);
+      
+      const isValid = verifyBackup(signature, message, keyPair.publicKey);
+      assert.strictEqual(isValid, true);
+    });
+  });
+  
+  // ============================================================
+  // DUAL SIGNATURES (DEFENSE-IN-DEPTH)
+  // ============================================================
+  
+  describe('Dual Signatures (ML-DSA + SLH-DSA)', () => {
+    let keyPairs;
+    
+    before(() => {
+      setSecurityLevel(SecurityLevel.LEVEL_3);
+      const seed = randomBytes(32);
+      keyPairs = generateDualSignatureKeyPairs(seed);
+    });
+    
+    test('generates both primary and backup keypairs', () => {
+      assert.ok(keyPairs.primary);
+      assert.ok(keyPairs.backup);
+      
+      // Primary is ML-DSA
+      assert.strictEqual(keyPairs.primary.publicKey.length, 1952);
+      assert.strictEqual(keyPairs.primary.secretKey.length, 4032);
+      
+      // Backup is SLH-DSA (smaller keys)
+      assert.strictEqual(keyPairs.backup.publicKey.length, 48);
+      assert.strictEqual(keyPairs.backup.secretKey.length, 96);
+    });
+    
+    test('creates dual signature with both algorithms', () => {
+      const message = utf8ToBytes('Dual-signed message for maximum security');
+      
+      const dualSig = signDual(
+        message,
+        keyPairs.primary.secretKey,
+        keyPairs.backup.secretKey
+      );
+      
+      assert.ok(dualSig.primary instanceof Uint8Array);
+      assert.ok(dualSig.backup instanceof Uint8Array);
+      assert.ok(dualSig.combined instanceof Uint8Array);
+      
+      // Primary is ML-DSA sized
+      assert.strictEqual(dualSig.primary.length, 3309);
+      
+      // Backup is SLH-DSA sized (large)
+      assert.ok(dualSig.backup.length > 30000);
+      
+      // Combined includes length prefix + both signatures
+      assert.strictEqual(
+        dualSig.combined.length,
+        4 + dualSig.primary.length + dualSig.backup.length
+      );
+    });
+    
+    test('verifies dual signature (both must be valid)', () => {
+      const message = utf8ToBytes('Verify both signatures');
+      
+      const dualSig = signDual(
+        message,
+        keyPairs.primary.secretKey,
+        keyPairs.backup.secretKey
+      );
+      
+      const result = verifyDual(
+        { primary: dualSig.primary, backup: dualSig.backup },
+        message,
+        keyPairs.primary.publicKey,
+        keyPairs.backup.publicKey
+      );
+      
+      assert.strictEqual(result.valid, true);
+      assert.strictEqual(result.primaryValid, true);
+      assert.strictEqual(result.backupValid, true);
+    });
+    
+    test('verifies combined dual signature', () => {
+      const message = utf8ToBytes('Combined signature format');
+      
+      const dualSig = signDual(
+        message,
+        keyPairs.primary.secretKey,
+        keyPairs.backup.secretKey
+      );
+      
+      // Verify using combined format
+      const result = verifyDual(
+        { combined: dualSig.combined },
+        message,
+        keyPairs.primary.publicKey,
+        keyPairs.backup.publicKey
+      );
+      
+      assert.strictEqual(result.valid, true);
+      assert.strictEqual(result.primaryValid, true);
+      assert.strictEqual(result.backupValid, true);
+    });
+    
+    test('fails if primary signature is invalid', () => {
+      const message = utf8ToBytes('Test primary tampering');
+      
+      const dualSig = signDual(
+        message,
+        keyPairs.primary.secretKey,
+        keyPairs.backup.secretKey
+      );
+      
+      // Tamper with primary
+      const tamperedPrimary = new Uint8Array(dualSig.primary);
+      tamperedPrimary[0] ^= 0xFF;
+      
+      const result = verifyDual(
+        { primary: tamperedPrimary, backup: dualSig.backup },
+        message,
+        keyPairs.primary.publicKey,
+        keyPairs.backup.publicKey
+      );
+      
+      assert.strictEqual(result.valid, false);
+      assert.strictEqual(result.primaryValid, false);
+      assert.strictEqual(result.backupValid, true);
+    });
+    
+    test('fails if backup signature is invalid', () => {
+      const message = utf8ToBytes('Test backup tampering');
+      
+      const dualSig = signDual(
+        message,
+        keyPairs.primary.secretKey,
+        keyPairs.backup.secretKey
+      );
+      
+      // Tamper with backup
+      const tamperedBackup = new Uint8Array(dualSig.backup);
+      tamperedBackup[100] ^= 0xFF;
+      
+      const result = verifyDual(
+        { primary: dualSig.primary, backup: tamperedBackup },
+        message,
+        keyPairs.primary.publicKey,
+        keyPairs.backup.publicKey
+      );
+      
+      assert.strictEqual(result.valid, false);
+      assert.strictEqual(result.primaryValid, true);
+      assert.strictEqual(result.backupValid, false);
+    });
+    
+    test('getCryptoSummary includes SLH-DSA info', () => {
+      const summary = getCryptoSummary();
+      
+      assert.ok(summary.backupSignatureAlgorithm);
+      assert.strictEqual(summary.backupSignatureAlgorithm, 'SLH-DSA-SHA2-192f');
+      assert.ok(summary.nistStandards.includes('FIPS 205 (SLH-DSA)'));
     });
   });
   

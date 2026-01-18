@@ -97,3 +97,52 @@ jobs:
             -d "text=🦬 *YAKMESH™ ${VERSION} Released!*%0A%0A📦 npm install yakmesh@${VERSION}%0A%0A🔗 https://github.com/yakmesh/yakmesh/releases/tag/${VERSION}"
           
           echo "✓ Telegram notification sent for $VERSION"
+
+  notify-devto:
+    runs-on: ubuntu-latest
+    # Only post to Dev.to for major/minor releases, not patches
+    if: contains(github.ref_name, '.0')
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        
+      - name: Get release info
+        id: release_info
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            echo "version=${{ github.event.release.tag_name }}" >> $GITHUB_OUTPUT
+          else
+            echo "version=${{ github.ref_name }}" >> $GITHUB_OUTPUT
+          fi
+          
+      - name: Post to Dev.to
+        env:
+          DEVTO_API_KEY: ${{ secrets.DEVTO_API_KEY }}
+        run: |
+          VERSION="${{ steps.release_info.outputs.version }}"
+          
+          # Create article JSON
+          cat > article.json << 'EOF'
+          {
+            "article": {
+              "title": "YAKMESH™ VERSION_PLACEHOLDER - Post-Quantum P2P Mesh Network",
+              "published": true,
+              "tags": ["p2p", "cryptography", "nodejs", "security"],
+              "series": "YAKMESH Releases",
+              "canonical_url": "https://github.com/yakmesh/yakmesh/releases/tag/VERSION_PLACEHOLDER",
+              "body_markdown": "## 🦬 YAKMESH™ VERSION_PLACEHOLDER Released!\n\nA new version of YAKMESH - the post-quantum secure P2P mesh network - has been published!\n\n### What is YAKMESH?\n\nYAKMESH is a high-resiliency, decentralized networking layer with:\n\n- 🔒 **Post-Quantum Security** - ML-DSA-65 (NIST FIPS 204) signatures\n- 🔮 **Self-Verifying Oracle** - Code-as-authority trust model\n- 🌐 **Mesh Networking** - P2P WebSocket with gossip protocol\n- ⏱️ **Precision Timing** - Atomic clock, GPS, PTP support\n\n### Install\n\n```bash\nnpm install yakmesh@VERSION_PLACEHOLDER\n```\n\n### Links\n\n- 📖 [Documentation](https://yakmesh.dev/docs)\n- 💻 [GitHub](https://github.com/yakmesh/yakmesh)\n- 📦 [npm](https://npmjs.com/package/yakmesh)\n- 💬 [Discord](https://discord.gg/8mSPfbJB8N)\n- 📱 [Telegram](https://t.me/yakmesh)\n\n---\n\n*Built with quantum principles. Secured by math.*"
+            }
+          }
+          EOF
+          
+          # Replace version placeholder
+          sed -i "s/VERSION_PLACEHOLDER/${VERSION}/g" article.json
+          
+          # Post to Dev.to
+          RESPONSE=$(curl -s -X POST "https://dev.to/api/articles" \
+            -H "Content-Type: application/json" \
+            -H "api-key: ${DEVTO_API_KEY}" \
+            -d @article.json)
+          
+          echo "Dev.to response: $RESPONSE"
+          echo "✓ Dev.to article posted for $VERSION"
