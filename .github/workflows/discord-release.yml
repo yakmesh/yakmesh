@@ -1,12 +1,10 @@
 name: Release Notifications
 
+# NOTE: Only trigger on GitHub release publish, NOT on tag push
+# Previously triggered on both, causing double notifications
 on:
   release:
     types: [published]
-  # Also trigger on version tags for npm publishes
-  push:
-    tags:
-      - 'v*'
 
 jobs:
   notify-discord:
