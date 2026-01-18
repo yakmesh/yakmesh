@@ -52,6 +52,15 @@ In an era where traditional ECDSA is increasingly vulnerable and network jitter 
 - 🔌 **Plugin Architecture** - Adapters for any database or API
 - 🛡️ **Phase Modulation** - Time-based anti-replay protection
 
+### v2.0 — The Sherpa Security Stack
+
+- 🧭 **NAMCHE Gateway** - 7-gate mathematical verification (no CA required)
+- 📜 **DOKO Identity** - Self-sovereign identity documents verified by mesh
+- 🏔️ **SHERPA Discovery** - Decentralized peer discovery via public web beacons
+- 🎒 **NAKPAK Routing** - Post-quantum onion routing for anonymity
+- 🔐 **ANNEX Channels** - ML-KEM768 encrypted P2P with perfect forward secrecy
+- 🤝 **Hybrid Trust** - Multi-factor trust combining crypto + behavior + social proof
+
 ## Quick Start
 
 ```bash
@@ -90,11 +99,18 @@ Full documentation available at **[yakmesh.dev](https://yakmesh.dev)**
 
 ```
 yakmesh/
+├── security/         # NAMCHE gateway, DOKO identity, trust models
+│   ├── namche-gateway.js    # 7-gate verification
+│   ├── doko-identity.js     # Self-sovereign identity
+│   ├── hybrid-trust.js      # Multi-factor trust scoring
+│   ├── tls-binding.js       # mTLS certificate binding
+│   └── domain-consensus.js  # Mesh-verified domains
 ├── oracle/           # Self-verifying validation engine
 ├── mesh/             # WebSocket P2P networking
+│   ├── sherpa-discovery.js  # Decentralized peer discovery
+│   ├── nakpak-routing.js    # Onion routing
+│   └── annex-channel.js     # Encrypted P2P channels
 ├── gossip/           # Epidemic-style message propagation
-├── identity/         # Post-quantum key management
-├── database/         # SQLite replication engine
 ├── adapters/         # Platform integration plugins
 ├── webserver/        # Embedded Caddy web server
 └── server/           # HTTP/WS server

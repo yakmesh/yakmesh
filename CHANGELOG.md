@@ -2,6 +2,170 @@
 
 All notable changes to YAKMESH will be documented in this file.
 
+## [2.0.0] - 2026-01-18
+
+### 🧭 NAMCHE Gateway & 📜 DOKO Identity — The "Sherpa Security Stack"
+
+This major release introduces **mathematical trust** — replacing certificate authorities with cryptographic proof. The mesh now verifies identity through 7 independent gates, eliminating the need to trust any central authority.
+
+> *"The Sherpa does not prove knowledge by certificate. The Sherpa proves knowledge by walking the path."*
+
+---
+
+#### 🧭 NAMCHE: Network Authenticated Mesh Certificate Hub & Exchange
+
+A 7-gate verification gateway inspired by Nepal's Namche Bazaar — the last checkpoint before Everest.
+
+##### The 7 Gates of Verification
+| Gate | Name | Verification |
+|------|------|-------------|
+| 1 | Cryptographic Gate | Valid ML-DSA-65 signature |
+| 2 | Format Gate | DOKO structure compliance |
+| 3 | Temporal Gate | Not expired, within clock tolerance |
+| 4 | Domain Gate | DNS TXT record verification |
+| 5 | Mesh Gate | 3+ peer endorsements (KHATA protocol) |
+| 6 | Behavioral Gate | Historical trust score ≥ threshold |
+| 7 | Freshness Gate | Proof-of-liveliness within 5 minutes |
+
+##### New Module: `security/namche-gateway.js`
+- `NamcheGateway` - Main verification orchestrator
+- `GateResult` - Individual gate pass/fail with evidence
+- `VerificationReport` - Complete 7-gate assessment
+- `TrustDecision` - Final ALLOW/DENY/CHALLENGE decision
+
+##### Trust Levels
+```javascript
+TRUST_LEVELS = {
+  UNTRUSTED: 0,    // Failed critical gates
+  BRONZE: 1,       // Passed gates 1-3 only
+  SILVER: 2,       // Passed gates 1-5
+  GOLD: 3,         // Passed all 7 gates
+  PLATINUM: 4      // Gold + extended history
+}
+```
+
+---
+
+#### 📜 DOKO: Distributed Ownership & Key Object
+
+Self-sovereign identity documents verified by the mesh, not a CA.
+
+##### New Module: `security/doko-identity.js`
+- `DOKODocument` - The identity document structure
+- `DOKOGenerator` - Create new DOKO documents
+- `DOKOValidator` - Validate document structure and signatures
+- `DOKOExtensions` - Optional capability declarations
+
+##### DOKO Structure
+```javascript
+{
+  version: "1.0",
+  type: "node" | "user" | "service" | "device",
+  nodeId: "cryptographic-hash",
+  publicKey: "ML-DSA-65 public key",
+  created: 1737225600000,
+  expires: 1768761600000,
+  claims: {
+    domain: "example.com",
+    name: "My Node"
+  },
+  extensions: {
+    capabilities: ["annex", "nakpak", "sherpa"],
+    tlsBinding: { ... }
+  },
+  endorsements: [...],
+  signature: "self-signature"
+}
+```
+
+---
+
+#### 🔐 mTLS Phase 1: TLS Certificate Binding
+
+Bind DOKO identity to X.509 certificates for TLS-level verification.
+
+##### New Module: `security/tls-binding.js`
+- `DOKOCertificateGenerator` - Create X.509 certs from DOKO
+- `TLSVerifier` - Verify TLS connections against DOKO
+- `TLSCapabilityAdvertiser` - Announce TLS capabilities to mesh
+
+---
+
+#### 🤝 Hybrid Trust Model
+
+Multi-factor trust assessment combining cryptographic proof with behavioral history.
+
+##### New Module: `security/hybrid-trust.js`
+- `TrustEvidence` - Collect evidence from multiple sources
+- `HybridTrustModel` - Calculate weighted trust scores
+- `TrustBasedAccessControl` - Gate features by trust level
+
+##### Trust Factors
+| Factor | Weight | Source |
+|--------|--------|--------|
+| Cryptographic | 40% | NAMCHE gates 1-3 |
+| Social | 25% | Mesh endorsements (KHATA) |
+| Behavioral | 20% | Historical interactions |
+| Temporal | 15% | Identity age, freshness |
+
+---
+
+#### 🌐 Domain Consensus Protocol
+
+Mesh-verified domain ownership without centralized DNS authorities.
+
+##### New Module: `security/domain-consensus.js`
+- `DomainClaim` - Claim domain ownership
+- `DomainConsensus` - Multi-peer verification
+- `DNSVerifier` - Check DNS TXT records
+
+---
+
+#### 📊 Test Coverage
+
+| Module | Tests | Status |
+|--------|-------|--------|
+| NAMCHE Gateway | 37 | ✅ Passing |
+| Domain Consensus | 36 | ✅ Passing |
+| TLS Binding | 26 | ✅ Passing |
+| Hybrid Trust | 30 | ✅ Passing |
+| **Total Security** | **129** | ✅ All Passing |
+
+---
+
+#### 🏔️ The Sherpa Protocol Family
+
+| Protocol | Full Name | Purpose |
+|----------|-----------|---------|
+| **NAMCHE** | Network Authenticated Mesh Certificate Hub & Exchange | 7-gate verification |
+| **DOKO** | Distributed Ownership & Key Object | Self-sovereign identity |
+| **SHERPA** | Secure Hidden Endpoint Resolution Path Architecture | Peer discovery |
+| **NAKPAK** | NAK Protocol for Anonymous Kommunication | Onion routing |
+| **ANNEX** | Autonomous Network Negotiated eXchange | Encrypted P2P channels |
+| **KHATA** | Kryptographic Handshake for Automated Trust Acceptance | Trust distribution |
+
+---
+
+#### Breaking Changes
+
+- `identity.js` replaced by `doko-identity.js` (migration guide in docs)
+- Trust verification now requires NAMCHE gateway for new connections
+- Minimum Node.js version: 18.0.0
+
+#### Migration Guide
+
+```javascript
+// Before (v1.x)
+import { Identity } from 'yakmesh/oracle/identity';
+const id = new Identity();
+
+// After (v2.0)
+import { DOKOGenerator } from 'yakmesh/security/doko-identity';
+const doko = await DOKOGenerator.create({ type: 'node', claims: { name: 'My Node' } });
+```
+
+---
+
 ## [1.8.0] - 2026-01-18
 
 ### 🏔️ SHERPA: Decentralized Peer Discovery

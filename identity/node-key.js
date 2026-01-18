@@ -5,6 +5,10 @@
  * Security Level: NIST Level 3 (~192-bit classical security)
  * Quantum Resistant: Yes (lattice-based)
  * 
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * ⚠️  SECURITY ARCHITECTURE - DO NOT MODIFY WITHOUT EXPLICIT REVIEW  ⚠️
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * 
  * IMPORTANT: Node IDs are composed of TWO parts:
  * 1. NETWORK NAME - Derived from codebase hash (SAME for all nodes on network)
  * 2. INSTANCE ID - Derived from public key hash (UNIQUE per node instance)
@@ -13,14 +17,45 @@
  * - Nodes running identical code share the same network name
  * - Each node instance has a unique identifier
  * - Human-readable verification: same network name = same code = can peer
+ * - Codebase integrity is cryptographically bound to identity
  * 
  * Format: "node-[network-name]-[instance-id]"
  * Example: "node-qubit-lattice-prism-pq-a7x9"
  *          ^^^^^^^^^^^^^^^^^^^^^ ^^^^^^^^
  *          Same for all nodes    Unique per instance
  * 
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * 🚫 REJECTED SIMPLIFICATIONS (Security Anti-Patterns):
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * 
+ * The following "simplifications" have been proposed and MUST BE REJECTED:
+ * 
+ * ❌ NodeID = SHA3-256(publicKey)
+ *    WHY REJECT: Removes codebase integrity verification. A malicious node
+ *    running modified code would be indistinguishable from honest nodes.
+ * 
+ * ❌ NodeID = base64(publicKey)
+ *    WHY REJECT: Same as above, plus loses human-readable verification.
+ * 
+ * ❌ NodeID = UUID or random string
+ *    WHY REJECT: Breaks deterministic derivation. Cannot verify identity
+ *    matches public key. Enables identity spoofing.
+ * 
+ * ❌ Removing the codebase hash component
+ *    WHY REJECT: Fundamental to network segmentation by code version.
+ *    Prevents incompatible or malicious code from joining honest networks.
+ * 
+ * The current two-part design (network + instance) via iO obfuscation is
+ * INTENTIONAL and provides security properties that simpler schemes lack.
+ * 
+ * This warning added 2026-01-18 after a spec draft attempted to simplify
+ * NodeID to just SHA3-256(publicKey), which would have undermined the
+ * entire network integrity model.
+ * 
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * 
  * @module identity/node-key
- * @version 1.5.0
+ * @version 1.6.0
  */
 
 import { ml_dsa65 } from '@noble/post-quantum/ml-dsa.js';
