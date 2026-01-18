@@ -422,7 +422,9 @@ ANNEX slots into the protocol stack as the private messaging layer:
 ├─────────────────────────────────────────────────────────────┤
 │  Beacon            │ Flood-based priority broadcasts        │
 ├─────────────────────────────────────────────────────────────┤
-│  Phantom           │ Post-quantum onion routing             │
+│  Nakpak            │ Post-quantum onion routing (NAKPAK)    │
+├─────────────────────────────────────────────────────────────┤
+│  Sherpa            │ Peer discovery DHT (SHERPA)            │
 ├─────────────────────────────────────────────────────────────┤
 │  Mesh Core         │ WebSocket + Code Proof Protocol        │
 └─────────────────────────────────────────────────────────────┘

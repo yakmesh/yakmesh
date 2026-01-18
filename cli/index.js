@@ -56,7 +56,7 @@ program
     // Parse bootstrap nodes
     const bootstrapNodes = options.bootstrap 
       ? options.bootstrap.split(',').map(s => s.trim())
-      : ['wss://peerquanta.com:9001'];
+      : [];  // Empty by default - YAKMESH is decentralized, no central bootstrap
 
     // Generate config
     const config = `/**

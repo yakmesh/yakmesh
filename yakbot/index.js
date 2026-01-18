@@ -77,8 +77,9 @@ Protocol Stack (top to bottom):
 2. Annex - Encrypted point-to-point messaging (ML-KEM768 + AES-256-GCM)
 3. Gossip - Epidemic-style message propagation
 4. Beacon - Emergency broadcast with priority levels
-5. Phantom - Onion routing for anonymity
-6. Mesh - Core P2P network with Code Proof Protocol
+5. Nakpak - Onion routing for anonymity (Nested Anonymous Kernel for Private Authenticated Komms)
+6. Sherpa - Peer discovery DHT (Secure Hidden Endpoint Resolution Path Architecture)
+7. Mesh - Core P2P network with Code Proof Protocol
 
 Installation:
 npm install yakmesh
