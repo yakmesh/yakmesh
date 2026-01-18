@@ -1,6 +1,6 @@
 /**
  * YAKMESH™ v1.3.0 Novel Systems Test Suite
- * Tests for: ECHO, PULSE, PHANTOM, BEACON
+ * Tests for: ECHO, PULSE, NAKPAK, BEACON, SHERPA
  */
 
 import {

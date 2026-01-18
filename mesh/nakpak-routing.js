@@ -1,5 +1,5 @@
 /**
- * Yakmesh Phantom Routing - Post-quantum Hidden Anonymous Network Transmission Over Mesh
+ * Yakmesh NAKPAK Routing - Nested Anonymous Kernel for Private Authenticated Komms
  * 
  * The first post-quantum secure onion routing implementation featuring:
  * - ML-DSA-65 signatures at every routing layer
@@ -7,12 +7,15 @@
  * - Multi-layer encryption with perfect forward secrecy
  * - Timing attack resistance through temporal padding
  * 
- * Key Innovation: "Your packets become ghosts"
+ * Key Innovation: "Your packets travel like yak caravans through hidden mountain paths"
  * - Each routing layer uses different quantum-resistant keys
  * - Decoy traffic masks real communication patterns
  * - Temporal obfuscation defeats traffic analysis
  * 
- * @module mesh/phantom-routing
+ * Etymology: NAK (female yak, the pack carrier) + PAK (package) = NAKPAK (sounds like "knapsack")
+ * Works with SHERPA (Secure Hidden Endpoint Resolution Path Architecture) for peer discovery.
+ * 
+ * @module mesh/nakpak-routing
  * @license MIT
  * @copyright 2026 YAKMESH™ Contributors
  */
@@ -23,7 +26,7 @@ import { ml_kem768 } from '@noble/post-quantum/ml-kem.js';
 import { sha3_256 } from '@noble/hashes/sha3.js';
 import { bytesToHex, hexToBytes, utf8ToBytes } from '@noble/hashes/utils.js';
 
-const PHANTOM_CONFIG = {
+const NAKPAK_CONFIG = {
   // Circuit settings
   defaultHopCount: 3,           // Number of hops (like Tor)
   maxHopCount: 7,               // Maximum allowed hops
@@ -44,13 +47,13 @@ const PHANTOM_CONFIG = {
   maxPayloadSize: 7000,         // Max actual payload
   
   // Key derivation
-  keyDerivationSalt: 'PHANTOM-YAKMESH-2026',
+  keyDerivationSalt: 'NAKPAK-YAKMESH-2026',
 };
 
 /**
- * A single routing layer in the onion
+ * A single routing layer in the onion (like a yak's pack saddle layer)
  */
-class PhantomLayer {
+class NakpakLayer {
   constructor(options) {
     this.hopIndex = options.hopIndex;
     this.nodeId = options.nodeId;
@@ -114,12 +117,12 @@ class PhantomLayer {
       throw new Error('No encryption key established');
     }
 
-    const nonce = randomBytes(PHANTOM_CONFIG.nonceSize);
+    const nonce = randomBytes(NAKPAK_CONFIG.nonceSize);
     const cipher = createCipheriv(
-      PHANTOM_CONFIG.layerEncryption,
+      NAKPAK_CONFIG.layerEncryption,
       this.encryptionKey,
       nonce,
-      { authTagLength: PHANTOM_CONFIG.authTagLength }
+      { authTagLength: NAKPAK_CONFIG.authTagLength }
     );
 
     const plaintext = typeof data === 'string' ? data : JSON.stringify(data);
@@ -148,10 +151,10 @@ class PhantomLayer {
     const tag = Buffer.from(encryptedData.tag, 'hex');
 
     const decipher = createDecipheriv(
-      PHANTOM_CONFIG.layerEncryption,
+      NAKPAK_CONFIG.layerEncryption,
       this.encryptionKey,
       nonce,
-      { authTagLength: PHANTOM_CONFIG.authTagLength }
+      { authTagLength: NAKPAK_CONFIG.authTagLength }
     );
     decipher.setAuthTag(tag);
 
@@ -166,16 +169,16 @@ class PhantomLayer {
   _deriveEncryptionKey(sharedSecret) {
     return createHash('sha3-256')
       .update(sharedSecret)
-      .update(PHANTOM_CONFIG.keyDerivationSalt)
+      .update(NAKPAK_CONFIG.keyDerivationSalt)
       .update(Buffer.from([this.hopIndex]))
       .digest();
   }
 }
 
 /**
- * An onion-wrapped packet
+ * An onion-wrapped packet (like a yak's cargo bundle)
  */
-class PhantomPacket {
+class NakpakPacket {
   constructor(options = {}) {
     this.id = options.id || bytesToHex(randomBytes(16));
     this.circuitId = options.circuitId;
@@ -211,7 +214,7 @@ class PhantomPacket {
     });
 
     const currentSize = Buffer.byteLength(serialized, 'utf8');
-    const paddingNeeded = PHANTOM_CONFIG.fixedPacketSize - currentSize - 50; // Reserve for padding field
+    const paddingNeeded = NAKPAK_CONFIG.fixedPacketSize - currentSize - 50; // Reserve for padding field
 
     if (paddingNeeded > 0) {
       this.padding = randomBytes(Math.max(1, paddingNeeded)).toString('base64');
@@ -222,7 +225,7 @@ class PhantomPacket {
    * Create decoy packet
    */
   static createDecoy(circuitId) {
-    const decoy = new PhantomPacket({
+    const decoy = new NakpakPacket({
       circuitId,
       isDecoy: true,
     });
@@ -251,7 +254,7 @@ class PhantomPacket {
   }
 
   static deserialize(obj) {
-    const packet = new PhantomPacket({
+    const packet = new NakpakPacket({
       id: obj.id,
       circuitId: obj.circuitId,
       timestamp: obj.timestamp,
@@ -263,12 +266,12 @@ class PhantomPacket {
 }
 
 /**
- * A circuit through the mesh (like a Tor circuit)
+ * A circuit through the mesh (like a yak caravan route)
  */
-class PhantomCircuit {
+class NakpakCircuit {
   constructor(options = {}) {
     this.circuitId = options.circuitId || bytesToHex(randomBytes(16));
-    this.hops = [];                // Array of PhantomLayer
+    this.hops = [];                // Array of NakpakLayer
     this.isEstablished = false;
     this.createdAt = Date.now();
     this.lastUsed = Date.now();
@@ -279,14 +282,14 @@ class PhantomCircuit {
    * Build a circuit through specified nodes
    */
   async buildCircuit(nodeIds) {
-    if (nodeIds.length > PHANTOM_CONFIG.maxHopCount) {
-      throw new Error('Too many hops: max is ' + PHANTOM_CONFIG.maxHopCount);
+    if (nodeIds.length > NAKPAK_CONFIG.maxHopCount) {
+      throw new Error('Too many hops: max is ' + NAKPAK_CONFIG.maxHopCount);
     }
 
     this.hops = [];
     
     for (let i = 0; i < nodeIds.length; i++) {
-      const layer = new PhantomLayer({
+      const layer = new NakpakLayer({
         hopIndex: i,
         nodeId: nodeIds[i],
         nextHop: nodeIds[i + 1] || null,
@@ -356,7 +359,7 @@ class PhantomCircuit {
       };
     }
 
-    const packet = new PhantomPacket({
+    const packet = new NakpakPacket({
       circuitId: this.circuitId,
     });
     packet.addLayer(payload);
@@ -369,14 +372,14 @@ class PhantomCircuit {
   }
 
   isExpired() {
-    return Date.now() - this.createdAt > PHANTOM_CONFIG.circuitTimeout;
+    return Date.now() - this.createdAt > NAKPAK_CONFIG.circuitTimeout;
   }
 }
 
 /**
- * Relay node handler for forwarding phantom packets
+ * Relay node handler for forwarding nakpak packets
  */
-class PhantomRelay {
+class NakpakRelay {
   constructor(options = {}) {
     this.nodeId = options.nodeId || bytesToHex(randomBytes(16));
     this.circuits = new Map();    // circuitId -> local layer info
@@ -401,7 +404,7 @@ class PhantomRelay {
    * Handle incoming circuit creation request
    */
   async handleCircuitCreate(request) {
-    const layer = new PhantomLayer({
+    const layer = new NakpakLayer({
       hopIndex: request.hopIndex,
       nodeId: this.nodeId,
       nextHop: request.nextHop,
@@ -491,8 +494,8 @@ class PhantomRelay {
    * Add random delay to defeat timing analysis
    */
   async _addTimingDelay() {
-    const delay = PHANTOM_CONFIG.minPaddingMs + 
-      Math.random() * (PHANTOM_CONFIG.maxPaddingMs - PHANTOM_CONFIG.minPaddingMs);
+    const delay = NAKPAK_CONFIG.minPaddingMs + 
+      Math.random() * (NAKPAK_CONFIG.maxPaddingMs - NAKPAK_CONFIG.minPaddingMs);
     await new Promise(resolve => setTimeout(resolve, delay));
   }
 
@@ -500,9 +503,9 @@ class PhantomRelay {
    * Maybe inject a decoy packet to mask traffic patterns
    */
   _maybeInjectDecoy(circuitId) {
-    if (Math.random() < PHANTOM_CONFIG.decoyProbability) {
+    if (Math.random() < NAKPAK_CONFIG.decoyProbability) {
       this.stats.decoysInjected++;
-      return PhantomPacket.createDecoy(circuitId).serialize();
+      return NakpakPacket.createDecoy(circuitId).serialize();
     }
     return null;
   }
@@ -537,13 +540,13 @@ class PhantomRelay {
 }
 
 /**
- * Main PHANTOM routing manager
+ * Main NAKPAK routing manager
  */
-class PhantomRouter {
+class NakpakRouter {
   constructor(options = {}) {
     this.nodeId = options.nodeId || bytesToHex(randomBytes(16));
-    this.relay = new PhantomRelay({ nodeId: this.nodeId });
-    this.circuits = new Map();     // circuitId -> PhantomCircuit (for circuits we created)
+    this.relay = new NakpakRelay({ nodeId: this.nodeId });
+    this.circuits = new Map();     // circuitId -> NakpakCircuit (for circuits we created)
     this.knownNodes = new Map();   // nodeId -> { publicKey, lastSeen }
     
     this.stats = {
@@ -576,7 +579,7 @@ class PhantomRouter {
       const availableNodes = Array.from(this.knownNodes.keys())
         .filter(id => id !== this.nodeId);
       
-      if (availableNodes.length < PHANTOM_CONFIG.defaultHopCount) {
+      if (availableNodes.length < NAKPAK_CONFIG.defaultHopCount) {
         throw new Error('Not enough known nodes for circuit');
       }
       
@@ -586,10 +589,10 @@ class PhantomRouter {
         [availableNodes[i], availableNodes[j]] = [availableNodes[j], availableNodes[i]];
       }
       
-      hopNodeIds = availableNodes.slice(0, PHANTOM_CONFIG.defaultHopCount);
+      hopNodeIds = availableNodes.slice(0, NAKPAK_CONFIG.defaultHopCount);
     }
 
-    const circuit = new PhantomCircuit();
+    const circuit = new NakpakCircuit();
     const buildResult = await circuit.buildCircuit(hopNodeIds);
     
     this.circuits.set(circuit.circuitId, circuit);
@@ -638,7 +641,7 @@ class PhantomRouter {
    * Handle incoming packet (as a relay)
    */
   async handlePacket(packetData) {
-    const packet = PhantomPacket.deserialize(packetData);
+    const packet = NakpakPacket.deserialize(packetData);
     const result = await this.relay.processPacket(packet);
 
     if (result.type === 'EXIT') {
@@ -690,10 +693,10 @@ class PhantomRouter {
 }
 
 export {
-  PHANTOM_CONFIG,
-  PhantomLayer,
-  PhantomPacket,
-  PhantomCircuit,
-  PhantomRelay,
-  PhantomRouter,
+  NAKPAK_CONFIG,
+  NakpakLayer,
+  NakpakPacket,
+  NakpakCircuit,
+  NakpakRelay,
+  NakpakRouter,
 };

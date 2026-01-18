@@ -4,6 +4,37 @@ All notable changes to YAKMESH will be documented in this file.
 
 ## [1.7.0] - 2026-01-18
 
+### 🦬 NAKPAK & SHERPA: Yak-Themed Protocol Naming
+
+This release renames dark-themed protocols to yak-themed names for brand consistency.
+
+#### Renamed Protocols
+
+##### NAKPAK (formerly Phantom)
+- **N**ested **A**nonymous **K**ernel for **P**rivate **A**uthenticated **K**omms
+- Post-quantum onion routing with ML-KEM768 key encapsulation
+- File renamed: `phantom-routing.js` → `nakpak-routing.js`
+- Classes renamed: `PhantomRouter` → `NakpakRouter`, etc.
+- Etymology: NAK (female yak) + PAK (package) = sounds like "knapsack" 🎒
+
+##### SHERPA (new protocol slot)
+- **S**ecure **H**idden **E**ndpoint **R**esolution **P**ath **A**rchitecture
+- Peer discovery DHT via public web layer
+- Guides nodes to find each other like Sherpas guide travelers
+
+#### Protocol Stack Update
+```text
+1. HTTP API - Public content delivery
+2. Annex - Encrypted P2P messaging
+3. Gossip - Message propagation
+4. Beacon - Emergency broadcast
+5. Nakpak - Onion routing (NEW NAME)
+6. Sherpa - Peer discovery (NEW)
+7. Mesh - Core P2P network
+```
+
+---
+
 ### 🛡️ SLH-DSA Backup Signatures & Monitoring Dashboard
 
 This release adds defense-in-depth with FIPS 205 hash-based backup signatures and a comprehensive monitoring dashboard.
@@ -95,7 +126,7 @@ All hash operations now use SHA3-256 for post-quantum consistency:
 - `oracle/phase-epoch.js` - Phase derivation uses SHA3-256
 - `gossip/protocol.js` - Bloom filters and message IDs use SHA3-256
 - `mesh/temporal-encoder.js` - Temporal hashes use SHA3-256
-- `mesh/phantom-routing.js` - Key derivation uses SHA3-256
+- `mesh/nakpak-routing.js` - Key derivation uses SHA3-256 (formerly phantom-routing)
 - `mesh/annex.js` - Session key derivation uses SHA3-256
 - `mesh/echo-ranging.js` - Probe key derivation uses SHA3-256
 
