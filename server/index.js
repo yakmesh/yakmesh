@@ -25,6 +25,9 @@ import { ContentStore, createContentAPI } from '../content/index.js';
 // Annex - Autonomous Network Negotiated Encrypted eXchange
 import { Annex } from '../mesh/annex.js';
 
+// SHERPA - Secure Hidden Endpoint Resolution Path Architecture
+import { SherpaDiscovery, createBeaconMiddleware } from '../mesh/sherpa-discovery.js';
+
 // Oracle system imports
 import { 
   getOracle, 
@@ -271,6 +274,31 @@ export class YakmeshNode {
     });
     console.log('✓ Annex channel initialized (encrypted P2P messaging)');
     
+    // 5c. Initialize SHERPA for decentralized peer discovery
+    this.sherpa = new SherpaDiscovery({
+      nodeId: this.identity.identity.nodeId,
+      networkName: this.genesisNetwork?.networkName,
+      publicKey: this.identity.identity.publicKey,
+      signFn: (data) => this.identity.sign(data),
+      verifyFn: (data, sig, pubKey) => this.identity.verify(data, sig, pubKey),
+      selfEndpoint: this.config.sherpa?.selfEndpoint || null,
+      wsEndpoint: this.config.sherpa?.wsEndpoint || null,
+      capabilities: {
+        wsPort: this.config.network.wsPort,
+        httpPort: this.config.network.httpPort,
+        supportsAnnex: true,
+        supportsNakpak: true,
+        supportsGossip: true,
+      },
+      seedEndpoints: this.config.sherpa?.seeds || [],
+    });
+    
+    // Start SHERPA if seeds are configured or selfEndpoint is set
+    if (this.config.sherpa?.enabled !== false) {
+      this.sherpa.start();
+      console.log('✓ SHERPA discovery initialized (decentralized peer discovery)');
+    }
+    
     // 6. Start HTTP server
     await this._startHttpServer();
 
@@ -297,6 +325,9 @@ export class YakmeshNode {
     }
     if (this.annex) {
       console.log(`  Annex:      ✓ Encrypted P2P ready`);
+    }
+    if (this.sherpa) {
+      console.log(`  SHERPA:     ✓ Beacon at /.well-known/yakmesh/beacon`);
     }
     if (this.adapter) {
       console.log(`  Adapter:    ✓ Enabled`);
@@ -604,6 +635,32 @@ export class YakmeshNode {
     // Peers list
     app.get('/peers', (req, res) => {
       res.json(this.mesh.getPeers());
+    });
+
+    // =========================================
+    // SHERPA: Decentralized Peer Discovery
+    // =========================================
+    
+    // Beacon endpoint for SHERPA peer discovery
+    // This allows other nodes to discover us and our known peers
+    if (this.sherpa) {
+      app.get('/.well-known/yakmesh/beacon', createBeaconMiddleware(this.sherpa));
+    }
+
+    // SHERPA discovery stats
+    app.get('/sherpa/status', (req, res) => {
+      if (!this.sherpa) {
+        return res.status(503).json({ error: 'SHERPA not initialized' });
+      }
+      res.json(this.sherpa.getStats());
+    });
+
+    // Get connection candidates from SHERPA
+    app.get('/sherpa/candidates', (req, res) => {
+      if (!this.sherpa) {
+        return res.status(503).json({ error: 'SHERPA not initialized' });
+      }
+      res.json(this.sherpa.getConnectionCandidates(10));
     });
 
     // Replication stats

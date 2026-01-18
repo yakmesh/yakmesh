@@ -2,7 +2,61 @@
 
 All notable changes to YAKMESH will be documented in this file.
 
-## [1.7.0] - 2026-01-18
+## [1.8.0] - 2026-01-18
+
+### 🏔️ SHERPA: Decentralized Peer Discovery
+
+This release implements SHERPA, a novel peer discovery mechanism that uses the public web as a decentralized DHT.
+
+#### New Feature: SHERPA Discovery
+
+##### The Innovation: "The Web IS the DHT"
+- Each node exposes `/.well-known/yakmesh/beacon` with its peer list
+- Discovery crawls known endpoints to find new peers
+- No central authority - truly decentralized bootstrap
+- Works with existing CDN infrastructure
+
+##### New Module: `mesh/sherpa-discovery.js`
+- `SherpaDiscovery` - Main discovery engine with peer crawling
+- `BeaconMessage` - Signed beacon format for peer advertisement
+- `PeerRegistry` - Scored peer management with decay
+- `createBeaconMiddleware` - Express middleware for beacon endpoint
+
+##### New Endpoints
+- `GET /.well-known/yakmesh/beacon` - Advertise this node and known peers
+- `GET /sherpa/status` - Discovery statistics
+- `GET /sherpa/candidates` - Get connection candidates
+
+##### Configuration
+```javascript
+// yakmesh.config.js
+export default {
+  sherpa: {
+    enabled: true,
+    selfEndpoint: 'https://mynode.example.com',
+    wsEndpoint: 'wss://mynode.example.com:9001',
+    seeds: ['https://peer1.example.com', 'https://peer2.example.com'],
+  },
+};
+```
+
+##### Beacon Response Format
+```json
+{
+  "version": "1.0",
+  "nodeId": "abc123...",
+  "networkName": "mobius-rabi-junction",
+  "timestamp": 1737225600000,
+  "capabilities": { "wsPort": 9001, "supportsAnnex": true },
+  "peers": [{ "nodeId": "...", "endpoint": "https://..." }],
+  "publicKey": "...",
+  "signature": "..."
+}
+```
+
+---
+
+## [1.7.1] - 2026-01-18
 
 ### 🦬 NAKPAK & SHERPA: Yak-Themed Protocol Naming
 
