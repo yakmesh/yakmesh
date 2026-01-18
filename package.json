@@ -75,6 +75,10 @@
   ],
   "author": "Yakmesh",
   "license": "MIT",
+  "funding": {
+    "type": "patreon",
+    "url": "https://patreon.com/yakmesh"
+  },
   "homepage": "https://yakmesh.dev",
   "repository": {
     "url": "git+https://github.com/peerquanta/yakmesh.git",

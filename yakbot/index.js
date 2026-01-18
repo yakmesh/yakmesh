@@ -27,7 +27,7 @@ const config = {
   geminiKey: process.env.GEMINI_API_KEY,
   
   // Current version
-  version: '1.6.0',
+  version: '1.7.0',
   
   // Official YAKMESH nodes for health checks
   officialNodes: [
@@ -44,6 +44,7 @@ const config = {
     discord: 'https://discord.gg/8mSPfbJB8N',
     twitter: 'https://x.com/yakmesh_dev',
     telegram: 'https://t.me/yakmesh',
+    patreon: 'https://patreon.com/yakmesh',
   },
   
   // Brand colors
@@ -471,6 +472,7 @@ const commands = {
         { name: '💬 Discord', value: `[Join Server](${config.links.discord})`, inline: true },
         { name: '🐦 Twitter/X', value: `[@yakmesh](${config.links.twitter})`, inline: true },
         { name: '📱 Telegram', value: `[@yakmesh](${config.links.telegram})`, inline: true },
+        { name: '❤️ Patreon', value: `[Support Us](${config.links.patreon})`, inline: true },
       ],
       footer: 'YAKMESH™ - Sturdy & Secure',
     });
