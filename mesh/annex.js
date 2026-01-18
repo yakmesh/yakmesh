@@ -295,7 +295,7 @@ class AnnexSession {
    * Derive symmetric encryption key from shared secret
    */
   _deriveEncryptionKey() {
-    return createHash('sha256')
+    return createHash('sha3-256')
       .update(this.sharedSecret)
       .update(ANNEX_CONFIG.keyDerivationSalt)
       .update(this.sessionId)

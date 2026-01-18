@@ -8,7 +8,7 @@
  * - Bloom filters for efficient seen-message tracking
  */
 
-import { sha256 } from '@noble/hashes/sha2.js';
+import { sha3_256 } from '@noble/hashes/sha3.js';
 import { bytesToHex } from '@noble/hashes/utils.js';
 
 // Message types for gossip protocol
@@ -40,7 +40,7 @@ class BloomFilter {
 
   _hash(value, seed) {
     const data = `${seed}:${value}`;
-    const hash = sha256(new TextEncoder().encode(data));
+    const hash = sha3_256(new TextEncoder().encode(data));
     return new DataView(hash.buffer).getUint32(0, true) % this.size;
   }
 
@@ -448,7 +448,7 @@ export class GossipProtocol {
    */
   _generateMessageId(topic, data) {
     const payload = JSON.stringify({ topic, data, origin: this.identity.identity.nodeId, ts: Date.now() });
-    return bytesToHex(sha256(new TextEncoder().encode(payload))).slice(0, 32);
+    return bytesToHex(sha3_256(new TextEncoder().encode(payload))).slice(0, 32);
   }
 
   /**

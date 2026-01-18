@@ -23,7 +23,7 @@
 import { sha3_256 } from '@noble/hashes/sha3.js';
 import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js';
 import { hkdf } from '@noble/hashes/hkdf.js';
-import { sha256 } from '@noble/hashes/sha2.js';
+// Using sha3_256 for all hashing operations for post-quantum consistency
 
 // ============================================================
 // CONFIGURATION
@@ -245,7 +245,7 @@ export function derivePhaseModulated(inputKey, baseSalt, baseInfo, outputLength,
   const salt = modulateSalt(baseSalt, epoch);
   const info = modulateInfo(baseInfo, epoch);
   
-  return hkdf(sha256, inputKey, salt, info, outputLength);
+  return hkdf(sha3_256, inputKey, salt, info, outputLength);
 }
 
 /**
