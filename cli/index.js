@@ -12,7 +12,7 @@ import { join, resolve } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
-const VERSION = '0.1.0';
+const VERSION = '2.1.0';
 
 const program = new Command();
 
@@ -284,6 +284,237 @@ program
       }
     } catch (e) {
       console.log(chalk.red('✗ Could not connect'));
+      console.log(chalk.gray(`  ${e.message}`));
+      process.exit(1);
+    }
+  });
+
+// ===== PROTOCOL COMMAND GROUP =====
+const protocolCmd = program
+  .command('protocol')
+  .description('Manage yak:// protocol registration');
+
+protocolCmd
+  .command('register')
+  .description('Register yak:// protocol with the operating system')
+  .option('-p, --port <port>', 'HTTP port of local node', '3000')
+  .action(async (options) => {
+    showBanner();
+    console.log(chalk.yellow('Registering yak:// protocol...\n'));
+    
+    try {
+      const { YakProtocolHandler } = await import('../protocol/yak-protocol.js');
+      const handler = new YakProtocolHandler({ port: parseInt(options.port) });
+      
+      const success = await handler.register();
+      
+      if (success) {
+        console.log(chalk.green('\n✓ yak:// protocol registered successfully!\n'));
+        console.log(chalk.cyan('Try these URLs:'));
+        console.log(chalk.gray('  yak://dashboard   - Node dashboard'));
+        console.log(chalk.gray('  yak://site        - Hosted website'));
+        console.log(chalk.gray('  yak://peers       - Connected peers'));
+        console.log(chalk.gray('  yak://content/<hash> - Content by hash'));
+        console.log('');
+      } else {
+        console.log(chalk.red('✗ Failed to register protocol'));
+        process.exit(1);
+      }
+    } catch (e) {
+      console.log(chalk.red('✗ Error registering protocol'));
+      console.log(chalk.gray(`  ${e.message}`));
+      process.exit(1);
+    }
+  });
+
+protocolCmd
+  .command('unregister')
+  .description('Unregister yak:// protocol from the operating system')
+  .action(async () => {
+    showBanner();
+    console.log(chalk.yellow('Unregistering yak:// protocol...\n'));
+    
+    try {
+      const { YakProtocolHandler } = await import('../protocol/yak-protocol.js');
+      const handler = new YakProtocolHandler();
+      
+      await handler.unregister();
+      console.log(chalk.green('✓ yak:// protocol unregistered'));
+    } catch (e) {
+      console.log(chalk.red('✗ Error unregistering protocol'));
+      console.log(chalk.gray(`  ${e.message}`));
+      process.exit(1);
+    }
+  });
+
+protocolCmd
+  .command('test <url>')
+  .description('Test a yak:// URL without opening browser')
+  .option('-p, --port <port>', 'HTTP port of local node', '3000')
+  .action(async (url, options) => {
+    try {
+      const { parseYakUrl, yakToHttp } = await import('../protocol/yak-protocol.js');
+      
+      const parsed = parseYakUrl(url);
+      const httpUrl = yakToHttp(url, parseInt(options.port));
+      
+      console.log(chalk.cyan('\n🔗 YAK:// Protocol Test\n'));
+      console.log(chalk.white('Input:'));
+      console.log(chalk.gray(`  ${url}\n`));
+      console.log(chalk.white('Parsed:'));
+      console.log(chalk.gray(`  Type:   ${parsed.type}`));
+      console.log(chalk.gray(`  Route:  ${parsed.route || parsed.hash || parsed.name || '-'}`));
+      console.log(chalk.gray(`  Path:   ${parsed.path}\n`));
+      console.log(chalk.white('HTTP URL:'));
+      console.log(chalk.green(`  ${httpUrl}`));
+      console.log('');
+    } catch (e) {
+      console.log(chalk.red('✗ Error parsing URL'));
+      console.log(chalk.gray(`  ${e.message}`));
+      process.exit(1);
+    }
+  });
+
+protocolCmd
+  .command('open <url>')
+  .description('Open a yak:// URL in the default browser')
+  .option('-p, --port <port>', 'HTTP port of local node', '3000')
+  .action(async (url, options) => {
+    try {
+      const { YakProtocolHandler } = await import('../protocol/yak-protocol.js');
+      const handler = new YakProtocolHandler({ port: parseInt(options.port) });
+      
+      console.log(chalk.cyan(`\n🔗 Opening: ${url}\n`));
+      await handler.handle(url);
+    } catch (e) {
+      console.log(chalk.red('✗ Error opening URL'));
+      console.log(chalk.gray(`  ${e.message}`));
+      process.exit(1);
+    }
+  });
+
+// ===== BOOKMARK SUBCOMMANDS =====
+const bookmarkCmd = protocolCmd
+  .command('bookmark')
+  .alias('bm')
+  .description('Manage yak:// URL bookmarks (local pet names)');
+
+bookmarkCmd
+  .command('add <name> <target>')
+  .description('Add a bookmark (e.g., yakmesh protocol bookmark add alice yak://content/abc123)')
+  .action(async (name, target) => {
+    try {
+      const { getBookmarkManager } = await import('../protocol/yak-protocol.js');
+      const bookmarks = getBookmarkManager();
+      
+      // Handle yak:// prefix in target
+      if (target.startsWith('yak://')) {
+        target = target.replace(/^yak:\/\//i, '');
+      }
+      
+      const success = bookmarks.add(name, target);
+      
+      if (success) {
+        console.log(chalk.green(`\n✓ Bookmark added: yak://${name.toLowerCase()} → ${bookmarks.get(name.toLowerCase())}\n`));
+        console.log(chalk.cyan('Usage:'));
+        console.log(chalk.gray(`  yakmesh protocol open yak://${name.toLowerCase()}`));
+        console.log(chalk.gray(`  yakmesh protocol test yak://${name.toLowerCase()}`));
+      } else {
+        console.log(chalk.yellow(`\n⚠ Could not add bookmark '${name}' - it may be a builtin route\n`));
+      }
+      console.log('');
+    } catch (e) {
+      console.log(chalk.red('✗ Error adding bookmark'));
+      console.log(chalk.gray(`  ${e.message}`));
+      process.exit(1);
+    }
+  });
+
+bookmarkCmd
+  .command('remove <name>')
+  .alias('rm')
+  .description('Remove a bookmark')
+  .action(async (name) => {
+    try {
+      const { getBookmarkManager } = await import('../protocol/yak-protocol.js');
+      const bookmarks = getBookmarkManager();
+      
+      if (!bookmarks.has(name)) {
+        console.log(chalk.yellow(`\n⚠ Bookmark '${name}' not found\n`));
+        process.exit(1);
+      }
+      
+      bookmarks.remove(name);
+      console.log(chalk.green(`\n✓ Bookmark '${name}' removed\n`));
+    } catch (e) {
+      console.log(chalk.red('✗ Error removing bookmark'));
+      console.log(chalk.gray(`  ${e.message}`));
+      process.exit(1);
+    }
+  });
+
+bookmarkCmd
+  .command('list')
+  .alias('ls')
+  .description('List all bookmarks')
+  .action(async () => {
+    try {
+      const { getBookmarkManager } = await import('../protocol/yak-protocol.js');
+      const bookmarks = getBookmarkManager();
+      
+      const all = bookmarks.list();
+      const names = Object.keys(all);
+      
+      console.log(chalk.cyan('\n📖 YAK:// Bookmarks\n'));
+      
+      if (names.length === 0) {
+        console.log(chalk.gray('  No bookmarks yet.'));
+        console.log(chalk.gray('  Add one with: yakmesh protocol bookmark add <name> <target>'));
+      } else {
+        for (const name of names.sort()) {
+          const bm = all[name];
+          console.log(chalk.white(`  yak://${name}`));
+          console.log(chalk.gray(`    → ${bm.target}`));
+        }
+        console.log(chalk.gray(`\n  Total: ${names.length} bookmark(s)`));
+      }
+      console.log('');
+    } catch (e) {
+      console.log(chalk.red('✗ Error listing bookmarks'));
+      console.log(chalk.gray(`  ${e.message}`));
+      process.exit(1);
+    }
+  });
+
+bookmarkCmd
+  .command('get <name>')
+  .description('Get details of a specific bookmark')
+  .action(async (name) => {
+    try {
+      const { getBookmarkManager, yakToHttp } = await import('../protocol/yak-protocol.js');
+      const bookmarks = getBookmarkManager();
+      
+      const target = bookmarks.get(name);
+      
+      if (!target) {
+        console.log(chalk.yellow(`\n⚠ Bookmark '${name}' not found\n`));
+        process.exit(1);
+      }
+      
+      const all = bookmarks.list();
+      const bm = all[name.toLowerCase()];
+      
+      console.log(chalk.cyan(`\n📖 Bookmark: ${name}\n`));
+      console.log(chalk.white('Details:'));
+      console.log(chalk.gray(`  URL:     yak://${name.toLowerCase()}`));
+      console.log(chalk.gray(`  Target:  ${target}`));
+      console.log(chalk.gray(`  HTTP:    ${yakToHttp('yak:/' + target)}`));
+      if (bm?.createdAt) {
+        console.log(chalk.gray(`  Created: ${new Date(bm.createdAt).toLocaleString()}`));
+      }
+      console.log('');
+    } catch (e) {
+      console.log(chalk.red('✗ Error getting bookmark'));
       console.log(chalk.gray(`  ${e.message}`));
       process.exit(1);
     }

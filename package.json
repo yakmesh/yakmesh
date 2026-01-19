@@ -1,9 +1,10 @@
 {
   "name": "yakmesh",
-  "version": "2.0.0",
+  "version": "2.2.0",
   "description": "YAKMESH: Yielding Atomic Kernel Modular Encryption Secured Hub - Post-quantum secure P2P mesh network for the 2026 threat landscape",
   "type": "module",
   "main": "server/index.js",
+  "types": "types/index.d.ts",
   "exports": {
     ".": "./server/index.js",
     "./cli": "./cli/index.js",
@@ -23,6 +24,9 @@
     "./security/tls-binding": "./security/tls-binding.js",
     "./security/hybrid-trust": "./security/hybrid-trust.js",
     "./security/domain-consensus": "./security/domain-consensus.js",
+    "./security/khata-protocol": "./security/khata-protocol.js",
+    "./security/mesh-auth": "./security/mesh-auth.js",
+    "./identity/node-key": "./identity/node-key.js",
     "./mesh/network": "./mesh/network.js",
     "./mesh/rate-limiter": "./mesh/rate-limiter.js",
     "./mesh/message-validator": "./mesh/message-validator.js",
@@ -32,7 +36,10 @@
     "./mesh/pulse-sync": "./mesh/pulse-sync.js",
     "./mesh/nakpak-routing": "./mesh/nakpak-routing.js",
     "./mesh/beacon-broadcast": "./mesh/beacon-broadcast.js",
-    "./mesh/sherpa-discovery": "./mesh/sherpa-discovery.js"
+    "./mesh/sherpa-discovery": "./mesh/sherpa-discovery.js",
+    "./mesh/annex": "./mesh/annex.js",
+    "./mesh/temporal-encoder": "./mesh/temporal-encoder.js",
+    "./protocol/yak-protocol": "./protocol/yak-protocol.js"
   },
   "bin": {
     "yakmesh": "cli/index.js"
@@ -44,7 +51,11 @@
     "test:time": "node --test oracle/tests/time-source.test.js",
     "test:phase": "node --test oracle/tests/phase-epoch.test.js",
     "test:crypto": "node --test oracle/tests/crypto.test.js",
-    "test:all": "node test-novel-systems.mjs"
+    "test:oracle": "node --test oracle/tests/*.test.js",
+    "test:protocol": "node --test protocol/tests/*.test.js",
+    "test:multinode": "node --test tests/multi-node.test.js",
+    "test:security": "npx vitest run",
+    "test:all": "npm run test:oracle && npm run test:protocol && npm run test:multinode && npm run test:security"
   },
   "dependencies": {
     "@noble/hashes": "^2.0.0",
@@ -58,7 +69,8 @@
     "ws": "^8.16.0"
   },
   "devDependencies": {
-    "nodemon": "^3.0.0"
+    "nodemon": "^3.0.0",
+    "vitest": "^4.0.17"
   },
   "engines": {
     "node": ">=18.0.0"

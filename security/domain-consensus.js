@@ -950,8 +950,20 @@ export class DomainConsensusVerifier extends EventEmitter {
     }
 
     // Check beacon signature (if gateway available)
-    if (this.gateway) {
-      // TODO: Verify beacon signature using gateway
+    if (this.gateway && beacon.signature && beacon.verifierPublicKey) {
+      try {
+        const signableData = JSON.stringify({
+          domain: beacon.domain,
+          timestamp: beacon.timestamp,
+          verifierId: beacon.verifierId,
+        });
+        const valid = this.identity.verify(signableData, beacon.signature, beacon.verifierPublicKey);
+        if (!valid) {
+          return { valid: false, error: 'Invalid beacon signature' };
+        }
+      } catch (e) {
+        return { valid: false, error: `Beacon signature verification failed: ${e.message}` };
+      }
     }
 
     return { valid: true };

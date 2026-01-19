@@ -73,7 +73,8 @@ export class SealedModule {
       const sigBytes = hexToBytes(attestation.signature);
       const pubKeyBytes = hexToBytes(attestation.publicKey);
       
-      return ml_dsa65.verify(pubKeyBytes, messageBytes, sigBytes);
+      // IMPORTANT: ml_dsa65.verify(signature, message, publicKey) - signature FIRST!
+      return ml_dsa65.verify(sigBytes, messageBytes, pubKeyBytes);
     } catch (e) {
       return false;
     }
@@ -241,7 +242,8 @@ export class ModuleSealer {
     const messageBytes = utf8ToBytes(sealHash);
     const privKeyBytes = hexToBytes(this.privateKey);
     
-    const signature = ml_dsa65.sign(privKeyBytes, messageBytes);
+    // IMPORTANT: ml_dsa65.sign(message, secretKey) - message FIRST!
+    const signature = ml_dsa65.sign(messageBytes, privKeyBytes);
     
     return {
       publicKey: this.publicKey,

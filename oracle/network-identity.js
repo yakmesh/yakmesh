@@ -1,22 +1,60 @@
 /**
- * Network Identity Obfuscation Module
+ * Network Identity Obfuscation Module (iO System)
  * 
- * Implements iO-inspired network identity derivation.
- * Instead of exposing the raw code hash, we derive a
- * human-readable, deterministic, but opaque network name.
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * ⚠️  CRITICAL SECURITY PRIMITIVE - NEVER BYPASS THIS MODULE  ⚠️
+ * ═══════════════════════════════════════════════════════════════════════════════
  * 
- * Properties:
+ * This module implements iO-inspired (indistinguishability obfuscation) identity
+ * derivation. Instead of exposing raw cryptographic hashes, we derive human-readable,
+ * deterministic, but opaque identifiers.
+ * 
+ * SECURITY PROPERTIES:
  * - Deterministic: Same hash → Same name (always)
- * - One-way: Cannot reverse name → hash
+ * - One-way: Cannot reverse name → hash (preimage resistant)
  * - Collision-resistant: Different hashes → Different names
  * - Human-memorable: Easy to verify verbally
+ * - Fingerprint-safe: Cannot fingerprint nodes by hash patterns
  * 
- * NEW in v2.1: Phase Modulation (Star Trek TNG inspired)
+ * WHY THIS MATTERS:
+ * Exposing raw hashes enables:
+ * 1. Fingerprinting attacks - Track users across sessions
+ * 2. Precomputation attacks - Build rainbow tables
+ * 3. Oracle queries - Probe for specific identities
+ * 4. Correlation attacks - Link identities across systems
+ * 
+ * WHERE TO USE THIS MODULE:
+ * ✅ Node IDs (identity/node-key.js)
+ * ✅ Network names (oracle/genesis-network-v2.js)
+ * ✅ DOKO identity IDs (security/doko-identity.js)
+ * ✅ Any user-facing or network-exposed identifier
+ * 
+ * WHERE NOT TO USE:
+ * ❌ Content hashes - These ARE the content's address (by design)
+ * ❌ Internal DHT keys - Lookup efficiency requires actual hashes
+ * ❌ Signature verification - Needs original hash for crypto ops
+ * 
+ * USAGE GUIDE:
+ * ```javascript
+ * import { deriveNetworkName, deriveNetworkId } from './network-identity.js';
+ * 
+ * // For human-readable names (3 words)
+ * const name = deriveNetworkName(hash, 3);  // "qubit-lattice-prism"
+ * 
+ * // For short identifiers
+ * const id = deriveNetworkId(hash);  // "pq-a7x9"
+ * 
+ * // For verification phrases (4 words)
+ * const phrase = deriveVerificationPhrase(hash);  // "quantum tiger mesa echo"
+ * ```
+ * 
+ * Phase Modulation (Star Trek TNG inspired):
  * - Rotating fingerprints that expire after phase rotation
  * - Prevents replay attacks and pre-computation
  * - Stable identity + rotating security layer
  * 
  * @module oracle/network-identity
+ * @version 2.2.0
  */
 
 import { sha3_256 } from '@noble/hashes/sha3.js';

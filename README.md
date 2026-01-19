@@ -159,6 +159,72 @@ class MyAdapter extends BaseAdapter {
 
 - `@yakmesh/adapter-peerquanta` - PeerQuanta phpBB marketplace
 
+## v2.2.0 — YAK:// Protocol & Identity Recovery
+
+### 🔗 YAK:// Protocol
+
+Custom URL protocol for mesh-native addressing. Escape HTTP entirely!
+
+```bash
+# Built-in routes
+yak://dashboard          # Node dashboard
+yak://peers              # Connected peers
+yak://content/<hash>     # Content by hash
+
+# Personal bookmarks (pet names)
+yakmesh bookmark add alice /site/alice-homepage
+yak://alice              # Opens your bookmark
+```
+
+### 📚 Remote Bookmarks
+
+Share bookmark lists between nodes via gossip protocol:
+
+```javascript
+import { getRemoteBookmarkSync } from 'yakmesh/protocol/yak-protocol';
+
+const sync = getRemoteBookmarkSync({ nodeId: 'my-node' });
+
+// Subscribe to another node's bookmarks
+sync.subscribe('trusted-node-id');
+
+// Publish your bookmarks to the mesh
+sync.publish('my-bookmarks', ['project', 'docs', 'friends']);
+
+// Resolve remote bookmarks
+sync.resolveRemote('alice'); // Returns target from subscribed node
+```
+
+### 🔐 DOKO Revocation
+
+Key compromise recovery with self-revocation and emergency "break-glass" certificates:
+
+```javascript
+import { DOKORevocation, REVOCATION_REASONS } from 'yakmesh/security/doko-identity';
+
+const revocation = new DOKORevocation({ generator, nodeId });
+
+// Normal self-revocation
+const cert = revocation.revoke(dokoId, REVOCATION_REASONS.KEY_COMPROMISED, privateKey);
+
+// Emergency revocation (primary key compromised, use backup)
+const emergencyCert = revocation.createEmergencyCertificate(
+  dokoId, 
+  REVOCATION_REASONS.KEY_COMPROMISED, 
+  backupPrivateKey
+);
+
+// Check revocation status
+revocation.isRevoked(dokoId); // true
+```
+
+**Revocation Reasons:**
+- `KEY_COMPROMISED` - Private key was exposed
+- `DOKO_SUPERSEDED` - Replaced with new identity
+- `IDENTITY_RETIRED` - No longer in use
+- `LOST_ACCESS` - Cannot access keys
+- `AFFILIATION_ENDED` - Organization membership ended
+
 ## API Endpoints
 
 | Endpoint | Method | Description |
@@ -171,6 +237,15 @@ class MyAdapter extends BaseAdapter {
 | `/time/status` | GET | Time source detection |
 | `/time/capabilities` | GET | Time oracle eligibility |
 | `/connect` | POST | Connect to a peer |
+| `/bookmarks` | GET | List local bookmarks |
+| `/bookmarks` | POST | Add a bookmark |
+| `/bookmarks/:name` | DELETE | Remove a bookmark |
+| `/bookmarks/remote` | GET | List remote bookmarks |
+| `/bookmarks/remote/subscribe` | POST | Subscribe to node |
+| `/bookmarks/remote/publish` | POST | Publish bookmark list |
+| `/bookmarks/remote/status` | GET | Remote sync status |
+| `/security/doko/stats` | GET | DOKO identity stats |
+| `/security/namche/gates` | GET | Gateway verification status |
 
 ## Pro Features
 

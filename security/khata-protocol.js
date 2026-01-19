@@ -293,7 +293,8 @@ export class KhataProtocol extends EventEmitter {
     } else if (query.nodeId) {
       doko = this.gateway.lookupByNodeId(query.nodeId);
     } else if (query.domain) {
-      // TODO: Implement domain lookup
+      // Lookup DOKO by verified domain claim
+      doko = this.gateway.lookupByDomain?.(query.domain) || null;
     }
 
     if (doko) {
