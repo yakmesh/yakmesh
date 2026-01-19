@@ -16,6 +16,9 @@
 import { getOracle, contentHash, deterministicStringify } from './validation-oracle.js';
 import { CodeProofProtocol } from './code-proof-protocol.js';
 import { EventEmitter } from 'events';
+import { createLogger } from '../utils/logger.js';
+
+const log = createLogger('oracle:consensus');
 
 /**
  * Content State - represents the consensus state of a piece of content
@@ -555,7 +558,7 @@ export class ConsensusEngine extends EventEmitter {
       stats: this.getStats(),
     });
     
-    console.log('✓ Consensus engine stopped');
+    log.info('Consensus engine stopped');
   }
   
   /**

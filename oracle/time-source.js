@@ -22,6 +22,9 @@ import { execSync, exec } from 'child_process';
 import { existsSync, readFileSync } from 'fs';
 import { platform } from 'os';
 import { EventEmitter } from 'events';
+import { createLogger } from '../utils/logger.js';
+
+const log = createLogger('oracle:time-source');
 
 // ============================================================
 // SILENT COMMAND EXECUTION HELPER
@@ -234,7 +237,7 @@ export class TimeSourceDetector extends EventEmitter {
       
     } catch (error) {
       if (this.options.verbose) {
-        console.error('Time source detection error:', error.message);
+        log.error('Time source detection error', { error: error.message });
       }
     }
     
@@ -661,40 +664,45 @@ export class TimeSourceDetector extends EventEmitter {
    * Log detection results
    */
   logDetectionResults(results) {
-    console.log('\n⏰ Time Source Detection Results');
-    console.log('─'.repeat(50));
-    console.log(`  Platform: ${results.platform}`);
-    console.log(`  Trust Level: ${results.trustLevel.toUpperCase()}`);
-    console.log(`  Phase Tolerance: ±${results.phaseTolerance}ms`);
-    console.log(`  Primary Source: ${results.primarySource || 'none'}`);
-    console.log('─'.repeat(50));
+    log.info('Time Source Detection Results', {
+      platform: results.platform,
+      trustLevel: results.trustLevel.toUpperCase(),
+      phaseTolerance: results.phaseTolerance,
+      primarySource: results.primarySource || 'none',
+    });
     
     if (results.sources.atomic?.detected) {
-      console.log(`  🔬 Atomic Clock: ${results.sources.atomic.type || 'detected'}`);
-      console.log(`     Device: ${results.sources.atomic.device || 'unknown'}`);
-      console.log(`     Synced: ${results.sources.atomic.synchronized ? '✓' : '✗'}`);
+      log.info('Atomic clock detected', {
+        type: results.sources.atomic.type || 'detected',
+        device: results.sources.atomic.device || 'unknown',
+        synchronized: results.sources.atomic.synchronized,
+      });
     }
     
     if (results.sources.gps?.detected) {
-      console.log(`  🛰️  GPS: ${results.sources.gps.device || 'detected'}`);
-      console.log(`     PPS: ${results.sources.gps.hasPPS ? '✓' : '✗'}`);
-      console.log(`     Synced: ${results.sources.gps.synchronized ? '✓' : '✗'}`);
+      log.info('GPS detected', {
+        device: results.sources.gps.device || 'detected',
+        hasPPS: results.sources.gps.hasPPS,
+        synchronized: results.sources.gps.synchronized,
+      });
     }
     
     if (results.sources.ptp?.detected) {
-      console.log(`  📡 PTP: ${results.sources.ptp.device || 'detected'}`);
-      console.log(`     Offset: ${results.sources.ptp.offset ?? 'unknown'}ns`);
-      console.log(`     Synced: ${results.sources.ptp.synchronized ? '✓' : '✗'}`);
+      log.info('PTP detected', {
+        device: results.sources.ptp.device || 'detected',
+        offset: results.sources.ptp.offset ?? 'unknown',
+        synchronized: results.sources.ptp.synchronized,
+      });
     }
     
     if (results.sources.ntp) {
-      console.log(`  🌐 NTP: ${results.sources.ntp.method || 'not configured'}`);
-      console.log(`     Server: ${results.sources.ntp.server || 'unknown'}`);
-      console.log(`     Stratum: ${results.sources.ntp.stratum}`);
-      console.log(`     Synced: ${results.sources.ntp.synchronized ? '✓' : '✗'}`);
+      log.info('NTP detected', {
+        method: results.sources.ntp.method || 'not configured',
+        server: results.sources.ntp.server || 'unknown',
+        stratum: results.sources.ntp.stratum,
+        synchronized: results.sources.ntp.synchronized,
+      });
     }
-    
-    console.log('─'.repeat(50));
   }
   
   /**

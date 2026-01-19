@@ -16,6 +16,9 @@
  */
 
 import { NetworkIdentity, createNetworkIdentity, deriveNetworkName } from './network-identity.js';
+import { createLogger } from '../utils/logger.js';
+
+const log = createLogger('oracle:genesis');
 
 /**
  * Genesis Network with obfuscated identity
@@ -44,10 +47,11 @@ export class GenesisNetworkV2 {
     this.#upgradeProposals = new Map();
     this.#pendingUpgrade = null;
     
-    console.log(`🌐 Genesis Network initialized:`);
-    console.log(`   Name: ${this.#identity.name}`);
-    console.log(`   ID: ${this.#identity.shortId}`);
-    console.log(`   Verify: "${this.#identity.verificationPhrase}"`);
+    log.info('Genesis Network initialized', {
+      name: this.#identity.name,
+      id: this.#identity.shortId,
+      verificationPhrase: this.#identity.verificationPhrase,
+    });
   }
   
   // ============================================================
@@ -86,9 +90,13 @@ export class GenesisNetworkV2 {
     });
     
     if (!compatible) {
-      console.log(`⚠️ Peer ${peerId.slice(0, 8)}... is on different network:`);
-      console.log(`   Their network: ${handshake.name} (${handshake.shortId})`);
-      console.log(`   Our network:   ${this.#identity.name} (${this.#identity.shortId})`);
+      log.warn('Peer on different network', {
+        peerId: peerId.slice(0, 8),
+        theirNetwork: handshake.name,
+        theirId: handshake.shortId,
+        ourNetwork: this.#identity.name,
+        ourId: this.#identity.shortId,
+      });
     }
     
     return compatible;
@@ -142,7 +150,7 @@ export class GenesisNetworkV2 {
     const { newCodeHash, changelog, effectiveTime, sourceUrl, signature } = proposal;
     
     if (!newCodeHash || !changelog) {
-      console.log('❌ Invalid upgrade proposal: missing required fields');
+      log.error('Invalid upgrade proposal: missing required fields');
       return false;
     }
     
@@ -163,29 +171,20 @@ export class GenesisNetworkV2 {
       peersAccepted: new Set(),
     });
     
-    console.log('\n' + '═'.repeat(60));
-    console.log('⚠️  NETWORK UPGRADE PROPOSAL RECEIVED');
-    console.log('═'.repeat(60));
-    console.log(`Current Network: ${this.#identity.name} (${this.#identity.shortId})`);
-    console.log(`New Network:     ${newIdentity.name} (${newIdentity.shortId})`);
-    console.log('─'.repeat(60));
-    console.log('Verification Phrases:');
-    console.log(`  Current: "${this.#identity.verificationPhrase}"`);
-    console.log(`  New:     "${newIdentity.verificationPhrase}"`);
-    console.log('─'.repeat(60));
-    console.log('Changes:');
-    changelog.split('\n').forEach(line => console.log(`  ${line}`));
-    console.log('─'.repeat(60));
-    console.log(`Effective: ${new Date(effectiveTime).toISOString()}`);
-    if (sourceUrl) {
-      console.log(`Source: ${sourceUrl}`);
-    }
-    console.log('═'.repeat(60) + '\n');
-    
+    log.warn('NETWORK UPGRADE PROPOSAL RECEIVED', {
+      currentNetwork: this.#identity.name,
+      currentId: this.#identity.shortId,
+      newNetwork: newIdentity.name,
+      newId: newIdentity.shortId,
+      currentPhrase: this.#identity.verificationPhrase,
+      newPhrase: newIdentity.verificationPhrase,
+      changelog,
+      effectiveTime: new Date(effectiveTime).toISOString(),
+      sourceUrl: sourceUrl || undefined,
+    });
+
     return true;
-  }
-  
-  /**
+  }  /**
    * Generate upgrade prompt for operator
    */
   generateUpgradePrompt(newFingerprint) {
@@ -240,15 +239,17 @@ Accept upgrade? [Y/N]: `;
         status: 'pending_download',
       };
       
-      console.log('\n✅ Upgrade accepted. Preparing to join new network...');
-      console.log(`   New network: ${proposal.newName} (${proposal.newShortId})`);
-      console.log('   Please restart the node after code update.\n');
+      log.info('Upgrade accepted - preparing to join new network', {
+        newNetwork: proposal.newName,
+        newId: proposal.newShortId,
+      });
       
       return { accepted: true, action: 'download_and_restart', proposal };
     } else {
-      console.log('\n❌ Upgrade declined. Staying on current network.');
-      console.log(`   Current: ${this.#identity.name} (${this.#identity.shortId})`);
-      console.log('   Note: You may become isolated from upgraded nodes.\n');
+      log.info('Upgrade declined - staying on current network', {
+        currentNetwork: this.#identity.name,
+        currentId: this.#identity.shortId,
+      });
       
       return { accepted: false, action: 'stay_current' };
     }

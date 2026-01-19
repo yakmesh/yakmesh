@@ -7,6 +7,9 @@
 
 import { REST, Routes, SlashCommandBuilder } from 'discord.js';
 import 'dotenv/config';
+import { createLogger } from '../utils/logger.js';
+
+const log = createLogger('yakbot:register');
 
 const commands = [
   new SlashCommandBuilder()
@@ -77,9 +80,8 @@ const token = process.env.DISCORD_TOKEN;
 const clientId = process.env.DISCORD_CLIENT_ID;
 
 if (!token || !clientId) {
-  console.error('❌ Missing environment variables!');
-  console.log('\nUsage:');
-  console.log('DISCORD_TOKEN=xxx DISCORD_CLIENT_ID=xxx node register-commands.js\n');
+  log.error('Missing environment variables');
+  log.info('Usage: DISCORD_TOKEN=xxx DISCORD_CLIENT_ID=xxx node register-commands.js');
   process.exit(1);
 }
 
@@ -87,7 +89,7 @@ const rest = new REST().setToken(token);
 
 (async () => {
   try {
-    console.log('🔄 Registering slash commands...');
+    log.info('Registering slash commands...');
     
     // Register globally (takes up to 1 hour to propagate)
     await rest.put(
@@ -95,11 +97,9 @@ const rest = new REST().setToken(token);
       { body: commands.map(cmd => cmd.toJSON()) },
     );
     
-    console.log('✅ Successfully registered commands:');
-    commands.forEach(cmd => console.log(`   /${cmd.name}`));
-    console.log('\n📝 Note: Global commands may take up to 1 hour to appear.');
-    console.log('   For instant testing, use guild-specific commands.\n');
+    log.info('Successfully registered commands', { commands: commands.map(cmd => cmd.name) });
+    log.info('Global commands may take up to 1 hour to appear. For instant testing, use guild-specific commands.');
   } catch (error) {
-    console.error('❌ Error registering commands:', error);
+    log.error('Error registering commands', { error: error.message });
   }
 })();

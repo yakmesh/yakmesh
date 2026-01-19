@@ -12,6 +12,9 @@
 import { sha3_256 } from '@noble/hashes/sha3.js';
 import { bytesToHex, hexToBytes } from '@noble/hashes/utils.js';
 import { ml_dsa65 } from '@noble/post-quantum/ml-dsa.js';
+import { createLogger } from '../utils/logger.js';
+
+const log = createLogger('security:doko');
 
 // Import iO obfuscation for DOKO IDs - never expose raw hashes
 import { deriveNetworkName, deriveNetworkId } from '../oracle/network-identity.js';

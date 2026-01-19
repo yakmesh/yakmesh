@@ -20,6 +20,9 @@
 import { sha3_256 } from '@noble/hashes/sha3.js';
 import { bytesToHex, hexToBytes, utf8ToBytes, randomBytes } from '@noble/hashes/utils.js';
 import { getOracle, contentHash } from './validation-oracle.js';
+import { createLogger } from '../utils/logger.js';
+
+const log = createLogger('oracle:code-proof');
 
 // Phase modulation imports
 import {
@@ -113,7 +116,7 @@ export class CodeProofProtocol {
           failedAt: Date.now(),
           reason: 'CHALLENGE_TIMEOUT',
         });
-        console.warn(`⚠️ Code proof challenge to ${peerId.slice(0, 16)}... timed out`);
+        log.warn('Code proof challenge timed out', { peerId: peerId.slice(0, 16), reason: 'CHALLENGE_TIMEOUT' });
       }
     }, this.challengeTimeout);
     
@@ -146,7 +149,7 @@ export class CodeProofProtocol {
     if (epoch !== undefined) {
       const validEpochs = getValidEpochs();
       if (!validEpochs.includes(epoch)) {
-        console.warn(`⚠️ Challenge from ${challengerNodeId.slice(0, 16)}... has expired phase: ${formatPhaseId(epoch)}`);
+        log.warn('Challenge has expired phase', { challengerNodeId: challengerNodeId.slice(0, 16), phase: formatPhaseId(epoch) });
         return {
           type: 'CODE_PROOF_RESPONSE',
           challengeId,
@@ -160,7 +163,7 @@ export class CodeProofProtocol {
       
       // Check expiration
       if (expiresAt && Date.now() > expiresAt) {
-        console.warn(`⚠️ Challenge from ${challengerNodeId.slice(0, 16)}... has expired`);
+        log.warn('Challenge has expired', { challengerNodeId: challengerNodeId.slice(0, 16), expiresAt });
         return {
           type: 'CODE_PROOF_RESPONSE',
           challengeId,
@@ -258,7 +261,10 @@ export class CodeProofProtocol {
       // Remove from failed if previously there
       this.failedPeers.delete(responderNodeId);
       
-      console.log(`✓ Code proof verified for ${responderNodeId.slice(0, 16)}... [Phase: ${formatPhaseId(epoch || 0)}]`);
+      log.info('Code proof verified', {
+        peerId: responderNodeId.slice(0, 16),
+        phaseEpoch: formatPhaseId(epoch || 0),
+      });
       
       return {
         verified: true,
@@ -277,7 +283,10 @@ export class CodeProofProtocol {
         phaseEpoch: epoch,
       });
       
-      console.warn(`✗ Code proof FAILED for ${responderNodeId.slice(0, 16)}...: ${verification.reason}`);
+      log.warn('Code proof FAILED', {
+        peerId: responderNodeId.slice(0, 16),
+        reason: verification.reason,
+      });
       
       return {
         verified: false,
@@ -407,7 +416,7 @@ export class CodeProofProtocol {
         return result;
         
       default:
-        console.warn(`Unknown code proof message type: ${message.type}`);
+        log.warn('Unknown code proof message type', { type: message.type });
     }
   }
 }
@@ -430,7 +439,10 @@ export async function mutualVerification(localProtocol, peerConnection) {
     
     peerConnection.send(challenge);
     
-    console.log(`→ Sent phased challenge to ${peerId.slice(0, 16)}... [Phase: ${formatPhaseId(currentEpoch.epoch)}]`);
+    log.debug('Sent phased challenge', {
+      peerId: peerId.slice(0, 16),
+      phaseEpoch: formatPhaseId(currentEpoch.epoch),
+    });
     
     // Wait for response
     const timeout = setTimeout(() => {

@@ -28,6 +28,9 @@ import { bytesToHex, hexToBytes, utf8ToBytes } from '@noble/hashes/utils.js';
 import { EventEmitter } from 'events';
 import { generateNodeId, getCodebaseHash } from '../identity/node-key.js';
 import { deriveNetworkName } from '../oracle/network-identity.js';
+import { createLogger } from '../utils/logger.js';
+
+const log = createLogger('security:namche');
 
 /**
  * JSON Canonicalization (RFC 8785 simplified)

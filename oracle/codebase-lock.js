@@ -16,6 +16,9 @@ import { openSync, closeSync, readdirSync, statSync, chmodSync } from 'fs';
 import { join, extname } from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import { createLogger } from '../utils/logger.js';
+
+const log = createLogger('oracle:codebase-lock');
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -96,7 +99,7 @@ export class CodebaseLock {
         } catch (e) {
           // If we can't lock a file, log but continue
           // Some files might already be locked or inaccessible
-          console.warn(`  ⚠️ Could not lock: ${filePath} (${e.message})`);
+          log.warn('Could not lock file', { path: filePath, error: e.message });
         }
       }
       
@@ -237,7 +240,7 @@ export function setupUnlockOnExit() {
   const cleanup = () => {
     const lock = getCodebaseLock();
     if (lock.isLocked()) {
-      console.log('\n🔓 Unlocking codebase...');
+      log.info('Unlocking codebase on exit');
       lock.unlock();
     }
   };
@@ -247,7 +250,7 @@ export function setupUnlockOnExit() {
   process.on('SIGINT', () => { cleanup(); process.exit(0); });
   process.on('SIGTERM', () => { cleanup(); process.exit(0); });
   process.on('uncaughtException', (err) => {
-    console.error('Uncaught exception:', err);
+    log.error('Uncaught exception', { error: err.message, stack: err.stack });
     cleanup();
     process.exit(1);
   });

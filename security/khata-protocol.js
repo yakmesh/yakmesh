@@ -17,6 +17,9 @@
 import { sha3_256 } from '@noble/hashes/sha3.js';
 import { bytesToHex, utf8ToBytes, randomBytes } from '@noble/hashes/utils.js';
 import { EventEmitter } from 'events';
+import { createLogger } from '../utils/logger.js';
+
+const log = createLogger('security:khata');
 
 /**
  * KHATA Message Types

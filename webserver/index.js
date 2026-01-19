@@ -11,6 +11,9 @@ import { spawn, execSync } from 'child_process';
 import { existsSync, writeFileSync, mkdirSync, unlinkSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { createLogger } from '../utils/logger.js';
+
+const log = createLogger('webserver:main');
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -71,7 +74,7 @@ export class YakmeshWebServer {
       throw new Error(`Unsupported platform: ${platformKey}`);
     }
     
-    console.log(`Downloading Caddy for ${platformKey}...`);
+    log.info('Downloading Caddy', { platform: platformKey });
     mkdirSync(this.config.caddyPath, { recursive: true });
     
     const isWindows = process.platform === 'win32';
@@ -88,7 +91,7 @@ export class YakmeshWebServer {
     }
     
     unlinkSync(archivePath);
-    console.log('Caddy installed successfully!');
+    log.info('Caddy installed successfully');
     return true;
   }
   
@@ -139,40 +142,40 @@ ${this.config.domain} {
   }
   
   async start() {
-    if (this.running) return console.log('Web server already running');
+    if (this.running) {
+      log.warn('Web server already running');
+      return;
+    }
     
     if (!this.isInstalled()) {
-      console.log('Caddy not found, installing...');
+      log.info('Caddy not found, installing...');
       await this.install();
     }
     
     mkdirSync(this.config.root, { recursive: true });
     mkdirSync(this.config.logPath, { recursive: true });
     
-    const caddyfilePath = this.writeCaddyfile();
-    
-    console.log(`\nStarting Yakmesh Web Server on port ${this.config.port}...`);
-    
-    this.process = spawn(this.caddyBinary, ['run', '--config', caddyfilePath], {
+const caddyfilePath = this.writeCaddyfile();
+
+    log.info('Starting Yakmesh Web Server', { port: this.config.port });    this.process = spawn(this.caddyBinary, ['run', '--config', caddyfilePath], {
       stdio: ['ignore', 'pipe', 'pipe'],
       detached: false
     });
     
-    this.process.stdout.on('data', (d) => console.log(`[Caddy] ${d.toString().trim()}`));
-    this.process.stderr.on('data', (d) => console.error(`[Caddy] ${d.toString().trim()}`));
+    this.process.stdout.on('data', (d) => log.debug('Caddy output', { message: d.toString().trim() }));
+    this.process.stderr.on('data', (d) => log.error('Caddy error', { message: d.toString().trim() }));
     this.process.on('close', (code) => { this.running = false; });
     
     this.running = true;
     await new Promise(r => setTimeout(r, 1000));
     
-    console.log(`\nWeb server running at http://localhost:${this.config.port}`);
-    console.log(`Document root: ${this.config.root}`);
+    log.info('Web server running', { url: `http://localhost:${this.config.port}`, root: this.config.root });
     return this;
   }
   
   async stop() {
     if (!this.running || !this.process) return;
-    console.log('Stopping web server...');
+    log.info('Stopping web server');
     
     return new Promise((resolve) => {
       this.process.on('close', () => {

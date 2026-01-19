@@ -5,6 +5,9 @@
  */
 
 import { YakmeshWebServer } from './index.js';
+import { createLogger } from '../utils/logger.js';
+
+const log = createLogger('webserver:cli');
 
 /**
  * Register web server commands with Commander
@@ -53,8 +56,7 @@ export function registerWebCommands(program) {
     .description('Check web server status')
     .action(() => {
       const server = new YakmeshWebServer();
-      console.log('Caddy installed:', server.isInstalled());
-      console.log('Binary path:', server.caddyBinary);
+      log.info('Web server status', { installed: server.isInstalled(), binaryPath: server.caddyBinary });
     });
   
   return web;

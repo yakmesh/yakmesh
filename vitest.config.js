@@ -2,8 +2,11 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
-    // Only run Vitest-compatible tests (security module)
-    include: ['security/tests/**/*.test.js'],
+    // Run Vitest-compatible tests (security + mesh modules)
+    include: [
+      'security/tests/**/*.test.js',
+      'mesh/tests/**/*.test.js',
+    ],
     
     // Exclude Node.js test runner files
     exclude: [

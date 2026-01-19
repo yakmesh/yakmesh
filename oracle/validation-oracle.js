@@ -20,6 +20,9 @@ import { ml_dsa65 } from '@noble/post-quantum/ml-dsa.js';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { createLogger } from '../utils/logger.js';
+
+const log = createLogger('oracle:validation');
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -121,11 +124,11 @@ export class ValidationOracle {
    * Initialize the oracle and verify its own integrity
    */
   _initialize() {
-    console.log('🔮 Initializing Validation Oracle...');
+    log.info('Initializing Validation Oracle');
     
     // 1. Compute hash of our own source code
     this.selfHash = this._computeSelfHash();
-    console.log(`   Self-hash: ${this.selfHash.slice(0, 16)}...`);
+    log.debug('Self-hash computed', { hash: this.selfHash.slice(0, 16) });
     
     // 2. Register all validation functions with their hashes
     this._registerFunctions();
@@ -139,7 +142,7 @@ export class ValidationOracle {
     MODULE_SEAL.behaviorFingerprint = this.behaviorFingerprint;
     
     this.initialized = true;
-    console.log('✓ Validation Oracle initialized and sealed');
+    log.info('Validation Oracle initialized and sealed');
   }
   
   /**
@@ -520,7 +523,7 @@ export class ValidationOracle {
     // This allows for versioned hash formats
     if (!certificate.cert_hash.includes(computedHash.slice(0, 16))) {
       // For now, just warn - full validation requires signature check
-      console.warn('QCoA hash mismatch - will verify signature');
+      log.warn('QCoA hash mismatch - will verify signature', { certHash: certificate.cert_hash.slice(0, 16), computedHash: computedHash.slice(0, 16) });
     }
     
     // Verify the signature
@@ -536,7 +539,7 @@ export class ValidationOracle {
       }
     } catch (e) {
       // Signature validation failed - certificate may use different format
-      console.warn('QCoA signature verification skipped:', e.message);
+      log.warn('QCoA signature verification skipped', { error: e.message });
     }
     
     return ValidationResult.success({
@@ -706,7 +709,7 @@ export class ValidationOracle {
     // 2. Verify it was validated by a compatible oracle
     if (sealedPackage.oracleVersion !== MODULE_SEAL.version) {
       // Version mismatch - might still be compatible
-      console.warn(`Oracle version mismatch: ${sealedPackage.oracleVersion} vs ${MODULE_SEAL.version}`);
+      log.warn('Oracle version mismatch', { packageVersion: sealedPackage.oracleVersion, currentVersion: MODULE_SEAL.version });
     }
     
     // 3. Re-validate the content ourselves
