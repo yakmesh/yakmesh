@@ -8,6 +8,29 @@
  * - CodeProofProtocol: Peer verification protocol
  * - ConsensusEngine: Distributed consensus mechanism
  * - ModuleSealer: Cryptographic sealing system
+ * - NetworkIdentity: iO obfuscation for identity derivation
+ * 
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * ⚠️  iO IDENTITY OBFUSCATION - CRITICAL SECURITY PRIMITIVE  ⚠️
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * 
+ * ALL user-facing and network-exposed identifiers MUST use the iO system:
+ * 
+ *   import { deriveNetworkName, deriveNetworkId } from './oracle/index.js';
+ *   
+ *   // For human-readable names
+ *   const name = deriveNetworkName(hash, 3);  // "qubit-lattice-prism"
+ *   
+ *   // For short IDs  
+ *   const id = deriveNetworkId(hash);  // "pq-a7x9"
+ * 
+ * NEVER expose raw hashes (e.g., "7f3a9b2c...") in:
+ * - Node IDs, DOKO IDs, network names
+ * - API responses, logs visible to users
+ * - WebSocket messages, gossip protocol
+ * 
+ * See oracle/network-identity.js and SECURITY.md for details.
+ * ═══════════════════════════════════════════════════════════════════════════════
  * 
  * Philosophy:
  * "Code is the oracle. Every node running the same provably-correct code
@@ -15,7 +38,7 @@
  *  replaces social trust."
  * 
  * @module YakmeshOracle
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 export { 

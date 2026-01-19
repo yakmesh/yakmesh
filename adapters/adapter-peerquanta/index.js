@@ -12,12 +12,21 @@
  * - Deterministic validation (same rules on all nodes)
  * - Injection attack prevention
  * - Content integrity verification
+ * 
+ * v2.0 SECURITY FEATURES:
+ * - DOKO Trader Identity - Self-sovereign identities
+ * - Trust-Based Escrow - Variable escrow based on trust level
+ * - ANNEX Trade Chat - Encrypted P2P messaging
+ * - Merchant Domain Verification - Mesh-verified domains
  */
 
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import initSqlJs from 'sql.js';
-import { getOracle, contentHash } from '../oracle/index.js';
+import { getOracle, contentHash } from '../../oracle/index.js';
+
+// v2.0 Security Integration
+import PeerQuantaSecurity from './security.js';
 
 // sql.js instance
 let SQL = null;
@@ -110,6 +119,9 @@ export class PeerQuantaBridge {
       qcoa: 0,
       reputation: 0,
     };
+    
+    // v2.0 Security Integration (initialized in init())
+    this.security = null;
   }
 
   /**
@@ -148,6 +160,14 @@ export class PeerQuantaBridge {
         this._handlePeerQuantaRumor(topic, data, origin);
       }
     });
+    
+    // Initialize v2.0 Security features
+    try {
+      this.security = new PeerQuantaSecurity(this);
+      console.log('✓ v2.0 Security features enabled');
+    } catch (error) {
+      console.warn(`⚠ v2.0 Security features unavailable: ${error.message}`);
+    }
     
     console.log('✓ PeerQuanta Bridge initialized');
   }
@@ -1158,6 +1178,219 @@ export function createPeerQuantaEndpoints(app, bridge) {
       meshStats: bridge.getStatus(),
     });
   });
+
+  // ═══════════════════════════════════════════════════════════════════════════════
+  // v2.0 SECURITY API ENDPOINTS
+  // ═══════════════════════════════════════════════════════════════════════════════
+  
+  if (bridge.security) {
+    // Security status
+    app.get('/pq/security/status', (req, res) => {
+      res.json({
+        success: true,
+        status: bridge.security.getStatus(),
+      });
+    });
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // DOKO TRADER IDENTITY
+    // ─────────────────────────────────────────────────────────────────────────────
+    
+    // Create trader identity
+    app.post('/pq/identity/create', (req, res) => {
+      try {
+        const { userId, username, tradingPairs } = req.body;
+        if (!userId || !username) {
+          return res.status(400).json({ error: 'userId and username required' });
+        }
+        const result = bridge.security.identity.createTraderIdentity(userId, username, { tradingPairs });
+        res.json(result);
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    // Get trader identity
+    app.get('/pq/identity/:userId', (req, res) => {
+      try {
+        const doko = bridge.security.identity.getTraderDoko(parseInt(req.params.userId));
+        if (doko) {
+          res.json({ success: true, doko: doko.toJSON ? doko.toJSON() : doko });
+        } else {
+          res.status(404).json({ error: 'No DOKO found for user' });
+        }
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    // Verify trader
+    app.get('/pq/identity/:userId/verify', (req, res) => {
+      try {
+        const result = bridge.security.identity.verifyTrader(parseInt(req.params.userId));
+        res.json(result);
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    // List all traders
+    app.get('/pq/traders', (req, res) => {
+      try {
+        const traders = bridge.security.identity.getAllTraders();
+        res.json({ success: true, traders: traders.map(t => t.toJSON ? t.toJSON() : t) });
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // TRUST-BASED ESCROW
+    // ─────────────────────────────────────────────────────────────────────────────
+    
+    // Get escrow requirements for a trade
+    app.post('/pq/escrow/requirements', async (req, res) => {
+      try {
+        const { buyerUserId, sellerUserId, tradeValue } = req.body;
+        if (!buyerUserId || !sellerUserId || tradeValue === undefined) {
+          return res.status(400).json({ error: 'buyerUserId, sellerUserId, and tradeValue required' });
+        }
+        const result = await bridge.security.escrow.getEscrowRequirements(
+          buyerUserId, sellerUserId, tradeValue
+        );
+        res.json(result);
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    // Get trader trust level
+    app.get('/pq/trust/:userId', async (req, res) => {
+      try {
+        const result = await bridge.security.escrow.calculateTraderTrust(parseInt(req.params.userId));
+        res.json(result);
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // ANNEX TRADE CHAT
+    // ─────────────────────────────────────────────────────────────────────────────
+    
+    // Initialize trade chat
+    app.post('/pq/chat/init', async (req, res) => {
+      try {
+        const { tradeId, buyerUserId, sellerUserId } = req.body;
+        if (!tradeId || !buyerUserId || !sellerUserId) {
+          return res.status(400).json({ error: 'tradeId, buyerUserId, and sellerUserId required' });
+        }
+        const result = await bridge.security.chat.initTradeChat(tradeId, buyerUserId, sellerUserId);
+        res.json(result);
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    // Send message in trade chat
+    app.post('/pq/chat/:tradeId/send', async (req, res) => {
+      try {
+        const { senderUserId, message, secretKeyHex } = req.body;
+        if (!senderUserId || !message || !secretKeyHex) {
+          return res.status(400).json({ error: 'senderUserId, message, and secretKeyHex required' });
+        }
+        const result = await bridge.security.chat.sendMessage(
+          req.params.tradeId, senderUserId, message, secretKeyHex
+        );
+        res.json(result);
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    // Get chat history
+    app.get('/pq/chat/:tradeId', (req, res) => {
+      try {
+        const userId = parseInt(req.query.userId);
+        if (!userId) {
+          return res.status(400).json({ error: 'userId query parameter required' });
+        }
+        const result = bridge.security.chat.getChatHistory(req.params.tradeId, userId);
+        res.json(result);
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    // Close trade chat
+    app.delete('/pq/chat/:tradeId', (req, res) => {
+      try {
+        const result = bridge.security.chat.closeChat(req.params.tradeId);
+        res.json(result);
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    // ─────────────────────────────────────────────────────────────────────────────
+    // MERCHANT DOMAIN VERIFICATION
+    // ─────────────────────────────────────────────────────────────────────────────
+    
+    // Request domain verification
+    app.post('/pq/merchant/verify/request', async (req, res) => {
+      try {
+        const { userId, domain, businessName } = req.body;
+        if (!userId || !domain) {
+          return res.status(400).json({ error: 'userId and domain required' });
+        }
+        const result = await bridge.security.merchant.requestVerification(userId, domain, businessName);
+        res.json(result);
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    // Complete domain verification
+    app.post('/pq/merchant/verify/complete', async (req, res) => {
+      try {
+        const { userId, domain } = req.body;
+        if (!userId || !domain) {
+          return res.status(400).json({ error: 'userId and domain required' });
+        }
+        const result = await bridge.security.merchant.verifyDomain(userId, domain);
+        res.json(result);
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    // Check if merchant is verified
+    app.get('/pq/merchant/:userId/verified', (req, res) => {
+      try {
+        const verified = bridge.security.merchant.isVerified(parseInt(req.params.userId));
+        const details = bridge.security.merchant.getVerification(parseInt(req.params.userId));
+        res.json({ verified, details });
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    console.log('✓ v2.0 Security API endpoints registered');
+    console.log('  GET  /pq/security/status       - Security status');
+    console.log('  POST /pq/identity/create       - Create trader DOKO');
+    console.log('  GET  /pq/identity/:userId      - Get trader DOKO');
+    console.log('  GET  /pq/identity/:userId/verify - Verify trader');
+    console.log('  GET  /pq/traders               - List all traders');
+    console.log('  POST /pq/escrow/requirements   - Get escrow requirements');
+    console.log('  GET  /pq/trust/:userId         - Get trust level');
+    console.log('  POST /pq/chat/init             - Start trade chat');
+    console.log('  POST /pq/chat/:tradeId/send    - Send chat message');
+    console.log('  GET  /pq/chat/:tradeId         - Get chat history');
+    console.log('  DEL  /pq/chat/:tradeId         - Close chat');
+    console.log('  POST /pq/merchant/verify/request  - Request verification');
+    console.log('  POST /pq/merchant/verify/complete - Complete verification');
+    console.log('  GET  /pq/merchant/:userId/verified - Check verification');
+  }
 
   console.log('✓ PeerQuanta API endpoints registered');
   console.log('  GET  /pq/status         - Mesh status');

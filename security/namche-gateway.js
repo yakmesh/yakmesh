@@ -681,6 +681,35 @@ export class NamcheGateway extends EventEmitter {
   }
 
   /**
+   * Lookup a verified DOKO by domain
+   * Searches through cached DOKOs for one with a matching verified domain claim
+   * @param {string} domain - The domain to search for
+   * @returns {Object|null} The DOKO if found and still valid
+   */
+  lookupByDomain(domain) {
+    const normalizedDomain = domain.toLowerCase().replace(/^www\./, '');
+    
+    for (const [hash, cached] of this.dokoCache.cache.entries()) {
+      // Check TTL first
+      if (Date.now() - cached.verifiedAt >= this.config.dokoCacheTTL) {
+        continue;
+      }
+      
+      // Check if DOKO has domain claims
+      const doko = cached.doko;
+      if (doko.claims?.domains) {
+        for (const domainClaim of doko.claims.domains) {
+          const claimDomain = domainClaim.domain?.toLowerCase().replace(/^www\./, '');
+          if (claimDomain === normalizedDomain && domainClaim.verified) {
+            return doko;
+          }
+        }
+      }
+    }
+    return null;
+  }
+
+  /**
    * Get gateway statistics
    */
   getStats() {

@@ -86,26 +86,54 @@ node-[networkName]-[instanceId]
 
 ### iO Oracle Integration (CRITICAL)
 
-**Location**: `oracle/`
+**Location**: `oracle/network-identity.js`
 
-The indistinguishability obfuscation (iO) oracle provides:
-- Deterministic codebase hashing
-- Network identity derivation  
+The indistinguishability obfuscation (iO) system provides:
+- Deterministic identity derivation from hashes
+- Human-readable, verifiable names
 - Phase modulation for replay protection
+- One-way derivation (cannot reverse to original hash)
+
+**MANDATORY USAGE**:
+
+| Component | Must Use iO? | Function |
+|-----------|-------------|----------|
+| Node IDs | ✅ YES | `deriveNetworkName()`, `deriveNetworkId()` |
+| Network Names | ✅ YES | `deriveNetworkName()` |
+| DOKO Identity IDs | ✅ YES | `deriveNetworkName()`, `deriveNetworkId()` |
+| User-facing identifiers | ✅ YES | Any derived name functions |
+| Content hashes | ❌ NO | These are content addresses by design |
+| Internal DHT keys | ❌ NO | Lookup efficiency requires actual hashes |
 
 **DO NOT**:
 - Bypass the oracle for "faster" identity generation
+- Expose raw hashes in user-facing displays or network messages
 - Cache identities without oracle verification
 - Accept identities that don't match expected network name
+- Display truncated hex hashes (e.g., `7f3a9b2c...`) to users
+
+**WHY RAW HASH EXPOSURE IS DANGEROUS**:
+1. **Fingerprinting** - Track users across sessions
+2. **Precomputation** - Build rainbow tables for known entities
+3. **Oracle queries** - Probe for specific identity existence
+4. **Correlation** - Link identities across different systems
 
 ### Security Anti-Pattern Examples
 
 ```javascript
+// ❌ WRONG: Exposing raw hash in identifier
+const dokoId = `doko-${type}-${hash.slice(0, 16)}`;
+
+// ✅ CORRECT: Use iO obfuscation
+const dokoId = `doko-${type}-${deriveNetworkName(hash, 2)}-${deriveNetworkId(hash)}`;
+// Result: "doko-trader-qubit-lattice-pq-a7x9"
+
 // ❌ WRONG: Simplified NodeID (NEVER DO THIS)
 const nodeId = sha3_256(publicKey);
 
 // ✅ CORRECT: Full iO-based derivation
 const nodeId = generateNodeId(publicKey, codebaseHash);
+// Result: "node-qubit-lattice-prism-pq-a7x9"
 ```
 
 ---
@@ -119,6 +147,8 @@ Before merging any identity/crypto changes:
 - [ ] Does it use ML-DSA-65 (not classical crypto)?
 - [ ] Does it verify signatures before trusting data?
 - [ ] Does it respect the iO oracle's role?
+- [ ] Are all user-facing identifiers using iO obfuscation?
+- [ ] Are raw hashes only used for internal operations?
 
 ---
 
@@ -126,6 +156,7 @@ Before merging any identity/crypto changes:
 
 | Date | Description | Resolution |
 |------|-------------|------------|
+| 2026-01-18 | DOKO Identity `dokoId` exposed raw hash | Fixed. Updated to use iO obfuscation (`deriveNetworkName`, `deriveNetworkId`). |
 | 2026-01-18 | NAMCHE spec draft proposed `NodeID = SHA3-256(publicKey)` | Rejected. Spec corrected to document actual two-part design. Security warnings added to codebase. |
 
 ---

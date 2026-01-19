@@ -2,6 +2,233 @@
 
 All notable changes to YAKMESH will be documented in this file.
 
+## [2.2.0] - 2026-01-18
+
+### ✨ YAK:// Protocol v2.2.0 - Remote Bookmarks, DOKO Revocation & Comprehensive Testing
+
+This release adds mesh-synchronized bookmark sharing, key compromise recovery, and brings test coverage to 352 tests across all modules.
+
+#### 🌐 Remote Bookmarks (Mesh Sync)
+
+Share bookmark lists between nodes via gossip protocol. Subscribe to trusted nodes and receive their bookmarks automatically.
+
+**New Class: `RemoteBookmarkSync`**
+- **Publish**: Share your bookmarks to the mesh (`yakmesh bookmark share <list-name>`)
+- **Subscribe**: Follow other nodes' bookmark lists (`yakmesh bookmark subscribe <node-id>`)
+- **Sync**: Automatic sync via gossip protocol
+- **Priority**: Local bookmarks always override remote ones
+
+**Dashboard UI:**
+- New "Remote Bookmarks" panel with subscription management
+- Subscribe/Unsubscribe buttons
+- Publish your bookmarks to mesh
+- View remote bookmarks from subscribed nodes
+
+**REST API:**
+- `GET /bookmarks/remote/status` - Sync status and stats
+- `GET /bookmarks/remote` - List remote bookmarks
+- `POST /bookmarks/remote/subscribe` - Subscribe to a node
+- `POST /bookmarks/remote/unsubscribe` - Unsubscribe from a node
+- `POST /bookmarks/remote/publish` - Publish your bookmarks
+
+#### 🔑 DOKO Revocation (Key Compromise Recovery)
+
+Emergency revocation system for compromised DOKO identities.
+
+**New Class: `DOKORevocation`**
+- **Self-revocation**: Sign revocation with your own key (if available)
+- **Emergency revocation**: Pre-generated "break-glass" certificates
+- **Verification**: Validate revocation certificates with ML-DSA
+- **Broadcast**: Share revocations via gossip to prevent trust in compromised DOKOs
+
+**Revocation Reasons:**
+- `KEY_COMPROMISED` - Private key leaked or stolen
+- `DOKO_SUPERSEDED` - Replaced by new DOKO
+- `IDENTITY_RETIRED` - Voluntary retirement
+- `LOST_ACCESS` - Lost access to private key
+- `AFFILIATION_ENDED` - Left organization
+
+**Usage:**
+```javascript
+// Generate emergency cert when creating DOKO (store offline!)
+const emergencyCert = DOKORevocation.generateEmergencyCertificate(doko, privateKey);
+
+// Self-revoke if key is compromised but still accessible
+const revocation = DOKORevocation.createSelfRevocation(doko, privateKey, 'key_compromised');
+
+// Activate emergency revocation if key is lost
+DOKORevocation.activateEmergencyRevocation(emergencyCert);
+
+// Check if a DOKO is revoked
+const status = DOKORevocation.isRevoked(dokoId);
+```
+
+#### ✅ Comprehensive Test Coverage
+
+**352 tests across all modules:**
+
+| Suite | Framework | Tests |
+|-------|-----------|-------|
+| Oracle | Node.js test runner | 98 |
+| Protocol | Node.js test runner | 56 |
+| Multi-Node | Node.js test runner | 18 |
+| Security | Vitest | 180 |
+| **Total** | | **352** |
+
+**New Test Files:**
+- `protocol/tests/yak-protocol.test.js` - 56 tests for URL parsing, bookmarks, DOKO integration
+- `tests/multi-node.test.js` - 18 tests for cross-node sync with mock network
+
+#### 🎨 Dashboard Improvements
+
+- **Bookmarks Panel**: Add, list, remove local bookmarks
+- **Remote Bookmarks Panel**: Subscribe, publish, view mesh-synced bookmarks
+- **Version**: Updated to v2.2.0
+
+---
+
+## [2.1.0] - 2026-01-18
+
+### ✨ YAK:// Protocol v2.1.0 - Bookmarks, SSL Binding & Domain Transfers
+
+This release completes Phase 2 of the YAK:// protocol implementation with local bookmarks, SSL/TLS certificate binding, and secure domain transfer workflows.
+
+#### 🔖 Local Bookmarks (Phase 2)
+
+Personal "pet names" for YAK:// addresses. No global registry needed - bookmarks are local to your node.
+
+**Features:**
+- **BookmarkManager**: Manages local bookmarks stored in `data/bookmarks.json`
+- **URL Resolution**: Bookmarks are resolved after builtins, before content hashes
+- **CLI Commands**: Full bookmark management via CLI
+  - `yakmesh protocol bookmark add <name> <target>` - Add bookmark
+  - `yakmesh protocol bookmark list` - List all bookmarks
+  - `yakmesh protocol bookmark get <name>` - Get bookmark details
+  - `yakmesh protocol bookmark rm <name>` - Remove bookmark
+- **REST API**: `/bookmarks` endpoints for programmatic access
+  - `GET /bookmarks` - List all bookmarks
+  - `GET /bookmarks/:name` - Get specific bookmark
+  - `POST /bookmarks` - Add bookmark
+  - `DELETE /bookmarks/:name` - Remove bookmark
+
+**Usage:**
+```bash
+# Add a bookmark
+yakmesh protocol bookmark add docs yak://site/docs
+
+# Use the bookmark
+yakmesh protocol open yak://docs
+
+# Test resolution
+yakmesh protocol test yak://docs
+# → http://localhost:3000/site/docs
+```
+
+#### 🔐 SSL/TLS Certificate Binding
+
+Bind SSL certificates to DOKO identities for enhanced domain verification.
+
+**New Class: `DOKOCertBinding`**
+- `computeFingerprint(cert)` - SHA-256 fingerprint from PEM or DER certificate
+- `createBinding(options)` - Create SSL binding for a domain
+- `addBinding(doko, binding)` - Add binding to DOKO extensions
+- `verifyBinding(binding, cert)` - Verify certificate matches binding
+- `getBindingForDomain(doko, domain)` - Get binding for specific domain
+- `validateBindings(doko)` - Validate all bindings (expiration, etc.)
+
+**Cryptographic Chain:**
+```
+Domain → SSL Certificate → DOKO Identity → Mesh Verification
+```
+
+**19 tests** covering fingerprint computation, binding management, and verification.
+
+#### 🔄 Domain Transfer Workflow
+
+Secure ownership transfer of domains and DOKO-bound assets.
+
+**New Class: `DOKOTransfer`**
+- `createRequest(options)` - Create transfer request with expiration
+- `authorize(request, signature, nodeId)` - Owner authorizes transfer
+- `reject(request, reason)` - Owner rejects transfer
+- `cancel(request)` - Requester cancels pending transfer
+- `verifyAuthorization(transfer, publicKey)` - Verify owner signature
+- `complete(transfer, toNodeId)` - Complete transfer with proof
+- `createProof(completedTransfer)` - Generate mesh-verifiable proof
+
+**Transfer Flow:**
+```
+New Owner → Request → Current Owner → Authorize → 
+Mesh Verifies → Complete → Ownership Updated
+```
+
+**Transfer States:** `pending`, `authorized`, `completed`, `rejected`, `expired`, `cancelled`
+
+**Transfer Types:** `domain`, `website`, `asset`
+
+**19 tests** covering request creation, state transitions, completion, and proof validation.
+
+#### 📊 Test Results
+
+| Test Suite | Tests | Status |
+|------------|-------|--------|
+| Oracle Tests | 98 | ✅ Pass |
+| Security Tests | 152 | ✅ Pass |
+| DOKO Identity | 60 | ✅ Pass |
+| **Total** | **310** | ✅ All Pass |
+
+#### 🔧 Other Changes
+
+- Updated protocol version to 2.1.0
+- Fixed regex in DOKO ID format test (mixed case shortId)
+- Improved BookmarkManager normalization (simple `/` prefix)
+
+---
+
+## [2.0.1] - 2026-01-18
+
+### 🔧 Security Patch & Export Completeness
+
+This patch release fixes critical ML-DSA-65 argument order bugs discovered during post-release audit.
+
+#### 🐛 Bug Fixes
+
+##### ML-DSA-65 Argument Order (CRITICAL)
+Fixed incorrect argument order in two files where the noble-post-quantum API was used incorrectly:
+
+- **`oracle/module-sealer.js`**: Fixed `sign()` and `verify()` argument order
+  - `sign(secretKey, message)` → `sign(message, secretKey)` ✅
+  - `verify(publicKey, message, signature)` → `verify(signature, message, publicKey)` ✅
+
+- **`mesh/nakpak-routing.js`**: Fixed `sign()` and `verify()` argument order
+  - Same corrections as above
+
+**Impact**: Module attestations and NakPak routing signatures were failing validation.
+
+##### JSON Serialization in DOKO Identity
+Fixed `getSignableBytes()` to properly serialize nested objects using recursive key sorting.
+
+#### ✨ New Exports
+
+Added missing module exports to `package.json`:
+
+| Export Path | Module |
+|-------------|--------|
+| `./security/khata-protocol` | KHATA peer endorsement protocol |
+| `./security/mesh-auth` | Mesh authentication |
+| `./identity/node-key` | Node key management |
+| `./mesh/annex` | ANNEX encrypted P2P channels |
+| `./mesh/temporal-encoder` | Temporal encoding utilities |
+
+#### 📋 Release Process
+
+Added `RELEASE_CHECKLIST.md` with pre-release verification steps including:
+- Cryptographic API argument order verification
+- Export file existence checks
+- Documentation accuracy review
+
+---
+
 ## [2.0.0] - 2026-01-18
 
 ### 🧭 NAMCHE Gateway & 📜 DOKO Identity — The "Sherpa Security Stack"

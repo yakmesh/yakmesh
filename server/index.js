@@ -50,6 +50,35 @@ import {
 } from '../oracle/time-source.js';
 import { setTimeSourceConfig, getActiveConfig } from '../oracle/phase-epoch.js';
 
+// v2.0 Security imports - NAMCHE and DOKO
+import NamcheGateway, { 
+  DOKO_TYPES as NAMCHE_DOKO_TYPES,
+  VERIFY_RESULT 
+} from '../security/namche-gateway.js';
+import { 
+  DOKO_TYPES as DOKOTypes,
+  DOKODocument,
+  DOKOGenerator,
+  DOKOValidator,
+  DOKOStore
+} from '../security/doko-identity.js';
+
+// Gate names for dashboard display
+const GATE_NAMES = [
+  'Structure Valid', 'Signature Valid', 'NodeID Match',
+  'Temporal Valid', 'Network Match', 'Not Revoked', 'Domains OK'
+];
+
+// YAK:// Protocol Handler
+import YakProtocolHandler, { 
+  createProtocolEndpoints,
+  parseYakUrl,
+  yakToHttp,
+  httpToYak,
+  PROTOCOL,
+  BUILTIN_ROUTES
+} from '../protocol/yak-protocol.js';
+
 // Helper: Format uptime in human-readable format
 function formatUptime(seconds) {
   const days = Math.floor(seconds / 86400);
@@ -310,9 +339,18 @@ export class YakmeshNode {
       await this._initAdapter();
     }
 
+    // 8. Initialize Website Adapter (if website directory exists)
+    if (this.config.website?.enabled !== false) {
+      await this._initWebsiteAdapter();
+    }
+
+    // 9. Initialize YAK:// Protocol Handler
+    await this._initProtocolHandler();
+
     console.log('\n✓ Yakmesh Node is running!\n');
     console.log(`  Node ID:    ${this.identity.identity.nodeId}`);
     console.log(`  HTTP:       http://localhost:${this.boundHttpPort || this.config.network.httpPort}`);
+    console.log(`  YAK://      yak://dashboard  (register with: yakmesh protocol register)`);
     console.log(`  Content:    http://localhost:${this.boundHttpPort || this.config.network.httpPort}/content`);
     console.log(`  Dashboard:  http://localhost:${this.boundHttpPort || this.config.network.httpPort}/dashboard`);
     console.log(`  WebSocket:  ws://localhost:${this.mesh.boundPort || this.config.network.wsPort}`);
@@ -331,6 +369,9 @@ export class YakmeshNode {
     }
     if (this.adapter) {
       console.log(`  Adapter:    ✓ Enabled`);
+    }
+    if (this.websiteAdapter && this.websiteAdapter.manifests.size > 0) {
+      console.log(`  Website:    ✓ ${this.websiteAdapter.manifests.size} site(s) at /site/`);
     }
     console.log('');
 
@@ -1027,17 +1068,60 @@ export class YakmeshNode {
       const peerCount = this.mesh?.getPeers()?.length || 0;
       const gossipStats = this.gossip?.getStats() || null;
       
+      // NAMCHE security gate status (v2.0)
+      let namcheInfo = null;
+      if (this.namcheGateway) {
+        namcheInfo = this.namcheGateway.getStatus();
+      } else {
+        // Show gate definitions even if not initialized
+        namcheInfo = {
+          gates: GATE_NAMES,
+          status: 'uninitialized',
+          gateCount: 7,
+        };
+      }
+      
+      // DOKO identity status (v2.0)
+      let dokoInfo = null;
+      if (this.dokoRegistry) {
+        dokoInfo = this.dokoRegistry.getStats();
+      } else {
+        dokoInfo = {
+          status: 'uninitialized',
+          types: Object.keys(DOKOTypes),
+        };
+      }
+      
+      // Website adapter status (v2.0)
+      let websiteInfo = null;
+      if (this.websiteAdapter) {
+        websiteInfo = {
+          status: 'active',
+          websites: this.websiteAdapter.manifests.size,
+          domains: this.websiteAdapter.domains.size,
+          filesServed: this.websiteAdapter.stats.filesServed,
+          bytesServed: this.websiteAdapter.stats.bytesServed,
+        };
+      } else {
+        websiteInfo = { status: 'uninitialized' };
+      }
+      
       res.json({
         node: {
           id: this.identity?.identity?.nodeId || null,
           name: this.config?.node?.name || 'unknown',
-          version: '1.7.0',
+          version: '2.0.1',
           uptime,
           uptimeFormatted: formatUptime(uptime),
         },
         crypto: cryptoInfo,
         time: timeInfo,
         oracle: oracleInfo,
+        security: {
+          namche: namcheInfo,
+          doko: dokoInfo,
+        },
+        website: websiteInfo,
         network: {
           peers: peerCount,
           gossip: gossipStats,
@@ -1111,6 +1195,117 @@ export class YakmeshNode {
         epochDuration: phaseConfig.epochDurationHours,
         gracePeriod: phaseConfig.gracePeriodMinutes,
       });
+    });
+
+    // =========================================
+    // NAMCHE Security Gate Endpoints (v2.0)
+    // =========================================
+    
+    // Get all gate statuses
+    app.get('/security/namche/gates', (req, res) => {
+      if (!this.namcheGateway) {
+        return res.json({
+          status: 'uninitialized',
+          gates: GATE_NAMES.map((name, index) => ({
+            gate: index + 1,
+            name,
+            status: 'pending',
+            icon: ['🗝️', '🧩', '🔐', '🌐', '⚡', '🔮', '🏔️'][index]
+          }))
+        });
+      }
+      res.json(this.namcheGateway.getStatus());
+    });
+    
+    // Verify a specific gate
+    app.post('/security/namche/verify/:gate', (req, res) => {
+      const gateNum = parseInt(req.params.gate);
+      if (gateNum < 1 || gateNum > 7) {
+        return res.status(400).json({ error: 'Gate must be 1-7' });
+      }
+      
+      if (!this.namcheGateway) {
+        return res.status(503).json({ error: 'NAMCHE gateway not initialized' });
+      }
+      
+      const result = this.namcheGateway.verifyGate(gateNum, req.body);
+      res.json({
+        gate: gateNum,
+        name: GATE_NAMES[gateNum - 1],
+        ...result
+      });
+    });
+    
+    // Get comprehensive security status
+    app.get('/security/status', (req, res) => {
+      const oracleIntegrity = this.oracle?.verifySelfIntegrity();
+      
+      res.json({
+        namche: this.namcheGateway?.getStatus() || { status: 'uninitialized' },
+        doko: this.dokoRegistry?.getStats() || { status: 'uninitialized' },
+        oracle: {
+          valid: oracleIntegrity?.valid || false,
+          status: oracleIntegrity?.valid ? 'healthy' : 'unknown',
+        },
+        crypto: {
+          signatures: 'ML-DSA-65 (FIPS 204)',
+          keyExchange: 'ML-KEM-768 (FIPS 203)',
+          backup: 'SLH-DSA-SHA2-192f (FIPS 205)',
+          level: 'NIST Level 3',
+        },
+        timestamp: new Date().toISOString(),
+      });
+    });
+
+    // =========================================
+    // DOKO Identity Endpoints (v2.0)
+    // =========================================
+    
+    // Get DOKO registry stats
+    app.get('/security/doko/stats', (req, res) => {
+      if (!this.dokoRegistry) {
+        return res.json({
+          status: 'uninitialized',
+          types: Object.keys(DOKOTypes),
+          description: 'Decentralized On-chain Key Ownership'
+        });
+      }
+      res.json(this.dokoRegistry.getStats());
+    });
+    
+    // List identities (limited info)
+    app.get('/security/doko/identities', (req, res) => {
+      if (!this.dokoRegistry) {
+        return res.status(503).json({ error: 'DOKO registry not initialized' });
+      }
+      
+      const type = req.query.type || null;
+      const identities = this.dokoRegistry.list(type);
+      res.json({
+        count: identities.length,
+        type: type || 'all',
+        identities: identities.map(id => ({
+          id: id.id,
+          type: id.type,
+          created: id.created,
+          verified: id.verified,
+        }))
+      });
+    });
+    
+    // Verify an identity
+    app.post('/security/doko/verify', (req, res) => {
+      if (!this.dokoRegistry) {
+        return res.status(503).json({ error: 'DOKO registry not initialized' });
+      }
+      
+      const { id, challenge, signature } = req.body;
+      if (!id || !challenge || !signature) {
+        return res.status(400).json({ error: 'Missing id, challenge, or signature' });
+      }
+      
+      const result = this.dokoRegistry.verify(id, challenge, signature);
+      res.json(result);
     });
 
     return new Promise(async (resolve, reject) => {
@@ -1190,6 +1385,72 @@ export class YakmeshNode {
       console.log('✓ PeerQuanta integration enabled');
     } catch (error) {
       console.error('Failed to initialize PeerQuanta:', error.message);
+    }
+  }
+
+  /**
+   * Initialize Website Adapter for hosting static sites via mesh
+   */
+  async _initWebsiteAdapter() {
+    try {
+      const { default: WebsiteAdapter } = await import('../adapters/adapter-website/index.js');
+      
+      // Get source directory from config or default
+      const sourceDir = this.config.website?.sourceDir || '../website';
+      
+      this.websiteAdapter = new WebsiteAdapter(this, {
+        sourceDir,
+        cacheDir: './data/websites',
+        mountPath: '/site',
+        yakDomains: true,
+      });
+      
+      await this.websiteAdapter.init();
+      
+      // Register the yakmesh.yak domain if website exists
+      if (this.websiteAdapter.manifests.size > 0) {
+        const firstManifest = this.websiteAdapter.manifests.values().next().value;
+        if (firstManifest && !firstManifest.domain) {
+          try {
+            await this.websiteAdapter.registerDomain('yakmesh', firstManifest.id);
+          } catch (e) {
+            // Domain registration optional
+          }
+        }
+      }
+      
+      console.log('✓ Website Adapter enabled');
+      console.log(`  Site: http://localhost:${this.boundHttpPort}/site/`);
+    } catch (error) {
+      // Website adapter is optional
+      if (error.code !== 'ERR_MODULE_NOT_FOUND') {
+        console.warn('⚠️ Website Adapter:', error.message);
+      }
+    }
+  }
+
+  /**
+   * Initialize YAK:// Protocol Handler
+   */
+  async _initProtocolHandler() {
+    try {
+      this.protocolHandler = new YakProtocolHandler({
+        port: this.boundHttpPort || this.config.network.httpPort,
+        nodePath: process.cwd(),
+      });
+      
+      // Register protocol endpoints on Express app
+      createProtocolEndpoints(this.app, this.protocolHandler);
+      
+      // Auto-register protocol if configured
+      if (this.config.protocol?.autoRegister) {
+        await this.protocolHandler.register();
+      }
+      
+      console.log('✓ YAK:// Protocol handler initialized');
+    } catch (error) {
+      // Protocol handler is optional
+      console.warn('⚠️ YAK:// Protocol:', error.message);
     }
   }
 }

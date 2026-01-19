@@ -512,21 +512,23 @@ class NakpakRelay {
 
   /**
    * Sign data with ML-DSA-65
+   * IMPORTANT: ml_dsa65.sign(message, secretKey) - message FIRST!
    */
   sign(data) {
     const message = typeof data === 'string' ? utf8ToBytes(data) : data;
-    return bytesToHex(ml_dsa65.sign(this.signKeyPair.secretKey, message));
+    return bytesToHex(ml_dsa65.sign(message, this.signKeyPair.secretKey));
   }
 
   /**
    * Verify signature
+   * IMPORTANT: ml_dsa65.verify(signature, message, publicKey) - signature FIRST!
    */
   verify(data, signature, publicKey) {
     const message = typeof data === 'string' ? utf8ToBytes(data) : data;
     return ml_dsa65.verify(
-      hexToBytes(publicKey),
+      hexToBytes(signature),
       message,
-      hexToBytes(signature)
+      hexToBytes(publicKey)
     );
   }
 
