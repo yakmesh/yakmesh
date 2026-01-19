@@ -6,6 +6,23 @@ All notable changes to YAKMESH will be documented in this file.
 
 ### ✨ YAK:// Protocol v2.2.0 - Remote Bookmarks, DOKO Revocation & Comprehensive Testing
 
+**This release includes all features from v2.0.1, v2.1.0, and v2.2.0 (combined release).**
+
+#### 📋 Complete v2.2.0 Feature Summary
+
+| Category | Features Added |
+|----------|----------------|
+| **YAK:// Protocol** | Custom URL scheme, builtin routes, content addressing |
+| **Local Bookmarks** | Pet names, CLI commands, REST API, dashboard UI |
+| **Remote Bookmarks** | Mesh gossip sync, subscribe/publish, priority resolution |
+| **DOKO Revocation** | Self-revocation, emergency certificates, reason codes |
+| **SSL/TLS Binding** | Certificate fingerprints, domain binding, verification |
+| **Domain Transfers** | Request/authorize workflow, completion proofs |
+| **TypeScript** | Full `.d.ts` type definitions |
+| **Testing** | 352 tests (Oracle 98, Protocol 56, Multi-Node 18, Security 180) |
+| **Developer Experience** | Vitest config, npm scripts, expanded README |
+| **Bug Fixes** | ML-DSA-65 argument order, beacon signature verification |
+
 This release adds mesh-synchronized bookmark sharing, key compromise recovery, and brings test coverage to 352 tests across all modules.
 
 #### 🌐 Remote Bookmarks (Mesh Sync)
