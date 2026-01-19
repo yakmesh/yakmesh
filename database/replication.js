@@ -8,6 +8,9 @@ import initSqlJs from 'sql.js';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { dirname } from 'path';
 import { MessageTypes } from '../mesh/network.js';
+import { createLogger } from '../utils/logger.js';
+
+const log = createLogger('database:replication');
 
 // sql.js instance
 let SQL = null;
@@ -96,7 +99,7 @@ export class ReplicationEngine {
     }
 
     this._saveDb();
-    console.log(`✓ Database initialized: ${this.dbPath}`);
+    log.info('Database initialized', { path: this.dbPath });
 
     // Setup mesh handlers
     this._setupMeshHandlers();
@@ -120,7 +123,7 @@ export class ReplicationEngine {
     this.syncInterval = setInterval(() => {
       this.syncWithPeers();
     }, intervalMs);
-    console.log(`✓ Auto-sync started (every ${intervalMs / 1000}s)`);
+    log.info('Auto-sync started', { intervalSeconds: intervalMs / 1000 });
   }
 
   /**
@@ -212,7 +215,7 @@ export class ReplicationEngine {
     );
 
     this._saveDb();
-    console.log(`  ↓ Applied: ${operation} ${table_name}:${row_id} from ${node_id.slice(0, 12)}...`);
+    log.debug('Applied change', { operation, table: table_name, rowId: row_id, nodeId: node_id.slice(0, 12) });
     return true;
   }
 
@@ -272,7 +275,7 @@ export class ReplicationEngine {
     this.mesh.on(MessageTypes.SYNC_REQUEST, (msg, ws, peerNodeId) => {
       if (!peerNodeId) return;
       
-      console.log(`  ← Sync request from ${peerNodeId.slice(0, 12)}... (since ${msg.since})`);
+      log.debug('Sync request received', { from: peerNodeId.slice(0, 12), since: msg.since });
       
       const changes = this.getChangesSince(msg.since, msg.tables);
       
@@ -287,7 +290,7 @@ export class ReplicationEngine {
     this.mesh.on(MessageTypes.SYNC_RESPONSE, (msg, ws, peerNodeId) => {
       if (!peerNodeId) return;
       
-      console.log(`  → Sync response from ${peerNodeId.slice(0, 12)}...: ${msg.changes.length} changes`);
+      log.debug('Sync response received', { from: peerNodeId.slice(0, 12), changes: msg.changes.length });
       
       let applied = 0;
       for (const change of msg.changes) {
@@ -304,7 +307,7 @@ export class ReplicationEngine {
       this._saveDb();
       
       if (applied > 0) {
-        console.log(`  ✓ Applied ${applied} new changes from ${peerNodeId.slice(0, 12)}...`);
+        log.info('Applied new changes', { count: applied, from: peerNodeId.slice(0, 12) });
       }
     });
 

@@ -17,6 +17,9 @@
 import { Client, GatewayIntentBits, EmbedBuilder, Events } from 'discord.js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import 'dotenv/config';
+import { createLogger } from '../utils/logger.js';
+
+const log = createLogger('yakbot:main');
 
 // Configuration
 const config = {
@@ -124,7 +127,7 @@ let model = null;
 if (config.geminiKey) {
   genAI = new GoogleGenerativeAI(config.geminiKey);
   model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
-  console.log('✓ Gemini AI initialized');
+  log.info('Gemini AI initialized');
 }
 
 // Helper to create embeds
@@ -737,11 +740,12 @@ client.on(Events.MessageCreate, async (message) => {
 
 // Ready event
 client.once(Events.ClientReady, (c) => {
-  console.log(`\n🦬 YakBot is online!`);
-  console.log(`   Logged in as: ${c.user.tag}`);
-  console.log(`   Servers: ${c.guilds.cache.size}`);
-  console.log(`   AI: ${model ? '✓ Gemini enabled' : '✗ Not configured'}`);
-  console.log(`   Chat: ✓ Mentions & DMs enabled\n`);
+  log.info('YakBot is online', {
+    user: c.user.tag,
+    servers: c.guilds.cache.size,
+    ai: model ? 'Gemini enabled' : 'Not configured',
+    chat: 'Mentions & DMs enabled'
+  });
   
   // Set activity
   client.user.setActivity('YAKMESH™ | @me or /help', { type: 3 }); // Watching
@@ -749,11 +753,8 @@ client.once(Events.ClientReady, (c) => {
 
 // Login
 if (!config.token) {
-  console.error('❌ DISCORD_TOKEN environment variable not set!');
-  console.log('\nTo run YakBot:');
-  console.log('1. Create a bot at https://discord.com/developers/applications');
-  console.log('2. Get your bot token');
-  console.log('3. Run: DISCORD_TOKEN=your_token GEMINI_API_KEY=your_key node index.js\n');
+  log.error('DISCORD_TOKEN environment variable not set');
+  log.info('To run YakBot: 1. Create a bot at discord.com/developers 2. Get token 3. Run with DISCORD_TOKEN=xxx');
   process.exit(1);
 }
 

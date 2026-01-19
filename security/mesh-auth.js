@@ -8,9 +8,12 @@
  * @license Proprietary (Yakmesh Pro)
  */
 
-import { sha3_256 } from '@noble/hashes/sha3';
-import { randomBytes, bytesToHex, hexToBytes, utf8ToBytes } from '@noble/hashes/utils';
+import { sha3_256 } from '@noble/hashes/sha3.js';
+import { randomBytes, bytesToHex, hexToBytes, utf8ToBytes } from '@noble/hashes/utils.js';
 import { EventEmitter } from 'events';
+import { createLogger } from '../utils/logger.js';
+
+const log = createLogger('security:mesh-auth');
 
 const AUTH_CHALLENGE_TIMEOUT = 30000;
 const AUTH_NONCE_SIZE = 24;

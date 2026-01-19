@@ -29,6 +29,9 @@ import { randomBytes, createCipheriv, createDecipheriv, createHash } from 'crypt
 import { ml_kem768 } from '@noble/post-quantum/ml-kem.js';
 import { sha3_256 } from '@noble/hashes/sha3.js';
 import { bytesToHex, hexToBytes, utf8ToBytes } from '@noble/hashes/utils.js';
+import { createLogger } from '../utils/logger.js';
+
+const log = createLogger('mesh:annex');
 
 const ANNEX_CONFIG = {
   // Encryption
@@ -173,7 +176,7 @@ class AnnexSession {
     this.established = true;
     this.lastRekey = Date.now();
     
-    return bytesToHex(result.ciphertext);
+    return bytesToHex(result.cipherText);
   }
   
   /**
@@ -533,7 +536,7 @@ export class Annex {
       const peerPublicKey = this._getPeerPublicKey(envelope.senderId);
       
       if (peerPublicKey && !this.identity.verify(sigPayload, envelope.signature, peerPublicKey)) {
-        console.warn(`⚠️ ANNEX: Invalid signature from ${envelope.senderId?.slice(0, 16)}...`);
+        log.warn('Invalid signature from peer', { peerId: envelope.senderId?.slice(0, 16) });
         return;
       }
       
@@ -556,16 +559,16 @@ export class Annex {
           
         case ANNEX_CONFIG.messageTypes.CLOSE:
           this.sessions.delete(envelope.senderId);
-          console.log(`🏳️ ANNEX: Channel closed by ${envelope.senderId?.slice(0, 16)}...`);
+          log.info('Channel closed by peer', { peerId: envelope.senderId?.slice(0, 16) });
           break;
       }
     } catch (err) {
-      console.error('ANNEX error:', err.message);
+      log.error('Error handling ANNEX message', { error: err.message });
     }
   }
   
   async _handleKeyExchange(envelope) {
-    console.log(`🤝 ANNEX: Key exchange from ${envelope.senderId?.slice(0, 16)}...`);
+    log.info('Key exchange from peer', { peerId: envelope.senderId?.slice(0, 16) });
     
     // Create responding session
     const session = new AnnexSession({
@@ -596,13 +599,13 @@ export class Annex {
     response.signature = this.identity.sign(response.getSigningPayload());
     await this._sendToMesh(envelope.senderId, response);
     
-    console.log(`🔐 ANNEX: Channel established with ${envelope.senderId?.slice(0, 16)}...`);
+    log.info('Channel established with peer', { peerId: envelope.senderId?.slice(0, 16) });
   }
   
   async _handleKeyResponse(envelope) {
     const session = this.pendingHandshakes.get(envelope.senderId);
     if (!session) {
-      console.warn('ANNEX: Unexpected key response');
+      log.warn('Unexpected key response', { peerId: envelope.senderId?.slice(0, 16) });
       return;
     }
     
@@ -614,7 +617,7 @@ export class Annex {
     this.sessions.set(envelope.senderId, session);
     this.stats.sessionsCreated++;
     
-    console.log(`🔐 ANNEX: Channel established with ${envelope.senderId?.slice(0, 16)}...`);
+    log.info('Channel established with peer', { peerId: envelope.senderId?.slice(0, 16) });
     
     // Resolve the handshake promise
     if (session._resolveHandshake) {
@@ -625,7 +628,7 @@ export class Annex {
   async _handleEncrypted(envelope) {
     const session = this.sessions.get(envelope.senderId);
     if (!session || !session.established) {
-      console.warn('ANNEX: No session for encrypted message');
+      log.warn('No session for encrypted message', { peerId: envelope.senderId?.slice(0, 16) });
       return;
     }
     
@@ -660,13 +663,13 @@ export class Annex {
             timestamp: envelope.timestamp,
           });
         } catch (err) {
-          console.error('ANNEX handler error:', err.message);
+          log.error('Handler error', { error: err.message });
         }
       }
     } catch (err) {
       if (err.message.includes('Replay')) {
         this.stats.replaysBlocked++;
-        console.warn(`⚠️ ANNEX: ${err.message}`);
+        log.warn('Replay attack blocked', { error: err.message });
       } else {
         throw err;
       }
@@ -677,7 +680,7 @@ export class Annex {
     const session = this.sessions.get(envelope.senderId);
     if (!session) return;
     
-    console.log(`🔄 ANNEX: Re-keying with ${envelope.senderId?.slice(0, 16)}...`);
+    log.debug('Re-keying with peer', { peerId: envelope.senderId?.slice(0, 16) });
     
     // Respond to re-key with new key exchange
     session.generateKeyPair();
@@ -698,7 +701,7 @@ export class Annex {
   }
   
   async _rekey(session) {
-    console.log(`🔄 ANNEX: Initiating re-key with ${session.remoteNodeId?.slice(0, 16)}...`);
+    log.debug('Initiating re-key with peer', { peerId: session.remoteNodeId?.slice(0, 16) });
     
     // Generate new ephemeral keys
     const newPublicKey = session.generateKeyPair();

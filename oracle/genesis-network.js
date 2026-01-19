@@ -18,6 +18,9 @@ import { bytesToHex } from '@noble/hashes/utils.js';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { createLogger } from '../utils/logger.js';
+
+const log = createLogger('oracle:genesis');
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -64,9 +67,11 @@ export class GenesisNetwork {
     });
 
     if (!compatible) {
-      console.log(`⚠️ Peer ${peerId.slice(0, 8)}... is on different network:`);
-      console.log(`   Their network: pq-${peerHash.slice(0, 8)}`);
-      console.log(`   Our network:   ${this.networkId}`);
+      log.warn('Peer on different network', {
+        peerId: peerId.slice(0, 8),
+        theirNetwork: `pq-${peerHash.slice(0, 8)}`,
+        ourNetwork: this.networkId,
+      });
     }
 
     return compatible;
@@ -105,7 +110,7 @@ export class GenesisNetwork {
     const { newHash, changelog, effectiveTime, sourceUrl, signature } = proposal;
     
     if (!newHash || !changelog) {
-      console.log('❌ Invalid upgrade proposal: missing required fields');
+      log.error('Invalid upgrade proposal: missing required fields');
       return false;
     }
 
@@ -120,22 +125,15 @@ export class GenesisNetwork {
       peersAccepted: new Set(),
     });
 
-    console.log('\n' + '═'.repeat(60));
-    console.log('⚠️  NETWORK UPGRADE PROPOSAL RECEIVED');
-    console.log('═'.repeat(60));
-    console.log(`Current Network: ${this.networkId}`);
-    console.log(`Current Hash:    ${this.genesisHash.slice(0, 32)}...`);
-    console.log(`New Hash:        ${newHash.slice(0, 32)}...`);
-    console.log(`New Network:     pq-${newHash.slice(0, 8)}`);
-    console.log('─'.repeat(60));
-    console.log('Changes:');
-    changelog.split('\n').forEach(line => console.log(`  ${line}`));
-    console.log('─'.repeat(60));
-    console.log(`Effective: ${new Date(effectiveTime).toISOString()}`);
-    if (sourceUrl) {
-      console.log(`Source: ${sourceUrl}`);
-    }
-    console.log('═'.repeat(60) + '\n');
+    log.warn('NETWORK UPGRADE PROPOSAL RECEIVED', {
+      currentNetwork: this.networkId,
+      currentHash: this.genesisHash.slice(0, 32),
+      newHash: newHash.slice(0, 32),
+      newNetwork: `pq-${newHash.slice(0, 8)}`,
+      changelog,
+      effectiveTime: new Date(effectiveTime).toISOString(),
+      sourceUrl: sourceUrl || undefined,
+    });
 
     return true;
   }
@@ -193,9 +191,9 @@ Accept upgrade? [Y/N]: `;
         status: 'pending_download',
       };
       
-      console.log('\n✅ Upgrade accepted. Preparing to join new network...');
-      console.log(`   New network ID will be: pq-${newHash.slice(0, 8)}`);
-      console.log('   Please restart the node after code update.\n');
+      log.info('Upgrade accepted - preparing to join new network', {
+        newNetwork: `pq-${newHash.slice(0, 8)}`,
+      });
       
       return {
         accepted: true,
@@ -203,9 +201,9 @@ Accept upgrade? [Y/N]: `;
         newHash,
       };
     } else {
-      console.log('\n❌ Upgrade declined. Staying on current network.');
-      console.log(`   Current network: ${this.networkId}`);
-      console.log('   Note: You may become isolated from upgraded nodes.\n');
+      log.info('Upgrade declined - staying on current network', {
+        currentNetwork: this.networkId,
+      });
       
       return {
         accepted: false,
@@ -300,10 +298,10 @@ Accept upgrade? [Y/N]: `;
   static fromJSON(data, currentOracleHash) {
     // If the current oracle hash differs from saved, we're on a new network
     if (data.genesisHash !== currentOracleHash) {
-      console.log('⚠️ Code has changed since last run:');
-      console.log(`   Previous network: pq-${data.genesisHash.slice(0, 8)}`);
-      console.log(`   Current network:  pq-${currentOracleHash.slice(0, 8)}`);
-      console.log('   Starting fresh on new network.\n');
+      log.warn('Code has changed since last run - starting fresh on new network', {
+        previousNetwork: `pq-${data.genesisHash.slice(0, 8)}`,
+        currentNetwork: `pq-${currentOracleHash.slice(0, 8)}`,
+      });
       return new GenesisNetwork(currentOracleHash);
     }
 

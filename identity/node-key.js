@@ -58,6 +58,10 @@
  * @version 1.6.0
  */
 
+import { createLogger } from '../utils/logger.js';
+
+const log = createLogger('identity:node-key');
+
 import { ml_dsa65 } from '@noble/post-quantum/ml-dsa.js';
 import { sha3_256 } from '@noble/hashes/sha3.js';
 import { bytesToHex, hexToBytes } from '@noble/hashes/utils.js';
@@ -233,18 +237,20 @@ export class NodeIdentity {
       // Check if identity needs regeneration (codebase changed)
       if (codebaseHash && this.identity.codebaseHash && 
           this.identity.codebaseHash !== codebaseHash) {
-        console.log('⚠️ Codebase changed - regenerating node identity...');
-        console.log(`   Old network: ${this.identity.networkName || 'unknown'}`);
-        console.log(`   New network: ${this.networkName}`);
+        log.warn('Codebase changed - regenerating node identity', {
+          oldNetwork: this.identity.networkName || 'unknown',
+          newNetwork: this.networkName
+        });
         // Delete old identity and regenerate
         this.identity = null;
       } else {
-        console.log(`✓ Loaded node identity: ${this.identity.nodeId}`);
-        console.log(`  Network: ${this.identity.networkName || this.networkName || 'unknown'}`);
-        console.log(`  Algorithm: ${this.identity.algorithm} (NIST Level ${this.identity.nistLevel})`);
-        if (this.verificationPhrase) {
-          console.log(`  Verify: "${this.verificationPhrase}"`);
-        }
+        log.info('Loaded node identity', {
+          nodeId: this.identity.nodeId,
+          network: this.identity.networkName || this.networkName || 'unknown',
+          algorithm: this.identity.algorithm,
+          nistLevel: this.identity.nistLevel,
+          verificationPhrase: this.verificationPhrase || undefined
+        });
         return this.identity;
       }
     }
@@ -257,7 +263,7 @@ export class NodeIdentity {
       );
     }
     
-    console.log('⚙ Generating post-quantum keypair (ML-DSA-65)...');
+    log.info('Generating post-quantum keypair (ML-DSA-65)');
     const keyPair = generateKeyPair();
     const publicKeyBytes = hexToBytes(keyPair.publicKey);
     const nodeId = generateNodeId(publicKeyBytes, codebaseHash);
@@ -278,13 +284,13 @@ export class NodeIdentity {
     };
 
     writeFileSync(this.keyPath, JSON.stringify(this.identity, null, 2));
-    console.log(`✓ Generated new node identity: ${nodeId}`);
-    console.log(`  Network: ${this.networkName}`);
-    console.log(`  Algorithm: ML-DSA-65 (FIPS 204, NIST Level 3)`);
-    console.log(`  Public Key Size: ${keyPair.publicKey.length / 2} bytes`);
-    if (this.verificationPhrase) {
-      console.log(`  Verify: "${this.verificationPhrase}"`);
-    }
+    log.info('Generated new node identity', {
+      nodeId,
+      network: this.networkName,
+      algorithm: 'ML-DSA-65 (FIPS 204, NIST Level 3)',
+      publicKeySize: keyPair.publicKey.length / 2,
+      verificationPhrase: this.verificationPhrase || undefined
+    });
 
     return this.identity;
   }

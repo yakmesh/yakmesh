@@ -5,6 +5,9 @@
 
 import { WebSocketServer, WebSocket } from 'ws';
 import { ConnectionRateLimiter } from './rate-limiter.js';
+import { createLogger } from '../utils/logger.js';
+
+const log = createLogger('mesh:network');
 
 /**
  * Message types for mesh protocol
@@ -75,9 +78,9 @@ export class MeshNetwork {
         await this._tryBindPort(port);
         this.boundPort = port;
         if (attempt > 0) {
-          console.log(`⚠️  Port ${basePort} was in use, bound to ${port} instead`);
+          log.warn('Port was in use, bound to alternate', { originalPort: basePort, boundPort: port });
         }
-        console.log(`✓ Mesh server listening on ws://localhost:${port}`);
+        log.info('Mesh server listening', { url: `ws://localhost:${port}` });
         this._startPingLoop();
         return;
       } catch (err) {
@@ -123,7 +126,7 @@ export class MeshNetwork {
    */
   async connect(endpoint) {
     return new Promise((resolve, reject) => {
-      console.log(`→ Connecting to ${endpoint}...`);
+      log.debug('Connecting to peer', { endpoint });
       
       const ws = new WebSocket(endpoint);
       
@@ -156,7 +159,7 @@ export class MeshNetwork {
       // Resolve when we get WELCOME back
       const welcomeHandler = (msg) => {
         if (msg.type === MessageTypes.WELCOME) {
-          console.log(`✓ Connected to ${msg.identity.nodeId}`);
+          log.info('Connected to peer', { nodeId: msg.identity.nodeId });
           resolve(msg.identity);
         }
       };
@@ -289,7 +292,7 @@ export class MeshNetwork {
       this.server = null;
     }
     
-    console.log('✓ Mesh server stopped');
+    log.info('Mesh server stopped');
   }
 
   // ===== Private Methods =====
@@ -337,7 +340,7 @@ export class MeshNetwork {
         peers: this.getPeers().filter(p => p.nodeId !== nodeId),
       });
       
-      console.log(`✓ Peer connected: ${msg.identity.name} (${nodeId.slice(0, 20)}...)`);
+      log.info('Peer connected', { name: msg.identity.name, nodeId: nodeId.slice(0, 20) });
     });
 
     // Handle WELCOME
@@ -424,7 +427,7 @@ export class MeshNetwork {
 
   _handleIncomingConnection(ws, req) {
     const clientIp = req.socket.remoteAddress || 'unknown';
-    console.log(`← Incoming connection from ${clientIp}`);
+    log.debug('Incoming connection', { clientIp });
     
     // SECURITY: Rate limit check for connection flood protection
     const connectionCheck = this.rateLimiter.checkConnection(clientIp);
@@ -474,7 +477,7 @@ export class MeshNetwork {
   _handleDisconnect(ws) {
     for (const [nodeId, peer] of this.peers) {
       if (peer.ws === ws) {
-        console.log(`✗ Peer disconnected: ${peer.identity.name}`);
+        log.info('Peer disconnected', { name: peer.identity.name });
         this.peers.delete(nodeId);
         break;
       }
@@ -493,7 +496,7 @@ export class MeshNetwork {
       for (const [nodeId, peer] of this.peers) {
         // Check for stale connections
         if (now - peer.lastSeen > this.config.pingInterval * 3) {
-          console.log(`✗ Peer timeout: ${peer.identity.name}`);
+          log.warn('Peer timeout', { name: peer.identity.name });
           peer.ws.close();
           this.peers.delete(nodeId);
         } else {

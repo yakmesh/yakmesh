@@ -89,7 +89,7 @@ class NakpakLayer {
     this.encryptionKey = this._deriveEncryptionKey(this.sharedSecret);
     
     return {
-      ciphertext: bytesToHex(result.ciphertext),
+      ciphertext: bytesToHex(result.cipherText),
       hopIndex: this.hopIndex,
     };
   }

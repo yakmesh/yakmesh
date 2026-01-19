@@ -17,6 +17,9 @@ import { ml_dsa65 } from '@noble/post-quantum/ml-dsa.js';
 import { readFileSync, readdirSync, statSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { createLogger } from '../utils/logger.js';
+
+const log = createLogger('oracle:validation');
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -217,11 +220,11 @@ export class ValidationOracle {
    * Initialize the oracle and verify its own integrity
    */
   #initialize() {
-    console.log('🔮 Initializing Validation Oracle (HARDENED)...');
+    log.info('Initializing Validation Oracle (HARDENED)');
     
     // 1. Compute hash of our own source code
     this.#selfHash = this.#computeSelfHash();
-    console.log(`   Self-hash: ${this.#selfHash.slice(0, 16)}...`);
+    log.debug('Self-hash computed', { hash: this.#selfHash.slice(0, 16) });
     
     // 2. Register all validation functions with their hashes
     this.#registerFunctions();
@@ -242,7 +245,7 @@ export class ValidationOracle {
     }
     
     this.#initialized = true;
-    console.log('✓ Validation Oracle initialized and sealed (HARDENED)');
+    log.info('Validation Oracle initialized and sealed (HARDENED)');
   }
   
   /**
@@ -253,7 +256,7 @@ export class ValidationOracle {
     if (this.#frozen) return;
     this.#frozen = true;
     Object.freeze(this);
-    console.log('🔒 Oracle instance frozen - no further modifications possible');
+    log.info('Oracle instance frozen - no further modifications possible');
   }
   
   /**
@@ -286,7 +289,7 @@ export class ValidationOracle {
       
       return contentHash(codebaseContent);
     } catch (e) {
-      console.error('⚠️ Failed to hash codebase:', e.message);
+      log.error('Failed to hash codebase', { error: e.message });
       // Fallback: hash the function definitions
       const functionSources = [
         this.validateListing.toString(),
@@ -364,7 +367,7 @@ export class ValidationOracle {
         }
       }
     } catch (dirErr) {
-      console.warn(`⚠️ Cannot read directory ${dir}: ${dirErr.message}`);
+      log.warn('Cannot read directory', { dir, error: dirErr.message });
     }
   }
   

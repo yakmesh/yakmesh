@@ -17,6 +17,9 @@ import { sha3_256 } from '@noble/hashes/sha3.js';
 import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js';
 import { existsSync, mkdirSync, writeFileSync, readFileSync, readdirSync, unlinkSync, statSync } from 'fs';
 import { join, dirname } from 'path';
+import { createLogger } from '../utils/logger.js';
+
+const log = createLogger('content:store');
 
 /**
  * Content types supported
@@ -191,8 +194,7 @@ export class ContentStore {
       // which calls contentStore._handleContentGossip()
     }
 
-    console.log(`✓ Content store initialized: ${this.config.dataDir}`);
-    console.log(`   Objects: ${this.metaCache.size}`);
+    log.info('Content store initialized', { dataDir: this.config.dataDir, objectCount: this.metaCache.size });
     
     return this;
   }
@@ -446,10 +448,10 @@ export class ContentStore {
 
     // Gossip to mesh
     if (this.gossip) {
-      console.log(`📡 Gossiping content_announce for ${hash.slice(0, 16)}...`);
+      log.debug('Gossiping content_announce', { hash: hash.slice(0, 16) });
       this.gossip.spreadRumor('content', announcement);
     } else {
-      console.log(`⚠️ No gossip protocol available for content announce`);
+      log.warn('No gossip protocol available for content announce');
     }
 
     // Update status
@@ -501,7 +503,7 @@ export class ContentStore {
       case 'content_announce':
         // Peer has new content - request it if we don't have it
         if (!this.has(data.hash)) {
-          console.log(`📦 New content announced: ${data.hash.slice(0, 16)}... from ${origin.slice(0, 16)}...`);
+          log.debug('New content announced', { hash: data.hash.slice(0, 16), origin: origin.slice(0, 16) });
           // Request full content via gossip
           if (this.gossip) {
             this.gossip.spreadRumor('content', {
@@ -565,7 +567,7 @@ export class ContentStore {
             writeFileSync(this._getMetaPath(data.hash), JSON.stringify(meta.toJSON(), null, 2));
           }
 
-          console.log(`✓ Content received: ${data.hash.slice(0, 16)}...`);
+          log.info('Content received', { hash: data.hash.slice(0, 16) });
         }
         break;
 
@@ -605,7 +607,7 @@ export class ContentStore {
           
           if (meta.consensusProof.hasQuorum()) {
             meta.status = ContentStatus.VERIFIED;
-            console.log(`✓ Content verified (quorum reached): ${data.hash.slice(0, 16)}...`);
+            log.info('Content verified (quorum reached)', { hash: data.hash.slice(0, 16) });
           }
           
           writeFileSync(this._getMetaPath(data.hash), JSON.stringify(meta.toJSON(), null, 2));

@@ -14,6 +14,9 @@
 import express from 'express';
 import rateLimit from 'express-rate-limit';
 import { existsSync } from 'fs';
+import { createLogger } from '../utils/logger.js';
+
+const log = createLogger('server:main');
 import { NodeIdentity } from '../identity/node-key.js';
 import { MeshNetwork } from '../mesh/network.js';
 import { ReplicationEngine } from '../database/replication.js';
@@ -125,7 +128,7 @@ async function loadConfig() {
   
   if (configArgIndex !== -1 && process.argv[configArgIndex + 1]) {
     configPath = process.argv[configArgIndex + 1];
-    console.log(`📋 Using config: ${configPath}`);
+    log.info(`📋 Using config: ${configPath}`);
   }
   
   // Try to load config file
@@ -184,22 +187,22 @@ export class YakmeshNode {
   }
 
   async start() {
-    console.log('\n🦬 Starting Yakmesh Node...\n');
+    log.info('\n🦬 Starting Yakmesh Node...\n');
     
     // Record start time for uptime tracking
     this._startTime = Date.now();
 
     // 0. LOCK THE CODEBASE - Prevent any modifications during runtime
     // This is critical for Code Proof Protocol security
-    console.log('🔐 Securing codebase...');
+    log.info('🔐 Securing codebase...');
     const lockResult = lockCodebase();
     if (lockResult.success) {
       this.codebaseLocked = true;
       setupUnlockOnExit();  // Ensure cleanup on process exit
-      console.log(`✓ Codebase locked: ${lockResult.fileCount} source files protected`);
+      log.info(`✓ Codebase locked: ${lockResult.fileCount} source files protected`);
     } else {
-      console.warn(`⚠️ Codebase lock failed: ${lockResult.error}`);
-      console.warn('   Node will continue but source files are not protected');
+      log.warn(`⚠️ Codebase lock failed: ${lockResult.error}`);
+      log.warn('   Node will continue but source files are not protected');
     }
 
     // 1. Initialize the Oracle system FIRST (provides codebase hash for identity)
@@ -246,7 +249,7 @@ export class YakmeshNode {
 
     // Handle incoming rumors (data from other nodes)
     this.mesh.on('rumor', (topic, data, origin) => {
-      console.log(`📨 Rumor [${topic}] from ${origin.slice(0, 16)}...`);
+      log.debug(`📨 Rumor [${topic}] from ${origin.slice(0, 16)}...`);
       
       // Handle different rumor topics
       if (topic === 'data_update') {
@@ -301,7 +304,7 @@ export class YakmeshNode {
       identity: this.identity,
       mesh: this.mesh,
     });
-    console.log('✓ Annex channel initialized (encrypted P2P messaging)');
+    log.info('✓ Annex channel initialized (encrypted P2P messaging)');
     
     // 5c. Initialize SHERPA for decentralized peer discovery
     this.sherpa = new SherpaDiscovery({
@@ -325,7 +328,7 @@ export class YakmeshNode {
     // Start SHERPA if seeds are configured or selfEndpoint is set
     if (this.config.sherpa?.enabled !== false) {
       this.sherpa.start();
-      console.log('✓ SHERPA discovery initialized (decentralized peer discovery)');
+      log.info('✓ SHERPA discovery initialized (decentralized peer discovery)');
     }
     
     // 6. Start HTTP server
@@ -347,39 +350,39 @@ export class YakmeshNode {
     // 9. Initialize YAK:// Protocol Handler
     await this._initProtocolHandler();
 
-    console.log('\n✓ Yakmesh Node is running!\n');
-    console.log(`  Node ID:    ${this.identity.identity.nodeId}`);
-    console.log(`  HTTP:       http://localhost:${this.boundHttpPort || this.config.network.httpPort}`);
-    console.log(`  YAK://      yak://dashboard  (register with: yakmesh protocol register)`);
-    console.log(`  Content:    http://localhost:${this.boundHttpPort || this.config.network.httpPort}/content`);
-    console.log(`  Dashboard:  http://localhost:${this.boundHttpPort || this.config.network.httpPort}/dashboard`);
-    console.log(`  WebSocket:  ws://localhost:${this.mesh.boundPort || this.config.network.wsPort}`);
-    console.log(`  Algorithm:  ML-DSA-65 (Post-Quantum)`);
-    console.log(`  Oracle:     ✓ ${this.oracle.selfHash.slice(0, 16)}...`);
-    console.log(`  Network:    ${this.genesisNetwork.networkName} (${this.genesisNetwork.networkId})`);
+    log.info('\n✓ Yakmesh Node is running!\n');
+    log.info(`  Node ID:    ${this.identity.identity.nodeId}`);
+    log.info(`  HTTP:       http://localhost:${this.boundHttpPort || this.config.network.httpPort}`);
+    log.info(`  YAK://      yak://dashboard  (register with: yakmesh protocol register)`);
+    log.info(`  Content:    http://localhost:${this.boundHttpPort || this.config.network.httpPort}/content`);
+    log.info(`  Dashboard:  http://localhost:${this.boundHttpPort || this.config.network.httpPort}/dashboard`);
+    log.info(`  WebSocket:  ws://localhost:${this.mesh.boundPort || this.config.network.wsPort}`);
+    log.info(`  Algorithm:  ML-DSA-65 (Post-Quantum)`);
+    log.info(`  Oracle:     ✓ ${this.oracle.selfHash.slice(0, 16)}...`);
+    log.info(`  Network:    ${this.genesisNetwork.networkName} (${this.genesisNetwork.networkId})`);
     if (this.contentStore) {
       const stats = this.contentStore.getStats();
-      console.log(`  Content:    ${stats.totalObjects} objects (${stats.verified} verified)`);
+      log.info(`  Content:    ${stats.totalObjects} objects (${stats.verified} verified)`);
     }
     if (this.annex) {
-      console.log(`  Annex:      ✓ Encrypted P2P ready`);
+      log.info(`  Annex:      ✓ Encrypted P2P ready`);
     }
     if (this.sherpa) {
-      console.log(`  SHERPA:     ✓ Beacon at /.well-known/yakmesh/beacon`);
+      log.info(`  SHERPA:     ✓ Beacon at /.well-known/yakmesh/beacon`);
     }
     if (this.adapter) {
-      console.log(`  Adapter:    ✓ Enabled`);
+      log.info(`  Adapter:    ✓ Enabled`);
     }
     if (this.websiteAdapter && this.websiteAdapter.manifests.size > 0) {
-      console.log(`  Website:    ✓ ${this.websiteAdapter.manifests.size} site(s) at /site/`);
+      log.info(`  Website:    ✓ ${this.websiteAdapter.manifests.size} site(s) at /site/`);
     }
-    console.log('');
+    log.info('');
 
     return this;
   }
 
   async stop() {
-    console.log('\n🛑 Stopping Yakmesh Node...');
+    log.info('\n🛑 Stopping Yakmesh Node...');
     
     this.adapter?.stopSync();
     this.timeSource?.stop();  // Stop time source monitoring
@@ -399,7 +402,7 @@ export class YakmeshNode {
       this.codebaseLocked = false;
     }
     
-    console.log('✓ Yakmesh Node stopped\n');
+    log.info('✓ Yakmesh Node stopped\n');
   }
 
   /**
@@ -408,7 +411,7 @@ export class YakmeshNode {
    * derive the network name from the codebase hash for node identity.
    */
   _initOracle() {
-    console.log('🔮 Initializing Oracle System...');
+    log.info('🔮 Initializing Oracle System...');
     
     // Get the singleton oracle instance (computes codebase hash)
     this.oracle = getOracle();
@@ -423,15 +426,15 @@ export class YakmeshNode {
     
     // Listen for consensus events
     this.consensus.on('consensus', (event) => {
-      console.log(`✓ Consensus reached for ${event.contentType}: ${event.contentHash.slice(0, 16)}...`);
+      log.info(`✓ Consensus reached for ${event.contentType}: ${event.contentHash.slice(0, 16)}...`);
     });
     
     this.consensus.on('conflict-resolved', (event) => {
-      console.log(`⚖️ Conflict resolved: ${event.winnerHash.slice(0, 16)}... won`);
+      log.info(`⚖️ Conflict resolved: ${event.winnerHash.slice(0, 16)}... won`);
     });
     
     // Note: Raw oracle hash now hidden - use network identity instead
-    console.log(`✓ Oracle initialized`);
+    log.info(`✓ Oracle initialized`);
     
     // Initialize iO-inspired network identity (hash obfuscation)
     this._initGenesisNetwork();
@@ -443,7 +446,7 @@ export class YakmeshNode {
    * without ever exposing the raw hash in network communication.
    */
   _initGenesisNetwork() {
-    console.log('🌐 Initializing iO Network Identity...');
+    log.info('🌐 Initializing iO Network Identity...');
     
     // Create GenesisNetworkV2 from the oracle
     this.genesisNetwork = createGenesisNetworkV2(this.oracle);
@@ -458,10 +461,10 @@ export class YakmeshNode {
       this.codeProof.networkFingerprint = this.genesisNetwork.fingerprint;
     }
     
-    console.log(`   Network Name: ${this.genesisNetwork.networkName}`);
-    console.log(`   Network ID:   ${this.genesisNetwork.networkId}`);
-    console.log(`   Verify:       "${this.genesisNetwork.verificationPhrase}"`);
-    console.log('✓ Genesis Network initialized (iO hash obfuscation active)');
+    log.debug(`   Network Name: ${this.genesisNetwork.networkName}`);
+    log.debug(`   Network ID:   ${this.genesisNetwork.networkId}`);
+    log.debug(`   Verify:       "${this.genesisNetwork.verificationPhrase}"`);
+    log.info('✓ Genesis Network initialized (iO hash obfuscation active)');
   }
   
   /**
@@ -469,7 +472,7 @@ export class YakmeshNode {
    * Detects precision time sources and configures phase epochs accordingly
    */
   _initTimeSource() {
-    console.log('⏰ Initializing Time Source Detection...');
+    log.info('⏰ Initializing Time Source Detection...');
     
     // Get or create global time source detector
     this.timeSource = getTimeSourceDetector({
@@ -499,19 +502,19 @@ export class YakmeshNode {
       unsync: '⚠️',
     };
     
-    console.log(`   Trust Level: ${trustIcons[results.trustLevel] || '?'} ${results.trustLevel.toUpperCase()}`);
-    console.log(`   Tolerance:   ±${results.phaseTolerance}ms`);
-    console.log(`   Primary:     ${results.primarySource || 'none'}`);
+    log.debug(`   Trust Level: ${trustIcons[results.trustLevel] || '?'} ${results.trustLevel.toUpperCase()}`);
+    log.debug(`   Tolerance:   ±${results.phaseTolerance}ms`);
+    log.debug(`   Primary:     ${results.primarySource || 'none'}`);
     
     // Listen for trust level changes
     this.timeSource.on('detected', (newResults) => {
       if (newResults.trustLevel !== results.trustLevel) {
-        console.log(`⏰ Time source changed: ${newResults.trustLevel.toUpperCase()}`);
+        log.info(`⏰ Time source changed: ${newResults.trustLevel.toUpperCase()}`);
         setTimeSourceConfig(newResults.trustLevel);
       }
     });
     
-    console.log('✓ Time Source initialized');
+    log.info('✓ Time Source initialized');
   }
   
   /**
@@ -522,7 +525,7 @@ export class YakmeshNode {
     
     // Verify the peer is running valid code
     if (!this.codeProof.isPeerVerified(origin)) {
-      console.warn(`⚠️ Received content from unverified peer ${origin.slice(0, 16)}...`);
+      log.warn(`⚠️ Received content from unverified peer ${origin.slice(0, 16)}...`);
       // Challenge the peer
       const challenge = this.codeProof.generateChallenge(origin);
       this.gossip.spreadRumor('code_proof_challenge', challenge);
@@ -533,7 +536,7 @@ export class YakmeshNode {
     const result = this.consensus.receivePackage(data);
     
     if (result.accepted) {
-      console.log(`✓ Oracle content accepted: ${result.contentHash?.slice(0, 16)}...`);
+      log.info(`✓ Oracle content accepted: ${result.contentHash?.slice(0, 16)}...`);
       
       // Record in replication for persistence
       this.replication.recordChange(
@@ -543,7 +546,7 @@ export class YakmeshNode {
         sealedPackage.content
       );
     } else {
-      console.warn(`✗ Oracle content rejected: ${result.reason}`);
+      log.warn(`✗ Oracle content rejected: ${result.reason}`);
     }
   }
 
@@ -561,10 +564,10 @@ export class YakmeshNode {
     const compatible = this.genesisNetwork.registerPeer(nodeId || origin, handshake);
     
     if (compatible) {
-      console.log(`🌐 Peer ${origin.slice(0, 16)}... verified on same network: ${handshake.name}`);
+      log.debug(`🌐 Peer ${origin.slice(0, 16)}... verified on same network: ${handshake.name}`);
     } else {
-      console.log(`⚠️ Peer ${origin.slice(0, 16)}... on different network: ${handshake.name} (${handshake.shortId})`);
-      console.log(`   Our network: ${this.genesisNetwork.networkName} (${this.genesisNetwork.networkId})`);
+      log.debug(`⚠️ Peer ${origin.slice(0, 16)}... on different network: ${handshake.name} (${handshake.shortId})`);
+      log.debug(`   Our network: ${this.genesisNetwork.networkName} (${this.genesisNetwork.networkId})`);
     }
     
     // Optionally broadcast our handshake back
@@ -1318,9 +1321,9 @@ export class YakmeshNode {
           await this._tryHttpBind(app, port);
           this.boundHttpPort = port;
           if (attempt > 0) {
-            console.log(`⚠️  Port ${basePort} was in use, HTTP bound to ${port} instead`);
+            log.warn(`⚠️  Port ${basePort} was in use, HTTP bound to ${port} instead`);
           }
-          console.log(`✓ HTTP server on http://localhost:${port}`);
+          log.info(`✓ HTTP server on http://localhost:${port}`);
           resolve();
           return;
         } catch (err) {
@@ -1354,7 +1357,7 @@ export class YakmeshNode {
       try {
         await this.mesh.connect(endpoint);
       } catch (e) {
-        console.log(`  (bootstrap ${endpoint} not available)`);
+        log.debug(`  (bootstrap ${endpoint} not available)`);
       }
     }
   }
@@ -1382,9 +1385,9 @@ export class YakmeshNode {
         this.adapter.startSync(this.config.peerquanta.syncInterval);
       }
       
-      console.log('✓ PeerQuanta integration enabled');
+      log.info('✓ PeerQuanta integration enabled');
     } catch (error) {
-      console.error('Failed to initialize PeerQuanta:', error.message);
+      log.error('Failed to initialize PeerQuanta:', { error: error.message });
     }
   }
 
@@ -1419,12 +1422,12 @@ export class YakmeshNode {
         }
       }
       
-      console.log('✓ Website Adapter enabled');
-      console.log(`  Site: http://localhost:${this.boundHttpPort}/site/`);
+      log.info('✓ Website Adapter enabled');
+      log.info(`  Site: http://localhost:${this.boundHttpPort}/site/`);
     } catch (error) {
       // Website adapter is optional
       if (error.code !== 'ERR_MODULE_NOT_FOUND') {
-        console.warn('⚠️ Website Adapter:', error.message);
+        log.warn('⚠️ Website Adapter:', { error: error.message });
       }
     }
   }
@@ -1447,10 +1450,10 @@ export class YakmeshNode {
         await this.protocolHandler.register();
       }
       
-      console.log('✓ YAK:// Protocol handler initialized');
+      log.info('✓ YAK:// Protocol handler initialized');
     } catch (error) {
       // Protocol handler is optional
-      console.warn('⚠️ YAK:// Protocol:', error.message);
+      log.warn('⚠️ YAK:// Protocol:', { error: error.message });
     }
   }
 }

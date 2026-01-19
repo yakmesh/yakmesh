@@ -7,14 +7,12 @@
 
 import { YakmeshNode } from '../server/index.js';
 import { YakmeshWebServer } from '../webserver/index.js';
+import { createLogger } from '../utils/logger.js';
+
+const log = createLogger('webserver:fullstack');
 
 async function main() {
-  console.log(`
-  ====================================
-      YAKMESH FULL STACK
-      Mesh Network + Web Server
-  ====================================
-  `);
+  log.info('Starting YAKMESH Full Stack - Mesh Network + Web Server');
 
   // 1. Start the mesh node
   const meshNode = new YakmeshNode({
@@ -35,18 +33,15 @@ async function main() {
   await meshNode.start();
   await webServer.start();
 
-  console.log(`
-  All services running:
-    Mesh Node:     ws://localhost:9001
-    Dashboard:     http://localhost:3000
-    Web Server:    http://localhost:8080
-    
-  Press Ctrl+C to stop all services
-  `);
+  log.info('All services running', {
+    meshNode: 'ws://localhost:9001',
+    dashboard: 'http://localhost:3000',
+    webServer: 'http://localhost:8080'
+  });
 
   // Graceful shutdown
   process.on('SIGINT', async () => {
-    console.log('\nShutting down...');
+    log.info('Shutting down...');
     await webServer.stop();
     await meshNode.stop();
     process.exit(0);

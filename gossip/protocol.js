@@ -10,6 +10,9 @@
 
 import { sha3_256 } from '@noble/hashes/sha3.js';
 import { bytesToHex } from '@noble/hashes/utils.js';
+import { createLogger } from '../utils/logger.js';
+
+const log = createLogger('gossip:protocol');
 
 // Message types for gossip protocol
 export const GossipMessageType = {
@@ -112,7 +115,7 @@ export class GossipProtocol {
    * Start the gossip protocol
    */
   start() {
-    console.log('✓ Gossip protocol started');
+    log.info('Gossip protocol started');
     
     // Register message handler with mesh
     this.mesh.on('gossip', this._handleGossipMessage);
@@ -143,7 +146,7 @@ export class GossipProtocol {
     this.intervals.forEach(clearInterval);
     this.intervals = [];
     this.mesh.off('gossip', this._handleGossipMessage);
-    console.log('✓ Gossip protocol stopped');
+    log.info('Gossip protocol stopped');
   }
 
   /**
@@ -257,7 +260,7 @@ export class GossipProtocol {
       lastSeen: Date.now(),
     });
 
-    console.log(`📡 Discovered peer: ${message.name} (${message.nodeId.slice(0, 16)}...)`);
+    log.info('Discovered peer', { name: message.name, nodeId: message.nodeId.slice(0, 16) });
 
     // Respond with our peer list
     this._sendPeerList(fromNodeId);
@@ -305,7 +308,7 @@ export class GossipProtocol {
         
         // Try to connect if we have an endpoint
         if (peer.endpoint && !this.mesh.isConnectedTo(peer.nodeId)) {
-          console.log(`🔗 Attempting connection to discovered peer: ${peer.name}`);
+          log.debug('Attempting connection to discovered peer', { name: peer.name });
           this.mesh.connectToPeer(peer.endpoint).catch(() => {
             // Connection failed, that's ok
           });
@@ -340,7 +343,7 @@ export class GossipProtocol {
     // Emit event for application layer
     this.mesh.emit('rumor', rumor.topic, rumor.data, rumor.origin);
 
-    console.log(`📨 Received rumor: ${rumor.topic} from ${rumor.origin.slice(0, 16)}...`);
+    log.debug('Received rumor', { topic: rumor.topic, origin: rumor.origin.slice(0, 16) });
 
     // Propagate if TTL allows
     if (ttl > 1) {
@@ -370,13 +373,13 @@ export class GossipProtocol {
       .filter(p => p.nodeId !== excludeNodeId && p.nodeId !== rumor.origin);
 
     if (peers.length === 0) {
-      console.log(`⚠️ No peers to propagate rumor to`);
+      log.warn('No peers to propagate rumor to');
       return;
     }
 
     // Select random subset based on fanout
     const targets = this._selectRandom(peers, this.config.fanout);
-    console.log(`📤 Propagating rumor to ${targets.length} peers: ${targets.map(t => t.nodeId.slice(0, 12)).join(', ')}`);
+    log.debug('Propagating rumor', { targetCount: targets.length, targets: targets.map(t => t.nodeId.slice(0, 12)) });
 
     for (const target of targets) {
       // Use broadcast format so the mesh routes it correctly
@@ -438,7 +441,7 @@ export class GossipProtocol {
     for (const [nodeId, info] of this.knownPeers) {
       if (now - info.lastSeen > this.config.peerTTL) {
         this.knownPeers.delete(nodeId);
-        console.log(`🚫 Peer expired: ${info.name}`);
+        log.info('Peer expired', { name: info.name });
       }
     }
   }
