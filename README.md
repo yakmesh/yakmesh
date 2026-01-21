@@ -51,15 +51,30 @@ In an era where traditional ECDSA is increasingly vulnerable and network jitter 
 - ⏱️ **Precision Timing** - Support for atomic clocks, GPS, PTP, NTP
 - 🔌 **Plugin Architecture** - Adapters for any database or API
 - 🛡️ **Phase Modulation** - Time-based anti-replay protection
+- 🌍 **Geographic Exclusion** - Speed-of-light physics prove where nodes CANNOT be
 
-### v2.0 — The Sherpa Security Stack
+### v2.5 — The Complete Stack
 
+**Identity & Trust:**
 - 🧭 **NAMCHE Gateway** - 7-gate mathematical verification (no CA required)
 - 📜 **DOKO Identity** - Self-sovereign identity documents verified by mesh
+- 🏆 **Trust Tiers** - ORACLE/ANCHOR/SENTINEL/PARTICIPANT hierarchy
+- 🔬 **Hardware Attestation** - AES-NI timing proves real silicon
+- ⚖️ **Silicon Parity** - "One silicon = one vote" anti-farm defense
+- ⚠️ **Strike System** - Three strikes with hardware fingerprint tracking
+
+**Networking:**
 - 🏔️ **SHERPA Discovery** - Decentralized peer discovery via public web beacons
 - 🎒 **NAKPAK Routing** - Post-quantum onion routing for anonymity
 - 🔐 **ANNEX Channels** - ML-KEM768 encrypted P2P with perfect forward secrecy
-- 🤝 **Hybrid Trust** - Multi-factor trust combining crypto + behavior + social proof
+- 🔗 **YAK:// Protocol** - Mesh-native URL scheme with bookmarks
+
+**Advanced:**
+- 🌍 **Geographic Proof** - Speed-of-light exclusion zones
+- 🕵️ **Sybil Detection** - Graph analysis for fake identity clusters
+- 📡 **ECHO Ranging** - Privacy-preserving topology discovery
+- 💓 **PULSE Heartbeat** - Liveness detection and partition recovery
+- 🚨 **BEACON Alerts** - Priority emergency broadcast
 
 ## Quick Start
 
@@ -104,7 +119,8 @@ yakmesh/
 │   ├── doko-identity.js     # Self-sovereign identity
 │   ├── hybrid-trust.js      # Multi-factor trust scoring
 │   ├── tls-binding.js       # mTLS certificate binding
-│   └── domain-consensus.js  # Mesh-verified domains
+│   ├── domain-consensus.js  # Mesh-verified domains
+│   └── geo-proof.js         # Speed-of-light geographic exclusion
 ├── oracle/           # Self-verifying validation engine
 ├── mesh/             # WebSocket P2P networking
 │   ├── sherpa-discovery.js  # Decentralized peer discovery
@@ -246,6 +262,11 @@ revocation.isRevoked(dokoId); // true
 | `/bookmarks/remote/status` | GET | Remote sync status |
 | `/security/doko/stats` | GET | DOKO identity stats |
 | `/security/namche/gates` | GET | Gateway verification status |
+| `/geo/status` | GET | Geographic proof status |
+| `/geo/landmarks` | GET/POST | List or add landmarks |
+| `/geo/zones` | GET | List exclusion zones |
+| `/geo/prove` | POST | Generate geographic proof |
+| `/geo/verify` | POST | Verify another node's claims |
 
 ## Pro Features
 

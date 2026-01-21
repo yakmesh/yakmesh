@@ -23,6 +23,15 @@ import { sha3_256 } from '@noble/hashes/sha3.js';
 import { bytesToHex, randomBytes, utf8ToBytes } from '@noble/hashes/utils.js';
 import { EventEmitter } from 'events';
 
+// v2.5.0 Geographic Proof Integration
+import {
+  GeoProofService,
+  LandmarkRegistry,
+  calculateMinDistance,
+  LIGHT_SPEED,
+  GEO_PROOF_CONFIG,
+} from '../security/geo-proof.js';
+
 // ============================================================
 // SHERPA CONFIGURATION
 // ============================================================
@@ -52,7 +61,12 @@ const SHERPA_CONFIG = {
   maxCrawlsPerMinute: 10,       // Prevent crawl storms
   
   // Version
-  protocolVersion: '1.0',
+  protocolVersion: '1.1',       // v1.1 adds geo-proof support
+  
+  // v2.5.0 Geographic Proof
+  geoProofEnabled: true,        // Enable RTT-based geographic proofs
+  geoMinRttSamples: 3,          // Minimum RTT samples for geo proof
+  geoRttWindowMs: 60000,        // Window for RTT sample averaging
 };
 
 // ============================================================
@@ -84,6 +98,24 @@ class BeaconMessage {
       supportsKhata: options.supportsKhata ?? true,
       canVerifyDomains: options.canVerifyDomains ?? false,
       canRouteNakpak: options.canRouteNakpak ?? true,
+      // v2.5.0 Geographic proof capability
+      supportsGeoProof: options.supportsGeoProof ?? true,
+    };
+    
+    // ════════════════════════════════════════════════════════════════════
+    // v2.5.0 Geographic Coordinates (Optional)
+    // If provided, this beacon can be used as a geographic landmark
+    // ════════════════════════════════════════════════════════════════════
+    this.geo = {
+      // Coordinates (null if node doesn't want to be a landmark)
+      lat: options.geoLat ?? null,
+      lon: options.geoLon ?? null,
+      // Location name/description (optional)
+      name: options.geoName || null,
+      // Accuracy radius in km (how precise is this location claim?)
+      accuracyKm: options.geoAccuracyKm ?? null,
+      // Time source tier (higher = more trusted for timing)
+      timeTier: options.timeTier || null,
     };
     
     // ════════════════════════════════════════════════════════════════════
@@ -168,7 +200,8 @@ class BeaconMessage {
       timestamp: this.timestamp,
       ttl: this.ttl,
       capabilities: this.capabilities,
-      namche: this.namche,  // NAMCHE integration fields
+      geo: this.geo,           // v2.5.0 geographic coordinates
+      namche: this.namche,     // NAMCHE integration fields
       peers: this.getPeersForDiscovery(),
       publicKey: this.publicKey,
       signature: this.signature,
@@ -185,7 +218,8 @@ class BeaconMessage {
       networkName: this.networkName,
       timestamp: this.timestamp,
       capabilities: this.capabilities,
-      namche: this.namche,  // Include NAMCHE in signature
+      geo: this.geo,          // v2.5.0 include geo in signature
+      namche: this.namche,    // Include NAMCHE in signature
     });
   }
 
@@ -207,6 +241,14 @@ class BeaconMessage {
       supportsKhata: data.capabilities?.supportsKhata,
       canVerifyDomains: data.capabilities?.canVerifyDomains,
       canRouteNakpak: data.capabilities?.canRouteNakpak,
+      // v2.5.0 Geographic proof capability
+      supportsGeoProof: data.capabilities?.supportsGeoProof,
+      // v2.5.0 Geographic coordinates
+      geoLat: data.geo?.lat,
+      geoLon: data.geo?.lon,
+      geoName: data.geo?.name,
+      geoAccuracyKm: data.geo?.accuracyKm,
+      timeTier: data.geo?.timeTier,
       // NAMCHE integration
       dokoHash: data.namche?.dokoHash,
       sslHasPublicCert: data.namche?.ssl?.hasPublicCert,
@@ -385,6 +427,20 @@ class SherpaDiscovery extends EventEmitter {
     this.wsEndpoint = options.wsEndpoint || null;
     this.capabilities = options.capabilities || {};
     
+    // v2.5.0 Geographic proof configuration
+    this.geoConfig = {
+      enabled: options.geoEnabled ?? SHERPA_CONFIG.geoProofEnabled,
+      lat: options.geoLat ?? null,       // Our latitude (if configured)
+      lon: options.geoLon ?? null,       // Our longitude (if configured)
+      name: options.geoName || null,     // Our location name
+      accuracyKm: options.geoAccuracyKm ?? null,
+      timeTier: options.timeTier || null,
+    };
+    
+    // v2.5.0 Geographic proof tracking
+    this.geoProofService = options.geoProofService || null;
+    this.rttMeasurements = new Map();  // nodeId -> { samples: [], lastUpdated }
+    
     // Peer registry
     this.registry = new PeerRegistry({
       networkFilter: options.networkFilter || this.networkName,
@@ -406,6 +462,10 @@ class SherpaDiscovery extends EventEmitter {
       beaconsFailed: 0,
       peersDiscovered: 0,
       peersEvicted: 0,
+      // v2.5.0 Geographic proof stats
+      geoLandmarksDiscovered: 0,
+      geoRttMeasurements: 0,
+      geoExclusionZonesCreated: 0,
     };
   }
 
@@ -458,6 +518,13 @@ class SherpaDiscovery extends EventEmitter {
       supportsNakpak: this.capabilities.supportsNakpak ?? true,
       supportsGossip: this.capabilities.supportsGossip ?? true,
       publicKey: this.publicKey,
+      // v2.5.0 Geographic coordinates (if configured)
+      supportsGeoProof: this.geoConfig.enabled,
+      geoLat: this.geoConfig.lat,
+      geoLon: this.geoConfig.lon,
+      geoName: this.geoConfig.name,
+      geoAccuracyKm: this.geoConfig.accuracyKm,
+      timeTier: this.geoConfig.timeTier,
     });
     
     // Add known peers
@@ -567,12 +634,16 @@ class SherpaDiscovery extends EventEmitter {
 
   /**
    * Fetch a beacon from an endpoint
+   * v2.5.0: Also measures RTT for geographic proof
    */
   async _fetchBeacon(endpoint) {
     const url = new URL(SHERPA_CONFIG.beaconPath, endpoint).toString();
     
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), SHERPA_CONFIG.crawlTimeout);
+    
+    // v2.5.0: Measure RTT for geographic proof
+    const rttStart = performance.now();
     
     try {
       const response = await fetch(url, {
@@ -582,6 +653,9 @@ class SherpaDiscovery extends EventEmitter {
         },
         signal: controller.signal,
       });
+      
+      // v2.5.0: Calculate RTT
+      const rttMs = performance.now() - rttStart;
       
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
@@ -594,6 +668,10 @@ class SherpaDiscovery extends EventEmitter {
       
       const data = JSON.parse(text);
       const beacon = BeaconMessage.deserialize(data);
+      
+      // v2.5.0: Attach RTT measurement to beacon for geo-proof processing
+      beacon._rttMs = rttMs;
+      beacon._endpoint = endpoint;
       
       // Verify signature if required
       if (SHERPA_CONFIG.signatureRequired && this.verifyFn) {
@@ -617,6 +695,9 @@ class SherpaDiscovery extends EventEmitter {
       if (age > beacon.ttl * 1000) {
         throw new Error('Beacon expired');
       }
+      
+      // v2.5.0: Process geographic proof if beacon has coordinates
+      this._processGeoProof(beacon, rttMs);
       
       return beacon;
       
@@ -664,7 +745,200 @@ class SherpaDiscovery extends EventEmitter {
       seedCount: this.seedEndpoints.size,
       lastCrawl: this.lastCrawl,
       crawlInProgress: this.crawlInProgress,
+      // v2.5.0 Geographic proof stats
+      geoEnabled: this.geoConfig.enabled,
+      geoLandmarkCount: this.geoProofService?.landmarkRegistry?.landmarks?.size || 0,
+      geoHasCoordinates: this.geoConfig.lat !== null && this.geoConfig.lon !== null,
     };
+  }
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // v2.5.0 Geographic Proof Methods
+  // ════════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Set the GeoProofService for RTT-based geographic proofs
+   */
+  setGeoProofService(service) {
+    this.geoProofService = service;
+  }
+
+  /**
+   * Configure this node's geographic coordinates
+   * Once set, this node will be advertised as a geographic landmark
+   */
+  setGeoCoordinates(lat, lon, options = {}) {
+    if (typeof lat !== 'number' || typeof lon !== 'number') {
+      throw new Error('lat and lon must be numbers');
+    }
+    if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+      throw new Error('Invalid coordinates');
+    }
+    
+    this.geoConfig.lat = lat;
+    this.geoConfig.lon = lon;
+    this.geoConfig.name = options.name || this.geoConfig.name;
+    this.geoConfig.accuracyKm = options.accuracyKm ?? this.geoConfig.accuracyKm;
+    this.geoConfig.timeTier = options.timeTier || this.geoConfig.timeTier;
+    
+    this.emit('geo-configured', { lat, lon, name: this.geoConfig.name });
+  }
+
+  /**
+   * Process geographic proof from a beacon with coordinates
+   * Called after fetching a beacon that includes geo data
+   */
+  _processGeoProof(beacon, rttMs) {
+    // Only process if geo proof is enabled and beacon has valid coordinates
+    if (!this.geoConfig.enabled) return;
+    if (!beacon.geo?.lat || !beacon.geo?.lon) return;
+    if (!beacon.nodeId) return;
+    
+    // Track RTT measurement
+    this._recordRttMeasurement(beacon.nodeId, rttMs, beacon.geo);
+    this.stats.geoRttMeasurements++;
+    
+    // If we have a GeoProofService, register this as a landmark
+    if (this.geoProofService) {
+      const existing = this.geoProofService.landmarkRegistry.getLandmark(beacon.nodeId);
+      
+      if (!existing) {
+        // New landmark discovered via SHERPA
+        this.geoProofService.landmarkRegistry.addLandmark(
+          beacon.nodeId,
+          beacon.geo.lat,
+          beacon.geo.lon,
+          {
+            name: beacon.geo.name || `SHERPA Beacon ${beacon.nodeId.slice(0, 8)}`,
+            endpoint: beacon._endpoint,
+            timeTier: beacon.geo.timeTier,
+            accuracyKm: beacon.geo.accuracyKm,
+            verified: false,  // Will be verified through repeated measurements
+            discoveredVia: 'sherpa',
+          }
+        );
+        this.stats.geoLandmarksDiscovered++;
+        
+        this.emit('geo-landmark-discovered', {
+          nodeId: beacon.nodeId,
+          lat: beacon.geo.lat,
+          lon: beacon.geo.lon,
+          name: beacon.geo.name,
+          rttMs,
+        });
+      }
+      
+      // Calculate exclusion zone from RTT
+      const minDistanceKm = calculateMinDistance(rttMs);
+      
+      // Record this measurement for the landmark
+      this.geoProofService.recordRttMeasurement(beacon.nodeId, rttMs);
+      
+      this.emit('geo-rtt-measured', {
+        nodeId: beacon.nodeId,
+        rttMs,
+        minDistanceKm,
+        lat: beacon.geo.lat,
+        lon: beacon.geo.lon,
+      });
+    }
+  }
+
+  /**
+   * Record an RTT measurement for a node
+   * Used for averaging and jitter detection
+   */
+  _recordRttMeasurement(nodeId, rttMs, geo) {
+    const now = Date.now();
+    let record = this.rttMeasurements.get(nodeId);
+    
+    if (!record) {
+      record = {
+        samples: [],
+        geo,
+        lastUpdated: now,
+      };
+      this.rttMeasurements.set(nodeId, record);
+    }
+    
+    // Add sample
+    record.samples.push({ rttMs, timestamp: now });
+    record.lastUpdated = now;
+    
+    // Prune old samples (outside window)
+    const windowStart = now - SHERPA_CONFIG.geoRttWindowMs;
+    record.samples = record.samples.filter(s => s.timestamp >= windowStart);
+    
+    // Keep maximum of 100 samples
+    if (record.samples.length > 100) {
+      record.samples = record.samples.slice(-100);
+    }
+  }
+
+  /**
+   * Get average RTT for a node
+   */
+  getAverageRtt(nodeId) {
+    const record = this.rttMeasurements.get(nodeId);
+    if (!record || record.samples.length === 0) return null;
+    
+    const sum = record.samples.reduce((acc, s) => acc + s.rttMs, 0);
+    return sum / record.samples.length;
+  }
+
+  /**
+   * Get minimum RTT for a node (most physically meaningful)
+   */
+  getMinimumRtt(nodeId) {
+    const record = this.rttMeasurements.get(nodeId);
+    if (!record || record.samples.length === 0) return null;
+    
+    return Math.min(...record.samples.map(s => s.rttMs));
+  }
+
+  /**
+   * Get all RTT measurements for geographic proof generation
+   */
+  getRttMeasurements() {
+    const result = [];
+    
+    for (const [nodeId, record] of this.rttMeasurements) {
+      if (record.samples.length >= SHERPA_CONFIG.geoMinRttSamples) {
+        const minRtt = this.getMinimumRtt(nodeId);
+        result.push({
+          nodeId,
+          rttMs: minRtt,
+          minDistanceKm: calculateMinDistance(minRtt),
+          sampleCount: record.samples.length,
+          geo: record.geo,
+        });
+      }
+    }
+    
+    return result;
+  }
+
+  /**
+   * Get geographic landmarks discovered via SHERPA
+   */
+  getGeoLandmarks() {
+    const landmarks = [];
+    
+    for (const [nodeId, record] of this.rttMeasurements) {
+      if (record.geo?.lat && record.geo?.lon) {
+        landmarks.push({
+          nodeId,
+          lat: record.geo.lat,
+          lon: record.geo.lon,
+          name: record.geo.name,
+          rttMs: this.getMinimumRtt(nodeId),
+          minDistanceKm: calculateMinDistance(this.getMinimumRtt(nodeId)),
+          sampleCount: record.samples.length,
+        });
+      }
+    }
+    
+    return landmarks;
   }
 }
 

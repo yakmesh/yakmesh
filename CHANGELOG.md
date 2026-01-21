@@ -2,11 +2,190 @@
 
 All notable changes to YAKMESH will be documented in this file.
 
-## [2.3.0] - 2025-06-14
+## [2.5.0] - 2026-01-20
 
-### 🧪 Testing Expansion & Bug Fixes
+### 🌍 Geographic Exclusion — Physics Don't Lie
 
-This release expands test coverage from 352 to 562 tests with comprehensive mesh module testing.
+*Theme: "Speed of light is the ultimate validator. We prove where you CANNOT be."*
+
+#### 🎯 Core Principles
+
+- **Unforgeable Distance** - Speed of light provides cryptographic lower bound on distance
+- **Exclusion Zones** - Prove where nodes CANNOT be, not precise location
+- **No GPS Required** - RTT + physics = provable geography
+- **Network Overhead is Safe** - Latency only inflates RTT, making zones always valid
+
+#### ✅ Implemented Features
+
+**Geographic Proof Core** (`security/geo-proof.js`)
+- Speed-of-light distance calculation (fiber = 0.67c)
+- LandmarkRegistry for known geographic reference points
+- RTTMeasurement with jitter handling and averaging
+- ExclusionZone creation from RTT measurements
+- GeographicProof with confidence scoring
+- GeoProofService for full lifecycle management
+- **59 tests**
+
+**KHATA Gossip Integration** (`security/khata-trust-integration.js`)
+- 6 new message types for geo-proof gossip:
+  - GEO_PROOF_ANNOUNCE, GEO_PROOF_REQUEST, GEO_PROOF_RESPONSE
+  - LANDMARK_ANNOUNCE, LANDMARK_REQUEST, LANDMARK_VERIFY
+- Geo-proof announcement and request handling
+- Landmark discovery via gossip
+- **14 new tests** (36 total)
+
+**CLI Commands** (`cli/index.js`)
+- `yakmesh geo status` - Show geographic proof status
+- `yakmesh geo landmarks` - List known landmarks
+- `yakmesh geo zones` - List exclusion zones
+- `yakmesh geo prove` - Generate geographic proof
+- `yakmesh geo verify <nodeId>` - Verify another node
+- `yakmesh geo add-landmark <name>` - Add landmark manually
+- `yakmesh geo physics` - Show speed-of-light constants
+
+**Server API Endpoints** (`server/index.js`)
+- `GET /geo/status` - Geographic proof status and physics constants
+- `GET /geo/landmarks` - List registered landmarks
+- `POST /geo/landmarks` - Add a landmark
+- `GET /geo/zones` - List exclusion zones
+- `POST /geo/prove` - Generate geographic proof
+- `POST /geo/verify` - Verify another node's claims
+
+**SHERPA Beacon Integration** (`mesh/sherpa-discovery.js`)
+- RTT measurement during beacon fetch (performance.now())
+- Geographic coordinates in BeaconMessage (lat, lon, name, accuracyKm, timeTier)
+- Automatic landmark discovery from geo-enabled beacons
+- RTT sample averaging with configurable window
+- Protocol version bumped to 1.1 for geo support
+- New SherpaDiscovery methods:
+  - `setGeoCoordinates()` - Configure this node as landmark
+  - `setGeoProofService()` - Connect to GeoProofService
+  - `getGeoLandmarks()` - List discovered landmarks
+  - `getRttMeasurements()` - Get RTT data for proof generation
+- **31 tests**
+
+#### ⚡ Speed-of-Light Physics
+
+| RTT | Minimum Distance |
+|-----|------------------|
+| 1 ms | ≥100 km |
+| 5 ms | ≥500 km |
+| 10 ms | ≥999 km |
+| 50 ms | ≥4,997 km |
+| 100 ms | ≥9,993 km |
+| 200 ms | ≥19,986 km |
+
+**Formula:** `minDistance = (RTT / 2) × fiberSpeed`
+- Vacuum speed: 299,792.458 km/s
+- Fiber speed (0.67c): 199,861.639 km/s
+
+#### 📊 Test Summary
+
+| Module | Tests | Status |
+|--------|-------|--------|
+| Geo Proof Core | 59 | ✅ |
+| KHATA Geo Integration | 14 | ✅ |
+| SHERPA Geo Integration | 31 | ✅ |
+| **v2.5 Total** | **104** | ✅ |
+
+#### 🔮 Implementation Notes
+
+- Dashboard visualization skipped (privacy concern - CLI provides same data)
+- SHERPA beacons now serve as geographic landmarks automatically
+- RTT measured using high-resolution `performance.now()` timing
+
+---
+
+## [2.4.0] - 2026-01-19 (Internal)
+
+### 🤝 Mathematical Trust — No Simulation
+
+*Theme: "You can't fake physics. Atomic time and real silicon are your credentials."*
+
+> **Note**: This version was developed internally and released as part of v2.5.0.
+
+#### 🎯 Core Principles
+
+- **No Simulation** - Must prove real AES-NI hardware through timing analysis
+- **Atomic Precision** - Highest trust requires physical time sources
+- **Mathematical Consensus** - Revocation through signature counting, not voting
+
+#### ✅ Implemented Features
+
+**Mesh-Consensus Revocation** (`security/mesh-revocation.js`)
+- 2/3 threshold attestation-based revocation
+- Post-quantum signed attestations (ML-DSA-65)
+- Revocation certificates with threshold proof
+- **41 tests**
+
+**Hardware Attestation** (`security/hardware-attestation.js`)
+- AES-NI timing verification to prove real silicon
+- Challenge-response protocol for peer verification
+- Bot farms and VMs fail timing checks
+- **5 tests**
+
+**Trust Tier System** (`security/trust-tier.js`)
+- ORACLE (2.0x): Atomic clock + AES-NI + 30 days
+- ANCHOR (1.5x): GPS+PPS + AES-NI + 14 days  
+- SENTINEL (1.25x): PTP + AES-NI + 7 days
+- PARTICIPANT (1.0x): NTP + AES-NI
+- OBSERVER (0.25x): Unverified
+- **35 tests**
+
+**Silicon Parity** (`security/silicon-parity.js`)
+- "One Silicon = One Vote" anti-ASIC/farm defense
+- Weight division: `tierMax / coreCount`
+- 100-core rig = same weight as 1-core
+- AES-NI fingerprint as unique silicon identity
+- **36 tests**
+
+**Sybil Graph Analysis** (`security/sybil-graph.js`)
+- Clustering coefficient detection (>0.7 = suspicious)
+- Edge cut ratio analysis (<0.1 = insular cluster)
+- Component analysis for cluster isolation
+- Behavior correlation (uptime, activity patterns)
+- **44 tests**
+
+**KHATA Trust Integration** (`security/khata-trust-integration.js`)
+- Gossip layer for trust messages over KHATA protocol
+- 8 new message types for attestation/challenge routing
+- Deduplication and hop limit enforcement
+- Trust synchronization between peers
+- **22 tests**
+
+**Strike System** (`security/strike-system.js`)
+- "Three Strikes — Then Math Speaks"
+- Hardware fingerprint tracks identity across fresh starts
+- Strike 1: Fresh start allowed, recorded
+- Strike 2: 7-day probation, reduced trust (0.5x)
+- Strike 3: Permanent network ban
+- Revocation bridge for automated strike issuance
+- **31 tests**
+
+#### 📊 Test Summary
+
+| Module | Tests | Status |
+|--------|-------|--------|
+| Mesh Revocation | 41 | ✅ |
+| Hardware Attestation | 5 | ✅ |
+| Trust Tiers | 35 | ✅ |
+| Silicon Parity | 36 | ✅ |
+| Sybil Graph | 44 | ✅ |
+| KHATA Integration | 22 | ✅ |
+| Strike System | 31 | ✅ |
+| **v2.4 Total** | **214** | ✅ |
+
+**Project Total**: 598 + 214 = **812 tests**
+
+See [ROADMAP-2.4.0.md](docs/ROADMAP-2.4.0.md) for full details.
+
+---
+
+## [2.3.0] - 2026-01-20
+
+### 🧪 Testing Expansion, BYOND Adapter & Bug Fixes
+
+This release expands test coverage from 352 to 598 tests with comprehensive mesh module testing and adds the BYOND game server adapter.
 
 #### 📊 Test Coverage
 
@@ -15,9 +194,27 @@ This release expands test coverage from 352 to 562 tests with comprehensive mesh
 | **Oracle** | 98 | ✅ All passing |
 | **Protocol** | 56 | ✅ All passing |
 | **Multi-Node** | 18 | ✅ All passing |
-| **Security (Vitest)** | 192 | ✅ 187 passing, 5 skipped |
-| **Mesh (Vitest)** | 173 | ✅ 123 passing, 50 skipped |
-| **Total** | **562** | **507 passing, 55 skipped** |
+| **BYOND Adapter** | 36 | ✅ All passing |
+| **Security (Vitest)** | 390 | ✅ All passing (55 skipped) |
+| **Total** | **598** | **543 passing, 55 skipped** |
+
+#### 🎮 BYOND Game Server Adapter
+
+New adapter for integrating BYOND games (Space Station 13, Pondera, etc.) with Yakmesh:
+
+- **Topic Protocol** - Native BYOND wire protocol implementation
+- **HTTP Bridge** - REST API for DreamDaemon communication
+- **Server Discovery** - Find BYOND servers via mesh gossip
+- **World Persistence** - Save/load world data to mesh storage
+- **DOKO Integration** - Cryptographic identity for game servers
+- **DMAPI Library** - Drop-in DM code for game developers
+
+**Files:**
+- `adapters/adapter-byond/index.js` - Main adapter
+- `adapters/adapter-byond/topic-client.js` - Wire protocol
+- `adapters/adapter-byond/http-bridge.js` - HTTP server
+- `adapters/adapter-byond/security.js` - DOKO verification
+- `adapters/adapter-byond/dmapi/` - DM library
 
 #### ✅ New Test Files
 
@@ -26,11 +223,20 @@ This release expands test coverage from 352 to 562 tests with comprehensive mesh
 - `mesh/tests/annex.test.js` - 64 tests for ANNEX encrypted channels
 - `security/tests/khata-protocol.test.js` - 38 tests for KHATA trust protocol
 - `security/tests/mesh-auth.test.js` - 54 tests for WebSocket authentication
+- `adapters/adapter-byond/tests/*.test.js` - 36 tests for BYOND integration
 
 #### 🐛 Bug Fixes
 
 - **Fixed ML-KEM768 cipherText capitalization** - `ml_kem768.encapsulate()` returns `{cipherText}` with capital T, not `{ciphertext}`. Fixed in `nakpak-routing.js` and `annex.js`
 - **Fixed mesh-auth.js import** - Changed `@noble/hashes/sha3` to `@noble/hashes/sha3.js` for proper ESM resolution
+- **Fixed oracle path normalization** - Consistent cross-platform path handling
+
+#### 🤖 YakBot Updates
+
+- Updated to v2.3.0 with current features
+- Enhanced AI context with NAMCHE/DOKO, adapters, 598 tests
+- New FAQ entry for security features
+- Added YakBot deployment package to build system
 
 #### 📝 Notes
 

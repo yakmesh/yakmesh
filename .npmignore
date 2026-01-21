@@ -1,12 +1,38 @@
-# Pro-only modules (not included in MIT release)
-security/
+# Test files - exclude tests from npm package
+**/tests/
+*.test.js
+*.spec.js
 
 # Development files
 node_modules/
 docs/
 templates/
-*.test.js
-*.spec.js
+memory-bank/
+convert-tests.cjs
+vitest.config.js
+
+# Desktop distribution packages (300+ MB)
+deploy-packages/
+
+# Yakbot Discord bot (separate package)
+yakbot/
+
+# Marketing & announcements (internal)
+announcements/
+marketing/
+discord.md
+
+# Deployment configs (instance-specific)
+deploy/
+hostinger/
+
+# Instance-specific config files (users create their own)
+yakmesh.config.js
+yakmesh.config.production.js
+ecosystem.config.json
+
+# PeerQuanta-specific adapter (not generic)
+adapters/adapter-peerquanta/
 
 # SENSITIVE DATA - NEVER PUBLISH
 data/
@@ -14,6 +40,8 @@ data-*/
 test-nodes/data-*/
 *.db
 node-key.json
+.env
+.env.*
 
 # Test/debug files
 test-*.mjs
@@ -28,4 +56,3 @@ test-nodes/
 .DS_Store
 .git/
 .github/
-

@@ -12,7 +12,7 @@ import { join, resolve } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
-const VERSION = '2.1.0';
+const VERSION = '2.5.0';
 
 const program = new Command();
 
@@ -518,6 +518,309 @@ bookmarkCmd
       console.log(chalk.gray(`  ${e.message}`));
       process.exit(1);
     }
+  });
+
+// ===== GEO COMMAND GROUP =====
+const geoCmd = program
+  .command('geo')
+  .description('Geographic proof and exclusion zone management');
+
+geoCmd
+  .command('status')
+  .description('Show geographic proof status and statistics')
+  .option('-p, --port <port>', 'HTTP port of local node', '3000')
+  .action(async (options) => {
+    try {
+      const response = await fetch(`http://localhost:${options.port}/geo/status`);
+      const data = await response.json();
+
+      showBanner();
+      console.log(chalk.cyan('🌍 Geographic Proof Status\n'));
+      
+      console.log(chalk.white('  Time Source:'));
+      console.log(chalk.gray(`    Type:       ${data.timeSource?.type || 'UNKNOWN'}`));
+      console.log(chalk.gray(`    Quality:    ${data.timeSource?.quality || 'N/A'}`));
+      console.log(chalk.gray(`    Precision:  ${data.timeSource?.precision || 'N/A'}`));
+      
+      console.log(chalk.white('\n  Landmarks:'));
+      console.log(chalk.gray(`    Registered: ${data.landmarks?.count || 0}`));
+      console.log(chalk.gray(`    Verified:   ${data.landmarks?.verified || 0}`));
+      
+      console.log(chalk.white('\n  Exclusion Zones:'));
+      console.log(chalk.gray(`    Active:     ${data.zones?.active || 0}`));
+      console.log(chalk.gray(`    Total:      ${data.zones?.total || 0}`));
+      
+      console.log(chalk.white('\n  My Geographic Proof:'));
+      if (data.myProof) {
+        console.log(chalk.gray(`    Confidence: ${(data.myProof.confidence * 100).toFixed(1)}%`));
+        console.log(chalk.gray(`    Zones:      ${data.myProof.zoneCount} exclusion zones`));
+        console.log(chalk.gray(`    Last RTT:   ${data.myProof.lastRttMs?.toFixed(2) || 'N/A'} ms`));
+      } else {
+        console.log(chalk.yellow('    No geographic proof established yet'));
+        console.log(chalk.gray('    Run: yakmesh geo prove'));
+      }
+      console.log('');
+    } catch (e) {
+      console.log(chalk.red('✗ Could not fetch geo status'));
+      console.log(chalk.gray(`  Is the node running on port ${options.port}?`));
+      process.exit(1);
+    }
+  });
+
+geoCmd
+  .command('landmarks')
+  .description('List known geographic landmarks')
+  .option('-p, --port <port>', 'HTTP port of local node', '3000')
+  .option('-v, --verified', 'Show only verified landmarks')
+  .action(async (options) => {
+    try {
+      const url = options.verified 
+        ? `http://localhost:${options.port}/geo/landmarks?verified=true`
+        : `http://localhost:${options.port}/geo/landmarks`;
+      const response = await fetch(url);
+      const data = await response.json();
+
+      showBanner();
+      console.log(chalk.cyan('📍 Geographic Landmarks\n'));
+      
+      if (!data.landmarks || data.landmarks.length === 0) {
+        console.log(chalk.yellow('  No landmarks registered\n'));
+        console.log(chalk.gray('  Landmarks are discovered via KHATA gossip'));
+        console.log(chalk.gray('  or can be added with: yakmesh geo add-landmark'));
+        return;
+      }
+
+      for (const lm of data.landmarks) {
+        const verifiedIcon = lm.verified ? chalk.green('✓') : chalk.gray('○');
+        console.log(chalk.white(`  ${verifiedIcon} ${lm.name}`));
+        console.log(chalk.gray(`      ID:       ${lm.nodeId.slice(0, 24)}...`));
+        console.log(chalk.gray(`      Location: ${lm.lat?.toFixed(4)}°, ${lm.lon?.toFixed(4)}°`));
+        console.log(chalk.gray(`      Tier:     ${lm.tier || 'UNKNOWN'}`));
+        if (lm.lastRttMs) {
+          const distance = (lm.lastRttMs / 2) * 199861.639 / 1000;
+          console.log(chalk.gray(`      RTT:      ${lm.lastRttMs.toFixed(2)} ms (≥${distance.toFixed(0)} km)`));
+        }
+        console.log('');
+      }
+      
+      console.log(chalk.gray(`  Total: ${data.landmarks.length} landmark(s)`));
+      console.log('');
+    } catch (e) {
+      console.log(chalk.red('✗ Could not fetch landmarks'));
+      console.log(chalk.gray(`  ${e.message}`));
+      process.exit(1);
+    }
+  });
+
+geoCmd
+  .command('zones')
+  .description('List exclusion zones for this node')
+  .option('-p, --port <port>', 'HTTP port of local node', '3000')
+  .action(async (options) => {
+    try {
+      const response = await fetch(`http://localhost:${options.port}/geo/zones`);
+      const data = await response.json();
+
+      showBanner();
+      console.log(chalk.cyan('🚫 Geographic Exclusion Zones\n'));
+      console.log(chalk.gray('  Exclusion zones prove where this node CANNOT be.\n'));
+      
+      if (!data.zones || data.zones.length === 0) {
+        console.log(chalk.yellow('  No exclusion zones established\n'));
+        console.log(chalk.gray('  Run: yakmesh geo prove'));
+        return;
+      }
+
+      for (const zone of data.zones) {
+        console.log(chalk.white(`  Zone: ${zone.landmarkName || zone.landmarkId.slice(0, 16)}...`));
+        console.log(chalk.gray(`      Landmark:  ${zone.lat?.toFixed(4)}°, ${zone.lon?.toFixed(4)}°`));
+        console.log(chalk.gray(`      Radius:    ${zone.radiusKm.toFixed(1)} km (min distance)`));
+        console.log(chalk.gray(`      RTT:       ${zone.rttMs.toFixed(2)} ms`));
+        console.log(chalk.gray(`      Measured:  ${new Date(zone.measuredAt).toISOString()}`));
+        console.log('');
+      }
+      
+      console.log(chalk.gray(`  Total: ${data.zones.length} exclusion zone(s)`));
+      console.log('');
+    } catch (e) {
+      console.log(chalk.red('✗ Could not fetch zones'));
+      console.log(chalk.gray(`  ${e.message}`));
+      process.exit(1);
+    }
+  });
+
+geoCmd
+  .command('prove')
+  .description('Generate a new geographic proof')
+  .option('-p, --port <port>', 'HTTP port of local node', '3000')
+  .option('-f, --force', 'Force re-measurement of all landmarks')
+  .action(async (options) => {
+    try {
+      showBanner();
+      console.log(chalk.yellow('🌍 Generating Geographic Proof...\n'));
+      console.log(chalk.gray('  Measuring RTT to known landmarks...\n'));
+      
+      const response = await fetch(`http://localhost:${options.port}/geo/prove`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ force: options.force || false }),
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        console.log(chalk.green('✓ Geographic proof generated!\n'));
+        console.log(chalk.white('  Results:'));
+        console.log(chalk.gray(`    Confidence:      ${(result.proof.confidence * 100).toFixed(1)}%`));
+        console.log(chalk.gray(`    Exclusion zones: ${result.proof.zoneCount}`));
+        console.log(chalk.gray(`    Time source:     ${result.proof.timeSource}`));
+        console.log(chalk.gray(`    Valid until:     ${new Date(result.proof.expiresAt).toISOString()}`));
+        
+        if (result.proof.zones && result.proof.zones.length > 0) {
+          console.log(chalk.white('\n  Zones created:'));
+          for (const zone of result.proof.zones.slice(0, 5)) {
+            console.log(chalk.gray(`    • ${zone.landmarkName}: ≥${zone.radiusKm.toFixed(1)} km away`));
+          }
+          if (result.proof.zones.length > 5) {
+            console.log(chalk.gray(`    ... and ${result.proof.zones.length - 5} more`));
+          }
+        }
+      } else {
+        console.log(chalk.red(`✗ Failed to generate proof: ${result.error}`));
+        if (result.reason) {
+          console.log(chalk.gray(`  ${result.reason}`));
+        }
+      }
+      console.log('');
+    } catch (e) {
+      console.log(chalk.red('✗ Could not generate proof'));
+      console.log(chalk.gray(`  ${e.message}`));
+      process.exit(1);
+    }
+  });
+
+geoCmd
+  .command('verify <nodeId>')
+  .description('Verify geographic claims of another node')
+  .option('-p, --port <port>', 'HTTP port of local node', '3000')
+  .action(async (nodeId, options) => {
+    try {
+      showBanner();
+      console.log(chalk.yellow(`🔍 Verifying node ${nodeId.slice(0, 24)}...\n`));
+      
+      const response = await fetch(`http://localhost:${options.port}/geo/verify`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nodeId }),
+      });
+      
+      const result = await response.json();
+      
+      if (result.verified) {
+        console.log(chalk.green('✓ Geographic claims verified!\n'));
+        console.log(chalk.white('  Verification Results:'));
+        console.log(chalk.gray(`    Node ID:     ${result.nodeId.slice(0, 32)}...`));
+        console.log(chalk.gray(`    Zones valid: ${result.validZones}/${result.totalZones}`));
+        console.log(chalk.gray(`    Confidence:  ${(result.confidence * 100).toFixed(1)}%`));
+        
+        if (result.region) {
+          console.log(chalk.gray(`    Region:      ${result.region}`));
+        }
+      } else {
+        console.log(chalk.red('✗ Geographic verification failed\n'));
+        console.log(chalk.gray(`  Reason: ${result.reason || 'Unknown'}`));
+        
+        if (result.violations && result.violations.length > 0) {
+          console.log(chalk.white('\n  Violations:'));
+          for (const v of result.violations) {
+            console.log(chalk.red(`    • ${v}`));
+          }
+        }
+      }
+      console.log('');
+    } catch (e) {
+      console.log(chalk.red('✗ Could not verify node'));
+      console.log(chalk.gray(`  ${e.message}`));
+      process.exit(1);
+    }
+  });
+
+geoCmd
+  .command('add-landmark <name>')
+  .description('Add a well-known landmark node')
+  .option('-p, --port <port>', 'HTTP port of local node', '3000')
+  .option('--lat <latitude>', 'Latitude of landmark')
+  .option('--lon <longitude>', 'Longitude of landmark')
+  .option('--node-id <nodeId>', 'Node ID of landmark')
+  .option('--endpoint <url>', 'WebSocket endpoint of landmark')
+  .action(async (name, options) => {
+    try {
+      if (!options.lat || !options.lon) {
+        console.log(chalk.red('✗ Error: --lat and --lon are required'));
+        console.log(chalk.gray('  Example: yakmesh geo add-landmark "NYC Beacon" --lat 40.7128 --lon -74.0060 --endpoint ws://beacon.nyc:9001'));
+        process.exit(1);
+      }
+      
+      const response = await fetch(`http://localhost:${options.port}/geo/landmarks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name,
+          lat: parseFloat(options.lat),
+          lon: parseFloat(options.lon),
+          nodeId: options.nodeId,
+          endpoint: options.endpoint,
+        }),
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        console.log(chalk.green(`\n✓ Landmark '${name}' added\n`));
+        console.log(chalk.gray(`  Location: ${options.lat}°, ${options.lon}°`));
+        if (options.endpoint) {
+          console.log(chalk.gray(`  Endpoint: ${options.endpoint}`));
+        }
+      } else {
+        console.log(chalk.red(`✗ Failed to add landmark: ${result.error}`));
+      }
+      console.log('');
+    } catch (e) {
+      console.log(chalk.red('✗ Could not add landmark'));
+      console.log(chalk.gray(`  ${e.message}`));
+      process.exit(1);
+    }
+  });
+
+geoCmd
+  .command('physics')
+  .description('Show speed-of-light physics constants used for verification')
+  .action(async () => {
+    showBanner();
+    console.log(chalk.cyan('⚡ Speed-of-Light Physics Constants\n'));
+    
+    console.log(chalk.white('  Fundamental Constants:'));
+    console.log(chalk.gray('    Speed of light (vacuum): 299,792.458 km/s'));
+    console.log(chalk.gray('    Speed in fiber (0.67c):  199,861.639 km/s'));
+    
+    console.log(chalk.white('\n  Example RTT to Distance:'));
+    const examples = [1, 5, 10, 50, 100, 200];
+    for (const rtt of examples) {
+      const distance = (rtt / 2) * 199861.639 / 1000;
+      console.log(chalk.gray(`    ${rtt.toString().padStart(3)} ms RTT → ≥${distance.toFixed(0).padStart(5)} km minimum distance`));
+    }
+    
+    console.log(chalk.white('\n  How It Works:'));
+    console.log(chalk.gray('    1. Measure RTT to landmark with known location'));
+    console.log(chalk.gray('    2. Calculate minimum distance using speed of light'));
+    console.log(chalk.gray('    3. Create exclusion zone (node CANNOT be within radius)'));
+    console.log(chalk.gray('    4. Network latency only adds delay → zones are always valid'));
+    
+    console.log(chalk.white('\n  Key Insight:'));
+    console.log(chalk.cyan('    "We prove where you CANNOT be, not where you ARE"'));
+    console.log(chalk.gray('    Physics only provides lower bound on distance.'));
+    console.log(chalk.gray('    This is unforgeable - speed of light cannot be exceeded.'));
+    console.log('');
   });
 
 // ===== VERSION =====

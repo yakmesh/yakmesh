@@ -19,7 +19,7 @@
 
 import { sha3_256 } from '@noble/hashes/sha3.js';
 import { bytesToHex, hexToBytes, utf8ToBytes, randomBytes } from '@noble/hashes/utils.js';
-import { getOracle, contentHash } from './validation-oracle.js';
+import { getOracle, contentHash } from './validation-oracle-hardened.js';
 import { createLogger } from '../utils/logger.js';
 
 const log = createLogger('oracle:code-proof');

@@ -1,5 +1,20 @@
 /**
- * PeerQuanta Validation Oracle
+ * @deprecated USE validation-oracle-hardened.js INSTEAD
+ * 
+ * This file is DEPRECATED and will be removed in a future version.
+ * All production code should import from:
+ *   - './validation-oracle-hardened.js' (direct)
+ *   - './index.js' (recommended - main entry point)
+ * 
+ * The hardened version includes:
+ *   - Cross-platform path normalization (Windows/Linux compatible)
+ *   - Full codebase hashing (not just oracle file)
+ *   - Frozen singleton pattern
+ *   - Self-integrity verification
+ * 
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * 
+ * PeerQuanta Validation Oracle (LEGACY)
  * 
  * A self-verifying, deterministic validation system that acts as a distributed oracle.
  * Every node running this code will independently arrive at the same truth.
@@ -12,6 +27,7 @@
  * 
  * @module ValidationOracle
  * @version 1.0.0
+ * @deprecated Use validation-oracle-hardened.js
  */
 
 import { sha3_256, sha3_512 } from '@noble/hashes/sha3.js';

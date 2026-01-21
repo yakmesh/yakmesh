@@ -14,10 +14,10 @@
  * @copyright 2026 YAKMESH™ Contributors
  */
 
-import { Client, GatewayIntentBits, EmbedBuilder, Events } from 'discord.js';
+import { Client, GatewayIntentBits, EmbedBuilder, Events, Partials } from 'discord.js';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import 'dotenv/config';
-import { createLogger } from '../utils/logger.js';
+import { createLogger } from './utils/logger.js';
 
 const log = createLogger('yakbot:main');
 
@@ -30,7 +30,7 @@ const config = {
   geminiKey: process.env.GEMINI_API_KEY,
   
   // Current version
-  version: '1.7.0',
+  version: '2.5.0',
   
   // Official YAKMESH nodes for health checks
   officialNodes: [
@@ -67,22 +67,37 @@ You are YakBot, the helpful assistant for YAKMESH™ - a post-quantum secure P2P
 Key facts about YAKMESH:
 - YAKMESH stands for: Yielding Atomic Kernel Modular Encryption Secured Hub
 - Current version: ${config.version}
-- Written in Node.js/JavaScript
+- Written in Node.js/JavaScript (ESM modules)
 - Uses ML-DSA-65 (NIST FIPS 204) for post-quantum signatures
-- Uses ML-KEM768 (Kyber) for quantum-resistant key exchange
+- Uses ML-KEM768 (NIST FIPS 203) for quantum-resistant key exchange
 - Self-verifying oracle for deterministic validation
 - Content-addressed storage with SHA3-256 hashing
 - Gossip protocol for message propagation
 - WebSocket-based mesh networking
+- 732+ tests covering oracle, protocol, security, and mesh modules
+
+Security Features (v2.0+):
+- NAMCHE Gateway: 7-gate mathematical verification (no human authority)
+- DOKO Identity: Distributed Ownership & Key Objects for identity management
+- iO Obfuscation: All user-facing identifiers use indistinguishability obfuscation
+- TLS Binding: Certificate fingerprints bound to DOKO identities
+- Phase Epochs: Time-based replay protection with 6-hour epochs
+- Geographic Exclusion (v2.5): Speed-of-light physics prove minimum node distances
 
 Protocol Stack (top to bottom):
-1. HTTP API - Public content delivery (CDN layer)
-2. Annex - Encrypted point-to-point messaging (ML-KEM768 + AES-256-GCM)
-3. Gossip - Epidemic-style message propagation
-4. Beacon - Emergency broadcast with priority levels
-5. Nakpak - Onion routing for anonymity (Nested Anonymous Kernel for Private Authenticated Komms)
-6. Sherpa - Peer discovery DHT (Secure Hidden Endpoint Resolution Path Architecture)
-7. Mesh - Core P2P network with Code Proof Protocol
+1. YAK:// Protocol - Custom URL scheme (yak://dashboard, yak://site, etc.)
+2. HTTP API - Public content delivery (CDN layer)
+3. Annex - Encrypted point-to-point messaging (ML-KEM768 + XChaCha20-Poly1305)
+4. Gossip - Epidemic-style message propagation with rumors
+5. Beacon - Emergency broadcast with priority levels
+6. Nakpak - Onion routing for anonymity (Nested Anonymous Kernel for Private Authenticated Komms)
+7. Sherpa - Peer discovery DHT with RTT geo-proofing (Secure Hidden Endpoint Resolution Path Architecture)
+8. Mesh - Core P2P network with Code Proof Protocol
+
+Adapters:
+- PeerQuanta: phpBB forum database replication
+- Website: Static site hosting via mesh
+- BYOND: Game server discovery and hosting (SS13, Pondera)
 
 Installation:
 npm install yakmesh
@@ -107,6 +122,11 @@ const client = new Client({
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
     GatewayIntentBits.GuildMembers,
+    GatewayIntentBits.DirectMessages,
+  ],
+  partials: [
+    Partials.Channel,  // Required for DM channels
+    Partials.Message,  // Required for DM messages
   ],
 });
 
@@ -370,18 +390,18 @@ const commands = {
       url: `${config.links.github}/blob/main/CHANGELOG.md`,
       fields: [
         {
-          name: '🔧 v1.5.0 - Network Identity Unification',
-          value: '• Fixed node IDs to derive from codebase hash\n• All nodes on same network share network name\n• Human-verifiable network identity\n• Auto-regenerate identity on code changes',
+          name: '🧪 v2.3.0 - Testing & Oracle Hardening',
+          value: '• 562+ tests (Oracle, Protocol, Multi-Node, Security, Mesh)\n• Fixed ML-KEM768 cipherText capitalization\n• BYOND adapter for game server hosting\n• Oracle path normalization fix',
           inline: false,
         },
         {
-          name: '🔐 v1.4.0 - Annex Encrypted P2P',
-          value: '• Added Yakmesh Annex - encrypted point-to-point messaging\n• ML-KEM768 (Kyber) quantum-resistant key exchange\n• Perfect forward secrecy',
+          name: '🌐 v2.2.0 - YAK:// Protocol & Remote Bookmarks',
+          value: '• YAK:// custom URL scheme with builtin routes\n• Remote bookmark sync via mesh gossip\n• DOKO revocation system for key compromise\n• SSL/TLS binding with certificate fingerprints',
           inline: false,
         },
         {
-          name: '🌐 v1.3.x - Content & Fixes',
-          value: '• Public content delivery API\n• Fixed gossip propagation\n• Social channels launched',
+          name: '🔐 v2.0.0 - NAMCHE Gateway & DOKO Identity',
+          value: '• 7-gate verification flow (math as authority)\n• DOKO distributed identity documents\n• iO obfuscation for all user-facing identifiers\n• Post-quantum ML-DSA-65 + ML-KEM768',
           inline: false,
         },
       ],
@@ -528,17 +548,22 @@ const commands = {
         },
         { 
           name: '🌐 How do nodes find each other?', 
-          value: 'Nodes with identical code share the same "network name" derived from the codebase hash. Gossip protocol handles peer discovery.',
+          value: 'Nodes with identical code share the same "network name" derived from the codebase hash via iO obfuscation. SHERPA DHT and gossip handle peer discovery.',
           inline: false,
         },
         { 
           name: '🔒 Is traffic encrypted?', 
-          value: 'Yes! Annex provides ML-KEM768 key exchange + AES-256-GCM encryption with perfect forward secrecy for P2P channels.',
+          value: 'Yes! Annex provides ML-KEM768 key exchange + XChaCha20-Poly1305 encryption with perfect forward secrecy for P2P channels.',
+          inline: false,
+        },
+        { 
+          name: '🛡️ What is NAMCHE/DOKO?', 
+          value: 'NAMCHE is the 7-gate verification gateway (math as authority). DOKO is the distributed identity system for nodes, users, and domains.',
           inline: false,
         },
         { 
           name: '📦 Is it production ready?', 
-          value: 'YAKMESH is actively developed. Check releases for stable versions. Current: v' + config.version,
+          value: 'YAKMESH is actively developed with 562+ tests. Check releases for stable versions. Current: v' + config.version,
           inline: false,
         },
       ],

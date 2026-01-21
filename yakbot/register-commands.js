@@ -7,7 +7,7 @@
 
 import { REST, Routes, SlashCommandBuilder } from 'discord.js';
 import 'dotenv/config';
-import { createLogger } from '../utils/logger.js';
+import { createLogger } from './utils/logger.js';
 
 const log = createLogger('yakbot:register');
 
