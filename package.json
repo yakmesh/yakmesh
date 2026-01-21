@@ -1,6 +1,6 @@
 {
   "name": "yakmesh",
-  "version": "2.3.0",
+  "version": "2.5.0",
   "description": "YAKMESH: Yielding Atomic Kernel Modular Encryption Secured Hub - Post-quantum secure P2P mesh network for the 2026 threat landscape",
   "type": "module",
   "main": "server/index.js",
@@ -26,6 +26,14 @@
     "./security/domain-consensus": "./security/domain-consensus.js",
     "./security/khata-protocol": "./security/khata-protocol.js",
     "./security/mesh-auth": "./security/mesh-auth.js",
+    "./security/mesh-revocation": "./security/mesh-revocation.js",
+    "./security/hardware-attestation": "./security/hardware-attestation.js",
+    "./security/trust-tier": "./security/trust-tier.js",
+    "./security/silicon-parity": "./security/silicon-parity.js",
+    "./security/sybil-graph": "./security/sybil-graph.js",
+    "./security/khata-trust-integration": "./security/khata-trust-integration.js",
+    "./security/geo-proof": "./security/geo-proof.js",
+    "./security/strike-system": "./security/strike-system.js",
     "./identity/node-key": "./identity/node-key.js",
     "./mesh/network": "./mesh/network.js",
     "./mesh/rate-limiter": "./mesh/rate-limiter.js",
@@ -39,7 +47,11 @@
     "./mesh/sherpa-discovery": "./mesh/sherpa-discovery.js",
     "./mesh/annex": "./mesh/annex.js",
     "./mesh/temporal-encoder": "./mesh/temporal-encoder.js",
-    "./protocol/yak-protocol": "./protocol/yak-protocol.js"
+    "./protocol/yak-protocol": "./protocol/yak-protocol.js",
+    "./adapters/byond": "./adapters/adapter-byond/index.js",
+    "./adapters/byond/topic-client": "./adapters/adapter-byond/topic-client.js",
+    "./adapters/byond/http-bridge": "./adapters/adapter-byond/http-bridge.js",
+    "./adapters/byond/security": "./adapters/adapter-byond/security.js"
   },
   "bin": {
     "yakmesh": "cli/index.js"
@@ -55,7 +67,8 @@
     "test:protocol": "node --test protocol/tests/*.test.js",
     "test:multinode": "node --test tests/multi-node.test.js",
     "test:security": "npx vitest run",
-    "test:all": "npm run test:oracle && npm run test:protocol && npm run test:multinode && npm run test:security"
+    "test:byond": "node --test adapters/adapter-byond/tests/*.test.js",
+    "test:all": "npm run test:oracle && npm run test:protocol && npm run test:multinode && npm run test:byond && npm run test:security"
   },
   "dependencies": {
     "@noble/hashes": "^2.0.0",

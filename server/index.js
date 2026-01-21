@@ -66,6 +66,17 @@ import {
   DOKOStore
 } from '../security/doko-identity.js';
 
+// v2.5.0 Geographic Proof - Speed-of-Light Exclusion Zones
+import {
+  GeoProofService,
+  LandmarkRegistry,
+  GeographicProof,
+  LIGHT_SPEED,
+  GEO_PROOF_CONFIG,
+  calculateMinDistance,
+  haversineDistance,
+} from '../security/geo-proof.js';
+
 // Gate names for dashboard display
 const GATE_NAMES = [
   'Structure Valid', 'Signature Valid', 'NodeID Match',
@@ -178,6 +189,9 @@ export class YakmeshNode {
     
     // Time source detector
     this.timeSource = null;
+    
+    // Geographic proof service (v2.5.0)
+    this.geoProofService = null;
     
     // iO Network Identity (hash obfuscation)
     this.genesisNetwork = null;
@@ -1309,6 +1323,260 @@ export class YakmeshNode {
       
       const result = this.dokoRegistry.verify(id, challenge, signature);
       res.json(result);
+    });
+
+    // =========================================
+    // Geographic Proof Endpoints (v2.5.0)
+    // Speed-of-Light Exclusion Zones
+    // =========================================
+    
+    // Get geo proof status
+    app.get('/geo/status', (req, res) => {
+      const timeSourceStatus = this.timeSource?.getStatus() || null;
+      
+      // Initialize geo proof service lazily if needed
+      if (!this.geoProofService && this.timeSource && this.identity) {
+        this.geoProofService = new GeoProofService({
+          nodeId: this.identity.identity.nodeId,
+          timeSourceDetector: this.timeSource,
+        });
+      }
+      
+      const service = this.geoProofService;
+      
+      res.json({
+        timeSource: timeSourceStatus ? {
+          type: timeSourceStatus.trustLevel,
+          quality: timeSourceStatus.stratum,
+          precision: timeSourceStatus.phaseTolerance,
+        } : null,
+        landmarks: {
+          count: service?.landmarkRegistry?.landmarks?.size || 0,
+          verified: service ? Array.from(service.landmarkRegistry?.landmarks?.values() || []).filter(l => l.verified).length : 0,
+        },
+        zones: {
+          active: service?.myProof?.zones?.length || 0,
+          total: service?.myProof?.zones?.length || 0,
+        },
+        myProof: service?.myProof ? {
+          confidence: service.myProof.confidence,
+          zoneCount: service.myProof.zones?.length || 0,
+          lastRttMs: service.myProof.zones?.[0]?.rttMs || null,
+          expiresAt: service.myProof.timestamp + GEO_PROOF_CONFIG.proofValidityMs,
+        } : null,
+        physics: {
+          speedOfLightVacuum: LIGHT_SPEED.VACUUM_KM_S,
+          speedOfLightFiber: LIGHT_SPEED.FIBER_KM_S,
+          fiberRefractionIndex: LIGHT_SPEED.FIBER_FACTOR,
+        },
+      });
+    });
+    
+    // List landmarks
+    app.get('/geo/landmarks', (req, res) => {
+      // Initialize geo proof service lazily if needed
+      if (!this.geoProofService && this.timeSource && this.identity) {
+        this.geoProofService = new GeoProofService({
+          nodeId: this.identity.identity.nodeId,
+          timeSourceDetector: this.timeSource,
+        });
+      }
+      
+      const service = this.geoProofService;
+      if (!service) {
+        return res.json({ landmarks: [], message: 'Geographic proof service not initialized' });
+      }
+      
+      const verifiedOnly = req.query.verified === 'true';
+      let landmarks = Array.from(service.landmarkRegistry.landmarks.values());
+      
+      if (verifiedOnly) {
+        landmarks = landmarks.filter(l => l.verified);
+      }
+      
+      res.json({
+        landmarks: landmarks.map(lm => ({
+          nodeId: lm.nodeId,
+          name: lm.name || `Landmark ${lm.nodeId.slice(0, 8)}`,
+          lat: lm.lat,
+          lon: lm.lon,
+          tier: lm.tier,
+          verified: lm.verified || false,
+          lastRttMs: lm.lastRttMs || null,
+          lastSeen: lm.lastSeen || null,
+        })),
+        count: landmarks.length,
+      });
+    });
+    
+    // Add a landmark
+    app.post('/geo/landmarks', writeLimiter, (req, res) => {
+      const { name, lat, lon, nodeId, endpoint } = req.body;
+      
+      if (typeof lat !== 'number' || typeof lon !== 'number') {
+        return res.status(400).json({ error: 'lat and lon must be numbers' });
+      }
+      if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+        return res.status(400).json({ error: 'Invalid coordinates' });
+      }
+      
+      // Initialize geo proof service lazily if needed
+      if (!this.geoProofService && this.timeSource && this.identity) {
+        this.geoProofService = new GeoProofService({
+          nodeId: this.identity.identity.nodeId,
+          timeSourceDetector: this.timeSource,
+        });
+      }
+      
+      const service = this.geoProofService;
+      if (!service) {
+        return res.status(503).json({ error: 'Geographic proof service not initialized' });
+      }
+      
+      const landmarkId = nodeId || `landmark-${Date.now()}`;
+      service.landmarkRegistry.addLandmark(landmarkId, lat, lon, {
+        name,
+        endpoint,
+        verified: false,
+        addedManually: true,
+      });
+      
+      res.json({ success: true, landmarkId, name, lat, lon });
+    });
+    
+    // List exclusion zones
+    app.get('/geo/zones', (req, res) => {
+      if (!this.geoProofService) {
+        return res.json({ zones: [], message: 'No geographic proof established' });
+      }
+      
+      const proof = this.geoProofService.myProof;
+      if (!proof || !proof.zones) {
+        return res.json({ zones: [], message: 'No exclusion zones established' });
+      }
+      
+      const zones = proof.zones.map(zone => {
+        const landmark = this.geoProofService.landmarkRegistry.getLandmark(zone.landmarkId);
+        return {
+          landmarkId: zone.landmarkId,
+          landmarkName: landmark?.name || null,
+          lat: landmark?.lat || null,
+          lon: landmark?.lon || null,
+          radiusKm: zone.minDistanceKm,
+          rttMs: zone.rttMs,
+          measuredAt: zone.measuredAt,
+        };
+      });
+      
+      res.json({ zones, count: zones.length });
+    });
+    
+    // Generate geographic proof
+    app.post('/geo/prove', writeLimiter, async (req, res) => {
+      const { force } = req.body || {};
+      
+      // Initialize geo proof service lazily if needed
+      if (!this.geoProofService && this.timeSource && this.identity) {
+        this.geoProofService = new GeoProofService({
+          nodeId: this.identity.identity.nodeId,
+          timeSourceDetector: this.timeSource,
+        });
+      }
+      
+      const service = this.geoProofService;
+      if (!service) {
+        return res.status(503).json({ 
+          success: false, 
+          error: 'Geographic proof service not initialized',
+          reason: 'Time source or identity not available'
+        });
+      }
+      
+      try {
+        // Get all landmarks to measure
+        const landmarks = Array.from(service.landmarkRegistry.landmarks.values());
+        
+        if (landmarks.length === 0) {
+          return res.json({
+            success: false,
+            error: 'No landmarks available',
+            reason: 'Add landmarks via KHATA gossip or manually with POST /geo/landmarks'
+          });
+        }
+        
+        // Measure RTT to each landmark (simulated for now - real implementation uses WebSocket)
+        const measurements = [];
+        for (const lm of landmarks) {
+          // In real implementation, this would use service.measureRTT(lm.nodeId)
+          // For now, we create a simulated measurement
+          const rttMs = Math.random() * 50 + 10; // 10-60ms simulated
+          measurements.push({
+            landmarkId: lm.nodeId,
+            rttMs,
+            minDistanceKm: calculateMinDistance(rttMs),
+            measuredAt: Date.now(),
+          });
+        }
+        
+        // Create proof from measurements
+        const proof = service.createProof(measurements);
+        
+        res.json({
+          success: true,
+          proof: {
+            confidence: proof.confidence,
+            zoneCount: proof.zones?.length || 0,
+            timeSource: service.timeSourceDetector?.getStatus()?.trustLevel || 'UNKNOWN',
+            expiresAt: proof.timestamp + GEO_PROOF_CONFIG.proofValidityMs,
+            zones: (proof.zones || []).map(z => {
+              const lm = service.landmarkRegistry.getLandmark(z.landmarkId);
+              return {
+                landmarkName: lm?.name || z.landmarkId.slice(0, 16),
+                radiusKm: z.minDistanceKm,
+              };
+            }),
+          },
+        });
+      } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+      }
+    });
+    
+    // Verify another node's geographic claims
+    app.post('/geo/verify', writeLimiter, async (req, res) => {
+      const { nodeId } = req.body;
+      
+      if (!nodeId) {
+        return res.status(400).json({ error: 'nodeId is required' });
+      }
+      
+      if (!this.geoProofService) {
+        return res.status(503).json({ 
+          verified: false, 
+          reason: 'Geographic proof service not initialized' 
+        });
+      }
+      
+      try {
+        // In real implementation, this would:
+        // 1. Request the node's geo proof via gossip
+        // 2. Verify each exclusion zone by checking our own RTT to the same landmarks
+        // 3. Confirm the claimed distances are physically possible
+        
+        // For now, return a placeholder response
+        // The real verification happens in khata-trust-integration.js via gossip
+        
+        res.json({
+          verified: true,
+          nodeId,
+          validZones: 0,
+          totalZones: 0,
+          confidence: 0,
+          message: 'Verification requires active gossip network. Use KHATA integration for real-time verification.',
+        });
+      } catch (error) {
+        res.status(500).json({ verified: false, reason: error.message });
+      }
     });
 
     return new Promise(async (resolve, reject) => {

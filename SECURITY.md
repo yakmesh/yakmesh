@@ -4,7 +4,11 @@
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 1.0.x   | :white_check_mark: |
+| 2.5.x   | :white_check_mark: |
+| 2.4.x   | :white_check_mark: |
+| 2.2.x   | :white_check_mark: |
+| 2.0.x   | :warning: Security fixes only |
+| < 2.0   | :x: End of life |
 
 ## Reporting a Vulnerability
 

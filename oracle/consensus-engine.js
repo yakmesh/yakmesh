@@ -13,7 +13,7 @@
  * @module ConsensusEngine
  */
 
-import { getOracle, contentHash, deterministicStringify } from './validation-oracle.js';
+import { getOracle, contentHash, deterministicStringify } from './validation-oracle-hardened.js';
 import { CodeProofProtocol } from './code-proof-protocol.js';
 import { EventEmitter } from 'events';
 import { createLogger } from '../utils/logger.js';

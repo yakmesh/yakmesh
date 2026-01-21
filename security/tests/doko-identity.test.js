@@ -577,7 +577,7 @@ describe('DOKOTransfer', () => {
       expect(request.requestId).toMatch(/^xfer-[a-f0-9]{16}$/);
     });
 
-    test('request ID is deterministic for same inputs', () => {
+    test('request ID includes timestamp for uniqueness', () => {
       const options = {
         type: DOKOTransfer.TYPES.DOMAIN,
         assetId: 'test.yak',
@@ -586,10 +586,16 @@ describe('DOKOTransfer', () => {
       };
       
       const req1 = DOKOTransfer.createRequest(options);
+      // Small delay to ensure different timestamp
+      const start = Date.now();
+      while (Date.now() === start) { /* spin until next ms */ }
       const req2 = DOKOTransfer.createRequest(options);
       
-      // Same inputs at same time = same ID
-      expect(req1.requestId).toBe(req2.requestId);
+      // Different timestamps = different IDs (prevents replay attacks)
+      expect(req1.requestId).not.toBe(req2.requestId);
+      // Both should have valid format
+      expect(req1.requestId).toMatch(/^xfer-[a-f0-9]{16}$/);
+      expect(req2.requestId).toMatch(/^xfer-[a-f0-9]{16}$/);
     });
 
     test('throws on missing required fields', () => {

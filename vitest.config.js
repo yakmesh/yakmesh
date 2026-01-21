@@ -11,6 +11,7 @@ export default defineConfig({
     // Exclude Node.js test runner files
     exclude: [
       '**/node_modules/**',
+      '**/deploy-packages/**',
       'oracle/tests/**',      // Uses Node.js test runner
       'protocol/tests/**',    // Uses Node.js test runner
       'tests/**',             // Uses Node.js test runner

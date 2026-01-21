@@ -1,4 +1,30 @@
 /**
+ * ╔═══════════════════════════════════════════════════════════════════════════════╗
+ * ║                    YAKMESH VALIDATION ORACLE - HARDENED                       ║
+ * ║                                                                               ║
+ * ║  ⚠️  CRITICAL SECURITY MODULE - DO NOT MODIFY WITHOUT REVIEW  ⚠️              ║
+ * ║                                                                               ║
+ * ║  This module is the cryptographic foundation of network identity.             ║
+ * ║  ANY change to this file will change the codebase hash, which will:           ║
+ * ║    - Create a new network (nodes won't peer with old network)                 ║
+ * ║    - Invalidate all existing node identities                                  ║
+ * ║    - Require coordinated deployment across all nodes                          ║
+ * ║                                                                               ║
+ * ║  STABILITY REQUIREMENTS:                                                      ║
+ * ║    1. All paths normalized to forward slashes (cross-platform)                ║
+ * ║    2. Deterministic file ordering (localeCompare sort)                        ║
+ * ║    3. Consistent hash algorithm (SHA3-256)                                    ║
+ * ║    4. Frozen singleton pattern (no runtime modification)                      ║
+ * ║                                                                               ║
+ * ║  BEFORE MODIFYING:                                                            ║
+ * ║    - Document the change in CHANGELOG.md                                      ║
+ * ║    - Coordinate with all node operators                                       ║
+ * ║    - Plan network migration strategy                                          ║
+ * ║    - Update version number below                                              ║
+ * ║                                                                               ║
+ * ║  Last verified: 2026-01-19 | Version: 1.2.0-hardened                          ║
+ * ╚═══════════════════════════════════════════════════════════════════════════════╝
+ * 
  * PeerQuanta Validation Oracle - HARDENED VERSION
  * 
  * Security-hardened self-verifying oracle with protection against:
@@ -8,7 +34,7 @@
  * - Edge case inputs (comprehensive validation)
  * 
  * @module ValidationOracle
- * @version 1.1.0-hardened
+ * @version 1.2.0-hardened
  */
 
 import { sha3_256, sha3_512 } from '@noble/hashes/sha3.js';
@@ -341,7 +367,13 @@ export class ValidationOracle {
       
       for (const entry of entries) {
         const fullPath = join(dir, entry.name);
-        const relativePath = fullPath.replace(baseDir, '').replace(/^[/\\]/, '');
+        // ═══════════════════════════════════════════════════════════════════════
+        // CRITICAL: Normalize ALL paths to forward slashes for cross-platform
+        // consistency. Without this, Windows (\) and Linux (/) produce different
+        // hashes for identical codebases, causing network fragmentation.
+        // DO NOT CHANGE THIS LINE without understanding the consequences.
+        // ═══════════════════════════════════════════════════════════════════════
+        const relativePath = fullPath.replace(baseDir, '').replace(/^[/\\]/, '').replace(/\\/g, '/');
         
         if (entry.isDirectory()) {
           // Skip excluded directories

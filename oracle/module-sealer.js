@@ -20,7 +20,7 @@ import { ml_dsa65 } from '@noble/post-quantum/ml-dsa.js';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { contentHash, deterministicStringify } from './validation-oracle.js';
+import { contentHash, deterministicStringify } from './validation-oracle-hardened.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
