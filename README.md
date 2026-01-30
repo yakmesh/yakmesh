@@ -134,18 +134,23 @@ yakmesh/
 
 ## Network Identity
 
-Each YAKMESH network has a unique identity derived from configurable salts:
+Each YAKMESH network has a unique identity derived from the **oracle's code hash** — a deterministic fingerprint of the codebase itself. This means the code IS the identity.
 
 ```javascript
-import { setIdentityConfig } from 'yakmesh/oracle/network-identity.js';
+// Network identity is AUTOMATIC - derived from code hash
+// When you run a node, it computes:
+// 1. Code hash → cryptographic identity of the codebase
+// 2. Network name → human-readable name (e.g., "factor-primitive-bose")
+// 3. Verification phrase → speakable phrase for verbal verification
 
-setIdentityConfig({
-  networkPrefix: 'my',           // Network ID prefix
-  identitySalt: 'my-app-v1',     // Unique network salt
-});
+// The identity functions are available for inspection:
+import { deriveNetworkName, deriveVerificationPhrase } from 'yakmesh/oracle/network-identity.js';
 
-// Different salt = different network (cannot interoperate)
+// Same code = same network. Different code = different network.
+// No configuration needed - the math handles network separation.
 ```
+
+**Key Principle:** Two nodes running the same YAKMESH version will automatically be on the same network. Fork the code or modify the oracle, and you're on a different network entirely.
 
 ## Time Source Trust Levels
 
