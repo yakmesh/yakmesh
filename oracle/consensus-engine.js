@@ -1,5 +1,25 @@
 /**
- * Consensus Engine
+ * ╔═══════════════════════════════════════════════════════════════════════════════╗
+ * ║                    🔮 LAMA CONSENSUS ENGINE - THE WISE ORACLE 🔮              ║
+ * ╠═══════════════════════════════════════════════════════════════════════════════╣
+ * ║                                                                               ║
+ * ║  In Tibetan Buddhism, a LAMA is a wise teacher who guides seekers toward      ║
+ * ║  enlightenment through accumulated wisdom. Multiple lamas in a monastery      ║
+ * ║  reach consensus on dharmic truths through deep contemplation, each           ║
+ * ║  independently arriving at the same understanding.                            ║
+ * ║                                                                               ║
+ * ║  The LAMA Consensus Engine embodies this principle:                           ║
+ * ║  - Each node is a lama, contemplating independently                           ║
+ * ║  - Truth emerges through mathematical inevitability, not voting               ║
+ * ║  - Conflicting views resolve through deterministic wisdom                     ║
+ * ║  - Content-addressed storage: data IS its own identity                        ║
+ * ║                                                                               ║
+ * ║  PROTOCOL PHILOSOPHY:                                                         ║
+ * ║    "Many lamas, one truth" - Independent verification yields consensus        ║
+ * ║                                                                               ║
+ * ╚═══════════════════════════════════════════════════════════════════════════════╝
+ * 
+ * Consensus Engine (LAMA Protocol)
  * 
  * Implements the distributed consensus mechanism where all nodes
  * independently arrive at the same truth through mathematical inevitability.
@@ -10,7 +30,7 @@
  * - Automatic outlier rejection
  * - Cryptographic proof of consensus
  * 
- * @module ConsensusEngine
+ * @module LamaConsensus
  */
 
 import { getOracle, contentHash, deterministicStringify } from './validation-oracle-hardened.js';
@@ -18,27 +38,34 @@ import { CodeProofProtocol } from './code-proof-protocol.js';
 import { EventEmitter } from 'events';
 import { createLogger } from '../utils/logger.js';
 
-const log = createLogger('oracle:consensus');
+const log = createLogger('lama:consensus');
 
 /**
- * Content State - represents the consensus state of a piece of content
+ * Dharmic State - represents the consensus state of content in the LAMA system
+ * Like a teaching progressing through stages of acceptance
  */
-export const ContentState = {
-  PENDING: 'pending',       // Received but not yet validated
-  VALIDATED: 'validated',   // Passed local validation
-  CONSENSUS: 'consensus',   // Confirmed by multiple nodes
-  REJECTED: 'rejected',     // Failed validation or consensus
-  CONFLICT: 'conflict',     // Conflicting versions exist (will be resolved)
+export const DharmicState = {
+  PENDING: 'pending',       // Received but not yet validated (teaching received)
+  VALIDATED: 'validated',   // Passed local validation (accepted by one lama)
+  CONSENSUS: 'consensus',   // Confirmed by multiple nodes (all lamas agree)
+  REJECTED: 'rejected',     // Failed validation or consensus (teaching rejected)
+  CONFLICT: 'conflict',     // Conflicting versions exist (will be resolved through wisdom)
 };
 
+// Backward compatibility alias
+export const ContentState = DharmicState;
+
 /**
- * Consensus Engine
+ * LAMA Consensus Engine
  * Manages distributed consensus through deterministic validation
+ * 
+ * Like a council of wise lamas independently contemplating the same question,
+ * nodes arrive at truth through mathematical certainty, not political voting.
  * 
  * Security Note (v1.2.0): Uses network fingerprint instead of raw oracle hash
  * for all external-facing operations (iO-inspired obfuscation).
  */
-export class ConsensusEngine extends EventEmitter {
+export class LamaConsensus extends EventEmitter {
   constructor(nodeIdentity, options = {}) {
     super();
     
@@ -609,4 +636,15 @@ export class ConsensusEngine extends EventEmitter {
   }
 }
 
-export default ConsensusEngine;
+// ============================================================
+// EXPORTS - New LAMA naming with backward compatibility
+// ============================================================
+
+// Primary exports already declared inline above (export const/class)
+// LamaConsensus and DharmicState are exported where they are defined
+
+// Backward compatibility exports (original naming)
+export { LamaConsensus as ConsensusEngine };
+
+// Default export
+export default LamaConsensus;

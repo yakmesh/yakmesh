@@ -1,41 +1,64 @@
 /**
- * Lantern Mesh Protocol
- * WebSocket-based peer-to-peer communication
+ * ╔═══════════════════════════════════════════════════════════════════════════════╗
+ * ║                    🌐 MANDALA NETWORK - SACRED GEOMETRY 🌐                    ║
+ * ╠═══════════════════════════════════════════════════════════════════════════════╣
+ * ║                                                                               ║
+ * ║  In Tibetan Buddhism, a MANDALA is a sacred geometric pattern representing   ║
+ * ║  the cosmos—intricate, interconnected, and perfectly balanced. Each point    ║
+ * ║  relates to every other, creating harmony through structure.                 ║
+ * ║                                                                               ║
+ * ║  The MANDALA Network embodies this principle:                                ║
+ * ║  - Nodes form geometric patterns of connection                               ║
+ * ║  - Messages flow through balanced pathways                                   ║
+ * ║  - The whole emerges from the harmony of its parts                           ║
+ * ║  - Each peer is essential to the cosmic structure                            ║
+ * ║                                                                               ║
+ * ║  PROTOCOL PHILOSOPHY:                                                         ║
+ * ║    "Sacred geometry binds us" - Structure creates resilience                 ║
+ * ║                                                                               ║
+ * ╚═══════════════════════════════════════════════════════════════════════════════╝
+ * 
+ * MANDALA Mesh Protocol
+ * WebSocket-based peer-to-peer communication forming sacred network geometry
  */
 
 import { WebSocketServer, WebSocket } from 'ws';
 import { ConnectionRateLimiter } from './rate-limiter.js';
 import { createLogger } from '../utils/logger.js';
 
-const log = createLogger('mesh:network');
+const log = createLogger('mandala:network');
 
 /**
- * Message types for mesh protocol
+ * Message types for MANDALA mesh protocol
+ * Each message type represents a sacred communication form
  */
-export const MessageTypes = {
-  // Handshake
+export const MandalaMessageTypes = {
+  // Handshake (greeting rituals)
   HELLO: 'hello',           // Initial connection with identity
   WELCOME: 'welcome',       // Response to hello
   
-  // Node management
+  // Node management (maintaining the mandala pattern)
   PING: 'ping',
   PONG: 'pong',
-  PEERS: 'peers',           // Share known peers
+  PEERS: 'peers',           // Share known peers (reveal the pattern)
   
-  // Data replication
+  // Data replication (sacred knowledge transmission)
   SYNC_REQUEST: 'sync_request',
   SYNC_RESPONSE: 'sync_response',
   REPLICATE: 'replicate',   // Push new data
   
-  // Gossip
+  // Gossip (whispered teachings)
   GOSSIP: 'gossip',         // Broadcast message
 };
 
+// Backward compatibility alias
+export const MessageTypes = MandalaMessageTypes;
+
 /**
- * Mesh Network Manager
- * Handles peer connections and message routing
+ * MANDALA Network Manager
+ * Handles peer connections and message routing through sacred geometry
  */
-export class MeshNetwork {
+export class MandalaNetwork {
   constructor(identity, config = {}) {
     this.identity = identity;
     this.config = {
@@ -512,4 +535,12 @@ export class MeshNetwork {
   }
 }
 
-export default MeshNetwork;
+// ============================================================
+// EXPORTS - MANDALA naming with backward compatibility
+// ============================================================
+
+// Note: MandalaMessageTypes and MandalaNetwork already exported at declarations
+// Backward compatibility exports (original naming)
+export { MandalaNetwork as MeshNetwork };
+
+export default MandalaNetwork;

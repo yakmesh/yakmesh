@@ -1,34 +1,53 @@
 /**
- * Gossip Protocol for Lantern Mesh Network
+ * MANTRA - Message Amplification Network for Trust Relayed Announcements
+ * 
+ * "Like prayer wheels spreading mantras across the mountains,
+ *  messages flow through the mesh, carrying truth to all who listen."
  * 
  * Implements epidemic-style message propagation with:
  * - Peer discovery via HELLO/PEERS exchange
- * - Anti-entropy synchronization
- * - Rumor mongering for fast propagation
+ * - Anti-entropy synchronization (KARMA balance)
+ * - Rumor mongering for fast propagation (MANTRA spreading)
  * - Bloom filters for efficient seen-message tracking
+ * 
+ * Part of the Himalayan Protocol Family:
+ * - NAMCHE: Gateway verification
+ * - DOKO: Identity certificates
+ * - SHERPA: Peer discovery
+ * - NAKPAK: Onion routing
+ * - ANNEX: P2P channels
+ * - KHATA: Trust distribution
+ * - MANTRA: Message propagation (this module)
+ * 
+ * @module gossip/mantra-protocol
+ * @version 2.6.0
  */
 
 import { sha3_256 } from '@noble/hashes/sha3.js';
 import { bytesToHex } from '@noble/hashes/utils.js';
 import { createLogger } from '../utils/logger.js';
 
-const log = createLogger('gossip:protocol');
+const log = createLogger('mantra:protocol');
 
-// Message types for gossip protocol
-export const GossipMessageType = {
-  // Peer discovery
-  HELLO: 'GOSSIP_HELLO',           // Announce self to network
-  PEERS: 'GOSSIP_PEERS',           // Share known peers
-  WANT_PEERS: 'GOSSIP_WANT_PEERS', // Request peer list
+// Message types for MANTRA protocol
+// (Maintains GOSSIP_ prefix for backward compatibility with existing mesh messages)
+export const MantraMessageType = {
+  // Peer discovery (SHERPA integration)
+  HELLO: 'GOSSIP_HELLO',           // Announce self to network (prayer wheel spin)
+  PEERS: 'GOSSIP_PEERS',           // Share known peers (community)
+  WANT_PEERS: 'GOSSIP_WANT_PEERS', // Request peer list (seeking guidance)
   
-  // Rumor mongering
-  RUMOR: 'GOSSIP_RUMOR',           // New data to propagate
-  SEEN: 'GOSSIP_SEEN',             // Acknowledge receipt
+  // Rumor mongering (MANTRA spreading)
+  RUMOR: 'GOSSIP_RUMOR',           // New data to propagate (mantra to spread)
+  SEEN: 'GOSSIP_SEEN',             // Acknowledge receipt (mantra received)
   
-  // Anti-entropy
-  DIGEST: 'GOSSIP_DIGEST',         // Summary of known data
-  DIFF: 'GOSSIP_DIFF',             // Missing data request
+  // Anti-entropy (KARMA balance)
+  DIGEST: 'GOSSIP_DIGEST',         // Summary of known data (karma digest)
+  DIFF: 'GOSSIP_DIFF',             // Missing data request (karma balance)
 };
+
+// Legacy export for backward compatibility
+export const GossipMessageType = MantraMessageType;
 
 /**
  * Simple Bloom Filter for tracking seen messages
@@ -81,21 +100,24 @@ class BloomFilter {
 }
 
 /**
- * Gossip Protocol Manager
+ * MANTRA Protocol Manager
+ * 
+ * Spreads messages through the mesh like mantras carried by prayer wheels.
+ * Each spin (propagation) brings the message closer to enlightenment (full network coverage).
  */
-export class GossipProtocol {
+export class MantraProtocol {
   constructor(mesh, identity, options = {}) {
     this.mesh = mesh;
     this.identity = identity;
     
     // Configuration
     this.config = {
-      fanout: options.fanout || 3,              // Peers to gossip to
-      helloInterval: options.helloInterval || 30000,    // 30s
-      digestInterval: options.digestInterval || 60000,  // 60s
+      fanout: options.fanout || 3,              // Peers to spread mantra to
+      helloInterval: options.helloInterval || 30000,    // 30s (prayer wheel spin)
+      digestInterval: options.digestInterval || 60000,  // 60s (karma check)
       peerTTL: options.peerTTL || 300000,       // 5 min peer expiry
       maxPeersToShare: options.maxPeersToShare || 10,
-      rumorTTL: options.rumorTTL || 5,          // Max hops
+      rumorTTL: options.rumorTTL || 5,          // Max hops (wheel spins)
       ...options,
     };
 
@@ -112,10 +134,10 @@ export class GossipProtocol {
   }
 
   /**
-   * Start the gossip protocol
+   * Start the MANTRA protocol (begin spinning the prayer wheel)
    */
   start() {
-    log.info('Gossip protocol started');
+    log.info('MANTRA protocol started - prayer wheel spinning');
     
     // Register message handler with mesh
     this.mesh.on('gossip', this._handleGossipMessage);
@@ -140,17 +162,18 @@ export class GossipProtocol {
   }
 
   /**
-   * Stop the gossip protocol
+   * Stop the MANTRA protocol (prayer wheel rests)
    */
   stop() {
     this.intervals.forEach(clearInterval);
     this.intervals = [];
     this.mesh.off('gossip', this._handleGossipMessage);
-    log.info('Gossip protocol stopped');
+    log.info('MANTRA protocol stopped - prayer wheel at rest');
   }
 
   /**
-   * Broadcast a rumor to the network
+   * Spread a mantra (rumor) to the network
+   * Like spinning a prayer wheel, the message propagates outward
    */
   spreadRumor(topic, data) {
     const messageId = this._generateMessageId(topic, data);
@@ -463,16 +486,18 @@ export class GossipProtocol {
   }
 
   /**
-   * Get gossip statistics
+   * Get MANTRA statistics (prayer wheel metrics)
    */
   getStats() {
     return {
-      knownPeers: this.knownPeers.size,
-      seenMessages: this.seenMessages.count,
-      pendingRumors: this.pendingRumors.size,
+      knownPeers: this.knownPeers.size,          // Fellow travelers on the path
+      seenMessages: this.seenMessages.count,     // Mantras spoken
+      pendingRumors: this.pendingRumors.size,    // Mantras in flight
       bloomFilterHealth: this.seenMessages.count / this.seenMessages.size,
     };
   }
 }
 
-export default GossipProtocol;
+// Legacy export for backward compatibility
+export const GossipProtocol = MantraProtocol;
+export default MantraProtocol;

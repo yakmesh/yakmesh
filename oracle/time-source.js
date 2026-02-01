@@ -1,11 +1,31 @@
 /**
- * Time Source Detection Module
+ * ╔═══════════════════════════════════════════════════════════════════════════════╗
+ * ║                    ⏱️ MANI TIME SYNCHRONIZATION - PRECIOUS PRECISION ⏱️        ║
+ * ╠═══════════════════════════════════════════════════════════════════════════════╣
+ * ║                                                                               ║
+ * ║  In Tibetan Buddhism, MANI stones are sacred rocks inscribed with mantras,   ║
+ * ║  placed along mountain paths as immutable markers of time and devotion.      ║
+ * ║  Each stone is precisely positioned, never moved—eternal reference points    ║
+ * ║  for travelers navigating the high passes.                                   ║
+ * ║                                                                               ║
+ * ║  The MANI Time Protocol embodies this principle:                             ║
+ * ║  - Atomic clocks as primary MANI stones (immutable reference)                ║
+ * ║  - GPS signals as celestial markers (from the heavens)                       ║
+ * ║  - Each node synchronizes to the most precious time source available         ║
+ * ║  - Phase tolerance tightens with higher-quality sources                      ║
+ * ║                                                                               ║
+ * ║  PROTOCOL PHILOSOPHY:                                                         ║
+ * ║    "Precious stones mark the path" - Quality time enables tight consensus    ║
+ * ║                                                                               ║
+ * ╚═══════════════════════════════════════════════════════════════════════════════╝
+ * 
+ * MANI Time Source Detection Module
  * 
  * Detects and integrates with various precision time sources:
- * - PCIe Atomic Clocks (CSAC, Rubidium)
- * - GPS receivers with PPS
- * - PTP (IEEE 1588) hardware timestamping
- * - Standard NTP (fallback)
+ * - PCIe Atomic Clocks (CSAC, Rubidium) - Primary MANI stones
+ * - GPS receivers with PPS - Celestial markers
+ * - PTP (IEEE 1588) hardware timestamping - Network reference
+ * - Standard NTP (fallback) - Basic synchronization
  * 
  * Provides trust levels based on time source quality,
  * enabling tighter phase tolerances for atomic-synced nodes.
@@ -15,7 +35,7 @@
  * - GPS (Level 2): Hardware GPS/PPS, ±500ms tolerance
  * - STANDARD (Level 1): NTP only, ±5000ms tolerance
  * 
- * @module oracle/time-source
+ * @module mani/time-source
  */
 
 import { execSync, exec } from 'child_process';
@@ -24,7 +44,7 @@ import { platform } from 'os';
 import { EventEmitter } from 'events';
 import { createLogger } from '../utils/logger.js';
 
-const log = createLogger('oracle:time-source');
+const log = createLogger('mani:time-source');
 
 // ============================================================
 // SILENT COMMAND EXECUTION HELPER
@@ -57,40 +77,51 @@ function execSilent(command, timeout = 5000) {
 // ============================================================
 
 /**
- * Trust levels for time sources
+ * MANI Time Trust Levels - Quality of time reference
+ * Named after the precious gems in Buddhist tradition
  */
-export const TimeTrustLevel = {
+export const ManiTrustLevel = {
   QUANTUM: 'quantum',   // Quantum optical network (WR-PTP, optical atomic, entanglement-based)
-  ATOMIC: 'atomic',     // PCIe atomic clock (CSAC, Rubidium)
-  GPS: 'gps',           // GPS with PPS signal
-  PTP: 'ptp',           // IEEE 1588 PTP synchronized
-  NTP: 'ntp',           // Standard NTP
-  UNSYNC: 'unsync',     // No reliable time source
+  ATOMIC: 'atomic',     // PCIe atomic clock (CSAC, Rubidium) - Most precious MANI stone
+  GPS: 'gps',           // GPS with PPS signal - Celestial marker
+  PTP: 'ptp',           // IEEE 1588 PTP synchronized - Network reference
+  NTP: 'ntp',           // Standard NTP - Basic synchronization
+  UNSYNC: 'unsync',     // No reliable time source - Lost on the path
 };
 
-/**
- * Phase tolerance in milliseconds per trust level
- */
-export const PhaseTolerance = {
-  [TimeTrustLevel.QUANTUM]: 1,    // ±1ms for quantum (sub-nanosecond capable)
-  [TimeTrustLevel.ATOMIC]: 100,      // ±100ms for atomic
-  [TimeTrustLevel.GPS]: 500,         // ±500ms for GPS
-  [TimeTrustLevel.PTP]: 500,         // ±500ms for PTP
-  [TimeTrustLevel.NTP]: 5000,        // ±5 seconds for NTP
-  [TimeTrustLevel.UNSYNC]: 30000,    // ±30 seconds for unsync (degraded mode)
-};
+// Backward compatibility alias
+export const TimeTrustLevel = ManiTrustLevel;
 
 /**
- * Stratum equivalents for trust levels
+ * MANI Phase Tolerance - Precision in milliseconds per trust level
+ * Higher-quality MANI stones enable tighter consensus
  */
-export const StratumLevel = {
-  [TimeTrustLevel.QUANTUM]: 0, // Quantum reference (highest)
-  [TimeTrustLevel.ATOMIC]: 0,  // Reference clock
-  [TimeTrustLevel.GPS]: 1,     // Primary server
-  [TimeTrustLevel.PTP]: 1,     // Primary server
-  [TimeTrustLevel.NTP]: 2,     // Secondary server
-  [TimeTrustLevel.UNSYNC]: 16, // Unsynchronized
+export const ManiPhaseTolerance = {
+  [ManiTrustLevel.QUANTUM]: 1,    // ±1ms for quantum (sub-nanosecond capable)
+  [ManiTrustLevel.ATOMIC]: 100,      // ±100ms for atomic
+  [ManiTrustLevel.GPS]: 500,         // ±500ms for GPS
+  [ManiTrustLevel.PTP]: 500,         // ±500ms for PTP
+  [ManiTrustLevel.NTP]: 5000,        // ±5 seconds for NTP
+  [ManiTrustLevel.UNSYNC]: 30000,    // ±30 seconds for unsync (degraded mode)
 };
+
+// Backward compatibility alias
+export const PhaseTolerance = ManiPhaseTolerance;
+
+/**
+ * MANI Stratum Levels - Hierarchical quality (like layers of a stupa)
+ */
+export const ManiStratumLevel = {
+  [ManiTrustLevel.QUANTUM]: 0, // Quantum reference (highest - the jewel atop the stupa)
+  [ManiTrustLevel.ATOMIC]: 0,  // Reference clock (primary MANI stone)
+  [ManiTrustLevel.GPS]: 1,     // Primary server (celestial marker)
+  [ManiTrustLevel.PTP]: 1,     // Primary server (network reference)
+  [ManiTrustLevel.NTP]: 2,     // Secondary server (distant echo)
+  [ManiTrustLevel.UNSYNC]: 16, // Unsynchronized (lost on the path)
+};
+
+// Backward compatibility alias
+export const StratumLevel = ManiStratumLevel;
 
 // ============================================================
 // DEVICE PATHS
@@ -120,14 +151,15 @@ const DEVICE_PATHS = {
 };
 
 // ============================================================
-// TIME SOURCE DETECTOR
+// MANI TIME SOURCE DETECTOR
 // ============================================================
 
 /**
- * Time Source Detector
- * Automatically detects available time sources and their quality
+ * MANI Time Source Detector
+ * Automatically detects available time sources and their quality,
+ * like a pilgrim discovering MANI stones along the mountain path.
  */
-export class TimeSourceDetector extends EventEmitter {
+export class ManiTimeDetector extends EventEmitter {
   constructor(options = {}) {
     super();
     
@@ -147,7 +179,7 @@ export class TimeSourceDetector extends EventEmitter {
     this.platform = platform();
     this.detectedSources = new Map();
     this.primarySource = null;
-    this.trustLevel = TimeTrustLevel.UNSYNC;
+    this.trustLevel = ManiTrustLevel.UNSYNC;
     this.lastCheck = null;
     this.refreshTimer = null;
   }
@@ -814,38 +846,57 @@ export function createPhaseConfig(detector) {
 let globalDetector = null;
 
 /**
- * Get or create the global time source detector
+ * Get or create the global MANI time source detector
  * @param {Object} options - Detector options
- * @returns {TimeSourceDetector}
+ * @returns {ManiTimeDetector}
  */
-export function getTimeSourceDetector(options = {}) {
+export function getManiTimeDetector(options = {}) {
   if (!globalDetector) {
-    globalDetector = new TimeSourceDetector(options);
+    globalDetector = new ManiTimeDetector(options);
   }
   return globalDetector;
 }
+
+// Backward compatibility alias
+export const getTimeSourceDetector = getManiTimeDetector;
 
 /**
  * Quick detection of time sources
  * @returns {Object} Detection results
  */
 export function detectTimeSources() {
-  const detector = new TimeSourceDetector({ verbose: false });
+  const detector = new ManiTimeDetector({ verbose: false });
   return detector.detect();
 }
 
 // ============================================================
-// EXPORTS
+// EXPORTS - MANI naming with backward compatibility
 // ============================================================
 
+// Primary exports (MANI naming)
+// Note: getManiTimeDetector, ManiTimeDetector, ManiTrustLevel, ManiPhaseTolerance, ManiStratumLevel
+//       are already exported at their declarations
+export {
+  // Re-export only things not already exported inline
+};
+
+// Backward compatibility exports (original naming)
+export { ManiTimeDetector as TimeSourceDetector };
+
 export default {
-  TimeSourceDetector,
-  TimeTrustLevel,
-  PhaseTolerance,
-  StratumLevel,
+  ManiTimeDetector,
+  ManiTrustLevel,
+  ManiPhaseTolerance,
+  ManiStratumLevel,
   createPhaseConfig,
-  getTimeSourceDetector,
+  getManiTimeDetector,
   detectTimeSources,
+  // Backward compatibility
+  TimeSourceDetector: ManiTimeDetector,
+  TimeTrustLevel: ManiTrustLevel,
+  PhaseTolerance: ManiPhaseTolerance,
+  StratumLevel: ManiStratumLevel,
+  getTimeSourceDetector: getManiTimeDetector,
 };
 
 
