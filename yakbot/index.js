@@ -30,7 +30,7 @@ const config = {
   geminiKey: process.env.GEMINI_API_KEY,
   
   // Current version
-  version: '2.5.0',
+  version: '2.6.0',
   
   // Official YAKMESH nodes for health checks
   officialNodes: [
@@ -62,7 +62,7 @@ const config = {
 
 // YAKMESH knowledge base for AI context
 const YAKMESH_CONTEXT = `
-You are YakBot, the helpful assistant for YAKMESH™ v2.5.0 - a post-quantum secure P2P mesh network.
+You are YakBot, the helpful assistant for YAKMESH™ v2.6.0 - a post-quantum secure P2P mesh network.
 
 Key facts about YAKMESH:
 - YAKMESH stands for: Yielding Atomic Kernel Modular Encryption Secured Hub
@@ -76,7 +76,7 @@ Key facts about YAKMESH:
 - WebSocket-based mesh networking
 - 732+ tests covering oracle, protocol, security, and mesh modules
 
-NAMCHE 7-Gate Identity Verification (v2.5.0):
+NAMCHE 7-Gate Identity Verification:
 Nodes pass through 7 mathematical gates for cryptographic identity proof:
 1. CRYPTO - ML-DSA-65 signature verification
 2. TEMPORAL - Challenge/response timing analysis

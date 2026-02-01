@@ -1,9 +1,10 @@
-# 🤖 YakBot - YAKMESH Discord Bot
+# 🤖 YakBot - YAKMESH Community Bot
 
-Interactive Discord bot that provides community support for YAKMESH users.
+Interactive bot for Discord and Telegram that provides community support for YAKMESH users.
 
 ## Features
 
+### Discord Bot
 - **📊 `/status`** - Show current version and project stats
 - **📚 `/docs [topic]`** - Get documentation links for specific topics
 - **📋 `/changelog`** - View recent changes
@@ -11,6 +12,10 @@ Interactive Discord bot that provides community support for YAKMESH users.
 - **❓ `/ask [question]`** - Ask questions about YAKMESH (AI-powered)
 - **🔗 `/links`** - All social and resource links
 - **🏓 `/ping`** - Check bot latency
+
+### Telegram Integration
+- **📢 Channel Announcements** - Push updates to @yakmesh
+- **🔔 Escalation Alerts** - Get notified when users need human help
 
 Plus **automatic release announcements** via GitHub Actions!
 
@@ -34,15 +39,26 @@ Plus **automatic release announcements** via GitHub Actions!
 Create `.env` file:
 
 ```env
+# Discord
 DISCORD_TOKEN=your_bot_token_here
 DISCORD_CLIENT_ID=your_application_id
 DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/...
+
+# Telegram (for announcements)
+TELEGRAM_BOT_TOKEN=your_telegram_bot_token
+TELEGRAM_CHANNEL_ID=@your_channel
+TELEGRAM_CHAT_ID=your_chat_id
+
+# AI
+GEMINI_API_KEY=your_gemini_key
 ```
 
 **Where to find these:**
 - `DISCORD_TOKEN` - Bot tab → Token (step 4 above)
 - `DISCORD_CLIENT_ID` - General Information → Application ID
 - `DISCORD_WEBHOOK_URL` - Server Settings → Integrations → Webhooks
+- `TELEGRAM_BOT_TOKEN` - Create via @BotFather on Telegram
+- `TELEGRAM_CHANNEL_ID` - Your channel username (e.g., @yakmesh)
 
 ### 3. Install & Run
 
@@ -57,11 +73,30 @@ npm start                   # Start the bot
 
 ```
 yakbot/
-├── index.js              # Main bot logic
+├── index.js              # Main Discord bot
+├── announce.js           # Multi-platform announcements
 ├── register-commands.js  # Slash command registration
 ├── package.json
 ├── .env.example         # Example config
 └── README.md            # This file
+```
+
+## Announcements
+
+Send announcements to Discord and/or Telegram:
+
+```bash
+# Send version announcement to all platforms
+node announce.js -v 2.6.0 --all
+
+# Send to Telegram only
+node announce.js -f telegram-v2.6.0.md --telegram
+
+# Quick message to all platforms
+node announce.js -m "🚀 Hot fix deployed!" --all
+
+# Preview without sending
+node announce.js -v 2.6.0 --dry-run
 ```
 
 ## GitHub Actions Integration
