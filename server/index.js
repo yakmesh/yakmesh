@@ -25,6 +25,9 @@ import { GossipProtocol } from '../gossip/protocol.js';
 // Content store for public delivery
 import { ContentStore, createContentAPI } from '../content/index.js';
 
+// Embedded documentation (hardcoded, hash-verified)
+import { getDocsFile, serveDocsFile, getBundleInfo } from '../embedded-docs/index.js';
+
 // Annex - Autonomous Network Negotiated Encrypted eXchange
 import { Annex } from '../mesh/annex.js';
 
@@ -665,6 +668,33 @@ export class YakmeshNode {
       validateString,
     });
     app.use('/content', contentAPI);
+    
+    // =========================================
+    // Embedded Documentation (hardcoded, hash-verified)
+    // Accessible via yak://docs or http://localhost:PORT/docs/
+    // =========================================
+    
+    app.get('/docs', (req, res) => {
+      res.redirect('/docs/');
+    });
+    
+    app.get('/docs/', (req, res) => {
+      serveDocsFile('index.html', res);
+    });
+    
+    app.get('/docs/_bundle', (req, res) => {
+      try {
+        const info = getBundleInfo();
+        res.json(info);
+      } catch (err) {
+        res.status(500).json({ error: 'Bundle info unavailable' });
+      }
+    });
+    
+    app.get('/docs/:file(*)', (req, res) => {
+      const file = req.params.file || 'index.html';
+      serveDocsFile(file, res);
+    });
     
     // Serve dashboard
     app.get('/dashboard', (req, res) => {

@@ -1,29 +1,48 @@
 /**
- * Hybrid Trust Model - Multi-Level Trust Assessment
+ * ╔═══════════════════════════════════════════════════════════════════════════════╗
+ * ║                    ☯️ KARMA TRUST MODEL - ACTIONS BEAR CONSEQUENCES ☯️         ║
+ * ╠═══════════════════════════════════════════════════════════════════════════════╣
+ * ║                                                                               ║
+ * ║  In Buddhist philosophy, KARMA represents the universal law of cause and     ║
+ * ║  effect—every action creates ripples that shape future outcomes. Good        ║
+ * ║  actions accumulate merit; harmful actions diminish it.                      ║
+ * ║                                                                               ║
+ * ║  The KARMA Trust Model embodies this principle:                              ║
+ * ║  - Trust is EARNED through consistent good behavior                          ║
+ * ║  - Multiple independent sources strengthen karmic standing                   ║
+ * ║  - Bad actions cause trust to decay (negative karma)                         ║
+ * ║  - Time and consistency build toward higher levels (merit accumulation)      ║
+ * ║                                                                               ║
+ * ║  PROTOCOL PHILOSOPHY:                                                         ║
+ * ║    "Actions bear consequences" - Trust reflects cumulative behavior          ║
+ * ║                                                                               ║
+ * ╚═══════════════════════════════════════════════════════════════════════════════╝
+ * 
+ * KARMA Trust Model - Multi-Level Trust Assessment
  * 
  * Implements a 3-level trust system combining multiple verification sources:
  * 
- * TRUST LEVELS:
+ * KARMA LEVELS:
  * ═════════════════════════════════════════════════════════════════════════════
  * 
- * LEVEL 3: PLATINUM TRUST (Highest)
+ * LEVEL 3: ENLIGHTENED (Highest - formerly PLATINUM)
  * - SSL certificate verified via CA
  * - Mesh quorum verification passed
  * - Consistent beacon presence >7 days
  * - Domain ownership verified via consensus
  * 
- * LEVEL 2: GOLD TRUST (Standard)
+ * LEVEL 2: AWAKENED (Standard - formerly GOLD)
  * - Mesh quorum verification passed
  * - Diverse verifier set (Sybil defense passed)
  * - No SSL certificate or self-signed only
  * 
- * LEVEL 1: BRONZE TRUST (Basic)
+ * LEVEL 1: SEEKING (Basic - formerly BRONZE)
  * - Self-asserted beacon only
  * - No external verification
  * - New node or insufficient mesh history
  * 
  * UNTRUSTED (Level 0)
- * - Failed verification
+ * - Failed verification (negative karma)
  * - Revoked DOKO
  * - Suspicious activity detected
  * 
@@ -32,7 +51,7 @@
  * Security Philosophy:
  * "Trust is earned through multiple independent sources of evidence."
  * 
- * @module security/hybrid-trust
+ * @module karma/trust-model
  * @version 1.0.0
  */
 
@@ -41,44 +60,54 @@ import { sha3_256 } from '@noble/hashes/sha3.js';
 import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js';
 
 /**
- * Trust Level Constants
+ * KARMA Level Constants - Stages of spiritual trust
  */
-export const TrustLevel = {
-  UNTRUSTED: 0,
-  BRONZE: 1,    // Basic - Self-asserted only
-  GOLD: 2,      // Standard - Mesh verified
-  PLATINUM: 3,  // Highest - SSL + Mesh + Time
+export const KarmaLevel = {
+  UNTRUSTED: 0,     // Negative karma - failed verification
+  SEEKING: 1,       // Basic - Self-asserted only (on the path)
+  AWAKENED: 2,      // Standard - Mesh verified (eyes opening)
+  ENLIGHTENED: 3,   // Highest - Full verification (full realization)
 };
 
+// Backward compatibility alias
+export const TrustLevel = KarmaLevel;
+
 /**
- * Trust Level Descriptions
+ * KARMA Level Descriptions - Himalayan-themed trust levels
  */
-export const TrustLevelInfo = {
-  [TrustLevel.UNTRUSTED]: {
+export const KarmaLevelInfo = {
+  [KarmaLevel.UNTRUSTED]: {
     name: 'UNTRUSTED',
-    description: 'Failed verification or revoked',
+    description: 'Negative karma - failed verification or revoked',
     color: '#FF0000',
     icon: '🚫',
+    himalayan: 'Lost in samsara',
   },
-  [TrustLevel.BRONZE]: {
-    name: 'BRONZE',
-    description: 'Self-asserted, awaiting mesh verification',
+  [KarmaLevel.SEEKING]: {
+    name: 'SEEKING',
+    description: 'On the path - self-asserted, awaiting verification',
     color: '#CD7F32',
     icon: '🥉',
+    himalayan: 'Beginning the journey',
   },
-  [TrustLevel.GOLD]: {
-    name: 'GOLD',
-    description: 'Mesh verified with diverse quorum',
+  [KarmaLevel.AWAKENED]: {
+    name: 'AWAKENED',
+    description: 'Eyes opening - mesh verified with diverse quorum',
     color: '#FFD700',
     icon: '🥇',
+    himalayan: 'Seeing clearly',
   },
-  [TrustLevel.PLATINUM]: {
-    name: 'PLATINUM',
-    description: 'Full verification: SSL + Mesh + Time',
+  [KarmaLevel.ENLIGHTENED]: {
+    name: 'ENLIGHTENED',
+    description: 'Full realization - SSL + Mesh + Time verified',
     color: '#E5E4E2',
     icon: '💎',
+    himalayan: 'Dharma embodied',
   },
 };
+
+// Backward compatibility alias
+export const TrustLevelInfo = KarmaLevelInfo;
 
 /**
  * Default configuration
@@ -114,10 +143,11 @@ const DEFAULT_CONFIG = {
 
 /**
  * ═══════════════════════════════════════════════════════════════════════════
- * Trust Evidence - Records verification evidence for a node
+ * Karma Evidence - Records karmic actions and verification for a node
+ * Like a spiritual ledger tracking the node's journey toward enlightenment
  * ═══════════════════════════════════════════════════════════════════════════
  */
-class TrustEvidence {
+class KarmaEvidence {
   constructor(nodeId) {
     this.nodeId = nodeId;
     this.createdAt = Date.now();
@@ -311,16 +341,17 @@ class TrustEvidence {
 
 /**
  * ═══════════════════════════════════════════════════════════════════════════
- * HybridTrustModel - Main trust assessment engine
+ * KARMA Trust Model - The wheel of cause and effect
+ * Assesses and tracks trust levels based on cumulative actions
  * ═══════════════════════════════════════════════════════════════════════════
  */
-export class HybridTrustModel extends EventEmitter {
+export class KarmaTrustModel extends EventEmitter {
   constructor(config = {}) {
     super();
     this.config = { ...DEFAULT_CONFIG, ...config };
     
-    // Trust evidence per node
-    this.evidence = new Map();  // nodeId -> TrustEvidence
+    // Karma evidence per node (spiritual ledger)
+    this.evidence = new Map();  // nodeId -> KarmaEvidence
     
     // Stats
     this.stats = {
@@ -328,14 +359,14 @@ export class HybridTrustModel extends EventEmitter {
       promotions: 0,
       demotions: 0,
       nodesByLevel: {
-        [TrustLevel.UNTRUSTED]: 0,
-        [TrustLevel.BRONZE]: 0,
-        [TrustLevel.GOLD]: 0,
-        [TrustLevel.PLATINUM]: 0,
+        [KarmaLevel.UNTRUSTED]: 0,
+        [KarmaLevel.SEEKING]: 0,
+        [KarmaLevel.AWAKENED]: 0,
+        [KarmaLevel.ENLIGHTENED]: 0,
       },
     };
     
-    // Promotion check interval
+    // Promotion check interval (karmic advancement)
     this.promotionInterval = null;
     if (this.config.autoPromoteEnabled) {
       this.startPromotionChecks();
@@ -343,11 +374,11 @@ export class HybridTrustModel extends EventEmitter {
   }
 
   /**
-   * Get or create trust evidence for a node
+   * Get or create karma evidence for a node
    */
   getEvidence(nodeId) {
     if (!this.evidence.has(nodeId)) {
-      this.evidence.set(nodeId, new TrustEvidence(nodeId));
+      this.evidence.set(nodeId, new KarmaEvidence(nodeId));
     }
     return this.evidence.get(nodeId);
   }
@@ -831,5 +862,16 @@ export class TrustBasedAccessControl {
   }
 }
 
-export { TrustEvidence };
-export default HybridTrustModel;
+// ============================================================
+// EXPORTS - KARMA naming with backward compatibility
+// ============================================================
+
+// Primary exports (KARMA naming)
+// KarmaLevel, KarmaLevelInfo, KarmaTrustModel are exported inline above
+export { KarmaEvidence };
+
+// Backward compatibility exports (original naming)
+export { KarmaEvidence as TrustEvidence };
+export { KarmaTrustModel as HybridTrustModel };
+
+export default KarmaTrustModel;

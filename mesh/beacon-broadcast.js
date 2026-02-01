@@ -1,5 +1,10 @@
 /**
- * Yakmesh Beacon - Broadcast Emergency Alert Channel Over Network
+ * STUPA - Signal Transmission Unit for Peer Awareness
+ * (Formerly: Yakmesh Beacon - Broadcast Emergency Alert Channel Over Network)
+ * 
+ * "Like sacred stupas that rise above the landscape to guide travelers,
+ *  STUPA broadcasts rise above the mesh to ensure critical messages
+ *  reach all who need to hear them."
  * 
  * Priority message propagation with guaranteed delivery:
  * - Flood-based protocol with intelligent deduplication
@@ -12,7 +17,16 @@
  * - Cryptographic receipts prove delivery chain
  * - Multi-path redundancy ensures survivability
  * 
- * @module mesh/beacon-broadcast
+ * Part of the Himalayan Protocol Family:
+ * - NAMCHE: Gateway verification
+ * - DOKO: Identity certificates
+ * - SHERPA: Peer discovery
+ * - NAKPAK: Onion routing
+ * - ANNEX: P2P channels
+ * - MANTRA: Message propagation
+ * - STUPA: Emergency broadcasts (this module)
+ * 
+ * @module mesh/stupa-broadcast
  * @license MIT
  * @copyright 2026 YAKMESH™ Contributors
  */
@@ -21,14 +35,15 @@ import { randomBytes, createHash } from 'crypto';
 import { sha3_256 } from '@noble/hashes/sha3.js';
 import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js';
 
-const BEACON_CONFIG = {
-  // Priority levels
+// STUPA configuration (sacred structure levels)
+const STUPA_CONFIG = {
+  // Priority levels (like stupa tiers)
   priorities: {
-    ROUTINE: 0,         // Normal messages
-    PRIORITY: 1,        // Important but not urgent
-    IMMEDIATE: 2,       // Time-sensitive
-    FLASH: 3,           // Emergency
-    CRITICAL: 4,        // Life/safety critical
+    ROUTINE: 0,         // Normal messages (base level)
+    PRIORITY: 1,        // Important but not urgent (first tier)
+    IMMEDIATE: 2,       // Time-sensitive (second tier)
+    FLASH: 3,           // Emergency (third tier)
+    CRITICAL: 4,        // Life/safety critical (pinnacle)
   },
   
   // Propagation settings
@@ -53,16 +68,19 @@ const BEACON_CONFIG = {
   },
 };
 
+// Legacy export for backward compatibility
+const BEACON_CONFIG = STUPA_CONFIG;
+
 /**
- * A beacon message with propagation metadata
+ * A STUPA message (broadcast signal) with propagation metadata
  */
-class BeaconMessage {
+class StupaMessage {
   constructor(options) {
     this.id = options.id || bytesToHex(randomBytes(16));
     this.originNodeId = options.originNodeId;
     this.payload = options.payload;
-    this.priority = options.priority || BEACON_CONFIG.priorities.ROUTINE;
-    this.ttl = options.ttl || BEACON_CONFIG.defaultTTL;
+    this.priority = options.priority || STUPA_CONFIG.priorities.ROUTINE;
+    this.ttl = options.ttl || STUPA_CONFIG.defaultTTL;
     this.timestamp = options.timestamp || Date.now();
     this.expiresAt = options.expiresAt || (Date.now() + 300000); // 5 min default
     this.hopPath = options.hopPath || [];
@@ -102,7 +120,7 @@ class BeaconMessage {
       return null;
     }
     
-    return new BeaconMessage({
+    return new StupaMessage({
       id: this.id,
       originNodeId: this.originNodeId,
       payload: this.payload,
@@ -119,7 +137,7 @@ class BeaconMessage {
    * Get priority name
    */
   getPriorityName() {
-    for (const [name, value] of Object.entries(BEACON_CONFIG.priorities)) {
+    for (const [name, value] of Object.entries(STUPA_CONFIG.priorities)) {
       if (value === this.priority) return name;
     }
     return 'UNKNOWN';
@@ -141,7 +159,7 @@ class BeaconMessage {
   }
 
   static deserialize(obj) {
-    const msg = new BeaconMessage({
+    const msg = new StupaMessage({
       id: obj.id,
       originNodeId: obj.originNodeId,
       payload: obj.payload,
@@ -426,9 +444,13 @@ class PriorityMessageQueue {
 }
 
 /**
- * Main BEACON broadcast system
+ * Main STUPA broadcast system
+ * 
+ * Like a sacred stupa rising above the landscape to guide travelers,
+ * StupaBroadcast ensures critical messages rise above network noise
+ * and reach all nodes in the mesh.
  */
-class BeaconBroadcast {
+class StupaBroadcast {
   constructor(options = {}) {
     this.nodeId = options.nodeId || bytesToHex(randomBytes(16));
     this.dedup = new DeduplicationTracker();
@@ -463,14 +485,14 @@ class BeaconBroadcast {
   }
 
   /**
-   * Broadcast a new message
+   * Broadcast a new message (raise a stupa signal)
    */
   broadcast(payload, options = {}) {
-    const message = new BeaconMessage({
+    const message = new StupaMessage({
       originNodeId: this.nodeId,
       payload,
-      priority: options.priority || BEACON_CONFIG.priorities.ROUTINE,
-      ttl: options.ttl || BEACON_CONFIG.defaultTTL,
+      priority: options.priority || STUPA_CONFIG.priorities.ROUTINE,
+      ttl: options.ttl || STUPA_CONFIG.defaultTTL,
       expiresAt: options.expiresAt,
     });
 
@@ -504,11 +526,11 @@ class BeaconBroadcast {
   }
 
   /**
-   * Receive and process an incoming message
+   * Receive and process an incoming STUPA signal
    */
   receive(messageData) {
     try {
-      const message = BeaconMessage.deserialize(messageData);
+      const message = StupaMessage.deserialize(messageData);
 
       // Check validity
       if (!message.isValid()) {
@@ -619,15 +641,18 @@ class BeaconBroadcast {
   }
 
   /**
-   * Send flash priority message
+   * Send flash priority message (emergency stupa signal)
    */
   sendFlash(payload, options = {}) {
     return this.broadcast(payload, {
       ...options,
-      priority: BEACON_CONFIG.priorities.FLASH,
+      priority: STUPA_CONFIG.priorities.FLASH,
     });
   }
 
+  /**
+   * Get STUPA statistics
+   */
   getStats() {
     return {
       ...this.stats,
@@ -643,12 +668,20 @@ class BeaconBroadcast {
   }
 }
 
+// New STUPA exports
 export {
-  BEACON_CONFIG,
-  BeaconMessage,
+  STUPA_CONFIG,
+  StupaMessage,
+  StupaBroadcast,
   DeliveryReceipt,
   DeduplicationTracker,
   ReceiptCollector,
   PriorityMessageQueue,
-  BeaconBroadcast,
+};
+
+// Legacy exports for backward compatibility
+export {
+  STUPA_CONFIG as BEACON_CONFIG,
+  StupaMessage as BeaconMessage,
+  StupaBroadcast as BeaconBroadcast,
 };

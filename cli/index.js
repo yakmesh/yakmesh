@@ -823,6 +823,182 @@ geoCmd
     console.log('');
   });
 
+// ===== DOCS COMMAND GROUP =====
+const docsCmd = program
+  .command('docs')
+  .description('Embedded documentation management');
+
+// docs info - Show bundle information
+docsCmd
+  .command('info')
+  .description('Show documentation bundle information')
+  .action(async () => {
+    try {
+      const { getBundleInfo, BUNDLE_HASH, BUNDLE_VERSION } = await import('../embedded-docs/index.js');
+      const info = getBundleInfo();
+      
+      console.log(chalk.cyan('\n📦 YAKMESH Embedded Documentation Bundle\n'));
+      console.log(chalk.white('  Bundle Hash:'), chalk.yellow(BUNDLE_HASH));
+      console.log(chalk.white('  Version:    '), chalk.green(BUNDLE_VERSION));
+      console.log(chalk.white('  Files:      '), info.fileCount);
+      console.log(chalk.white('  Total Size: '), Math.round(info.totalSize / 1024) + ' KB');
+      console.log('');
+      console.log(chalk.gray('  Run "yakmesh docs verify" to verify bundle integrity.'));
+      console.log(chalk.gray('  Run "yakmesh docs list" to see all files.'));
+      console.log('');
+    } catch (err) {
+      console.error(chalk.red('✗ Error loading docs bundle:'), err.message);
+      process.exit(1);
+    }
+  });
+
+// docs verify - Verify bundle integrity
+docsCmd
+  .command('verify')
+  .description('Verify documentation bundle integrity using SHA3-256')
+  .option('-v, --verbose', 'Show individual file verification results')
+  .action(async (options) => {
+    try {
+      const { getBundleInfo, getDocsFile, verifyFile, BUNDLE_HASH } = await import('../embedded-docs/index.js');
+      const info = getBundleInfo();
+      
+      console.log(chalk.cyan('\n🔐 Verifying Documentation Bundle...\n'));
+      
+      let verified = 0;
+      let failed = 0;
+      
+      for (const filePath of info.files) {
+        const file = getDocsFile(filePath);
+        if (!file) {
+          if (options.verbose) {
+            console.log(chalk.red('  ✗'), filePath, chalk.gray('- FILE MISSING'));
+          }
+          failed++;
+          continue;
+        }
+        
+        const result = verifyFile(filePath, file.content);
+        if (result.valid) {
+          verified++;
+          if (options.verbose) {
+            console.log(chalk.green('  ✓'), filePath, chalk.gray(`(${file.content.length} bytes)`));
+          }
+        } else {
+          failed++;
+          if (options.verbose) {
+            console.log(chalk.red('  ✗'), filePath, chalk.gray('- HASH MISMATCH'));
+          }
+        }
+      }
+      
+      console.log('');
+      if (failed === 0) {
+        console.log(chalk.green('✓ Bundle verification PASSED'));
+        console.log(chalk.gray(`  ${verified} files verified`));
+        console.log(chalk.gray(`  Bundle: ${BUNDLE_HASH.substring(0, 32)}...`));
+      } else {
+        console.log(chalk.red('✗ Bundle verification FAILED'));
+        console.log(chalk.gray(`  ${verified} passed, ${failed} failed`));
+        process.exit(1);
+      }
+      console.log('');
+    } catch (err) {
+      console.error(chalk.red('✗ Error:'), err.message);
+      process.exit(1);
+    }
+  });
+
+// docs list - List all files in bundle
+docsCmd
+  .command('list')
+  .description('List all files in the documentation bundle')
+  .option('--html', 'Show only HTML files')
+  .option('--json', 'Output as JSON')
+  .action(async (options) => {
+    try {
+      const { getBundleInfo, FILE_INDEX } = await import('../embedded-docs/index.js');
+      const info = getBundleInfo();
+      
+      let files = info.files;
+      if (options.html) {
+        files = files.filter(f => f.endsWith('.html'));
+      }
+      
+      if (options.json) {
+        console.log(JSON.stringify({ files, count: files.length }, null, 2));
+        return;
+      }
+      
+      console.log(chalk.cyan(`\n📄 Documentation Files (${files.length})\n`));
+      for (const file of files.sort()) {
+        const meta = FILE_INDEX[file];
+        const size = meta ? Math.round(meta.size / 1024) + ' KB' : '?';
+        console.log(chalk.gray('  -'), file, chalk.gray(`(${size})`));
+      }
+      console.log('');
+    } catch (err) {
+      console.error(chalk.red('✗ Error:'), err.message);
+      process.exit(1);
+    }
+  });
+
+// docs serve - Start documentation server
+docsCmd
+  .command('serve')
+  .description('Start a local documentation server')
+  .option('-p, --port <port>', 'Port to serve on', '8080')
+  .action(async (options) => {
+    try {
+      const express = (await import('express')).default;
+      const { serveDocsFile, getBundleInfo, BUNDLE_HASH } = await import('../embedded-docs/index.js');
+      
+      const app = express();
+      const port = parseInt(options.port);
+      
+      // Order matters! Specific routes first to avoid redirect loops
+      app.get('/docs/_bundle', (req, res) => res.json(getBundleInfo()));
+      app.get('/docs/index.html', (req, res) => serveDocsFile('index.html', res));
+      app.get('/docs/', (req, res) => serveDocsFile('index.html', res));
+      app.get('/docs', (req, res) => res.redirect('/docs/'));
+      app.get('/docs/:file', (req, res) => {
+        const file = req.params.file || 'index.html';
+        serveDocsFile(file, res);
+      });
+      
+      // Serve assets (silhouettes, etc.) - CSS references ../assets/ from /docs/
+      app.get('/assets/*', (req, res) => {
+        const assetPath = req.path.substring(1); // Remove leading /
+        serveDocsFile(assetPath, res);
+      });
+      
+      app.get('/', (req, res) => res.redirect('/docs/'));
+      
+      app.listen(port, '0.0.0.0', () => {
+        console.log(chalk.cyan('\n📦 YAKMESH Documentation Server\n'));
+        console.log(chalk.white('  URL:        '), chalk.green(`http://localhost:${port}/docs/`));
+        console.log(chalk.white('  Bundle:     '), chalk.gray(BUNDLE_HASH.substring(0, 24) + '...'));
+        console.log(chalk.white('  Files:      '), getBundleInfo().fileCount);
+        console.log('');
+        console.log(chalk.gray('  Press Ctrl+C to stop.'));
+        console.log('');
+      });
+    } catch (err) {
+      console.error(chalk.red('✗ Error:'), err.message);
+      process.exit(1);
+    }
+  });
+
+// docs rebuild - Rebuild the bundle (for developers)
+docsCmd
+  .command('rebuild')
+  .description('Rebuild documentation bundle (development only)')
+  .action(async () => {
+    console.log(chalk.cyan('\n📦 Rebuilding Documentation Bundle...\n'));
+    console.log(chalk.gray('  Run this command from the yakmesh-node directory:'));
+    console.log(chalk.white('  npm run build:docs'));
+    console.log('');
+  });
+
 // ===== VERSION =====
 program
   .version(VERSION)

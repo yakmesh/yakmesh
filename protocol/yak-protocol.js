@@ -53,6 +53,8 @@ export const PROTOCOL = {
  */
 export const BUILTIN_ROUTES = {
   'dashboard': '/dashboard',
+  'docs': '/docs/',                      // Embedded documentation (hash-verified)
+  'docs.yakmesh': '/docs/',              // yak://docs.yakmesh/ alias
   'site': '/site/',
   'content': '/content',
   'node': '/node',

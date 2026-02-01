@@ -42,6 +42,11 @@ Get-ChildItem -Recurse -Filter "*.js" | Select-String -Pattern "ml_dsa65\.(sign|
 - [ ] **API documentation matches implementation** - Check function signatures
 - [ ] **CHANGELOG.md updated** - Version, date, and all changes documented
 - [ ] **Migration guide** (if breaking changes) - Clear upgrade path for users
+- [ ] **Docs bundle regenerated** - Run `npm run build:docs` before release
+  ```powershell
+  npm run build:docs
+  # Verify output shows correct file count and bundle hash
+  ```
 
 ### 5. Version Management
 
@@ -86,6 +91,7 @@ node -e "const yk = require('yakmesh-node'); console.log('Import successful')"
 | `oracle/module-sealer.js` | Module attestation | HIGH |
 | `mesh/nakpak-routing.js` | Packet signing | HIGH |
 | `identity/node-key.js` | Node authentication | HIGH |
+| `embedded-docs/bundle.js` | Documentation hashes | MEDIUM |
 
 ## Known Pitfalls
 

@@ -1,6 +1,6 @@
 {
   "name": "yakmesh",
-  "version": "2.5.0",
+  "version": "2.6.0",
   "description": "YAKMESH: Yielding Atomic Kernel Modular Encryption Secured Hub - Post-quantum secure P2P mesh network for the 2026 threat landscape",
   "type": "module",
   "main": "server/index.js",
@@ -51,7 +51,11 @@
     "./adapters/byond": "./adapters/adapter-byond/index.js",
     "./adapters/byond/topic-client": "./adapters/adapter-byond/topic-client.js",
     "./adapters/byond/http-bridge": "./adapters/adapter-byond/http-bridge.js",
-    "./adapters/byond/security": "./adapters/adapter-byond/security.js"
+    "./adapters/byond/security": "./adapters/adapter-byond/security.js",
+    "./embedded-docs": "./embedded-docs/index.js",
+    "./embedded-docs/verify": "./embedded-docs/verify.js",
+    "./embedded-docs/serve": "./embedded-docs/serve.js",
+    "./embedded-docs/bundle": "./embedded-docs/bundle.js"
   },
   "bin": {
     "yakmesh": "cli/index.js"
@@ -59,6 +63,8 @@
   "scripts": {
     "start": "node server/index.js",
     "dev": "node --watch server/index.js",
+    "build:docs": "node scripts/build-docs-bundle.mjs",
+    "prebuild": "npm run build:docs",
     "test": "node --test oracle/tests/*.test.js",
     "test:time": "node --test oracle/tests/time-source.test.js",
     "test:phase": "node --test oracle/tests/phase-epoch.test.js",

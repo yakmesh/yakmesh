@@ -1,17 +1,17 @@
 /**
- * Trust Tiers - Combined Hardware + Time Source Trust Levels
+ * KARMA Trust Tiers - Combined Hardware + Time Source Trust Levels
  * 
- * The ultimate trust stack for YAKMESH:
- * - ORACLE: Atomic Clock + Real Hardware (AES-NI)
- * - ANCHOR: GPS + PPS + Real Hardware
- * - SENTINEL: PTP (IEEE 1588) + Real Hardware
- * - PARTICIPANT: NTP + Real Hardware
- * - OBSERVER: Unverified hardware or time
+ * Named after Nepali expedition hiking team roles:
+ * - SIRDAR (सिरदार): Expedition Leader - Atomic Clock + Real Hardware (AES-NI)
+ * - SATHI (साथी): Trusted Companion - GPS + PPS + Real Hardware
+ * - PATHIK (पथिक): Traveler on Path - PTP (IEEE 1588) + Real Hardware
+ * - YATRI (यात्री): Pilgrim/Journeyer - NTP + Real Hardware  
+ * - NAYA (नया): Newcomer - Unverified hardware or time
  * 
  * "You can't fake physics. Atomic time and real silicon are your credentials."
  * 
  * @module security/trust-tier
- * @version 1.0.0
+ * @version 2.0.0
  */
 
 import { HardwareAttestation, validateAESTiming } from './hardware-attestation.js';
@@ -20,14 +20,31 @@ import { createLogger } from '../utils/logger.js';
 const log = createLogger('security:trust-tier');
 
 /**
- * Trust Tiers - hierarchical trust levels
+ * KARMA Trust Tiers - hierarchical trust levels (Nepali expedition roles)
+ * 
+ * | Tier     | Nepali   | English              | Trust Level |
+ * |----------|----------|----------------------|-------------|
+ * | SIRDAR   | सिरदार   | Expedition Leader    | Oracle      |
+ * | SATHI    | साथी     | Trusted Companion    | Anchor      |
+ * | PATHIK   | पथिक     | Traveler on Path     | Sentinel    |
+ * | YATRI    | यात्री   | Pilgrim/Journeyer    | Participant |
+ * | NAYA     | नया      | Newcomer             | Observer    |
  */
+export const KARMA_TIER = {
+  SIRDAR: 'sirdar',       // सिरदार - Expedition leader - Atomic clock + AES-NI
+  SATHI: 'sathi',         // साथी - Trusted companion - GPS + PPS + AES-NI
+  PATHIK: 'pathik',       // पथिक - Traveler on path - PTP + AES-NI
+  YATRI: 'yatri',         // यात्री - Pilgrim/journeyer - NTP + AES-NI
+  NAYA: 'naya',           // नया - Newcomer - Unverified
+};
+
+// Backward compatibility alias
 export const TRUST_TIER = {
-  ORACLE: 'oracle',         // Atomic clock + AES-NI
-  ANCHOR: 'anchor',         // GPS + PPS + AES-NI
-  SENTINEL: 'sentinel',     // PTP + AES-NI
-  PARTICIPANT: 'participant', // NTP + AES-NI
-  OBSERVER: 'observer',     // Unverified
+  ORACLE: KARMA_TIER.SIRDAR,
+  ANCHOR: KARMA_TIER.SATHI,
+  SENTINEL: KARMA_TIER.PATHIK,
+  PARTICIPANT: KARMA_TIER.YATRI,
+  OBSERVER: KARMA_TIER.NAYA,
 };
 
 /**
@@ -45,42 +62,42 @@ export const TIME_SOURCE = {
  * Attestation weight multipliers by tier
  */
 export const TIER_WEIGHT = {
-  [TRUST_TIER.ORACLE]: 2.0,      // Maximum trust
-  [TRUST_TIER.ANCHOR]: 1.5,      // High trust
-  [TRUST_TIER.SENTINEL]: 1.25,   // Good trust
-  [TRUST_TIER.PARTICIPANT]: 1.0, // Standard trust
-  [TRUST_TIER.OBSERVER]: 0.25,   // Minimal trust
+  [KARMA_TIER.SIRDAR]: 2.0,      // Maximum trust - Expedition Leader
+  [KARMA_TIER.SATHI]: 1.5,       // High trust - Trusted Companion
+  [KARMA_TIER.PATHIK]: 1.25,     // Good trust - Traveler
+  [KARMA_TIER.YATRI]: 1.0,       // Standard trust - Pilgrim
+  [KARMA_TIER.NAYA]: 0.25,       // Minimal trust - Newcomer
 };
 
 /**
  * Tier requirements
  */
 export const TIER_REQUIREMENTS = {
-  [TRUST_TIER.ORACLE]: {
+  [KARMA_TIER.SIRDAR]: {
     timeSource: [TIME_SOURCE.ATOMIC],
     requiresAESNI: true,
     minNetworkAge: 30 * 24 * 60 * 60 * 1000, // 30 days
     minEndorsements: 3,
   },
-  [TRUST_TIER.ANCHOR]: {
+  [KARMA_TIER.SATHI]: {
     timeSource: [TIME_SOURCE.GPS],
     requiresAESNI: true,
     minNetworkAge: 14 * 24 * 60 * 60 * 1000, // 14 days
     minEndorsements: 2,
   },
-  [TRUST_TIER.SENTINEL]: {
+  [KARMA_TIER.PATHIK]: {
     timeSource: [TIME_SOURCE.PTP],
     requiresAESNI: true,
     minNetworkAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     minEndorsements: 1,
   },
-  [TRUST_TIER.PARTICIPANT]: {
+  [KARMA_TIER.YATRI]: {
     timeSource: [TIME_SOURCE.NTP, TIME_SOURCE.SYSTEM],
     requiresAESNI: true,
     minNetworkAge: 24 * 60 * 60 * 1000, // 1 day
     minEndorsements: 0,
   },
-  [TRUST_TIER.OBSERVER]: {
+  [KARMA_TIER.NAYA]: {
     timeSource: [TIME_SOURCE.NTP, TIME_SOURCE.SYSTEM],
     requiresAESNI: false,
     minNetworkAge: 0,
