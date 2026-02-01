@@ -17,64 +17,7 @@
 
 YAKMESH is a high-resiliency, decentralized networking layer designed for the 2026 threat landscape. Built with quantum-resistant cryptography at its core and anchored by PCIe atomic timing synchronization, YAKMESH provides a "sturdy" substrate for distributed systems that cannot afford to fail.
 
-## Why YAKMESH?
-
-In an era where traditional ECDSA is increasingly vulnerable and network jitter can desynchronize global state, YAKMESH offers a three-pillar solution:
-
-🌿 **Yielding Resilience**: A self-healing mesh topology that adapts to node failure and adversarial interference without central authority.
-
-⚛️ **Atomic Precision**: Integrated support for PCIe atomic clock hardware, enabling hardware timestamping with support for high-precision time sources for low-latency synchronization.
-
-🔐 **Quantum Hardened**: Fully compatible with Project Zond and the QRL (Quantum Resistant Ledger) ecosystem, utilizing stateless lattice-based signatures (ML-DSA) from Genesis.
-
----
-
-## The Y.A.K.M.E.S.H. Philosophy
-
-| Letter | Principle | Description |
-|--------|-----------|-------------|
-| **Y** | **Yielding** | Not brittle; flexible enough to absorb network shocks |
-| **A** | **Atomic** | Grounded in the absolute truth of physical time |
-| **K** | **Kernel** | The essential, innermost part of the secure stack |
-| **M** | **Modular** | Swap out encryption primitives or transport layers as tech evolves |
-| **E** | **Encryption** | Privacy and integrity by default |
-| **S** | **Secured** | Hardened against both classical and quantum vectors |
-| **H** | **Hub** | A nexus for decentralized data and peer-to-peer logic |
-
----
-
-## Features
-
-- 🔒 **Post-Quantum Secure** - ML-DSA-65 (NIST FIPS 204) signatures
-- 🔮 **Self-Verifying Oracle** - Deterministic validation without external trust
-- 🌐 **Mesh Networking** - P2P WebSocket communication with gossip protocol
-- ⏱️ **Precision Timing** - Support for atomic clocks, GPS, PTP, NTP
-- 🔌 **Plugin Architecture** - Adapters for any database or API
-- 🛡️ **Phase Modulation** - Time-based anti-replay protection
-- 🌍 **Geographic Exclusion** - Speed-of-light physics prove where nodes CANNOT be
-
-### v2.5 — The Complete Stack
-
-**Identity & Trust:**
-- 🧭 **NAMCHE Gateway** - 7-gate mathematical verification (no CA required)
-- 📜 **DOKO Identity** - Self-sovereign identity documents verified by mesh
-- 🏆 **Trust Tiers** - ORACLE/ANCHOR/SENTINEL/PARTICIPANT hierarchy
-- 🔬 **Hardware Attestation** - AES-NI timing proves real silicon
-- ⚖️ **Silicon Parity** - "One silicon = one vote" anti-farm defense
-- ⚠️ **Strike System** - Three strikes with hardware fingerprint tracking
-
-**Networking:**
-- 🏔️ **SHERPA Discovery** - Decentralized peer discovery via public web beacons
-- 🎒 **NAKPAK Routing** - Post-quantum onion routing for anonymity
-- 🔐 **ANNEX Channels** - ML-KEM768 encrypted P2P with perfect forward secrecy
-- 🔗 **YAK:// Protocol** - Mesh-native URL scheme with bookmarks
-
-**Advanced:**
-- 🌍 **Geographic Proof** - Speed-of-light exclusion zones
-- 🕵️ **Sybil Detection** - Graph analysis for fake identity clusters
-- 📡 **ECHO Ranging** - Privacy-preserving topology discovery
-- 💓 **PULSE Heartbeat** - Liveness detection and partition recovery
-- 🚨 **BEACON Alerts** - Priority emergency broadcast
+> **📚 Full documentation: [yakmesh.dev](https://yakmesh.dev)** | **[docs/](docs/)** for specifications
 
 ## Quick Start
 
@@ -93,194 +36,58 @@ const node = new YakmeshNode({
 await node.start();
 ```
 
-## CLI
+## Features
 
-```bash
-# Initialize a new node
-npx yakmesh init
+- 🔒 **Post-Quantum Secure** - ML-DSA-65 (NIST FIPS 204) signatures
+- 🔮 **TATTVA Oracle** - Self-verifying validation without external trust
+- 🌐 **Mesh Networking** - P2P WebSocket communication with gossip protocol
+- ⏱️ **Precision Timing** - Support for atomic clocks, GPS, PTP, NTP
+- 🧭 **NAMCHE Gateway** - 7-gate mathematical identity verification
+- 🏔️ **SHERPA Discovery** - Decentralized peer discovery
+- 🔐 **ANNEX Channels** - ML-KEM768 encrypted P2P with forward secrecy
+- 🌍 **Geographic Proof** - Speed-of-light exclusion zones
 
-# Start the node
-npx yakmesh start
-
-# Check status
-npx yakmesh status
-```
-
-## Documentation
-
-Full documentation available at **[yakmesh.dev](https://yakmesh.dev)**
+> See [yakmesh.dev](https://yakmesh.dev) for complete feature documentation
 
 ## Architecture
 
 ```
 yakmesh/
 ├── security/         # NAMCHE gateway, DOKO identity, trust models
-│   ├── namche-gateway.js    # 7-gate verification
-│   ├── doko-identity.js     # Self-sovereign identity
-│   ├── hybrid-trust.js      # Multi-factor trust scoring
-│   ├── tls-binding.js       # mTLS certificate binding
-│   ├── domain-consensus.js  # Mesh-verified domains
-│   └── geo-proof.js         # Speed-of-light geographic exclusion
-├── oracle/           # Self-verifying validation engine
-├── mesh/             # WebSocket P2P networking
-│   ├── sherpa-discovery.js  # Decentralized peer discovery
-│   ├── nakpak-routing.js    # Onion routing
-│   └── annex-channel.js     # Encrypted P2P channels
+├── oracle/           # TATTVA self-verifying validation engine
+├── mesh/             # SHERPA, NAKPAK, ANNEX networking
 ├── gossip/           # Epidemic-style message propagation
+├── protocol/         # STUPA, LAMA, MANI, KARMA, MANDALA
 ├── adapters/         # Platform integration plugins
-├── webserver/        # Embedded Caddy web server
+├── embedded-docs/    # GRANTH documentation bundle
 └── server/           # HTTP/WS server
 ```
 
 ## Network Identity
 
-Each YAKMESH network has a unique identity derived from the **oracle's code hash** — a deterministic fingerprint of the codebase itself. This means the code IS the identity.
+Each YAKMESH network has a unique identity derived from the **oracle's code hash** — the code IS the identity.
 
 ```javascript
-// Network identity is AUTOMATIC - derived from code hash
-// When you run a node, it computes:
-// 1. Code hash → cryptographic identity of the codebase
-// 2. Network name → human-readable name (e.g., "factor-primitive-bose")
-// 3. Verification phrase → speakable phrase for verbal verification
-
-// The identity functions are available for inspection:
 import { deriveNetworkName, deriveVerificationPhrase } from 'yakmesh/oracle/network-identity.js';
 
 // Same code = same network. Different code = different network.
 // No configuration needed - the math handles network separation.
 ```
 
-**Key Principle:** Two nodes running the same YAKMESH version will automatically be on the same network. Fork the code or modify the oracle, and you're on a different network entirely.
+## API Reference
 
-## Time Source Trust Levels
+Full API documentation at [yakmesh.dev/docs/api](https://yakmesh.dev/docs/api)
 
-| Level | Source | Tolerance | Oracle Capable |
-|-------|--------|-----------|----------------|
-| ATOMIC | PCIe atomic clock | ±100ms | ✅ Yes |
-| GPS | GPS with PPS | ±500ms | ✅ Yes |
-| PTP | IEEE 1588 (Meinberg) | ±500ms | ⚠️ Partial |
-| NTP | Standard NTP | ±5000ms | ❌ No |
-
-## Adapters
-
-Create custom adapters by extending `BaseAdapter`:
-
-```javascript
-import { BaseAdapter } from 'yakmesh/adapters/base-adapter.js';
-
-class MyAdapter extends BaseAdapter {
-  async init() { /* Connect to your database */ }
-  getSchema() { return { tables: ['users', 'orders'] }; }
-  async fetchChanges(since) { /* Return changed records */ }
-  async applyChange(table, record, op) { /* Write to database */ }
-}
-```
-
-### Official Adapters
-
-- `@yakmesh/adapter-peerquanta` - PeerQuanta phpBB marketplace
-
-## v2.2.0 — YAK:// Protocol & Identity Recovery
-
-### 🔗 YAK:// Protocol
-
-Custom URL protocol for mesh-native addressing. Escape HTTP entirely!
-
-```bash
-# Built-in routes
-yak://dashboard          # Node dashboard
-yak://peers              # Connected peers
-yak://content/<hash>     # Content by hash
-
-# Personal bookmarks (pet names)
-yakmesh bookmark add alice /site/alice-homepage
-yak://alice              # Opens your bookmark
-```
-
-### 📚 Remote Bookmarks
-
-Share bookmark lists between nodes via gossip protocol:
-
-```javascript
-import { getRemoteBookmarkSync } from 'yakmesh/protocol/yak-protocol';
-
-const sync = getRemoteBookmarkSync({ nodeId: 'my-node' });
-
-// Subscribe to another node's bookmarks
-sync.subscribe('trusted-node-id');
-
-// Publish your bookmarks to the mesh
-sync.publish('my-bookmarks', ['project', 'docs', 'friends']);
-
-// Resolve remote bookmarks
-sync.resolveRemote('alice'); // Returns target from subscribed node
-```
-
-### 🔐 DOKO Revocation
-
-Key compromise recovery with self-revocation and emergency "break-glass" certificates:
-
-```javascript
-import { DOKORevocation, REVOCATION_REASONS } from 'yakmesh/security/doko-identity';
-
-const revocation = new DOKORevocation({ generator, nodeId });
-
-// Normal self-revocation
-const cert = revocation.revoke(dokoId, REVOCATION_REASONS.KEY_COMPROMISED, privateKey);
-
-// Emergency revocation (primary key compromised, use backup)
-const emergencyCert = revocation.createEmergencyCertificate(
-  dokoId, 
-  REVOCATION_REASONS.KEY_COMPROMISED, 
-  backupPrivateKey
-);
-
-// Check revocation status
-revocation.isRevoked(dokoId); // true
-```
-
-**Revocation Reasons:**
-- `KEY_COMPROMISED` - Private key was exposed
-- `DOKO_SUPERSEDED` - Replaced with new identity
-- `IDENTITY_RETIRED` - No longer in use
-- `LOST_ACCESS` - Cannot access keys
-- `AFFILIATION_ENDED` - Organization membership ended
-
-## API Endpoints
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/health` | GET | Node health status |
-| `/node` | GET | Node identity info |
-| `/peers` | GET | Connected peers |
-| `/oracle/status` | GET | Oracle integrity check |
-| `/network/identity` | GET | Network identity (hash obfuscated) |
-| `/time/status` | GET | Time source detection |
-| `/time/capabilities` | GET | Time oracle eligibility |
-| `/connect` | POST | Connect to a peer |
-| `/bookmarks` | GET | List local bookmarks |
-| `/bookmarks` | POST | Add a bookmark |
-| `/bookmarks/:name` | DELETE | Remove a bookmark |
-| `/bookmarks/remote` | GET | List remote bookmarks |
-| `/bookmarks/remote/subscribe` | POST | Subscribe to node |
-| `/bookmarks/remote/publish` | POST | Publish bookmark list |
-| `/bookmarks/remote/status` | GET | Remote sync status |
-| `/security/doko/stats` | GET | DOKO identity stats |
-| `/security/namche/gates` | GET | Gateway verification status |
-| `/geo/status` | GET | Geographic proof status |
-| `/geo/landmarks` | GET/POST | List or add landmarks |
-| `/geo/zones` | GET | List exclusion zones |
-| `/geo/prove` | POST | Generate geographic proof |
-| `/geo/verify` | POST | Verify another node's claims |
-
-## Pro Features
-
-YAKMESH Pro includes additional security features:
-
-- 🔐 **WebSocket Authentication** - Challenge-response auth with signatures
-- 🔒 **Message Encryption** - XChaCha20-Poly1305 encrypted messages
-- 📋 **Peer Allowlist/Blocklist** - Access control for private networks
-- 🛡️ **Connection Rate Limiting** - DDoS protection
+| Endpoint | Description |
+|----------|-------------|
+| `/health` | Node health status |
+| `/node` | Node identity info |
+| `/peers` | Connected peers |
+| `/oracle/status` | Oracle integrity check |
+| `/network/identity` | Network identity |
+| `/time/status` | Time source detection |
+| `/security/namche/gates` | Gateway verification status |
+| `/geo/status` | Geographic proof status |
 
 ## License
 
@@ -307,3 +114,4 @@ See [TRADEMARK.md](TRADEMARK.md) for trademark usage policy.
   <br>
   <sub>YAKMESH™ is a trademark of PeerQuanta, application pending (Serial No. 99594620).</sub>
 </div>
+

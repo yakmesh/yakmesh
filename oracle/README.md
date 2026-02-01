@@ -1,8 +1,10 @@
-# PeerQuanta ValidationOracle System
+# TATTVA: The Self-Verifying Oracle System
+
+> *Truth Attestation Through Temporal Validation Architecture*
 
 ## Overview
 
-The ValidationOracle system implements a "code is the oracle" approach to distributed consensus.
+The TATTVA oracle system implements a "code is the oracle" approach to distributed consensus.
 Instead of relying on voting or social trust, nodes prove they're running identical validation
 code and therefore MUST arrive at the same conclusions about data validity.
 
