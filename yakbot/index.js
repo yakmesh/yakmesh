@@ -30,7 +30,7 @@ const config = {
   geminiKey: process.env.GEMINI_API_KEY,
   
   // Current version
-  version: '2.6.1',
+  version: '2.6.2',
   
   // Official YAKMESH nodes for health checks
   officialNodes: [
