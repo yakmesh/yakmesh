@@ -56,3 +56,6 @@ test-nodes/
 .DS_Store
 .git/
 .github/
+
+# Build artifacts
+*.tgz
