@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="getting-started">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="favicon.ico" sizes="32x32">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <title>Getting Started - YAKMESH Documentation</title>
+    <meta name="description" content="Get your first YAKMESH node running in under 5 minutes. Post-quantum secure P2P mesh networking.">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        theme: { 
+                            primary: '#f59e0b', 
+                            secondary: '#d97706', 
+                            accent: '#fbbf24',
+                            bg: '#451a03',
+                            glow: 'rgba(245, 158, 11, 0.1)'
+                        },
+                        mountain: { 
+                            300: '#88b4a6', 
+                            400: '#6a9a8a', 
+                            700: '#2e4c43', 
+                            800: '#1f332d', 
+                            900: '#101a16' 
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Syntax Highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="docs.css">
+    <style>
+        /* Page-specific theme overrides */
+        .theme-accent { color: #f59e0b; }
+        .theme-accent-hover:hover { color: #fbbf24; }
+        .theme-badge { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+        .theme-border { border-color: #f59e0b; }
+        .theme-callout { background: rgba(245, 158, 11, 0.1); border-color: #d97706; }
+        .active-link { background: rgba(245, 158, 11, 0.2) !important; color: #fbbf24 !important; }
+    </style>
+</head>
+<body class="bg-mountain-900 text-white min-h-screen">
+    
+  <nav class="docs-sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-logo">
+      <span class="logo-icon">🏔️</span>
+      <span class="logo-text">Yakmesh</span>
+    </a>
+    <ul class="sidebar-nav">
+      <li><a href="index.html"><span>🏠</span> <span>Overview</span></a></li>
+      <li><a href="getting-started.html" class="active"><span>🚀</span> <span>Getting Started</span></a></li>
+      <li><a href="doko.html"><span>🧺</span> <span>DOKO</span></a></li>
+      <li><a href="namche.html"><span>🚪</span> <span>NAMCHE</span></a></li>
+      <li><a href="sherpa.html"><span>🧗</span> <span>SHERPA</span></a></li>
+      <li><a href="nakpak.html"><span>🎒</span> <span>NAKPAK</span></a></li>
+      <li><a href="annex.html"><span>🌉</span> <span>ANNEX</span></a></li>
+      <li><a href="yak-protocol.html"><span class="yak-icon"></span> <span>YAK</span></a></li>
+      <li><a href="mantra.html"><span>🕉️</span> <span>MANTRA</span></a></li>
+      <li><a href="stupa.html"><span>🛕</span> <span>STUPA</span></a></li>
+      <li><a href="lama.html"><span>🔮</span> <span>LAMA</span></a></li>
+      <li><a href="mani.html"><span>⏱️</span> <span>MANI</span></a></li>
+      <li><a href="karma.html"><span>☯️</span> <span>KARMA</span></a></li>
+      <li><a href="mandala.html"><span>🌐</span> <span>MANDALA</span></a></li>
+      <li><a href="tattva.html"><span>🔯</span> <span>TATTVA</span></a></li>
+      <li><a href="geo-proof.html"><span>🌍</span> <span>PRAMAAN</span></a></li>
+      <li><a href="trust-security.html"><span>🔒</span> <span>SURAKSHA</span></a></li>
+      <li><a href="docs-bundle.html"><span>📚</span> <span>GRANTH</span></a></li>
+      <li><a href="api.html"><span>📡</span> <span>API</span></a></li>
+    </ul>
+  </nav>
+
+  <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+    </svg>
+  </button>
+
+  <!-- Mobile overlay for tap-to-close sidebar -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="docs-main" id="mainContent">
+
+        <div class="docs-content">
+            <!-- Page Header -->
+            <div class="flex items-center gap-3 mb-4">
+                <span class="text-4xl">🚀</span>
+                <div>
+                    <h1 class="text-4xl font-bold">Getting Started</h1>
+                    <p class="theme-accent">Your journey to post-quantum security begins here</p>
+                </div>
+            </div>
+            <p class="text-xl text-mountain-300 mb-8">
+                Get your first YAKMESH node running in under 5 minutes.
+            </p>
+
+            <!-- Prerequisites -->
+            <h2 class="text-2xl font-bold mb-4">Prerequisites</h2>
+            <ul class="list-disc list-inside text-mountain-300 space-y-2 mb-8">
+                <li><strong>Node.js 20+</strong> (22 LTS recommended)</li>
+                <li>npm package manager</li>
+            </ul>
+
+            <!-- Installation -->
+            <h2 class="text-2xl font-bold mb-4">Installation</h2>
+            <p class="text-mountain-300 mb-4">Install YAKMESH from npm:</p>
+            <pre class="language-bash mb-8"><code>npm install yakmesh</code></pre>
+
+            <!-- Initialize -->
+            <h2 class="text-2xl font-bold mb-4">Initialize a Node</h2>
+            <p class="text-mountain-300 mb-4">Generate your node identity and configuration:</p>
+            <pre class="language-bash mb-4"><code>npx yakmesh init</code></pre>
+            <p class="text-mountain-300 mb-8">
+                This creates a <code class="bg-mountain-800 px-2 py-1 rounded theme-accent">yakmesh.config.js</code> 
+                file and a <code class="bg-mountain-800 px-2 py-1 rounded theme-accent">data/</code> directory.
+            </p>
+
+            <!-- Start -->
+            <h2 class="text-2xl font-bold mb-4">Start the Node</h2>
+            <pre class="language-bash mb-4"><code>npx yakmesh start</code></pre>
+            <p class="text-mountain-300 mb-4">You should see output like:</p>
+            <pre class="language-text mb-4"><code><span class="yak-icon"></span> Starting Yakmesh Node...
+
+🔐 Securing codebase...
+✓ Codebase locked: 65 files protected
+🔮 Initializing Oracle System...
+✓ Annex channel initialized
+✓ Yakmesh Node is running!
+   Network: example-network-name
+   Network ID: pq-XXXX
+   Dashboard: http://localhost:3000/dashboard</code></pre>
+            <p class="text-mountain-400 text-sm italic mb-8">
+                * Network name and ID are derived from your codebase hash and will vary by version.
+            </p>
+
+            <!-- Network Identity Callout -->
+            <div class="theme-callout rounded-xl p-6 mb-8 border">
+                <p class="font-semibold mb-2 theme-accent"><span class="yak-icon"></span> Code IS the Network Identity</p>
+                <p class="text-mountain-300 text-sm mb-4">
+                    YAKMESH doesn't use configurable salts or bootstrap servers. Your <strong>codebase hash</strong> 
+                    IS your network identity. All nodes running identical code automatically form the same network.
+                </p>
+                <ul class="text-mountain-400 text-sm space-y-1">
+                    <li>• Same code → Same network name → Peers verify each other</li>
+                    <li>• Different code → Different network → Cannot connect</li>
+                    <li>• No central authority decides who's "in" — <em>math does</em></li>
+                </ul>
+            </div>
+
+            <!-- Connecting to Peers -->
+            <h2 class="text-2xl font-bold mb-4">Connecting to Peers</h2>
+            <p class="text-mountain-300 mb-6">
+                YAKMESH uses <strong>DOKO peer discovery</strong> — fully decentralized with no central bootstrap servers.
+            </p>
+            
+            <h3 class="text-xl font-bold mb-3">Option 1: Direct Connection</h3>
+            <p class="text-mountain-300 mb-4">Connect to a peer you know about via the REST API:</p>
+            <pre class="language-bash mb-6"><code>curl -X POST http://localhost:3000/connect \
+  -H "Content-Type: application/json" \
+  -d '{"address": "wss://peer-node.example.com:9001"}'</code></pre>
+            
+            <h3 class="text-xl font-bold mb-3">Option 2: SHERPA Beacon Discovery</h3>
+            <p class="text-mountain-300 mb-4">
+                Nodes can publish their presence via public web beacons. Other nodes discover them through 
+                <a href="sherpa.html" class="theme-accent theme-accent-hover">SHERPA discovery</a>.
+            </p>
+            
+            <h3 class="text-xl font-bold mb-3">Option 3: LAN Discovery</h3>
+            <p class="text-mountain-300 mb-8">
+                Nodes on the same local network discover each other automatically through gossip once any two are connected.
+            </p>
+
+            <!-- Verify -->
+            <h2 class="text-2xl font-bold mb-4">Verify Your Node</h2>
+            <p class="text-mountain-300 mb-4">Check your node's status:</p>
+            <pre class="language-bash mb-4"><code>curl http://localhost:3000/health</code></pre>
+            <pre class="language-json mb-8"><code>{
+  "status": "healthy",
+  "network": "factor-primitive-bose",
+  "networkId": "pq-XXXX",
+  "algorithm": "ML-DSA-65",
+  "peers": 2,
+  "version": "2.6.x"
+}</code></pre>
+            <p class="text-mountain-400 text-sm italic mb-4">
+                * Values shown are examples; actual output reflects your installed version.
+            </p>
+
+            <!-- Next Steps -->
+            <div class="bg-mountain-800 border theme-border rounded-xl p-6 mt-8">
+                <h3 class="text-lg font-semibold mb-4">Next Steps on the Journey</h3>
+                <ul class="space-y-3 text-mountain-300">
+                    <li class="flex items-center gap-2">
+                        <span>�</span>
+                        <a href="doko.html" class="theme-accent theme-accent-hover">Create your DOKO identity</a>
+                        <span class="text-mountain-400 text-sm">— Your passport in the mesh</span>
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <span>🚪</span>
+                        <a href="namche.html" class="theme-accent theme-accent-hover">Enter the NAMCHE Gateway</a>
+                        <span class="text-mountain-400 text-sm">— 7-gate identity verification</span>
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <span>🏔️</span>
+                        <a href="sherpa.html" class="theme-accent theme-accent-hover">Meet your SHERPA guide</a>
+                        <span class="text-mountain-400 text-sm">— Peer discovery</span>
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <span>📡</span>
+                        <a href="api.html" class="theme-accent theme-accent-hover">Explore the REST API</a>
+                        <span class="text-mountain-400 text-sm">— Full endpoint reference</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Journey Navigation -->
+            <div class="border-t border-mountain-700 mt-12 pt-8">
+                <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <a href="doko.html" class="flex-1 block bg-mountain-800 border border-theme-primary rounded-xl p-4 hover:border-theme-accent transition group">
+                        <div class="text-xs text-mountain-400 mb-1">Next →</div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">🧺</span>
+                            <span class="font-semibold group-hover:text-theme-accent">DOKO Identity</span>
+                        </div>
+                        <p class="text-mountain-400 text-sm mt-1">Create your portable mesh identity container</p>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+  <footer class="docs-footer">
+    <p>© 2026 YAKMESH™</p>
+  </footer><!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+    <script src="docs.js"></script>
+
+  
+</body>
+</html>
+
+
+

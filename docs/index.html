@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="index">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="favicon.ico" sizes="32x32">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <title>Documentation | YAKMESH</title>
+    <meta name="description" content="YAKMESH documentation - Post-quantum secure P2P mesh networking.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        theme: { primary: '#10b981', secondary: '#059669', accent: '#34d399', bg: '#022c22', glow: 'rgba(16, 185, 129, 0.1)' },
+                        mountain: { 300: '#88b4a6', 400: '#6a9a8a', 700: '#2e4c43', 800: '#1f332d', 900: '#101a16' }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="stylesheet" href="docs.css">
+    <style>
+        .theme-accent { color: #34d399; }
+        .theme-accent-hover:hover { color: #6ee7b7; }
+        .theme-badge { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+        .theme-border { border-color: #10b981; }
+        .theme-callout { background: rgba(16, 185, 129, 0.1); border-color: #059669; }
+        .active-link { background: rgba(16, 185, 129, 0.2) !important; color: #34d399 !important; }
+    </style>
+</head>
+<body class="bg-mountain-900 text-white min-h-screen">
+  <nav class="docs-sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-logo">
+      <span class="logo-icon">🏔️</span>
+      <span class="logo-text">Yakmesh</span>
+    </a>
+    <ul class="sidebar-nav">
+      <li><a href="index.html" class="active"><span>🏠</span> <span>Overview</span></a></li>
+      <li><a href="getting-started.html"><span>🚀</span> <span>Getting Started</span></a></li>
+      <li><a href="doko.html"><span>🧺</span> <span>DOKO</span></a></li>
+      <li><a href="namche.html"><span>🚪</span> <span>NAMCHE</span></a></li>
+      <li><a href="sherpa.html"><span>🧗</span> <span>SHERPA</span></a></li>
+      <li><a href="nakpak.html"><span>🎒</span> <span>NAKPAK</span></a></li>
+      <li><a href="annex.html"><span>🌉</span> <span>ANNEX</span></a></li>
+      <li><a href="yak-protocol.html"><span class="yak-icon"></span> <span>YAK</span></a></li>
+      <li><a href="mantra.html"><span>🕉️</span> <span>MANTRA</span></a></li>
+      <li><a href="stupa.html"><span>🛕</span> <span>STUPA</span></a></li>
+      <li><a href="lama.html"><span>🔮</span> <span>LAMA</span></a></li>
+      <li><a href="mani.html"><span>⏱️</span> <span>MANI</span></a></li>
+      <li><a href="karma.html"><span>☯️</span> <span>KARMA</span></a></li>
+      <li><a href="mandala.html"><span>🌐</span> <span>MANDALA</span></a></li>
+      <li><a href="tattva.html"><span>🔯</span> <span>TATTVA</span></a></li>
+      <li><a href="geo-proof.html"><span>🌍</span> <span>PRAMAAN</span></a></li>
+      <li><a href="trust-security.html"><span>🔒</span> <span>SURAKSHA</span></a></li>
+      <li><a href="docs-bundle.html"><span>📚</span> <span>GRANTH</span></a></li>
+      <li><a href="api.html"><span>📡</span> <span>API</span></a></li>
+    </ul>
+  </nav>
+
+  <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+    </svg>
+  </button>
+
+  <!-- Mobile overlay for tap-to-close sidebar -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="docs-main" id="mainContent">
+        <div class="docs-content max-w-4xl">
+            <h1 class="text-4xl font-bold mb-4">YAKMESH Documentation</h1>
+            <p class="text-xl text-mountain-300 mb-8">
+                Learn how to build decentralized applications with post-quantum security.
+            </p>
+
+            <div class="grid md:grid-cols-2 gap-6 mb-12">
+                <a href="getting-started.html" class="block bg-mountain-800 border border-mountain-700 rounded-xl p-6 hover:border-theme-primary transition">
+                    <div class="text-2xl mb-2">🚀</div>
+                    <h3 class="text-lg font-semibold mb-2">Getting Started</h3>
+                    <p class="text-mountain-400 text-sm">Install YAKMESH and run your first node in 5 minutes.</p>
+                </a>
+                <a href="namche.html" class="block bg-mountain-800 border border-theme-primary rounded-xl p-6 hover:border-theme-accent transition">
+                    <div class="text-2xl mb-2">🧭</div>
+                    <h3 class="text-lg font-semibold mb-2">NAMCHE (Identity Gateway)</h3>
+                    <p class="text-mountain-400 text-sm">7-gate mathematical verification — no human CA required.</p>
+                    <span class="inline-block mt-2 text-xs theme-badge px-2 py-1 rounded">New in v2.6.0</span>
+                </a>
+                <a href="doko.html" class="block bg-mountain-800 border border-theme-primary rounded-xl p-6 hover:border-theme-accent transition">
+                    <div class="text-2xl mb-2">📜</div>
+                    <h3 class="text-lg font-semibold mb-2">DOKO (Identity Object)</h3>
+                    <p class="text-mountain-400 text-sm">Distributed Ownership & Key Object with mesh-verified domain claims.</p>
+                    <span class="inline-block mt-2 text-xs theme-badge px-2 py-1 rounded">v2.6.0</span>
+                </a>
+                <a href="sherpa.html" class="block bg-mountain-800 border border-theme-primary rounded-xl p-6 hover:border-theme-accent transition">
+                    <div class="text-2xl mb-2">🏔️</div>
+                    <h3 class="text-lg font-semibold mb-2">SHERPA (Peer Discovery)</h3>
+                    <p class="text-mountain-400 text-sm">Decentralized peer discovery using public web beacons.</p>
+                    <span class="inline-block mt-2 text-xs theme-badge px-2 py-1 rounded">v1.8.0</span>
+                </a>
+                <a href="nakpak.html" class="block bg-mountain-800 border border-theme-primary rounded-xl p-6 hover:border-theme-accent transition">
+                    <div class="text-2xl mb-2">🎒</div>
+                    <h3 class="text-lg font-semibold mb-2">NAKPAK (Onion Routing)</h3>
+                    <p class="text-mountain-400 text-sm">Post-quantum anonymous routing with layered encryption.</p>
+                    <span class="inline-block mt-2 text-xs theme-badge px-2 py-1 rounded">v1.7.1</span>
+                </a>
+                <a href="annex.html" class="block bg-mountain-800 border border-theme-primary rounded-xl p-6 hover:border-theme-accent transition">
+                    <div class="text-2xl mb-2">🔐</div>
+                    <h3 class="text-lg font-semibold mb-2">ANNEX (Encrypted P2P)</h3>
+                    <p class="text-mountain-400 text-sm">Autonomous Network Negotiated eXchange with ML-KEM-768.</p>
+                    <span class="inline-block mt-2 text-xs theme-badge px-2 py-1 rounded">v2.6.0</span>
+                </a>
+                <a href="adapters.html" class="block bg-mountain-800 border border-mountain-700 rounded-xl p-6 hover:border-theme-primary transition">
+                    <div class="text-2xl mb-2">🔌</div>
+                    <h3 class="text-lg font-semibold mb-2">Building Adapters</h3>
+                    <p class="text-mountain-400 text-sm">Create custom adapters for your database or API.</p>
+                </a>
+                <a href="api.html" class="block bg-mountain-800 border border-mountain-700 rounded-xl p-6 hover:border-theme-primary transition">
+                    <div class="text-2xl mb-2">📡</div>
+                    <h3 class="text-lg font-semibold mb-2">API Reference</h3>
+                    <p class="text-mountain-400 text-sm">Complete REST API documentation for all endpoints.</p>
+                </a>
+            </div>
+
+            <h2 class="text-2xl font-bold mb-4">What is YAKMESH?</h2>
+            <p class="text-mountain-300 mb-4">
+                YAKMESH is a quantum-inspired distributed mesh network with a self-verifying oracle. 
+                It provides post-quantum secure peer-to-peer communication with deterministic validation 
+                that requires no external trust.
+            </p>
+            <h3 class="text-xl font-semibold mb-3">Key Features</h3>
+            <ul class="list-disc list-inside text-mountain-300 space-y-2 mb-8">
+                <li><strong>Post-Quantum Security</strong> - ML-DSA-65 signatures (NIST FIPS 204) and ML-KEM-768 key exchange</li>
+                <li><strong>NAMCHE Gateway</strong> - 7-gate mathematical identity verification</li>
+                <li><strong>DOKO Identity</strong> - Distributed Ownership & Key Object with mesh-verified domain claims</li>
+                <li><strong>SHERPA Discovery</strong> - Decentralized peer discovery via public web beacons</li>
+                <li><strong>NAKPAK Routing</strong> - Post-quantum onion routing for anonymous communication</li>
+                <li><strong>ANNEX Channels</strong> - Autonomous Network Negotiated eXchange with AES-256-GCM</li>
+                <li><strong>Self-Verifying Oracle</strong> - Deterministic validation without trust</li>
+                <li><strong>Mesh Networking</strong> - WebSocket P2P with gossip protocol</li>
+                <li><strong>Precision Timing</strong> - Atomic clock, GPS, PTP, NTP support</li>
+                <li><strong>Plugin Architecture</strong> - BaseAdapter for custom integrations</li>
+            </ul>
+
+            <h3 class="text-xl font-semibold mb-3">Protocol Stack (v2.6.0)</h3>
+            <div class="bg-mountain-800 rounded-xl p-6 mb-8">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="text-left text-mountain-400">
+                            <th class="pb-2">Layer</th>
+                            <th class="pb-2">Protocol</th>
+                            <th class="pb-2">Purpose</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-mountain-300">
+                        <tr><td class="py-1">1</td><td>YAK <span class="yak-icon"></span></td><td>Universal resource addressing</td></tr>
+                        <tr><td class="py-1">2</td><td>ANNEX 🌉</td><td>Encrypted P2P (ML-KEM768)</td></tr>
+                        <tr><td class="py-1">3</td><td>NAKPAK 🎒</td><td>Onion routing & privacy</td></tr>
+                        <tr><td class="py-1">4</td><td>NAMCHE 🚪</td><td>Gateway & identity verification</td></tr>
+                        <tr><td class="py-1">5</td><td>DOKO 🧺</td><td>Identity certificates</td></tr>
+                        <tr><td class="py-1">6</td><td>SHERPA 🧗</td><td>Peer discovery & beacons</td></tr>
+                        <tr><td class="py-1">7</td><td>MANDALA 🌐</td><td>Mesh network topology</td></tr>
+                        <tr><td class="py-1">8</td><td>MANTRA 🕉️</td><td>Gossip message propagation</td></tr>
+                        <tr><td class="py-1">9</td><td>STUPA 🛕</td><td>Distributed storage</td></tr>
+                        <tr><td class="py-1">10</td><td>LAMA 🔮</td><td>Consensus & agreement</td></tr>
+                        <tr><td class="py-1">11</td><td>MANI ⏱️</td><td>Time synchronization</td></tr>
+                        <tr><td class="py-1">12</td><td>KARMA ☯️</td><td>Trust & reputation</td></tr>
+                        <tr><td class="py-1">13</td><td>TATTVA 🔯</td><td>State & element management</td></tr>
+                        <tr><td class="py-1">14</td><td>PRAMAAN 🌍</td><td>Geographic proof & attestation</td></tr>
+                        <tr><td class="py-1">15</td><td>SURAKSHA 🔒</td><td>Security & cryptographic core</td></tr>
+                        <tr><td class="py-1">16</td><td>GRANTH 📚</td><td>Documentation bundle</td></tr>
+                        <tr><td class="py-1">17</td><td>API 📡</td><td>REST interface & endpoints</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+  <footer class="docs-footer">
+    <p>© 2026 YAKMESH™</p>
+  </footer><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script src="docs.js"></script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

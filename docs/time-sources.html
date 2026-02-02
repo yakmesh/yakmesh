@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="time-sources">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="favicon.ico" sizes="32x32">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <title>Precision Time Sources | YAKMESH Documentation</title>
+    <meta name="description" content="YAKMESH precision time synchronization. Quantum, atomic, GPS, PTP, and NTP time sources for ultra-accurate mesh coordination.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        theme: { primary: '#fbbf24', secondary: '#f59e0b', accent: '#fcd34d', bg: '#78350f', glow: 'rgba(251, 191, 36, 0.1)' },
+                        mountain: { 300: '#88b4a6', 400: '#6a9a8a', 700: '#2e4c43', 800: '#1f332d', 900: '#101a16' }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="stylesheet" href="docs.css">
+    <style>
+        .theme-accent { color: #fbbf24; }
+        .theme-accent-hover:hover { color: #fcd34d; }
+        .theme-badge { background: rgba(251, 191, 36, 0.2); color: #fcd34d; }
+        .theme-border { border-color: #fbbf24; }
+        .theme-callout { background: rgba(251, 191, 36, 0.1); border-color: #f59e0b; }
+        .active-link { background: rgba(251, 191, 36, 0.2) !important; color: #fcd34d !important; }
+        .trust-table { width: 100%; border-collapse: collapse; }
+        .trust-table th, .trust-table td { padding: 0.75rem; text-align: left; border-bottom: 1px solid #2e4c43; }
+        .trust-table th { color: #fbbf24; font-weight: 600; background: rgba(251, 191, 36, 0.1); }
+        .trust-table code { background: #1f332d; padding: 0.25rem 0.5rem; border-radius: 4px; color: #fcd34d; }
+        .trust-level-quantum { background: linear-gradient(135deg, rgba(139, 92, 246, 0.3), rgba(236, 72, 153, 0.2)); border-left: 4px solid #a855f7; }
+        .trust-level-atomic { background: linear-gradient(135deg, rgba(251, 191, 36, 0.3), rgba(245, 158, 11, 0.2)); border-left: 4px solid #fbbf24; }
+        .trust-level-gps { background: linear-gradient(135deg, rgba(34, 197, 94, 0.3), rgba(22, 163, 74, 0.2)); border-left: 4px solid #22c55e; }
+        .trust-level-ptp { background: linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(37, 99, 235, 0.2)); border-left: 4px solid #3b82f6; }
+        .trust-level-ntp { background: linear-gradient(135deg, rgba(156, 163, 175, 0.3), rgba(107, 114, 128, 0.2)); border-left: 4px solid #9ca3af; }
+        .trust-level-unsync { background: linear-gradient(135deg, rgba(239, 68, 68, 0.3), rgba(220, 38, 38, 0.2)); border-left: 4px solid #ef4444; }
+        .device-path { font-family: monospace; background: #0d1117; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.875rem; }
+    </style>
+</head>
+<body class="bg-mountain-900 text-white min-h-screen">
+    
+  <nav class="docs-sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-logo">
+      <span class="logo-icon">🏔️</span>
+      <span class="logo-text">Yakmesh</span>
+    </a>
+    <ul class="sidebar-nav">
+      <li><a href="index.html"><span>🏠</span> <span>Overview</span></a></li>
+      <li><a href="getting-started.html"><span>🚀</span> <span>Getting Started</span></a></li>
+      <li><a href="doko.html"><span>🧺</span> <span>DOKO</span></a></li>
+      <li><a href="namche.html"><span>🚪</span> <span>NAMCHE</span></a></li>
+      <li><a href="sherpa.html"><span>🧗</span> <span>SHERPA</span></a></li>
+      <li><a href="nakpak.html"><span>🎒</span> <span>NAKPAK</span></a></li>
+      <li><a href="annex.html"><span>🌉</span> <span>ANNEX</span></a></li>
+      <li><a href="yak-protocol.html"><span class="yak-icon"></span> <span>YAK</span></a></li>
+      <li><a href="mantra.html"><span>🕉️</span> <span>MANTRA</span></a></li>
+      <li><a href="stupa.html"><span>🛕</span> <span>STUPA</span></a></li>
+      <li><a href="lama.html"><span>🔮</span> <span>LAMA</span></a></li>
+      <li><a href="mani.html"><span>⏱️</span> <span>MANI</span></a></li>
+      <li><a href="karma.html"><span>☯️</span> <span>KARMA</span></a></li>
+      <li><a href="mandala.html"><span>🌐</span> <span>MANDALA</span></a></li>
+      <li><a href="tattva.html"><span>🔯</span> <span>TATTVA</span></a></li>
+      <li><a href="geo-proof.html"><span>🌍</span> <span>PRAMAAN</span></a></li>
+      <li><a href="trust-security.html"><span>🔒</span> <span>SURAKSHA</span></a></li>
+      <li><a href="api.html"><span>📡</span> <span>API</span></a></li>
+    </ul>
+  </nav>
+
+  <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+    </svg>
+  </button>
+
+  <!-- Mobile overlay for tap-to-close sidebar -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="docs-main" id="mainContent">
+
+        <div class="docs-content">
+            <!-- Page Header -->
+            <div class="flex items-center gap-3 mb-4">
+                <span class="text-4xl">⏱️</span>
+                <div>
+                    <div class="flex items-center gap-3">
+                        <h1 class="text-4xl font-bold">Precision Time Sources</h1>
+                        <span class="theme-badge text-xs px-2 py-1 rounded-full font-mono">v2.0.0</span>
+                    </div>
+                    <p class="theme-accent">Sub-millisecond synchronization for mesh coordination</p>
+                </div>
+            </div>
+            <p class="text-xl text-mountain-300 mb-8">
+                YAKMESH integrates with quantum, atomic, GPS, PTP, and NTP time sources to enable precision-grade
+                phase synchronization across the mesh network.
+            </p>
+
+            <!-- Overview Callout -->
+            <div class="theme-callout rounded-xl p-6 mb-8 border">
+                <p class="font-semibold mb-2 theme-accent">🎯 Why Precision Time Matters</p>
+                <p class="text-mountain-300 text-sm mb-4">
+                    YAKMESH uses <strong>phase epochs</strong> to coordinate network consensus. Higher-precision time sources
+                    enable tighter phase windows, reducing attack surfaces and improving network synchronization.
+                </p>
+                <ul class="text-mountain-400 text-sm space-y-1">
+                    <li>• Atomic-tier nodes can serve as <strong>time oracles</strong> for the network</li>
+                    <li>• GPS/PTP nodes can validate tight phase windows</li>
+                    <li>• NTP nodes still participate but with wider tolerance margins</li>
+                </ul>
+            </div>
+
+            <!-- Trust Levels Section -->
+            <h2 class="text-2xl font-bold mb-4" id="trust-levels">Trust Levels</h2>
+            <p class="text-mountain-300 mb-6">
+                Time sources are classified into trust levels based on their precision and reliability.
+                Higher trust levels enable tighter phase tolerances for consensus operations.
+            </p>
+
+            <!-- Trust Level Cards -->
+            <div class="space-y-4 mb-8">
+                <!-- QUANTUM -->
+                <div class="trust-level-quantum rounded-xl p-5">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-3">
+                            <span class="text-2xl">🔮</span>
+                            <div>
+                                <h3 class="text-xl font-bold text-purple-300">QUANTUM</h3>
+                                <span class="text-sm text-purple-400">Level 5 • Stratum 0</span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-2xl font-mono text-purple-300">±1ms</div>
+                            <div class="text-xs text-purple-400">tolerance</div>
+                        </div>
+                    </div>
+                    <p class="text-mountain-300 text-sm mb-3">
+                        Quantum optical network time sources including White Rabbit PTP (WR-PTP), 
+                        optical atomic references, and entanglement-based synchronization. Sub-nanosecond capable.
+                    </p>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="text-xs bg-purple-900/50 text-purple-300 px-2 py-1 rounded">WR-PTP</span>
+                        <span class="text-xs bg-purple-900/50 text-purple-300 px-2 py-1 rounded">Optical Atomic</span>
+                        <span class="text-xs bg-purple-900/50 text-purple-300 px-2 py-1 rounded">Entanglement Sync</span>
+                    </div>
+                </div>
+
+                <!-- ATOMIC -->
+                <div class="trust-level-atomic rounded-xl p-5">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-3">
+                            <span class="text-2xl">⚛️</span>
+                            <div>
+                                <h3 class="text-xl font-bold text-yellow-300">ATOMIC</h3>
+                                <span class="text-sm text-yellow-400">Level 4 • Stratum 0</span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-2xl font-mono text-yellow-300">±100ms</div>
+                            <div class="text-xs text-yellow-400">tolerance</div>
+                        </div>
+                    </div>
+                    <p class="text-mountain-300 text-sm mb-3">
+                        PCIe atomic clocks including Chip-Scale Atomic Clocks (CSAC) and Rubidium oscillators.
+                        Reference-grade timing for infrastructure nodes.
+                    </p>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="text-xs bg-yellow-900/50 text-yellow-300 px-2 py-1 rounded">PCIe CSAC</span>
+                        <span class="text-xs bg-yellow-900/50 text-yellow-300 px-2 py-1 rounded">Rubidium</span>
+                        <span class="text-xs bg-yellow-900/50 text-yellow-300 px-2 py-1 rounded">SA.45s</span>
+                        <span class="text-xs bg-yellow-900/50 text-yellow-300 px-2 py-1 rounded">Caesium</span>
+                    </div>
+                </div>
+
+                <!-- GPS -->
+                <div class="trust-level-gps rounded-xl p-5">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-3">
+                            <span class="text-2xl">🛰️</span>
+                            <div>
+                                <h3 class="text-xl font-bold text-green-300">GPS</h3>
+                                <span class="text-sm text-green-400">Level 3 • Stratum 1</span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-2xl font-mono text-green-300">±500ms</div>
+                            <div class="text-xs text-green-400">tolerance</div>
+                        </div>
+                    </div>
+                    <p class="text-mountain-300 text-sm mb-3">
+                        Hardware GPS receivers with PPS (Pulse-Per-Second) signal output.
+                        Provides globally synchronized timing from satellite constellation.
+                    </p>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="text-xs bg-green-900/50 text-green-300 px-2 py-1 rounded">PPS Signal</span>
+                        <span class="text-xs bg-green-900/50 text-green-300 px-2 py-1 rounded">gpsd</span>
+                        <span class="text-xs bg-green-900/50 text-green-300 px-2 py-1 rounded">u-blox</span>
+                        <span class="text-xs bg-green-900/50 text-green-300 px-2 py-1 rounded">Trimble</span>
+                    </div>
+                </div>
+
+                <!-- PTP -->
+                <div class="trust-level-ptp rounded-xl p-5">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-3">
+                            <span class="text-2xl">🔗</span>
+                            <div>
+                                <h3 class="text-xl font-bold text-blue-300">PTP</h3>
+                                <span class="text-sm text-blue-400">Level 2 • Stratum 1</span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-2xl font-mono text-blue-300">±500ms</div>
+                            <div class="text-xs text-blue-400">tolerance</div>
+                        </div>
+                    </div>
+                    <p class="text-mountain-300 text-sm mb-3">
+                        IEEE 1588 Precision Time Protocol with hardware timestamping.
+                        Network-based synchronization for data center and enterprise deployments.
+                    </p>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="text-xs bg-blue-900/50 text-blue-300 px-2 py-1 rounded">IEEE 1588</span>
+                        <span class="text-xs bg-blue-900/50 text-blue-300 px-2 py-1 rounded">ptp4l</span>
+                        <span class="text-xs bg-blue-900/50 text-blue-300 px-2 py-1 rounded">phc2sys</span>
+                        <span class="text-xs bg-blue-900/50 text-blue-300 px-2 py-1 rounded">Meinberg</span>
+                    </div>
+                </div>
+
+                <!-- NTP -->
+                <div class="trust-level-ntp rounded-xl p-5">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-3">
+                            <span class="text-2xl">🌐</span>
+                            <div>
+                                <h3 class="text-xl font-bold text-gray-300">NTP</h3>
+                                <span class="text-sm text-gray-400">Level 1 • Stratum 2</span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-2xl font-mono text-gray-300">±5000ms</div>
+                            <div class="text-xs text-gray-400">tolerance</div>
+                        </div>
+                    </div>
+                    <p class="text-mountain-300 text-sm mb-3">
+                        Standard Network Time Protocol synchronization.
+                        Universal fallback available on all network-connected systems.
+                    </p>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="text-xs bg-gray-800/50 text-gray-300 px-2 py-1 rounded">chrony</span>
+                        <span class="text-xs bg-gray-800/50 text-gray-300 px-2 py-1 rounded">ntpd</span>
+                        <span class="text-xs bg-gray-800/50 text-gray-300 px-2 py-1 rounded">systemd-timesyncd</span>
+                        <span class="text-xs bg-gray-800/50 text-gray-300 px-2 py-1 rounded">w32tm</span>
+                    </div>
+                </div>
+
+                <!-- UNSYNC -->
+                <div class="trust-level-unsync rounded-xl p-5">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-3">
+                            <span class="text-2xl">⚠️</span>
+                            <div>
+                                <h3 class="text-xl font-bold text-red-300">UNSYNC</h3>
+                                <span class="text-sm text-red-400">Level 0 • Stratum 16</span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-2xl font-mono text-red-300">±30000ms</div>
+                            <div class="text-xs text-red-400">tolerance</div>
+                        </div>
+                    </div>
+                    <p class="text-mountain-300 text-sm mb-3">
+                        No reliable time source available. Degraded mode with wide tolerance.
+                        Node cannot participate in time-critical consensus operations.
+                    </p>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="text-xs bg-red-900/50 text-red-300 px-2 py-1 rounded">Degraded Mode</span>
+                        <span class="text-xs bg-red-900/50 text-red-300 px-2 py-1 rounded">Local Clock Only</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trust Levels Table -->
+            <h3 class="text-xl font-bold mb-4">Quick Reference Table</h3>
+            <div class="overflow-x-auto mb-8">
+                <table class="trust-table rounded-lg overflow-hidden">
+                    <thead>
+                        <tr>
+                            <th>Trust Level</th>
+                            <th>Rank</th>
+                            <th>Stratum</th>
+                            <th>Tolerance</th>
+                            <th>Epoch Duration</th>
+                            <th>Grace Period</th>
+                            <th>Use Case</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>QUANTUM</code></td>
+                            <td>5</td>
+                            <td>0</td>
+                            <td>±1ms</td>
+                            <td>1 hour</td>
+                            <td>1 min</td>
+                            <td>Research labs, quantum networks</td>
+                        </tr>
+                        <tr>
+                            <td><code>ATOMIC</code></td>
+                            <td>4</td>
+                            <td>0</td>
+                            <td>±100ms</td>
+                            <td>1 hour</td>
+                            <td>1 min</td>
+                            <td>Time oracles, infrastructure nodes</td>
+                        </tr>
+                        <tr>
+                            <td><code>GPS</code></td>
+                            <td>3</td>
+                            <td>1</td>
+                            <td>±500ms</td>
+                            <td>2 hours</td>
+                            <td>5 min</td>
+                            <td>Edge nodes, outdoor deployments</td>
+                        </tr>
+                        <tr>
+                            <td><code>PTP</code></td>
+                            <td>2</td>
+                            <td>1</td>
+                            <td>±500ms</td>
+                            <td>2 hours</td>
+                            <td>5 min</td>
+                            <td>Data centers, enterprise networks</td>
+                        </tr>
+                        <tr>
+                            <td><code>NTP</code></td>
+                            <td>1</td>
+                            <td>2</td>
+                            <td>±5000ms</td>
+                            <td>6 hours</td>
+                            <td>15 min</td>
+                            <td>Standard nodes, home users</td>
+                        </tr>
+                        <tr>
+                            <td><code>UNSYNC</code></td>
+                            <td>0</td>
+                            <td>16</td>
+                            <td>±30000ms</td>
+                            <td>12 hours</td>
+                            <td>30 min</td>
+                            <td>Degraded mode, offline operation</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- TimeSourceDetector Section -->
+            <h2 class="text-2xl font-bold mb-4" id="time-source-detector">TimeSourceDetector Class</h2>
+            <p class="text-mountain-300 mb-6">
+                The <code class="bg-mountain-800 px-2 py-1 rounded theme-accent">TimeSourceDetector</code> class 
+                automatically detects available time sources and selects the highest-quality option.
+            </p>
+
+            <h3 class="text-xl font-bold mb-3">Basic Usage</h3>
+            <pre class="language-javascript mb-6"><code>import { 
+  TimeSourceDetector, 
+  TimeTrustLevel, 
+  PhaseTolerance 
+} from './oracle/time-source.js';
+
+// Create detector with hardware detection enabled
+const detector = new TimeSourceDetector({ 
+  detectHardware: true,
+  checkNtp: true,
+  refreshInterval: 60000, // Re-check every minute
+  verbose: true
+});
+
+// Start continuous monitoring
+detector.start();
+
+// Get detection results
+const results = detector.detect();
+console.log('Primary source:', results.primarySource);
+console.log('Trust level:', results.trustLevel);
+console.log('Phase tolerance:', results.phaseTolerance, 'ms');</code></pre>
+
+            <h3 class="text-xl font-bold mb-3">Constructor Options</h3>
+            <div class="overflow-x-auto mb-6">
+                <table class="trust-table rounded-lg overflow-hidden">
+                    <thead>
+                        <tr>
+                            <th>Option</th>
+                            <th>Type</th>
+                            <th>Default</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>detectHardware</code></td>
+                            <td>boolean</td>
+                            <td><code>true</code></td>
+                            <td>Enable detection of atomic clocks, GPS, and PTP devices</td>
+                        </tr>
+                        <tr>
+                            <td><code>checkNtp</code></td>
+                            <td>boolean</td>
+                            <td><code>true</code></td>
+                            <td>Check NTP/Chrony synchronization status</td>
+                        </tr>
+                        <tr>
+                            <td><code>customDevices</code></td>
+                            <td>object</td>
+                            <td><code>{}</code></td>
+                            <td>Custom device paths for detection</td>
+                        </tr>
+                        <tr>
+                            <td><code>refreshInterval</code></td>
+                            <td>number</td>
+                            <td><code>60000</code></td>
+                            <td>Refresh interval in milliseconds (0 to disable)</td>
+                        </tr>
+                        <tr>
+                            <td><code>verbose</code></td>
+                            <td>boolean</td>
+                            <td><code>false</code></td>
+                            <td>Enable verbose logging of detection results</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3 class="text-xl font-bold mb-3">Key Methods</h3>
+            <pre class="language-javascript mb-6"><code>// Start continuous monitoring
+detector.start();
+
+// Stop monitoring
+detector.stop();
+
+// Manual detection
+const results = detector.detect();
+
+// Get current trust level
+const trust = detector.getTrustLevel(); // 'atomic', 'gps', 'ntp', etc.
+
+// Get phase tolerance in milliseconds
+const tolerance = detector.getPhaseTolerance(); // e.g., 100
+
+// Get NTP stratum equivalent
+const stratum = detector.getStratum(); // e.g., 0, 1, 2, 16
+
+// Check if atomic-tier time is available
+if (detector.hasAtomicTime()) {
+  console.log('Node can serve as time oracle');
+}
+
+// Check if high-precision time is available (atomic, GPS, or PTP)
+if (detector.hasHighPrecisionTime()) {
+  console.log('Node can validate tight phase windows');
+}
+
+// Get full status object for API responses
+const status = detector.getStatus();</code></pre>
+
+            <h3 class="text-xl font-bold mb-3">Event Handling</h3>
+            <pre class="language-javascript mb-8"><code>// Listen for detection events
+detector.on('detected', (results) => {
+  console.log('Time sources detected:', results);
+  console.log('Primary:', results.primarySource);
+  console.log('Trust:', results.trustLevel);
+  console.log('Tolerance:', results.phaseTolerance, 'ms');
+});</code></pre>
+
+            <!-- Device Paths Section -->
+            <h2 class="text-2xl font-bold mb-4" id="device-paths">Device Paths</h2>
+            <p class="text-mountain-300 mb-6">
+                The detector checks platform-specific device paths for hardware time sources.
+            </p>
+
+            <h3 class="text-xl font-bold mb-3">Linux</h3>
+            <div class="bg-mountain-800 rounded-lg p-4 mb-6">
+                <div class="grid gap-3">
+                    <div>
+                        <span class="text-mountain-400 text-sm">PPS Devices:</span>
+                        <div class="flex flex-wrap gap-2 mt-1">
+                            <span class="device-path text-green-400">/dev/pps0</span>
+                            <span class="device-path text-green-400">/dev/pps1</span>
+                            <span class="device-path text-green-400">/dev/pps2</span>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="text-mountain-400 text-sm">PTP Devices:</span>
+                        <div class="flex flex-wrap gap-2 mt-1">
+                            <span class="device-path text-blue-400">/dev/ptp0</span>
+                            <span class="device-path text-blue-400">/dev/ptp1</span>
+                            <span class="device-path text-blue-400">/dev/ptp2</span>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="text-mountain-400 text-sm">GPS Devices:</span>
+                        <div class="flex flex-wrap gap-2 mt-1">
+                            <span class="device-path text-yellow-400">/dev/ttyUSB0</span>
+                            <span class="device-path text-yellow-400">/dev/ttyACM0</span>
+                            <span class="device-path text-yellow-400">/dev/gps0</span>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="text-mountain-400 text-sm">Chrony Socket:</span>
+                        <div class="flex flex-wrap gap-2 mt-1">
+                            <span class="device-path text-gray-400">/var/run/chrony/chronyd.sock</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h3 class="text-xl font-bold mb-3">Windows</h3>
+            <div class="bg-mountain-800 rounded-lg p-4 mb-6">
+                <div class="grid gap-3">
+                    <div>
+                        <span class="text-mountain-400 text-sm">Time Service:</span>
+                        <div class="flex flex-wrap gap-2 mt-1">
+                            <span class="device-path text-gray-400">w32tm</span>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="text-mountain-400 text-sm">PTP:</span>
+                        <span class="text-mountain-500 text-sm ml-2">Requires vendor-specific drivers (Meinberg, etc.)</span>
+                    </div>
+                </div>
+            </div>
+
+            <h3 class="text-xl font-bold mb-3">macOS (Darwin)</h3>
+            <div class="bg-mountain-800 rounded-lg p-4 mb-8">
+                <div class="grid gap-3">
+                    <div>
+                        <span class="text-mountain-400 text-sm">PPS Devices:</span>
+                        <div class="flex flex-wrap gap-2 mt-1">
+                            <span class="device-path text-green-400">/dev/pps0</span>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="text-mountain-400 text-sm">PTP Devices:</span>
+                        <div class="flex flex-wrap gap-2 mt-1">
+                            <span class="device-path text-blue-400">/dev/ptp0</span>
+                        </div>
+                    </div>
+                    <div>
+                        <span class="text-mountain-400 text-sm">GPS Devices:</span>
+                        <div class="flex flex-wrap gap-2 mt-1">
+                            <span class="device-path text-yellow-400">/dev/cu.usbserial*</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detection Methods Section -->
+            <h2 class="text-2xl font-bold mb-4" id="detection-methods">Detection Methods</h2>
+            
+            <h3 class="text-xl font-bold mb-3">Atomic Clock Detection</h3>
+            <p class="text-mountain-300 mb-4">
+                The detector identifies atomic clocks through multiple methods:
+            </p>
+            <ul class="list-disc list-inside text-mountain-300 space-y-2 mb-6">
+                <li>Chrony sources reporting <code class="theme-accent">PPS</code> or <code class="theme-accent">ATOM</code> references</li>
+                <li>PPS device names containing: <code class="theme-accent">atomic</code>, <code class="theme-accent">csac</code>, <code class="theme-accent">rubidium</code>, <code class="theme-accent">caesium</code>, <code class="theme-accent">sa.45</code></li>
+                <li>PCIe devices via <code class="theme-accent">lspci</code> matching time/clock/atomic keywords</li>
+                <li>Windows: Jackson Labs CSAC driver processes</li>
+            </ul>
+
+            <h3 class="text-xl font-bold mb-3">GPS Detection</h3>
+            <p class="text-mountain-300 mb-4">
+                GPS receivers are detected via:
+            </p>
+            <ul class="list-disc list-inside text-mountain-300 space-y-2 mb-6">
+                <li><code class="theme-accent">gpsd</code> service status and <code class="theme-accent">gpspipe</code> output</li>
+                <li>Serial devices at standard GPS paths</li>
+                <li>Associated PPS devices for high-precision timing</li>
+                <li>Chrony sources with GPS references</li>
+            </ul>
+
+            <h3 class="text-xl font-bold mb-3">PTP Detection</h3>
+            <p class="text-mountain-300 mb-4">
+                IEEE 1588 PTP synchronization is detected through:
+            </p>
+            <ul class="list-disc list-inside text-mountain-300 space-y-2 mb-6">
+                <li>PTP hardware devices at <code class="theme-accent">/dev/ptpN</code></li>
+                <li><code class="theme-accent">ptp4l</code> service with <code class="theme-accent">pmc</code> queries for offset</li>
+                <li><code class="theme-accent">phc2sys</code> process for PTP-to-system clock sync</li>
+                <li>Meinberg PTP hardware (PTP270PEX) via <code class="theme-accent">lspci</code> and <code class="theme-accent">mbgstatus</code></li>
+            </ul>
+
+            <h3 class="text-xl font-bold mb-3">NTP Detection</h3>
+            <p class="text-mountain-300 mb-4">
+                NTP status is checked via:
+            </p>
+            <ul class="list-disc list-inside text-mountain-300 space-y-2 mb-8">
+                <li><strong>Chrony:</strong> <code class="theme-accent">chronyc tracking</code> for stratum, offset, and server</li>
+                <li><strong>systemd-timesyncd:</strong> <code class="theme-accent">timedatectl show</code></li>
+                <li><strong>ntpd:</strong> <code class="theme-accent">ntpq -p</code> for selected source</li>
+                <li><strong>Windows:</strong> <code class="theme-accent">w32tm /query /status</code></li>
+                <li><strong>macOS:</strong> <code class="theme-accent">sntp</code> queries</li>
+            </ul>
+
+            <!-- Phase Configuration Section -->
+            <h2 class="text-2xl font-bold mb-4" id="phase-config">Phase Configuration</h2>
+            <p class="text-mountain-300 mb-6">
+                Use <code class="bg-mountain-800 px-2 py-1 rounded theme-accent">createPhaseConfig()</code> to generate 
+                phase epoch configuration based on detected time source quality.
+            </p>
+
+            <pre class="language-javascript mb-6"><code>import { 
+  TimeSourceDetector, 
+  createPhaseConfig 
+} from './oracle/time-source.js';
+
+const detector = new TimeSourceDetector({ detectHardware: true });
+detector.detect();
+
+const phaseConfig = createPhaseConfig(detector);
+
+console.log(phaseConfig);
+// {
+//   trustLevel: 'atomic',
+//   toleranceMs: 100,
+//   epochDurationHours: 1,
+//   gracePeriodMinutes: 1,
+//   capabilities: {
+//     canBeTimeOracle: true,
+//     canValidateTightPhase: true,
+//     canParticipateInConsensus: true
+//   }
+// }</code></pre>
+
+            <h3 class="text-xl font-bold mb-3">Capabilities by Trust Level</h3>
+            <div class="overflow-x-auto mb-8">
+                <table class="trust-table rounded-lg overflow-hidden">
+                    <thead>
+                        <tr>
+                            <th>Capability</th>
+                            <th>QUANTUM</th>
+                            <th>ATOMIC</th>
+                            <th>GPS</th>
+                            <th>PTP</th>
+                            <th>NTP</th>
+                            <th>UNSYNC</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Can be Time Oracle</td>
+                            <td class="text-green-400">✓</td>
+                            <td class="text-green-400">✓</td>
+                            <td class="text-red-400">✗</td>
+                            <td class="text-red-400">✗</td>
+                            <td class="text-red-400">✗</td>
+                            <td class="text-red-400">✗</td>
+                        </tr>
+                        <tr>
+                            <td>Validate Tight Phase</td>
+                            <td class="text-green-400">✓</td>
+                            <td class="text-green-400">✓</td>
+                            <td class="text-green-400">✓</td>
+                            <td class="text-red-400">✗</td>
+                            <td class="text-red-400">✗</td>
+                            <td class="text-red-400">✗</td>
+                        </tr>
+                        <tr>
+                            <td>Participate in Consensus</td>
+                            <td class="text-green-400">✓</td>
+                            <td class="text-green-400">✓</td>
+                            <td class="text-green-400">✓</td>
+                            <td class="text-green-400">✓</td>
+                            <td class="text-green-400">✓</td>
+                            <td class="text-red-400">✗</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Constants Section -->
+            <h2 class="text-2xl font-bold mb-4" id="constants">Exported Constants</h2>
+            
+            <h3 class="text-xl font-bold mb-3">TimeTrustLevel</h3>
+            <pre class="language-javascript mb-6"><code>export const TimeTrustLevel = {
+  QUANTUM: 'quantum',   // Quantum optical network (WR-PTP, optical atomic)
+  ATOMIC: 'atomic',     // PCIe atomic clock (CSAC, Rubidium)
+  GPS: 'gps',           // GPS with PPS signal
+  PTP: 'ptp',           // IEEE 1588 PTP synchronized
+  NTP: 'ntp',           // Standard NTP
+  UNSYNC: 'unsync',     // No reliable time source
+};</code></pre>
+
+            <h3 class="text-xl font-bold mb-3">PhaseTolerance</h3>
+            <pre class="language-javascript mb-6"><code>export const PhaseTolerance = {
+  [TimeTrustLevel.QUANTUM]: 1,       // ±1ms for quantum (sub-nanosecond capable)
+  [TimeTrustLevel.ATOMIC]: 100,      // ±100ms for atomic
+  [TimeTrustLevel.GPS]: 500,         // ±500ms for GPS
+  [TimeTrustLevel.PTP]: 500,         // ±500ms for PTP
+  [TimeTrustLevel.NTP]: 5000,        // ±5 seconds for NTP
+  [TimeTrustLevel.UNSYNC]: 30000,    // ±30 seconds for unsync (degraded mode)
+};</code></pre>
+
+            <h3 class="text-xl font-bold mb-3">StratumLevel</h3>
+            <pre class="language-javascript mb-8"><code>export const StratumLevel = {
+  [TimeTrustLevel.QUANTUM]: 0, // Quantum reference (highest)
+  [TimeTrustLevel.ATOMIC]: 0,  // Reference clock
+  [TimeTrustLevel.GPS]: 1,     // Primary server
+  [TimeTrustLevel.PTP]: 1,     // Primary server
+  [TimeTrustLevel.NTP]: 2,     // Secondary server
+  [TimeTrustLevel.UNSYNC]: 16, // Unsynchronized
+};</code></pre>
+
+            <!-- Helper Functions Section -->
+            <h2 class="text-2xl font-bold mb-4" id="helpers">Helper Functions</h2>
+
+            <h3 class="text-xl font-bold mb-3">Quick Detection</h3>
+            <pre class="language-javascript mb-6"><code>import { detectTimeSources } from './oracle/time-source.js';
+
+// One-shot detection without continuous monitoring
+const results = detectTimeSources();
+console.log('Detected:', results.primarySource, 'at', results.trustLevel);</code></pre>
+
+            <h3 class="text-xl font-bold mb-3">Singleton Instance</h3>
+            <pre class="language-javascript mb-8"><code>import { getTimeSourceDetector } from './oracle/time-source.js';
+
+// Get or create the global detector instance
+const detector = getTimeSourceDetector({ verbose: true });
+detector.start();
+
+// Subsequent calls return the same instance
+const sameDetector = getTimeSourceDetector();
+console.log(detector === sameDetector); // true</code></pre>
+
+            <!-- Next Steps -->
+            <div class="bg-mountain-800 border theme-border rounded-xl p-6 mt-8">
+                <h3 class="text-lg font-semibold mb-4">Related Documentation</h3>
+                <ul class="space-y-3 text-mountain-300">
+                    <li class="flex items-center gap-2">
+                        <span>🔮</span>
+                        <a href="tattva.html" class="theme-accent theme-accent-hover">Oracle System</a>
+                        <span class="text-mountain-400 text-sm">— Network-wide time consensus</span>
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <span>🌐</span>
+                        <a href="mandala.html" class="theme-accent theme-accent-hover">MANDALA (Mesh)</a>
+                        <span class="text-mountain-400 text-sm">— Peer coordination and routing</span>
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <span>🛡️</span>
+                        <a href="trust-security.html" class="theme-accent theme-accent-hover">SURAKSHA</a>
+                        <span class="text-mountain-400 text-sm">— Phase-based trust validation</span>
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <span>⚙️</span>
+                        <a href="configuration.html" class="theme-accent theme-accent-hover">Configuration</a>
+                        <span class="text-mountain-400 text-sm">— Time source configuration options</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Journey Navigation -->
+            <div class="border-t border-mountain-700 mt-12 pt-8">
+                <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <a href="cli.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">
+                        <div class="text-xs text-mountain-400 mb-1">← Previous</div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">💻</span>
+                            <span class="font-semibold group-hover:text-theme-accent">CLI Commands</span>
+                        </div>
+                        <p class="text-mountain-400 text-sm mt-1">Command line interface reference</p>
+                    </a>
+                    <a href="tattva.html" class="flex-1 block bg-mountain-800 border border-theme-primary rounded-xl p-4 hover:border-theme-accent transition group">
+                        <div class="text-xs text-mountain-400 mb-1">Next →</div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">👁️</span>
+                            <span class="font-semibold group-hover:text-theme-accent">Oracle System</span>
+                        </div>
+                        <p class="text-mountain-400 text-sm mt-1">Distributed verification network</p>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+  <footer class="docs-footer">
+    <p>© 2026 YAKMESH™</p>
+  </footer><!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+    <script src="docs.js"></script>
+
+  
+</body>
+</html>
+
+
+

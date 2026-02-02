@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="sherpa">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="favicon.ico" sizes="32x32">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <title>SHERPA - Peer Discovery | YAKMESH Documentation</title>
+    <meta name="description" content="SHERPA: Secure Hidden Endpoint Resolution Path Architecture. Decentralized peer discovery using public web beacons.">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        theme: { 
+                            primary: '#06b6d4', 
+                            secondary: '#0891b2', 
+                            accent: '#22d3ee',
+                            bg: '#164e63',
+                            glow: 'rgba(6, 182, 212, 0.1)'
+                        },
+                        mountain: { 
+                            300: '#88b4a6', 
+                            400: '#6a9a8a', 
+                            700: '#2e4c43', 
+                            800: '#1f332d', 
+                            900: '#101a16' 
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Syntax Highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="docs.css">
+    <style>
+        /* Page-specific theme overrides - Ice Cyan */
+        .theme-accent { color: #22d3ee; }
+        .theme-accent-hover:hover { color: #67e8f9; }
+        .theme-badge { background: rgba(6, 182, 212, 0.2); color: #22d3ee; }
+        .theme-border { border-color: #06b6d4; }
+        .theme-callout { background: rgba(6, 182, 212, 0.1); border-color: #0891b2; }
+        .active-link { background: rgba(6, 182, 212, 0.2) !important; color: #22d3ee !important; }
+    </style>
+</head>
+<body class="bg-mountain-900 text-white min-h-screen">
+    
+  <nav class="docs-sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-logo">
+      <span class="logo-icon">🏔️</span>
+      <span class="logo-text">Yakmesh</span>
+    </a>
+    <ul class="sidebar-nav">
+      <li><a href="index.html"><span>🏠</span> <span>Overview</span></a></li>
+      <li><a href="getting-started.html"><span>🚀</span> <span>Getting Started</span></a></li>
+      <li><a href="doko.html"><span>🧺</span> <span>DOKO</span></a></li>
+      <li><a href="namche.html"><span>🚪</span> <span>NAMCHE</span></a></li>
+      <li><a href="sherpa.html" class="active"><span>🧗</span> <span>SHERPA</span></a></li>
+      <li><a href="nakpak.html"><span>🎒</span> <span>NAKPAK</span></a></li>
+      <li><a href="annex.html"><span>🌉</span> <span>ANNEX</span></a></li>
+      <li><a href="yak-protocol.html"><span class="yak-icon"></span> <span>YAK</span></a></li>
+      <li><a href="mantra.html"><span>🕉️</span> <span>MANTRA</span></a></li>
+      <li><a href="stupa.html"><span>🛕</span> <span>STUPA</span></a></li>
+      <li><a href="lama.html"><span>🔮</span> <span>LAMA</span></a></li>
+      <li><a href="mani.html"><span>⏱️</span> <span>MANI</span></a></li>
+      <li><a href="karma.html"><span>☯️</span> <span>KARMA</span></a></li>
+      <li><a href="mandala.html"><span>🌐</span> <span>MANDALA</span></a></li>
+      <li><a href="tattva.html"><span>🔯</span> <span>TATTVA</span></a></li>
+      <li><a href="geo-proof.html"><span>🌍</span> <span>PRAMAAN</span></a></li>
+      <li><a href="trust-security.html"><span>🔒</span> <span>SURAKSHA</span></a></li>
+      <li><a href="docs-bundle.html"><span>📚</span> <span>GRANTH</span></a></li>
+      <li><a href="api.html"><span>📡</span> <span>API</span></a></li>
+    </ul>
+  </nav>
+
+  <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+    </svg>
+  </button>
+
+  <!-- Mobile overlay for tap-to-close sidebar -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="docs-main" id="mainContent">
+
+        <div class="docs-content">
+            <div class="flex items-center gap-3 mb-4">
+                <span class="text-4xl">🏔️</span>
+                <div>
+                    <h1 class="text-4xl font-bold">SHERPA</h1>
+                    <p class="theme-accent">Secure Hidden Endpoint Resolution Path Architecture</p>
+                </div>
+            </div>
+            <p class="text-xl text-mountain-300 mb-8">
+                Decentralized peer discovery using public web beacons. No central bootstrap servers required.
+            </p>
+            <span class="inline-block text-xs theme-badge px-2 py-1 rounded mb-8">v2.6.0</span>
+
+            <h2 class="text-2xl font-bold mb-4">Overview</h2>
+            <p class="text-mountain-300 mb-6">
+                SHERPA is YAKMESH's novel peer discovery mechanism that leverages the <strong>public web layer</strong> 
+                to bootstrap mesh connections. Instead of relying on hardcoded bootstrap servers, SHERPA treats 
+                every YAKMESH node's public endpoint as a potential discovery beacon.
+            </p>
+
+            <div class="bg-mountain-800 rounded-xl p-6 mb-8">
+                <h3 class="text-lg font-semibold mb-3 theme-accent">Key Innovation: "The Web IS the DHT"</h3>
+                <ul class="text-mountain-300 space-y-2">
+                    <li>• Each node exposes <code class="bg-mountain-700 px-2 py-1 rounded">/.well-known/yakmesh/beacon</code></li>
+                    <li>• Discovery crawls known endpoints to find new peers</li>
+                    <li>• No central authority - truly decentralized bootstrap</li>
+                    <li>• Works with existing CDN infrastructure</li>
+                    <li>• Traverses firewalls via standard HTTPS (port 443)</li>
+                </ul>
+            </div>
+
+            <h2 class="text-2xl font-bold mb-4">How It Works</h2>
+            <div class="bg-mountain-800 rounded-xl p-6 mb-8 font-mono text-sm">
+<pre class="text-mountain-300">
+┌─────────────────────────────────────────────────┐
+│              Public Web Layer                   │
+│   (HTTPS, /.well-known/yakmesh/beacon)          │
+├─────────────────────────────────────────────────┤
+│              SHERPA Discovery                   │
+│   - Scan known domains/endpoints                │
+│   - Verify beacon signatures (ML-DSA-65)        │
+│   - Build scored peer list                      │
+├─────────────────────────────────────────────────┤
+│              Mesh Core                          │
+│   (WebSocket P2P connections)                   │
+└─────────────────────────────────────────────────┘
+</pre>
+            </div>
+
+            <h2 class="text-2xl font-bold mb-4">Beacon Endpoint</h2>
+            <p class="text-mountain-300 mb-4">
+                Every YAKMESH node automatically exposes a beacon at:
+            </p>
+            <pre class="bg-mountain-800 rounded-lg p-4 mb-6"><code class="theme-accent">GET /.well-known/yakmesh/beacon</code></pre>
+
+            <h3 class="text-lg font-semibold mb-3">Beacon Response</h3>
+            <pre class="bg-mountain-800 rounded-lg p-4 mb-8 overflow-x-auto"><code class="language-json text-sm">{
+  "version": "1.0",
+  "nodeId": "abc123...",
+  "networkName": "yakmesh-mainnet",
+  "timestamp": 1737200000000,
+  "ttl": 3600,
+  "capabilities": {
+    "wsPort": 9001,
+    "httpPort": 443,
+    "supportsAnnex": true,
+    "supportsNakpak": true,
+    "supportsGossip": true
+  },
+  "peers": [
+    {
+      "nodeId": "def456...",
+      "endpoint": "https://peer1.example.com",
+      "wsEndpoint": "wss://peer1.example.com:9001",
+      "lastSeen": 1737199000000
+    }
+  ],
+  "publicKey": "ML-DSA-65 public key (hex)",
+  "signature": "beacon signature (hex)"
+}</code></pre>
+
+            <h2 class="text-2xl font-bold mb-4">Configuration</h2>
+            <pre class="bg-mountain-800 rounded-lg p-4 mb-8 overflow-x-auto"><code class="language-javascript">// yakmesh.config.js
+export default {
+  sherpa: {
+    // Your node's public HTTPS endpoint
+    selfEndpoint: 'https://mynode.example.com',
+    
+    // Your node's WebSocket endpoint
+    wsEndpoint: 'wss://mynode.example.com:9001',
+    
+    // Seed endpoints to start discovery
+    seedEndpoints: [
+      'https://peerquanta.com',
+      'https://yakmesh.dev'
+    ],
+    
+    // Discovery settings
+    crawlInterval: 300000,  // 5 minutes
+    maxPeers: 1000,
+  }
+};</code></pre>
+
+            <h2 class="text-2xl font-bold mb-4">Peer Scoring</h2>
+            <p class="text-mountain-300 mb-4">
+                SHERPA maintains a scored registry of known peers:
+            </p>
+            <div class="bg-mountain-800 rounded-xl p-6 mb-8">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="text-left text-mountain-400">
+                            <th class="pb-2">Event</th>
+                            <th class="pb-2">Score Change</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-mountain-300">
+                        <tr><td class="py-1">Successful beacon fetch</td><td class="text-green-400">+0.2</td></tr>
+                        <tr><td class="py-1">Failed beacon fetch</td><td class="text-red-400">-0.3</td></tr>
+                        <tr><td class="py-1">Per interval decay</td><td class="text-yellow-400">×0.95</td></tr>
+                        <tr><td class="py-1">Score below 0.1</td><td class="text-red-400">Evicted</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h2 class="text-2xl font-bold mb-4">Security</h2>
+            <ul class="text-mountain-300 space-y-2 mb-8">
+                <li>• <strong>Signed Beacons</strong> - All beacons are signed with ML-DSA-65</li>
+                <li>• <strong>Network Filtering</strong> - Only accept peers from same network</li>
+                <li>• <strong>Rate Limiting</strong> - Max 10 crawls per minute</li>
+                <li>• <strong>Size Limits</strong> - Max beacon size 64KB</li>
+                <li>• <strong>Timeout Protection</strong> - 5 second fetch timeout</li>
+            </ul>
+
+            <h2 class="text-2xl font-bold mb-4">Etymology</h2>
+            <div class="theme-callout border rounded-xl p-6 mb-8">
+                <p class="text-mountain-200 italic">
+                    "Sherpas guide travelers through hidden mountain paths, just like SHERPA guides nodes 
+                    to discover each other through the web."
+                </p>
+            </div>
+
+            <h2 class="text-2xl font-bold mb-4">API</h2>
+            <pre class="bg-mountain-800 rounded-lg p-4 mb-4 overflow-x-auto"><code class="language-javascript">// Access SHERPA from your node
+const sherpa = node.sherpa;
+
+// Add a seed endpoint
+sherpa.addSeed('https://example.com');
+
+// Start discovery
+sherpa.start();
+
+// Get discovered peers
+const peers = sherpa.registry.getBestPeers(10);
+
+// Listen for new peers
+sherpa.on('peer:discovered', (peer) => {
+  console.log('Found peer:', peer.nodeId);
+});
+
+// Get stats
+console.log(sherpa.stats);
+// { crawlsCompleted: 5, peersDiscovered: 23, ... }</code></pre>
+
+            <!-- Journey Navigation -->
+            <div class="border-t border-mountain-700 mt-12 pt-8">
+                <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <a href="namche.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">
+                        <div class="text-xs text-mountain-400 mb-1">← Previous</div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">🚪</span>
+                            <span class="font-semibold group-hover:text-theme-accent">NAMCHE Gateway</span>
+                        </div>
+                        <p class="text-mountain-400 text-sm mt-1">The 7-gate identity verification</p>
+                    </a>
+                    <a href="nakpak.html" class="flex-1 block bg-mountain-800 border border-theme-primary rounded-xl p-4 hover:border-theme-accent transition group">
+                        <div class="text-xs text-mountain-400 mb-1">Next →</div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">🎒</span>
+                            <span class="font-semibold group-hover:text-theme-accent">NAKPAK Routing</span>
+                        </div>
+                        <p class="text-mountain-400 text-sm mt-1">Onion routing for privacy and security</p>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+  <footer class="docs-footer">
+    <p>© 2026 YAKMESH™</p>
+  </footer><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+    <script src="docs.js"></script>
+
+  
+</body>
+</html>
+
+
+

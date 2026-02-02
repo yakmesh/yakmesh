@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="mantra">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="favicon.ico" sizes="32x32">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <title>MANTRA Protocol | YAKMESH Documentation</title>
+    <meta name="description" content="MANTRA - Message Amplification Network for Trust Relayed Announcements. Epidemic-style message propagation like prayer wheels spreading sacred messages across the mesh.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        theme: { primary: '#f97316', secondary: '#ea580c', accent: '#fdba74', bg: '#431407', glow: 'rgba(249, 115, 22, 0.15)' },
+                        mountain: { 300: '#88b4a6', 400: '#6a9a8a', 700: '#2e4c43', 800: '#1f332d', 900: '#101a16' }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="stylesheet" href="docs.css">
+    <style>
+        .theme-accent { color: #f97316; }
+        .theme-accent-hover:hover { color: #fdba74; }
+        .theme-badge { background: rgba(249, 115, 22, 0.2); color: #fdba74; }
+        .theme-border { border-color: #f97316; }
+        .theme-callout { background: rgba(249, 115, 22, 0.1); border-color: #ea580c; }
+        .active-link { background: rgba(249, 115, 22, 0.2) !important; color: #fdba74 !important; }
+        .mantra-table { width: 100%; border-collapse: collapse; }
+        .mantra-table th, .mantra-table td { padding: 0.75rem; text-align: left; border-bottom: 1px solid #2e4c43; }
+        .mantra-table th { color: #f97316; font-weight: 600; background: rgba(249, 115, 22, 0.1); }
+        .mantra-table code { background: #1f332d; padding: 0.25rem 0.5rem; border-radius: 4px; color: #fdba74; }
+        .wheel-card { background: linear-gradient(135deg, rgba(249, 115, 22, 0.15), rgba(234, 88, 12, 0.1)); border-left: 4px solid #f97316; }
+        .mantra-philosophy { font-style: italic; background: linear-gradient(135deg, rgba(249, 115, 22, 0.2), rgba(234, 88, 12, 0.1)); border-left: 4px solid #f97316; }
+    </style>
+</head>
+<body class="bg-mountain-900 text-white min-h-screen">
+    
+  <nav class="docs-sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-logo">
+      <span class="logo-icon">🏔️</span>
+      <span class="logo-text">Yakmesh</span>
+    </a>
+    <ul class="sidebar-nav">
+      <li><a href="index.html"><span>🏠</span> <span>Overview</span></a></li>
+      <li><a href="getting-started.html"><span>🚀</span> <span>Getting Started</span></a></li>
+      <li><a href="doko.html"><span>🧺</span> <span>DOKO</span></a></li>
+      <li><a href="namche.html"><span>🚪</span> <span>NAMCHE</span></a></li>
+      <li><a href="sherpa.html"><span>🧗</span> <span>SHERPA</span></a></li>
+      <li><a href="nakpak.html"><span>🎒</span> <span>NAKPAK</span></a></li>
+      <li><a href="annex.html"><span>🌉</span> <span>ANNEX</span></a></li>
+      <li><a href="yak-protocol.html"><span class="yak-icon"></span> <span>YAK</span></a></li>
+      <li><a href="mantra.html" class="active"><span>🕉️</span> <span>MANTRA</span></a></li>
+      <li><a href="stupa.html"><span>🛕</span> <span>STUPA</span></a></li>
+      <li><a href="lama.html"><span>🔮</span> <span>LAMA</span></a></li>
+      <li><a href="mani.html"><span>⏱️</span> <span>MANI</span></a></li>
+      <li><a href="karma.html"><span>☯️</span> <span>KARMA</span></a></li>
+      <li><a href="mandala.html"><span>🌐</span> <span>MANDALA</span></a></li>
+      <li><a href="tattva.html"><span>🔯</span> <span>TATTVA</span></a></li>
+      <li><a href="geo-proof.html"><span>🌍</span> <span>PRAMAAN</span></a></li>
+      <li><a href="trust-security.html"><span>🔒</span> <span>SURAKSHA</span></a></li>
+      <li><a href="docs-bundle.html"><span>📚</span> <span>GRANTH</span></a></li>
+      <li><a href="api.html"><span>📡</span> <span>API</span></a></li>
+    </ul>
+  </nav>
+
+  <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+    </svg>
+  </button>
+
+  <!-- Mobile overlay for tap-to-close sidebar -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="docs-main" id="mainContent">
+
+        <div class="docs-content">
+            <div class="flex items-center gap-3 mb-4">
+                <span class="theme-badge px-3 py-1 rounded-full text-sm font-medium">Core Module</span>
+                <span class="text-mountain-400">v2.6.0</span>
+            </div>
+            
+            <h1 class="text-4xl font-bold theme-accent mb-2">🕉️ MANTRA</h1>
+            <p class="text-xl text-mountain-300 mb-8">Message Amplification Network for Trust Relayed Announcements</p>
+
+            <!-- Philosophy Quote -->
+            <div class="mantra-philosophy p-6 rounded-lg mb-8">
+                <p class="text-lg text-mountain-200">
+                    "Like prayer wheels spreading mantras across the mountains, messages flow through the mesh, 
+                    carrying truth to all who listen. Each spin of the wheel propagates the sacred words further, 
+                    until all travelers on the path have received the message."
+                </p>
+            </div>
+
+            <!-- What is MANTRA -->
+            <section class="mb-12">
+                <h2 class="text-2xl font-semibold theme-accent mb-4">What is MANTRA?</h2>
+                <p class="text-mountain-200 mb-4">
+                    MANTRA is YAKMESH's epidemic-style message propagation protocol. Just as Tibetan prayer wheels 
+                    spread mantras with each rotation, MANTRA spreads messages across the mesh network with each 
+                    node propagation. The protocol ensures that important announcements reach all nodes efficiently 
+                    without requiring direct connections to every peer.
+                </p>
+                <div class="wheel-card p-4 rounded-lg mb-4">
+                    <p class="text-mountain-200">
+                        <strong class="theme-accent">Etymology:</strong> In Buddhist tradition, mantras are sacred 
+                        utterances that carry spiritual power. Prayer wheels contain written mantras, and spinning 
+                        them spreads the mantra's blessing. MANTRA spreads messages with the same viral efficiency.
+                    </p>
+                </div>
+            </section>
+
+            <!-- Core Concepts -->
+            <section class="mb-12">
+                <h2 class="text-2xl font-semibold theme-accent mb-4">Core Concepts</h2>
+                
+                <h3 class="text-xl font-medium text-mountain-200 mb-3">🔄 The Prayer Wheel Model</h3>
+                <div class="bg-mountain-800 p-6 rounded-lg mb-6">
+                    <table class="mantra-table">
+                        <thead>
+                            <tr>
+                                <th>Concept</th>
+                                <th>Himalayan Metaphor</th>
+                                <th>Technical Implementation</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Message Propagation</td>
+                                <td>🕉️ Prayer wheel spin</td>
+                                <td>Rumor mongering with fanout</td>
+                            </tr>
+                            <tr>
+                                <td>Peer Discovery</td>
+                                <td>🙏 Traveler greeting</td>
+                                <td>HELLO/PEERS exchange</td>
+                            </tr>
+                            <tr>
+                                <td>Message Deduplication</td>
+                                <td>📿 Counting mala beads</td>
+                                <td>Bloom filter tracking</td>
+                            </tr>
+                            <tr>
+                                <td>State Synchronization</td>
+                                <td>☯️ Karma balance</td>
+                                <td>Anti-entropy protocol</td>
+                            </tr>
+                            <tr>
+                                <td>Hop Limit</td>
+                                <td>🏔️ Mountain passes</td>
+                                <td>TTL (Time To Live)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Message Types -->
+            <section class="mb-12">
+                <h2 class="text-2xl font-semibold theme-accent mb-4">Message Types</h2>
+                
+                <div class="grid gap-4 md:grid-cols-2">
+                    <div class="wheel-card p-4 rounded-lg">
+                        <h4 class="font-semibold theme-accent mb-2">HELLO</h4>
+                        <p class="text-sm text-mountain-300">Announce presence to the network. Like a traveler greeting others on the mountain path.</p>
+                        <code class="text-xs mt-2 block">MantraMessageType.HELLO</code>
+                    </div>
+                    <div class="wheel-card p-4 rounded-lg">
+                        <h4 class="font-semibold theme-accent mb-2">PEERS</h4>
+                        <p class="text-sm text-mountain-300">Share known peers. Helping others find their way.</p>
+                        <code class="text-xs mt-2 block">MantraMessageType.PEERS</code>
+                    </div>
+                    <div class="wheel-card p-4 rounded-lg">
+                        <h4 class="font-semibold theme-accent mb-2">RUMOR</h4>
+                        <p class="text-sm text-mountain-300">New data to propagate. The mantra to spread.</p>
+                        <code class="text-xs mt-2 block">MantraMessageType.RUMOR</code>
+                    </div>
+                    <div class="wheel-card p-4 rounded-lg">
+                        <h4 class="font-semibold theme-accent mb-2">SEEN</h4>
+                        <p class="text-sm text-mountain-300">Acknowledge receipt. The mantra has been received.</p>
+                        <code class="text-xs mt-2 block">MantraMessageType.SEEN</code>
+                    </div>
+                    <div class="wheel-card p-4 rounded-lg">
+                        <h4 class="font-semibold theme-accent mb-2">DIGEST</h4>
+                        <p class="text-sm text-mountain-300">Summary of known state. Karma balance check.</p>
+                        <code class="text-xs mt-2 block">MantraMessageType.DIGEST</code>
+                    </div>
+                    <div class="wheel-card p-4 rounded-lg">
+                        <h4 class="font-semibold theme-accent mb-2">DIFF</h4>
+                        <p class="text-sm text-mountain-300">Request missing data. Balancing the karma.</p>
+                        <code class="text-xs mt-2 block">MantraMessageType.DIFF</code>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Usage -->
+            <section class="mb-12">
+                <h2 class="text-2xl font-semibold theme-accent mb-4">Usage</h2>
+                
+                <h3 class="text-xl font-medium text-mountain-200 mb-3">Spreading a Mantra</h3>
+                <pre class="bg-mountain-800 p-4 rounded-lg overflow-x-auto mb-6"><code class="language-javascript">import { MantraProtocol } from 'yakmesh/gossip/protocol.js';
+
+// Create the MANTRA protocol
+const mantra = new MantraProtocol(mesh, identity, {
+  fanout: 3,              // Spread to 3 peers per spin
+  rumorTTL: 5,            // Maximum 5 hops (mountain passes)
+  helloInterval: 30000,   // Greet peers every 30 seconds
+});
+
+// Start the prayer wheel
+mantra.start();
+
+// Spread a mantra (message) to the network
+mantra.spreadRumor('content:announce', {
+  hash: 'abc123...',
+  nodeId: 'origin-node',
+  timestamp: Date.now(),
+});
+
+// Get known peers (fellow travelers)
+const peers = mantra.getKnownPeers();
+
+// Get statistics (prayer wheel metrics)
+const stats = mantra.getStats();
+console.log(`Mantras spoken: ${stats.seenMessages}`);
+console.log(`Fellow travelers: ${stats.knownPeers}`);</code></pre>
+
+                <h3 class="text-xl font-medium text-mountain-200 mb-3">Configuration Options</h3>
+                <div class="bg-mountain-800 p-6 rounded-lg">
+                    <table class="mantra-table">
+                        <thead>
+                            <tr>
+                                <th>Option</th>
+                                <th>Default</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>fanout</code></td>
+                                <td>3</td>
+                                <td>Number of peers to spread each mantra to</td>
+                            </tr>
+                            <tr>
+                                <td><code>helloInterval</code></td>
+                                <td>30000ms</td>
+                                <td>Time between HELLO broadcasts</td>
+                            </tr>
+                            <tr>
+                                <td><code>digestInterval</code></td>
+                                <td>60000ms</td>
+                                <td>Time between anti-entropy checks</td>
+                            </tr>
+                            <tr>
+                                <td><code>peerTTL</code></td>
+                                <td>300000ms</td>
+                                <td>Time before peer is considered expired</td>
+                            </tr>
+                            <tr>
+                                <td><code>rumorTTL</code></td>
+                                <td>5</td>
+                                <td>Maximum hops for message propagation</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Protocol Family -->
+            <section class="mb-12">
+                <h2 class="text-2xl font-semibold theme-accent mb-4">The Himalayan Protocol Family</h2>
+                <p class="text-mountain-200 mb-4">
+                    MANTRA is part of YAKMESH's Himalayan-themed protocol stack:
+                </p>
+                <div class="bg-mountain-800 p-6 rounded-lg">
+                    <table class="mantra-table">
+                        <thead>
+                            <tr>
+                                <th>Protocol</th>
+                                <th>Full Name</th>
+                                <th>Purpose</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><a href="namche.html" class="theme-accent-hover">NAMCHE</a></td>
+                                <td>Network Authenticated Mesh Certificate Hub & Exchange</td>
+                                <td>7-gate verification</td>
+                            </tr>
+                            <tr>
+                                <td><a href="doko.html" class="theme-accent-hover">DOKO</a></td>
+                                <td>Distributed Ownership & Key Object</td>
+                                <td>Self-sovereign identity</td>
+                            </tr>
+                            <tr>
+                                <td><a href="sherpa.html" class="theme-accent-hover">SHERPA</a></td>
+                                <td>Secure Hidden Endpoint Resolution Path Architecture</td>
+                                <td>Peer discovery</td>
+                            </tr>
+                            <tr>
+                                <td><a href="nakpak.html" class="theme-accent-hover">NAKPAK</a></td>
+                                <td>Nested Anonymous Kernel for Private Authenticated Komms</td>
+                                <td>Onion routing</td>
+                            </tr>
+                            <tr>
+                                <td><a href="annex.html" class="theme-accent-hover">ANNEX</a></td>
+                                <td>Autonomous Network Negotiated eXchange</td>
+                                <td>Encrypted P2P channels</td>
+                            </tr>
+                            <tr>
+                                <td>KHATA</td>
+                                <td>Kryptographic Handshake for Automated Trust Acceptance</td>
+                                <td>Trust distribution</td>
+                            </tr>
+                            <tr class="bg-mountain-700/30">
+                                <td class="theme-accent font-semibold">MANTRA</td>
+                                <td>Message Amplification Network for Trust Relayed Announcements</td>
+                                <td>Message propagation</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Journey Navigation -->
+            <div class="border-t border-mountain-700 mt-12 pt-8">
+                <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <a href="yak-protocol.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">
+                        <div class="text-xs text-mountain-400 mb-1">← Previous</div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">🐃</span>
+                            <span class="font-semibold group-hover:text-theme-accent">YAK:// Protocol</span>
+                        </div>
+                        <p class="text-mountain-400 text-sm mt-1">Content addressing & retrieval</p>
+                    </a>
+                    <a href="stupa.html" class="flex-1 block bg-mountain-800 border border-theme-primary rounded-xl p-4 hover:border-theme-accent transition group">
+                        <div class="text-xs text-mountain-400 mb-1">Next →</div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">🛕</span>
+                            <span class="font-semibold group-hover:text-theme-accent">STUPA Protocol</span>
+                        </div>
+                        <p class="text-mountain-400 text-sm mt-1">Priority broadcasts</p>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+  <footer class="docs-footer">
+    <p>© 2026 YAKMESH™</p>
+  </footer><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script>
+        // Mobile sidebar toggle
+        const toggle = document.querySelector('.sidebar-toggle');
+        const sidebar = document.querySelector('.docs-sidebar');
+        const overlay = document.querySelector('.sidebar-overlay');
+        const main = document.querySelector('.docs-main');
+        
+        function toggleSidebar() {
+            sidebar.classList.toggle('open');
+            overlay.classList.toggle('open');
+            toggle.classList.toggle('sidebar-open');
+        }
+        
+        toggle.addEventListener('click', toggleSidebar);
+        overlay.addEventListener('click', toggleSidebar);
+    </script>
+
+  
+<script src="docs.js"></script></body>
+</html>
+
+

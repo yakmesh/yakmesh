@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="configuration">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="favicon.ico" sizes="32x32">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <title>Configuration | YAKMESH Documentation</title>
+    <meta name="description" content="YAKMESH configuration reference. Complete guide to yakmesh.config.js including node identity, network settings, database, security, and environment variables.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        theme: { primary: '#a1a1aa', secondary: '#71717a', accent: '#d4d4d8', bg: '#3f3f46', glow: 'rgba(161, 161, 170, 0.1)' },
+                        mountain: { 300: '#88b4a6', 400: '#6a9a8a', 700: '#2e4c43', 800: '#1f332d', 900: '#101a16' }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="stylesheet" href="docs.css">
+    <style>
+        .theme-accent { color: #a1a1aa; }
+        .theme-accent-hover:hover { color: #d4d4d8; }
+        .theme-badge { background: rgba(161, 161, 170, 0.2); color: #d4d4d8; }
+        .theme-border { border-color: #a1a1aa; }
+        .theme-callout { background: rgba(161, 161, 170, 0.1); border-color: #71717a; }
+        .active-link { background: rgba(161, 161, 170, 0.2) !important; color: #d4d4d8 !important; }
+        .config-table { width: 100%; border-collapse: collapse; }
+        .config-table th, .config-table td { padding: 0.75rem; text-align: left; border-bottom: 1px solid #2e4c43; }
+        .config-table th { color: #a1a1aa; font-weight: 600; background: rgba(161, 161, 170, 0.1); }
+        .config-table code { background: #1f332d; padding: 0.25rem 0.5rem; border-radius: 4px; color: #d4d4d8; }
+        .config-card { background: linear-gradient(135deg, rgba(161, 161, 170, 0.15), rgba(113, 113, 122, 0.1)); border-left: 4px solid #a1a1aa; }
+        .config-card-node { background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.1)); border-left: 4px solid #3b82f6; }
+        .config-card-network { background: linear-gradient(135deg, rgba(20, 184, 166, 0.2), rgba(13, 148, 136, 0.1)); border-left: 4px solid #14b8a6; }
+        .config-card-database { background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(139, 92, 246, 0.1)); border-left: 4px solid #a855f7; }
+        .config-card-security { background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.1)); border-left: 4px solid #ef4444; }
+        .config-card-bootstrap { background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(245, 158, 11, 0.1)); border-left: 4px solid #fbbf24; }
+        .config-card-env { background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(22, 163, 74, 0.1)); border-left: 4px solid #22c55e; }
+        .config-philosophy { font-style: italic; background: linear-gradient(135deg, rgba(161, 161, 170, 0.2), rgba(99, 102, 241, 0.1)); border-left: 4px solid #a1a1aa; }
+        .capability-badge { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.875rem; font-weight: 500; margin: 0.25rem; }
+        .capability-listings { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+        .capability-chat { background: rgba(20, 184, 166, 0.2); color: #2dd4bf; }
+        .capability-forum { background: rgba(168, 85, 247, 0.2); color: #c084fc; }
+        .capability-qcoa { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
+    </style>
+</head>
+<body class="bg-mountain-900 text-white min-h-screen">
+    
+  <nav class="docs-sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-logo">
+      <span class="logo-icon">🏔️</span>
+      <span class="logo-text">Yakmesh</span>
+    </a>
+    <ul class="sidebar-nav">
+      <li><a href="index.html"><span>🏠</span> <span>Overview</span></a></li>
+      <li><a href="getting-started.html"><span>🚀</span> <span>Getting Started</span></a></li>
+      <li><a href="doko.html"><span>🧺</span> <span>DOKO</span></a></li>
+      <li><a href="namche.html"><span>🚪</span> <span>NAMCHE</span></a></li>
+      <li><a href="sherpa.html"><span>🧗</span> <span>SHERPA</span></a></li>
+      <li><a href="nakpak.html"><span>🎒</span> <span>NAKPAK</span></a></li>
+      <li><a href="annex.html"><span>🌉</span> <span>ANNEX</span></a></li>
+      <li><a href="yak-protocol.html"><span class="yak-icon"></span> <span>YAK</span></a></li>
+      <li><a href="mantra.html"><span>🕉️</span> <span>MANTRA</span></a></li>
+      <li><a href="stupa.html"><span>🛕</span> <span>STUPA</span></a></li>
+      <li><a href="lama.html"><span>🔮</span> <span>LAMA</span></a></li>
+      <li><a href="mani.html"><span>⏱️</span> <span>MANI</span></a></li>
+      <li><a href="karma.html"><span>☯️</span> <span>KARMA</span></a></li>
+      <li><a href="mandala.html"><span>🌐</span> <span>MANDALA</span></a></li>
+      <li><a href="tattva.html"><span>🔯</span> <span>TATTVA</span></a></li>
+      <li><a href="geo-proof.html"><span>🌍</span> <span>PRAMAAN</span></a></li>
+      <li><a href="trust-security.html"><span>🔒</span> <span>SURAKSHA</span></a></li>
+      <li><a href="api.html"><span>📡</span> <span>API</span></a></li>
+    </ul>
+  </nav>
+
+  <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+    </svg>
+  </button>
+
+  <!-- Mobile overlay for tap-to-close sidebar -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="docs-main" id="mainContent">
+
+        <div class="docs-content">
+            <!-- Page Header -->
+            <div class="flex items-center gap-3 mb-4">
+                <span class="text-4xl">⚙️</span>
+                <div>
+                    <div class="flex items-center gap-3">
+                        <h1 class="text-4xl font-bold">Configuration</h1>
+                        <span class="theme-badge text-xs px-2 py-1 rounded-full font-mono">v2.0.0</span>
+                    </div>
+                    <p class="theme-accent">Complete yakmesh.config.js reference</p>
+                </div>
+            </div>
+            <p class="text-xl text-mountain-300 mb-8">
+                Configure your YAKMESH node with <code class="text-zinc-300 bg-mountain-800 px-2 py-1 rounded">yakmesh.config.js</code>. 
+                This file controls node identity, network ports, database settings, and security options.
+            </p>
+
+            <!-- Philosophy Callout -->
+            <div class="config-philosophy rounded-xl p-6 mb-8">
+                <p class="text-lg text-zinc-200 mb-2">
+                    <strong class="theme-accent">"Configuration as code — versioned, reproducible, decentralized"</strong>
+                </p>
+                <p class="text-mountain-300">
+                    YAKMESH is designed to work out of the box with sensible defaults. 
+                    The configuration file is optional for local development but essential for production deployments.
+                </p>
+            </div>
+
+            <!-- Quick Start -->
+            <h2 class="text-2xl font-bold mb-4" id="quick-start">Quick Start</h2>
+            <p class="text-mountain-300 mb-4">
+                Generate a configuration file with the CLI:
+            </p>
+            <pre class="language-bash mb-4"><code>npx yakmesh init</code></pre>
+            <p class="text-mountain-300 mb-4">
+                This creates <code class="text-zinc-300 bg-mountain-800 px-2 py-1 rounded">yakmesh.config.js</code> in your project root.
+            </p>
+
+            <!-- Full Configuration -->
+            <h2 class="text-2xl font-bold mb-4 mt-8" id="full-config">Full Configuration Structure</h2>
+            <p class="text-mountain-300 mb-4">
+                The complete configuration file with all available options:
+            </p>
+            <pre class="language-javascript mb-8"><code>export default {
+  // Node identity
+  node: {
+    name: 'My Yakmesh Node',
+    region: 'local',
+    capabilities: ['listings', 'chat', 'forum', 'qcoa'],
+  },
+  
+  // Network settings
+  network: {
+    httpPort: 3000,
+    wsPort: 9001,
+    publicHost: 'localhost',
+  },
+  
+  // Bootstrap nodes (optional - YAKMESH is decentralized)
+  bootstrap: [],
+  
+  // Database
+  database: {
+    path: './data/peerquanta.db',
+    replication: {
+      enabled: true,
+      syncInterval: 30000,  // 30 seconds
+    },
+  },
+  
+  // Security
+  security: {
+    maxPeers: 50,
+    requireAuth: false,
+  },
+};</code></pre>
+
+            <!-- Configuration Sections -->
+            <h2 class="text-2xl font-bold mb-6" id="sections">Configuration Sections</h2>
+
+            <!-- Node Section -->
+            <div class="config-card-node rounded-xl p-6 mb-6" id="node">
+                <h3 class="text-xl font-bold text-blue-400 mb-3 flex items-center gap-2">
+                    <span>🔷</span> node — Node Identity
+                </h3>
+                <p class="text-mountain-300 mb-4">
+                    Defines your node's identity on the mesh network.
+                </p>
+                <div class="overflow-x-auto">
+                    <table class="config-table rounded-lg overflow-hidden">
+                        <thead>
+                            <tr>
+                                <th>Option</th>
+                                <th>Type</th>
+                                <th>Default</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>name</code></td>
+                                <td>string</td>
+                                <td><code>'Yakmesh Node'</code></td>
+                                <td>Human-readable node name displayed to peers</td>
+                            </tr>
+                            <tr>
+                                <td><code>region</code></td>
+                                <td>string</td>
+                                <td><code>'local'</code></td>
+                                <td>Geographic region for peer discovery optimization</td>
+                            </tr>
+                            <tr>
+                                <td><code>capabilities</code></td>
+                                <td>string[]</td>
+                                <td><code>['listings']</code></td>
+                                <td>Features this node supports (see Capabilities below)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Network Section -->
+            <div class="config-card-network rounded-xl p-6 mb-6" id="network">
+                <h3 class="text-xl font-bold text-teal-400 mb-3 flex items-center gap-2">
+                    <span>🌐</span> network — Network Settings
+                </h3>
+                <p class="text-mountain-300 mb-4">
+                    Configure HTTP and WebSocket ports for your node.
+                </p>
+                <div class="overflow-x-auto">
+                    <table class="config-table rounded-lg overflow-hidden">
+                        <thead>
+                            <tr>
+                                <th>Option</th>
+                                <th>Type</th>
+                                <th>Default</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>httpPort</code></td>
+                                <td>number</td>
+                                <td><code>3000</code></td>
+                                <td>HTTP server port for REST API and web interface</td>
+                            </tr>
+                            <tr>
+                                <td><code>wsPort</code></td>
+                                <td>number</td>
+                                <td><code>9001</code></td>
+                                <td>WebSocket port for mesh network P2P connections</td>
+                            </tr>
+                            <tr>
+                                <td><code>publicHost</code></td>
+                                <td>string</td>
+                                <td><code>'localhost'</code></td>
+                                <td>Public hostname or IP for peer connections</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Bootstrap Section -->
+            <div class="config-card-bootstrap rounded-xl p-6 mb-6" id="bootstrap">
+                <h3 class="text-xl font-bold text-yellow-400 mb-3 flex items-center gap-2">
+                    <span>🚀</span> bootstrap — Entry Point Nodes
+                </h3>
+                <p class="text-mountain-300 mb-4">
+                    Optional list of known nodes for initial network discovery. 
+                    YAKMESH is fully decentralized — bootstrap nodes are just helpful starting points, not required.
+                </p>
+                <pre class="language-javascript mb-4"><code>bootstrap: [
+  'ws://node1.yakmesh.network:9001',
+  'ws://node2.yakmesh.network:9001',
+  'ws://192.168.1.100:9001',  // Local network node
+]</code></pre>
+                <div class="theme-callout rounded-lg p-4 mt-4">
+                    <p class="text-zinc-300 text-sm">
+                        <strong>💡 Tip:</strong> Leave empty for local development. 
+                        Nodes discover each other automatically on the same network via mDNS/broadcast.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Database Section -->
+            <div class="config-card-database rounded-xl p-6 mb-6" id="database">
+                <h3 class="text-xl font-bold text-purple-400 mb-3 flex items-center gap-2">
+                    <span>💾</span> database — SQLite Database
+                </h3>
+                <p class="text-mountain-300 mb-4">
+                    Configure the PeerQuanta SQLite database for listings, identities, and mesh state.
+                </p>
+                <div class="overflow-x-auto">
+                    <table class="config-table rounded-lg overflow-hidden">
+                        <thead>
+                            <tr>
+                                <th>Option</th>
+                                <th>Type</th>
+                                <th>Default</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>path</code></td>
+                                <td>string</td>
+                                <td><code>'./data/peerquanta.db'</code></td>
+                                <td>Path to SQLite database file</td>
+                            </tr>
+                            <tr>
+                                <td><code>replication.enabled</code></td>
+                                <td>boolean</td>
+                                <td><code>true</code></td>
+                                <td>Enable P2P database replication</td>
+                            </tr>
+                            <tr>
+                                <td><code>replication.syncInterval</code></td>
+                                <td>number</td>
+                                <td><code>30000</code></td>
+                                <td>Sync interval in milliseconds (30 seconds)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Security Section -->
+            <div class="config-card-security rounded-xl p-6 mb-6" id="security">
+                <h3 class="text-xl font-bold text-red-400 mb-3 flex items-center gap-2">
+                    <span>🛡️</span> security — Security Settings
+                </h3>
+                <p class="text-mountain-300 mb-4">
+                    Control peer limits and authentication requirements.
+                </p>
+                <div class="overflow-x-auto">
+                    <table class="config-table rounded-lg overflow-hidden">
+                        <thead>
+                            <tr>
+                                <th>Option</th>
+                                <th>Type</th>
+                                <th>Default</th>
+                                <th>Description</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>maxPeers</code></td>
+                                <td>number</td>
+                                <td><code>50</code></td>
+                                <td>Maximum concurrent peer connections</td>
+                            </tr>
+                            <tr>
+                                <td><code>requireAuth</code></td>
+                                <td>boolean</td>
+                                <td><code>false</code></td>
+                                <td>Require authentication for API access</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Capabilities -->
+            <h2 class="text-2xl font-bold mb-4 mt-8" id="capabilities">Node Capabilities</h2>
+            <p class="text-mountain-300 mb-6">
+                Capabilities define what features your node supports on the mesh network. 
+                Peers can query these to find nodes that support specific services.
+            </p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                <div class="bg-mountain-800 rounded-xl p-4">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="capability-badge capability-listings">listings</span>
+                    </div>
+                    <p class="text-mountain-300 text-sm">
+                        <strong>P2P Marketplace Listings</strong> — Host and serve marketplace listings, 
+                        enable search and discovery of items across the mesh network.
+                    </p>
+                </div>
+                <div class="bg-mountain-800 rounded-xl p-4">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="capability-badge capability-chat">chat</span>
+                    </div>
+                    <p class="text-mountain-300 text-sm">
+                        <strong>Encrypted Messaging</strong> — Support end-to-end encrypted 
+                        direct messaging via ANNEX P2P channels.
+                    </p>
+                </div>
+                <div class="bg-mountain-800 rounded-xl p-4">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="capability-badge capability-forum">forum</span>
+                    </div>
+                    <p class="text-mountain-300 text-sm">
+                        <strong>Discussion Boards</strong> — Host and replicate 
+                        decentralized forum threads and discussions.
+                    </p>
+                </div>
+                <div class="bg-mountain-800 rounded-xl p-4">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="capability-badge capability-qcoa">qcoa</span>
+                    </div>
+                    <p class="text-mountain-300 text-sm">
+                        <strong>Quantum Certificate of Authenticity</strong> — Issue and verify 
+                        QCoA certificates for item provenance.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Environment Variables -->
+            <h2 class="text-2xl font-bold mb-4" id="environment-variables">Environment Variables</h2>
+            <p class="text-mountain-300 mb-6">
+                Override configuration options with environment variables. 
+                Environment variables take precedence over config file settings.
+            </p>
+
+            <div class="config-card-env rounded-xl p-6 mb-8">
+                <div class="overflow-x-auto">
+                    <table class="config-table rounded-lg overflow-hidden">
+                        <thead>
+                            <tr>
+                                <th>Variable</th>
+                                <th>Overrides</th>
+                                <th>Example</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><code>YAKMESH_PORT</code></td>
+                                <td><code>network.httpPort</code></td>
+                                <td><code>YAKMESH_PORT=8080</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>YAKMESH_WS_PORT</code></td>
+                                <td><code>network.wsPort</code></td>
+                                <td><code>YAKMESH_WS_PORT=9002</code></td>
+                            </tr>
+                            <tr>
+                                <td><code>YAKMESH_DATA_DIR</code></td>
+                                <td><code>database.path</code></td>
+                                <td><code>YAKMESH_DATA_DIR=/var/yakmesh/data</code></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <pre class="language-bash mt-4"><code># Example: Start with custom ports
+YAKMESH_PORT=8080 YAKMESH_WS_PORT=9002 npx yakmesh start</code></pre>
+            </div>
+
+            <!-- Deployment Examples -->
+            <h2 class="text-2xl font-bold mb-6" id="examples">Deployment Examples</h2>
+
+            <!-- Local Development -->
+            <h3 class="text-xl font-semibold mb-3 text-zinc-300" id="local-dev">Local Development</h3>
+            <p class="text-mountain-300 mb-4">
+                Minimal configuration for local development and testing:
+            </p>
+            <pre class="language-javascript mb-6"><code>// yakmesh.config.js — Local Development
+export default {
+  node: {
+    name: 'Dev Node',
+    region: 'local',
+    capabilities: ['listings', 'chat'],
+  },
+  
+  network: {
+    httpPort: 3000,
+    wsPort: 9001,
+    publicHost: 'localhost',
+  },
+  
+  database: {
+    path: './data/dev.db',
+    replication: {
+      enabled: false,  // Disable for faster local dev
+    },
+  },
+  
+  security: {
+    maxPeers: 5,
+    requireAuth: false,
+  },
+};</code></pre>
+
+            <!-- Production -->
+            <h3 class="text-xl font-semibold mb-3 text-zinc-300" id="production">Production Deployment</h3>
+            <p class="text-mountain-300 mb-4">
+                Hardened configuration for production servers:
+            </p>
+            <pre class="language-javascript mb-6"><code>// yakmesh.config.js — Production
+export default {
+  node: {
+    name: 'YakMesh Production Node',
+    region: 'us-west',
+    capabilities: ['listings', 'chat', 'forum', 'qcoa'],
+  },
+  
+  network: {
+    httpPort: 80,
+    wsPort: 443,
+    publicHost: 'node.yourdomain.com',
+  },
+  
+  bootstrap: [
+    'wss://gateway1.yakmesh.network:443',
+    'wss://gateway2.yakmesh.network:443',
+  ],
+  
+  database: {
+    path: '/var/yakmesh/data/peerquanta.db',
+    replication: {
+      enabled: true,
+      syncInterval: 15000,  // More frequent sync
+    },
+  },
+  
+  security: {
+    maxPeers: 100,
+    requireAuth: true,  // Enable authentication
+  },
+};</code></pre>
+
+            <!-- Landmark Node -->
+            <h3 class="text-xl font-semibold mb-3 text-zinc-300" id="landmark">Landmark Node (High Availability)</h3>
+            <p class="text-mountain-300 mb-4">
+                Configuration for landmark nodes that serve as stable reference points in the mesh:
+            </p>
+            <pre class="language-javascript mb-8"><code>// yakmesh.config.js — Landmark Node
+export default {
+  node: {
+    name: 'Everest Landmark',
+    region: 'asia-south',
+    capabilities: ['listings', 'chat', 'forum', 'qcoa'],
+  },
+  
+  network: {
+    httpPort: 3000,
+    wsPort: 9001,
+    publicHost: 'everest.yakmesh.network',
+  },
+  
+  bootstrap: [],  // Landmark nodes don't need bootstrap
+  
+  database: {
+    path: '/mnt/ssd/yakmesh/peerquanta.db',
+    replication: {
+      enabled: true,
+      syncInterval: 10000,  // Aggressive sync
+    },
+  },
+  
+  security: {
+    maxPeers: 200,       // High peer capacity
+    requireAuth: false,  // Open for mesh access
+  },
+};</code></pre>
+
+            <!-- Configuration Tips -->
+            <h2 class="text-2xl font-bold mb-4" id="tips">Configuration Tips</h2>
+            
+            <div class="space-y-4 mb-8">
+                <div class="bg-mountain-800 rounded-lg p-4 border-l-4 border-blue-500">
+                    <h4 class="font-semibold text-blue-400 mb-2">🔷 Port Selection</h4>
+                    <p class="text-mountain-300 text-sm">
+                        If ports are in use, YAKMESH will automatically try sequential ports 
+                        (9001 → 9002 → 9003...). Use environment variables for container deployments.
+                    </p>
+                </div>
+                <div class="bg-mountain-800 rounded-lg p-4 border-l-4 border-teal-500">
+                    <h4 class="font-semibold text-teal-400 mb-2">🌐 Public Host</h4>
+                    <p class="text-mountain-300 text-sm">
+                        Set <code class="text-zinc-300">publicHost</code> to your actual public IP or domain 
+                        so other peers can connect back to your node.
+                    </p>
+                </div>
+                <div class="bg-mountain-800 rounded-lg p-4 border-l-4 border-yellow-500">
+                    <h4 class="font-semibold text-yellow-400 mb-2">🚀 Bootstrap Nodes</h4>
+                    <p class="text-mountain-300 text-sm">
+                        Only needed for initial discovery. Once connected to the mesh, 
+                        your node learns about other peers through gossip protocol.
+                    </p>
+                </div>
+                <div class="bg-mountain-800 rounded-lg p-4 border-l-4 border-purple-500">
+                    <h4 class="font-semibold text-purple-400 mb-2">💾 Database Path</h4>
+                    <p class="text-mountain-300 text-sm">
+                        Use absolute paths in production. The directory must exist and be writable.
+                        SQLite is automatically initialized on first run.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Related Documentation -->
+            <div class="bg-mountain-800 border theme-border rounded-xl p-6 mt-8">
+                <h3 class="text-lg font-semibold mb-4">Related Documentation</h3>
+                <ul class="space-y-3 text-mountain-300">
+                    <li class="flex items-center gap-2">
+                        <span>💻</span>
+                        <a href="cli.html" class="theme-accent theme-accent-hover">CLI Commands</a>
+                        <span class="text-mountain-400 text-sm">— Initialize and manage nodes</span>
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <span>🌐</span>
+                        <a href="mandala.html" class="theme-accent theme-accent-hover">MANDALA (Mesh)</a>
+                        <span class="text-mountain-400 text-sm">— P2P mesh networking</span>
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <span>🏔️</span>
+                        <a href="sherpa.html" class="theme-accent theme-accent-hover">SHERPA</a>
+                        <span class="text-mountain-400 text-sm">— Peer discovery system</span>
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <span>🔐</span>
+                        <a href="annex.html" class="theme-accent theme-accent-hover">ANNEX</a>
+                        <span class="text-mountain-400 text-sm">— P2P encrypted channels</span>
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <span>🛡️</span>
+                        <a href="trust-security.html" class="theme-accent theme-accent-hover">SURAKSHA</a>
+                        <span class="text-mountain-400 text-sm">— Authentication and trust</span>
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <span>🌐</span>
+                        <a href="webserver.html" class="theme-accent theme-accent-hover">Web Server</a>
+                        <span class="text-mountain-400 text-sm">— Hosting configuration</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Journey Navigation -->
+            <div class="border-t border-mountain-700 mt-12 pt-8">
+                <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <a href="mandala.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">
+                        <div class="text-xs text-mountain-400 mb-1">← Previous</div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">🌐</span>
+                            <span class="font-semibold group-hover:text-theme-accent">MANDALA (Mesh)</span>
+                        </div>
+                        <p class="text-mountain-400 text-sm mt-1">P2P mesh networking protocol</p>
+                    </a>
+                    <a href="adapters.html" class="flex-1 block bg-mountain-800 border border-theme-primary rounded-xl p-4 hover:border-theme-accent transition group">
+                        <div class="text-xs text-mountain-400 mb-1">Next →</div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">🔌</span>
+                            <span class="font-semibold group-hover:text-theme-accent">Adapters</span>
+                        </div>
+                        <p class="text-mountain-400 text-sm mt-1">External system integrations</p>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+  <footer class="docs-footer">
+    <p>© 2026 YAKMESH™</p>
+  </footer><!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+    <script src="docs.js"></script>
+
+  
+</body>
+</html>
+
+
+

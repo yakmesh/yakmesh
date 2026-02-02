@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="stupa">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="favicon.ico" sizes="32x32">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <title>STUPA Protocol | YAKMESH Documentation</title>
+  <meta name="description" content="STUPA - Signal Transmission Unit for Peer Awareness. Priority-based broadcast messaging across the Yakmesh network.">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            theme: { primary: '#fbbf24', secondary: '#f59e0b', accent: '#fde68a', bg: '#451a03', glow: 'rgba(251, 191, 36, 0.15)' },
+            mountain: { 300: '#88b4a6', 400: '#6a9a8a', 700: '#2e4c43', 800: '#1f332d', 900: '#101a16' }
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="docs.css">
+  <style>
+    .theme-accent { color: #fde68a; }
+    .theme-accent-hover:hover { color: #fbbf24; }
+    .theme-badge { background: rgba(251, 191, 36, 0.2); color: #fde68a; }
+    .theme-border { border-color: #fbbf24; }
+    .theme-callout { background: rgba(251, 191, 36, 0.1); border-color: #f59e0b; }
+    .active-link { background: rgba(251, 191, 36, 0.2) !important; color: #fde68a !important; }
+  </style>
+</head>
+<body class="bg-mountain-900 text-white min-h-screen">
+    <nav class="docs-sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-logo">
+      <span class="logo-icon">🏔️</span>
+      <span class="logo-text">Yakmesh</span>
+    </a>
+    <ul class="sidebar-nav">
+      <li><a href="index.html"><span>🏠</span> <span>Overview</span></a></li>
+      <li><a href="getting-started.html"><span>🚀</span> <span>Getting Started</span></a></li>
+      <li><a href="doko.html"><span>🧺</span> <span>DOKO</span></a></li>
+      <li><a href="namche.html"><span>🚪</span> <span>NAMCHE</span></a></li>
+      <li><a href="sherpa.html"><span>🧗</span> <span>SHERPA</span></a></li>
+      <li><a href="nakpak.html"><span>🎒</span> <span>NAKPAK</span></a></li>
+      <li><a href="annex.html"><span>🌉</span> <span>ANNEX</span></a></li>
+      <li><a href="yak-protocol.html"><span class="yak-icon"></span> <span>YAK</span></a></li>
+      <li><a href="mantra.html"><span>🕉️</span> <span>MANTRA</span></a></li>
+      <li><a href="stupa.html" class="active"><span>🛕</span> <span>STUPA</span></a></li>
+      <li><a href="lama.html"><span>🔮</span> <span>LAMA</span></a></li>
+      <li><a href="mani.html"><span>⏱️</span> <span>MANI</span></a></li>
+      <li><a href="karma.html"><span>☯️</span> <span>KARMA</span></a></li>
+      <li><a href="mandala.html"><span>🌐</span> <span>MANDALA</span></a></li>
+      <li><a href="tattva.html"><span>🔯</span> <span>TATTVA</span></a></li>
+      <li><a href="geo-proof.html"><span>🌍</span> <span>PRAMAAN</span></a></li>
+      <li><a href="trust-security.html"><span>🔒</span> <span>SURAKSHA</span></a></li>
+      <li><a href="docs-bundle.html"><span>📚</span> <span>GRANTH</span></a></li>
+      <li><a href="api.html"><span>📡</span> <span>API</span></a></li>
+    </ul>
+  </nav>
+
+  <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+    </svg>
+  </button>
+
+  <!-- Mobile overlay for tap-to-close sidebar -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="docs-main" id="mainContent">
+
+    <div class="docs-content">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="text-4xl">🛕</span>
+        <div>
+          <h1 class="text-4xl font-bold">STUPA <span class="text-xl text-mountain-400">स्तूप</span></h1>
+          <p class="theme-accent">Signal Transmission Unit for Peer Awareness</p>
+        </div>
+      </div>
+      <p class="text-xl text-mountain-300 mb-4">Priority-based broadcast messaging across the Yakmesh network.</p>
+      <span class="inline-block text-xs theme-badge px-2 py-1 rounded mb-8">v2.5.0</span>
+
+      <div class="feature-box">
+        <h3>The Sacred Tower</h3>
+        <p>
+          In Himalayan Buddhist tradition, a <strong>stupa</strong> is a sacred structure that rises above the landscape, 
+          radiating spiritual presence to all who see it. Pilgrims from every direction are drawn to its signal.
+        </p>
+        <p>
+          The STUPA protocol embodies this principle—when a node broadcasts a critical message, it rises like a 
+          sacred tower above the mesh, ensuring all peers receive the signal according to its urgency.
+        </p>
+      </div>
+
+      <h2>🏔️ Overview</h2>
+      <p>
+        STUPA (Signal Transmission Unit for Peer Awareness) provides <strong>priority-based broadcast messaging</strong> 
+        for the Yakmesh network. Unlike MANTRA's epidemic gossip, STUPA messages are explicitly broadcast to all 
+        connected peers with priority levels that determine propagation urgency.
+      </p>
+
+      <div class="protocol-family">
+        <h3>Protocol Family</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Protocol</th>
+              <th>Himalayan Name</th>
+              <th>Purpose</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>🕉️ Gossip</td>
+              <td>MANTRA</td>
+              <td>Epidemic message propagation</td>
+            </tr>
+            <tr class="active">
+              <td>🛕 Broadcast</td>
+              <td>STUPA</td>
+              <td>Priority-based broadcasting</td>
+            </tr>
+            <tr>
+              <td>🔮 Oracle</td>
+              <td>LAMA</td>
+              <td>Distributed consensus</td>
+            </tr>
+            <tr>
+              <td>⏱️ Time</td>
+              <td>MANI</td>
+              <td>Temporal synchronization</td>
+            </tr>
+            <tr>
+              <td>☯️ Trust</td>
+              <td>KARMA</td>
+              <td>Reputation management</td>
+            </tr>
+            <tr>
+              <td>🌐 Mesh</td>
+              <td>MANDALA</td>
+              <td>Network topology</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>📊 Priority Levels</h2>
+      <p>
+        STUPA messages carry priority levels inspired by the tiers of a stupa's ascending structure. 
+        Higher priority messages propagate faster and with greater urgency:
+      </p>
+
+      <div class="priority-tiers">
+        <div class="tier tier-critical">
+          <div class="tier-header">
+            <span class="tier-level">5</span>
+            <h4>CRITICAL</h4>
+          </div>
+          <p>Security breaches, network-wide emergencies. Immediate propagation.</p>
+        </div>
+        <div class="tier tier-flash">
+          <div class="tier-header">
+            <span class="tier-level">4</span>
+            <h4>FLASH</h4>
+          </div>
+          <p>Urgent operational messages requiring rapid response.</p>
+        </div>
+        <div class="tier tier-immediate">
+          <div class="tier-header">
+            <span class="tier-level">3</span>
+            <h4>IMMEDIATE</h4>
+          </div>
+          <p>High-priority messages with expedited handling.</p>
+        </div>
+        <div class="tier tier-priority">
+          <div class="tier-header">
+            <span class="tier-level">2</span>
+            <h4>PRIORITY</h4>
+          </div>
+          <p>Important messages with elevated processing.</p>
+        </div>
+        <div class="tier tier-routine">
+          <div class="tier-header">
+            <span class="tier-level">1</span>
+            <h4>ROUTINE</h4>
+          </div>
+          <p>Standard broadcasts processed normally.</p>
+        </div>
+      </div>
+
+      <h2>🛕 Core Components</h2>
+
+      <h3>StupaMessage</h3>
+      <p>The fundamental message unit for broadcasts:</p>
+      <pre><code>import { StupaMessage, STUPA_PRIORITY } from 'yakmesh/mesh/beacon-broadcast';
+
+// Create a broadcast message
+const message = new StupaMessage({
+  type: 'NETWORK_ALERT',
+  payload: { alert: 'Node cluster offline', region: 'asia-1' },
+  priority: STUPA_PRIORITY.FLASH,
+  ttl: 300, // 5 minutes
+  origin: nodeId
+});
+
+// Message properties
+console.log(message.id);        // Unique message ID
+console.log(message.priority);  // Priority level
+console.log(message.hops);      // Propagation count
+console.log(message.isExpired); // TTL check</code></pre>
+
+      <h3>StupaBroadcast</h3>
+      <p>The broadcast controller managing message propagation:</p>
+      <pre><code>import { StupaBroadcast, STUPA_CONFIG } from 'yakmesh/mesh/beacon-broadcast';
+
+// Initialize the broadcast system
+const stupa = new StupaBroadcast(node, {
+  ...STUPA_CONFIG,
+  maxHops: 10,
+  deduplicationWindow: 60000 // 1 minute
+});
+
+// Broadcast a message
+await stupa.broadcast({
+  type: 'CONSENSUS_REACHED',
+  payload: { decision: 'upgrade-v2', votes: 42 },
+  priority: STUPA_PRIORITY.IMMEDIATE
+});
+
+// Listen for broadcasts
+stupa.on('message', (message) => {
+  console.log(`Received ${message.type} from ${message.origin}`);
+  console.log(`Priority: ${stupa.getPriorityName(message.priority)}`);
+});</code></pre>
+
+      <h2>🔔 Event System</h2>
+      <p>STUPA emits events for broadcast lifecycle management:</p>
+
+      <table class="api-table">
+        <thead>
+          <tr>
+            <th>Event</th>
+            <th>Payload</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>message</code></td>
+            <td>StupaMessage</td>
+            <td>New broadcast received from the network</td>
+          </tr>
+          <tr>
+            <td><code>broadcast</code></td>
+            <td>StupaMessage</td>
+            <td>Message successfully broadcast to peers</td>
+          </tr>
+          <tr>
+            <td><code>forward</code></td>
+            <td>StupaMessage</td>
+            <td>Message forwarded to next-hop peers</td>
+          </tr>
+          <tr>
+            <td><code>expired</code></td>
+            <td>StupaMessage</td>
+            <td>Message TTL exceeded, dropped</td>
+          </tr>
+          <tr>
+            <td><code>duplicate</code></td>
+            <td>messageId</td>
+            <td>Duplicate message detected and filtered</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>⚙️ Configuration</h2>
+      <pre><code>export const STUPA_CONFIG = {
+  // Message propagation
+  maxHops: 10,              // Maximum hop count before drop
+  defaultTTL: 3600,         // Default message TTL (1 hour)
+  
+  // Deduplication
+  deduplicationWindow: 60000, // Duplicate detection window (ms)
+  maxSeenMessages: 10000,     // Message ID cache size
+  
+  // Priority handling
+  priorityQueues: true,       // Enable priority-based queuing
+  criticalBypass: true,       // CRITICAL skips normal queue
+  
+  // Rate limiting
+  maxBroadcastsPerMinute: 60, // Outbound rate limit
+  burstAllowance: 10          // Burst capacity
+};</code></pre>
+
+      <h2>🌊 Message Flow</h2>
+      <div class="flow-diagram">
+        <div class="flow-step">
+          <div class="flow-icon">📢</div>
+          <div class="flow-label">Originate</div>
+          <p>Node creates StupaMessage with priority</p>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">
+          <div class="flow-icon">🛕</div>
+          <div class="flow-label">Broadcast</div>
+          <p>StupaBroadcast sends to all peers</p>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">
+          <div class="flow-icon">🔄</div>
+          <div class="flow-label">Forward</div>
+          <p>Peers relay based on TTL and hops</p>
+        </div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step">
+          <div class="flow-icon">✅</div>
+          <div class="flow-label">Deliver</div>
+          <p>All nodes receive the broadcast</p>
+        </div>
+      </div>
+
+      <h2>🔐 Security Considerations</h2>
+      <ul class="security-list">
+        <li><strong>Message Signing:</strong> All broadcasts are cryptographically signed by origin</li>
+        <li><strong>Priority Abuse Prevention:</strong> Rate limiting prevents CRITICAL spam</li>
+        <li><strong>TTL Enforcement:</strong> Expired messages are dropped, preventing replay attacks</li>
+        <li><strong>Hop Limiting:</strong> Maximum hop count prevents infinite propagation loops</li>
+        <li><strong>Origin Verification:</strong> KARMA scores influence broadcast acceptance</li>
+      </ul>
+
+      <h2>🔗 Integration with Other Protocols</h2>
+      <div class="integration-grid">
+        <div class="integration-card">
+          <h4>🕉️ MANTRA</h4>
+          <p>STUPA for urgent broadcasts, MANTRA for eventual consistency</p>
+        </div>
+        <div class="integration-card">
+          <h4>🔮 LAMA (Oracle)</h4>
+          <p>Consensus results broadcast via STUPA IMMEDIATE priority</p>
+        </div>
+        <div class="integration-card">
+          <h4>☯️ KARMA</h4>
+          <p>Trust scores determine broadcast acceptance thresholds</p>
+        </div>
+        <div class="integration-card">
+          <h4>🌐 MANDALA</h4>
+          <p>Mesh topology optimizes broadcast routing paths</p>
+        </div>
+      </div>
+
+      <h2>📖 Backward Compatibility</h2>
+      <p>
+        For existing codebases using the original "Beacon" naming, legacy exports are maintained:
+      </p>
+      <pre><code>// Legacy imports still work
+import { BeaconBroadcast, BeaconMessage, BEACON_CONFIG } from 'yakmesh/mesh/beacon-broadcast';
+
+// These map to the new STUPA names
+// BeaconBroadcast → StupaBroadcast
+// BeaconMessage → StupaMessage
+// BEACON_CONFIG → STUPA_CONFIG</code></pre>
+
+      <!-- Journey Navigation -->
+      <div class="border-t border-mountain-700 mt-12 pt-8">
+        <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
+        <div class="flex flex-col sm:flex-row gap-4">
+          <a href="mantra.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">
+            <div class="text-xs text-mountain-400 mb-1">← Previous</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">🕉️</span>
+              <span class="font-semibold group-hover:text-theme-accent">MANTRA Protocol</span>
+            </div>
+            <p class="text-mountain-400 text-sm mt-1">Message propagation & gossip</p>
+          </a>
+          <a href="lama.html" class="flex-1 block bg-mountain-800 border border-theme-primary rounded-xl p-4 hover:border-theme-accent transition group">
+            <div class="text-xs text-mountain-400 mb-1">Next →</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">🔮</span>
+              <span class="font-semibold group-hover:text-theme-accent">LAMA Protocol</span>
+            </div>
+            <p class="text-mountain-400 text-sm mt-1">Distributed consensus</p>
+          </a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="docs-footer">
+    <p>© 2026 YAKMESH™</p>
+  </footer>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="docs.js"></script>
+
+  
+</body>
+</html>
+
+

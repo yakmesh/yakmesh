@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="api">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="favicon.ico" sizes="32x32">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <title>REST API Reference | YAKMESH Documentation</title>
+    <meta name="description" content="Complete REST API reference for YAKMESH node operations.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        theme: { primary: '#475569', secondary: '#334155', accent: '#64748b', bg: '#1e293b', glow: 'rgba(71, 85, 105, 0.1)' },
+                        mountain: { 300: '#88b4a6', 400: '#6a9a8a', 700: '#2e4c43', 800: '#1f332d', 900: '#101a16' }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="stylesheet" href="docs.css">
+    <style>
+        .theme-accent { color: #94a3b8; }
+        .theme-accent-hover:hover { color: #cbd5e1; }
+        .theme-badge { background: rgba(71, 85, 105, 0.3); color: #94a3b8; }
+        .theme-border { border-color: #475569; }
+        .theme-callout { background: rgba(71, 85, 105, 0.1); border-color: #334155; }
+        .active-link { background: rgba(71, 85, 105, 0.3) !important; color: #94a3b8 !important; }
+        .method-get { background: #166534; }
+        .method-post { background: #1d4ed8; }
+    </style>
+</head>
+<body class="bg-mountain-900 text-white min-h-screen">
+  <nav class="docs-sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-logo">
+      <span class="logo-icon">🏔️</span>
+      <span class="logo-text">Yakmesh</span>
+    </a>
+    <ul class="sidebar-nav">
+      <li><a href="index.html"><span>🏠</span> <span>Overview</span></a></li>
+      <li><a href="getting-started.html"><span>🚀</span> <span>Getting Started</span></a></li>
+      <li><a href="doko.html"><span>🧺</span> <span>DOKO</span></a></li>
+      <li><a href="namche.html"><span>🚪</span> <span>NAMCHE</span></a></li>
+      <li><a href="sherpa.html"><span>🧗</span> <span>SHERPA</span></a></li>
+      <li><a href="nakpak.html"><span>🎒</span> <span>NAKPAK</span></a></li>
+      <li><a href="annex.html"><span>🌉</span> <span>ANNEX</span></a></li>
+      <li><a href="yak-protocol.html"><span class="yak-icon"></span> <span>YAK</span></a></li>
+      <li><a href="mantra.html"><span>🕉️</span> <span>MANTRA</span></a></li>
+      <li><a href="stupa.html"><span>🛕</span> <span>STUPA</span></a></li>
+      <li><a href="lama.html"><span>🔮</span> <span>LAMA</span></a></li>
+      <li><a href="mani.html"><span>⏱️</span> <span>MANI</span></a></li>
+      <li><a href="karma.html"><span>☯️</span> <span>KARMA</span></a></li>
+      <li><a href="mandala.html"><span>🌐</span> <span>MANDALA</span></a></li>
+      <li><a href="tattva.html"><span>🔯</span> <span>TATTVA</span></a></li>
+      <li><a href="geo-proof.html"><span>🌍</span> <span>PRAMAAN</span></a></li>
+      <li><a href="trust-security.html"><span>🔒</span> <span>SURAKSHA</span></a></li>
+      <li><a href="docs-bundle.html"><span>📚</span> <span>GRANTH</span></a></li>
+      <li><a href="api.html" class="active"><span>📡</span> <span>API</span></a></li>
+    </ul>
+  </nav>
+
+  <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+    </svg>
+  </button>
+
+  <!-- Mobile overlay for tap-to-close sidebar -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="docs-main" id="mainContent">
+        <div class="docs-content">
+            <h1 class="text-4xl font-bold mb-4">REST API Reference</h1>
+            <p class="text-xl text-mountain-300 mb-8">Complete documentation for all YAKMESH REST endpoints.</p>
+
+            <div class="space-y-8">
+                <!-- Status -->
+                <div class="bg-mountain-800 border border-mountain-700 rounded-xl overflow-hidden">
+                    <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
+                        <span class="method-get px-2 py-1 rounded text-xs font-mono">GET</span>
+                        <code class="text-Yakmesh-300">/health</code>
+                    </div>
+                    <div class="p-4">
+                        <p class="text-mountain-300 mb-4">Returns node health and network status.</p>
+                        <h4 class="font-semibold mb-2">Response</h4>
+                        <pre class="language-json rounded-lg"><code>{
+  "status": "ok",
+  "nodeId": "a7f3b2c1e8d9...",
+  "peers": 3,
+  "algorithm": "ML-DSA-65",
+  "network": {
+    "name": "mobius-rabi-junction",
+    "id": "pq-g1b6"
+  }
+}</code></pre>
+                    </div>
+                </div>
+
+                <!-- Identity -->
+                <div class="bg-mountain-800 border border-mountain-700 rounded-xl overflow-hidden">
+                    <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
+                        <span class="method-get px-2 py-1 rounded text-xs font-mono">GET</span>
+                        <code class="text-Yakmesh-300">/node</code>
+                    </div>
+                    <div class="p-4">
+                        <p class="text-mountain-300 mb-4">Returns node identity information.</p>
+                        <pre class="language-json rounded-lg"><code>{
+  "nodeId": "a7f3b2c1e8d9...",
+  "name": "My YAKMESH Node",
+  "region": "local",
+  "algorithm": "ML-DSA-65",
+  "nistLevel": 3,
+  "publicKey": "3082...",
+  "createdAt": "2026-01-17T10:00:00.000Z"
+}</code></pre>
+                    </div>
+                </div>
+
+                <!-- Peers -->
+                <div class="bg-mountain-800 border border-mountain-700 rounded-xl overflow-hidden">
+                    <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
+                        <span class="method-get px-2 py-1 rounded text-xs font-mono">GET</span>
+                        <code class="text-Yakmesh-300">/peers</code>
+                    </div>
+                    <div class="p-4">
+                        <p class="text-mountain-300 mb-4">Lists all connected peers.</p>
+                        <pre class="language-json rounded-lg"><code>[
+  {
+    "nodeId": "b8e4c3f2a1d7...",
+    "name": "Peer Node 1",
+    "endpoint": "wss://peer1.example.com:9001",
+    "lastSeen": 1737100000000
+  },
+  {
+    "nodeId": "c9f5d4e3b2a8...",
+    "name": "Peer Node 2",
+    "endpoint": "inbound",
+    "lastSeen": 1737100005000
+  }
+]</code></pre>
+                    </div>
+                </div>
+
+                <!-- Time -->
+                <div class="bg-mountain-800 border border-mountain-700 rounded-xl overflow-hidden">
+                    <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
+                        <span class="method-get px-2 py-1 rounded text-xs font-mono">GET</span>
+                        <code class="text-Yakmesh-300">/network/identity</code>
+                    </div>
+                    <div class="p-4">
+                        <p class="text-mountain-300 mb-4">Returns network identity (derived from codebase hash, never exposing the hash).</p>
+                        <pre class="language-json rounded-lg"><code>{
+  "name": "mobius-rabi-junction",
+  "id": "pq-g1b6",
+  "fingerprint": "8f3a9c2b...",
+  "verificationPhrase": "The tier fermion reflects the create public"
+}</code></pre>
+                    </div>
+                </div>
+
+                <!-- Oracle -->
+                <div class="bg-mountain-800 border border-mountain-700 rounded-xl overflow-hidden">
+                    <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
+                        <span class="method-get px-2 py-1 rounded text-xs font-mono">GET</span>
+                        <code class="text-Yakmesh-300">/oracle/status</code>
+                    </div>
+                    <div class="p-4">
+                        <p class="text-mountain-300 mb-4">Returns oracle status and self-integrity verification.</p>
+                        <pre class="language-json rounded-lg"><code>{
+  "status": "healthy",
+  "integrity": { "valid": true },
+  "networkFingerprint": "8f3a9c2b...",
+  "networkName": "mobius-rabi-junction",
+  "networkId": "pq-g1b6",
+  "validationMethods": ["hashContent", "verify", "seal"],
+  "verifiedPeers": []
+}</code></pre>
+                    </div>
+                </div>
+
+                <!-- Gossip -->
+                <div class="bg-mountain-800 border border-mountain-700 rounded-xl overflow-hidden">
+                    <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
+                        <span class="method-post px-2 py-1 rounded text-xs font-mono">POST</span>
+                        <code class="text-Yakmesh-300">/rumor</code>
+                    </div>
+                    <div class="p-4">
+                        <p class="text-mountain-300 mb-4">Spreads a rumor to connected peers via gossip protocol.</p>
+                        <h4 class="font-semibold mb-2">Request Body</h4>
+                        <pre class="language-json rounded-lg mb-4"><code>{
+  "topic": "custom_event",
+  "data": { "key": "value" }
+}</code></pre>
+                        <h4 class="font-semibold mb-2">Response</h4>
+                        <pre class="language-json rounded-lg"><code>{
+  "success": true,
+  "messageId": "msg_a7f3b2c1"
+}</code></pre>
+                    </div>
+                </div>
+
+                <!-- SHERPA Status -->
+                <div class="bg-mountain-800 border border-mountain-700 rounded-xl overflow-hidden">
+                    <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
+                        <span class="method-get px-2 py-1 rounded text-xs font-mono">GET</span>
+                        <code class="text-Yakmesh-300">/sherpa/status</code>
+                    </div>
+                    <div class="p-4">
+                        <p class="text-mountain-300 mb-4">Returns SHERPA discovery service status and beacon information.</p>
+                        <pre class="language-json rounded-lg"><code>{
+  "enabled": true,
+  "beacon": {
+    "nodeId": "a7f3b2c1e8d9...",
+    "endpoint": "wss://node.example.com:9001",
+    "lastBroadcast": 1737200000000
+  },
+  "discoveredPeers": 12,
+  "beaconAge": "3d 4h 12m"
+}</code></pre>
+                    </div>
+                </div>
+
+                <!-- SHERPA Candidates -->
+                <div class="bg-mountain-800 border border-mountain-700 rounded-xl overflow-hidden">
+                    <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
+                        <span class="method-get px-2 py-1 rounded text-xs font-mono">GET</span>
+                        <code class="text-Yakmesh-300">/sherpa/candidates</code>
+                    </div>
+                    <div class="p-4">
+                        <p class="text-mountain-300 mb-4">Returns list of discovered peer candidates for connection.</p>
+                        <pre class="language-json rounded-lg"><code>[
+  {
+    "nodeId": "b8e4c3f2a1d7...",
+    "endpoint": "wss://peer1.example.com:9001",
+    "karmaTier": "sathi",
+    "lastSeen": 1737200000000
+  }
+]</code></pre>
+                    </div>
+                </div>
+
+                <!-- Replication -->
+                <div class="bg-mountain-800 border border-mountain-700 rounded-xl overflow-hidden">
+                    <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
+                        <span class="method-get px-2 py-1 rounded text-xs font-mono">GET</span>
+                        <code class="text-Yakmesh-300">/replication</code>
+                    </div>
+                    <div class="p-4">
+                        <p class="text-mountain-300 mb-4">Returns STUPA replication statistics.</p>
+                        <pre class="language-json rounded-lg"><code>{
+  "status": "healthy",
+  "peers": 5,
+  "pendingSyncs": 0,
+  "lastSync": 1737200000000,
+  "replicatedItems": 1247
+}</code></pre>
+                    </div>
+                </div>
+
+                <!-- Data POST -->
+                <div class="bg-mountain-800 border border-mountain-700 rounded-xl overflow-hidden">
+                    <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
+                        <span class="method-post px-2 py-1 rounded text-xs font-mono">POST</span>
+                        <code class="text-Yakmesh-300">/data</code>
+                    </div>
+                    <div class="p-4">
+                        <p class="text-mountain-300 mb-4">Stores data in the local node (rate limited).</p>
+                        <h4 class="font-semibold mb-2">Request Body</h4>
+                        <pre class="language-json rounded-lg mb-4"><code>{
+  "key": "my-content-key",
+  "value": "content to store",
+  "ttl": 86400
+}</code></pre>
+                        <h4 class="font-semibold mb-2">Response</h4>
+                        <pre class="language-json rounded-lg"><code>{
+  "success": true,
+  "hash": "sha3-256-hash..."
+}</code></pre>
+                    </div>
+                </div>
+
+                <!-- Time -->
+                <div class="bg-mountain-800 border border-mountain-700 rounded-xl overflow-hidden">
+                    <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
+                        <span class="method-get px-2 py-1 rounded text-xs font-mono">GET</span>
+                        <code class="text-Yakmesh-300">/time</code>
+                    </div>
+                    <div class="p-4">
+                        <p class="text-mountain-300 mb-4">Returns current MANI time synchronization status.</p>
+                        <pre class="language-json rounded-lg"><code>{
+  "source": "ntp",
+  "trustLevel": "yatri",
+  "offset": 0.003,
+  "timestamp": 1737200000000,
+  "synced": true
+}</code></pre>
+                    </div>
+                </div>
+
+                <!-- Bookmarks -->
+                <div class="bg-mountain-800 border border-mountain-700 rounded-xl overflow-hidden">
+                    <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
+                        <span class="method-get px-2 py-1 rounded text-xs font-mono">GET</span>
+                        <code class="text-Yakmesh-300">/bookmarks</code>
+                    </div>
+                    <div class="p-4">
+                        <p class="text-mountain-300 mb-4">Returns all saved YAK:// protocol bookmarks.</p>
+                        <pre class="language-json rounded-lg"><code>[
+  {
+    "name": "my-docs",
+    "uri": "yak://docs.yakmesh/",
+    "createdAt": 1737200000000
+  }
+]</code></pre>
+                    </div>
+                </div>
+
+                <!-- Docs -->
+                <div class="bg-mountain-800 border border-mountain-700 rounded-xl overflow-hidden">
+                    <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
+                        <span class="method-get px-2 py-1 rounded text-xs font-mono">GET</span>
+                        <code class="text-Yakmesh-300">/docs/</code>
+                    </div>
+                    <div class="p-4">
+                        <p class="text-mountain-300 mb-4">Serves embedded documentation bundle (SHA3-256 verified).</p>
+                        <pre class="language-json rounded-lg"><code>// Returns HTML documentation
+// Bundle hash: 17ccf7d033f25b9de...
+// 56 files, ~736 KB total</code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Journey Navigation -->
+            <div class="border-t border-mountain-700 mt-12 pt-8">
+                <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <a href="docs-bundle.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">
+                        <div class="text-xs text-mountain-400 mb-1">← Previous</div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">📚</span>
+                            <span class="font-semibold group-hover:text-theme-accent">GRANTH (Docs Bundle)</span>
+                        </div>
+                        <p class="text-mountain-400 text-sm mt-1">Tamper-proof documentation</p>
+                    </a>
+                    <a href="getting-started.html" class="flex-1 block bg-mountain-800 border border-theme-primary rounded-xl p-4 hover:border-theme-accent transition group">
+                        <div class="text-xs text-mountain-400 mb-1">🔄 Start Over</div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">🚀</span>
+                            <span class="font-semibold group-hover:text-theme-accent">Getting Started</span>
+                        </div>
+                        <p class="text-mountain-400 text-sm mt-1">Begin your YAKMESH journey!</p>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+  <footer class="docs-footer">
+    <p>© 2026 YAKMESH™</p>
+  </footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+
+  
+<script src="docs.js"></script></body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

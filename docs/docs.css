@@ -1,0 +1,1829 @@
+/**
+ * YAKMESH Documentation - Shared Styles & Theme System
+ * 
+ * The Himalayan Journey Documentation Theme
+ * Each module represents a waypoint on the trek to post-quantum enlightenment.
+ */
+
+/* ============================================
+   BASE STYLES
+   ============================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  /* Mountain Base Colors */
+  --mountain-100: #f1f5f9;
+  --mountain-200: #e2e8f0;
+  --mountain-300: #88b4a6;
+  --mountain-400: #6a9a8a;
+  --mountain-700: #2e4c43;
+  --mountain-800: #1f332d;
+  --mountain-900: #101a16;
+  
+  /* Default Yakmesh Green */
+  --yakmesh-400: #10b981;
+  --yakmesh-500: #059669;
+  --yakmesh-600: #047857;
+  --yakmesh-700: #065f46;
+  --yakmesh-900: #022c22;
+  
+  /* Sidebar */
+  --sidebar-width: 16rem;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background-color: var(--mountain-900);
+  color: #fff;
+  min-height: 100vh;
+  position: relative;
+}
+
+/* ============================================
+   THEMED SILHOUETTE BACKGROUNDS
+   Grand atmospheric scenes filling the viewport
+   ============================================ */
+
+/* Base silhouette styling - full viewport */
+body::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  height: 100vh;
+  background-repeat: no-repeat;
+  background-position: center bottom;
+  background-size: cover;
+  pointer-events: none;
+  z-index: -1;
+  opacity: 0.85;
+}
+
+/* Getting Started - Base Camp with tents */
+[data-theme="getting-started"] body::after {
+  background-image: url('../assets/silhouettes/base-camp.svg');
+}
+
+/* NAMCHE Gateway - Stone arch */
+[data-theme="namche"] body::after {
+  background-image: url('../assets/silhouettes/gateway.svg');
+}
+
+/* DOKO Identity - Woven basket */
+[data-theme="doko"] body::after {
+  background-image: url('../assets/silhouettes/doko-basket.svg');
+}
+
+/* SHERPA Discovery - Mountain guide */
+[data-theme="sherpa"] body::after {
+  background-image: url('../assets/silhouettes/sherpa.svg');
+}
+
+/* NAKPAK Routing - Layered backpack */
+[data-theme="nakpak"] body::after {
+  background-image: url('../assets/silhouettes/nakpak.svg');
+}
+
+/* ANNEX P2P - Rope bridge */
+[data-theme="annex"] body::after {
+  background-image: url('../assets/silhouettes/bridge.svg');
+}
+
+/* YAK Protocol - The yak */
+[data-theme="yak-protocol"] body::after {
+  background-image: url('../assets/silhouettes/yak.svg');
+}
+
+/* Geographic Proof - Globe with satellites */
+[data-theme="geo-proof"] body::after {
+  background-image: url('../assets/silhouettes/globe-satellite.svg');
+}
+
+/* Trust & Security - Fortress */
+[data-theme="trust-security"] body::after {
+  background-image: url('../assets/silhouettes/fortress.svg');
+}
+
+/* Advanced Systems - Peak with lightning */
+[data-theme="advanced-systems"] body::after {
+  background-image: url('../assets/silhouettes/peak-lightning.svg');
+}
+
+/* CLI Commands - Terminal */
+[data-theme="cli"] body::after {
+  background-image: url('../assets/silhouettes/terminal.svg');
+}
+
+/* Time Sources - Atomic clock */
+[data-theme="time-sources"] body::after {
+  background-image: url('../assets/silhouettes/atomic-clock.svg');
+}
+
+/* TATTVA System - All-seeing truth */
+[data-theme="tattva"] body::after {
+  background-image: url('../assets/silhouettes/tattva-eye.svg');
+}
+
+/* Mesh Network - Interconnected nodes */
+[data-theme="mesh"] body::after {
+  background-image: url('../assets/silhouettes/mesh-nodes.svg');
+}
+
+/* Configuration - Gears */
+[data-theme="configuration"] body::after {
+  background-image: url('../assets/silhouettes/gears.svg');
+}
+
+/* Adapters - Puzzle pieces */
+[data-theme="adapters"] body::after {
+  background-image: url('../assets/silhouettes/adapters.svg');
+}
+
+/* Web Server - Globe and server */
+[data-theme="webserver"] body::after {
+  background-image: url('../assets/silhouettes/webserver.svg');
+}
+
+/* API Reference - Endpoints */
+[data-theme="api"] body::after {
+  background-image: url('../assets/silhouettes/api-endpoints.svg');
+}
+
+/* MANTRA Protocol - Prayer wheel spreading messages */
+[data-theme="mantra"] body::after {
+  background-image: url('../assets/silhouettes/mantra-wheel.svg');
+}
+
+/* STUPA Broadcast - Sacred tower broadcasting signals */
+[data-theme="stupa"] body::after {
+  background-image: url('../assets/silhouettes/stupa-tower.svg');
+}
+
+/* Index/Overview - Base camp (default) */
+[data-theme="index"] body::after {
+  background-image: url('../assets/silhouettes/base-camp.svg');
+}
+
+/* Index/Overview - Base camp (default) */
+[data-theme="index"] body::after,
+html[data-theme="index"]::after {
+  background-image: url('../assets/silhouettes/base-camp.svg');
+}
+
+code, pre {
+  font-family: 'JetBrains Mono', monospace;
+}
+
+pre[class*="language-"] {
+  border-radius: 0.5rem;
+}
+
+/* ============================================
+   MODULE THEME COLORS
+   ============================================ */
+
+/* Getting Started - Warm amber sunrise, beginning of journey */
+[data-theme="getting-started"] {
+  --theme-primary: #f59e0b;
+  --theme-secondary: #d97706;
+  --theme-accent: #fbbf24;
+  --theme-bg: #451a03;
+  --theme-glow: rgba(245, 158, 11, 0.1);
+}
+
+/* NAMCHE Gateway - Gold/amber, ancient stone arches */
+[data-theme="namche"] {
+  --theme-primary: #eab308;
+  --theme-secondary: #ca8a04;
+  --theme-accent: #fde047;
+  --theme-bg: #422006;
+  --theme-glow: rgba(234, 179, 8, 0.1);
+}
+
+/* DOKO Identity - Earth brown/tan, woven basket patterns */
+[data-theme="doko"] {
+  --theme-primary: #a16207;
+  --theme-secondary: #854d0e;
+  --theme-accent: #fbbf24;
+  --theme-bg: #1c1917;
+  --theme-glow: rgba(161, 98, 7, 0.1);
+}
+
+/* SHERPA Discovery - Ice blue/cyan, mountain guide */
+[data-theme="sherpa"] {
+  --theme-primary: #06b6d4;
+  --theme-secondary: #0891b2;
+  --theme-accent: #22d3ee;
+  --theme-bg: #083344;
+  --theme-glow: rgba(6, 182, 212, 0.1);
+}
+
+/* NAKPAK Routing - Deep purple/indigo, layered mystery */
+[data-theme="nakpak"] {
+  --theme-primary: #8b5cf6;
+  --theme-secondary: #7c3aed;
+  --theme-accent: #a78bfa;
+  --theme-bg: #1e1b4b;
+  --theme-glow: rgba(139, 92, 246, 0.1);
+}
+
+/* ANNEX P2P - Bridge blue, connection across chasms */
+[data-theme="annex"] {
+  --theme-primary: #3b82f6;
+  --theme-secondary: #2563eb;
+  --theme-accent: #60a5fa;
+  --theme-bg: #172554;
+  --theme-glow: rgba(59, 130, 246, 0.1);
+}
+
+/* YAK Protocol - Warm brown, the yak itself */
+[data-theme="yak-protocol"] {
+  --theme-primary: #b45309;
+  --theme-secondary: #92400e;
+  --theme-accent: #f59e0b;
+  --theme-bg: #1c1917;
+  --theme-glow: rgba(180, 83, 9, 0.1);
+}
+
+/* Geographic Proof - Earth green, satellite/physics */
+[data-theme="geo-proof"] {
+  --theme-primary: #10b981;
+  --theme-secondary: #059669;
+  --theme-accent: #34d399;
+  --theme-bg: #022c22;
+  --theme-glow: rgba(16, 185, 129, 0.1);
+}
+
+/* Trust & Security - Forest green/stone, fortress walls */
+[data-theme="trust-security"] {
+  --theme-primary: #047857;
+  --theme-secondary: #065f46;
+  --theme-accent: #10b981;
+  --theme-bg: #022c22;
+  --theme-glow: rgba(4, 120, 87, 0.1);
+}
+
+/* Advanced Systems - Electric cyan/purple, peak tech */
+[data-theme="advanced-systems"] {
+  --theme-primary: #06b6d4;
+  --theme-secondary: #8b5cf6;
+  --theme-accent: #22d3ee;
+  --theme-bg: #0f172a;
+  --theme-glow: rgba(6, 182, 212, 0.15);
+}
+
+/* API Reference - Neutral slate, clean technical */
+[data-theme="api"] {
+  --theme-primary: #64748b;
+  --theme-secondary: #475569;
+  --theme-accent: #94a3b8;
+  --theme-bg: #0f172a;
+  --theme-glow: rgba(100, 116, 139, 0.1);
+}
+
+/* Adapters - Connector orange, puzzle pieces */
+[data-theme="adapters"] {
+  --theme-primary: #f97316;
+  --theme-secondary: #ea580c;
+  --theme-accent: #fb923c;
+  --theme-bg: #431407;
+  --theme-glow: rgba(249, 115, 22, 0.1);
+}
+
+/* Web Server - Web blue */
+[data-theme="webserver"] {
+  --theme-primary: #0ea5e9;
+  --theme-secondary: #0284c7;
+  --theme-accent: #38bdf8;
+  --theme-bg: #0c4a6e;
+  --theme-glow: rgba(14, 165, 233, 0.1);
+}
+
+/* CLI - Terminal green, command line */
+[data-theme="cli"] {
+  --theme-primary: #22c55e;
+  --theme-secondary: #16a34a;
+  --theme-accent: #4ade80;
+  --theme-bg: #052e16;
+  --theme-glow: rgba(34, 197, 94, 0.1);
+}
+
+/* Time Sources - Precision gold, atomic clocks */
+[data-theme="time-sources"] {
+  --theme-primary: #fbbf24;
+  --theme-secondary: #d97706;
+  --theme-accent: #fcd34d;
+  --theme-bg: #451a03;
+  --theme-glow: rgba(251, 191, 36, 0.1);
+}
+
+/* TATTVA - Deep violet, self-verifying truth */
+[data-theme="tattva"] {
+  --theme-primary: #a855f7;
+  --theme-secondary: #9333ea;
+  --theme-accent: #c084fc;
+  --theme-bg: #2e1065;
+  --theme-glow: rgba(168, 85, 247, 0.1);
+}
+
+/* Mesh - Network cyan, interconnected web */
+[data-theme="mesh"] {
+  --theme-primary: #14b8a6;
+  --theme-secondary: #0d9488;
+  --theme-accent: #2dd4bf;
+  --theme-bg: #042f2e;
+  --theme-glow: rgba(20, 184, 166, 0.1);
+}
+
+/* Configuration - Settings gray, config files */
+[data-theme="configuration"] {
+  --theme-primary: #a1a1aa;
+  --theme-secondary: #71717a;
+  --theme-accent: #d4d4d8;
+  --theme-bg: #18181b;
+  --theme-glow: rgba(161, 161, 170, 0.1);
+}
+
+/* MANTRA - Saffron/gold, prayer wheels and sacred messages */
+[data-theme="mantra"] {
+  --theme-primary: #f97316;
+  --theme-secondary: #ea580c;
+  --theme-accent: #fdba74;
+  --theme-bg: #431407;
+  --theme-glow: rgba(249, 115, 22, 0.15);
+}
+
+/* STUPA - Golden amber, sacred broadcasting towers */
+[data-theme="stupa"] {
+  --theme-primary: #fbbf24;
+  --theme-secondary: #f59e0b;
+  --theme-accent: #fde68a;
+  --theme-bg: #451a03;
+  --theme-glow: rgba(251, 191, 36, 0.15);
+}
+
+[data-theme="stupa"] body::after {
+  background-image: url('../assets/silhouettes/stupa-tower.svg');
+}
+
+/* LAMA - Deep purple/violet, wise teachers in contemplation */
+[data-theme="lama"] {
+  --theme-primary: #a855f7;
+  --theme-secondary: #9333ea;
+  --theme-accent: #c084fc;
+  --theme-bg: #2e1065;
+  --theme-glow: rgba(168, 85, 247, 0.15);
+}
+
+[data-theme="lama"] body::after {
+  background-image: url('../assets/silhouettes/lama-council.svg');
+}
+
+/* MANI - Gold/precision, sacred time-keeping stones */
+[data-theme="mani"] {
+  --theme-primary: #eab308;
+  --theme-secondary: #ca8a04;
+  --theme-accent: #facc15;
+  --theme-bg: #422006;
+  --theme-glow: rgba(234, 179, 8, 0.15);
+}
+
+[data-theme="mani"] body::after {
+  background-image: url('../assets/silhouettes/mani-stones.svg');
+}
+
+/* KARMA - Red/purple, cause and effect wheel */
+[data-theme="karma"] {
+  --theme-primary: #e11d48;
+  --theme-secondary: #be123c;
+  --theme-accent: #fb7185;
+  --theme-bg: #4c0519;
+  --theme-glow: rgba(225, 29, 72, 0.15);
+}
+
+[data-theme="karma"] body::after {
+  background-image: url('../assets/silhouettes/karma-wheel.svg');
+}
+
+/* MANDALA - Teal/cyan, sacred geometric network patterns */
+[data-theme="mandala"] {
+  --theme-primary: #14b8a6;
+  --theme-secondary: #0d9488;
+  --theme-accent: #2dd4bf;
+  --theme-bg: #042f2e;
+  --theme-glow: rgba(20, 184, 166, 0.15);
+}
+
+[data-theme="mandala"] body::after {
+  background-image: url('../assets/silhouettes/mandala-network.svg');
+}
+
+/* DOCS BUNDLE - Package amber/gold, bundled shipment */
+[data-theme="docs-bundle"] {
+  --theme-primary: #f59e0b;
+  --theme-secondary: #d97706;
+  --theme-accent: #fbbf24;
+  --theme-bg: #451a03;
+  --theme-glow: rgba(245, 158, 11, 0.15);
+}
+
+[data-theme="docs-bundle"] body::after {
+  background-image: url('../assets/silhouettes/docs-bundle.svg');
+}
+
+/* Documentation Index - Yakmesh green */
+[data-theme="index"] {
+  --theme-primary: #10b981;
+  --theme-secondary: #059669;
+  --theme-accent: #34d399;
+  --theme-bg: #022c22;
+  --theme-glow: rgba(16, 185, 129, 0.1);
+}
+
+/* ============================================
+   SIDEBAR STYLES
+   ============================================ */
+
+.docs-sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: var(--sidebar-width);
+  height: 100%;
+  background: var(--mountain-800);
+  border-right: 1px solid var(--mountain-700);
+  padding: 1.5rem;
+  overflow-y: auto;
+  overflow-x: hidden;
+  z-index: 50;
+  transition: width 0.3s ease, transform 0.3s ease;
+  scrollbar-width: thin;
+  scrollbar-color: var(--glacier-500) transparent;
+}
+
+.docs-sidebar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.docs-sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.docs-sidebar::-webkit-scrollbar-thumb {
+  background: var(--glacier-600);
+  border-radius: 4px;
+}
+
+.docs-sidebar::-webkit-scrollbar-thumb:hover {
+  background: var(--glacier-500);
+}
+
+/* Sidebar Logo */
+.sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  text-decoration: none;
+  color: #fff;
+  font-weight: 600;
+  font-size: 1.25rem;
+}
+
+.sidebar-logo .logo-icon {
+  font-size: 1.5rem;
+  flex-shrink: 0;
+}
+
+.sidebar-logo .logo-text {
+  transition: opacity 0.2s ease, width 0.2s ease;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+/* Sidebar Navigation */
+.sidebar-nav {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.sidebar-nav li {
+  list-style: none;
+}
+
+.sidebar-nav a {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.375rem;
+  color: var(--mountain-300);
+  text-decoration: none;
+  transition: background-color 0.15s, color 0.15s;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.sidebar-nav a:hover {
+  background: var(--mountain-700);
+  color: #fff;
+}
+
+.sidebar-nav a.active {
+  background: rgba(16, 185, 129, 0.2);
+  color: #6ee7b7;
+}
+
+.docs-sidebar-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 2rem;
+}
+
+.docs-sidebar-logo img {
+  height: 4rem;
+  width: 4rem;
+}
+
+.docs-sidebar nav {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.docs-sidebar h3 {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: var(--mountain-400);
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  letter-spacing: 0.05em;
+}
+
+.docs-sidebar ul {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.docs-sidebar a {
+  display: block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 0.375rem;
+  color: var(--mountain-300);
+  text-decoration: none;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.docs-sidebar a:hover {
+  background: var(--mountain-700);
+  color: #fff;
+}
+
+.docs-sidebar a.active {
+  background: rgba(16, 185, 129, 0.2);
+  color: #6ee7b7;
+}
+
+/* ============================================
+   SIDEBAR TOGGLE - Icon-only collapse
+   ============================================ */
+
+.sidebar-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: fixed;
+  top: 4rem;
+  left: calc(var(--sidebar-width) - 1rem);
+  z-index: 110;
+  background: var(--mountain-700);
+  border: 1px solid var(--mountain-600);
+  border-radius: 0.5rem;
+  width: 2rem;
+  height: 2rem;
+  color: var(--mountain-300);
+  cursor: pointer;
+  transition: left 0.3s ease, background-color 0.15s;
+}
+
+.sidebar-toggle:hover {
+  background: var(--mountain-600);
+  color: #fff;
+}
+
+.sidebar-toggle svg {
+  width: 1rem;
+  height: 1rem;
+  transition: transform 0.3s ease;
+}
+
+/* ============================================
+   ICON-ONLY COLLAPSED MODE
+   ============================================ */
+
+:root {
+  --sidebar-collapsed-width: 5rem;
+}
+
+/* Collapsed sidebar state */
+.docs-sidebar.icon-only {
+  width: var(--sidebar-collapsed-width);
+  padding: 1rem 0.5rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.docs-sidebar.icon-only .sidebar-logo {
+  justify-content: center;
+}
+
+.docs-sidebar.icon-only .sidebar-logo .logo-text {
+  display: none;
+}
+
+.docs-sidebar.icon-only .sidebar-logo .logo-icon {
+  font-size: 1.75rem;
+}
+
+.docs-sidebar.icon-only .sidebar-nav a {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0.75rem 0.5rem;
+}
+
+/* Hide text in nav links when collapsed */
+.docs-sidebar.icon-only .sidebar-nav a span:last-child {
+  display: none;
+}
+
+/* Emoji icons in collapsed mode */
+.docs-sidebar.icon-only .sidebar-nav a span:first-child {
+  font-size: 1.5rem;
+}
+
+/* First span (emoji) styling - normal mode */
+.sidebar-nav a span:first-child {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+/* Toggle button moves with sidebar */
+.docs-sidebar.icon-only ~ .sidebar-toggle,
+.sidebar-toggle.collapsed {
+  left: calc(var(--sidebar-collapsed-width) - 1rem);
+}
+
+.sidebar-toggle.collapsed svg {
+  transform: rotate(180deg);
+}
+
+/* Main content adjusts */
+.docs-main {
+  transition: margin-left 0.3s ease;
+}
+
+.docs-main.sidebar-collapsed {
+  margin-left: var(--sidebar-collapsed-width);
+}
+
+/* ============================================
+   MAIN CONTENT
+   ============================================ */
+
+.docs-main {
+  margin-left: var(--sidebar-width);
+  padding: 2rem 3rem;
+  min-height: 100vh;
+  position: relative;
+  z-index: 1;
+}
+
+.docs-content {
+  max-width: 56rem;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+.docs-content h1 {
+  font-size: 2.25rem;
+  margin-bottom: 0.5rem;
+  color: #fff;
+}
+
+.docs-content .subtitle {
+  font-size: 1.1rem;
+  color: var(--mountain-300);
+  margin-bottom: 2rem;
+}
+
+.docs-content h2 {
+  font-size: 1.5rem;
+  margin-top: 2.5rem;
+  margin-bottom: 1rem;
+  color: var(--theme-accent, #6ee7b7);
+}
+
+.docs-content h3 {
+  font-size: 1.25rem;
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+  color: var(--theme-primary, #10b981);
+}
+
+.docs-content p {
+  line-height: 1.7;
+  margin-bottom: 1rem;
+  color: var(--mountain-200);
+}
+
+.docs-content pre {
+  background: var(--mountain-800);
+  border: 1px solid var(--mountain-700);
+  border-radius: 0.5rem;
+  padding: 1rem;
+  overflow-x: auto;
+  margin: 1rem 0;
+}
+
+.docs-content code {
+  font-size: 0.875rem;
+  color: var(--theme-accent, #6ee7b7);
+}
+
+.docs-content pre code {
+  color: var(--mountain-200);
+}
+
+/* ============================================
+   FOOTER
+   ============================================ */
+
+.docs-footer {
+  margin-left: var(--sidebar-width);
+  padding: 2rem 3rem;
+  text-align: center;
+  color: var(--mountain-400);
+  border-top: 1px solid var(--mountain-700);
+  transition: margin-left 0.3s ease;
+}
+
+.docs-footer p {
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+/* Footer adjusts with collapsed sidebar */
+.sidebar-collapsed ~ .docs-footer,
+body:has(.docs-sidebar.icon-only) .docs-footer {
+  margin-left: var(--sidebar-collapsed-width);
+}
+
+/* ============================================
+   RESPONSIVE / MOBILE
+   ============================================ */
+
+/* Narrow screens - hide sidebar, show hamburger menu */
+@media (max-width: 900px) {
+  .docs-sidebar {
+    display: none !important;
+    position: fixed;
+    left: 0;
+    top: 0;
+    width: 280px;
+    max-width: 85vw;
+    height: 100%;
+    padding: 1.5rem;
+    z-index: 90;
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.3);
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+  
+  .docs-sidebar.open {
+    display: block !important;
+    transform: translateX(0);
+  }
+  
+  /* Reset icon-only mode on mobile */
+  .docs-sidebar.open.icon-only {
+    width: 280px;
+    max-width: 85vw;
+    padding: 1.5rem;
+  }
+  
+  .docs-sidebar.open.icon-only .sidebar-logo .logo-text,
+  .docs-sidebar.open.icon-only .sidebar-nav a span:last-child {
+    display: inline !important;
+  }
+  
+  .docs-sidebar.open.icon-only .sidebar-nav a {
+    justify-content: flex-start;
+    padding: 0.5rem 0.75rem;
+  }
+  
+  .sidebar-toggle {
+    display: flex !important;
+    position: fixed;
+    left: 0.75rem;
+    top: 0.75rem;
+    z-index: 100;
+    background: var(--mountain-700);
+    border: 1px solid var(--mountain-600);
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+  
+  .sidebar-toggle svg {
+    width: 1.25rem;
+    height: 1.25rem;
+  }
+  
+  .sidebar-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 80;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  
+  .sidebar-overlay.open {
+    display: block;
+    opacity: 1;
+  }
+  
+  .docs-main {
+    margin-left: 0 !important;
+    padding: 1rem;
+    padding-top: 4rem;
+  }
+  
+  .docs-footer {
+    margin-left: 0 !important;
+  }
+  
+  /* Cards single column on mobile */
+  .grid.md\\:grid-cols-2 {
+    grid-template-columns: 1fr !important;
+  }
+  
+  .flex {
+    flex-wrap: wrap;
+  }
+  
+  pre {
+    padding: 0.75rem !important;
+    font-size: 0.8rem;
+    overflow-x: auto;
+  }
+  
+  /* Prevent body scroll when sidebar is open */
+  body.sidebar-mobile-open {
+    overflow: hidden;
+  }
+}
+
+/* ============================================
+   THEME-AWARE ELEMENTS
+   ============================================ */
+
+.theme-badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  background: var(--theme-glow, rgba(16, 185, 129, 0.2));
+  color: var(--theme-primary, #10b981);
+}
+
+.theme-heading {
+  color: var(--theme-primary, #10b981);
+}
+
+.theme-link {
+  color: var(--theme-primary, #10b981);
+  text-decoration: none;
+}
+
+.theme-link:hover {
+  color: var(--theme-accent, #34d399);
+}
+
+.theme-card {
+  background: var(--mountain-800);
+  border: 1px solid var(--theme-primary, var(--mountain-700));
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  transition: border-color 0.15s;
+}
+
+.theme-card:hover {
+  border-color: var(--theme-accent, var(--mountain-400));
+}
+
+.theme-callout {
+  background: var(--theme-glow, rgba(16, 185, 129, 0.1));
+  border: 1px solid var(--theme-primary, var(--mountain-700));
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+}
+
+/* ============================================
+   STUPA PRIORITY TIERS
+   ============================================ */
+
+.priority-tiers {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 1.5rem 0;
+}
+
+.tier {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-radius: 0.5rem;
+  background: var(--mountain-800);
+  border-left: 4px solid;
+}
+
+.tier-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 140px;
+}
+
+.tier-level {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  font-weight: 700;
+  font-size: 0.875rem;
+}
+
+.tier h4 {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.tier p {
+  margin: 0;
+  color: var(--mountain-300);
+  font-size: 0.875rem;
+}
+
+.tier-critical {
+  border-left-color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+.tier-critical .tier-level {
+  background: #ef4444;
+  color: #fff;
+}
+.tier-critical h4 {
+  color: #f87171;
+}
+
+.tier-flash {
+  border-left-color: #f97316;
+  background: rgba(249, 115, 22, 0.1);
+}
+.tier-flash .tier-level {
+  background: #f97316;
+  color: #fff;
+}
+.tier-flash h4 {
+  color: #fb923c;
+}
+
+.tier-immediate {
+  border-left-color: #fbbf24;
+  background: rgba(251, 191, 36, 0.1);
+}
+.tier-immediate .tier-level {
+  background: #fbbf24;
+  color: #1a2a22;
+}
+.tier-immediate h4 {
+  color: #fcd34d;
+}
+
+.tier-priority {
+  border-left-color: #34d399;
+  background: rgba(52, 211, 153, 0.1);
+}
+.tier-priority .tier-level {
+  background: #34d399;
+  color: #1a2a22;
+}
+.tier-priority h4 {
+  color: #6ee7b7;
+}
+
+.tier-routine {
+  border-left-color: #60a5fa;
+  background: rgba(96, 165, 250, 0.1);
+}
+.tier-routine .tier-level {
+  background: #60a5fa;
+  color: #1a2a22;
+}
+.tier-routine h4 {
+  color: #93c5fd;
+}
+
+/* Flow Diagram */
+.flow-diagram {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 2rem 0;
+  flex-wrap: wrap;
+}
+
+.flow-step {
+  text-align: center;
+  padding: 1rem;
+  background: var(--mountain-800);
+  border-radius: 0.75rem;
+  border: 1px solid var(--mountain-700);
+  min-width: 120px;
+}
+
+.flow-icon {
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.flow-label {
+  font-weight: 600;
+  color: var(--theme-primary, #fbbf24);
+  margin-bottom: 0.25rem;
+}
+
+.flow-step p {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--mountain-400);
+}
+
+.flow-arrow {
+  color: var(--mountain-500);
+  font-size: 1.5rem;
+}
+
+/* Security List */
+.security-list {
+  list-style: none;
+  padding: 0;
+}
+
+.security-list li {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--mountain-700);
+  color: var(--mountain-200);
+}
+
+.security-list li:last-child {
+  border-bottom: none;
+}
+
+/* Integration Grid */
+.integration-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.integration-card {
+  background: var(--mountain-800);
+  border: 1px solid var(--mountain-700);
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+}
+
+.integration-card h4 {
+  margin: 0 0 0.5rem 0;
+  color: var(--theme-primary, #10b981);
+}
+
+.integration-card p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--mountain-300);
+}
+
+/* API Table */
+.api-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+}
+
+.api-table th,
+.api-table td {
+  padding: 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--mountain-700);
+}
+
+.api-table th {
+  background: var(--mountain-800);
+  color: var(--mountain-200);
+  font-weight: 600;
+}
+
+.api-table td {
+  color: var(--mountain-300);
+}
+
+.api-table code {
+  background: var(--mountain-900);
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  font-size: 0.875rem;
+}
+
+/* ============================================
+   LAMA DHARMIC STATES
+   ============================================ */
+
+.dharmic-states {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 1.5rem 0;
+}
+
+.state {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-radius: 0.5rem;
+  background: var(--mountain-800);
+  border-left: 4px solid;
+}
+
+.state-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 140px;
+}
+
+.state-icon {
+  font-size: 1.25rem;
+}
+
+.state h4 {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.state p {
+  margin: 0;
+  color: var(--mountain-300);
+  font-size: 0.875rem;
+}
+
+.state-pending {
+  border-left-color: #6b7280;
+  background: rgba(107, 114, 128, 0.1);
+}
+.state-pending h4 { color: #9ca3af; }
+
+.state-validated {
+  border-left-color: #a855f7;
+  background: rgba(168, 85, 247, 0.1);
+}
+.state-validated h4 { color: #c084fc; }
+
+.state-consensus {
+  border-left-color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
+}
+.state-consensus h4 { color: #34d399; }
+
+.state-rejected {
+  border-left-color: #ef4444;
+  background: rgba(239, 68, 68, 0.1);
+}
+.state-rejected h4 { color: #f87171; }
+
+.state-conflict {
+  border-left-color: #f59e0b;
+  background: rgba(245, 158, 11, 0.1);
+}
+.state-conflict h4 { color: #fbbf24; }
+
+/* Conflict Flow */
+.conflict-flow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 2rem 0;
+  flex-wrap: wrap;
+}
+
+.conflict-step {
+  text-align: center;
+  padding: 1rem;
+  background: var(--mountain-800);
+  border-radius: 0.75rem;
+  border: 1px solid var(--mountain-700);
+  min-width: 140px;
+  max-width: 180px;
+}
+
+.conflict-step h4 {
+  margin: 0 0 0.5rem 0;
+  color: var(--theme-primary, #a855f7);
+}
+
+.conflict-step p {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--mountain-400);
+}
+
+.conflict-arrow {
+  color: var(--mountain-500);
+  font-size: 1.5rem;
+}
+
+/* ============================================
+   MANI TRUST LEVELS
+   ============================================ */
+
+.trust-levels {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 1.5rem 0;
+}
+
+.trust-level {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-radius: 0.5rem;
+  background: var(--mountain-800);
+  border-left: 4px solid;
+}
+
+.level-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 180px;
+}
+
+.level-icon {
+  font-size: 1.25rem;
+}
+
+.trust-level h4 {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  flex: 1;
+}
+
+.level-tolerance {
+  font-size: 0.75rem;
+  font-family: monospace;
+  padding: 0.125rem 0.375rem;
+  background: var(--mountain-900);
+  border-radius: 0.25rem;
+}
+
+.trust-level p {
+  margin: 0;
+  color: var(--mountain-300);
+  font-size: 0.875rem;
+  flex: 1;
+}
+
+.level-quantum {
+  border-left-color: #a855f7;
+  background: rgba(168, 85, 247, 0.1);
+}
+.level-quantum h4 { color: #c084fc; }
+.level-quantum .level-tolerance { color: #c084fc; }
+
+.level-atomic {
+  border-left-color: #eab308;
+  background: rgba(234, 179, 8, 0.1);
+}
+.level-atomic h4 { color: #facc15; }
+.level-atomic .level-tolerance { color: #facc15; }
+
+.level-gps {
+  border-left-color: #84cc16;
+  background: rgba(132, 204, 22, 0.1);
+}
+.level-gps h4 { color: #a3e635; }
+.level-gps .level-tolerance { color: #a3e635; }
+
+.level-ptp {
+  border-left-color: #0ea5e9;
+  background: rgba(14, 165, 233, 0.1);
+}
+.level-ptp h4 { color: #38bdf8; }
+.level-ptp .level-tolerance { color: #38bdf8; }
+
+.level-ntp {
+  border-left-color: #60a5fa;
+  background: rgba(96, 165, 250, 0.1);
+}
+.level-ntp h4 { color: #93c5fd; }
+.level-ntp .level-tolerance { color: #93c5fd; }
+
+.level-unsync {
+  border-left-color: #6b7280;
+  background: rgba(107, 114, 128, 0.1);
+}
+.level-unsync h4 { color: #9ca3af; }
+.level-unsync .level-tolerance { color: #9ca3af; }
+
+/* ============================================
+   KARMA LEVELS
+   ============================================ */
+
+.karma-levels {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.karma-level {
+  background: var(--mountain-800);
+  border-radius: 0.75rem;
+  border-left: 4px solid;
+  overflow: hidden;
+}
+
+.karma-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  background: var(--mountain-900);
+}
+
+.karma-icon {
+  font-size: 1.5rem;
+}
+
+.karma-header h4 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  flex: 1;
+}
+
+.karma-number {
+  font-size: 0.75rem;
+  font-family: monospace;
+  padding: 0.25rem 0.5rem;
+  background: var(--mountain-800);
+  border-radius: 0.25rem;
+}
+
+.karma-body {
+  padding: 1rem 1.25rem;
+}
+
+.karma-desc {
+  margin: 0 0 0.75rem 0;
+  color: var(--mountain-300);
+  font-style: italic;
+}
+
+.karma-requirements {
+  margin: 0;
+  padding-left: 1.25rem;
+  color: var(--mountain-400);
+  font-size: 0.875rem;
+}
+
+.karma-requirements li {
+  margin-bottom: 0.25rem;
+}
+
+/* KARMA levels - Nepali expedition roles */
+.level-sirdar {
+  border-left-color: #f59e0b; /* Amber gold - expedition leader */
+}
+.level-sirdar .karma-header h4 { color: #fbbf24; }
+.level-sirdar .karma-number { color: #f59e0b; background: rgba(245, 158, 11, 0.2); }
+
+.level-sathi {
+  border-left-color: #a855f7; /* Purple - trusted companion */
+}
+.level-sathi .karma-header h4 { color: #c084fc; }
+.level-sathi .karma-number { color: #a855f7; background: rgba(168, 85, 247, 0.2); }
+
+.level-pathik {
+  border-left-color: #eab308; /* Yellow - traveler */
+}
+.level-pathik .karma-header h4 { color: #facc15; }
+.level-pathik .karma-number { color: #eab308; background: rgba(234, 179, 8, 0.2); }
+
+.level-yatri {
+  border-left-color: #6b7280; /* Gray - pilgrim */
+}
+.level-yatri .karma-header h4 { color: #9ca3af; }
+.level-yatri .karma-number { color: #6b7280; background: rgba(107, 114, 128, 0.2); }
+
+.level-naya {
+  border-left-color: #22c55e; /* Green - newcomer */
+}
+.level-naya .karma-header h4 { color: #4ade80; }
+.level-naya .karma-number { color: #22c55e; background: rgba(34, 197, 94, 0.2); }
+
+/* Legacy level names (keep for backwards compatibility) */
+.level-enlightened {
+  border-left-color: #E5E4E2;
+}
+.level-enlightened .karma-header h4 { color: #f5f5f4; }
+.level-enlightened .karma-number { color: #E5E4E2; }
+
+.level-awakened {
+  border-left-color: #FFD700;
+}
+.level-awakened .karma-header h4 { color: #fde047; }
+.level-awakened .karma-number { color: #FFD700; }
+
+.level-seeking {
+  border-left-color: #CD7F32;
+}
+.level-seeking .karma-header h4 { color: #d97706; }
+.level-seeking .karma-number { color: #CD7F32; }
+
+.level-untrusted {
+  border-left-color: #ef4444;
+}
+.level-untrusted .karma-header h4 { color: #f87171; }
+.level-untrusted .karma-number { color: #ef4444; }
+
+/* ============================================
+   MANDALA MESSAGE TYPES
+   ============================================ */
+
+.message-types {
+  display: grid;
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.message-type {
+  background: var(--mountain-800);
+  border-radius: 0.5rem;
+  border-left: 4px solid var(--mountain-600);
+  overflow: hidden;
+}
+
+.message-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: var(--mountain-750);
+}
+
+.message-icon {
+  font-size: 1.25rem;
+}
+
+.message-header h4 {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+}
+
+.message-body {
+  padding: 0.75rem 1rem;
+}
+
+.message-body p {
+  margin: 0 0 0.5rem 0;
+  color: var(--mountain-300);
+  font-size: 0.875rem;
+}
+
+.message-body code {
+  font-size: 0.75rem;
+  color: #2dd4bf;
+}
+
+.type-hello { border-left-color: #10b981; }
+.type-hello .message-header h4 { color: #6ee7b7; }
+
+.type-welcome { border-left-color: #14b8a6; }
+.type-welcome .message-header h4 { color: #5eead4; }
+
+.type-gossip { border-left-color: #f59e0b; }
+.type-gossip .message-header h4 { color: #fcd34d; }
+
+.type-sync { border-left-color: #3b82f6; }
+.type-sync .message-header h4 { color: #93c5fd; }
+
+.type-ping { border-left-color: #8b5cf6; }
+.type-ping .message-header h4 { color: #c4b5fd; }
+
+.type-bye { border-left-color: #ef4444; }
+.type-bye .message-header h4 { color: #fca5a5; }
+
+/* ============================================
+   MANDALA CONNECTION LIFECYCLE
+   ============================================ */
+
+.lifecycle-flow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1.5rem 0;
+  padding: 1.5rem;
+  background: var(--mountain-800);
+  border-radius: 0.5rem;
+}
+
+.lifecycle-step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.75rem 1rem;
+  background: var(--mountain-750);
+  border-radius: 0.5rem;
+  border: 1px solid var(--mountain-600);
+  min-width: 100px;
+}
+
+.step-num {
+  font-size: 0.75rem;
+  font-weight: bold;
+  color: #14b8a6;
+  font-family: monospace;
+}
+
+.step-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #5eead4;
+}
+
+.step-desc {
+  font-size: 0.7rem;
+  color: var(--mountain-400);
+  text-align: center;
+}
+
+.lifecycle-arrow {
+  color: var(--mountain-500);
+  font-size: 1.25rem;
+  font-weight: bold;
+}
+
+/* ============================================
+   MANDALA CONNECTION STATES
+   ============================================ */
+
+.connection-states {
+  display: grid;
+  gap: 0.75rem;
+  margin: 1.5rem 0;
+}
+
+.conn-state {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--mountain-800);
+  border-radius: 0.5rem;
+  border-left: 3px solid var(--mountain-600);
+}
+
+.state-icon {
+  font-size: 1.25rem;
+}
+
+.state-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: monospace;
+  min-width: 120px;
+}
+
+.state-desc {
+  font-size: 0.875rem;
+  color: var(--mountain-400);
+}
+
+.state-connecting { border-left-color: #f59e0b; }
+.state-connecting .state-name { color: #fcd34d; }
+
+.state-handshaking { border-left-color: #3b82f6; }
+.state-handshaking .state-name { color: #93c5fd; }
+
+.state-active { border-left-color: #10b981; }
+.state-active .state-name { color: #6ee7b7; }
+
+.state-draining { border-left-color: #8b5cf6; }
+.state-draining .state-name { color: #c4b5fd; }
+
+.state-closed { border-left-color: #ef4444; }
+.state-closed .state-name { color: #fca5a5; }
+
+/* ============================================
+   TOPOLOGY DIAGRAM
+   ============================================ */
+
+.topology-diagram {
+  margin: 1.5rem 0;
+  padding: 1.5rem;
+  background: var(--mountain-800);
+  border-radius: 0.5rem;
+  overflow-x: auto;
+}
+
+.ascii-art {
+  font-family: monospace;
+  font-size: 0.8rem;
+  line-height: 1.4;
+  color: #5eead4;
+  margin: 0;
+  white-space: pre;
+}
+
+/* ============================================
+   INTEGRATION TABLE
+   ============================================ */
+
+.integration-table {
+  width: 100%;
+  margin: 1.5rem 0;
+  border-collapse: collapse;
+}
+
+.integration-table th,
+.integration-table td {
+  padding: 0.75rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--mountain-700);
+}
+
+.integration-table th {
+  background: var(--mountain-800);
+  color: #5eead4;
+  font-weight: 600;
+}
+
+.integration-table td:first-child {
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* ============================================
+   UTILITY CLASSES
+   ============================================ */
+
+.text-mountain-300 { color: var(--mountain-300); }
+.text-mountain-400 { color: var(--mountain-400); }
+.bg-mountain-800 { background-color: var(--mountain-800); }
+.bg-mountain-900 { background-color: var(--mountain-900); }
+.border-mountain-700 { border-color: var(--mountain-700); }
+
+/* ============================================
+   ADDITIONAL RESPONSIVE FIXES
+   ============================================ */
+
+/* Cryptographic chains and horizontal flows should wrap */
+@media (max-width: 800px) {
+  /* Make horizontal flex chains wrap */
+  .bg-mountain-800 .flex.items-center.gap-2,
+  .flex.items-center.gap-2:has(span.bg-mountain-700) {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  
+  /* Hide arrows on wrap */
+  .flex.items-center.gap-2 > span:not(.bg-mountain-700):not([class]) {
+    display: none;
+  }
+  
+  /* Journey navigation cards stack vertically */
+  .flex.flex-col.sm\\:flex-row {
+    flex-direction: column !important;
+  }
+  
+  /* Reduce main content padding */
+  .docs-main {
+    padding: 1rem 0.75rem;
+  }
+  
+  .docs-content {
+    padding: 0;
+  }
+  
+  /* Tables become scrollable */
+  table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  
+  /* Reduce heading sizes */
+  h1 { font-size: 1.75rem; }
+  h2 { font-size: 1.5rem; }
+  h3 { font-size: 1.25rem; }
+}
+
+/* Very small screens */
+@media (max-width: 480px) {
+  .docs-main {
+    padding: 0.75rem 0.5rem;
+    padding-top: 3.5rem;
+  }
+  
+  /* Stack items that have flex-1 */
+  .flex > .flex-1 {
+    min-width: 100%;
+  }
+  
+  /* Reduce badge and tag sizes */
+  .theme-badge,
+  span.bg-mountain-700 {
+    font-size: 0.7rem;
+    padding: 0.25rem 0.5rem;
+  }
+  
+  /* Make code blocks scrollable */
+  pre {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+  
+  pre code {
+    font-size: 0.75rem;
+  }
+}
+
+/* ============================================
+   YAK ICON - Yakmesh logo (32x30 ICO, 4KB)
+   ============================================ */
+
+.yak-icon {
+  display: inline-block;
+  width: 1.3em;
+  height: 1.5em;
+  vertical-align: -0.4em;
+  margin-right: 0.03em;
+  background-image: url("../assets/yakmesh.ico");
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.docs-sidebar.icon-only .sidebar-nav .yak-icon {
+  width: 1.5em;
+  height: 1.5em;
+}

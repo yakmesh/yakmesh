@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="karma">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="favicon.ico" sizes="32x32">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <title>KARMA Protocol | YAKMESH Documentation</title>
+  <meta name="description" content="KARMA - Kinetic Assessment of Reputation & Merit Accumulation. Trust earned through consistent good actions.">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            theme: { primary: '#e11d48', secondary: '#be123c', accent: '#fb7185', bg: '#4c0519', glow: 'rgba(225, 29, 72, 0.15)' },
+            mountain: { 300: '#88b4a6', 400: '#6a9a8a', 700: '#2e4c43', 800: '#1f332d', 900: '#101a16' }
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="docs.css">
+  <style>
+    .theme-accent { color: #fb7185; }
+    .theme-accent-hover:hover { color: #e11d48; }
+    .theme-badge { background: rgba(225, 29, 72, 0.2); color: #fb7185; }
+    .theme-border { border-color: #e11d48; }
+    .theme-callout { background: rgba(225, 29, 72, 0.1); border-color: #be123c; }
+    .active-link { background: rgba(225, 29, 72, 0.2) !important; color: #fb7185 !important; }
+  </style>
+</head>
+<body class="bg-mountain-900 text-white min-h-screen">
+    <nav class="docs-sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-logo">
+      <span class="logo-icon">🏔️</span>
+      <span class="logo-text">Yakmesh</span>
+    </a>
+    <ul class="sidebar-nav">
+      <li><a href="index.html"><span>🏠</span> <span>Overview</span></a></li>
+      <li><a href="getting-started.html"><span>🚀</span> <span>Getting Started</span></a></li>
+      <li><a href="doko.html"><span>🧺</span> <span>DOKO</span></a></li>
+      <li><a href="namche.html"><span>🚪</span> <span>NAMCHE</span></a></li>
+      <li><a href="sherpa.html"><span>🧗</span> <span>SHERPA</span></a></li>
+      <li><a href="nakpak.html"><span>🎒</span> <span>NAKPAK</span></a></li>
+      <li><a href="annex.html"><span>🌉</span> <span>ANNEX</span></a></li>
+      <li><a href="yak-protocol.html"><span class="yak-icon"></span> <span>YAK</span></a></li>
+      <li><a href="mantra.html"><span>🕉️</span> <span>MANTRA</span></a></li>
+      <li><a href="stupa.html"><span>🛕</span> <span>STUPA</span></a></li>
+      <li><a href="lama.html"><span>🔮</span> <span>LAMA</span></a></li>
+      <li><a href="mani.html"><span>⏱️</span> <span>MANI</span></a></li>
+      <li><a href="karma.html" class="active"><span>☯️</span> <span>KARMA</span></a></li>
+      <li><a href="mandala.html"><span>🌐</span> <span>MANDALA</span></a></li>
+      <li><a href="tattva.html"><span>🔯</span> <span>TATTVA</span></a></li>
+      <li><a href="geo-proof.html"><span>🌍</span> <span>PRAMAAN</span></a></li>
+      <li><a href="trust-security.html"><span>🔒</span> <span>SURAKSHA</span></a></li>
+      <li><a href="docs-bundle.html"><span>📚</span> <span>GRANTH</span></a></li>
+      <li><a href="api.html"><span>📡</span> <span>API</span></a></li>
+    </ul>
+  </nav>
+
+  <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+    </svg>
+  </button>
+
+  <!-- Mobile overlay for tap-to-close sidebar -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="docs-main" id="mainContent">
+
+    <div class="docs-content">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="text-4xl">☯️</span>
+        <div>
+          <h1 class="text-4xl font-bold">KARMA <span class="text-xl text-mountain-400">कर्म</span></h1>
+          <p class="theme-accent">Kinetic Assessment of Reputation & Merit Accumulation</p>
+        </div>
+      </div>
+      <p class="text-xl text-mountain-300 mb-4">Trust earned through consistent good actions.</p>
+      <span class="inline-block text-xs theme-badge px-2 py-1 rounded mb-8">v2.5.0</span>
+
+      <div class="feature-box">
+        <h3>The Wheel of Cause and Effect</h3>
+        <p>
+          In Buddhist philosophy, <strong>karma</strong> represents the universal law of cause and effect—
+          every action creates ripples that shape future outcomes. Good actions accumulate merit; 
+          harmful actions diminish it.
+        </p>
+        <p>
+          The KARMA protocol embodies this principle: trust is EARNED through consistent good behavior, 
+          multiple independent sources strengthen karmic standing, and bad actions cause trust to decay. 
+          Time and consistency build toward higher levels.
+        </p>
+      </div>
+
+      <h2>🏔️ Overview</h2>
+      <p>
+        KARMA (Kinetic Assessment of Reputation & Merit Accumulation) provides <strong>multi-level trust assessment</strong> 
+        for the Yakmesh network. Unlike simple binary trust, KARMA combines multiple verification sources 
+        to create a nuanced understanding of node reliability and integrity.
+      </p>
+
+      <div class="protocol-family">
+        <h3>Protocol Family</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Protocol</th>
+              <th>Himalayan Name</th>
+              <th>Purpose</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>🕉️ Gossip</td>
+              <td>MANTRA</td>
+              <td>Epidemic message propagation</td>
+            </tr>
+            <tr>
+              <td>🛕 Broadcast</td>
+              <td>STUPA</td>
+              <td>Priority-based broadcasting</td>
+            </tr>
+            <tr>
+              <td>🔮 Consensus</td>
+              <td>LAMA</td>
+              <td>Distributed agreement</td>
+            </tr>
+            <tr>
+              <td>⏱️ Time</td>
+              <td>MANI</td>
+              <td>Temporal synchronization</td>
+            </tr>
+            <tr class="active">
+              <td>☯️ Trust</td>
+              <td>KARMA</td>
+              <td>Reputation management</td>
+            </tr>
+            <tr>
+              <td>🌐 Mesh</td>
+              <td>MANDALA</td>
+              <td>Network topology</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>🔮 Karma Levels</h2>
+      <p>
+        KARMA classifies nodes into levels representing their spiritual journey toward network trust. 
+        Each level unlocks greater privileges and responsibilities:
+      </p>
+
+      <div class="karma-levels">
+        <div class="karma-level level-sirdar">
+          <div class="karma-header">
+            <span class="karma-icon">🏔️</span>
+            <h4>SIRDAR <small>(सिरदार)</small></h4>
+            <span class="karma-number">Level 4</span>
+          </div>
+          <div class="karma-body">
+            <p class="karma-desc">Expedition Leader — Atomic time + full hardware attestation</p>
+            <ul class="karma-requirements">
+              <li>Atomic clock time source verified</li>
+              <li>AES-NI hardware attestation passed</li>
+              <li>30+ days consistent network presence</li>
+              <li>3+ endorsements from other SIRDARs</li>
+            </ul>
+          </div>
+        </div>
+        
+        <div class="karma-level level-sathi">
+          <div class="karma-header">
+            <span class="karma-icon">💎</span>
+            <h4>SATHI <small>(साथी)</small></h4>
+            <span class="karma-number">Level 3</span>
+          </div>
+          <div class="karma-body">
+            <p class="karma-desc">Trusted Companion — GPS + hardware verified</p>
+            <ul class="karma-requirements">
+              <li>GPS with PPS time source</li>
+              <li>AES-NI hardware attestation passed</li>
+              <li>14+ days network presence</li>
+              <li>2+ endorsements from higher tiers</li>
+            </ul>
+          </div>
+        </div>
+        
+        <div class="karma-level level-pathik">
+          <div class="karma-header">
+            <span class="karma-icon">🥇</span>
+            <h4>PATHIK <small>(पथिक)</small></h4>
+            <span class="karma-number">Level 2</span>
+          </div>
+          <div class="karma-body">
+            <p class="karma-desc">Traveler on Path — PTP time + hardware verified</p>
+            <ul class="karma-requirements">
+              <li>IEEE 1588 PTP time source</li>
+              <li>AES-NI hardware attestation</li>
+              <li>7+ days network presence</li>
+              <li>1+ endorsement from higher tier</li>
+            </ul>
+          </div>
+        </div>
+        
+        <div class="karma-level level-yatri">
+          <div class="karma-header">
+            <span class="karma-icon">🥈</span>
+            <h4>YATRI <small>(यात्री)</small></h4>
+            <span class="karma-number">Level 1</span>
+          </div>
+          <div class="karma-body">
+            <p class="karma-desc">Pilgrim/Journeyer — NTP time + hardware verified</p>
+            <ul class="karma-requirements">
+              <li>NTP or system time source</li>
+              <li>AES-NI hardware attestation</li>
+              <li>1+ day network presence</li>
+              <li>Standard participant in mesh</li>
+            </ul>
+          </div>
+        </div>
+        
+        <div class="karma-level level-naya">
+          <div class="karma-header">
+            <span class="karma-icon">🌱</span>
+            <h4>NAYA <small>(नया)</small></h4>
+            <span class="karma-number">Level 0</span>
+          </div>
+          <div class="karma-body">
+            <p class="karma-desc">Newcomer — Unverified, observer status</p>
+            <ul class="karma-requirements">
+              <li>System time only</li>
+              <li>No hardware attestation</li>
+              <li>New to network</li>
+              <li>Limited privileges, building trust</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <h2>☯️ Core Components</h2>
+
+      <h3>KarmaTrustModel</h3>
+      <p>The main trust assessment engine—the wheel of cause and effect:</p>
+      <pre><code>import { KarmaTrustModel, KARMA_TIER } from 'yakmesh/security/trust-tier';
+
+// Initialize the karma system
+const karma = new KarmaTrustModel({
+  minAgeForSirdar: 30 * 24 * 60 * 60 * 1000, // 30 days for SIRDAR
+  minAgeForSathi: 14 * 24 * 60 * 60 * 1000,  // 14 days for SATHI
+  autoPromoteEnabled: true,                   // Auto-promotion when earned
+});
+
+// Get a node's karma tier
+const { tier, tierInfo, score } = karma.getTrustLevel(nodeId);
+console.log(`${nodeId}: ${tierInfo.name} (${tierInfo.nepali})`);
+console.log(`Karma Score: ${score}/100`);
+
+// Listen for karma tier changes
+karma.on('tierChanged', ({ nodeId, previous, current }) => {
+  if (current > previous) {
+    console.log(`${nodeId} has advanced to ${KARMA_TIER[current]}!`);
+  } else {
+    console.log(`${nodeId}'s karma has decreased.`);
+  }
+});</code></pre>
+
+      <h3>KarmaEvidence</h3>
+      <p>Records the spiritual ledger of a node's actions:</p>
+      <pre><code>// Record evidence from various sources
+const evidence = karma.getEvidence(nodeId);
+
+// DOKO verification (identity)
+evidence.recordDokoVerification({
+  passed: true,
+  gatesChecked: 7,
+  dokoHash: 'abc123...'
+});
+
+// Mesh quorum verification
+evidence.recordMeshQuorum({
+  valid: true,
+  validProofs: 5,
+  verifiers: ['node1', 'node2', 'node3', 'node4', 'node5'],
+  diversity: { subnets: 4, asns: 3 }
+});
+
+// SSL verification
+evidence.recordSSL({
+  valid: true,
+  certType: 'ca-signed',
+  issuer: 'DigiCert'
+});
+
+// Recompute karma level
+karma.computeTrustLevel(nodeId);</code></pre>
+
+      <h2>📊 Evidence Sources</h2>
+      <table class="api-table">
+        <thead>
+          <tr>
+            <th>Source</th>
+            <th>Weight</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>DOKO</td>
+            <td>Required</td>
+            <td>Cryptographic identity verification via NAMCHE gates</td>
+          </tr>
+          <tr>
+            <td>Mesh Quorum</td>
+            <td>High</td>
+            <td>Multiple independent nodes attest to validity</td>
+          </tr>
+          <tr>
+            <td>SSL Certificate</td>
+            <td>Medium</td>
+            <td>CA-signed certificate proves domain control</td>
+          </tr>
+          <tr>
+            <td>Domain Ownership</td>
+            <td>Medium</td>
+            <td>DNS-based proof of domain control</td>
+          </tr>
+          <tr>
+            <td>Beacon Consistency</td>
+            <td>Time-based</td>
+            <td>Regular presence over 7+ days</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>⚙️ Configuration</h2>
+      <pre><code>const config = {
+  // Time requirements
+  minAgeForGold: 0,                           // Immediate if mesh verified
+  minAgeForPlatinum: 7 * 24 * 60 * 60 * 1000, // 7 days for ENLIGHTENED
+  
+  // Beacon consistency
+  minBeaconConsistency: 0.8,                  // 80% uptime for ENLIGHTENED
+  beaconCheckWindow: 7 * 24 * 60 * 60 * 1000, // 7 day window
+  
+  // Mesh verification
+  minQuorumForGold: 3,                        // Minimum verifiers
+  minDiversityForGold: 3,                     // Different subnets
+  
+  // SSL requirements
+  requireSSLForPlatinum: true,
+  acceptSelfSignedSSL: true,                  // For DOKO-bound certs
+  
+  // Trust decay (negative karma over time)
+  trustDecayEnabled: true,
+  trustDecayPeriod: 30 * 24 * 60 * 60 * 1000, // After 30 days inactive
+  
+  // Auto-promotion
+  autoPromoteEnabled: true,
+  promotionCheckInterval: 60 * 60 * 1000,     // Check hourly
+};</code></pre>
+
+      <h2>🔗 Integration with Other Protocols</h2>
+      <div class="integration-grid">
+        <div class="integration-card">
+          <h4>🔮 LAMA</h4>
+          <p>Karma levels weight attestation significance in consensus</p>
+        </div>
+        <div class="integration-card">
+          <h4>🛕 STUPA</h4>
+          <p>Broadcast acceptance thresholds based on sender karma</p>
+        </div>
+        <div class="integration-card">
+          <h4>🕉️ MANTRA</h4>
+          <p>Gossip prioritization favors higher-karma nodes</p>
+        </div>
+        <div class="integration-card">
+          <h4>⏱️ MANI</h4>
+          <p>Time source quality can contribute to karma</p>
+        </div>
+      </div>
+
+      <h2>📖 Backward Compatibility</h2>
+      <p>
+        For existing codebases using the original naming, legacy exports are maintained:
+      </p>
+      <pre><code>// Legacy imports still work
+import { HybridTrustModel, TrustLevel, TrustEvidence } from 'yakmesh/security/hybrid-trust';
+
+// These map to the new KARMA names
+// HybridTrustModel → KarmaTrustModel
+// TrustLevel → KarmaLevel
+// TrustEvidence → KarmaEvidence
+
+// Level aliases
+// BRONZE → SEEKING
+// GOLD → AWAKENED
+// PLATINUM → ENLIGHTENED</code></pre>
+
+      <!-- Journey Navigation -->
+      <div class="border-t border-mountain-700 mt-12 pt-8">
+        <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
+        <div class="flex flex-col sm:flex-row gap-4">
+          <a href="mani.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">
+            <div class="text-xs text-mountain-400 mb-1">← Previous</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">⏱️</span>
+              <span class="font-semibold group-hover:text-theme-accent">MANI Protocol</span>
+            </div>
+            <p class="text-mountain-400 text-sm mt-1">Time synchronization</p>
+          </a>
+          <a href="mandala.html" class="flex-1 block bg-mountain-800 border border-theme-primary rounded-xl p-4 hover:border-theme-accent transition group">
+            <div class="text-xs text-mountain-400 mb-1">Next →</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">🌐</span>
+              <span class="font-semibold group-hover:text-theme-accent">MANDALA Protocol</span>
+            </div>
+            <p class="text-mountain-400 text-sm mt-1">Network topology</p>
+          </a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="docs-footer">
+    <p>© 2026 YAKMESH™</p>
+  </footer>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="docs.js"></script>
+
+  
+</body>
+</html>
+
+

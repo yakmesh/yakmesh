@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="mani">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="favicon.ico" sizes="32x32">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <title>MANI Protocol | YAKMESH Documentation</title>
+  <meta name="description" content="MANI - Metrological Anchoring for Network Integrity. Precious time synchronization for the Yakmesh network.">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            theme: { primary: '#eab308', secondary: '#ca8a04', accent: '#facc15', bg: '#422006', glow: 'rgba(234, 179, 8, 0.15)' },
+            mountain: { 300: '#88b4a6', 400: '#6a9a8a', 700: '#2e4c43', 800: '#1f332d', 900: '#101a16' }
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="docs.css">
+  <style>
+    .theme-accent { color: #facc15; }
+    .theme-accent-hover:hover { color: #eab308; }
+    .theme-badge { background: rgba(234, 179, 8, 0.2); color: #facc15; }
+    .theme-border { border-color: #eab308; }
+    .theme-callout { background: rgba(234, 179, 8, 0.1); border-color: #ca8a04; }
+    .active-link { background: rgba(234, 179, 8, 0.2) !important; color: #facc15 !important; }
+  </style>
+</head>
+<body class="bg-mountain-900 text-white min-h-screen">
+    <nav class="docs-sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-logo">
+      <span class="logo-icon">🏔️</span>
+      <span class="logo-text">Yakmesh</span>
+    </a>
+    <ul class="sidebar-nav">
+      <li><a href="index.html"><span>🏠</span> <span>Overview</span></a></li>
+      <li><a href="getting-started.html"><span>🚀</span> <span>Getting Started</span></a></li>
+      <li><a href="doko.html"><span>🧺</span> <span>DOKO</span></a></li>
+      <li><a href="namche.html"><span>🚪</span> <span>NAMCHE</span></a></li>
+      <li><a href="sherpa.html"><span>🧗</span> <span>SHERPA</span></a></li>
+      <li><a href="nakpak.html"><span>🎒</span> <span>NAKPAK</span></a></li>
+      <li><a href="annex.html"><span>🌉</span> <span>ANNEX</span></a></li>
+      <li><a href="yak-protocol.html"><span class="yak-icon"></span> <span>YAK</span></a></li>
+      <li><a href="mantra.html"><span>🕉️</span> <span>MANTRA</span></a></li>
+      <li><a href="stupa.html"><span>🛕</span> <span>STUPA</span></a></li>
+      <li><a href="lama.html"><span>🔮</span> <span>LAMA</span></a></li>
+      <li><a href="mani.html" class="active"><span>⏱️</span> <span>MANI</span></a></li>
+      <li><a href="karma.html"><span>☯️</span> <span>KARMA</span></a></li>
+      <li><a href="mandala.html"><span>🌐</span> <span>MANDALA</span></a></li>
+      <li><a href="tattva.html"><span>🔯</span> <span>TATTVA</span></a></li>
+      <li><a href="geo-proof.html"><span>🌍</span> <span>PRAMAAN</span></a></li>
+      <li><a href="trust-security.html"><span>🔒</span> <span>SURAKSHA</span></a></li>
+      <li><a href="docs-bundle.html"><span>📚</span> <span>GRANTH</span></a></li>
+      <li><a href="api.html"><span>📡</span> <span>API</span></a></li>
+    </ul>
+  </nav>
+
+  <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+    </svg>
+  </button>
+
+  <!-- Mobile overlay for tap-to-close sidebar -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="docs-main" id="mainContent">
+
+    <div class="docs-content">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="text-4xl">⏱️</span>
+        <div>
+          <h1 class="text-4xl font-bold">MANI <span class="text-xl text-mountain-400">मणि</span></h1>
+          <p class="theme-accent">Metrological Anchoring for Network Integrity</p>
+        </div>
+      </div>
+      <p class="text-xl text-mountain-300 mb-4">Precious time synchronization for the Yakmesh network.</p>
+      <span class="inline-block text-xs theme-badge px-2 py-1 rounded mb-8">v2.5.0</span>
+
+      <div class="feature-box">
+        <h3>The Sacred Stones</h3>
+        <p>
+          In Tibetan Buddhism, <strong>MANI stones</strong> are sacred rocks inscribed with mantras, 
+          placed along mountain paths as immutable markers of time and devotion. Each stone is 
+          precisely positioned, never moved—eternal reference points for travelers navigating 
+          the high passes.
+        </p>
+        <p>
+          The MANI protocol embodies this principle: atomic clocks serve as primary MANI stones 
+          (immutable reference), GPS signals as celestial markers (from the heavens), and each 
+          node synchronizes to the most precious time source available.
+        </p>
+      </div>
+
+      <h2>🏔️ Overview</h2>
+      <p>
+        MANI (Metrological Anchoring for Network Integrity) provides <strong>precision time synchronization</strong> 
+        for the Yakmesh network. Quality of time determines phase tolerance for consensus operations—
+        nodes with atomic clocks can participate in tighter consensus windows than those relying on NTP alone.
+      </p>
+
+      <div class="protocol-family">
+        <h3>Protocol Family</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Protocol</th>
+              <th>Himalayan Name</th>
+              <th>Purpose</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>🕉️ Gossip</td>
+              <td>MANTRA</td>
+              <td>Epidemic message propagation</td>
+            </tr>
+            <tr>
+              <td>🛕 Broadcast</td>
+              <td>STUPA</td>
+              <td>Priority-based broadcasting</td>
+            </tr>
+            <tr>
+              <td>🔮 Consensus</td>
+              <td>LAMA</td>
+              <td>Distributed agreement</td>
+            </tr>
+            <tr class="active">
+              <td>⏱️ Time</td>
+              <td>MANI</td>
+              <td>Temporal synchronization</td>
+            </tr>
+            <tr>
+              <td>☯️ Trust</td>
+              <td>KARMA</td>
+              <td>Reputation management</td>
+            </tr>
+            <tr>
+              <td>🌐 Mesh</td>
+              <td>MANDALA</td>
+              <td>Network topology</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>💎 Trust Levels</h2>
+      <p>
+        MANI classifies time sources by their quality, like precious gems in a spiritual hierarchy. 
+        Higher-quality sources enable tighter consensus tolerances:
+      </p>
+
+      <div class="trust-levels">
+        <div class="trust-level level-quantum">
+          <div class="level-header">
+            <span class="level-icon">🔮</span>
+            <h4>QUANTUM</h4>
+            <span class="level-tolerance">±1ms</span>
+          </div>
+          <p>Quantum optical network (WR-PTP, optical atomic). Sub-nanosecond capability.</p>
+        </div>
+        <div class="trust-level level-atomic">
+          <div class="level-header">
+            <span class="level-icon">⚛️</span>
+            <h4>ATOMIC</h4>
+            <span class="level-tolerance">±100ms</span>
+          </div>
+          <p>PCIe atomic clock (CSAC, Rubidium). Primary MANI stone—immutable reference.</p>
+        </div>
+        <div class="trust-level level-gps">
+          <div class="level-header">
+            <span class="level-icon">🛰️</span>
+            <h4>GPS</h4>
+            <span class="level-tolerance">±500ms</span>
+          </div>
+          <p>GPS with PPS signal. Celestial marker from the heavens.</p>
+        </div>
+        <div class="trust-level level-ptp">
+          <div class="level-header">
+            <span class="level-icon">🌐</span>
+            <h4>PTP</h4>
+            <span class="level-tolerance">±500ms</span>
+          </div>
+          <p>IEEE 1588 hardware timestamping. Network-synchronized reference.</p>
+        </div>
+        <div class="trust-level level-ntp">
+          <div class="level-header">
+            <span class="level-icon">🕐</span>
+            <h4>NTP</h4>
+            <span class="level-tolerance">±5000ms</span>
+          </div>
+          <p>Standard NTP synchronization. Basic time reference.</p>
+        </div>
+        <div class="trust-level level-unsync">
+          <div class="level-header">
+            <span class="level-icon">❓</span>
+            <h4>UNSYNC</h4>
+            <span class="level-tolerance">±30000ms</span>
+          </div>
+          <p>No reliable time source. Degraded mode—lost on the path.</p>
+        </div>
+      </div>
+
+      <h2>⏱️ Core Components</h2>
+
+      <h3>ManiTimeDetector</h3>
+      <p>Automatically detects available time sources like a pilgrim discovering MANI stones along the mountain path:</p>
+      <pre><code>import { ManiTimeDetector, ManiTrustLevel } from 'yakmesh/oracle/time-source';
+
+// Create and start the detector
+const mani = new ManiTimeDetector({
+  detectHardware: true,     // Scan for atomic clocks, GPS
+  checkNtp: true,           // Check NTP status
+  refreshInterval: 60000,   // Re-detect every minute
+});
+
+// Start continuous monitoring
+mani.start();
+
+// Get current detection results
+const status = mani.detect();
+console.log(`Trust Level: ${status.trustLevel}`);
+console.log(`Phase Tolerance: ±${status.phaseTolerance}ms`);
+console.log(`Primary Source: ${status.primarySource}`);
+
+// Listen for changes
+mani.on('trustLevelChanged', ({ previous, current }) => {
+  console.log(`Time quality changed: ${previous} → ${current}`);
+});</code></pre>
+
+      <h3>Phase Configuration</h3>
+      <p>Generate phase tolerance settings based on detected time quality:</p>
+      <pre><code>import { createPhaseConfig, ManiTrustLevel } from 'yakmesh/oracle/time-source';
+
+// Get phase configuration for current trust level
+const config = createPhaseConfig(ManiTrustLevel.ATOMIC);
+
+console.log(config);
+// {
+//   trustLevel: 'atomic',
+//   phaseTolerance: 100,
+//   stratumLevel: 0,
+//   capabilities: {
+//     canBeTimeOracle: true,
+//     canValidateTightPhase: true,
+//     canParticipateInConsensus: true
+//   }
+// }</code></pre>
+
+      <h2>🔍 Hardware Detection</h2>
+      <p>MANI automatically scans for precision time hardware:</p>
+
+      <table class="api-table">
+        <thead>
+          <tr>
+            <th>Device Type</th>
+            <th>Linux Paths</th>
+            <th>Detection Method</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>PCIe Atomic Clock</td>
+            <td><code>/dev/pps0</code>, vendor-specific</td>
+            <td>PCI device enumeration, driver detection</td>
+          </tr>
+          <tr>
+            <td>GPS Receiver</td>
+            <td><code>/dev/ttyUSB0</code>, <code>/dev/gps0</code></td>
+            <td>Serial port scan, NMEA detection</td>
+          </tr>
+          <tr>
+            <td>PTP Hardware</td>
+            <td><code>/dev/ptp0</code></td>
+            <td>IEEE 1588 capable NIC detection</td>
+          </tr>
+          <tr>
+            <td>NTP Status</td>
+            <td>chrony/ntpd sockets</td>
+            <td>Daemon status query</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>⚙️ Configuration</h2>
+      <pre><code>const options = {
+  // Hardware detection
+  detectHardware: true,      // Scan for atomic clocks, GPS, PTP
+  checkNtp: true,            // Check NTP daemon status
+  
+  // Custom device paths (override defaults)
+  customDevices: {
+    pps: ['/dev/my-atomic-clock'],
+    gps: ['/dev/my-gps-receiver'],
+  },
+  
+  // Monitoring
+  refreshInterval: 60000,    // Re-detect interval (ms), 0 to disable
+  verbose: false,            // Enable debug logging
+};</code></pre>
+
+      <h2>🔗 Integration with Other Protocols</h2>
+      <div class="integration-grid">
+        <div class="integration-card">
+          <h4>🔮 LAMA</h4>
+          <p>Time quality determines consensus phase tolerance windows</p>
+        </div>
+        <div class="integration-card">
+          <h4>📜 ValidationOracle</h4>
+          <p>Timestamps validated against node's MANI trust level</p>
+        </div>
+        <div class="integration-card">
+          <h4>☯️ KARMA</h4>
+          <p>Nodes with better time sources may receive trust bonuses</p>
+        </div>
+        <div class="integration-card">
+          <h4>🕉️ MANTRA</h4>
+          <p>Gossip timestamps use MANI-synchronized local time</p>
+        </div>
+      </div>
+
+      <h2>📖 Backward Compatibility</h2>
+      <p>
+        For existing codebases using the original naming, legacy exports are maintained:
+      </p>
+      <pre><code>// Legacy imports still work
+import { TimeSourceDetector, TimeTrustLevel, PhaseTolerance } from 'yakmesh/oracle/time-source';
+
+// These map to the new MANI names
+// TimeSourceDetector → ManiTimeDetector
+// TimeTrustLevel → ManiTrustLevel
+// PhaseTolerance → ManiPhaseTolerance</code></pre>
+
+      <!-- Journey Navigation -->
+      <div class="border-t border-mountain-700 mt-12 pt-8">
+        <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
+        <div class="flex flex-col sm:flex-row gap-4">
+          <a href="lama.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">
+            <div class="text-xs text-mountain-400 mb-1">← Previous</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">🔮</span>
+              <span class="font-semibold group-hover:text-theme-accent">LAMA Protocol</span>
+            </div>
+            <p class="text-mountain-400 text-sm mt-1">Distributed consensus</p>
+          </a>
+          <a href="karma.html" class="flex-1 block bg-mountain-800 border border-theme-primary rounded-xl p-4 hover:border-theme-accent transition group">
+            <div class="text-xs text-mountain-400 mb-1">Next →</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">☯️</span>
+              <span class="font-semibold group-hover:text-theme-accent">KARMA Protocol</span>
+            </div>
+            <p class="text-mountain-400 text-sm mt-1">Reputation management</p>
+          </a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="docs-footer">
+    <p>© 2026 YAKMESH™</p>
+  </footer>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="docs.js"></script>
+
+  
+</body>
+</html>
+
+

@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="annex">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="favicon.ico" sizes="32x32">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <title>ANNEX - P2P Channels | YAKMESH Documentation</title>
+    <meta name="description" content="ANNEX: Autonomous Network Negotiated eXchange. Post-quantum encrypted point-to-point communication channels.">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        theme: { 
+                            primary: '#3b82f6', 
+                            secondary: '#2563eb', 
+                            accent: '#60a5fa',
+                            bg: '#1e3a5f',
+                            glow: 'rgba(59, 130, 246, 0.1)'
+                        },
+                        mountain: { 
+                            300: '#88b4a6', 
+                            400: '#6a9a8a', 
+                            700: '#2e4c43', 
+                            800: '#1f332d', 
+                            900: '#101a16' 
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Syntax Highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="docs.css">
+    <style>
+        /* Page-specific theme overrides - Deep Blue "Ice Caves" theme */
+        .theme-accent { color: #60a5fa; }
+        .theme-accent-hover:hover { color: #93c5fd; }
+        .theme-badge { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+        .theme-border { border-color: #3b82f6; }
+        .theme-callout { background: rgba(59, 130, 246, 0.1); border-color: #2563eb; }
+        .active-link { background: rgba(59, 130, 246, 0.2) !important; color: #60a5fa !important; }
+    </style>
+</head>
+<body class="bg-mountain-900 text-white min-h-screen">
+    
+  <nav class="docs-sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-logo">
+      <span class="logo-icon">🏔️</span>
+      <span class="logo-text">Yakmesh</span>
+    </a>
+    <ul class="sidebar-nav">
+      <li><a href="index.html"><span>🏠</span> <span>Overview</span></a></li>
+      <li><a href="getting-started.html"><span>🚀</span> <span>Getting Started</span></a></li>
+      <li><a href="doko.html"><span>🧺</span> <span>DOKO</span></a></li>
+      <li><a href="namche.html"><span>🚪</span> <span>NAMCHE</span></a></li>
+      <li><a href="sherpa.html"><span>🧗</span> <span>SHERPA</span></a></li>
+      <li><a href="nakpak.html"><span>🎒</span> <span>NAKPAK</span></a></li>
+      <li><a href="annex.html" class="active"><span>🌉</span> <span>ANNEX</span></a></li>
+      <li><a href="yak-protocol.html"><span class="yak-icon"></span> <span>YAK</span></a></li>
+      <li><a href="mantra.html"><span>🕉️</span> <span>MANTRA</span></a></li>
+      <li><a href="stupa.html"><span>🛕</span> <span>STUPA</span></a></li>
+      <li><a href="lama.html"><span>🔮</span> <span>LAMA</span></a></li>
+      <li><a href="mani.html"><span>⏱️</span> <span>MANI</span></a></li>
+      <li><a href="karma.html"><span>☯️</span> <span>KARMA</span></a></li>
+      <li><a href="mandala.html"><span>🌐</span> <span>MANDALA</span></a></li>
+      <li><a href="tattva.html"><span>🔯</span> <span>TATTVA</span></a></li>
+      <li><a href="geo-proof.html"><span>🌍</span> <span>PRAMAAN</span></a></li>
+      <li><a href="trust-security.html"><span>🔒</span> <span>SURAKSHA</span></a></li>
+      <li><a href="docs-bundle.html"><span>📚</span> <span>GRANTH</span></a></li>
+      <li><a href="api.html"><span>📡</span> <span>API</span></a></li>
+    </ul>
+  </nav>
+
+  <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+    </svg>
+  </button>
+
+  <!-- Mobile overlay for tap-to-close sidebar -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="docs-main" id="mainContent">
+
+        <div class="docs-content">
+            <div class="flex items-center gap-3 mb-4">
+                <span class="text-4xl">🔐</span>
+                <div>
+                    <h1 class="text-4xl font-bold">ANNEX</h1>
+                    <p class="theme-accent">Autonomous Network Negotiated eXchange</p>
+                </div>
+            </div>
+            <p class="text-xl text-mountain-300 mb-4">Post-quantum encrypted point-to-point communication channels</p>
+            <span class="inline-block text-xs theme-badge px-2 py-1 rounded mb-8">v2.6.0</span>
+
+            <!-- Philosophy Quote -->
+            <div class="theme-callout border rounded-r-xl p-6 mb-8 italic text-mountain-200">
+                "Deep within the ice caves of the Khumbu, encrypted channels flow like glacial streams — 
+                invisible to the surface world. <strong class="theme-accent">Changes pass through math alone.</strong>"
+            </div>
+
+            <!-- Overview Section -->
+            <h2 class="text-2xl font-bold mb-4">Overview</h2>
+            <p class="text-mountain-300 mb-6">
+                YAKMESH ANNEX establishes encrypted point-to-point channels between mesh peers using post-quantum cryptography. 
+                All payload transformations are cryptographically autonomous with no plaintext touching the network.
+            </p>
+            <div class="grid grid-cols-2 gap-4 mb-8">
+                <div class="bg-mountain-800 rounded-lg p-4">
+                    <div class="theme-accent font-semibold mb-2">🔐 Key Exchange</div>
+                    <div class="text-mountain-400 text-sm">ML-KEM-768 (Kyber) — NIST FIPS 203 post-quantum KEM</div>
+                </div>
+                <div class="bg-mountain-800 rounded-lg p-4">
+                    <div class="theme-accent font-semibold mb-2">🛡️ Encryption</div>
+                    <div class="text-mountain-400 text-sm">AES-256-GCM authenticated symmetric encryption</div>
+                </div>
+                <div class="bg-mountain-800 rounded-lg p-4">
+                    <div class="theme-accent font-semibold mb-2">✍️ Authentication</div>
+                    <div class="text-mountain-400 text-sm">ML-DSA-65 signatures on all messages</div>
+                </div>
+                <div class="bg-mountain-800 rounded-lg p-4">
+                    <div class="theme-accent font-semibold mb-2">🔄 Forward Secrecy</div>
+                    <div class="text-mountain-400 text-sm">Automatic re-key every 5 minutes or 10,000 messages</div>
+                </div>
+            </div>
+
+            <!-- Use Cases Section -->
+            <div class="bg-mountain-800 rounded-xl p-6 mb-8">
+                <h3 class="text-lg font-semibold mb-3 theme-accent">Use Cases</h3>
+                <ul class="space-y-3 text-mountain-300">
+                    <li class="flex items-start gap-3">
+                        <span class="theme-accent">•</span>
+                        <span><strong>Beacon Acknowledgments</strong> — Encrypted responses to emergency broadcasts without revealing recipient identity</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <span class="theme-accent">•</span>
+                        <span><strong>Authenticated Content Delivery</strong> — Private content transfer vs public gossip propagation</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <span class="theme-accent">•</span>
+                        <span><strong>App-Specific Payloads</strong> — Private application data requiring confidentiality</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <span class="theme-accent">•</span>
+                        <span><strong>CDN Authentication Tokens</strong> — Secure token exchange for site/CDN access</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <span class="theme-accent">•</span>
+                        <span><strong>Direct P2P Messaging</strong> — Secure peer-to-peer communication</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Quick Start Section -->
+            <h2 class="text-2xl font-bold mb-4">Quick Start</h2>
+            <div class="bg-mountain-800 border theme-border rounded-xl overflow-hidden mb-8">
+                <div class="p-4">
+                    <pre class="language-javascript rounded-lg"><code>import { Annex } from 'yakmesh/mesh/annex.js';
+
+// Initialize with node identity and mesh connection
+const annex = new Annex({ identity, mesh });
+
+// Open encrypted channel to a peer
+await annex.openChannel(peerNodeId);
+
+// Send encrypted message
+await annex.send(peerNodeId, {
+  type: 'private_message',
+  content: 'Hello from the annexed territory!',
+});
+
+// Handle incoming messages
+annex.onMessage(({ from, payload, sessionId }) => {
+  console.log(`Decrypted from ${from}:`, payload);
+});
+
+// Close channel when done
+await annex.closeChannel(peerNodeId);</code></pre>
+                </div>
+            </div>
+
+            <!-- API Reference Section -->
+            <h2 class="text-2xl font-bold mb-4">API Reference</h2>
+            <div class="space-y-6">
+                <!-- openChannel -->
+                <div class="bg-mountain-800 border theme-border rounded-xl overflow-hidden">
+                    <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
+                        <span class="theme-badge px-2 py-1 rounded text-xs font-mono">async</span>
+                        <code class="theme-accent">annex.openChannel(remoteNodeId)</code>
+                    </div>
+                    <div class="p-4">
+                        <p class="text-mountain-300 mb-4">Establishes an encrypted channel with a peer using ML-KEM-768 key exchange.</p>
+                        <h4 class="font-semibold mb-2">Parameters</h4>
+                        <table class="w-full text-sm mb-4">
+                            <tr class="border-b border-mountain-700">
+                                <td class="py-2 theme-accent font-mono">remoteNodeId</td>
+                                <td class="py-2 text-mountain-400">string</td>
+                                <td class="py-2 text-mountain-300">The target peer's node ID</td>
+                            </tr>
+                        </table>
+                        <h4 class="font-semibold mb-2">Returns</h4>
+                        <pre class="language-javascript rounded-lg text-sm"><code>Promise&lt;AnnexSession&gt; // The established session object</code></pre>
+                    </div>
+                </div>
+
+                <!-- send -->
+                <div class="bg-mountain-800 border theme-border rounded-xl overflow-hidden">
+                    <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
+                        <span class="theme-badge px-2 py-1 rounded text-xs font-mono">async</span>
+                        <code class="theme-accent">annex.send(remoteNodeId, payload)</code>
+                    </div>
+                    <div class="p-4">
+                        <p class="text-mountain-300 mb-4">Sends an encrypted message through an established ANNEX channel. Automatically opens a channel if needed.</p>
+                        <h4 class="font-semibold mb-2">Parameters</h4>
+                        <table class="w-full text-sm mb-4">
+                            <tr class="border-b border-mountain-700">
+                                <td class="py-2 theme-accent font-mono">remoteNodeId</td>
+                                <td class="py-2 text-mountain-400">string</td>
+                                <td class="py-2 text-mountain-300">Target peer's node ID</td>
+                            </tr>
+                            <tr class="border-b border-mountain-700">
+                                <td class="py-2 theme-accent font-mono">payload</td>
+                                <td class="py-2 text-mountain-400">object | string</td>
+                                <td class="py-2 text-mountain-300">Message content to encrypt and send</td>
+                            </tr>
+                        </table>
+                        <h4 class="font-semibold mb-2">Returns</h4>
+                        <pre class="language-javascript rounded-lg text-sm"><code>{
+  sent: true,
+  sessionId: "abc123...",
+  sequence: 42
+}</code></pre>
+                    </div>
+                </div>
+
+                <!-- onMessage -->
+                <div class="bg-mountain-800 border theme-border rounded-xl overflow-hidden">
+                    <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
+                        <code class="theme-accent">annex.onMessage(handler)</code>
+                    </div>
+                    <div class="p-4">
+                        <p class="text-mountain-300 mb-4">Registers a callback for decrypted incoming messages.</p>
+                        <h4 class="font-semibold mb-2">Handler Receives</h4>
+                        <pre class="language-javascript rounded-lg text-sm"><code>{
+  from: "node-abc123...",      // Sender's node ID
+  sessionId: "session-xyz...", // Session identifier
+  payload: { ... },            // Decrypted message content
+  timestamp: 1736766000000     // Message timestamp
+}</code></pre>
+                        <h4 class="font-semibold mb-2 mt-4">Returns</h4>
+                        <p class="text-mountain-400 text-sm">Handler ID (string) — use with <code class="theme-accent">offMessage()</code> to remove</p>
+                    </div>
+                </div>
+
+                <!-- closeChannel -->
+                <div class="bg-mountain-800 border theme-border rounded-xl overflow-hidden">
+                    <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
+                        <span class="theme-badge px-2 py-1 rounded text-xs font-mono">async</span>
+                        <code class="theme-accent">annex.closeChannel(remoteNodeId)</code>
+                    </div>
+                    <div class="p-4">
+                        <p class="text-mountain-300 mb-4">Closes the ANNEX channel with a peer, releasing the session and notifying the remote node.</p>
+                        <h4 class="font-semibold mb-2">Parameters</h4>
+                        <table class="w-full text-sm">
+                            <tr class="border-b border-mountain-700">
+                                <td class="py-2 theme-accent font-mono">remoteNodeId</td>
+                                <td class="py-2 text-mountain-400">string</td>
+                                <td class="py-2 text-mountain-300">The peer's node ID</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- getStats -->
+                <div class="bg-mountain-800 border theme-border rounded-xl overflow-hidden">
+                    <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
+                        <code class="theme-accent">annex.getStats()</code>
+                    </div>
+                    <div class="p-4">
+                        <p class="text-mountain-300 mb-4">Returns statistics about ANNEX operations.</p>
+                        <h4 class="font-semibold mb-2">Returns</h4>
+                        <pre class="language-javascript rounded-lg text-sm"><code>{
+  sessionsCreated: 5,
+  messagesEncrypted: 142,
+  messagesDecrypted: 138,
+  handshakesFailed: 1,
+  replaysBlocked: 0,
+  activeSessions: 2,
+  pendingHandshakes: 0
+}</code></pre>
+                    </div>
+                </div>
+
+                <!-- listAnnexes -->
+                <div class="bg-mountain-800 border theme-border rounded-xl overflow-hidden">
+                    <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
+                        <code class="theme-accent">annex.listAnnexes()</code>
+                    </div>
+                    <div class="p-4">
+                        <p class="text-mountain-300 mb-4">Returns a list of all active ANNEX sessions (annexed territories).</p>
+                        <h4 class="font-semibold mb-2">Returns</h4>
+                        <pre class="language-javascript rounded-lg text-sm"><code>[
+  {
+    nodeId: "node-abc123...",
+    sessionId: "session-xyz...",
+    established: true,
+    createdAt: 1736766000000,
+    lastActivity: 1736766300000,
+    messageCount: 42,
+    isExpired: false
+  }
+]</code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Security Section -->
+            <h2 class="text-2xl font-bold mb-4 mt-8">Security Properties</h2>
+            <div class="bg-mountain-800 rounded-xl p-6 mb-8">
+                <div class="space-y-4">
+                    <div class="flex items-start gap-4">
+                        <div class="theme-badge w-8 h-8 rounded-full flex items-center justify-center font-bold">1</div>
+                        <div>
+                            <h4 class="font-semibold theme-accent">Post-Quantum Confidentiality</h4>
+                            <p class="text-mountain-400 text-sm">ML-KEM-768 (Kyber) key exchange is resistant to Shor's algorithm and HNDL attacks</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-4">
+                        <div class="theme-badge w-8 h-8 rounded-full flex items-center justify-center font-bold">2</div>
+                        <div>
+                            <h4 class="font-semibold theme-accent">Message Authentication</h4>
+                            <p class="text-mountain-400 text-sm">Every envelope is signed with ML-DSA-65 — recipients verify sender identity</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-4">
+                        <div class="theme-badge w-8 h-8 rounded-full flex items-center justify-center font-bold">3</div>
+                        <div>
+                            <h4 class="font-semibold theme-accent">Replay Protection</h4>
+                            <p class="text-mountain-400 text-sm">Sequence numbers bound to session ID via AAD in GCM authentication tag</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-4">
+                        <div class="theme-badge w-8 h-8 rounded-full flex items-center justify-center font-bold">4</div>
+                        <div>
+                            <h4 class="font-semibold theme-accent">Perfect Forward Secrecy</h4>
+                            <p class="text-mountain-400 text-sm">Automatic ephemeral key rotation every 5 minutes or 10,000 messages</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-4">
+                        <div class="theme-badge w-8 h-8 rounded-full flex items-center justify-center font-bold">5</div>
+                        <div>
+                            <h4 class="font-semibold theme-accent">Authenticated Encryption</h4>
+                            <p class="text-mountain-400 text-sm">AES-256-GCM provides both confidentiality and integrity with 128-bit auth tag</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Protocol Stack -->
+            <h2 class="text-2xl font-bold mb-4">Protocol Stack Position</h2>
+            <div class="bg-mountain-800 rounded-xl p-6 mb-8">
+                <p class="text-mountain-300 mb-4">ANNEX sits above the mesh layer as the private messaging channel:</p>
+                <pre class="language-text rounded-lg text-sm"><code>┌─────────────────────────────────────────────────────────────┐
+│                    YAKMESH PROTOCOL STACK                   │
+├─────────────────────────────────────────────────────────────┤
+│  HTTP API          │ Public content delivery (CDN layer)    │
+├─────────────────────────────────────────────────────────────┤
+│  ANNEX             │ ML-KEM768 + AES-256-GCM encrypted P2P  │  ◄── You are here
+├─────────────────────────────────────────────────────────────┤
+│  Gossip            │ ML-DSA-65 signed message propagation   │
+├─────────────────────────────────────────────────────────────┤
+│  Beacon            │ Flood-based priority broadcasts        │
+├─────────────────────────────────────────────────────────────┤
+│  NAKPAK            │ Post-quantum onion routing             │
+├─────────────────────────────────────────────────────────────┤
+│  Mesh Core         │ WebSocket + Code Proof Protocol        │
+└─────────────────────────────────────────────────────────────┘</code></pre>
+            </div>
+
+            <!-- Message Types -->
+            <h2 class="text-2xl font-bold mb-4">Internal Message Types</h2>
+            <div class="bg-mountain-800 rounded-xl p-6 mb-8">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-mountain-700">
+                            <th class="py-2 text-left text-mountain-400">Type</th>
+                            <th class="py-2 text-left text-mountain-400">Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="border-b border-mountain-700">
+                            <td class="py-3 theme-accent font-mono">annex:key_exchange</td>
+                            <td class="py-3 text-mountain-300">Initiates ML-KEM-768 key exchange with peer</td>
+                        </tr>
+                        <tr class="border-b border-mountain-700">
+                            <td class="py-3 theme-accent font-mono">annex:key_response</td>
+                            <td class="py-3 text-mountain-300">Completes key encapsulation and establishes session</td>
+                        </tr>
+                        <tr class="border-b border-mountain-700">
+                            <td class="py-3 theme-accent font-mono">annex:encrypted</td>
+                            <td class="py-3 text-mountain-300">Encrypted payload with sequence number</td>
+                        </tr>
+                        <tr class="border-b border-mountain-700">
+                            <td class="py-3 theme-accent font-mono">annex:rekey</td>
+                            <td class="py-3 text-mountain-300">Initiates perfect forward secrecy re-key</td>
+                        </tr>
+                        <tr>
+                            <td class="py-3 theme-accent font-mono">annex:close</td>
+                            <td class="py-3 text-mountain-300">Releases annexed territory (closes session)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Version Info -->
+            <div class="text-center text-mountain-400 text-sm mt-12 pt-8 border-t border-mountain-700">
+                <p>YAKMESH ANNEX — <span class="theme-badge px-2 py-1 rounded">v2.6.0</span></p>
+                <p class="mt-2">
+                    <a href="https://github.com/yakmesh/yakmesh" class="theme-accent theme-accent-hover">GitHub</a> · 
+                    <a href="https://www.npmjs.com/package/yakmesh" class="theme-accent theme-accent-hover">npm</a> · 
+                    <a href="https://discord.gg/8mSPfbJB8N" class="theme-accent theme-accent-hover">Discord</a>
+                </p>
+            </div>
+
+            <!-- Journey Navigation -->
+            <div class="border-t border-mountain-700 mt-12 pt-8">
+                <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <a href="nakpak.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">
+                        <div class="text-xs text-mountain-400 mb-1">← Previous</div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">🎒</span>
+                            <span class="font-semibold group-hover:text-theme-accent">NAKPAK Routing</span>
+                        </div>
+                        <p class="text-mountain-400 text-sm mt-1">Onion routing for privacy and security</p>
+                    </a>
+                    <a href="yak-protocol.html" class="flex-1 block bg-mountain-800 border border-theme-primary rounded-xl p-4 hover:border-theme-accent transition group">
+                        <div class="text-xs text-mountain-400 mb-1">Next →</div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl"><span class="yak-icon"></span></span>
+                            <span class="font-semibold group-hover:text-theme-accent">YAK Protocol</span>
+                        </div>
+                        <p class="text-mountain-400 text-sm mt-1">Post-quantum secure messaging layer</p>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+  <footer class="docs-footer">
+    <p>© 2026 YAKMESH™</p>
+  </footer><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script src="docs.js"></script>
+
+  
+</body>
+</html>
+
+
+

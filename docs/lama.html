@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="lama">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="favicon.ico" sizes="32x32">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <title>LAMA Protocol | YAKMESH Documentation</title>
+  <meta name="description" content="LAMA - Locally Attested Multi-Agreement. Distributed consensus through independent wisdom.">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            theme: { primary: '#a855f7', secondary: '#9333ea', accent: '#c084fc', bg: '#2e1065', glow: 'rgba(168, 85, 247, 0.15)' },
+            mountain: { 300: '#88b4a6', 400: '#6a9a8a', 700: '#2e4c43', 800: '#1f332d', 900: '#101a16' }
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="docs.css">
+  <style>
+    .theme-accent { color: #c084fc; }
+    .theme-accent-hover:hover { color: #a855f7; }
+    .theme-badge { background: rgba(168, 85, 247, 0.2); color: #c084fc; }
+    .theme-border { border-color: #a855f7; }
+    .theme-callout { background: rgba(168, 85, 247, 0.1); border-color: #9333ea; }
+    .active-link { background: rgba(168, 85, 247, 0.2) !important; color: #c084fc !important; }
+  </style>
+</head>
+<body class="bg-mountain-900 text-white min-h-screen">
+    <nav class="docs-sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-logo">
+      <span class="logo-icon">🏔️</span>
+      <span class="logo-text">Yakmesh</span>
+    </a>
+    <ul class="sidebar-nav">
+      <li><a href="index.html"><span>🏠</span> <span>Overview</span></a></li>
+      <li><a href="getting-started.html"><span>🚀</span> <span>Getting Started</span></a></li>
+      <li><a href="doko.html"><span>🧺</span> <span>DOKO</span></a></li>
+      <li><a href="namche.html"><span>🚪</span> <span>NAMCHE</span></a></li>
+      <li><a href="sherpa.html"><span>🧗</span> <span>SHERPA</span></a></li>
+      <li><a href="nakpak.html"><span>🎒</span> <span>NAKPAK</span></a></li>
+      <li><a href="annex.html"><span>🌉</span> <span>ANNEX</span></a></li>
+      <li><a href="yak-protocol.html"><span class="yak-icon"></span> <span>YAK</span></a></li>
+      <li><a href="mantra.html"><span>🕉️</span> <span>MANTRA</span></a></li>
+      <li><a href="stupa.html"><span>🛕</span> <span>STUPA</span></a></li>
+      <li><a href="lama.html" class="active"><span>🔮</span> <span>LAMA</span></a></li>
+      <li><a href="mani.html"><span>⏱️</span> <span>MANI</span></a></li>
+      <li><a href="karma.html"><span>☯️</span> <span>KARMA</span></a></li>
+      <li><a href="mandala.html"><span>🌐</span> <span>MANDALA</span></a></li>
+      <li><a href="tattva.html"><span>🔯</span> <span>TATTVA</span></a></li>
+      <li><a href="geo-proof.html"><span>🌍</span> <span>PRAMAAN</span></a></li>
+      <li><a href="trust-security.html"><span>🔒</span> <span>SURAKSHA</span></a></li>
+      <li><a href="docs-bundle.html"><span>📚</span> <span>GRANTH</span></a></li>
+      <li><a href="api.html"><span>📡</span> <span>API</span></a></li>
+    </ul>
+  </nav>
+
+  <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+    </svg>
+  </button>
+
+  <!-- Mobile overlay for tap-to-close sidebar -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="docs-main" id="mainContent">
+
+    <div class="docs-content">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="text-4xl">🔮</span>
+        <div>
+          <h1 class="text-4xl font-bold">LAMA <span class="text-xl text-mountain-400">लामा</span></h1>
+          <p class="theme-accent">Locally Attested Multi-Agreement</p>
+        </div>
+      </div>
+      <p class="text-xl text-mountain-300 mb-4">Distributed consensus through independent wisdom.</p>
+      <span class="inline-block text-xs theme-badge px-2 py-1 rounded mb-8">v2.5.0</span>
+
+      <div class="feature-box">
+        <h3>The Wise Council</h3>
+        <p>
+          In Tibetan Buddhism, a <strong>lama</strong> is a wise teacher who guides seekers toward enlightenment 
+          through accumulated wisdom. Multiple lamas in a monastery reach consensus on dharmic truths through 
+          deep contemplation—each independently arriving at the same understanding.
+        </p>
+        <p>
+          The LAMA protocol embodies this principle: each node is a lama, contemplating independently. 
+          Truth emerges through mathematical inevitability, not political voting. Many lamas, one truth.
+        </p>
+      </div>
+
+      <h2>🏔️ Overview</h2>
+      <p>
+        LAMA (Locally Attested Multi-Agreement) provides <strong>distributed consensus</strong> for the 
+        Yakmesh network. Unlike traditional blockchain consensus that relies on voting or stake-weighted 
+        selection, LAMA achieves agreement through deterministic validation where all nodes independently 
+        arrive at the same conclusion.
+      </p>
+
+      <div class="protocol-family">
+        <h3>Protocol Family</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Protocol</th>
+              <th>Himalayan Name</th>
+              <th>Purpose</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>🕉️ Gossip</td>
+              <td>MANTRA</td>
+              <td>Epidemic message propagation</td>
+            </tr>
+            <tr>
+              <td>🛕 Broadcast</td>
+              <td>STUPA</td>
+              <td>Priority-based broadcasting</td>
+            </tr>
+            <tr class="active">
+              <td>🔮 Consensus</td>
+              <td>LAMA</td>
+              <td>Distributed agreement</td>
+            </tr>
+            <tr>
+              <td>⏱️ Time</td>
+              <td>MANI</td>
+              <td>Temporal synchronization</td>
+            </tr>
+            <tr>
+              <td>☯️ Trust</td>
+              <td>KARMA</td>
+              <td>Reputation management</td>
+            </tr>
+            <tr>
+              <td>🌐 Mesh</td>
+              <td>MANDALA</td>
+              <td>Network topology</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>📿 Dharmic States</h2>
+      <p>
+        Content in the LAMA system progresses through states, like a teaching moving through 
+        stages of acceptance in a monastery:
+      </p>
+
+      <div class="dharmic-states">
+        <div class="state state-pending">
+          <div class="state-header">
+            <span class="state-icon">📥</span>
+            <h4>PENDING</h4>
+          </div>
+          <p>Teaching received, awaiting contemplation. Content has arrived but not yet validated locally.</p>
+        </div>
+        <div class="state state-validated">
+          <div class="state-header">
+            <span class="state-icon">✓</span>
+            <h4>VALIDATED</h4>
+          </div>
+          <p>Accepted by one lama. Local node has verified the content's validity.</p>
+        </div>
+        <div class="state state-consensus">
+          <div class="state-header">
+            <span class="state-icon">🔮</span>
+            <h4>CONSENSUS</h4>
+          </div>
+          <p>All lamas agree on truth. Multiple nodes have independently verified.</p>
+        </div>
+        <div class="state state-rejected">
+          <div class="state-header">
+            <span class="state-icon">✗</span>
+            <h4>REJECTED</h4>
+          </div>
+          <p>Teaching rejected. Failed validation or consensus requirements.</p>
+        </div>
+        <div class="state state-conflict">
+          <div class="state-header">
+            <span class="state-icon">⚖️</span>
+            <h4>CONFLICT</h4>
+          </div>
+          <p>Multiple versions exist. Will be resolved through deterministic wisdom.</p>
+        </div>
+      </div>
+
+      <h2>🔮 Core Components</h2>
+
+      <h3>LamaConsensus</h3>
+      <p>The main consensus engine managing distributed agreement:</p>
+      <pre><code>import { LamaConsensus, DharmicState } from 'yakmesh/oracle/consensus-engine';
+
+// Initialize the consensus engine
+const lama = new LamaConsensus(nodeIdentity, {
+  minAttestations: 3,            // Minimum nodes to confirm
+  conflictResolutionDelay: 5000, // Time before resolving conflicts
+  networkFingerprint: fingerprint
+});
+
+// Submit content for consensus
+const result = lama.submitContent('listing', {
+  title: 'Quantum-Safe Widget',
+  price: 100,
+  seller: userId
+}, {
+  signature: userSignature,
+  publicKey: userPubKey
+});
+
+console.log(result.status);      // 'VALIDATED', 'DUPLICATE', 'CONFLICT_DETECTED'
+console.log(result.contentHash); // Content's unique identity</code></pre>
+
+      <h3>Receiving Attestations</h3>
+      <p>When other nodes validate the same content, they provide attestations:</p>
+      <pre><code>// Receive attestation from another node
+lama.receiveAttestation(contentHash, attestingNodeId);
+
+// Listen for consensus events
+lama.on('consensus', ({ contentHash, attestations }) => {
+  console.log(`Consensus reached with ${attestations.size} attestations`);
+});
+
+// Listen for conflict resolution
+lama.on('conflictResolved', ({ primaryKey, winner, loser }) => {
+  console.log(`Conflict resolved: ${winner} chosen over ${loser}`);
+});</code></pre>
+
+      <h2>⚖️ Conflict Resolution</h2>
+      <p>
+        When multiple versions of content share the same primary key (e.g., same listing ID), 
+        LAMA resolves conflicts deterministically using content hashes:
+      </p>
+
+      <div class="conflict-flow">
+        <div class="conflict-step">
+          <h4>1. Detection</h4>
+          <p>Two nodes submit different content with the same primary key</p>
+        </div>
+        <div class="conflict-arrow">→</div>
+        <div class="conflict-step">
+          <h4>2. Collection</h4>
+          <p>Both versions are stored, marked as CONFLICT</p>
+        </div>
+        <div class="conflict-arrow">→</div>
+        <div class="conflict-step">
+          <h4>3. Resolution</h4>
+          <p>After delay, deterministic comparison (hash ordering) selects winner</p>
+        </div>
+        <div class="conflict-arrow">→</div>
+        <div class="conflict-step">
+          <h4>4. Consensus</h4>
+          <p>Winner promoted to CONSENSUS, loser marked REJECTED</p>
+        </div>
+      </div>
+
+      <p>
+        <strong>Key insight:</strong> Because resolution is deterministic (based on content hashes), 
+        all nodes will independently arrive at the same conclusion without communication.
+      </p>
+
+      <h2>🔔 Event System</h2>
+      <table class="api-table">
+        <thead>
+          <tr>
+            <th>Event</th>
+            <th>Payload</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>validated</code></td>
+            <td>{ contentHash, content }</td>
+            <td>Content passed local validation</td>
+          </tr>
+          <tr>
+            <td><code>consensus</code></td>
+            <td>{ contentHash, attestations }</td>
+            <td>Consensus threshold reached</td>
+          </tr>
+          <tr>
+            <td><code>conflictDetected</code></td>
+            <td>{ primaryKey, hashes }</td>
+            <td>Conflicting versions identified</td>
+          </tr>
+          <tr>
+            <td><code>conflictResolved</code></td>
+            <td>{ primaryKey, winner, loser }</td>
+            <td>Conflict deterministically resolved</td>
+          </tr>
+          <tr>
+            <td><code>rejected</code></td>
+            <td>{ contentHash, reason }</td>
+            <td>Content failed validation</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>⚙️ Configuration</h2>
+      <pre><code>const config = {
+  // Attestation requirements
+  minAttestations: 1,              // Minimum nodes to reach consensus
+  
+  // Conflict handling
+  conflictResolutionDelay: 5000,   // Wait time before resolving (ms)
+  
+  // Storage limits
+  maxPendingContent: 10000,        // Maximum unresolved content
+  
+  // Security
+  networkFingerprint: '...',       // Network identity (hash never exposed)
+};</code></pre>
+
+      <h2>🌐 Integration with Other Protocols</h2>
+      <div class="integration-grid">
+        <div class="integration-card">
+          <h4>🕉️ MANTRA</h4>
+          <p>Content and attestations propagate via epidemic gossip</p>
+        </div>
+        <div class="integration-card">
+          <h4>🛕 STUPA</h4>
+          <p>Consensus results broadcast with IMMEDIATE priority</p>
+        </div>
+        <div class="integration-card">
+          <h4>📜 ValidationOracle</h4>
+          <p>Cryptographic validation of content before consensus</p>
+        </div>
+        <div class="integration-card">
+          <h4>☯️ KARMA</h4>
+          <p>Trust scores weight attestation significance</p>
+        </div>
+      </div>
+
+      <h2>📖 Backward Compatibility</h2>
+      <p>
+        For existing codebases using the original "ConsensusEngine" naming, legacy exports are maintained:
+      </p>
+      <pre><code>// Legacy imports still work
+import { ConsensusEngine, ContentState } from 'yakmesh/oracle/consensus-engine';
+
+// These map to the new LAMA names
+// ConsensusEngine → LamaConsensus
+// ContentState → DharmicState</code></pre>
+
+      <!-- Journey Navigation -->
+      <div class="border-t border-mountain-700 mt-12 pt-8">
+        <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
+        <div class="flex flex-col sm:flex-row gap-4">
+          <a href="stupa.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">
+            <div class="text-xs text-mountain-400 mb-1">← Previous</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">🛕</span>
+              <span class="font-semibold group-hover:text-theme-accent">STUPA Protocol</span>
+            </div>
+            <p class="text-mountain-400 text-sm mt-1">Priority broadcasts</p>
+          </a>
+          <a href="mani.html" class="flex-1 block bg-mountain-800 border border-theme-primary rounded-xl p-4 hover:border-theme-accent transition group">
+            <div class="text-xs text-mountain-400 mb-1">Next →</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">⏱️</span>
+              <span class="font-semibold group-hover:text-theme-accent">MANI Protocol</span>
+            </div>
+            <p class="text-mountain-400 text-sm mt-1">Time synchronization</p>
+          </a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="docs-footer">
+    <p>© 2026 YAKMESH™</p>
+  </footer>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="docs.js"></script>
+
+  
+</body>
+</html>
+
+

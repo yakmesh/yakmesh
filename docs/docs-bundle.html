@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="docs-bundle">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="favicon.ico" sizes="32x32">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <title>GRANTH (Docs Bundle) | YAKMESH Documentation</title>
+  <meta name="description" content="GRANTH - Guaranteed Read-only Authenticated Node Text Hardcode. Self-contained documentation bundle.">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            theme: { primary: '#f59e0b', secondary: '#d97706', accent: '#fbbf24', bg: '#451a03', glow: 'rgba(245, 158, 11, 0.15)' },
+            mountain: { 300: '#88b4a6', 400: '#6a9a8a', 700: '#2e4c43', 800: '#1f332d', 900: '#101a16' }
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="docs.css">
+  <style>
+    .theme-accent { color: #fbbf24; }
+    .theme-accent-hover:hover { color: #f59e0b; }
+    .theme-badge { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+    .theme-border { border-color: #f59e0b; }
+    .theme-callout { background: rgba(245, 158, 11, 0.1); border-color: #d97706; }
+    .active-link { background: rgba(245, 158, 11, 0.2) !important; color: #fbbf24 !important; }
+  </style>
+</head>
+<body class="bg-mountain-900 text-white min-h-screen">
+  <nav class="docs-sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-logo">
+      <span class="logo-icon">🏔️</span>
+      <span class="logo-text">Yakmesh</span>
+    </a>
+    <ul class="sidebar-nav">
+      <li><a href="index.html"><span>🏠</span> <span>Overview</span></a></li>
+      <li><a href="getting-started.html"><span>🚀</span> <span>Getting Started</span></a></li>
+      <li><a href="doko.html"><span>🧺</span> <span>DOKO</span></a></li>
+      <li><a href="namche.html"><span>🚪</span> <span>NAMCHE</span></a></li>
+      <li><a href="sherpa.html"><span>🧗</span> <span>SHERPA</span></a></li>
+      <li><a href="nakpak.html"><span>🎒</span> <span>NAKPAK</span></a></li>
+      <li><a href="annex.html"><span>🌉</span> <span>ANNEX</span></a></li>
+      <li><a href="yak-protocol.html"><span class="yak-icon"></span> <span>YAK</span></a></li>
+      <li><a href="mantra.html"><span>🕉️</span> <span>MANTRA</span></a></li>
+      <li><a href="stupa.html"><span>🛕</span> <span>STUPA</span></a></li>
+      <li><a href="lama.html"><span>🔮</span> <span>LAMA</span></a></li>
+      <li><a href="mani.html"><span>⏱️</span> <span>MANI</span></a></li>
+      <li><a href="karma.html"><span>☯️</span> <span>KARMA</span></a></li>
+      <li><a href="mandala.html"><span>🌐</span> <span>MANDALA</span></a></li>
+      <li><a href="tattva.html"><span>🔯</span> <span>TATTVA</span></a></li>
+      <li><a href="geo-proof.html"><span>🌍</span> <span>PRAMAAN</span></a></li>
+      <li><a href="trust-security.html"><span>🔒</span> <span>SURAKSHA</span></a></li>
+      <li><a href="docs-bundle.html" class="active"><span>📚</span> <span>GRANTH</span></a></li>
+      <li><a href="api.html"><span>📡</span> <span>API</span></a></li>
+    </ul>
+  </nav>
+
+  <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+    </svg>
+  </button>
+
+  <main class="docs-main" id="mainContent">
+    <div class="docs-content">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="text-4xl">📚</span>
+        <div>
+          <h1 class="text-4xl font-bold">GRANTH <span class="text-xl text-mountain-400">ग्रन्थ</span></h1>
+          <p class="theme-accent">Guaranteed Read-only Authenticated Node Text Hardcode</p>
+        </div>
+      </div>
+      <p class="text-xl text-mountain-300 mb-4">Self-contained, mathematically verified documentation that ships with every YAKMESH node.</p>
+      <span class="inline-block text-xs theme-badge px-2 py-1 rounded mb-8">v2.6.0</span>
+
+      <div class="feature-box">
+        <h3>Why Hardcoded?</h3>
+        <p>
+          YAKMESH is designed to operate <strong>without external dependencies</strong>. A node running on a 
+          phone in airplane mode, a device behind a firewall, or a server with no internet connection 
+          should still be able to access its own documentation.
+        </p>
+        <p>
+          The documentation is not "downloaded" or "synced" — it is <strong>part of the software itself</strong>, 
+          verified by the same cryptographic hash that validates the node's codebase.
+        </p>
+      </div>
+
+      <h2>🏔️ Design Principles</h2>
+      
+      <table>
+        <thead>
+          <tr>
+            <th>Principle</th>
+            <th>Implementation</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>No Central Manifest</strong></td>
+            <td>File hashes are hardcoded in source, not fetched from a server</td>
+          </tr>
+          <tr>
+            <td><strong>No Propagation Attack</strong></td>
+            <td>Docs don't sync via gossip — they ship with the release</td>
+          </tr>
+          <tr>
+            <td><strong>Developer Stewardship</strong></td>
+            <td>Only official releases contain official documentation</td>
+          </tr>
+          <tr>
+            <td><strong>Mathematical Verification</strong></td>
+            <td>Any node can verify docs are authentic via SHA3-256</td>
+          </tr>
+          <tr>
+            <td><strong>Offline Capable</strong></td>
+            <td>Docs are local — zero network latency, zero dependency</td>
+          </tr>
+          <tr>
+            <td><strong>Immutable Per Release</strong></td>
+            <td>New docs = new release = new bundle hash</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>📁 Module Structure</h2>
+      
+      <pre><code>yakmesh-node/
+├── docs/                      # Documentation module
+│   ├── index.js               # Module exports
+│   ├── bundle.js              # Generated at build time
+│   ├── verify.js              # Hash verification functions
+│   ├── serve.js               # HTTP/yak:// serving integration
+│   └── BUNDLE_HASH            # SHA3-256 of entire bundle
+│
+└── scripts/
+    └── build-docs-bundle.js   # Build script (runs at npm build)</code></pre>
+
+      <h2>🔐 Verification Flow</h2>
+      
+      <div class="verification-flow">
+        <pre><code>┌─────────────────────────────────────────────────────────────┐
+│                      BUILD TIME                              │
+├─────────────────────────────────────────────────────────────┤
+│  1. Read all files from website/docs/                        │
+│  2. Compute SHA3-256 hash for each file                      │
+│  3. Compute BUNDLE_HASH = SHA3-256(sorted file hashes)       │
+│  4. Generate bundle.js with embedded content + hashes        │
+│  5. Commit to release                                        │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                      RUNTIME                                 │
+├─────────────────────────────────────────────────────────────┤
+│  1. Node starts                                              │
+│  2. Optional: verifyDocsBundle() checks all hashes           │
+│  3. Serve docs at yak://docs.yakmesh/ or /docs/              │
+│  4. Each file served with X-Content-Hash header              │
+│  5. Clients can independently verify                         │
+└─────────────────────────────────────────────────────────────┘</code></pre>
+      </div>
+
+      <h2><span class="yak-icon"></span> The yak:// Protocol</h2>
+      <p>
+        Documentation is accessible via the native YAKMESH protocol:
+      </p>
+      
+      <pre><code>yak://docs.yakmesh/                    → Documentation index
+yak://docs.yakmesh/mandala             → MANDALA protocol docs
+yak://docs.yakmesh/getting-started     → Getting started guide</code></pre>
+
+      <p>
+        When a node receives a request for <code>yak://docs.yakmesh/mandala</code>:
+      </p>
+      
+      <ol>
+        <li>Looks up <code>mandala.html</code> in the hardcoded bundle</li>
+        <li>Verifies file hash matches (already trusted at install, optional re-check)</li>
+        <li>Serves content locally — <strong>zero network round-trip</strong></li>
+      </ol>
+
+      <h2>📦 Bundle Generation</h2>
+      
+      <h3>Build Script: scripts/build-docs-bundle.js</h3>
+      <pre><code>/**
+ * YAKMESH Documentation Bundle Generator
+ * 
+ * Reads website/docs/ and generates a hardcoded bundle
+ * with SHA3-256 verification hashes.
+ * 
+ * Run: npm run build:docs
+ */
+
+import { sha3_256 } from '@noble/hashes/sha3';
+import { bytesToHex } from '@noble/hashes/utils';
+import { readFileSync, writeFileSync, readdirSync, statSync } from 'fs';
+import { join, relative, extname } from 'path';
+
+const DOCS_SOURCE = './website/docs';
+const BUNDLE_OUTPUT = './docs/bundle.js';
+
+// Collect all files recursively
+function collectFiles(dir, base = dir) {
+  const files = [];
+  for (const entry of readdirSync(dir)) {
+    const path = join(dir, entry);
+    if (statSync(path).isDirectory()) {
+      files.push(...collectFiles(path, base));
+    } else {
+      files.push({
+        path: relative(base, path).replace(/\\/g, '/'),
+        content: readFileSync(path),
+      });
+    }
+  }
+  return files;
+}
+
+// Compute file hash
+function hashFile(content) {
+  return bytesToHex(sha3_256(content));
+}
+
+// Build the bundle
+const files = collectFiles(DOCS_SOURCE);
+const fileIndex = {};
+const hashes = [];
+
+for (const file of files) {
+  const hash = hashFile(file.content);
+  fileIndex[file.path] = {
+    hash,
+    size: file.content.length,
+    contentType: getContentType(file.path),
+  };
+  hashes.push(hash);
+}
+
+// Bundle hash = hash of sorted individual hashes
+hashes.sort();
+const BUNDLE_HASH = bytesToHex(sha3_256(hashes.join('')));
+
+// Generate bundle.js
+const bundle = `// AUTO-GENERATED - DO NOT EDIT
+// Generated: ${new Date().toISOString()}
+// YAKMESH Documentation Bundle
+
+export const BUNDLE_HASH = '${BUNDLE_HASH}';
+export const BUNDLE_VERSION = '${process.env.npm_package_version || '0.0.0'}';
+export const FILE_INDEX = ${JSON.stringify(fileIndex, null, 2)};
+
+// File contents stored separately for efficiency
+// (or embedded as base64 for single-file distribution)
+`;
+
+writeFileSync(BUNDLE_OUTPUT, bundle);
+console.log(`✅ Bundle generated: ${BUNDLE_HASH}`);</code></pre>
+
+      <h2>✅ Verification API</h2>
+      
+      <h3>docs/verify.js</h3>
+      <pre><code>/**
+ * Verify documentation bundle integrity
+ */
+import { sha3_256 } from '@noble/hashes/sha3';
+import { bytesToHex } from '@noble/hashes/utils';
+import { BUNDLE_HASH, FILE_INDEX } from './bundle.js';
+
+/**
+ * Verify a single file's content matches its hash
+ */
+export function verifyFile(path, content) {
+  const expected = FILE_INDEX[path]?.hash;
+  if (!expected) return { valid: false, error: 'File not in bundle' };
+  
+  const actual = bytesToHex(sha3_256(content));
+  return {
+    valid: actual === expected,
+    expected,
+    actual,
+  };
+}
+
+/**
+ * Verify entire bundle integrity
+ * Returns true only if ALL files are verified
+ */
+export function verifyBundle(fileContents) {
+  const hashes = [];
+  
+  for (const [path, meta] of Object.entries(FILE_INDEX)) {
+    const content = fileContents[path];
+    if (!content) return { valid: false, error: `Missing: ${path}` };
+    
+    const result = verifyFile(path, content);
+    if (!result.valid) return { valid: false, error: `Tampered: ${path}` };
+    
+    hashes.push(result.actual);
+  }
+  
+  // Verify bundle hash
+  hashes.sort();
+  const computedBundle = bytesToHex(sha3_256(hashes.join('')));
+  
+  return {
+    valid: computedBundle === BUNDLE_HASH,
+    bundleHash: BUNDLE_HASH,
+    computed: computedBundle,
+  };
+}
+
+/**
+ * Get bundle info without verification
+ */
+export function getBundleInfo() {
+  return {
+    hash: BUNDLE_HASH,
+    fileCount: Object.keys(FILE_INDEX).length,
+    files: Object.keys(FILE_INDEX),
+  };
+}</code></pre>
+
+      <h2>🌐 Serving Integration</h2>
+      
+      <h3>docs/serve.js</h3>
+      <pre><code>/**
+ * Serve hardcoded documentation via HTTP or yak://
+ */
+import { Router } from 'express';
+import { FILE_INDEX, BUNDLE_HASH } from './bundle.js';
+import { readFileSync } from 'fs';
+import { join } from 'path';
+
+const DOCS_DIR = join(__dirname, '../../website/docs');
+
+/**
+ * Create Express router for /docs/
+ */
+export function createDocsRouter() {
+  const router = Router();
+
+  // Serve index
+  router.get('/', (req, res) => {
+    res.redirect('/docs/index.html');
+  });
+
+  // Serve any doc file
+  router.get('/:file', (req, res) => {
+    const file = req.params.file;
+    const meta = FILE_INDEX[file];
+    
+    if (!meta) {
+      return res.status(404).json({ 
+        error: 'Documentation file not found',
+        available: Object.keys(FILE_INDEX).filter(f => f.endsWith('.html')),
+      });
+    }
+
+    // Read from embedded bundle (production) or disk (development)
+    const content = readFileSync(join(DOCS_DIR, file));
+    
+    res.setHeader('Content-Type', meta.contentType);
+    res.setHeader('X-Content-Hash', meta.hash);
+    res.setHeader('X-Bundle-Hash', BUNDLE_HASH);
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    
+    res.send(content);
+  });
+
+  // Bundle info endpoint
+  router.get('/_bundle', (req, res) => {
+    res.json({
+      hash: BUNDLE_HASH,
+      fileCount: Object.keys(FILE_INDEX).length,
+      files: FILE_INDEX,
+    });
+  });
+
+  return router;
+}</code></pre>
+
+      <h2>🚀 Usage</h2>
+      
+      <h3>Building the Bundle</h3>
+      <pre><code># Generate docs bundle before release
+npm run build:docs
+
+# Full build (includes docs)
+npm run build</code></pre>
+
+      <h3>Accessing Documentation</h3>
+      <pre><code># Via HTTP (when webserver enabled)
+http://localhost:8080/docs/
+http://localhost:8080/docs/mandala.html
+
+# Via yak:// protocol
+yak://docs.yakmesh/
+yak://docs.yakmesh/mandala
+
+# Programmatic access
+import { getBundleInfo, verifyBundle } from 'yakmesh/docs';
+
+const info = getBundleInfo();
+console.log(`Docs bundle: ${info.hash}`);
+console.log(`Files: ${info.fileCount}`);</code></pre>
+
+      <h2>🔒 Security Model</h2>
+      
+      <ul>
+        <li><strong>Immutability</strong>: Docs cannot be modified without changing the bundle hash</li>
+        <li><strong>No Network Trust</strong>: Verification is local, mathematical, instant</li>
+        <li><strong>Tamper Detection</strong>: Any modification fails hash verification</li>
+        <li><strong>Release Binding</strong>: Docs version matches software version</li>
+        <li><strong>No Propagation</strong>: Docs don't spread via gossip — prevents poisoning attacks</li>
+      </ul>
+
+      <div class="next-steps">
+        <h3>Related Documentation</h3>
+        <ul>
+          <li><a href="trust-security.html">🔒 SURAKSHA</a> — Overall security model</li>
+          <li><a href="tattva.html">🔯 TATTVA</a> — Codehash verification system</li>
+          <li><a href="yak-protocol.html"><span class="yak-icon"></span> YAK Protocol</a> — Native YAKMESH protocol</li>
+        </ul>
+      </div>
+
+      <!-- Journey Navigation -->
+      <div class="border-t border-mountain-700 mt-12 pt-8">
+        <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
+        <div class="flex flex-col sm:flex-row gap-4">
+          <a href="trust-security.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">
+            <div class="text-xs text-mountain-400 mb-1">← Previous</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">🔒</span>
+              <span class="font-semibold group-hover:text-theme-accent">SURAKSHA</span>
+            </div>
+            <p class="text-mountain-400 text-sm mt-1">Security Model</p>
+          </a>
+          <a href="api.html" class="flex-1 block bg-mountain-800 border border-theme-primary rounded-xl p-4 hover:border-theme-accent transition group">
+            <div class="text-xs text-mountain-400 mb-1">Next →</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">📡</span>
+              <span class="font-semibold group-hover:text-theme-accent">API Reference</span>
+            </div>
+            <p class="text-mountain-400 text-sm mt-1">Complete API documentation</p>
+          </a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="docs-footer">
+    <p>© 2026 YAKMESH™</p>
+  </footer>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="docs.js"></script>
+
+  <script>
+    const sidebar = document.getElementById('sidebar');
+    const toggle = document.getElementById('sidebarToggle');
+    const main = document.getElementById('mainContent');
+    
+    const isCollapsed = localStorage.getItem('sidebar-collapsed') === 'true';
+    if (isCollapsed) {
+      sidebar.classList.add('icon-only');
+      toggle.classList.add('collapsed');
+      main.classList.add('sidebar-collapsed');
+    }
+    
+    toggle.addEventListener('click', () => {
+      sidebar.classList.toggle('icon-only');
+      toggle.classList.toggle('collapsed');
+      main.classList.toggle('sidebar-collapsed');
+      localStorage.setItem('sidebar-collapsed', sidebar.classList.contains('icon-only'));
+    });
+  </script>
+</body>
+</html>
+
+

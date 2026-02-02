@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="mesh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="favicon.ico" sizes="32x32">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <title>Mesh Network | YAKMESH Documentation</title>
+    <meta name="description" content="YAKMESH mesh networking infrastructure. WebSocket-based P2P communication, gossip protocol, onion routing, and distributed peer coordination.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        theme: { primary: '#14b8a6', secondary: '#0d9488', accent: '#2dd4bf', bg: '#115e59', glow: 'rgba(20, 184, 166, 0.1)' },
+                        mountain: { 300: '#88b4a6', 400: '#6a9a8a', 700: '#2e4c43', 800: '#1f332d', 900: '#101a16' }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="stylesheet" href="docs.css">
+    <style>
+        .theme-accent { color: #14b8a6; }
+        .theme-accent-hover:hover { color: #2dd4bf; }
+        .theme-badge { background: rgba(20, 184, 166, 0.2); color: #2dd4bf; }
+        .theme-border { border-color: #14b8a6; }
+        .theme-callout { background: rgba(20, 184, 166, 0.1); border-color: #0d9488; }
+        .active-link { background: rgba(20, 184, 166, 0.2) !important; color: #2dd4bf !important; }
+        .mesh-table { width: 100%; border-collapse: collapse; }
+        .mesh-table th, .mesh-table td { padding: 0.75rem; text-align: left; border-bottom: 1px solid #2e4c43; }
+        .mesh-table th { color: #14b8a6; font-weight: 600; background: rgba(20, 184, 166, 0.1); }
+        .mesh-table code { background: #1f332d; padding: 0.25rem 0.5rem; border-radius: 4px; color: #2dd4bf; }
+        .module-card { background: linear-gradient(135deg, rgba(20, 184, 166, 0.15), rgba(13, 148, 136, 0.1)); border-left: 4px solid #14b8a6; }
+        .module-card-network { background: linear-gradient(135deg, rgba(20, 184, 166, 0.2), rgba(13, 148, 136, 0.1)); border-left: 4px solid #14b8a6; }
+        .module-card-annex { background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(139, 92, 246, 0.1)); border-left: 4px solid #a855f7; }
+        .module-card-beacon { background: linear-gradient(135deg, rgba(251, 191, 36, 0.2), rgba(245, 158, 11, 0.1)); border-left: 4px solid #fbbf24; }
+        .module-card-sherpa { background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(22, 163, 74, 0.1)); border-left: 4px solid #22c55e; }
+        .module-card-nakpak { background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.1)); border-left: 4px solid #3b82f6; }
+        .module-card-pulse { background: linear-gradient(135deg, rgba(236, 72, 153, 0.2), rgba(219, 39, 119, 0.1)); border-left: 4px solid #ec4899; }
+        .module-card-security { background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.1)); border-left: 4px solid #ef4444; }
+        .module-card-echo { background: linear-gradient(135deg, rgba(99, 102, 241, 0.2), rgba(79, 70, 229, 0.1)); border-left: 4px solid #6366f1; }
+        .module-card-temporal { background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.1)); border-left: 4px solid #f59e0b; }
+        .mesh-philosophy { font-style: italic; background: linear-gradient(135deg, rgba(20, 184, 166, 0.2), rgba(99, 102, 241, 0.1)); border-left: 4px solid #14b8a6; }
+    </style>
+</head>
+<body class="bg-mountain-900 text-white min-h-screen">
+    
+  <nav class="docs-sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-logo">
+      <span class="logo-icon">🏔️</span>
+      <span class="logo-text">Yakmesh</span>
+    </a>
+    <ul class="sidebar-nav">
+      <li><a href="index.html"><span>🏠</span> <span>Overview</span></a></li>
+      <li><a href="getting-started.html"><span>🚀</span> <span>Getting Started</span></a></li>
+      <li><a href="doko.html"><span>🧺</span> <span>DOKO</span></a></li>
+      <li><a href="namche.html"><span>🚪</span> <span>NAMCHE</span></a></li>
+      <li><a href="sherpa.html"><span>🧗</span> <span>SHERPA</span></a></li>
+      <li><a href="nakpak.html"><span>🎒</span> <span>NAKPAK</span></a></li>
+      <li><a href="annex.html"><span>🌉</span> <span>ANNEX</span></a></li>
+      <li><a href="yak-protocol.html"><span class="yak-icon"></span> <span>YAK</span></a></li>
+      <li><a href="mantra.html"><span>🕉️</span> <span>MANTRA</span></a></li>
+      <li><a href="stupa.html"><span>🛕</span> <span>STUPA</span></a></li>
+      <li><a href="lama.html"><span>🔮</span> <span>LAMA</span></a></li>
+      <li><a href="mani.html"><span>⏱️</span> <span>MANI</span></a></li>
+      <li><a href="karma.html"><span>☯️</span> <span>KARMA</span></a></li>
+      <li><a href="mandala.html"><span>🌐</span> <span>MANDALA</span></a></li>
+      <li><a href="tattva.html"><span>🔯</span> <span>TATTVA</span></a></li>
+      <li><a href="geo-proof.html"><span>🌍</span> <span>PRAMAAN</span></a></li>
+      <li><a href="trust-security.html"><span>🔒</span> <span>SURAKSHA</span></a></li>
+      <li><a href="api.html"><span>📡</span> <span>API</span></a></li>
+    </ul>
+  </nav>
+
+  <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+    </svg>
+  </button>
+
+  <!-- Mobile overlay for tap-to-close sidebar -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="docs-main" id="mainContent">
+
+        <div class="docs-content">
+            <!-- Page Header -->
+            <div class="flex items-center gap-3 mb-4">
+                <span class="text-4xl">🕸️</span>
+                <div>
+                    <div class="flex items-center gap-3">
+                        <h1 class="text-4xl font-bold">Mesh Network</h1>
+                        <span class="theme-badge text-xs px-2 py-1 rounded-full font-mono">v1.5.0</span>
+                    </div>
+                    <p class="theme-accent">WebSocket-based peer-to-peer mesh infrastructure</p>
+                </div>
+            </div>
+            <p class="text-xl text-mountain-300 mb-8">
+                The YAKMESH mesh network provides the communication backbone for all peer-to-peer operations.
+                Built on WebSockets with quantum-resistant cryptography, gossip protocols, and onion routing.
+            </p>
+
+            <!-- Philosophy Callout -->
+            <div class="mesh-philosophy rounded-xl p-6 mb-8">
+                <p class="text-lg text-teal-200 mb-2">
+                    <strong class="theme-accent">"Your packets travel like yak caravans through hidden mountain paths"</strong>
+                </p>
+                <p class="text-mountain-300">
+                    The mesh network is designed for resilience, privacy, and decentralization.
+                    No central servers, no single points of failure — just nodes cooperating through cryptographic trust.
+                </p>
+            </div>
+
+            <!-- Quick Start -->
+            <h2 class="text-2xl font-bold mb-4" id="quick-start">Quick Start</h2>
+            <p class="text-mountain-300 mb-4">
+                Create and start a mesh network node:
+            </p>
+            <pre class="language-javascript mb-8"><code>import { MeshNetwork, MessageTypes } from './mesh/network.js';
+
+// Create mesh network with your node identity
+const mesh = new MeshNetwork(identity, {
+  wsPort: 9001,           // WebSocket port (auto-fallback if in use)
+  maxPeers: 10,           // Maximum concurrent peer connections
+  pingInterval: 30000,    // Keep-alive ping interval (ms)
+  portRetries: 10,        // Try up to 10 sequential ports
+  networkId: 'yakmesh',   // Network identifier
+  networkFingerprint: fingerprint,  // Code proof verification
+});
+
+// Start listening for connections
+await mesh.start();
+
+// Connect to a peer
+await mesh.connect('ws://peer-node:9001');
+
+// Broadcast to all peers (gossip)
+mesh.broadcast({ type: 'custom', data: 'hello mesh!' });
+
+// Send to specific peer
+mesh.sendTo(nodeId, { action: 'sync', payload: data });
+
+// Listen for messages
+mesh.on(MessageTypes.GOSSIP, (msg, ws, nodeId) => {
+  console.log(`Gossip from ${nodeId}:`, msg.payload);
+});
+
+// Get connected peers
+const peers = mesh.getPeers();
+console.log(`Connected to ${peers.length} peers`);
+
+// Stop mesh server
+await mesh.stop();</code></pre>
+
+            <!-- Message Types Table -->
+            <h2 class="text-2xl font-bold mb-4" id="message-types">Message Types</h2>
+            <p class="text-mountain-300 mb-6">
+                The mesh protocol uses these message types for peer communication:
+            </p>
+
+            <div class="overflow-x-auto mb-8">
+                <table class="mesh-table rounded-lg overflow-hidden">
+                    <thead>
+                        <tr>
+                            <th>Type</th>
+                            <th>Constant</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>hello</code></td>
+                            <td><code>MessageTypes.HELLO</code></td>
+                            <td>Initial connection handshake with identity and network fingerprint</td>
+                        </tr>
+                        <tr>
+                            <td><code>welcome</code></td>
+                            <td><code>MessageTypes.WELCOME</code></td>
+                            <td>Response to hello with peer list</td>
+                        </tr>
+                        <tr>
+                            <td><code>ping</code></td>
+                            <td><code>MessageTypes.PING</code></td>
+                            <td>Keep-alive ping</td>
+                        </tr>
+                        <tr>
+                            <td><code>pong</code></td>
+                            <td><code>MessageTypes.PONG</code></td>
+                            <td>Keep-alive response</td>
+                        </tr>
+                        <tr>
+                            <td><code>peers</code></td>
+                            <td><code>MessageTypes.PEERS</code></td>
+                            <td>Share known peer endpoints</td>
+                        </tr>
+                        <tr>
+                            <td><code>sync_request</code></td>
+                            <td><code>MessageTypes.SYNC_REQUEST</code></td>
+                            <td>Request data synchronization</td>
+                        </tr>
+                        <tr>
+                            <td><code>sync_response</code></td>
+                            <td><code>MessageTypes.SYNC_RESPONSE</code></td>
+                            <td>Data sync response</td>
+                        </tr>
+                        <tr>
+                            <td><code>replicate</code></td>
+                            <td><code>MessageTypes.REPLICATE</code></td>
+                            <td>Push new data to peers</td>
+                        </tr>
+                        <tr>
+                            <td><code>gossip</code></td>
+                            <td><code>MessageTypes.GOSSIP</code></td>
+                            <td>Broadcast message with deduplication</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Mesh Files Section -->
+            <h2 class="text-2xl font-bold mb-4" id="modules">Mesh Modules</h2>
+            <p class="text-mountain-300 mb-6">
+                The mesh subsystem is composed of specialized modules, each handling a critical aspect of network communication.
+            </p>
+
+            <div class="space-y-4 mb-8">
+                <!-- Network Core -->
+                <div class="module-card-network rounded-xl p-5">
+                    <div class="flex items-center gap-3 mb-3">
+                        <span class="text-2xl">🕸️</span>
+                        <div>
+                            <h3 class="text-xl font-bold text-teal-300">MeshNetwork</h3>
+                            <span class="text-sm text-teal-400">network.js</span>
+                        </div>
+                    </div>
+                    <p class="text-mountain-300 text-sm mb-3">
+                        Core mesh network manager handling peer connections, message routing, and WebSocket server.
+                        Features automatic port fallback, code proof verification, and gossip with deduplication.
+                    </p>
+                    <pre class="language-javascript mb-3"><code>import { MeshNetwork, MessageTypes } from './mesh/network.js';
+
+const mesh = new MeshNetwork(identity, { wsPort: 9001 });
+await mesh.start();
+mesh.broadcast({ type: 'announce', data: myData });</code></pre>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="text-xs bg-teal-900/50 text-teal-300 px-2 py-1 rounded">WebSocket</span>
+                        <span class="text-xs bg-teal-900/50 text-teal-300 px-2 py-1 rounded">Gossip Protocol</span>
+                        <span class="text-xs bg-teal-900/50 text-teal-300 px-2 py-1 rounded">Port Fallback</span>
+                        <span class="text-xs bg-teal-900/50 text-teal-300 px-2 py-1 rounded">Code Proof</span>
+                    </div>
+                </div>
+
+                <!-- ANNEX -->
+                <div class="module-card-annex rounded-xl p-5">
+                    <div class="flex items-center gap-3 mb-3">
+                        <span class="text-2xl">🔐</span>
+                        <div>
+                            <h3 class="text-xl font-bold text-purple-300">ANNEX</h3>
+                            <span class="text-sm text-purple-400">annex.js — Autonomous Network Negotiated Encrypted eXchange</span>
+                        </div>
+                    </div>
+                    <p class="text-mountain-300 text-sm mb-3">
+                        End-to-end encrypted point-to-point channels using ML-KEM768 (Kyber) for quantum-resistant key exchange
+                        and AES-256-GCM for authenticated encryption. Perfect forward secrecy via ephemeral keys.
+                    </p>
+                    <pre class="language-javascript mb-3"><code>import { AnnexChannel } from './mesh/annex.js';
+
+const channel = new AnnexChannel(myIdentity, peerId);
+await channel.establish(meshNetwork);
+await channel.send({ secret: 'data' });  // E2E encrypted</code></pre>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="text-xs bg-purple-900/50 text-purple-300 px-2 py-1 rounded">ML-KEM768</span>
+                        <span class="text-xs bg-purple-900/50 text-purple-300 px-2 py-1 rounded">AES-256-GCM</span>
+                        <span class="text-xs bg-purple-900/50 text-purple-300 px-2 py-1 rounded">ML-DSA-65</span>
+                        <span class="text-xs bg-purple-900/50 text-purple-300 px-2 py-1 rounded">PFS</span>
+                    </div>
+                </div>
+
+                <!-- Beacon Broadcast -->
+                <div class="module-card-beacon rounded-xl p-5">
+                    <div class="flex items-center gap-3 mb-3">
+                        <span class="text-2xl">📡</span>
+                        <div>
+                            <h3 class="text-xl font-bold text-yellow-300">Beacon Broadcast</h3>
+                            <span class="text-sm text-yellow-400">beacon-broadcast.js — Broadcast Emergency Alert Channel Over Network</span>
+                        </div>
+                    </div>
+                    <p class="text-mountain-300 text-sm mb-3">
+                        Priority message propagation with guaranteed delivery. Flood-based protocol with intelligent
+                        deduplication, proof-of-receipt, and emergency priority levels (ROUTINE → CRITICAL).
+                    </p>
+                    <pre class="language-javascript mb-3"><code>import { BeaconBroadcaster, Priority } from './mesh/beacon-broadcast.js';
+
+const beacon = new BeaconBroadcaster(mesh);
+await beacon.broadcast(payload, {
+  priority: Priority.IMMEDIATE,
+  ttl: 10,  // hop count
+});</code></pre>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="text-xs bg-yellow-900/50 text-yellow-300 px-2 py-1 rounded">Priority Levels</span>
+                        <span class="text-xs bg-yellow-900/50 text-yellow-300 px-2 py-1 rounded">Proof-of-Receipt</span>
+                        <span class="text-xs bg-yellow-900/50 text-yellow-300 px-2 py-1 rounded">TTL Control</span>
+                    </div>
+                </div>
+
+                <!-- SHERPA Discovery -->
+                <div class="module-card-sherpa rounded-xl p-5">
+                    <div class="flex items-center gap-3 mb-3">
+                        <span class="text-2xl">🏔️</span>
+                        <div>
+                            <h3 class="text-xl font-bold text-green-300">SHERPA Discovery</h3>
+                            <span class="text-sm text-green-400">sherpa-discovery.js — Secure Hidden Endpoint Resolution Path Architecture</span>
+                        </div>
+                    </div>
+                    <p class="text-mountain-300 text-sm mb-3">
+                        Decentralized peer discovery using public web endpoints as a DHT. Nodes expose 
+                        <code class="bg-mountain-800 px-1 rounded">/.well-known/yakmesh/beacon</code> for self-organizing peer registry.
+                        No central bootstrap nodes required.
+                    </p>
+                    <pre class="language-javascript mb-3"><code>import { SherpaDiscovery } from './mesh/sherpa-discovery.js';
+
+const sherpa = new SherpaDiscovery(identity, {
+  maxCrawlDepth: 3,
+  crawlInterval: 300000,  // 5 minutes
+});
+const peers = await sherpa.discover(seedEndpoints);</code></pre>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="text-xs bg-green-900/50 text-green-300 px-2 py-1 rounded">Web DHT</span>
+                        <span class="text-xs bg-green-900/50 text-green-300 px-2 py-1 rounded">Peer Scoring</span>
+                        <span class="text-xs bg-green-900/50 text-green-300 px-2 py-1 rounded">Geo-Proof v2.5</span>
+                    </div>
+                </div>
+
+                <!-- NAKPAK Routing -->
+                <div class="module-card-nakpak rounded-xl p-5">
+                    <div class="flex items-center gap-3 mb-3">
+                        <span class="text-2xl">🎒</span>
+                        <div>
+                            <h3 class="text-xl font-bold text-blue-300">NAKPAK Routing</h3>
+                            <span class="text-sm text-blue-400">nakpak-routing.js — Nested Anonymous Kernel for Private Authenticated Komms</span>
+                        </div>
+                    </div>
+                    <p class="text-mountain-300 text-sm mb-3">
+                        Post-quantum secure onion routing with ML-DSA-65 signatures at every layer and ML-KEM key encapsulation.
+                        Multi-layer encryption with timing attack resistance through temporal padding.
+                    </p>
+                    <pre class="language-javascript mb-3"><code>import { NakpakRouter } from './mesh/nakpak-routing.js';
+
+const router = new NakpakRouter(identity, mesh);
+const circuit = await router.buildCircuit(3);  // 3 hops
+await router.sendAnonymous(circuit, payload);</code></pre>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="text-xs bg-blue-900/50 text-blue-300 px-2 py-1 rounded">Onion Routing</span>
+                        <span class="text-xs bg-blue-900/50 text-blue-300 px-2 py-1 rounded">ML-KEM768</span>
+                        <span class="text-xs bg-blue-900/50 text-blue-300 px-2 py-1 rounded">Decoy Traffic</span>
+                        <span class="text-xs bg-blue-900/50 text-blue-300 px-2 py-1 rounded">Fixed-Size Packets</span>
+                    </div>
+                </div>
+
+                <!-- Pulse Sync -->
+                <div class="module-card-pulse rounded-xl p-5">
+                    <div class="flex items-center gap-3 mb-3">
+                        <span class="text-2xl">💓</span>
+                        <div>
+                            <h3 class="text-xl font-bold text-pink-300">Pulse Sync</h3>
+                            <span class="text-sm text-pink-400">pulse-sync.js — Precision Universal Latency Sync Engine</span>
+                        </div>
+                    </div>
+                    <p class="text-mountain-300 text-sm mb-3">
+                        The heartbeat of the mesh network. Distributed liveness detection with temporal proofs,
+                        cryptographic heartbeat chains, and partition detection through gap analysis.
+                    </p>
+                    <pre class="language-javascript mb-3"><code>import { PulseSync } from './mesh/pulse-sync.js';
+
+const pulse = new PulseSync(identity, mesh, {
+  heartbeatIntervalMs: 1000,
+  missedBeatsThreshold: 5,
+});
+pulse.on('partition', (nodes) => handlePartition(nodes));</code></pre>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="text-xs bg-pink-900/50 text-pink-300 px-2 py-1 rounded">Heartbeat Chains</span>
+                        <span class="text-xs bg-pink-900/50 text-pink-300 px-2 py-1 rounded">Partition Detection</span>
+                        <span class="text-xs bg-pink-900/50 text-pink-300 px-2 py-1 rounded">Leader Election</span>
+                    </div>
+                </div>
+
+                <!-- Echo Ranging -->
+                <div class="module-card-echo rounded-xl p-5">
+                    <div class="flex items-center gap-3 mb-3">
+                        <span class="text-2xl">📍</span>
+                        <div>
+                            <h3 class="text-xl font-bold text-indigo-300">Echo Ranging</h3>
+                            <span class="text-sm text-indigo-400">echo-ranging.js — Encrypted Coordinate Heuristic Oracle</span>
+                        </div>
+                    </div>
+                    <p class="text-mountain-300 text-sm mb-3">
+                        Privacy-preserving network cartography. Maps mesh topology using encrypted timing probes
+                        without exposing node positions. Builds virtual coordinate space from RTT measurements.
+                    </p>
+                    <pre class="language-javascript mb-3"><code>import { EchoRanging } from './mesh/echo-ranging.js';
+
+const echo = new EchoRanging(identity, mesh);
+const rtt = await echo.measureLatency(peerId);
+const coords = echo.getVirtualCoordinates();</code></pre>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="text-xs bg-indigo-900/50 text-indigo-300 px-2 py-1 rounded">RTT Measurement</span>
+                        <span class="text-xs bg-indigo-900/50 text-indigo-300 px-2 py-1 rounded">Virtual Coords</span>
+                        <span class="text-xs bg-indigo-900/50 text-indigo-300 px-2 py-1 rounded">Encrypted Probes</span>
+                    </div>
+                </div>
+
+                <!-- Temporal Encoder -->
+                <div class="module-card-temporal rounded-xl p-5">
+                    <div class="flex items-center gap-3 mb-3">
+                        <span class="text-2xl">⏳</span>
+                        <div>
+                            <h3 class="text-xl font-bold text-amber-300">Temporal Encoder</h3>
+                            <span class="text-sm text-amber-400">temporal-encoder.js — Temporal Mesh Encoding</span>
+                        </div>
+                    </div>
+                    <p class="text-mountain-300 text-sm mb-3">
+                        Novel packet resilience through temporal encoding. Instead of erasure coding across space,
+                        TME encodes data across TIME using synchronized clocks as the redundancy dimension.
+                    </p>
+                    <pre class="language-javascript mb-3"><code>import { TemporalEncoder } from './mesh/temporal-encoder.js';
+
+const encoder = new TemporalEncoder({
+  sliceIntervalNs: 50_000_000,  // 50ms slices
+  minSlicesForReconstruction: 0.6,
+});
+const slices = encoder.encode(data);</code></pre>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="text-xs bg-amber-900/50 text-amber-300 px-2 py-1 rounded">Temporal Slicing</span>
+                        <span class="text-xs bg-amber-900/50 text-amber-300 px-2 py-1 rounded">Hash Chains</span>
+                        <span class="text-xs bg-amber-900/50 text-amber-300 px-2 py-1 rounded">Path Diversity</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Security Modules -->
+            <h2 class="text-2xl font-bold mb-4" id="security">Security Modules</h2>
+            <p class="text-mountain-300 mb-6">
+                Defense-in-depth protection against network attacks:
+            </p>
+
+            <div class="space-y-4 mb-8">
+                <!-- Rate Limiter -->
+                <div class="module-card-security rounded-xl p-5">
+                    <div class="flex items-center gap-3 mb-3">
+                        <span class="text-2xl">🚦</span>
+                        <div>
+                            <h3 class="text-xl font-bold text-red-300">Rate Limiter</h3>
+                            <span class="text-sm text-red-400">rate-limiter.js</span>
+                        </div>
+                    </div>
+                    <p class="text-mountain-300 text-sm mb-3">
+                        Sliding window rate limiter protecting against connection floods, handshake spam, and gossip storms.
+                        Per-IP and per-node tracking with automatic banning.
+                    </p>
+                    <pre class="language-javascript mb-3"><code>import { ConnectionRateLimiter } from './mesh/rate-limiter.js';
+
+const limiter = new ConnectionRateLimiter({
+  maxConnectionsPerMinute: 10,
+  maxMessagesPerSecond: 50,
+  maxHandshakesPerMinute: 5,
+  banThreshold: 5,
+  banDuration: 300000,  // 5 minutes
+});
+
+if (!limiter.checkConnection(ip).allowed) {
+  ws.close(1008, 'Rate limited');
+}</code></pre>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="text-xs bg-red-900/50 text-red-300 px-2 py-1 rounded">Sliding Window</span>
+                        <span class="text-xs bg-red-900/50 text-red-300 px-2 py-1 rounded">Auto-Ban</span>
+                        <span class="text-xs bg-red-900/50 text-red-300 px-2 py-1 rounded">Per-IP Tracking</span>
+                    </div>
+                </div>
+
+                <!-- Message Validator -->
+                <div class="module-card-security rounded-xl p-5">
+                    <div class="flex items-center gap-3 mb-3">
+                        <span class="text-2xl">✅</span>
+                        <div>
+                            <h3 class="text-xl font-bold text-red-300">Message Validator</h3>
+                            <span class="text-sm text-red-400">message-validator.js</span>
+                        </div>
+                    </div>
+                    <p class="text-mountain-300 text-sm mb-3">
+                        Validates message size and structure to prevent amplification attacks.
+                        Enforces payload limits by type: gossip (64KB), handshake (8KB), listing (128KB), data (512KB).
+                    </p>
+                    <pre class="language-javascript mb-3"><code>import { MessageValidator, SafeJsonParser } from './mesh/message-validator.js';
+
+const validator = new MessageValidator();
+const parser = new SafeJsonParser();
+
+const sizeCheck = validator.validateRaw(rawMessage, 'gossip');
+if (!sizeCheck.valid) reject(sizeCheck.reason);
+
+const parsed = parser.parse(rawMessage);
+if (!parsed.success) reject(parsed.error);
+
+const structCheck = validator.validateStructure(parsed.data, 'gossip');
+if (!structCheck.valid) reject(structCheck.reason);</code></pre>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="text-xs bg-red-900/50 text-red-300 px-2 py-1 rounded">Size Limits</span>
+                        <span class="text-xs bg-red-900/50 text-red-300 px-2 py-1 rounded">Depth Check</span>
+                        <span class="text-xs bg-red-900/50 text-red-300 px-2 py-1 rounded">Safe JSON</span>
+                    </div>
+                </div>
+
+                <!-- Replay Defense -->
+                <div class="module-card-security rounded-xl p-5">
+                    <div class="flex items-center gap-3 mb-3">
+                        <span class="text-2xl">🔄</span>
+                        <div>
+                            <h3 class="text-xl font-bold text-red-300">Replay Defense</h3>
+                            <span class="text-sm text-red-400">replay-defense.js</span>
+                        </div>
+                    </div>
+                    <p class="text-mountain-300 text-sm mb-3">
+                        Multi-layer replay attack protection with nonce registry, timestamp validation, and sequence tracking.
+                        Automatically detects and rejects duplicate or out-of-window messages.
+                    </p>
+                    <pre class="language-javascript mb-3"><code>import { NonceRegistry, TimestampValidator, SequenceTracker } 
+  from './mesh/replay-defense.js';
+
+const nonces = new NonceRegistry({ maxAge: 3600000 });
+const timestamps = new TimestampValidator({ maxAge: 600000 });
+const sequences = new SequenceTracker();
+
+// Generate nonce for outgoing message
+const nonce = nonces.generate();
+
+// Validate incoming message
+const nonceOk = nonces.validate(msg.nonce);
+const timeOk = timestamps.validate(msg.timestamp);
+const seqOk = sequences.validate(msg.senderId, msg.sequence);</code></pre>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="text-xs bg-red-900/50 text-red-300 px-2 py-1 rounded">Nonce Registry</span>
+                        <span class="text-xs bg-red-900/50 text-red-300 px-2 py-1 rounded">Timestamp</span>
+                        <span class="text-xs bg-red-900/50 text-red-300 px-2 py-1 rounded">Sequence Window</span>
+                    </div>
+                </div>
+
+                <!-- Sybil Defense -->
+                <div class="module-card-security rounded-xl p-5">
+                    <div class="flex items-center gap-3 mb-3">
+                        <span class="text-2xl">👥</span>
+                        <div>
+                            <h3 class="text-xl font-bold text-red-300">Sybil Defense</h3>
+                            <span class="text-sm text-red-400">sybil-defense.js</span>
+                        </div>
+                    </div>
+                    <p class="text-mountain-300 text-sm mb-3">
+                        Protection against Sybil attacks through NAVR (proof-of-work challenges), 
+                        reputation tracking, and subnet diversity enforcement.
+                    </p>
+                    <pre class="language-javascript mb-3"><code>import { NAVR, ReputationTracker, SubnetDiversity } 
+  from './mesh/sybil-defense.js';
+
+const navr = new NAVR({ difficulty: 16 });
+const reputation = new ReputationTracker();
+const subnets = new SubnetDiversity({ maxPerSubnet: 3 });
+
+// Challenge new peer
+const challenge = navr.createChallenge(peerId);
+// Peer solves and returns solution
+const verified = navr.verify(challenge, solution);
+
+// Track reputation
+reputation.registerNode(peerId, solution);
+reputation.reportGoodBehavior(peerId);
+const trust = reputation.getTrustLevel(peerId);  // 'trusted'|'normal'|'suspicious'|'banned'
+
+// Check subnet diversity
+if (!subnets.allowConnection(peerIp).allowed) {
+  reject('Too many connections from this subnet');
+}</code></pre>
+                    <div class="flex flex-wrap gap-2">
+                        <span class="text-xs bg-red-900/50 text-red-300 px-2 py-1 rounded">NAVR PoW</span>
+                        <span class="text-xs bg-red-900/50 text-red-300 px-2 py-1 rounded">Reputation</span>
+                        <span class="text-xs bg-red-900/50 text-red-300 px-2 py-1 rounded">Subnet Diversity</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Network Features -->
+            <h2 class="text-2xl font-bold mb-4" id="features">Key Features</h2>
+            
+            <div class="grid md:grid-cols-2 gap-4 mb-8">
+                <div class="bg-mountain-800 rounded-xl p-5">
+                    <p class="font-semibold text-teal-400 mb-2">🔄 Automatic Port Fallback</p>
+                    <p class="text-mountain-300 text-sm">
+                        If the configured WebSocket port is in use, automatically tries sequential ports
+                        up to <code class="bg-mountain-700 px-1 rounded">portRetries</code> times.
+                    </p>
+                </div>
+                <div class="bg-mountain-800 rounded-xl p-5">
+                    <p class="font-semibold text-teal-400 mb-2">🔐 Code Proof Verification</p>
+                    <p class="text-mountain-300 text-sm">
+                        Network fingerprint exchanged during handshake. Nodes running different codebases
+                        are automatically rejected.
+                    </p>
+                </div>
+                <div class="bg-mountain-800 rounded-xl p-5">
+                    <p class="font-semibold text-teal-400 mb-2">📢 Gossip Deduplication</p>
+                    <p class="text-mountain-300 text-sm">
+                        Messages include unique IDs tracked in <code class="bg-mountain-700 px-1 rounded">seenMessages</code> 
+                        set. Prevents infinite broadcast loops.
+                    </p>
+                </div>
+                <div class="bg-mountain-800 rounded-xl p-5">
+                    <p class="font-semibold text-teal-400 mb-2">✍️ Signed Messages</p>
+                    <p class="text-mountain-300 text-sm">
+                        All outgoing messages are signed with the node's identity using ML-DSA-65.
+                        Receivers verify authenticity.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Configuration Options -->
+            <h2 class="text-2xl font-bold mb-4" id="configuration">Configuration</h2>
+            <p class="text-mountain-300 mb-4">
+                MeshNetwork constructor options:
+            </p>
+            <div class="overflow-x-auto mb-8">
+                <table class="mesh-table rounded-lg overflow-hidden">
+                    <thead>
+                        <tr>
+                            <th>Option</th>
+                            <th>Default</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>wsPort</code></td>
+                            <td><code>9001</code></td>
+                            <td>WebSocket server port</td>
+                        </tr>
+                        <tr>
+                            <td><code>maxPeers</code></td>
+                            <td><code>10</code></td>
+                            <td>Maximum concurrent peer connections</td>
+                        </tr>
+                        <tr>
+                            <td><code>pingInterval</code></td>
+                            <td><code>30000</code></td>
+                            <td>Keep-alive ping interval (ms)</td>
+                        </tr>
+                        <tr>
+                            <td><code>portRetries</code></td>
+                            <td><code>10</code></td>
+                            <td>Number of sequential ports to try if base port is in use</td>
+                        </tr>
+                        <tr>
+                            <td><code>networkId</code></td>
+                            <td><code>null</code></td>
+                            <td>Network identifier for code proof</td>
+                        </tr>
+                        <tr>
+                            <td><code>networkFingerprint</code></td>
+                            <td><code>null</code></td>
+                            <td>Codebase hash for peer verification</td>
+                        </tr>
+                        <tr>
+                            <td><code>publicHost</code></td>
+                            <td><code>null</code></td>
+                            <td>Public hostname for endpoint advertisement</td>
+                        </tr>
+                        <tr>
+                            <td><code>rateLimiter</code></td>
+                            <td><code>{}</code></td>
+                            <td>Rate limiter configuration object</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- MeshNetwork API -->
+            <h2 class="text-2xl font-bold mb-4" id="api">MeshNetwork API</h2>
+            <div class="overflow-x-auto mb-8">
+                <table class="mesh-table rounded-lg overflow-hidden">
+                    <thead>
+                        <tr>
+                            <th>Method</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><code>start()</code></td>
+                            <td>Start WebSocket server with automatic port fallback</td>
+                        </tr>
+                        <tr>
+                            <td><code>connect(endpoint)</code></td>
+                            <td>Connect to a peer node, returns identity on WELCOME</td>
+                        </tr>
+                        <tr>
+                            <td><code>broadcast(message)</code></td>
+                            <td>Send gossip message to all connected peers</td>
+                        </tr>
+                        <tr>
+                            <td><code>sendTo(nodeId, message)</code></td>
+                            <td>Send direct message to specific peer</td>
+                        </tr>
+                        <tr>
+                            <td><code>on(type, handler)</code></td>
+                            <td>Register message handler for type</td>
+                        </tr>
+                        <tr>
+                            <td><code>off(type, handler)</code></td>
+                            <td>Remove message handler</td>
+                        </tr>
+                        <tr>
+                            <td><code>emit(type, ...args)</code></td>
+                            <td>Emit event to registered handlers</td>
+                        </tr>
+                        <tr>
+                            <td><code>isConnectedTo(nodeId)</code></td>
+                            <td>Check if connected to a specific node</td>
+                        </tr>
+                        <tr>
+                            <td><code>getPeers()</code></td>
+                            <td>Get list of connected peers with metadata</td>
+                        </tr>
+                        <tr>
+                            <td><code>getPublicEndpoint()</code></td>
+                            <td>Get this node's public WebSocket endpoint</td>
+                        </tr>
+                        <tr>
+                            <td><code>stop()</code></td>
+                            <td>Stop server and close all connections</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Related Documentation -->
+            <div class="bg-mountain-800 border theme-border rounded-xl p-6 mt-8">
+                <h3 class="text-lg font-semibold mb-4">Related Documentation</h3>
+                <ul class="space-y-3 text-mountain-300">
+                    <li class="flex items-center gap-2">
+                        <span>🏔️</span>
+                        <a href="sherpa.html" class="theme-accent theme-accent-hover">SHERPA</a>
+                        <span class="text-mountain-400 text-sm">— Detailed peer discovery documentation</span>
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <span>🎒</span>
+                        <a href="nakpak.html" class="theme-accent theme-accent-hover">NAKPAK</a>
+                        <span class="text-mountain-400 text-sm">— Onion routing deep dive</span>
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <span>🔐</span>
+                        <a href="annex.html" class="theme-accent theme-accent-hover">ANNEX</a>
+                        <span class="text-mountain-400 text-sm">— Encrypted P2P channels</span>
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <span>�</span>
+                        <a href="tattva.html" class="theme-accent theme-accent-hover">TATTVA</a>
+                        <span class="text-mountain-400 text-sm">— Code proof and validation</span>
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <span>🛡️</span>
+                        <a href="trust-security.html" class="theme-accent theme-accent-hover">SURAKSHA</a>
+                        <span class="text-mountain-400 text-sm">— Trust scoring and verification</span>
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <span>⚙️</span>
+                        <a href="configuration.html" class="theme-accent theme-accent-hover">Configuration</a>
+                        <span class="text-mountain-400 text-sm">— Full configuration reference</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Journey Navigation -->
+            <div class="border-t border-mountain-700 mt-12 pt-8">
+                <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <a href="tattva.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">
+                        <div class="text-xs text-mountain-400 mb-1">← Previous</div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">👁️</span>
+                            <span class="font-semibold group-hover:text-theme-accent">Oracle System</span>
+                        </div>
+                        <p class="text-mountain-400 text-sm mt-1">Distributed verification network</p>
+                    </a>
+                    <a href="configuration.html" class="flex-1 block bg-mountain-800 border border-theme-primary rounded-xl p-4 hover:border-theme-accent transition group">
+                        <div class="text-xs text-mountain-400 mb-1">Next →</div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">⚙️</span>
+                            <span class="font-semibold group-hover:text-theme-accent">Configuration</span>
+                        </div>
+                        <p class="text-mountain-400 text-sm mt-1">System configuration options</p>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+  <footer class="docs-footer">
+    <p>© 2026 YAKMESH™</p>
+  </footer><!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+    <script src="docs.js"></script>
+
+  
+</body>
+</html>
+
+
+

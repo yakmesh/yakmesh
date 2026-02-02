@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="cli">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="favicon.ico" sizes="32x32">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <title>CLI Commands | YAKMESH Documentation</title>
+    <meta name="description" content="Complete reference for YAKMESH command-line interface. Initialize, manage, and monitor your mesh nodes.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        theme: { primary: '#22c55e', secondary: '#16a34a', accent: '#4ade80', bg: '#14532d', glow: 'rgba(34, 197, 94, 0.1)' },
+                        mountain: { 300: '#88b4a6', 400: '#6a9a8a', 700: '#2e4c43', 800: '#1f332d', 900: '#101a16' }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="stylesheet" href="docs.css">
+    <style>
+        .theme-accent { color: #22c55e; }
+        .theme-accent-hover:hover { color: #4ade80; }
+        .theme-badge { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
+        .theme-border { border-color: #22c55e; }
+        .theme-callout { background: rgba(34, 197, 94, 0.1); border-color: #16a34a; }
+        .active-link { background: rgba(34, 197, 94, 0.2) !important; color: #4ade80 !important; }
+        .command-block { background: #0d1117; border: 1px solid #30363d; border-radius: 8px; }
+        .option-table { width: 100%; border-collapse: collapse; }
+        .option-table th, .option-table td { padding: 0.75rem; text-align: left; border-bottom: 1px solid #2e4c43; }
+        .option-table th { color: #22c55e; font-weight: 600; }
+        .option-table code { background: #1f332d; padding: 0.25rem 0.5rem; border-radius: 4px; color: #4ade80; }
+    </style>
+</head>
+<body class="bg-mountain-900 text-white min-h-screen">
+    
+  <nav class="docs-sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-logo">
+      <span class="logo-icon">🏔️</span>
+      <span class="logo-text">Yakmesh</span>
+    </a>
+    <ul class="sidebar-nav">
+      <li><a href="index.html"><span>🏠</span> <span>Overview</span></a></li>
+      <li><a href="getting-started.html"><span>🚀</span> <span>Getting Started</span></a></li>
+      <li><a href="doko.html"><span>🧺</span> <span>DOKO</span></a></li>
+      <li><a href="namche.html"><span>🚪</span> <span>NAMCHE</span></a></li>
+      <li><a href="sherpa.html"><span>🧗</span> <span>SHERPA</span></a></li>
+      <li><a href="nakpak.html"><span>🎒</span> <span>NAKPAK</span></a></li>
+      <li><a href="annex.html"><span>🌉</span> <span>ANNEX</span></a></li>
+      <li><a href="yak-protocol.html"><span class="yak-icon"></span> <span>YAK</span></a></li>
+      <li><a href="mantra.html"><span>🕉️</span> <span>MANTRA</span></a></li>
+      <li><a href="stupa.html"><span>🛕</span> <span>STUPA</span></a></li>
+      <li><a href="lama.html"><span>🔮</span> <span>LAMA</span></a></li>
+      <li><a href="mani.html"><span>⏱️</span> <span>MANI</span></a></li>
+      <li><a href="karma.html"><span>☯️</span> <span>KARMA</span></a></li>
+      <li><a href="mandala.html"><span>🌐</span> <span>MANDALA</span></a></li>
+      <li><a href="tattva.html"><span>🔯</span> <span>TATTVA</span></a></li>
+      <li><a href="geo-proof.html"><span>🌍</span> <span>PRAMAAN</span></a></li>
+      <li><a href="trust-security.html"><span>🔒</span> <span>SURAKSHA</span></a></li>
+      <li><a href="api.html"><span>📡</span> <span>API</span></a></li>
+    </ul>
+  </nav>
+
+  <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+    </svg>
+  </button>
+
+  <!-- Mobile overlay for tap-to-close sidebar -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="docs-main" id="mainContent">
+
+        <div class="docs-content">
+            <!-- Page Header -->
+            <div class="flex items-center gap-3 mb-4">
+                <span class="text-4xl">💻</span>
+                <div>
+                    <div class="flex items-center gap-3">
+                        <h1 class="text-4xl font-bold">CLI Commands</h1>
+                        <span class="theme-badge text-xs px-2 py-1 rounded-full">v1.0.0</span>
+                    </div>
+                    <p class="theme-accent">Command-line interface for YAKMESH nodes</p>
+                </div>
+            </div>
+            <p class="text-xl text-mountain-300 mb-8">
+                Manage your YAKMESH node from the terminal. Initialize, start, monitor, and connect to the mesh network.
+            </p>
+
+            <!-- Quick Reference Callout -->
+            <div class="theme-callout rounded-xl p-6 mb-8 border">
+                <p class="font-semibold mb-2 theme-accent">💡 Quick Reference</p>
+                <p class="text-mountain-300 text-sm mb-4">
+                    All commands are available via <code class="bg-mountain-800 px-2 py-1 rounded">npx yakmesh</code> or 
+                    <code class="bg-mountain-800 px-2 py-1 rounded">yakmesh</code> if installed globally.
+                </p>
+                <pre class="language-bash !mb-0"><code># Install globally for easier access
+npm install -g yakmesh</code></pre>
+            </div>
+
+            <!-- Table of Contents -->
+            <div class="bg-mountain-800 rounded-xl p-6 mb-8">
+                <h3 class="text-lg font-semibold mb-4 theme-accent">📋 Command Categories</h3>
+                <div class="grid md:grid-cols-2 gap-4 text-mountain-300">
+                    <ul class="space-y-2">
+                        <li><a href="#core-commands" class="theme-accent-hover hover:underline">→ Core Commands</a></li>
+                        <li><a href="#protocol-commands" class="theme-accent-hover hover:underline">→ Protocol Commands</a></li>
+                    </ul>
+                    <ul class="space-y-2">
+                        <li><a href="#bookmark-commands" class="theme-accent-hover hover:underline">→ Bookmark Commands</a></li>
+                        <li><a href="#geo-commands" class="theme-accent-hover hover:underline">→ Geographic Commands</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- ======================= -->
+            <!-- CORE COMMANDS SECTION -->
+            <!-- ======================= -->
+            <h2 id="core-commands" class="text-2xl font-bold mb-6 pt-4 border-t border-mountain-700">
+                <span class="theme-accent">$</span> Core Commands
+            </h2>
+
+            <!-- yakmesh init -->
+            <div class="command-block p-6 mb-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <code class="text-xl theme-accent font-mono">yakmesh init</code>
+                    <span class="text-mountain-400 text-sm">Initialize a new node</span>
+                </div>
+                <p class="text-mountain-300 mb-4">
+                    Creates a new YAKMESH node with post-quantum identity, configuration file, and data directory.
+                </p>
+                
+                <h4 class="font-semibold mb-3">Options</h4>
+                <table class="option-table mb-4">
+                    <thead>
+                        <tr>
+                            <th>Option</th>
+                            <th>Description</th>
+                            <th>Default</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-mountain-300">
+                        <tr>
+                            <td><code>--name</code></td>
+                            <td>Human-readable node name</td>
+                            <td>Auto-generated</td>
+                        </tr>
+                        <tr>
+                            <td><code>--region</code></td>
+                            <td>Geographic region identifier</td>
+                            <td>Auto-detected</td>
+                        </tr>
+                        <tr>
+                            <td><code>--port</code></td>
+                            <td>HTTP API port</td>
+                            <td>3000</td>
+                        </tr>
+                        <tr>
+                            <td><code>--ws-port</code></td>
+                            <td>WebSocket port for P2P</td>
+                            <td>9001</td>
+                        </tr>
+                        <tr>
+                            <td><code>--bootstrap</code></td>
+                            <td>Bootstrap peer address</td>
+                            <td>None</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h4 class="font-semibold mb-3">Examples</h4>
+                <pre class="language-bash"><code># Basic initialization
+yakmesh init
+
+# Named node with custom ports
+yakmesh init --name "himalaya-node-1" --port 8080 --ws-port 9002
+
+# Initialize with bootstrap peer
+yakmesh init --bootstrap wss://seed.yakmesh.net:9001
+
+# Full configuration
+yakmesh init \
+  --name "everest-gateway" \
+  --region "asia-south" \
+  --port 3000 \
+  --ws-port 9001 \
+  --bootstrap wss://peer.example.com:9001</code></pre>
+            </div>
+
+            <!-- yakmesh start -->
+            <div class="command-block p-6 mb-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <code class="text-xl theme-accent font-mono">yakmesh start</code>
+                    <span class="text-mountain-400 text-sm">Start the node</span>
+                </div>
+                <p class="text-mountain-300 mb-4">
+                    Starts the YAKMESH node with all services: HTTP API, WebSocket P2P, and mesh networking.
+                </p>
+                
+                <h4 class="font-semibold mb-3">Options</h4>
+                <table class="option-table mb-4">
+                    <thead>
+                        <tr>
+                            <th>Option</th>
+                            <th>Description</th>
+                            <th>Default</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-mountain-300">
+                        <tr>
+                            <td><code>--config</code></td>
+                            <td>Path to configuration file</td>
+                            <td>./yakmesh.config.js</td>
+                        </tr>
+                        <tr>
+                            <td><code>--daemon</code></td>
+                            <td>Run as background daemon</td>
+                            <td>false</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h4 class="font-semibold mb-3">Examples</h4>
+                <pre class="language-bash"><code># Start with default config
+yakmesh start
+
+# Start with custom config
+yakmesh start --config /etc/yakmesh/node.config.js
+
+# Start as daemon (background process)
+yakmesh start --daemon</code></pre>
+
+                <h4 class="font-semibold mb-3 mt-4">Expected Output</h4>
+                <pre class="language-text"><code><span class="yak-icon"></span> Starting Yakmesh Node...
+
+🔐 Securing codebase...
+✓ Codebase locked: 65 files protected
+🔮 Initializing Oracle System...
+✓ Annex channel initialized
+✓ Yakmesh Node is running!
+   Network: factor-primitive-bose
+   Network ID: pq-EqU8
+   Dashboard: http://localhost:3000/dashboard</code></pre>
+            </div>
+
+            <!-- yakmesh status -->
+            <div class="command-block p-6 mb-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <code class="text-xl theme-accent font-mono">yakmesh status</code>
+                    <span class="text-mountain-400 text-sm">Show node status</span>
+                </div>
+                <p class="text-mountain-300 mb-4">
+                    Displays the current status of your running YAKMESH node including health, peers, and network info.
+                </p>
+
+                <h4 class="font-semibold mb-3">Example</h4>
+                <pre class="language-bash"><code>yakmesh status</code></pre>
+                <pre class="language-text"><code>╔══════════════════════════════════════════════════╗
+║             YAKMESH NODE STATUS                   ║
+╠══════════════════════════════════════════════════╣
+║  Status:     🟢 ONLINE                           ║
+║  Network:    factor-primitive-bose               ║
+║  Network ID: pq-EqU8                             ║
+║  Uptime:     2h 34m 12s                          ║
+║  Peers:      7 connected                         ║
+║  Algorithm:  ML-DSA-65                           ║
+╚══════════════════════════════════════════════════╝</code></pre>
+            </div>
+
+            <!-- yakmesh peers -->
+            <div class="command-block p-6 mb-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <code class="text-xl theme-accent font-mono">yakmesh peers</code>
+                    <span class="text-mountain-400 text-sm">List connected peers</span>
+                </div>
+                <p class="text-mountain-300 mb-4">
+                    Lists all currently connected peers with their node IDs, endpoints, and connection status.
+                </p>
+
+                <h4 class="font-semibold mb-3">Example Output</h4>
+                <pre class="language-text"><code>Connected Peers (7):
+┌──────────────────────────────────────────────────────────────┐
+│ ID                    │ Endpoint              │ Latency │ Trust │
+├──────────────────────────────────────────────────────────────┤
+│ node-a7f3...2b1e     │ wss://peer1:9001      │ 12ms    │ 0.95  │
+│ node-c4d8...9f2a     │ wss://peer2:9001      │ 45ms    │ 0.87  │
+│ node-b2e6...1c4f     │ 192.168.1.5:9001      │ 2ms     │ 0.99  │
+└──────────────────────────────────────────────────────────────┘</code></pre>
+            </div>
+
+            <!-- yakmesh info -->
+            <div class="command-block p-6 mb-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <code class="text-xl theme-accent font-mono">yakmesh info</code>
+                    <span class="text-mountain-400 text-sm">Show detailed node info</span>
+                </div>
+                <p class="text-mountain-300 mb-4">
+                    Displays comprehensive information about your node including identity, capabilities, and configuration.
+                </p>
+
+                <h4 class="font-semibold mb-3">Example Output</h4>
+                <pre class="language-json"><code>{
+  "nodeId": "pq-7f3a2b1e-c4d8-4a2f-9b1c-e5f6a7b8c9d0",
+  "name": "himalaya-node-1",
+  "network": "factor-primitive-bose",
+  "networkId": "pq-EqU8",
+  "version": "2.5.0",
+  "algorithm": "ML-DSA-65",
+  "endpoints": {
+    "http": "http://localhost:3000",
+    "ws": "ws://localhost:9001"
+  },
+  "capabilities": ["SHERPA", "NAKPAK", "GEO_PROOF"],
+  "region": "asia-south",
+  "uptime": 9252
+}</code></pre>
+            </div>
+
+            <!-- yakmesh join -->
+            <div class="command-block p-6 mb-8">
+                <div class="flex items-center gap-3 mb-4">
+                    <code class="text-xl theme-accent font-mono">yakmesh join &lt;endpoint&gt;</code>
+                    <span class="text-mountain-400 text-sm">Connect to a peer</span>
+                </div>
+                <p class="text-mountain-300 mb-4">
+                    Initiates a connection to a known peer endpoint. The handshake includes NAMCHE verification.
+                </p>
+
+                <h4 class="font-semibold mb-3">Examples</h4>
+                <pre class="language-bash"><code># Join via WebSocket
+yakmesh join wss://peer.yakmesh.net:9001
+
+# Join local network peer
+yakmesh join ws://192.168.1.100:9001
+
+# Join with explicit protocol
+yakmesh join wss://gateway.example.com:9001</code></pre>
+
+                <h4 class="font-semibold mb-3 mt-4">Success Output</h4>
+                <pre class="language-text"><code>🔗 Connecting to wss://peer.yakmesh.net:9001...
+🧭 NAMCHE handshake initiated...
+✓ Connected to node-a7f3...2b1e
+  Trust score: 0.92
+  Latency: 45ms</code></pre>
+            </div>
+
+            <!-- ======================== -->
+            <!-- PROTOCOL COMMANDS SECTION -->
+            <!-- ======================== -->
+            <h2 id="protocol-commands" class="text-2xl font-bold mb-6 pt-4 border-t border-mountain-700">
+                <span class="theme-accent">$</span> Protocol Commands
+            </h2>
+            <p class="text-mountain-300 mb-6">
+                Manage the <code class="bg-mountain-800 px-2 py-1 rounded theme-accent">yak://</code> protocol handler for system-wide mesh URL support.
+            </p>
+
+            <!-- protocol register -->
+            <div class="command-block p-6 mb-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <code class="text-xl theme-accent font-mono">yakmesh protocol register</code>
+                    <span class="text-mountain-400 text-sm">Register yak:// protocol</span>
+                </div>
+                <p class="text-mountain-300 mb-4">
+                    Registers the <code class="bg-mountain-800 px-2 py-1 rounded">yak://</code> protocol with your operating system. 
+                    Enables clicking yak:// links in browsers and applications.
+                </p>
+
+                <h4 class="font-semibold mb-3">Example</h4>
+                <pre class="language-bash"><code>yakmesh protocol register</code></pre>
+                <pre class="language-text"><code>✓ Protocol yak:// registered successfully
+  Handler: /usr/local/bin/yakmesh
+  
+Test with: yakmesh protocol test yak://hello</code></pre>
+
+                <div class="theme-callout rounded-lg p-4 mt-4 border">
+                    <p class="text-sm text-mountain-300">
+                        <span class="theme-accent font-semibold">Note:</span> On Windows, this modifies the registry. 
+                        On macOS/Linux, it updates protocol handlers. May require elevated permissions.
+                    </p>
+                </div>
+            </div>
+
+            <!-- protocol unregister -->
+            <div class="command-block p-6 mb-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <code class="text-xl theme-accent font-mono">yakmesh protocol unregister</code>
+                    <span class="text-mountain-400 text-sm">Unregister protocol</span>
+                </div>
+                <p class="text-mountain-300 mb-4">
+                    Removes the yak:// protocol handler from your system.
+                </p>
+
+                <pre class="language-bash"><code>yakmesh protocol unregister</code></pre>
+                <pre class="language-text"><code>✓ Protocol yak:// unregistered</code></pre>
+            </div>
+
+            <!-- protocol test -->
+            <div class="command-block p-6 mb-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <code class="text-xl theme-accent font-mono">yakmesh protocol test &lt;url&gt;</code>
+                    <span class="text-mountain-400 text-sm">Test yak:// URL</span>
+                </div>
+                <p class="text-mountain-300 mb-4">
+                    Parses and validates a yak:// URL without executing it. Useful for debugging.
+                </p>
+
+                <h4 class="font-semibold mb-3">Examples</h4>
+                <pre class="language-bash"><code># Test a simple URL
+yakmesh protocol test yak://node-a7f3/resource
+
+# Test with query parameters
+yakmesh protocol test "yak://gateway.local/api/status?format=json"</code></pre>
+                <pre class="language-json"><code>{
+  "valid": true,
+  "parsed": {
+    "protocol": "yak:",
+    "host": "node-a7f3",
+    "path": "/resource",
+    "query": {}
+  }
+}</code></pre>
+            </div>
+
+            <!-- protocol open -->
+            <div class="command-block p-6 mb-8">
+                <div class="flex items-center gap-3 mb-4">
+                    <code class="text-xl theme-accent font-mono">yakmesh protocol open &lt;url&gt;</code>
+                    <span class="text-mountain-400 text-sm">Open yak:// URL</span>
+                </div>
+                <p class="text-mountain-300 mb-4">
+                    Opens a yak:// URL, routing through the mesh network to the target resource.
+                </p>
+
+                <h4 class="font-semibold mb-3">Examples</h4>
+                <pre class="language-bash"><code># Open a mesh resource
+yakmesh protocol open yak://peer-node/dashboard
+
+# Open with path
+yakmesh protocol open yak://gateway/api/health</code></pre>
+            </div>
+
+            <!-- ======================== -->
+            <!-- BOOKMARK COMMANDS SECTION -->
+            <!-- ======================== -->
+            <h2 id="bookmark-commands" class="text-2xl font-bold mb-6 pt-4 border-t border-mountain-700">
+                <span class="theme-accent">$</span> Bookmark Commands
+            </h2>
+            <p class="text-mountain-300 mb-6">
+                Save and manage yak:// bookmarks for quick access to frequently used mesh resources.
+            </p>
+
+            <!-- bookmark add -->
+            <div class="command-block p-6 mb-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <code class="text-xl theme-accent font-mono">yakmesh protocol bookmark add &lt;name&gt; &lt;target&gt;</code>
+                    <span class="text-mountain-400 text-sm">Add a bookmark</span>
+                </div>
+                <p class="text-mountain-300 mb-4">
+                    Creates a named shortcut to a yak:// URL or mesh resource.
+                </p>
+
+                <h4 class="font-semibold mb-3">Examples</h4>
+                <pre class="language-bash"><code># Bookmark a dashboard
+yakmesh protocol bookmark add dashboard yak://local/dashboard
+
+# Bookmark an API endpoint
+yakmesh protocol bookmark add health-check yak://gateway/api/health
+
+# Bookmark external node
+yakmesh protocol bookmark add main-peer yak://node-a7f3.yakmesh.net/</code></pre>
+                <pre class="language-text"><code>✓ Bookmark 'dashboard' added → yak://local/dashboard</code></pre>
+            </div>
+
+            <!-- bookmark remove -->
+            <div class="command-block p-6 mb-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <code class="text-xl theme-accent font-mono">yakmesh protocol bookmark remove &lt;name&gt;</code>
+                    <span class="text-mountain-400 text-sm">Remove a bookmark</span>
+                </div>
+                <pre class="language-bash"><code>yakmesh protocol bookmark remove dashboard</code></pre>
+                <pre class="language-text"><code>✓ Bookmark 'dashboard' removed</code></pre>
+            </div>
+
+            <!-- bookmark list -->
+            <div class="command-block p-6 mb-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <code class="text-xl theme-accent font-mono">yakmesh protocol bookmark list</code>
+                    <span class="text-mountain-400 text-sm">List all bookmarks</span>
+                </div>
+                <pre class="language-bash"><code>yakmesh protocol bookmark list</code></pre>
+                <pre class="language-text"><code>Bookmarks:
+┌────────────────┬─────────────────────────────────────┐
+│ Name           │ Target                              │
+├────────────────┼─────────────────────────────────────┤
+│ dashboard      │ yak://local/dashboard               │
+│ health-check   │ yak://gateway/api/health            │
+│ main-peer      │ yak://node-a7f3.yakmesh.net/        │
+└────────────────┴─────────────────────────────────────┘</code></pre>
+            </div>
+
+            <!-- bookmark get -->
+            <div class="command-block p-6 mb-8">
+                <div class="flex items-center gap-3 mb-4">
+                    <code class="text-xl theme-accent font-mono">yakmesh protocol bookmark get &lt;name&gt;</code>
+                    <span class="text-mountain-400 text-sm">Get bookmark target</span>
+                </div>
+                <pre class="language-bash"><code>yakmesh protocol bookmark get dashboard</code></pre>
+                <pre class="language-text"><code>yak://local/dashboard</code></pre>
+            </div>
+
+            <!-- ======================== -->
+            <!-- GEO COMMANDS SECTION -->
+            <!-- ======================== -->
+            <h2 id="geo-commands" class="text-2xl font-bold mb-6 pt-4 border-t border-mountain-700">
+                <span class="theme-accent">$</span> Geographic Commands
+            </h2>
+            <p class="text-mountain-300 mb-6">
+                Manage geographic proof of location using speed-of-light verification. 
+                See <a href="geo-proof.html" class="theme-accent theme-accent-hover">Geographic Proof documentation</a> for details.
+            </p>
+
+            <!-- geo status -->
+            <div class="command-block p-6 mb-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <code class="text-xl theme-accent font-mono">yakmesh geo status</code>
+                    <span class="text-mountain-400 text-sm">Geographic proof status</span>
+                </div>
+                <p class="text-mountain-300 mb-4">
+                    Shows the current geographic verification status and location proof.
+                </p>
+
+                <pre class="language-bash"><code>yakmesh geo status</code></pre>
+                <pre class="language-text"><code>Geographic Proof Status:
+  Verified: ✓ Yes
+  Region: asia-south
+  Confidence: 94.2%
+  Last Proof: 2024-01-15T10:30:00Z
+  Landmarks Used: 4
+  
+Triangulation:
+  • Singapore (12ms) ✓
+  • Tokyo (45ms) ✓
+  • Sydney (89ms) ✓
+  • Mumbai (8ms) ✓</code></pre>
+            </div>
+
+            <!-- geo landmarks -->
+            <div class="command-block p-6 mb-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <code class="text-xl theme-accent font-mono">yakmesh geo landmarks</code>
+                    <span class="text-mountain-400 text-sm">List landmarks</span>
+                </div>
+                <p class="text-mountain-300 mb-4">
+                    Lists all known geographic landmarks used for triangulation.
+                </p>
+
+                <pre class="language-text"><code>Known Landmarks (12):
+┌──────────────────┬──────────────────┬─────────┬──────────┐
+│ Name             │ Location         │ Status  │ Latency  │
+├──────────────────┼──────────────────┼─────────┼──────────┤
+│ landmark-sgp     │ Singapore        │ 🟢 Up   │ 12ms     │
+│ landmark-tyo     │ Tokyo            │ 🟢 Up   │ 45ms     │
+│ landmark-syd     │ Sydney           │ 🟢 Up   │ 89ms     │
+│ landmark-mum     │ Mumbai           │ 🟢 Up   │ 8ms      │
+│ landmark-fra     │ Frankfurt        │ 🟢 Up   │ 156ms    │
+│ landmark-nyc     │ New York         │ 🟡 Slow │ 234ms    │
+└──────────────────┴──────────────────┴─────────┴──────────┘</code></pre>
+            </div>
+
+            <!-- geo zones -->
+            <div class="command-block p-6 mb-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <code class="text-xl theme-accent font-mono">yakmesh geo zones</code>
+                    <span class="text-mountain-400 text-sm">List exclusion zones</span>
+                </div>
+                <p class="text-mountain-300 mb-4">
+                    Lists configured geographic exclusion zones where connections are restricted.
+                </p>
+
+                <pre class="language-bash"><code>yakmesh geo zones</code></pre>
+            </div>
+
+            <!-- geo prove -->
+            <div class="command-block p-6 mb-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <code class="text-xl theme-accent font-mono">yakmesh geo prove</code>
+                    <span class="text-mountain-400 text-sm">Generate geographic proof</span>
+                </div>
+                <p class="text-mountain-300 mb-4">
+                    Initiates a new geographic proof generation by triangulating against known landmarks.
+                </p>
+
+                <pre class="language-bash"><code>yakmesh geo prove</code></pre>
+                <pre class="language-text"><code>🌍 Generating geographic proof...
+  Pinging landmark-sgp... 12ms ✓
+  Pinging landmark-tyo... 45ms ✓
+  Pinging landmark-syd... 89ms ✓
+  Pinging landmark-mum... 8ms ✓
+
+✓ Proof generated successfully
+  Region: asia-south
+  Confidence: 94.2%
+  Proof ID: geo-proof-7f3a2b1e</code></pre>
+            </div>
+
+            <!-- geo verify -->
+            <div class="command-block p-6 mb-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <code class="text-xl theme-accent font-mono">yakmesh geo verify &lt;nodeId&gt;</code>
+                    <span class="text-mountain-400 text-sm">Verify another node</span>
+                </div>
+                <p class="text-mountain-300 mb-4">
+                    Requests and verifies the geographic proof from another node.
+                </p>
+
+                <pre class="language-bash"><code>yakmesh geo verify node-a7f3</code></pre>
+                <pre class="language-text"><code>🔍 Verifying geographic proof for node-a7f3...
+  Claimed region: europe-west
+  Verification landmarks: 3
+  
+✓ Location verified
+  Confidence: 91.7%
+  Distance to claimed: ~50km
+  Proof valid: Yes</code></pre>
+            </div>
+
+            <!-- geo add-landmark -->
+            <div class="command-block p-6 mb-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <code class="text-xl theme-accent font-mono">yakmesh geo add-landmark</code>
+                    <span class="text-mountain-400 text-sm">Add a landmark</span>
+                </div>
+                <p class="text-mountain-300 mb-4">
+                    Adds a new landmark server for geographic triangulation.
+                </p>
+
+                <pre class="language-bash"><code>yakmesh geo add-landmark --name "my-landmark" --endpoint "wss://landmark.example.com:9001" --location "40.7128,-74.0060"</code></pre>
+            </div>
+
+            <!-- geo physics -->
+            <div class="command-block p-6 mb-8">
+                <div class="flex items-center gap-3 mb-4">
+                    <code class="text-xl theme-accent font-mono">yakmesh geo physics</code>
+                    <span class="text-mountain-400 text-sm">Show speed-of-light constants</span>
+                </div>
+                <p class="text-mountain-300 mb-4">
+                    Displays the physical constants used for geographic proof calculations.
+                </p>
+
+                <pre class="language-bash"><code>yakmesh geo physics</code></pre>
+                <pre class="language-json"><code>{
+  "speedOfLight": 299792458,
+  "fiberRefractionIndex": 1.47,
+  "effectiveSpeed": 203940108,
+  "minTriangulationPoints": 3,
+  "maxAcceptableDeviation": 0.15,
+  "units": {
+    "speed": "m/s",
+    "distance": "km",
+    "time": "ms"
+  }
+}</code></pre>
+
+                <div class="theme-callout rounded-lg p-4 mt-4 border">
+                    <p class="text-sm text-mountain-300">
+                        <span class="theme-accent font-semibold">💡 How it works:</span> 
+                        Geographic proof uses the speed of light through fiber optic cables to verify 
+                        that a node's claimed location is physically consistent with its measured latencies.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Next Steps -->
+            <div class="bg-mountain-800 border theme-border rounded-xl p-6 mt-8">
+                <h3 class="text-lg font-semibold mb-4">Continue Exploring</h3>
+                <ul class="space-y-3 text-mountain-300">
+                    <li class="flex items-center gap-2">
+                        <span>📡</span>
+                        <a href="api.html" class="theme-accent theme-accent-hover">REST API Reference</a>
+                        <span class="text-mountain-400 text-sm">— HTTP endpoints for programmatic access</span>
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <span>🔗</span>
+                        <a href="yak-protocol.html" class="theme-accent theme-accent-hover">YAK:// Protocol</a>
+                        <span class="text-mountain-400 text-sm">— Custom URL scheme details</span>
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <span>🌍</span>
+                        <a href="geo-proof.html" class="theme-accent theme-accent-hover">Geographic Proof</a>
+                        <span class="text-mountain-400 text-sm">— Speed-of-light verification</span>
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <span>⚙️</span>
+                        <a href="configuration.html" class="theme-accent theme-accent-hover">Configuration</a>
+                        <span class="text-mountain-400 text-sm">— Full config file reference</span>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- Journey Navigation -->
+            <div class="border-t border-mountain-700 mt-12 pt-8">
+                <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <a href="advanced-systems.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">
+                        <div class="text-xs text-mountain-400 mb-1">← Previous</div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">⚡</span>
+                            <span class="font-semibold group-hover:text-theme-accent">Advanced Systems</span>
+                        </div>
+                        <p class="text-mountain-400 text-sm mt-1">Deep dive into the internals</p>
+                    </a>
+                    <a href="time-sources.html" class="flex-1 block bg-mountain-800 border border-theme-primary rounded-xl p-4 hover:border-theme-accent transition group">
+                        <div class="text-xs text-mountain-400 mb-1">Next →</div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">⏰</span>
+                            <span class="font-semibold group-hover:text-theme-accent">Time Sources</span>
+                        </div>
+                        <p class="text-mountain-400 text-sm mt-1">High-precision time infrastructure</p>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+  <footer class="docs-footer">
+    <p>© 2026 YAKMESH™</p>
+  </footer><!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+    <script src="docs.js"></script>
+
+  
+</body>
+</html>
+
+
+
