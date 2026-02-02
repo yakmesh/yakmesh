@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="nakpak">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="favicon.ico" sizes="32x32">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <title>NAKPAK - Routing | YAKMESH Documentation</title>
+    <meta name="description" content="NAKPAK: Nested Anonymous Kernel for Private Authenticated Komms. Post-quantum onion routing - rope bridges for secure message transport.">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        theme: { 
+                            primary: '#a855f7', 
+                            secondary: '#9333ea', 
+                            accent: '#c084fc',
+                            bg: '#3b0764',
+                            glow: 'rgba(168, 85, 247, 0.1)'
+                        },
+                        mountain: { 
+                            300: '#88b4a6', 
+                            400: '#6a9a8a', 
+                            700: '#2e4c43', 
+                            800: '#1f332d', 
+                            900: '#101a16' 
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Syntax Highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="docs.css">
+    <style>
+        /* Page-specific theme overrides - Purple/Violet for Rope Bridges */
+        .theme-accent { color: #c084fc; }
+        .theme-accent-hover:hover { color: #d8b4fe; }
+        .theme-badge { background: rgba(168, 85, 247, 0.2); color: #c084fc; }
+        .theme-border { border-color: #a855f7; }
+        .theme-callout { background: rgba(168, 85, 247, 0.1); border-color: #9333ea; }
+        .active-link { background: rgba(168, 85, 247, 0.2) !important; color: #c084fc !important; }
+    </style>
+</head>
+<body class="bg-mountain-900 text-white min-h-screen">
+    
+  <nav class="docs-sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-logo">
+      <span class="logo-icon">🏔️</span>
+      <span class="logo-text">Yakmesh</span>
+    </a>
+    <ul class="sidebar-nav">
+      <li><a href="index.html"><span>🏠</span> <span>Overview</span></a></li>
+      <li><a href="getting-started.html"><span>🚀</span> <span>Getting Started</span></a></li>
+      <li><a href="doko.html"><span>🧺</span> <span>DOKO</span></a></li>
+      <li><a href="namche.html"><span>🚪</span> <span>NAMCHE</span></a></li>
+      <li><a href="sherpa.html"><span>🧗</span> <span>SHERPA</span></a></li>
+      <li><a href="nakpak.html" class="active"><span>🎒</span> <span>NAKPAK</span></a></li>
+      <li><a href="annex.html"><span>🌉</span> <span>ANNEX</span></a></li>
+      <li><a href="yak-protocol.html"><span class="yak-icon"></span> <span>YAK</span></a></li>
+      <li><a href="mantra.html"><span>🕉️</span> <span>MANTRA</span></a></li>
+      <li><a href="stupa.html"><span>🛕</span> <span>STUPA</span></a></li>
+      <li><a href="lama.html"><span>🔮</span> <span>LAMA</span></a></li>
+      <li><a href="mani.html"><span>⏱️</span> <span>MANI</span></a></li>
+      <li><a href="karma.html"><span>☯️</span> <span>KARMA</span></a></li>
+      <li><a href="mandala.html"><span>🌐</span> <span>MANDALA</span></a></li>
+      <li><a href="tattva.html"><span>🔯</span> <span>TATTVA</span></a></li>
+      <li><a href="geo-proof.html"><span>🌍</span> <span>PRAMAAN</span></a></li>
+      <li><a href="trust-security.html"><span>🔒</span> <span>SURAKSHA</span></a></li>
+      <li><a href="docs-bundle.html"><span>📚</span> <span>GRANTH</span></a></li>
+      <li><a href="api.html"><span>📡</span> <span>API</span></a></li>
+    </ul>
+  </nav>
+
+  <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+    </svg>
+  </button>
+
+  <!-- Mobile overlay for tap-to-close sidebar -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="docs-main" id="mainContent">
+
+        <div class="docs-content">
+            <div class="flex items-center gap-3 mb-4">
+                <span class="text-4xl">🎒</span>
+                <div>
+                    <h1 class="text-4xl font-bold">NAKPAK</h1>
+                    <p class="theme-accent">Nested Anonymous Kernel for Private Authenticated Komms</p>
+                </div>
+            </div>
+            <p class="text-xl text-mountain-300 mb-8">
+                Post-quantum onion routing for anonymous communication across the YAKMESH network. <em>Rope bridges connecting mountain peaks.</em>
+            </p>
+            <span class="theme-badge inline-block text-xs px-2 py-1 rounded mb-8">v2.6.0</span>
+
+            <h2 class="text-2xl font-bold mb-4">Overview</h2>
+            <p class="text-mountain-300 mb-6">
+                NAKPAK provides <strong>anonymous routing</strong> through the YAKMESH network. Messages are 
+                wrapped in multiple layers of encryption, with each relay node only knowing the previous 
+                and next hop. Unlike traditional onion routing, NAKPAK uses <strong>post-quantum cryptography</strong> 
+                (ML-KEM768) for key encapsulation.
+            </p>
+
+            <div class="theme-callout border rounded-xl p-6 mb-8">
+                <h3 class="text-lg font-semibold mb-3 theme-accent">Key Features</h3>
+                <ul class="text-mountain-300 space-y-2">
+                    <li>• <strong>Post-Quantum</strong> - ML-KEM768 (Kyber) for key encapsulation</li>
+                    <li>• <strong>Layered Encryption</strong> - Each hop peels one encryption layer</li>
+                    <li>• <strong>Source Anonymity</strong> - Relays don't know the original sender</li>
+                    <li>• <strong>Destination Privacy</strong> - Only final relay knows the destination</li>
+                    <li>• <strong>Replay Protection</strong> - Unique circuit IDs prevent replay attacks</li>
+                </ul>
+            </div>
+
+            <h2 class="text-2xl font-bold mb-4">How It Works</h2>
+            <div class="bg-mountain-800 rounded-xl p-6 mb-8 font-mono text-xs sm:text-sm overflow-x-auto">
+<pre class="text-mountain-300 whitespace-pre">
+┌────────────────────────────────────────────────────────────┐
+│                   NAKPAK Onion Routing                     │
+├────────────────────────────────────────────────────────────┤
+│                                                            │
+│   Sender                                                   │
+│      │                                                     │
+│      │  Encrypt(L3(Encrypt(L2(Encrypt(L1(msg))))))         │
+│      │                                                     │
+│      ▼                                                     │
+│   ┌───────┐    ┌───────┐    ┌───────┐    ┌───────┐        │
+│   │Relay 1│ ─► │Relay 2│ ─► │Relay 3│ ─► │ Dest  │        │
+│   │Decrypt│    │Decrypt│    │Decrypt│    │Receive│        │
+│   │Layer 3│    │Layer 2│    │Layer 1│    │  msg  │        │
+│   └───────┘    └───────┘    └───────┘    └───────┘        │
+│                                                            │
+│   Each relay only knows: previous hop + next hop           │
+│   No relay knows both sender AND destination               │
+│                                                            │
+└────────────────────────────────────────────────────────────┘
+</pre>
+            </div>
+
+            <h2 class="text-2xl font-bold mb-4">Circuit Construction</h2>
+            <p class="text-mountain-300 mb-4">
+                NAKPAK builds circuits through 3+ relay nodes:
+            </p>
+            <ol class="text-mountain-300 space-y-3 mb-8 list-decimal list-inside">
+                <li><strong>Path Selection</strong> - Choose relay nodes from SHERPA peer registry</li>
+                <li><strong>Key Exchange</strong> - ML-KEM768 encapsulation with each relay</li>
+                <li><strong>Layer Building</strong> - Encrypt message for each hop (innermost to outermost)</li>
+                <li><strong>Transmission</strong> - Send through circuit, each relay decrypts one layer</li>
+            </ol>
+
+            <h2 class="text-2xl font-bold mb-4">Usage</h2>
+            <pre class="bg-mountain-800 rounded-lg p-4 mb-8 overflow-x-auto"><code class="language-javascript">// Access NAKPAK from your node
+const nakpak = node.nakpak;
+
+// Build a circuit to a destination
+const circuit = await nakpak.buildCircuit({
+  destination: 'targetNodeId',
+  hops: 3,  // Number of relay hops (default: 3)
+});
+
+// Send anonymous message through circuit
+await nakpak.send(circuit.id, {
+  type: 'private-message',
+  content: 'This message is anonymous!'
+});
+
+// Receive anonymous messages
+nakpak.onMessage((envelope) => {
+  // Note: envelope.from is the circuit ID, not the sender
+  console.log('Anonymous message:', envelope.payload);
+});
+
+// Close circuit when done
+await nakpak.closeCircuit(circuit.id);</code></pre>
+
+            <h2 class="text-2xl font-bold mb-4">Configuration</h2>
+            <pre class="bg-mountain-800 rounded-lg p-4 mb-8 overflow-x-auto"><code class="language-javascript">// yakmesh.config.js
+export default {
+  nakpak: {
+    enabled: true,
+    
+    // Default circuit settings
+    defaultHops: 3,
+    maxHops: 5,
+    
+    // Circuit lifetime
+    circuitTimeout: 600000,  // 10 minutes
+    
+    // Acting as relay
+    allowRelay: true,
+    maxRelayCircuits: 100,
+  }
+};</code></pre>
+
+            <h2 class="text-2xl font-bold mb-4">Security Considerations</h2>
+            <div class="theme-callout border rounded-xl p-6 mb-8">
+                <h3 class="text-lg font-semibold mb-3 theme-accent">⚠️ Important Notes</h3>
+                <ul class="text-mountain-300 space-y-2">
+                    <li>• <strong>Timing Attacks</strong> - Random delays are added to prevent correlation</li>
+                    <li>• <strong>Traffic Analysis</strong> - Messages are padded to fixed sizes</li>
+                    <li>• <strong>Exit Node</strong> - The final relay knows the destination (but not the source)</li>
+                    <li>• <strong>Circuit Lifetime</strong> - Circuits should be rotated periodically</li>
+                </ul>
+            </div>
+
+            <h2 class="text-2xl font-bold mb-4">Comparison with Tor</h2>
+            <div class="bg-mountain-800 rounded-xl p-6 mb-8">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="text-left text-mountain-400">
+                            <th class="pb-2">Feature</th>
+                            <th class="pb-2">NAKPAK</th>
+                            <th class="pb-2">Tor</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-mountain-300">
+                        <tr><td class="py-1">Key Exchange</td><td class="text-green-400">ML-KEM768 (PQ)</td><td>Curve25519</td></tr>
+                        <tr><td class="py-1">Quantum Safe</td><td class="text-green-400">✓</td><td class="text-red-400">✗</td></tr>
+                        <tr><td class="py-1">Relay Network</td><td>YAKMESH mesh</td><td>Volunteer relays</td></tr>
+                        <tr><td class="py-1">Discovery</td><td>SHERPA (decentralized)</td><td>Directory authorities</td></tr>
+                        <tr><td class="py-1">Protocol</td><td>WebSocket</td><td>Custom TCP</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h2 class="text-2xl font-bold mb-4">Use Cases</h2>
+            <ul class="text-mountain-300 space-y-2 mb-8">
+                <li>• <strong>Anonymous Messaging</strong> - Private communication without metadata exposure</li>
+                <li>• <strong>Whistleblowing</strong> - Submit sensitive information anonymously</li>
+                <li>• <strong>Privacy Markets</strong> - Anonymous trading on PeerQuanta marketplace</li>
+                <li>• <strong>Censorship Resistance</strong> - Bypass network-level blocking</li>
+            </ul>
+
+            <h2 class="text-2xl font-bold mb-4">Etymology</h2>
+            <div class="theme-callout border rounded-xl p-6 mb-8">
+                <p class="text-mountain-200 italic">
+                    "NAKPAK - like a backpack that carries your secrets through the mountains. 
+                    What's inside is known only to you."
+                </p>
+                <p class="text-mountain-400 text-sm mt-2">
+                    Nested Anonymous Kernel for Private Authenticated Komms
+                </p>
+            </div>
+
+            <!-- Journey Navigation -->
+            <div class="border-t border-mountain-700 mt-12 pt-8">
+                <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <a href="sherpa.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">
+                        <div class="text-xs text-mountain-400 mb-1">← Previous</div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">🧭</span>
+                            <span class="font-semibold group-hover:text-theme-accent">SHERPA Discovery</span>
+                        </div>
+                        <p class="text-mountain-400 text-sm mt-1">Find your way to other nodes in the mesh</p>
+                    </a>
+                    <a href="annex.html" class="flex-1 block bg-mountain-800 border border-theme-primary rounded-xl p-4 hover:border-theme-accent transition group">
+                        <div class="text-xs text-mountain-400 mb-1">Next →</div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">🔗</span>
+                            <span class="font-semibold group-hover:text-theme-accent">ANNEX P2P</span>
+                        </div>
+                        <p class="text-mountain-400 text-sm mt-1">Direct peer-to-peer connections</p>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+  <footer class="docs-footer">
+    <p>© 2026 YAKMESH™</p>
+  </footer><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script src="docs.js"></script>
+
+  
+</body>
+</html>
+
+
+

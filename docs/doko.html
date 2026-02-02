@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="doko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="favicon.ico" sizes="32x32">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <title>DOKO - Identity Object | YAKMESH Documentation</title>
+    <meta name="description" content="DOKO: Distributed Ownership & Key Object. Self-sovereign identity certificates for YAKMESH nodes.">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        theme: { 
+                            primary: '#a16207', 
+                            secondary: '#854d0e', 
+                            accent: '#ca8a04',
+                            bg: '#451a03',
+                            glow: 'rgba(161, 98, 7, 0.1)'
+                        },
+                        mountain: { 
+                            300: '#88b4a6', 
+                            400: '#6a9a8a', 
+                            700: '#2e4c43', 
+                            800: '#1f332d', 
+                            900: '#101a16' 
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Syntax Highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="docs.css">
+    <style>
+        /* Page-specific theme overrides - Parchment Brown */
+        .theme-accent { color: #ca8a04; }
+        .theme-accent-hover:hover { color: #eab308; }
+        .theme-badge { background: rgba(161, 98, 7, 0.2); color: #ca8a04; }
+        .theme-border { border-color: #a16207; }
+        .theme-callout { background: rgba(161, 98, 7, 0.1); border-color: #854d0e; }
+        .active-link { background: rgba(161, 98, 7, 0.2) !important; color: #ca8a04 !important; }
+        
+        /* Mobile fixes */
+        @media (max-width: 768px) {
+            .docs-content { padding: 1rem; }
+            .text-4xl { font-size: 1.75rem; }
+            pre { font-size: 0.75rem; max-width: 100%; }
+            .grid { grid-template-columns: 1fr !important; }
+            .flex-col-mobile { flex-direction: column; }
+        }
+    </style>
+</head>
+<body class="bg-mountain-900 text-white min-h-screen">
+    
+  <nav class="docs-sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-logo">
+      <span class="logo-icon">🏔️</span>
+      <span class="logo-text">Yakmesh</span>
+    </a>
+    <ul class="sidebar-nav">
+      <li><a href="index.html"><span>🏠</span> <span>Overview</span></a></li>
+      <li><a href="getting-started.html"><span>🚀</span> <span>Getting Started</span></a></li>
+      <li><a href="doko.html" class="active"><span>🧺</span> <span>DOKO</span></a></li>
+      <li><a href="namche.html"><span>🚪</span> <span>NAMCHE</span></a></li>
+      <li><a href="sherpa.html"><span>🧗</span> <span>SHERPA</span></a></li>
+      <li><a href="nakpak.html"><span>🎒</span> <span>NAKPAK</span></a></li>
+      <li><a href="annex.html"><span>🌉</span> <span>ANNEX</span></a></li>
+      <li><a href="yak-protocol.html"><span class="yak-icon"></span> <span>YAK</span></a></li>
+      <li><a href="mantra.html"><span>🕉️</span> <span>MANTRA</span></a></li>
+      <li><a href="stupa.html"><span>🛕</span> <span>STUPA</span></a></li>
+      <li><a href="lama.html"><span>🔮</span> <span>LAMA</span></a></li>
+      <li><a href="mani.html"><span>⏱️</span> <span>MANI</span></a></li>
+      <li><a href="karma.html"><span>☯️</span> <span>KARMA</span></a></li>
+      <li><a href="mandala.html"><span>🌐</span> <span>MANDALA</span></a></li>
+      <li><a href="tattva.html"><span>🔯</span> <span>TATTVA</span></a></li>
+      <li><a href="geo-proof.html"><span>🌍</span> <span>PRAMAAN</span></a></li>
+      <li><a href="trust-security.html"><span>🔒</span> <span>SURAKSHA</span></a></li>
+      <li><a href="docs-bundle.html"><span>📚</span> <span>GRANTH</span></a></li>
+      <li><a href="api.html"><span>📡</span> <span>API</span></a></li>
+    </ul>
+  </nav>
+
+  <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+    </svg>
+  </button>
+
+  <!-- Mobile overlay for tap-to-close sidebar -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="docs-main" id="mainContent">
+
+        <div class="docs-content">
+            <div class="flex items-center gap-3 mb-4">
+                <span class="text-4xl">📜</span>
+                <div>
+                    <h1 class="text-4xl font-bold">DOKO</h1>
+                    <p class="theme-accent">Distributed Ownership & Key Object</p>
+                </div>
+            </div>
+            <p class="text-xl text-mountain-300 mb-8">
+                The self-sovereign identity certificate for YAKMESH nodes. Your passport in the mesh.
+            </p>
+            <span class="inline-block text-xs theme-badge px-2 py-1 rounded mb-8">v2.6.0</span>
+
+            <h2 class="text-2xl font-bold mb-4">Overview</h2>
+            <p class="text-mountain-300 mb-6">
+                A DOKO is a cryptographically signed identity document that proves who you are in the Yakmesh network.
+                Unlike traditional certificates issued by a central authority, a DOKO is self-issued and 
+                verified by the mesh through mathematical proofs.
+            </p>
+
+            <div class="bg-mountain-800 rounded-xl p-6 mb-8">
+                <h3 class="text-lg font-semibold mb-3 theme-accent">DOKO Types</h3>
+                <div class="grid md:grid-cols-3 gap-4">
+                    <div class="bg-mountain-900 rounded-lg p-4">
+                        <div class="theme-accent font-semibold mb-2">🖥️ node-identity</div>
+                        <div class="text-mountain-400 text-sm">Core node identity — proves a node's existence and public key</div>
+                    </div>
+                    <div class="bg-mountain-900 rounded-lg p-4">
+                        <div class="theme-accent font-semibold mb-2">🌐 domain-claim</div>
+                        <div class="text-mountain-400 text-sm">Domain ownership — proves a node controls a domain</div>
+                    </div>
+                    <div class="bg-mountain-900 rounded-lg p-4">
+                        <div class="theme-accent font-semibold mb-2">⚙️ service-binding</div>
+                        <div class="text-mountain-400 text-sm">Service binding — links services to node identity</div>
+                    </div>
+                </div>
+            </div>
+
+            <h2 class="text-2xl font-bold mb-4">DOKO Structure</h2>
+            <p class="text-mountain-300 mb-6">
+                Every DOKO contains these core fields, signed with ML-DSA-65 (post-quantum):
+            </p>
+
+            <div class="bg-mountain-800 rounded-xl p-6 mb-8">
+                <pre class="text-sm overflow-x-auto"><code class="language-javascript">{
+  // Version & Type
+  "version": "1.0",
+  "type": "node-identity",  // or "domain-claim", "service-binding"
+  
+  // Core Identity
+  "nodeId": "node-mobius-rabi-junction-a7f3b2c1",
+  "publicKey": "ML-DSA-65 public key (hex)",
+  
+  // Network Binding
+  "networkName": "mobius-rabi-junction",  // From codebase hash
+  
+  // Temporal
+  "issuedAt": 1737200000000,   // Unix timestamp
+  "expiresAt": 1768736000000,  // 1 year validity
+  
+  // Optional Extensions
+  "domains": [
+    {
+      "domain": "example.com",
+      "proof": "/.well-known/yakmesh/domain-proof.json",
+      "verifiedAt": 1737200000000,
+      "quorumNodes": ["node-xxx", "node-yyy", "node-zzz"]
+    }
+  ],
+  
+  // TLS Binding (optional, for mTLS)
+  "tls": {
+    "certFingerprint": "sha256:a1b2c3...",
+    "validFrom": 1737200000000,
+    "validTo": 1768736000000
+  },
+  
+  // Signature (covers all above fields)
+  "signature": "ML-DSA-65 signature (hex)"
+}
+</code></pre>
+            </div>
+
+            <h2 class="text-2xl font-bold mb-4">Creating a DOKO</h2>
+            <div class="bg-mountain-800 rounded-xl p-6 mb-8">
+                <pre class="text-sm overflow-x-auto"><code class="language-javascript">import { createDoko, signDoko } from 'yakmesh/identity';
+
+// Generate or load your node key pair
+const { publicKey, privateKey } = await loadNodeKey('./data/node-key.json');
+
+// Create a node identity DOKO
+const doko = createDoko({
+  type: 'node-identity',
+  nodeId: myNodeId,
+  publicKey: publicKey,
+  networkName: config.networkName,
+  validityDays: 365,
+});
+
+// Sign with ML-DSA-65
+const signedDoko = signDoko(doko, privateKey);
+
+console.log('DOKO created:', signedDoko.nodeId);
+console.log('Expires:', new Date(signedDoko.expiresAt));
+</code></pre>
+            </div>
+
+            <h2 class="text-2xl font-bold mb-4">Domain Claims</h2>
+            <p class="text-mountain-300 mb-6">
+                To prove you control a domain, you must pass mesh-based domain verification.
+                This is a quorum-based process that requires multiple independent nodes to verify your claim.
+            </p>
+
+            <div class="bg-mountain-800 rounded-xl p-6 mb-8">
+                <h3 class="text-lg font-semibold mb-3 theme-accent">Verification Process</h3>
+                <ol class="text-mountain-300 space-y-3">
+                    <li class="flex items-start gap-3">
+                        <span class="theme-badge w-6 h-6 rounded-full flex items-center justify-center text-sm flex-shrink-0">1</span>
+                        <span>Place a proof file at <code class="bg-mountain-700 px-2 py-1 rounded text-sm">/.well-known/yakmesh/domain-proof.json</code></span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <span class="theme-badge w-6 h-6 rounded-full flex items-center justify-center text-sm flex-shrink-0">2</span>
+                        <span>Request domain verification from the mesh</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <span class="theme-badge w-6 h-6 rounded-full flex items-center justify-center text-sm flex-shrink-0">3</span>
+                        <span>Random verifiers (5+ nodes) check your proof file</span>
+                    </li>
+                    <li class="flex items-start gap-3">
+                        <span class="theme-badge w-6 h-6 rounded-full flex items-center justify-center text-sm flex-shrink-0">4</span>
+                        <span>Quorum (≥3 agreeing) adds domain to your DOKO</span>
+                    </li>
+                </ol>
+            </div>
+
+            <div class="bg-mountain-800 rounded-xl p-6 mb-8">
+                <h3 class="text-lg font-semibold mb-3 theme-accent">Domain Proof File</h3>
+                <pre class="text-sm overflow-x-auto"><code class="language-javascript">// /.well-known/yakmesh/domain-proof.json
+{
+  "nodeId": "node-mobius-rabi-junction-a7f3b2c1",
+  "domain": "example.com",
+  "challenge": "random-challenge-from-mesh",
+  "timestamp": 1737200000000,
+  "signature": "ML-DSA-65 signature of above fields"
+}
+</code></pre>
+            </div>
+
+            <h2 class="text-2xl font-bold mb-4">Trust Levels</h2>
+            <p class="text-mountain-300 mb-6">
+                DOKOs are assigned trust levels based on their verification state:
+            </p>
+
+            <p class="text-mountain-300 mb-4">DOKO trust levels use the KARMA tier system — Nepali expedition team roles:</p>
+            <div class="space-y-3 mb-8">
+                <div class="bg-mountain-800 rounded-xl p-4 flex items-center gap-4">
+                    <div class="w-12 h-12 bg-gradient-to-br from-amber-600 to-amber-800 rounded-lg flex items-center justify-center text-2xl">🏔️</div>
+                    <div>
+                        <div class="font-semibold text-amber-300">SIRDAR (सिरदार) — Expedition Leader</div>
+                        <div class="text-mountain-400 text-sm">Atomic time + hardware attestation + 30 days + endorsements</div>
+                    </div>
+                </div>
+                <div class="bg-mountain-800 rounded-xl p-4 flex items-center gap-4">
+                    <div class="w-12 h-12 bg-purple-600 rounded-lg flex items-center justify-center text-2xl">💎</div>
+                    <div>
+                        <div class="font-semibold text-purple-300">SATHI (साथी) — Trusted Companion</div>
+                        <div class="text-mountain-400 text-sm">GPS + hardware + 14 days + endorsements</div>
+                    </div>
+                </div>
+                <div class="bg-mountain-800 rounded-xl p-4 flex items-center gap-4">
+                    <div class="w-12 h-12 bg-yellow-600 rounded-lg flex items-center justify-center text-2xl">🥇</div>
+                    <div>
+                        <div class="font-semibold text-yellow-300">PATHIK (पथिक) — Traveler on Path</div>
+                        <div class="text-mountain-400 text-sm">PTP time + hardware + 7 days presence</div>
+                    </div>
+                </div>
+                <div class="bg-mountain-800 rounded-xl p-4 flex items-center gap-4">
+                    <div class="w-12 h-12 bg-gray-500 rounded-lg flex items-center justify-center text-2xl">🥈</div>
+                    <div>
+                        <div class="font-semibold text-gray-200">YATRI (यात्री) — Pilgrim</div>
+                        <div class="text-mountain-400 text-sm">NTP time + hardware + 1 day presence</div>
+                    </div>
+                </div>
+                <div class="bg-mountain-800 rounded-xl p-4 flex items-center gap-4">
+                    <div class="w-12 h-12 bg-green-700 rounded-lg flex items-center justify-center text-2xl">🌱</div>
+                    <div>
+                        <div class="font-semibold text-green-300">NAYA (नया) — Newcomer</div>
+                        <div class="text-mountain-400 text-sm">Observer status, building trust</div>
+                    </div>
+                </div>
+            </div>
+
+            <h2 class="text-2xl font-bold mb-4">DOKO Hash</h2>
+            <p class="text-mountain-300 mb-6">
+                Each DOKO has a unique hash that can be used for pinning and verification:
+            </p>
+
+            <div class="bg-mountain-800 rounded-xl p-6 mb-8">
+                <pre class="text-sm overflow-x-auto"><code class="language-javascript">import { computeDokoHash } from 'yakmesh/security';
+
+const hash = computeDokoHash(doko);
+// Returns: "sha3-256:a1b2c3d4e5..."
+
+// The hash covers:
+// - version, type, nodeId, publicKey
+// - networkName, issuedAt, expiresAt
+// - (excludes signature to allow re-signing)
+</code></pre>
+            </div>
+
+            <h2 class="text-2xl font-bold mb-4">DOKO Expiration & Renewal</h2>
+            <div class="bg-mountain-800 rounded-xl p-6 mb-8">
+                <ul class="text-mountain-300 space-y-2">
+                    <li>• <strong>Default validity:</strong> 1 year from issuance</li>
+                    <li>• <strong>Renewal window:</strong> 30 days before expiration</li>
+                    <li>• <strong>Auto-renewal:</strong> Node can re-sign with same key</li>
+                    <li>• <strong>Key rotation:</strong> New DOKO with new key pair</li>
+                </ul>
+            </div>
+
+            <h2 class="text-2xl font-bold mb-4">Security Considerations</h2>
+            <div class="bg-mountain-800 border border-theme-primary rounded-xl p-6 mb-8">
+                <h3 class="text-lg font-semibold mb-3 theme-accent">🔐 Identity Protection with iO</h3>
+                <p class="text-mountain-300 mb-4">
+                    Unlike raw cryptocurrency private keys, YAKMESH uses <strong>iO (indistinguishability obfuscation)</strong> 
+                    to derive human-readable identities from cryptographic material. Your identity is never a raw hash.
+                </p>
+                <ul class="text-mountain-300 space-y-2 mb-4">
+                    <li>• <strong>Network Names:</strong> <code class="text-theme-accent bg-mountain-900 px-2 py-1 rounded">qubit-lattice-prism</code> (not <code class="text-red-400">7f3a9b2c...</code>)</li>
+                    <li>• <strong>Node IDs:</strong> <code class="text-theme-accent bg-mountain-900 px-2 py-1 rounded">pq-EqU8</code> (human-memorable)</li>
+                    <li>• <strong>Verification Phrases:</strong> Three-word sequences for identity confirmation</li>
+                </ul>
+                <div class="bg-mountain-900 rounded-lg p-4 mb-4">
+                    <pre class="text-sm"><code class="language-javascript">import { deriveNetworkName, deriveNetworkId } from './oracle/network-identity.js';
+
+// Never expose raw hashes — always use iO derivation
+const name = deriveNetworkName(hash, 3);  // "factor-primitive-bose"
+const id = deriveNetworkId(hash);         // "pq-EqU8"</code></pre>
+                </div>
+                <p class="text-mountain-400 text-sm italic">
+                    "We learned from Bitcoin's mistakes. Human-readable identities that protect the underlying keys."
+                </p>
+            </div>
+
+            <div class="bg-yellow-900/30 border border-yellow-700 rounded-xl p-6 mb-8">
+                <h3 class="text-lg font-semibold mb-3 text-yellow-400">⚠️ Key Storage Best Practices</h3>
+                <ul class="text-mountain-300 space-y-2">
+                    <li>• Your <code>node-key.json</code> contains encrypted key material — back it up securely</li>
+                    <li>• Consider hardware security modules (HSM) for production deployments</li>
+                    <li>• If compromised, revoke immediately via mesh broadcast using your backup key</li>
+                    <li>• Key rotation: Generate a new DOKO and announce the transition to the mesh</li>
+                </ul>
+            </div>
+
+            <!-- Journey Navigation -->
+            <div class="border-t border-mountain-700 mt-12 pt-8">
+                <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <a href="getting-started.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">
+                        <div class="text-xs text-mountain-400 mb-1">← Previous</div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">🚀</span>
+                            <span class="font-semibold group-hover:text-theme-accent">Getting Started</span>
+                        </div>
+                        <p class="text-mountain-400 text-sm mt-1">Quick start guide for YAKMESH</p>
+                    </a>
+                    <a href="namche.html" class="flex-1 block bg-mountain-800 border border-theme-primary rounded-xl p-4 hover:border-theme-accent transition group">
+                        <div class="text-xs text-mountain-400 mb-1">Next →</div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">🚪</span>
+                            <span class="font-semibold group-hover:text-theme-accent">NAMCHE Gateway</span>
+                        </div>
+                        <p class="text-mountain-400 text-sm mt-1">The 7-gate verification that validates DOKOs</p>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+  <footer class="docs-footer">
+    <p>© 2026 YAKMESH™</p>
+  </footer><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script src="docs.js"></script>
+
+  
+</body>
+</html>
+
+
+

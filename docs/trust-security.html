@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="trust-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="favicon.ico" sizes="32x32">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <title>SURAKSHA (Security) | YAKMESH Documentation</title>
+    <meta name="description" content="Zero-trust architecture and post-quantum cryptography in YAKMESH.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        theme: { primary: '#15803d', secondary: '#166534', accent: '#22c55e', bg: '#052e16', glow: 'rgba(21, 128, 61, 0.1)' },
+                        mountain: { 300: '#88b4a6', 400: '#6a9a8a', 700: '#2e4c43', 800: '#1f332d', 900: '#101a16' }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="stylesheet" href="docs.css">
+    <style>
+        .theme-accent { color: #22c55e; }
+        .theme-accent-hover:hover { color: #4ade80; }
+        .theme-badge { background: rgba(21, 128, 61, 0.2); color: #22c55e; }
+        .theme-border { border-color: #15803d; }
+        .theme-callout { background: rgba(21, 128, 61, 0.1); border-color: #166534; }
+        .active-link { background: rgba(21, 128, 61, 0.2) !important; color: #22c55e !important; }
+    </style>
+</head>
+<body class="bg-mountain-900 text-white min-h-screen">
+  <nav class="docs-sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-logo">
+      <span class="logo-icon">🏔️</span>
+      <span class="logo-text">Yakmesh</span>
+    </a>
+    <ul class="sidebar-nav">
+      <li><a href="index.html"><span>🏠</span> <span>Overview</span></a></li>
+      <li><a href="getting-started.html"><span>🚀</span> <span>Getting Started</span></a></li>
+      <li><a href="doko.html"><span>🧺</span> <span>DOKO</span></a></li>
+      <li><a href="namche.html"><span>🚪</span> <span>NAMCHE</span></a></li>
+      <li><a href="sherpa.html"><span>🧗</span> <span>SHERPA</span></a></li>
+      <li><a href="nakpak.html"><span>🎒</span> <span>NAKPAK</span></a></li>
+      <li><a href="annex.html"><span>🌉</span> <span>ANNEX</span></a></li>
+      <li><a href="yak-protocol.html"><span class="yak-icon"></span> <span>YAK</span></a></li>
+      <li><a href="mantra.html"><span>🕉️</span> <span>MANTRA</span></a></li>
+      <li><a href="stupa.html"><span>🛕</span> <span>STUPA</span></a></li>
+      <li><a href="lama.html"><span>🔮</span> <span>LAMA</span></a></li>
+      <li><a href="mani.html"><span>⏱️</span> <span>MANI</span></a></li>
+      <li><a href="karma.html"><span>☯️</span> <span>KARMA</span></a></li>
+      <li><a href="mandala.html"><span>🌐</span> <span>MANDALA</span></a></li>
+      <li><a href="tattva.html"><span>🔯</span> <span>TATTVA</span></a></li>
+      <li><a href="geo-proof.html"><span>🌍</span> <span>PRAMAAN</span></a></li>
+      <li><a href="trust-security.html" class="active"><span>🔒</span> <span>SURAKSHA</span></a></li>
+      <li><a href="docs-bundle.html"><span>📚</span> <span>GRANTH</span></a></li>
+      <li><a href="api.html"><span>📡</span> <span>API</span></a></li>
+    </ul>
+  </nav>
+
+  <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+    </svg>
+  </button>
+
+  <!-- Mobile overlay for tap-to-close sidebar -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="docs-main" id="mainContent">
+        <div class="docs-content max-w-4xl">
+            <div class="flex items-center gap-3 mb-4">
+                <span class="text-4xl">🛡️</span>
+                <div>
+                    <h1 class="text-4xl font-bold">SURAKSHA <span class="text-xl text-mountain-400">सुरक्षा</span></h1>
+                    <p class="theme-accent">Security Model — Mathematical Trust, No Simulation</p>
+                </div>
+                <span class="theme-badge text-xs px-2 py-1 rounded-full ml-auto">v2.6.0</span>
+            </div>
+            <p class="text-xl text-mountain-300 mb-8">
+                YAKMESH's comprehensive security stack: hardware attestation, KARMA trust tiers, Sybil defense, and the strike system.
+            </p>
+
+            <!-- Trust Tiers -->
+            <section class="mb-12">
+                <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+                    <span>🏔️</span> KARMA Trust Tiers
+                </h2>
+                <p class="text-mountain-300 mb-6">
+                    Nodes earn trust through verifiable hardware, precise time sources, and sustained good behavior.
+                    Trust tiers are named after <strong>Nepali expedition team roles</strong>:
+                </p>
+                
+                <div class="overflow-x-auto mb-6">
+                    <table class="w-full text-left">
+                        <thead class="bg-mountain-800">
+                            <tr>
+                                <th class="px-4 py-2">Tier</th>
+                                <th class="px-4 py-2">Nepali</th>
+                                <th class="px-4 py-2">Weight</th>
+                                <th class="px-4 py-2">Requirements</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-mountain-300">
+                            <tr class="border-b border-mountain-700">
+                                <td class="px-4 py-2 font-semibold text-amber-400">🏔️ SIRDAR</td>
+                                <td class="px-4 py-2">सिरदार</td>
+                                <td class="px-4 py-2">2.0×</td>
+                                <td class="px-4 py-2">Expedition Leader — Atomic clock + AES-NI + 30 days</td>
+                            </tr>
+                            <tr class="border-b border-mountain-700">
+                                <td class="px-4 py-2 font-semibold text-purple-400">💎 SATHI</td>
+                                <td class="px-4 py-2">साथी</td>
+                                <td class="px-4 py-2">1.5×</td>
+                                <td class="px-4 py-2">Trusted Companion — GPS+PPS + AES-NI + 14 days</td>
+                            </tr>
+                            <tr class="border-b border-mountain-700">
+                                <td class="px-4 py-2 font-semibold text-yellow-400">🥇 PATHIK</td>
+                                <td class="px-4 py-2">पथिक</td>
+                                <td class="px-4 py-2">1.25×</td>
+                                <td class="px-4 py-2">Traveler on Path — PTP + AES-NI + 7 days</td>
+                            </tr>
+                            <tr class="border-b border-mountain-700">
+                                <td class="px-4 py-2 font-semibold text-gray-200">🥈 YATRI</td>
+                                <td class="px-4 py-2">यात्री</td>
+                                <td class="px-4 py-2">1.0×</td>
+                                <td class="px-4 py-2">Pilgrim — NTP + AES-NI + 1 day</td>
+                            </tr>
+                            <tr>
+                                <td class="px-4 py-2 font-semibold text-green-400">🌱 NAYA</td>
+                                <td class="px-4 py-2">नया</td>
+                                <td class="px-4 py-2">0.25×</td>
+                                <td class="px-4 py-2">Newcomer — Unverified (new nodes, VMs)</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="bg-mountain-800 rounded-lg overflow-hidden">
+                    <pre class="p-4"><code class="language-javascript">import { TrustProfile, KARMA_TIER, TIER_WEIGHT } from 'yakmesh/security/trust-tier';
+
+const profile = new TrustProfile({ dokoId: nodeId });
+
+// Get node's current tier
+const tier = await profile.evaluateTier();
+console.log(tier);                    // "sathi"
+console.log(TIER_WEIGHT[tier]);       // 1.5
+
+// Check if node meets threshold
+if (TIER_WEIGHT[tier] >= TIER_WEIGHT[KARMA_TIER.PATHIK]) {
+  // Allow privileged operations
+}</code></pre>
+                </div>
+            </section>
+
+            <!-- Hardware Attestation -->
+            <section class="mb-12">
+                <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+                    <span>🔬</span> Hardware Attestation
+                </h2>
+                <p class="text-mountain-300 mb-6">
+                    Prove you're running on real silicon, not a VM or simulation. AES-NI timing analysis detects emulation.
+                </p>
+
+                <div class="grid md:grid-cols-2 gap-4 mb-6">
+                    <div class="bg-green-900/20 border border-green-700 rounded-lg p-4">
+                        <h4 class="font-semibold text-green-400 mb-2">✅ Real Hardware</h4>
+                        <ul class="text-sm text-mountain-300 space-y-1">
+                            <li>• AES-NI instructions: ~1-3 cycles</li>
+                            <li>• Consistent timing patterns</li>
+                            <li>• Low variance across samples</li>
+                        </ul>
+                    </div>
+                    <div class="bg-red-900/20 border border-red-700 rounded-lg p-4">
+                        <h4 class="font-semibold text-red-400 mb-2">❌ VM/Emulation</h4>
+                        <ul class="text-sm text-mountain-300 space-y-1">
+                            <li>• Software AES: 10-100× slower</li>
+                            <li>• High timing variance</li>
+                            <li>• Detectable jitter patterns</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="bg-mountain-800 rounded-lg overflow-hidden">
+                    <pre class="p-4"><code class="language-javascript">import { HardwareAttestor } from 'yakmesh/security/hardware-attestation';
+
+const attestor = new HardwareAttestor();
+
+// Challenge a peer to prove real silicon
+const challenge = attestor.createChallenge();
+const response = await peer.respondToChallenge(challenge);
+
+// Verify timing proves real AES-NI
+const result = attestor.verifyResponse(response);
+if (result.isRealSilicon) {
+  console.log('Verified real hardware');
+} else {
+  console.log('Likely VM or emulation');
+}</code></pre>
+                </div>
+            </section>
+
+            <!-- Silicon Parity -->
+            <section class="mb-12">
+                <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+                    <span>⚖️</span> Silicon Parity
+                </h2>
+                <p class="text-mountain-300 mb-6">
+                    <strong>"One Silicon = One Vote"</strong> — Prevents large server farms from dominating the network.
+                </p>
+
+                <div class="bg-mountain-800 rounded-lg p-6 mb-6">
+                    <h4 class="font-semibold theme-accent mb-3">Weight Division Formula</h4>
+                    <div class="bg-mountain-900 rounded p-4 font-mono text-center text-lg">
+                        effectiveWeight = tierMaxWeight / coreCount
+                    </div>
+                    <p class="text-mountain-300 mt-4 text-sm">
+                        A 100-core server gets the same total weight as a single-core Raspberry Pi.
+                        This prevents resource-rich attackers from gaining disproportionate influence.
+                    </p>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead class="bg-mountain-800">
+                            <tr>
+                                <th class="px-4 py-2">Setup</th>
+                                <th class="px-4 py-2">Cores</th>
+                                <th class="px-4 py-2">Effective Weight</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-mountain-300">
+                            <tr class="border-b border-mountain-700"><td class="px-4 py-2">Raspberry Pi</td><td class="px-4 py-2">4</td><td class="px-4 py-2">0.50</td></tr>
+                            <tr class="border-b border-mountain-700"><td class="px-4 py-2">Desktop PC</td><td class="px-4 py-2">8</td><td class="px-4 py-2">0.25</td></tr>
+                            <tr class="border-b border-mountain-700"><td class="px-4 py-2">Server</td><td class="px-4 py-2">64</td><td class="px-4 py-2">0.03</td></tr>
+                            <tr><td class="px-4 py-2">100-core farm</td><td class="px-4 py-2">100</td><td class="px-4 py-2">0.02</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Sybil Detection -->
+            <section class="mb-12">
+                <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+                    <span>🕵️</span> Sybil Graph Analysis
+                </h2>
+                <p class="text-mountain-300 mb-6">
+                    Detects coordinated fake identities through network topology analysis.
+                </p>
+
+                <div class="grid md:grid-cols-2 gap-4 mb-6">
+                    <div class="bg-mountain-800 rounded-lg p-4">
+                        <h4 class="font-semibold theme-accent mb-2">Clustering Coefficient</h4>
+                        <p class="text-sm text-mountain-300">
+                            Sybil clusters have unusually high clustering (&gt;0.7). 
+                            Real networks have organic, lower clustering.
+                        </p>
+                    </div>
+                    <div class="bg-mountain-800 rounded-lg p-4">
+                        <h4 class="font-semibold theme-accent mb-2">Edge Cut Ratio</h4>
+                        <p class="text-sm text-mountain-300">
+                            Insular clusters (&lt;0.1 edge cut) are flagged. 
+                            Real nodes connect broadly across the network.
+                        </p>
+                    </div>
+                    <div class="bg-mountain-800 rounded-lg p-4">
+                        <h4 class="font-semibold theme-accent mb-2">Behavior Correlation</h4>
+                        <p class="text-sm text-mountain-300">
+                            Sybils often come online/offline together. 
+                            Correlated uptime patterns trigger investigation.
+                        </p>
+                    </div>
+                    <div class="bg-mountain-800 rounded-lg p-4">
+                        <h4 class="font-semibold theme-accent mb-2">Component Isolation</h4>
+                        <p class="text-sm text-mountain-300">
+                            Genuine nodes form one giant component. 
+                            Sybil clusters are often isolated subgraphs.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Strike System -->
+            <section class="mb-12">
+                <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+                    <span>⚠️</span> Strike System
+                </h2>
+                <p class="text-mountain-300 mb-6">
+                    <strong>"Three Strikes — Then Math Speaks"</strong> — Progressive penalties for bad actors.
+                </p>
+
+                <div class="space-y-4 mb-6">
+                    <div class="bg-yellow-900/20 border border-yellow-700 rounded-lg p-4">
+                        <h4 class="font-semibold text-yellow-400">Strike 1: Warning</h4>
+                        <p class="text-sm text-mountain-300">Fresh start allowed. Strike is recorded against hardware fingerprint.</p>
+                    </div>
+                    <div class="bg-orange-900/20 border border-orange-700 rounded-lg p-4">
+                        <h4 class="font-semibold text-orange-400">Strike 2: Probation</h4>
+                        <p class="text-sm text-mountain-300">7-day probation period. Trust weight reduced to 0.5×. All actions monitored.</p>
+                    </div>
+                    <div class="bg-red-900/20 border border-red-700 rounded-lg p-4">
+                        <h4 class="font-semibold text-red-400">Strike 3: Permanent Ban</h4>
+                        <p class="text-sm text-mountain-300">Hardware fingerprint banned. Cannot rejoin network even with new keys.</p>
+                    </div>
+                </div>
+
+                <div class="bg-mountain-800 rounded-lg p-4">
+                    <h4 class="font-semibold theme-accent mb-2">Hardware Fingerprint Tracking</h4>
+                    <p class="text-sm text-mountain-300">
+                        Strikes are tied to AES-NI hardware fingerprints, not just keys. 
+                        Generating new keypairs doesn't reset strikes — the silicon is remembered.
+                    </p>
+                </div>
+            </section>
+
+            <!-- Mesh Revocation -->
+            <section class="mb-12">
+                <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+                    <span>🔏</span> Mesh-Consensus Revocation
+                </h2>
+                <p class="text-mountain-300 mb-6">
+                    Revoke malicious nodes through mathematical consensus, not central authority.
+                </p>
+
+                <div class="bg-mountain-800 rounded-lg p-6 mb-6">
+                    <h4 class="font-semibold theme-accent mb-3">2/3 Threshold Attestation</h4>
+                    <p class="text-mountain-300 mb-4">
+                        When 2/3 of trust-weighted peers attest to bad behavior, 
+                        a revocation certificate is automatically generated and propagated.
+                    </p>
+                    <ul class="text-sm text-mountain-300 space-y-1">
+                        <li>• All attestations are ML-DSA-65 signed</li>
+                        <li>• Revocation certificates are verifiable by any node</li>
+                        <li>• No central authority needed</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- KHATA Protocol -->
+            <section class="mb-12">
+                <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+                    <span>🤝</span> KHATA Trust Protocol
+                </h2>
+                <p class="text-mountain-300 mb-6">
+                    <strong>K</strong>ryptographic <strong>H</strong>andshake for <strong>A</strong>utomated <strong>T</strong>rust <strong>A</strong>cceptance — 
+                    The gossip layer for trust information.
+                </p>
+
+                <div class="bg-mountain-800 rounded-lg overflow-hidden">
+                    <div class="px-4 py-2 bg-mountain-700 font-semibold">Message Types</div>
+                    <div class="p-4 text-sm text-mountain-300 grid grid-cols-2 gap-2">
+                        <div>• ATTESTATION_REQUEST</div>
+                        <div>• ATTESTATION_RESPONSE</div>
+                        <div>• CHALLENGE_FORWARD</div>
+                        <div>• CHALLENGE_RESPONSE</div>
+                        <div>• REVOCATION_ANNOUNCE</div>
+                        <div>• STRIKE_ANNOUNCE</div>
+                        <div>• GEO_PROOF_ANNOUNCE</div>
+                        <div>• LANDMARK_VERIFY</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Journey Navigation -->
+            <div class="border-t border-mountain-700 mt-12 pt-8">
+                <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <a href="geo-proof.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">
+                        <div class="text-xs text-mountain-400 mb-1">← Previous</div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">🌍</span>
+                            <span class="font-semibold group-hover:text-theme-accent">Geographic Proof</span>
+                        </div>
+                        <p class="text-mountain-400 text-sm mt-1">Physics-based location verification</p>
+                    </a>
+                    <a href="docs-bundle.html" class="flex-1 block bg-mountain-800 border border-theme-primary rounded-xl p-4 hover:border-theme-accent transition group">
+                        <div class="text-xs text-mountain-400 mb-1">Next →</div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">📚</span>
+                            <span class="font-semibold group-hover:text-theme-accent">GRANTH Docs Bundle</span>
+                        </div>
+                        <p class="text-mountain-400 text-sm mt-1">Tamper-proof documentation</p>
+                    </a>
+                </div>
+            </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+  <footer class="docs-footer">
+    <p>© 2026 YAKMESH™</p>
+  </footer><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+
+  
+<script src="docs.js"></script></body>
+</html>
+
+
+

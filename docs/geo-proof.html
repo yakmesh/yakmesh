@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="geo-proof">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="favicon.ico" sizes="32x32">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <title>PRAMAAN (Geographic Proof) | YAKMESH Documentation</title>
+    <meta name="description" content="Physics-based geographic exclusion and location verification.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        theme: { primary: '#22c55e', secondary: '#16a34a', accent: '#4ade80', bg: '#052e16', glow: 'rgba(34, 197, 94, 0.1)' },
+                        mountain: { 300: '#88b4a6', 400: '#6a9a8a', 700: '#2e4c43', 800: '#1f332d', 900: '#101a16' }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="stylesheet" href="docs.css">
+    <style>
+        .theme-accent { color: #4ade80; }
+        .theme-accent-hover:hover { color: #86efac; }
+        .theme-badge { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
+        .theme-border { border-color: #22c55e; }
+        .theme-callout { background: rgba(34, 197, 94, 0.1); border-color: #16a34a; }
+        .active-link { background: rgba(34, 197, 94, 0.2) !important; color: #4ade80 !important; }
+    </style>
+</head>
+<body class="bg-mountain-900 text-white min-h-screen">
+    
+  <nav class="docs-sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-logo">
+      <span class="logo-icon">🏔️</span>
+      <span class="logo-text">Yakmesh</span>
+    </a>
+    <ul class="sidebar-nav">
+      <li><a href="index.html"><span>🏠</span> <span>Overview</span></a></li>
+      <li><a href="getting-started.html"><span>🚀</span> <span>Getting Started</span></a></li>
+      <li><a href="doko.html"><span>🧺</span> <span>DOKO</span></a></li>
+      <li><a href="namche.html"><span>🚪</span> <span>NAMCHE</span></a></li>
+      <li><a href="sherpa.html"><span>🧗</span> <span>SHERPA</span></a></li>
+      <li><a href="nakpak.html"><span>🎒</span> <span>NAKPAK</span></a></li>
+      <li><a href="annex.html"><span>🌉</span> <span>ANNEX</span></a></li>
+      <li><a href="yak-protocol.html"><span class="yak-icon"></span> <span>YAK</span></a></li>
+      <li><a href="mantra.html"><span>🕉️</span> <span>MANTRA</span></a></li>
+      <li><a href="stupa.html"><span>🛕</span> <span>STUPA</span></a></li>
+      <li><a href="lama.html"><span>🔮</span> <span>LAMA</span></a></li>
+      <li><a href="mani.html"><span>⏱️</span> <span>MANI</span></a></li>
+      <li><a href="karma.html"><span>☯️</span> <span>KARMA</span></a></li>
+      <li><a href="mandala.html"><span>🌐</span> <span>MANDALA</span></a></li>
+      <li><a href="tattva.html"><span>🔯</span> <span>TATTVA</span></a></li>
+      <li><a href="geo-proof.html" class="active"><span>🌍</span> <span>PRAMAAN</span></a></li>
+      <li><a href="trust-security.html"><span>🔒</span> <span>SURAKSHA</span></a></li>
+      <li><a href="docs-bundle.html"><span>📚</span> <span>GRANTH</span></a></li>
+      <li><a href="api.html"><span>📡</span> <span>API</span></a></li>
+    </ul>
+  </nav>
+
+  <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+    </svg>
+  </button>
+
+  <!-- Mobile overlay for tap-to-close sidebar -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="docs-main" id="mainContent">
+
+        <div class="docs-content">
+            <div class="flex items-center gap-3 mb-4">
+                <span class="text-4xl">🌍</span>
+                <div>
+                    <h1 class="text-4xl font-bold">PRAMAAN <span class="text-xl text-mountain-400">प्रमाण</span></h1>
+                    <p class="theme-accent">Geographic Proof — Physics Don't Lie</p>
+                </div>
+            </div>
+            <p class="text-xl text-mountain-300 mb-8">
+                <strong>P</strong>hysics-based <strong>R</strong>ound-trip <strong>A</strong>ttestation for <strong>M</strong>esh <strong>A</strong>uthentication of <strong>A</strong>ctual <strong>N</strong>odes — Prove where nodes CANNOT be using speed-of-light physics. No GPS required.
+            </p>
+            <span class="inline-block text-xs theme-badge px-2 py-1 rounded mb-8">v2.6.0</span>
+
+            <h2 class="text-2xl font-bold mb-4">Overview</h2>
+            <p class="text-mountain-300 mb-6">
+                Geographic Exclusion uses the fundamental physics of light propagation to create 
+                <strong>unforgeable distance proofs</strong>. By measuring round-trip time (RTT) to known 
+                landmarks, we can prove the <em>minimum</em> distance a node must be from that location.
+            </p>
+
+            <div class="bg-mountain-800 rounded-lg p-6 mb-8">
+                <h3 class="text-lg font-semibold mb-3 theme-accent">Core Principle</h3>
+                <p class="text-mountain-300 mb-4">
+                    Light in fiber optic cables travels at approximately <strong>199,861 km/s</strong> (0.67× the speed of light in vacuum).
+                    This is a physical constant that cannot be bypassed.
+                </p>
+                <div class="bg-mountain-900 rounded p-4 font-mono text-sm">
+                    minDistance = (RTT / 2) × fiberSpeed
+                </div>
+            </div>
+
+            <h2 class="text-2xl font-bold mb-4">Distance Table</h2>
+            <div class="overflow-x-auto mb-8">
+                <table class="w-full text-left">
+                    <thead class="bg-mountain-800">
+                        <tr>
+                            <th class="px-4 py-2">RTT</th>
+                            <th class="px-4 py-2">Minimum Distance</th>
+                            <th class="px-4 py-2">Example Route</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-mountain-300">
+                        <tr class="border-b border-mountain-700"><td class="px-4 py-2">1 ms</td><td class="px-4 py-2">≥100 km</td><td class="px-4 py-2">City to suburb</td></tr>
+                        <tr class="border-b border-mountain-700"><td class="px-4 py-2">5 ms</td><td class="px-4 py-2">≥500 km</td><td class="px-4 py-2">NYC to Washington DC</td></tr>
+                        <tr class="border-b border-mountain-700"><td class="px-4 py-2">10 ms</td><td class="px-4 py-2">≥1,000 km</td><td class="px-4 py-2">NYC to Chicago</td></tr>
+                        <tr class="border-b border-mountain-700"><td class="px-4 py-2">50 ms</td><td class="px-4 py-2">≥5,000 km</td><td class="px-4 py-2">NYC to London</td></tr>
+                        <tr class="border-b border-mountain-700"><td class="px-4 py-2">100 ms</td><td class="px-4 py-2">≥10,000 km</td><td class="px-4 py-2">NYC to Tokyo</td></tr>
+                        <tr><td class="px-4 py-2">200 ms</td><td class="px-4 py-2">≥20,000 km</td><td class="px-4 py-2">Halfway around Earth</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h2 class="text-2xl font-bold mb-4">What We CAN Prove</h2>
+            <div class="grid gap-4 mb-8">
+                <div class="theme-callout border rounded-lg p-4">
+                    <span class="theme-accent">✅</span> "Node X is NOT within 500km of landmark Y" (exclusion)
+                </div>
+                <div class="theme-callout border rounded-lg p-4">
+                    <span class="theme-accent">✅</span> "Node X is consistent with being in region Z" (plausibility)
+                </div>
+                <div class="bg-red-900/20 border border-red-700 rounded-lg p-4">
+                    <span class="text-red-400">❌</span> "Node X is definitely at coordinates (lat, lon)" (NOT provable)
+                </div>
+            </div>
+
+            <h2 class="text-2xl font-bold mb-4">CLI Commands</h2>
+            <div class="bg-mountain-800 rounded-lg overflow-hidden mb-8">
+                <pre class="p-4"><code class="language-bash"># Show geographic proof status
+yakmesh geo status
+
+# List known landmarks
+yakmesh geo landmarks
+
+# List exclusion zones
+yakmesh geo zones
+
+# Generate geographic proof
+yakmesh geo prove
+
+# Verify another node
+yakmesh geo verify &lt;nodeId&gt;
+
+# Add a landmark manually
+yakmesh geo add-landmark &lt;name&gt;
+
+# Show physics constants
+yakmesh geo physics</code></pre>
+            </div>
+
+            <h2 class="text-2xl font-bold mb-4">API Endpoints</h2>
+            <div class="overflow-x-auto mb-8">
+                <table class="w-full text-left">
+                    <thead class="bg-mountain-800">
+                        <tr>
+                            <th class="px-4 py-2">Endpoint</th>
+                            <th class="px-4 py-2">Method</th>
+                            <th class="px-4 py-2">Description</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-mountain-300">
+                        <tr class="border-b border-mountain-700"><td class="px-4 py-2 font-mono">/geo/status</td><td class="px-4 py-2">GET</td><td class="px-4 py-2">Geographic proof status and physics constants</td></tr>
+                        <tr class="border-b border-mountain-700"><td class="px-4 py-2 font-mono">/geo/landmarks</td><td class="px-4 py-2">GET</td><td class="px-4 py-2">List registered landmarks</td></tr>
+                        <tr class="border-b border-mountain-700"><td class="px-4 py-2 font-mono">/geo/landmarks</td><td class="px-4 py-2">POST</td><td class="px-4 py-2">Add a landmark</td></tr>
+                        <tr class="border-b border-mountain-700"><td class="px-4 py-2 font-mono">/geo/zones</td><td class="px-4 py-2">GET</td><td class="px-4 py-2">List exclusion zones</td></tr>
+                        <tr class="border-b border-mountain-700"><td class="px-4 py-2 font-mono">/geo/prove</td><td class="px-4 py-2">POST</td><td class="px-4 py-2">Generate geographic proof</td></tr>
+                        <tr><td class="px-4 py-2 font-mono">/geo/verify</td><td class="px-4 py-2">POST</td><td class="px-4 py-2">Verify another node's claims</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h2 class="text-2xl font-bold mb-4">JavaScript API</h2>
+            <div class="bg-mountain-800 rounded-lg overflow-hidden mb-8">
+                <pre class="p-4"><code class="language-javascript">import { 
+  LIGHT_SPEED,
+  calculateMinDistance,
+  LandmarkRegistry,
+  GeoProofService 
+} from 'yakmesh/security/geo-proof';
+
+// Speed of light in fiber
+console.log(LIGHT_SPEED.FIBER); // 199861.639 km/s
+
+// Calculate minimum distance from RTT
+const minDistance = calculateMinDistance(40, 'FIBER');
+console.log(`Minimum distance: ${minDistance} km`); // ~3997 km
+
+// Create landmark registry
+const registry = new LandmarkRegistry();
+registry.add({
+  id: 'nyc-anchor',
+  name: 'NYC-ANCHOR-1',
+  lat: 40.7128,
+  lon: -74.0060
+});
+
+// Create geo-proof service
+const geoService = new GeoProofService({
+  landmarkRegistry: registry
+});</code></pre>
+            </div>
+
+            <h2 class="text-2xl font-bold mb-4">Honest Limitations</h2>
+            <div class="bg-yellow-900/20 border border-yellow-700 rounded-lg p-6 mb-8">
+                <ul class="space-y-2 text-mountain-300">
+                    <li>• We prove <strong>exclusion zones</strong>, not exact location</li>
+                    <li>• Network delays make nodes appear <em>farther</em>, never closer</li>
+                    <li>• This is NOT quantum entanglement — it's classical physics</li>
+                    <li>• Requires at least 3 landmarks for meaningful trilateration</li>
+                </ul>
+            </div>
+
+            <h2 class="text-2xl font-bold mb-4">Integration with SHERPA</h2>
+            <p class="text-mountain-300 mb-6">
+                SHERPA beacons now include geographic coordinates. When you fetch a beacon, 
+                YAKMESH automatically measures RTT and adds the beacon to your landmark registry.
+                This means geographic proof improves passively as you discover more peers.
+            </p>
+
+            <!-- Journey Navigation -->
+            <div class="border-t border-mountain-700 mt-12 pt-8">
+                <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <a href="tattva.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">
+                        <div class="text-xs text-mountain-400 mb-1">← Previous</div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">📜</span>
+                            <span class="font-semibold group-hover:text-theme-accent">TATTVA Protocol</span>
+                        </div>
+                        <p class="text-mountain-400 text-sm mt-1">Consensus validation layer</p>
+                    </a>
+                    <a href="trust-security.html" class="flex-1 block bg-mountain-800 border border-theme-primary rounded-xl p-4 hover:border-theme-accent transition group">
+                        <div class="text-xs text-mountain-400 mb-1">Next →</div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">🛡️</span>
+                            <span class="font-semibold group-hover:text-theme-accent">SURAKSHA (Security)</span>
+                        </div>
+                        <p class="text-mountain-400 text-sm mt-1">Security architecture and trust model</p>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+  <footer class="docs-footer">
+    <p>© 2026 YAKMESH™</p>
+  </footer><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+    <script src="docs.js"></script>
+
+  
+</body>
+</html>
+
+
+

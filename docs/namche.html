@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="namche">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="favicon.ico" sizes="32x32">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <title>NAMCHE - Identity Gateway | YAKMESH Documentation</title>
+    <meta name="description" content="NAMCHE: Network Authenticated Mesh Certificate Hub & Exchange. 7-gate mathematical identity verification.">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        theme: { 
+                            primary: '#eab308', 
+                            secondary: '#ca8a04', 
+                            accent: '#facc15',
+                            bg: '#422006',
+                            glow: 'rgba(234, 179, 8, 0.1)'
+                        },
+                        mountain: { 
+                            300: '#88b4a6', 
+                            400: '#6a9a8a', 
+                            700: '#2e4c43', 
+                            800: '#1f332d', 
+                            900: '#101a16' 
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Syntax Highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="docs.css">
+    <style>
+        /* Page-specific theme overrides */
+        .theme-accent { color: #eab308; }
+        .theme-accent-hover:hover { color: #facc15; }
+        .theme-badge { background: rgba(234, 179, 8, 0.2); color: #facc15; }
+        .theme-border { border-color: #eab308; }
+        .theme-callout { background: rgba(234, 179, 8, 0.1); border-color: #ca8a04; }
+        .active-link { background: rgba(234, 179, 8, 0.2) !important; color: #facc15 !important; }
+        .gate-pass { border-left: 4px solid #10b981; }
+        .gate-fail { border-left: 4px solid #ef4444; }
+    </style>
+</head>
+<body class="bg-mountain-900 text-white min-h-screen">
+    
+  <nav class="docs-sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-logo">
+      <span class="logo-icon">🏔️</span>
+      <span class="logo-text">Yakmesh</span>
+    </a>
+    <ul class="sidebar-nav">
+      <li><a href="index.html"><span>🏠</span> <span>Overview</span></a></li>
+      <li><a href="getting-started.html"><span>🚀</span> <span>Getting Started</span></a></li>
+      <li><a href="doko.html"><span>🧺</span> <span>DOKO</span></a></li>
+      <li><a href="namche.html" class="active"><span>🚪</span> <span>NAMCHE</span></a></li>
+      <li><a href="sherpa.html"><span>🧗</span> <span>SHERPA</span></a></li>
+      <li><a href="nakpak.html"><span>🎒</span> <span>NAKPAK</span></a></li>
+      <li><a href="annex.html"><span>🌉</span> <span>ANNEX</span></a></li>
+      <li><a href="yak-protocol.html"><span class="yak-icon"></span> <span>YAK</span></a></li>
+      <li><a href="mantra.html"><span>🕉️</span> <span>MANTRA</span></a></li>
+      <li><a href="stupa.html"><span>🛕</span> <span>STUPA</span></a></li>
+      <li><a href="lama.html"><span>🔮</span> <span>LAMA</span></a></li>
+      <li><a href="mani.html"><span>⏱️</span> <span>MANI</span></a></li>
+      <li><a href="karma.html"><span>☯️</span> <span>KARMA</span></a></li>
+      <li><a href="mandala.html"><span>🌐</span> <span>MANDALA</span></a></li>
+      <li><a href="tattva.html"><span>🔯</span> <span>TATTVA</span></a></li>
+      <li><a href="geo-proof.html"><span>🌍</span> <span>PRAMAAN</span></a></li>
+      <li><a href="trust-security.html"><span>🔒</span> <span>SURAKSHA</span></a></li>
+      <li><a href="docs-bundle.html"><span>📚</span> <span>GRANTH</span></a></li>
+      <li><a href="api.html"><span>📡</span> <span>API</span></a></li>
+    </ul>
+  </nav>
+
+  <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+    </svg>
+  </button>
+
+  <!-- Mobile overlay for tap-to-close sidebar -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="docs-main" id="mainContent">
+
+        <div class="docs-content">
+            <div class="flex items-center gap-3 mb-4">
+                <span class="text-4xl">🧭</span>
+                <div>
+                    <h1 class="text-4xl font-bold">NAMCHE</h1>
+                    <p class="theme-accent">Network Authenticated Mesh Certificate Hub & Exchange</p>
+                </div>
+            </div>
+            <p class="text-xl text-mountain-300 mb-8">
+                The gateway where Math itself verifies your identity. No human CA required.
+            </p>
+            <span class="inline-block text-xs theme-badge px-2 py-1 rounded mb-8">v2.6.0</span>
+
+            <!-- Philosophy Quote -->
+            <div class="theme-callout border rounded-r-xl p-6 mb-8 italic text-mountain-200">
+                "In the high passes of the Himalayas, the Sherpa does not consult a distant committee. 
+                The Sherpa reads the snow, the wind, the angle of the ice. <strong class="theme-accent">The mountain itself is the arbiter.</strong>"
+            </div>
+
+            <h2 class="text-2xl font-bold mb-4">Overview</h2>
+            <p class="text-mountain-300 mb-6">
+                NAMCHE replaces human-operated Certificate Authorities with pure mathematical verification.
+                Instead of trusting a third party to vouch for an identity, NAMCHE uses cryptographic proofs
+                that anyone can verify independently.
+            </p>
+
+            <div class="bg-mountain-800 rounded-xl p-6 mb-8">
+                <h3 class="text-lg font-semibold mb-3 theme-accent">The Problem with Traditional PKI</h3>
+                <ul class="text-mountain-300 space-y-2">
+                    <li>• <strong>Single point of failure</strong> — CA compromise affects all certificates</li>
+                    <li>• <strong>Human judgment</strong> — Humans can be bribed, coerced, or make mistakes</li>
+                    <li>• <strong>Jurisdictional</strong> — CAs are bound by legal frameworks that may conflict</li>
+                    <li>• <strong>Centralized trust</strong> — "Trust me because I say so"</li>
+                </ul>
+            </div>
+
+            <div class="bg-mountain-800 rounded-xl p-6 mb-8">
+                <h3 class="text-lg font-semibold mb-3 theme-accent">The NAMCHE Solution</h3>
+                <div class="font-mono text-sm bg-mountain-900 rounded-lg p-4 mb-4">
+                    <div class="text-mountain-400">Traditional:</div>
+                    <div class="text-red-400 ml-4">Human says "trust this" → You trust it</div>
+                    <div class="text-mountain-400 mt-2">NAMCHE:</div>
+                    <div class="text-green-400 ml-4">Math proves "this is valid" → You verify it</div>
+                </div>
+            </div>
+
+            <h2 class="text-2xl font-bold mb-4">The 7 Gates</h2>
+            <p class="text-mountain-300 mb-6">
+                Every identity document (DOKO) must pass through 7 mathematical gates. 
+                Each gate is a binary check — pass or fail. There is no "maybe."
+            </p>
+
+            <div class="space-y-4 mb-8">
+                <!-- Gate 1 -->
+                <div class="gate-pass bg-mountain-800 rounded-r-xl p-4">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="text-2xl">1️⃣</span>
+                        <h4 class="font-semibold theme-accent">STRUCTURE_OK</h4>
+                    </div>
+                    <p class="text-mountain-300 text-sm">Valid DOKO format with all required fields present</p>
+                </div>
+
+                <!-- Gate 2 -->
+                <div class="gate-pass bg-mountain-800 rounded-r-xl p-4">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="text-2xl">2️⃣</span>
+                        <h4 class="font-semibold theme-accent">SIGNATURE_OK</h4>
+                    </div>
+                    <p class="text-mountain-300 text-sm">ML-DSA-65 signature verifies against public key</p>
+                </div>
+
+                <!-- Gate 3 -->
+                <div class="gate-pass bg-mountain-800 rounded-r-xl p-4">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="text-2xl">3️⃣</span>
+                        <h4 class="font-semibold theme-accent">NODEID_OK</h4>
+                    </div>
+                    <p class="text-mountain-300 text-sm">NodeID matches two-part derivation (network + instance)</p>
+                </div>
+
+                <!-- Gate 4 -->
+                <div class="gate-pass bg-mountain-800 rounded-r-xl p-4">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="text-2xl">4️⃣</span>
+                        <h4 class="font-semibold theme-accent">TEMPORAL_OK</h4>
+                    </div>
+                    <p class="text-mountain-300 text-sm">Not expired, not from future (±5min clock skew tolerance)</p>
+                </div>
+
+                <!-- Gate 5 -->
+                <div class="gate-pass bg-mountain-800 rounded-r-xl p-4">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="text-2xl">5️⃣</span>
+                        <h4 class="font-semibold theme-accent">NETWORK_OK</h4>
+                    </div>
+                    <p class="text-mountain-300 text-sm">Correct network name (derived from codebase hash)</p>
+                </div>
+
+                <!-- Gate 6 -->
+                <div class="gate-pass bg-mountain-800 rounded-r-xl p-4">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="text-2xl">6️⃣</span>
+                        <h4 class="font-semibold theme-accent">NOT_REVOKED</h4>
+                    </div>
+                    <p class="text-mountain-300 text-sm">Not in mesh-distributed revocation log</p>
+                </div>
+
+                <!-- Gate 7 -->
+                <div class="gate-pass bg-mountain-800 rounded-r-xl p-4">
+                    <div class="flex items-center gap-3 mb-2">
+                        <span class="text-2xl">7️⃣</span>
+                        <h4 class="font-semibold theme-accent">DOMAINS_OK</h4>
+                    </div>
+                    <p class="text-mountain-300 text-sm">Quorum-verified domain claims (Sybil-resistant)</p>
+                </div>
+            </div>
+
+            <h2 class="text-2xl font-bold mb-4">Gate Results</h2>
+            <p class="text-mountain-300 mb-6">
+                The verification result is a bitmask showing which gates passed:
+            </p>
+
+            <div class="bg-mountain-800 rounded-xl p-6 mb-8 font-mono text-sm">
+<pre class="text-mountain-300">
+// All gates passed (127 = 0b1111111)
+{
+  "verified": true,
+  "gates": 127,
+  "gatesChecked": [
+    "STRUCTURE_OK",
+    "SIGNATURE_OK", 
+    "NODEID_OK",
+    "TEMPORAL_OK",
+    "NETWORK_OK",
+    "NOT_REVOKED",
+    "DOMAINS_OK"
+  ],
+  "dokoHash": "sha3-256:a1b2c3..."
+}
+
+// Gate 2 failed (signature invalid)
+{
+  "verified": false,
+  "gates": 1,
+  "failedGate": "SIGNATURE_OK",
+  "error": "Signature verification failed"
+}
+</pre>
+            </div>
+
+            <h2 class="text-2xl font-bold mb-4">Usage</h2>
+            <div class="bg-mountain-800 rounded-xl p-6 mb-8">
+                <pre class="text-sm overflow-x-auto"><code class="language-javascript">import { NamcheGateway } from 'yakmesh/security';
+
+// Create gateway instance
+const gateway = new NamcheGateway({
+  networkName: 'mobius-rabi-junction',
+  clockSkewTolerance: 5 * 60 * 1000,  // 5 minutes
+});
+
+// Verify a DOKO
+const result = await gateway.verify(peerDoko);
+
+if (result.verified) {
+  console.log('✓ Identity verified through all 7 gates');
+  console.log('Gates passed:', result.gatesChecked);
+} else {
+  console.log('✗ Verification failed at:', result.failedGate);
+  console.log('Reason:', result.error);
+}
+
+// Check specific gate
+if (result.gates & gateway.GATE.SIGNATURE_OK) {
+  console.log('Signature is valid');
+}
+</code></pre>
+            </div>
+
+            <h2 class="text-2xl font-bold mb-4">Sybil Attack Protection</h2>
+            <p class="text-mountain-300 mb-6">
+                The domain verification gate (Gate 7) includes multiple layers of Sybil attack protection:
+            </p>
+
+            <div class="grid md:grid-cols-2 gap-4 mb-8">
+                <div class="bg-mountain-800 rounded-xl p-4">
+                    <div class="theme-accent font-semibold mb-2">🕐 Age Requirement</div>
+                    <p class="text-mountain-400 text-sm">Verifiers must have beacons older than 7 days</p>
+                </div>
+                <div class="bg-mountain-800 rounded-xl p-4">
+                    <div class="theme-accent font-semibold mb-2">🌐 IP Diversity</div>
+                    <p class="text-mountain-400 text-sm">Minimum 3 different /24 subnets required</p>
+                </div>
+                <div class="bg-mountain-800 rounded-xl p-4">
+                    <div class="theme-accent font-semibold mb-2">🏢 ASN Diversity</div>
+                    <p class="text-mountain-400 text-sm">Minimum 2 different Autonomous Systems</p>
+                </div>
+                <div class="bg-mountain-800 rounded-xl p-4">
+                    <div class="theme-accent font-semibold mb-2">🚫 Claimant Exclusion</div>
+                    <p class="text-mountain-400 text-sm">Domain claimant cannot verify themselves</p>
+                </div>
+            </div>
+
+            <h2 class="text-2xl font-bold mb-4">Events</h2>
+            <div class="bg-mountain-800 rounded-xl p-6 mb-8">
+                <pre class="text-sm overflow-x-auto"><code class="language-javascript">gateway.on('verification-passed', ({ nodeId, dokoHash, gates }) => {
+  console.log(`Node ${nodeId} verified successfully`);
+});
+
+gateway.on('verification-failed', ({ nodeId, failedGate, error }) => {
+  console.log(`Node ${nodeId} failed at gate ${failedGate}: ${error}`);
+});
+
+gateway.on('doko-cached', ({ nodeId, expiresAt }) => {
+  console.log(`DOKO cached for ${nodeId} until ${expiresAt}`);
+});
+</code></pre>
+            </div>
+
+            <!-- Journey Navigation -->
+            <div class="border-t border-mountain-700 mt-12 pt-8">
+                <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <a href="doko.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">
+                        <div class="text-xs text-mountain-400 mb-1">← Previous</div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">📜</span>
+                            <span class="font-semibold group-hover:text-theme-accent">DOKO Identity</span>
+                        </div>
+                        <p class="text-mountain-400 text-sm mt-1">Your self-sovereign identity certificate</p>
+                    </a>
+                    <a href="sherpa.html" class="flex-1 block bg-mountain-800 border border-theme-primary rounded-xl p-4 hover:border-theme-accent transition group">
+                        <div class="text-xs text-mountain-400 mb-1">Next →</div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">🧗</span>
+                            <span class="font-semibold group-hover:text-theme-accent">SHERPA Discovery</span>
+                        </div>
+                        <p class="text-mountain-400 text-sm mt-1">Meet your guide to peer discovery</p>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+  <footer class="docs-footer">
+    <p>© 2026 YAKMESH™</p>
+  </footer><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script src="docs.js"></script>
+
+  
+</body>
+</html>
+
+
+

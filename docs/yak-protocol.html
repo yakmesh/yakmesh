@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="yak-protocol">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="favicon.ico" sizes="32x32">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <title>YAK:// Protocol | YAKMESH Documentation</title>
+    <meta name="description" content="YAK:// - Custom URI scheme for addressing mesh resources.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        theme: { primary: '#92400e', secondary: '#78350f', accent: '#b45309', bg: '#451a03', glow: 'rgba(146, 64, 14, 0.1)' },
+                        mountain: { 300: '#88b4a6', 400: '#6a9a8a', 700: '#2e4c43', 800: '#1f332d', 900: '#101a16' }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="stylesheet" href="docs.css">
+    <style>
+        .theme-accent { color: #b45309; }
+        .theme-accent-hover:hover { color: #d97706; }
+        .theme-badge { background: rgba(146, 64, 14, 0.2); color: #b45309; }
+        .theme-border { border-color: #92400e; }
+        .theme-callout { background: rgba(146, 64, 14, 0.1); border-color: #78350f; }
+        .active-link { background: rgba(146, 64, 14, 0.2) !important; color: #b45309 !important; }
+    </style>
+</head>
+<body class="bg-mountain-900 text-white min-h-screen">
+    
+  <nav class="docs-sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-logo">
+      <span class="logo-icon">🏔️</span>
+      <span class="logo-text">Yakmesh</span>
+    </a>
+    <ul class="sidebar-nav">
+      <li><a href="index.html"><span>🏠</span> <span>Overview</span></a></li>
+      <li><a href="getting-started.html"><span>🚀</span> <span>Getting Started</span></a></li>
+      <li><a href="doko.html"><span>🧺</span> <span>DOKO</span></a></li>
+      <li><a href="namche.html"><span>🚪</span> <span>NAMCHE</span></a></li>
+      <li><a href="sherpa.html"><span>🧗</span> <span>SHERPA</span></a></li>
+      <li><a href="nakpak.html"><span>🎒</span> <span>NAKPAK</span></a></li>
+      <li><a href="annex.html"><span>🌉</span> <span>ANNEX</span></a></li>
+      <li><a href="yak-protocol.html" class="active"><span class="yak-icon"></span> <span>YAK</span></a></li>
+      <li><a href="mantra.html"><span>🕉️</span> <span>MANTRA</span></a></li>
+      <li><a href="stupa.html"><span>🛕</span> <span>STUPA</span></a></li>
+      <li><a href="lama.html"><span>🔮</span> <span>LAMA</span></a></li>
+      <li><a href="mani.html"><span>⏱️</span> <span>MANI</span></a></li>
+      <li><a href="karma.html"><span>☯️</span> <span>KARMA</span></a></li>
+      <li><a href="mandala.html"><span>🌐</span> <span>MANDALA</span></a></li>
+      <li><a href="tattva.html"><span>🔯</span> <span>TATTVA</span></a></li>
+      <li><a href="geo-proof.html"><span>🌍</span> <span>PRAMAAN</span></a></li>
+      <li><a href="trust-security.html"><span>🔒</span> <span>SURAKSHA</span></a></li>
+      <li><a href="docs-bundle.html"><span>📚</span> <span>GRANTH</span></a></li>
+      <li><a href="api.html"><span>📡</span> <span>API</span></a></li>
+    </ul>
+  </nav>
+
+  <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+    </svg>
+  </button>
+
+  <!-- Mobile overlay for tap-to-close sidebar -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="docs-main" id="mainContent">
+
+        <div class="docs-content">
+            <div class="flex items-center gap-3 mb-4">
+                <span class="text-4xl">🔗</span>
+                <div>
+                    <h1 class="text-4xl font-bold">YAK:// Protocol</h1>
+                    <p class="theme-accent">Mesh-Native URL Scheme</p>
+                </div>
+            </div>
+            <p class="text-xl text-mountain-300 mb-8">
+                Custom URL protocol for mesh-native addressing. Escape HTTP entirely with content-addressed, bookmark-enhanced navigation.
+            </p>
+            <span class="inline-block text-xs theme-badge px-2 py-1 rounded mb-8">v2.6.0</span>
+
+            <!-- URL Structure -->
+            <section class="mb-12">
+                <h2 class="text-2xl font-bold mb-4">URL Structure</h2>
+                <div class="bg-mountain-800 rounded-lg p-6 mb-6">
+                    <div class="font-mono text-lg theme-accent mb-4">
+                        yak://&lt;target&gt;[/path][?query]
+                    </div>
+                    <div class="grid gap-2 text-sm text-mountain-300">
+                        <div><code class="theme-accent">yak://dashboard</code> — Built-in node dashboard</div>
+                        <div><code class="theme-accent">yak://peers</code> — Connected peers list</div>
+                        <div><code class="theme-accent">yak://content/abc123</code> — Content by hash</div>
+                        <div><code class="theme-accent">yak://mybookmark</code> — Personal bookmark</div>
+                        <div><code class="theme-accent">yak://node-id/path</code> — Remote node content</div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Built-in Routes -->
+            <section class="mb-12">
+                <h2 class="text-2xl font-bold mb-4">Built-in Routes</h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead class="bg-mountain-800">
+                            <tr>
+                                <th class="px-4 py-2">URL</th>
+                                <th class="px-4 py-2">Description</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-mountain-300">
+                            <tr class="border-b border-mountain-700"><td class="px-4 py-2 font-mono">yak://dashboard</td><td class="px-4 py-2">Node monitoring dashboard</td></tr>
+                            <tr class="border-b border-mountain-700"><td class="px-4 py-2 font-mono">yak://peers</td><td class="px-4 py-2">Connected peer list</td></tr>
+                            <tr class="border-b border-mountain-700"><td class="px-4 py-2 font-mono">yak://oracle</td><td class="px-4 py-2">Oracle status and integrity</td></tr>
+                            <tr class="border-b border-mountain-700"><td class="px-4 py-2 font-mono">yak://network</td><td class="px-4 py-2">Network identity info</td></tr>
+                            <tr class="border-b border-mountain-700"><td class="px-4 py-2 font-mono">yak://content/&lt;hash&gt;</td><td class="px-4 py-2">Fetch content by hash</td></tr>
+                            <tr><td class="px-4 py-2 font-mono">yak://geo</td><td class="px-4 py-2">Geographic proof status</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Local Bookmarks -->
+            <section class="mb-12">
+                <h2 class="text-2xl font-bold mb-4">📌 Local Bookmarks</h2>
+                <p class="text-mountain-300 mb-6">
+                    Personal "pet names" for YAK:// addresses. No global registry — bookmarks are local to your node.
+                </p>
+
+                <div class="bg-mountain-800 rounded-lg overflow-hidden mb-6">
+                    <div class="px-4 py-2 bg-mountain-700 font-semibold">CLI Commands</div>
+                    <pre class="p-4"><code class="language-bash"># Add a bookmark
+yakmesh bookmark add docs yak://site/documentation
+
+# List all bookmarks
+yakmesh bookmark list
+
+# Use the bookmark
+yakmesh open yak://docs
+
+# Remove a bookmark
+yakmesh bookmark rm docs</code></pre>
+                </div>
+
+                <div class="bg-mountain-800 rounded-lg overflow-hidden">
+                    <div class="px-4 py-2 bg-mountain-700 font-semibold">REST API</div>
+                    <pre class="p-4"><code class="language-bash"># List bookmarks
+GET /bookmarks
+
+# Add bookmark
+POST /bookmarks
+{ "name": "docs", "target": "yak://site/documentation" }
+
+# Get specific bookmark
+GET /bookmarks/docs
+
+# Remove bookmark
+DELETE /bookmarks/docs</code></pre>
+                </div>
+            </section>
+
+            <!-- Remote Bookmarks -->
+            <section class="mb-12">
+                <h2 class="text-2xl font-bold mb-4">🌐 Remote Bookmarks (Mesh Sync)</h2>
+                <p class="text-mountain-300 mb-6">
+                    Share bookmark lists between nodes via gossip protocol. Subscribe to trusted nodes and receive their bookmarks automatically.
+                </p>
+
+                <div class="grid md:grid-cols-2 gap-4 mb-6">
+                    <div class="bg-mountain-800 rounded-lg p-4">
+                        <h4 class="font-semibold theme-accent mb-2">Subscribe</h4>
+                        <p class="text-sm text-mountain-300">Follow another node's bookmarks. Their updates sync to you automatically.</p>
+                    </div>
+                    <div class="bg-mountain-800 rounded-lg p-4">
+                        <h4 class="font-semibold theme-accent mb-2">Publish</h4>
+                        <p class="text-sm text-mountain-300">Share your bookmarks with the mesh. Subscribers receive your updates.</p>
+                    </div>
+                </div>
+
+                <div class="bg-mountain-800 rounded-lg overflow-hidden mb-6">
+                    <pre class="p-4"><code class="language-javascript">import { RemoteBookmarkSync } from 'yakmesh/protocol/yak-protocol';
+
+const sync = new RemoteBookmarkSync({ nodeId: 'my-node' });
+
+// Subscribe to a trusted node's bookmarks
+await sync.subscribe('trusted-node-id');
+
+// Publish your bookmarks to the mesh
+await sync.publish('my-list', ['docs', 'tools', 'friends']);
+
+// Resolve a remote bookmark
+const target = sync.resolveRemote('docs');
+
+// Priority: Local bookmarks always override remote</code></pre>
+                </div>
+
+                <div class="bg-mountain-800 rounded-lg overflow-hidden">
+                    <div class="px-4 py-2 bg-mountain-700 font-semibold">REST API</div>
+                    <pre class="p-4"><code class="language-bash"># Remote bookmark status
+GET /bookmarks/remote/status
+
+# List remote bookmarks
+GET /bookmarks/remote
+
+# Subscribe to a node
+POST /bookmarks/remote/subscribe
+{ "nodeId": "node-abc-123" }
+
+# Publish your bookmarks
+POST /bookmarks/remote/publish
+{ "listName": "public", "bookmarks": ["docs", "tools"] }</code></pre>
+                </div>
+            </section>
+
+            <!-- DOKO Revocation -->
+            <section class="mb-12">
+                <h2 class="text-2xl font-bold mb-4">🔑 DOKO Revocation</h2>
+                <p class="text-mountain-300 mb-6">
+                    Emergency revocation system for compromised DOKO identities. Recover from key compromise without losing your network presence.
+                </p>
+
+                <div class="space-y-3 mb-6">
+                    <div class="bg-mountain-800 rounded-lg p-4">
+                        <h4 class="font-semibold theme-accent">Self-Revocation</h4>
+                        <p class="text-sm text-mountain-300">Sign revocation with your own key (if still accessible)</p>
+                    </div>
+                    <div class="bg-mountain-800 rounded-lg p-4">
+                        <h4 class="font-semibold theme-accent">Emergency Certificate</h4>
+                        <p class="text-sm text-mountain-300">Pre-generated "break-glass" certificate stored offline</p>
+                    </div>
+                    <div class="bg-mountain-800 rounded-lg p-4">
+                        <h4 class="font-semibold theme-accent">Mesh Broadcast</h4>
+                        <p class="text-sm text-mountain-300">Revocation propagates via gossip to all peers</p>
+                    </div>
+                </div>
+
+                <div class="bg-mountain-800 rounded-lg overflow-hidden mb-6">
+                    <div class="px-4 py-2 bg-mountain-700 font-semibold">Revocation Reasons</div>
+                    <div class="p-4 text-sm text-mountain-300 grid grid-cols-2 gap-2">
+                        <div><code>KEY_COMPROMISED</code> — Key leaked/stolen</div>
+                        <div><code>DOKO_SUPERSEDED</code> — Replaced with new DOKO</div>
+                        <div><code>IDENTITY_RETIRED</code> — Voluntary retirement</div>
+                        <div><code>LOST_ACCESS</code> — Cannot access keys</div>
+                        <div><code>AFFILIATION_ENDED</code> — Left organization</div>
+                    </div>
+                </div>
+
+                <div class="bg-mountain-800 rounded-lg overflow-hidden">
+                    <pre class="p-4"><code class="language-javascript">import { DOKORevocation, REVOCATION_REASONS } from 'yakmesh/security/doko-identity';
+
+// Generate emergency cert when creating DOKO (store offline!)
+const emergencyCert = DOKORevocation.generateEmergencyCertificate(doko, privateKey);
+
+// Self-revoke if key is compromised but accessible
+const revocation = DOKORevocation.createSelfRevocation(
+  doko, 
+  privateKey, 
+  REVOCATION_REASONS.KEY_COMPROMISED
+);
+
+// Activate emergency revocation if key is lost
+DOKORevocation.activateEmergencyRevocation(emergencyCert);
+
+// Check if a DOKO is revoked
+const isRevoked = DOKORevocation.isRevoked(dokoId);</code></pre>
+                </div>
+            </section>
+
+            <!-- SSL/TLS Binding -->
+            <section class="mb-12">
+                <h2 class="text-2xl font-bold mb-4">🔐 SSL/TLS Certificate Binding</h2>
+                <p class="text-mountain-300 mb-6">
+                    Bind SSL certificates to DOKO identities for enhanced domain verification.
+                </p>
+
+                <div class="bg-mountain-800 rounded-lg p-6 mb-6">
+                    <h4 class="font-semibold theme-accent mb-3">Cryptographic Chain</h4>
+                    <div class="flex flex-wrap items-center gap-2 text-mountain-300">
+                        <span class="bg-mountain-700 px-3 py-1 rounded text-sm">Domain</span>
+                        <span class="hidden sm:inline">→</span>
+                        <span class="bg-mountain-700 px-3 py-1 rounded text-sm">SSL Certificate</span>
+                        <span class="hidden sm:inline">→</span>
+                        <span class="bg-mountain-700 px-3 py-1 rounded text-sm">DOKO Identity</span>
+                        <span class="hidden sm:inline">→</span>
+                        <span class="bg-mountain-700 px-3 py-1 rounded text-sm">Mesh Verification</span>
+                    </div>
+                </div>
+
+                <div class="bg-mountain-800 rounded-lg overflow-hidden">
+                    <pre class="p-4"><code class="language-javascript">import { DOKOCertBinding } from 'yakmesh/security/doko-identity';
+
+// Compute certificate fingerprint
+const fingerprint = DOKOCertBinding.computeFingerprint(pemCertificate);
+
+// Create SSL binding for domain
+const binding = DOKOCertBinding.createBinding({
+  domain: 'example.com',
+  fingerprint,
+  expires: Date.now() + 365 * 24 * 60 * 60 * 1000
+});
+
+// Add binding to DOKO
+DOKOCertBinding.addBinding(doko, binding);
+
+// Verify certificate matches binding
+const valid = DOKOCertBinding.verifyBinding(binding, certificate);</code></pre>
+                </div>
+            </section>
+
+            <!-- Journey Navigation -->
+            <div class="border-t border-mountain-700 mt-12 pt-8">
+                <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <a href="annex.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">
+                        <div class="text-xs text-mountain-400 mb-1">← Previous</div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">🔗</span>
+                            <span class="font-semibold group-hover:text-theme-accent">ANNEX P2P</span>
+                        </div>
+                        <p class="text-mountain-400 text-sm mt-1">Direct peer-to-peer connections</p>
+                    </a>
+                    <a href="mantra.html" class="flex-1 block bg-mountain-800 border border-theme-primary rounded-xl p-4 hover:border-theme-accent transition group">
+                        <div class="text-xs text-mountain-400 mb-1">Next →</div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">🕉️</span>
+                            <span class="font-semibold group-hover:text-theme-accent">MANTRA Protocol</span>
+                        </div>
+                        <p class="text-mountain-400 text-sm mt-1">Message propagation & gossip</p>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+  <footer class="docs-footer">
+    <p>© 2026 YAKMESH™</p>
+  </footer><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+    <script src="docs.js"></script>
+
+  
+</body>
+</html>
+
+
+

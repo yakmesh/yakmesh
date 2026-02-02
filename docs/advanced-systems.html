@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="advanced-systems">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="favicon.ico" sizes="32x32">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <title>Advanced Systems | YAKMESH Documentation</title>
+    <meta name="description" content="Advanced networking features: gossip protocol, load balancing, and more.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        theme: { primary: '#0891b2', secondary: '#0e7490', accent: '#06b6d4', bg: '#164e63', glow: 'rgba(8, 145, 178, 0.1)' },
+                        mountain: { 300: '#88b4a6', 400: '#6a9a8a', 700: '#2e4c43', 800: '#1f332d', 900: '#101a16' }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="stylesheet" href="docs.css">
+    <style>
+        .theme-accent { color: #06b6d4; }
+        .theme-accent-hover:hover { color: #22d3ee; }
+        .theme-badge { background: rgba(8, 145, 178, 0.2); color: #06b6d4; }
+        .theme-border { border-color: #0891b2; }
+        .theme-callout { background: rgba(8, 145, 178, 0.1); border-color: #0e7490; }
+        .active-link { background: rgba(8, 145, 178, 0.2) !important; color: #06b6d4 !important; }
+    </style>
+</head>
+<body class="bg-mountain-900 text-white min-h-screen">
+    
+  <nav class="docs-sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-logo">
+      <span class="logo-icon">🏔️</span>
+      <span class="logo-text">Yakmesh</span>
+    </a>
+    <ul class="sidebar-nav">
+      <li><a href="index.html"><span>🏠</span> <span>Overview</span></a></li>
+      <li><a href="getting-started.html"><span>🚀</span> <span>Getting Started</span></a></li>
+      <li><a href="doko.html"><span>🧺</span> <span>DOKO</span></a></li>
+      <li><a href="namche.html"><span>🚪</span> <span>NAMCHE</span></a></li>
+      <li><a href="sherpa.html"><span>🧗</span> <span>SHERPA</span></a></li>
+      <li><a href="nakpak.html"><span>🎒</span> <span>NAKPAK</span></a></li>
+      <li><a href="annex.html"><span>🌉</span> <span>ANNEX</span></a></li>
+      <li><a href="yak-protocol.html"><span class="yak-icon"></span> <span>YAK</span></a></li>
+      <li><a href="mantra.html"><span>🕉️</span> <span>MANTRA</span></a></li>
+      <li><a href="stupa.html"><span>🛕</span> <span>STUPA</span></a></li>
+      <li><a href="lama.html"><span>🔮</span> <span>LAMA</span></a></li>
+      <li><a href="mani.html"><span>⏱️</span> <span>MANI</span></a></li>
+      <li><a href="karma.html"><span>☯️</span> <span>KARMA</span></a></li>
+      <li><a href="mandala.html"><span>🌐</span> <span>MANDALA</span></a></li>
+      <li><a href="tattva.html"><span>🔯</span> <span>TATTVA</span></a></li>
+      <li><a href="geo-proof.html"><span>🌍</span> <span>PRAMAAN</span></a></li>
+      <li><a href="trust-security.html"><span>🔒</span> <span>SURAKSHA</span></a></li>
+      <li><a href="docs-bundle.html"><span>📚</span> <span>GRANTH</span></a></li>
+      <li><a href="api.html"><span>📡</span> <span>API</span></a></li>
+    </ul>
+  </nav>
+
+  <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+    </svg>
+  </button>
+
+  <!-- Mobile overlay for tap-to-close sidebar -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="docs-main" id="mainContent">
+
+        <div class="docs-content">
+            <div class="flex items-center gap-3 mb-4">
+                <span class="text-4xl">⚡</span>
+                <div>
+                    <div class="flex items-center gap-3">
+                        <h1 class="text-4xl font-bold">Advanced Systems</h1>
+                        <span class="theme-badge text-xs px-2 py-1 rounded-full">v2.6.0</span>
+                    </div>
+                    <p class="theme-accent">ECHO, PULSE, BEACON & TME</p>
+                </div>
+            </div>
+            <p class="text-xl text-mountain-300 mb-8">
+                Low-level mesh infrastructure: topology discovery, heartbeats, emergency broadcast, and temporal encoding.
+            </p>
+
+            <!-- ECHO -->
+            <section class="mb-12">
+                <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+                    <span>📡</span> ECHO — Encrypted Coordinate Heuristic Oracle
+                </h2>
+                <p class="text-mountain-300 mb-6">
+                    Privacy-preserving network topology discovery using virtual coordinates.
+                </p>
+
+                <div class="grid md:grid-cols-2 gap-4 mb-6">
+                    <div class="bg-mountain-800 rounded-lg p-4">
+                        <h4 class="font-semibold theme-accent mb-2">Virtual Coordinates</h4>
+                        <p class="text-sm text-mountain-300">
+                            Nodes have virtual positions based on latency measurements. 
+                            Enables route optimization without revealing physical location.
+                        </p>
+                    </div>
+                    <div class="bg-mountain-800 rounded-lg p-4">
+                        <h4 class="font-semibold theme-accent mb-2">Encrypted Probes</h4>
+                        <p class="text-sm text-mountain-300">
+                            Timing probes are AES-256-GCM encrypted.
+                            Only participating nodes can decode measurements.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="bg-mountain-800 rounded-lg overflow-hidden">
+                    <pre class="p-4"><code class="language-javascript">import { EchoRanging } from 'yakmesh/mesh/echo-ranging';
+
+const echo = new EchoRanging({ nodeId: 'my-node' });
+
+// Measure latency to peer
+const measurement = await echo.probe(peerId);
+console.log(`RTT: ${measurement.rtt}ms`);
+
+// Get virtual coordinates
+const coords = echo.getCoordinates();
+console.log(`Position: (${coords.x}, ${coords.y})`);
+
+// Find optimal route
+const route = echo.findOptimalPath(targetId);</code></pre>
+                </div>
+            </section>
+
+            <!-- PULSE -->
+            <section class="mb-12">
+                <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+                    <span>💓</span> PULSE — Precision Universal Latency Sync Engine
+                </h2>
+                <p class="text-mountain-300 mb-6">
+                    Mesh heartbeat system with cryptographic proofs for liveness detection and partition detection.
+                </p>
+
+                <div class="space-y-3 mb-6">
+                    <div class="bg-green-900/20 border border-green-700 rounded-lg p-4 flex items-center gap-3">
+                        <span class="text-2xl">💚</span>
+                        <div>
+                            <h4 class="font-semibold text-green-400">ALIVE</h4>
+                            <p class="text-sm text-mountain-300">Node responding within expected timeframe</p>
+                        </div>
+                    </div>
+                    <div class="bg-yellow-900/20 border border-yellow-700 rounded-lg p-4 flex items-center gap-3">
+                        <span class="text-2xl">💛</span>
+                        <div>
+                            <h4 class="font-semibold text-yellow-400">SUSPECT</h4>
+                            <p class="text-sm text-mountain-300">Missed heartbeats, may be experiencing issues</p>
+                        </div>
+                    </div>
+                    <div class="bg-red-900/20 border border-red-700 rounded-lg p-4 flex items-center gap-3">
+                        <span class="text-2xl">🖤</span>
+                        <div>
+                            <h4 class="font-semibold text-red-400">DEAD</h4>
+                            <p class="text-sm text-mountain-300">Confirmed unreachable, removed from active peers</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-mountain-800 rounded-lg p-4 mb-6">
+                    <h4 class="font-semibold theme-accent mb-2">Partition Detection</h4>
+                    <p class="text-sm text-mountain-300">
+                        When multiple nodes become SUSPECT simultaneously, PULSE detects potential network partition 
+                        and triggers partition recovery protocols.
+                    </p>
+                </div>
+
+                <div class="bg-mountain-800 rounded-lg overflow-hidden">
+                    <pre class="p-4"><code class="language-javascript">import { PulseHeartbeat } from 'yakmesh/mesh/pulse-heartbeat';
+
+const pulse = new PulseHeartbeat({
+  interval: 5000,    // 5 second heartbeats
+  timeout: 15000,    // 15 seconds to SUSPECT
+  deadAfter: 45000   // 45 seconds to DEAD
+});
+
+// Start heartbeating
+pulse.start();
+
+// Check peer status
+const status = pulse.getPeerStatus(peerId);
+// Returns: 'alive' | 'suspect' | 'dead'
+
+// Listen for state changes
+pulse.on('peerStateChange', ({ peerId, from, to }) => {
+  console.log(`${peerId}: ${from} → ${to}`);
+});</code></pre>
+                </div>
+            </section>
+
+            <!-- BEACON -->
+            <section class="mb-12">
+                <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+                    <span>🚨</span> BEACON — Broadcast Emergency Alert Channel Over Network
+                </h2>
+                <p class="text-mountain-300 mb-6">
+                    Priority message propagation for emergency alerts. Flood-based protocol with intelligent deduplication.
+                </p>
+
+                <div class="overflow-x-auto mb-6">
+                    <table class="w-full text-left">
+                        <thead class="bg-mountain-800">
+                            <tr>
+                                <th class="px-4 py-2">Priority</th>
+                                <th class="px-4 py-2">TTL</th>
+                                <th class="px-4 py-2">Use Case</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-mountain-300">
+                            <tr class="border-b border-mountain-700">
+                                <td class="px-4 py-2 text-red-400 font-semibold">CRITICAL</td>
+                                <td class="px-4 py-2">300s</td>
+                                <td class="px-4 py-2">Security breach, network attack</td>
+                            </tr>
+                            <tr class="border-b border-mountain-700">
+                                <td class="px-4 py-2 text-orange-400 font-semibold">URGENT</td>
+                                <td class="px-4 py-2">180s</td>
+                                <td class="px-4 py-2">Service degradation, node failures</td>
+                            </tr>
+                            <tr class="border-b border-mountain-700">
+                                <td class="px-4 py-2 text-yellow-400 font-semibold">WARNING</td>
+                                <td class="px-4 py-2">120s</td>
+                                <td class="px-4 py-2">Upcoming maintenance, capacity alerts</td>
+                            </tr>
+                            <tr>
+                                <td class="px-4 py-2 text-gray-400 font-semibold">ROUTINE</td>
+                                <td class="px-4 py-2">60s</td>
+                                <td class="px-4 py-2">Informational messages</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="bg-mountain-800 rounded-lg overflow-hidden">
+                    <pre class="p-4"><code class="language-javascript">import { BeaconBroadcast, PRIORITY } from 'yakmesh/mesh/beacon-broadcast';
+
+const beacon = new BeaconBroadcast({ nodeId: 'my-node' });
+
+// Send critical alert
+await beacon.broadcast({
+  priority: PRIORITY.CRITICAL,
+  message: 'Security incident detected',
+  payload: { type: 'intrusion', source: '...' }
+});
+
+// Listen for beacons
+beacon.on('beacon', (alert) => {
+  if (alert.priority === PRIORITY.CRITICAL) {
+    // Handle emergency
+  }
+});
+
+// Proof of receipt
+const receipt = beacon.getReceipt(beaconId);</code></pre>
+                </div>
+            </section>
+
+            <!-- TME -->
+            <section class="mb-12">
+                <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+                    <span>⏳</span> TME — Temporal Mesh Encoding
+                </h2>
+                <p class="text-mountain-300 mb-6">
+                    Novel packet resilience system that encodes data across TIME, not space.
+                </p>
+
+                <div class="bg-mountain-800 rounded-lg p-6 mb-6">
+                    <h4 class="font-semibold theme-accent mb-3">The Innovation</h4>
+                    <p class="text-mountain-300 mb-4">
+                        Traditional erasure coding splits data across multiple <em>spatial</em> paths. 
+                        TME splits data across multiple <em>temporal</em> slices with cryptographic chaining.
+                    </p>
+                    <ul class="text-sm text-mountain-300 space-y-1">
+                        <li>• Temporal slicing with cryptographic chaining</li>
+                        <li>• Predictive reconstruction from timing proofs</li>
+                        <li>• Resistant to timing-based attacks</li>
+                    </ul>
+                </div>
+
+                <div class="bg-mountain-800 rounded-lg overflow-hidden">
+                    <pre class="p-4"><code class="language-javascript">import { TemporalEncoder } from 'yakmesh/mesh/temporal-encoder';
+
+const encoder = new TemporalEncoder({
+  slices: 5,        // Split into 5 temporal slices
+  threshold: 3      // Need 3 to reconstruct
+});
+
+// Encode data for temporal transmission
+const slices = encoder.encode(data);
+
+// Slices are sent at different times
+for (const slice of slices) {
+  await sendWithDelay(slice, slice.timestamp);
+}
+
+// Reconstruct from received slices
+const reconstructed = encoder.decode(receivedSlices);</code></pre>
+                </div>
+            </section>
+
+            <!-- SLH-DSA -->
+            <section class="mb-12">
+                <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+                    <span>🔐</span> SLH-DSA Backup Signatures
+                </h2>
+                <p class="text-mountain-300 mb-6">
+                    Defense-in-depth with FIPS 205 hash-based backup signatures. Different cryptographic assumptions from ML-DSA.
+                </p>
+
+                <div class="bg-mountain-800 rounded-lg p-6 mb-6">
+                    <h4 class="font-semibold theme-accent mb-3">Why Dual Signatures?</h4>
+                    <p class="text-mountain-300">
+                        ML-DSA is lattice-based. SLH-DSA is hash-based. If one cryptographic assumption breaks, 
+                        the other likely still holds. Critical operations use both.
+                    </p>
+                </div>
+
+                <div class="overflow-x-auto mb-6">
+                    <table class="w-full text-left">
+                        <thead class="bg-mountain-800">
+                            <tr>
+                                <th class="px-4 py-2">Level</th>
+                                <th class="px-4 py-2">Algorithm</th>
+                                <th class="px-4 py-2">Signature Size</th>
+                                <th class="px-4 py-2">Speed</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-mountain-300">
+                            <tr class="border-b border-mountain-700">
+                                <td class="px-4 py-2">3</td>
+                                <td class="px-4 py-2 font-mono">SLH-DSA-SHA2-192f</td>
+                                <td class="px-4 py-2">~35 KB</td>
+                                <td class="px-4 py-2">~100ms</td>
+                            </tr>
+                            <tr>
+                                <td class="px-4 py-2">5</td>
+                                <td class="px-4 py-2 font-mono">SLH-DSA-SHA2-256f</td>
+                                <td class="px-4 py-2">~50 KB</td>
+                                <td class="px-4 py-2">~160ms</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="bg-mountain-800 rounded-lg overflow-hidden">
+                    <pre class="p-4"><code class="language-javascript">import { 
+  signDual, 
+  verifyDual,
+  generateDualSignatureKeyPairs 
+} from 'yakmesh/oracle/dual-signature';
+
+// Generate both ML-DSA and SLH-DSA keypairs
+const { mlDsa, slhDsa } = await generateDualSignatureKeyPairs();
+
+// Sign with both algorithms
+const dualSig = signDual(message, mlDsa.secretKey, slhDsa.secretKey);
+
+// Verify requires both signatures valid
+const valid = verifyDual(
+  dualSig, 
+  message, 
+  mlDsa.publicKey, 
+  slhDsa.publicKey
+);</code></pre>
+                </div>
+            </section>
+
+            <!-- Crypto Levels -->
+            <section class="mb-12">
+                <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+                    <span>🔒</span> NIST Security Levels
+                </h2>
+                <p class="text-mountain-300 mb-6">
+                    Configurable security levels. Level 3 is default, Level 5 for paranoid mode.
+                </p>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left">
+                        <thead class="bg-mountain-800">
+                            <tr>
+                                <th class="px-4 py-2">Level</th>
+                                <th class="px-4 py-2">Signatures</th>
+                                <th class="px-4 py-2">Key Exchange</th>
+                                <th class="px-4 py-2">Classical Security</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-mountain-300">
+                            <tr class="border-b border-mountain-700">
+                                <td class="px-4 py-2 font-semibold">Level 3</td>
+                                <td class="px-4 py-2 font-mono">ML-DSA-65</td>
+                                <td class="px-4 py-2 font-mono">ML-KEM-768</td>
+                                <td class="px-4 py-2">192-bit</td>
+                            </tr>
+                            <tr>
+                                <td class="px-4 py-2 font-semibold">Level 5</td>
+                                <td class="px-4 py-2 font-mono">ML-DSA-87</td>
+                                <td class="px-4 py-2 font-mono">ML-KEM-1024</td>
+                                <td class="px-4 py-2">256-bit</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="bg-mountain-800 rounded-lg overflow-hidden mt-6">
+                    <pre class="p-4"><code class="language-javascript">import { setSecurityLevel, SecurityLevel } from 'yakmesh/security/crypto-config';
+
+// Switch to paranoid mode
+setSecurityLevel(SecurityLevel.LEVEL_5);
+
+// All subsequent crypto operations use Level 5 algorithms</code></pre>
+                </div>
+            </section>
+
+            <!-- Journey Navigation -->
+            <div class="border-t border-mountain-700 mt-12 pt-8">
+                <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <a href="trust-security.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">
+                        <div class="text-xs text-mountain-400 mb-1">← Previous</div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">🛡️</span>
+                            <span class="font-semibold group-hover:text-theme-accent">SURAKSHA</span>
+                        </div>
+                        <p class="text-mountain-400 text-sm mt-1">Security architecture and trust model</p>
+                    </a>
+                    <a href="cli.html" class="flex-1 block bg-mountain-800 border border-theme-primary rounded-xl p-4 hover:border-theme-accent transition group">
+                        <div class="text-xs text-mountain-400 mb-1">Next →</div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">💻</span>
+                            <span class="font-semibold group-hover:text-theme-accent">CLI Commands</span>
+                        </div>
+                        <p class="text-mountain-400 text-sm mt-1">Command line interface reference</p>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+  <footer class="docs-footer">
+    <p>© 2026 YAKMESH™</p>
+  </footer><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script src="docs.js"></script>
+
+  
+</body>
+</html>
+
+
+

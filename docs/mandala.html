@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="mandala">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="favicon.ico" sizes="32x32">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <title>MANDALA Protocol | YAKMESH Documentation</title>
+  <meta name="description" content="MANDALA - Mesh Architecture for Network Distribution & Layered Aggregation. Sacred geometry of interconnected nodes.">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            theme: { primary: '#14b8a6', secondary: '#0d9488', accent: '#2dd4bf', bg: '#042f2e', glow: 'rgba(20, 184, 166, 0.15)' },
+            mountain: { 300: '#88b4a6', 400: '#6a9a8a', 700: '#2e4c43', 800: '#1f332d', 900: '#101a16' }
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+  <link rel="stylesheet" href="docs.css">
+  <style>
+    .theme-accent { color: #2dd4bf; }
+    .theme-accent-hover:hover { color: #14b8a6; }
+    .theme-badge { background: rgba(20, 184, 166, 0.2); color: #2dd4bf; }
+    .theme-border { border-color: #14b8a6; }
+    .theme-callout { background: rgba(20, 184, 166, 0.1); border-color: #0d9488; }
+    .active-link { background: rgba(20, 184, 166, 0.2) !important; color: #2dd4bf !important; }
+  </style>
+</head>
+<body class="bg-mountain-900 text-white min-h-screen">
+  <nav class="docs-sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-logo">
+      <span class="logo-icon">🏔️</span>
+      <span class="logo-text">Yakmesh</span>
+    </a>
+    <ul class="sidebar-nav">
+      <li><a href="index.html"><span>🏠</span> <span>Overview</span></a></li>
+      <li><a href="getting-started.html"><span>🚀</span> <span>Getting Started</span></a></li>
+      <li><a href="doko.html"><span>🧺</span> <span>DOKO</span></a></li>
+      <li><a href="namche.html"><span>🚪</span> <span>NAMCHE</span></a></li>
+      <li><a href="sherpa.html"><span>🧗</span> <span>SHERPA</span></a></li>
+      <li><a href="nakpak.html"><span>🎒</span> <span>NAKPAK</span></a></li>
+      <li><a href="annex.html"><span>🌉</span> <span>ANNEX</span></a></li>
+      <li><a href="yak-protocol.html"><span class="yak-icon"></span> <span>YAK</span></a></li>
+      <li><a href="mantra.html"><span>🕉️</span> <span>MANTRA</span></a></li>
+      <li><a href="stupa.html"><span>🛕</span> <span>STUPA</span></a></li>
+      <li><a href="lama.html"><span>🔮</span> <span>LAMA</span></a></li>
+      <li><a href="mani.html"><span>⏱️</span> <span>MANI</span></a></li>
+      <li><a href="karma.html"><span>☯️</span> <span>KARMA</span></a></li>
+      <li><a href="mandala.html" class="active"><span>🌐</span> <span>MANDALA</span></a></li>
+      <li><a href="tattva.html"><span>🔯</span> <span>TATTVA</span></a></li>
+      <li><a href="geo-proof.html"><span>🌍</span> <span>PRAMAAN</span></a></li>
+      <li><a href="trust-security.html"><span>🔒</span> <span>SURAKSHA</span></a></li>
+      <li><a href="docs-bundle.html"><span>📚</span> <span>GRANTH</span></a></li>
+      <li><a href="api.html"><span>📡</span> <span>API</span></a></li>
+    </ul>
+  </nav>
+
+  <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+    </svg>
+  </button>
+
+  <!-- Mobile overlay for tap-to-close sidebar -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="docs-main" id="mainContent">
+    <div class="docs-content">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="text-4xl">🌐</span>
+        <div>
+          <h1 class="text-4xl font-bold">MANDALA <span class="text-xl text-mountain-400">मण्डल</span></h1>
+          <p class="theme-accent">Mesh Architecture for Network Distribution & Layered Aggregation</p>
+        </div>
+      </div>
+      <p class="text-xl text-mountain-300 mb-4">Sacred geometry of interconnected nodes.</p>
+      <span class="inline-block text-xs theme-badge px-2 py-1 rounded mb-8">v2.5.0</span>
+
+      <div class="feature-box">
+        <h3>The Sacred Geometry of Connection</h3>
+        <p>
+          In Buddhist and Hindu traditions, a <strong>mandala</strong> represents the cosmos—
+          a sacred geometric pattern symbolizing the universe's structure. Concentric circles 
+          radiate from a central point, with each layer representing different realms of existence.
+        </p>
+        <p>
+          The MANDALA protocol embodies this sacred geometry: nodes form a self-organizing mesh 
+          with hub nodes at the center, peer connections radiating outward, and message flows 
+          traversing the cosmic web of interconnection.
+        </p>
+      </div>
+
+      <h2>🏔️ Overview</h2>
+      <p>
+        MANDALA (Mesh Architecture for Network Distribution & Layered Aggregation) provides 
+        <strong>peer-to-peer mesh networking</strong> for the Yakmesh network. It handles 
+        node discovery, connection management, message routing, and topology maintenance—
+        creating the underlying fabric that connects all network participants.
+      </p>
+
+      <div class="protocol-family">
+        <h3>Protocol Family</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>Protocol</th>
+              <th>Himalayan Name</th>
+              <th>Purpose</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>🕉️ Gossip</td>
+              <td>MANTRA</td>
+              <td>Epidemic message propagation</td>
+            </tr>
+            <tr>
+              <td>🛕 Broadcast</td>
+              <td>STUPA</td>
+              <td>Priority-based broadcasting</td>
+            </tr>
+            <tr>
+              <td>🔮 Consensus</td>
+              <td>LAMA</td>
+              <td>Distributed agreement</td>
+            </tr>
+            <tr>
+              <td>⏱️ Time</td>
+              <td>MANI</td>
+              <td>Temporal synchronization</td>
+            </tr>
+            <tr>
+              <td>☯️ Trust</td>
+              <td>KARMA</td>
+              <td>Reputation management</td>
+            </tr>
+            <tr class="active">
+              <td>🌐 Mesh</td>
+              <td>MANDALA</td>
+              <td>Network topology</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>🔮 Message Types</h2>
+      <p>
+        MANDALA defines a set of message types that flow through the sacred geometry, 
+        each serving a specific purpose in maintaining the cosmic web:
+      </p>
+
+      <div class="message-types">
+        <div class="message-type type-hello">
+          <div class="message-header">
+            <span class="message-icon">👋</span>
+            <h4>HELLO</h4>
+          </div>
+          <div class="message-body">
+            <p>Initial greeting when nodes first connect. Introduces the node to its peer.</p>
+            <code>{ type: 'HELLO', nodeId, capabilities, version }</code>
+          </div>
+        </div>
+        
+        <div class="message-type type-welcome">
+          <div class="message-header">
+            <span class="message-icon">🙏</span>
+            <h4>WELCOME</h4>
+          </div>
+          <div class="message-body">
+            <p>Response to HELLO, confirming the connection and sharing peer information.</p>
+            <code>{ type: 'WELCOME', nodeId, peerList, networkState }</code>
+          </div>
+        </div>
+        
+        <div class="message-type type-gossip">
+          <div class="message-header">
+            <span class="message-icon">🗣️</span>
+            <h4>GOSSIP</h4>
+          </div>
+          <div class="message-body">
+            <p>Epidemic message propagation via MANTRA protocol. Spreads information to peers.</p>
+            <code>{ type: 'GOSSIP', mantraId, payload, ttl }</code>
+          </div>
+        </div>
+        
+        <div class="message-type type-sync">
+          <div class="message-header">
+            <span class="message-icon">🔄</span>
+            <h4>SYNC</h4>
+          </div>
+          <div class="message-body">
+            <p>State synchronization request. Reconciles data between nodes.</p>
+            <code>{ type: 'SYNC', vectorClock, dataRange }</code>
+          </div>
+        </div>
+        
+        <div class="message-type type-ping">
+          <div class="message-header">
+            <span class="message-icon">📡</span>
+            <h4>PING/PONG</h4>
+          </div>
+          <div class="message-body">
+            <p>Heartbeat messages to maintain connection liveness and measure latency.</p>
+            <code>{ type: 'PING', timestamp, nonce }</code>
+          </div>
+        </div>
+        
+        <div class="message-type type-bye">
+          <div class="message-header">
+            <span class="message-icon">👋</span>
+            <h4>BYE</h4>
+          </div>
+          <div class="message-body">
+            <p>Graceful disconnection notification. Allows clean peer list updates.</p>
+            <code>{ type: 'BYE', reason, reconnectHint }</code>
+          </div>
+        </div>
+      </div>
+
+      <h2>☯️ Core Components</h2>
+
+      <h3>MandalaNetwork</h3>
+      <p>The main mesh networking engine—the cosmic web of interconnection:</p>
+      <pre><code>import { MandalaNetwork, MandalaMessageTypes } from 'yakmesh/mesh/network';
+
+// Initialize the mandala mesh
+const mandala = new MandalaNetwork({
+  nodeId: 'my-node-id',
+  maxPeers: 50,                    // Maximum concurrent connections
+  heartbeatInterval: 30000,        // PING every 30 seconds
+  peerExchangeEnabled: true,       // Share peer lists
+  autoReconnect: true,             // Reconnect on disconnect
+});
+
+// Listen for events
+mandala.on('peer:connected', (peerId) => {
+  console.log(`🌐 New connection in the mandala: ${peerId}`);
+});
+
+mandala.on('message', (type, payload, from) => {
+  console.log(`📨 Message received: ${type} from ${from}`);
+});
+
+// Connect to a peer
+await mandala.connect('ws://peer.example.com:8080');
+
+// Broadcast to all peers
+mandala.broadcast(MandalaMessageTypes.GOSSIP, {
+  mantraId: 'msg-123',
+  payload: { content: 'Hello Mandala!' }
+});
+</code></pre>
+
+      <h3>Connection Lifecycle</h3>
+      <p>Each connection follows a sacred journey through the mandala:</p>
+      
+      <div class="lifecycle-flow">
+        <div class="lifecycle-step step-connect">
+          <span class="step-num">1</span>
+          <span class="step-label">CONNECT</span>
+          <span class="step-desc">WebSocket established</span>
+        </div>
+        <div class="lifecycle-arrow">→</div>
+        <div class="lifecycle-step step-hello">
+          <span class="step-num">2</span>
+          <span class="step-label">HELLO</span>
+          <span class="step-desc">Introduce ourselves</span>
+        </div>
+        <div class="lifecycle-arrow">→</div>
+        <div class="lifecycle-step step-welcome">
+          <span class="step-num">3</span>
+          <span class="step-label">WELCOME</span>
+          <span class="step-desc">Acknowledge & share peers</span>
+        </div>
+        <div class="lifecycle-arrow">→</div>
+        <div class="lifecycle-step step-active">
+          <span class="step-num">4</span>
+          <span class="step-label">ACTIVE</span>
+          <span class="step-desc">Full message exchange</span>
+        </div>
+        <div class="lifecycle-arrow">→</div>
+        <div class="lifecycle-step step-bye">
+          <span class="step-num">5</span>
+          <span class="step-label">BYE</span>
+          <span class="step-desc">Graceful disconnect</span>
+        </div>
+      </div>
+
+      <h2>🌐 Network Topology</h2>
+      <p>
+        The MANDALA forms a self-organizing mesh topology, with nodes naturally clustering 
+        into a sacred geometry pattern:
+      </p>
+
+      <div class="topology-diagram">
+        <pre class="ascii-art">
+                    ┌───────┐
+                    │ Edge  │
+                    │ Node  │
+                    └───┬───┘
+                        │
+          ┌─────────────┼─────────────┐
+          │             │             │
+      ┌───┴───┐    ┌────┴────┐    ┌───┴───┐
+      │ Outer │    │   Hub   │    │ Outer │
+      │ Ring  │────│  Node   │────│ Ring  │
+      └───┬───┘    └────┬────┘    └───┬───┘
+          │             │             │
+          └─────────────┼─────────────┘
+                        │
+                    ┌───┴───┐
+                    │ Peer  │
+                    └───────┘
+
+        Legend:
+        ─── Primary connection (low latency)
+        ··· Secondary connection (backup)
+        </pre>
+      </div>
+
+      <h2>📊 Connection States</h2>
+      
+      <div class="connection-states">
+        <div class="conn-state state-connecting">
+          <span class="state-icon">🔄</span>
+          <span class="state-name">CONNECTING</span>
+          <span class="state-desc">WebSocket handshake in progress</span>
+        </div>
+        <div class="conn-state state-handshaking">
+          <span class="state-icon">🤝</span>
+          <span class="state-name">HANDSHAKING</span>
+          <span class="state-desc">HELLO/WELCOME exchange</span>
+        </div>
+        <div class="conn-state state-active">
+          <span class="state-icon">✅</span>
+          <span class="state-name">ACTIVE</span>
+          <span class="state-desc">Full duplex communication</span>
+        </div>
+        <div class="conn-state state-draining">
+          <span class="state-icon">⏳</span>
+          <span class="state-name">DRAINING</span>
+          <span class="state-desc">Graceful shutdown in progress</span>
+        </div>
+        <div class="conn-state state-closed">
+          <span class="state-icon">🔴</span>
+          <span class="state-name">CLOSED</span>
+          <span class="state-desc">Connection terminated</span>
+        </div>
+      </div>
+
+      <h2>⚙️ Configuration</h2>
+      <pre><code>const mandala = new MandalaNetwork({
+  // Node identity
+  nodeId: string,                // Unique node identifier
+  
+  // Connection limits
+  maxPeers: 50,                  // Maximum concurrent peers
+  minPeers: 3,                   // Minimum peers to maintain
+  
+  // Heartbeat settings
+  heartbeatInterval: 30000,      // PING interval (ms)
+  heartbeatTimeout: 10000,       // PONG timeout (ms)
+  
+  // Peer discovery
+  peerExchangeEnabled: true,     // Share peer lists
+  peerExchangeInterval: 60000,   // Exchange frequency (ms)
+  
+  // Reconnection
+  autoReconnect: true,           // Auto-reconnect on disconnect
+  reconnectDelay: 5000,          // Initial delay (ms)
+  reconnectMaxDelay: 60000,      // Maximum backoff (ms)
+  
+  // Message handling
+  messageQueueSize: 1000,        // Max queued messages
+  deduplicationWindow: 60000,    // Dedup window (ms)
+});</code></pre>
+
+      <h2>🔗 Integration with Other Protocols</h2>
+      <p>MANDALA serves as the foundation layer, integrating with all other Himalayan protocols:</p>
+      
+      <table class="integration-table">
+        <thead>
+          <tr>
+            <th>Protocol</th>
+            <th>Integration</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>🕉️ MANTRA</td>
+            <td>GOSSIP messages propagate through MANDALA connections</td>
+          </tr>
+          <tr>
+            <td>🛕 STUPA</td>
+            <td>Broadcasts use MANDALA for peer selection and delivery</td>
+          </tr>
+          <tr>
+            <td>🔮 LAMA</td>
+            <td>Consensus votes travel via MANDALA message routing</td>
+          </tr>
+          <tr>
+            <td>⏱️ MANI</td>
+            <td>Time synchronization beacons flow through MANDALA</td>
+          </tr>
+          <tr>
+            <td>☯️ KARMA</td>
+            <td>Trust scores influence MANDALA peer prioritization</td>
+          </tr>
+          <tr>
+            <td>❄️ YETI</td>
+            <td>Discovery adds new peers to the MANDALA topology</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h2>📈 Metrics</h2>
+      <pre><code>// Get network statistics
+const stats = mandala.getStats();
+
+console.log(`Connected peers: ${stats.connectedPeers}`);
+console.log(`Messages sent: ${stats.messagesSent}`);
+console.log(`Messages received: ${stats.messagesReceived}`);
+console.log(`Average latency: ${stats.averageLatency}ms`);
+console.log(`Uptime: ${stats.uptime}s`);</code></pre>
+
+      <div class="next-steps">
+        <h3>Related Protocols</h3>
+        <ul>
+          <li><a href="mantra.html">🕉️ MANTRA Protocol</a> — Message propagation over the mesh</li>
+          <li><a href="yeti.html">❄️ YETI Protocol</a> — Peer discovery for the mandala</li>
+          <li><a href="karma.html">☯️ KARMA Protocol</a> — Trust-based peer ranking</li>
+          <li><a href="sherpa.html">🧗 SHERPA Protocol</a> — Underlying transport layer</li>
+        </ul>
+      </div>
+
+      <!-- Journey Navigation -->
+      <div class="border-t border-mountain-700 mt-12 pt-8">
+        <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
+        <div class="flex flex-col sm:flex-row gap-4">
+          <a href="karma.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">
+            <div class="text-xs text-mountain-400 mb-1">← Previous</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">☯️</span>
+              <span class="font-semibold group-hover:text-theme-accent">KARMA Protocol</span>
+            </div>
+            <p class="text-mountain-400 text-sm mt-1">Reputation management</p>
+          </a>
+          <a href="tattva.html" class="flex-1 block bg-mountain-800 border border-theme-primary rounded-xl p-4 hover:border-theme-accent transition group">
+            <div class="text-xs text-mountain-400 mb-1">Next →</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">🔯</span>
+              <span class="font-semibold group-hover:text-theme-accent">TATTVA Protocol</span>
+            </div>
+            <p class="text-mountain-400 text-sm mt-1">Fundamental truth engine</p>
+          </a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <footer class="docs-footer">
+    <p>© 2026 YAKMESH™</p>
+  </footer>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="docs.js"></script>
+
+
+  
+</body>
+</html>
+
+

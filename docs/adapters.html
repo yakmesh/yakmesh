@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="adapters">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="favicon.ico" sizes="32x32">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <title>Building Adapters | YAKMESH Documentation</title>
+    <meta name="description" content="Create custom adapters to integrate YAKMESH with external services.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        theme: { primary: '#ea580c', secondary: '#c2410c', accent: '#f97316', bg: '#431407', glow: 'rgba(234, 88, 12, 0.1)' },
+                        mountain: { 300: '#88b4a6', 400: '#6a9a8a', 700: '#2e4c43', 800: '#1f332d', 900: '#101a16' }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="stylesheet" href="docs.css">
+    <style>
+        .theme-accent { color: #f97316; }
+        .theme-accent-hover:hover { color: #fb923c; }
+        .theme-badge { background: rgba(234, 88, 12, 0.2); color: #f97316; }
+        .theme-border { border-color: #ea580c; }
+        .theme-callout { background: rgba(234, 88, 12, 0.1); border-color: #c2410c; }
+        .active-link { background: rgba(234, 88, 12, 0.2) !important; color: #f97316 !important; }
+    </style>
+</head>
+<body class="bg-mountain-900 text-white min-h-screen">
+    
+  <nav class="docs-sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-logo">
+      <span class="logo-icon">🏔️</span>
+      <span class="logo-text">Yakmesh</span>
+    </a>
+    <ul class="sidebar-nav">
+      <li><a href="index.html"><span>🏠</span> <span>Overview</span></a></li>
+      <li><a href="getting-started.html"><span>🚀</span> <span>Getting Started</span></a></li>
+      <li><a href="doko.html"><span>🧺</span> <span>DOKO</span></a></li>
+      <li><a href="namche.html"><span>🚪</span> <span>NAMCHE</span></a></li>
+      <li><a href="sherpa.html"><span>🧗</span> <span>SHERPA</span></a></li>
+      <li><a href="nakpak.html"><span>🎒</span> <span>NAKPAK</span></a></li>
+      <li><a href="annex.html"><span>🌉</span> <span>ANNEX</span></a></li>
+      <li><a href="yak-protocol.html"><span class="yak-icon"></span> <span>YAK</span></a></li>
+      <li><a href="mantra.html"><span>🕉️</span> <span>MANTRA</span></a></li>
+      <li><a href="stupa.html"><span>🛕</span> <span>STUPA</span></a></li>
+      <li><a href="lama.html"><span>🔮</span> <span>LAMA</span></a></li>
+      <li><a href="mani.html"><span>⏱️</span> <span>MANI</span></a></li>
+      <li><a href="karma.html"><span>☯️</span> <span>KARMA</span></a></li>
+      <li><a href="mandala.html"><span>🌐</span> <span>MANDALA</span></a></li>
+      <li><a href="tattva.html"><span>🔯</span> <span>TATTVA</span></a></li>
+      <li><a href="geo-proof.html"><span>🌍</span> <span>PRAMAAN</span></a></li>
+      <li><a href="trust-security.html"><span>🔒</span> <span>SURAKSHA</span></a></li>
+      <li><a href="docs-bundle.html"><span>📚</span> <span>GRANTH</span></a></li>
+      <li><a href="api.html"><span>📡</span> <span>API</span></a></li>
+    </ul>
+  </nav>
+
+  <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+    </svg>
+  </button>
+
+  <!-- Mobile overlay for tap-to-close sidebar -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="docs-main" id="mainContent">
+
+        <div class="docs-content">
+            <h1 class="text-4xl font-bold mb-4">Building Adapters</h1>
+            <p class="text-xl text-mountain-300 mb-8">Create custom adapters to integrate YAKMESH with any database, API, or platform.</p>
+
+            <h2 class="text-2xl font-bold mb-4">What is an Adapter?</h2>
+            <p class="text-mountain-300 mb-8">
+                Adapters are plugins that connect YAKMESH to external systems. They implement a standard interface 
+                for fetching changes, applying updates, and synchronizing data across the mesh network.
+            </p>
+
+            <h2 class="text-2xl font-bold mb-4">BaseAdapter Interface</h2>
+            <p class="text-mountain-300 mb-4">All adapters extend the <code class="theme-accent">BaseAdapter</code> class:</p>
+            <pre class="language-javascript rounded-lg mb-8"><code>import { BaseAdapter } from '@yakmesh/core/adapters';
+
+class MyAdapter extends BaseAdapter {
+  constructor(config) {
+    super('my-adapter', '1.0.0');
+    this.config = config;
+  }
+
+  async init() {
+    // Initialize connection to your system
+    this.db = await connectToDatabase(this.config.connectionString);
+  }
+
+  getSchema() {
+    // Define what data this adapter manages
+    return {
+      tables: ['users', 'posts'],
+      primaryKeys: { users: 'id', posts: 'id' }
+    };
+  }
+
+  async fetchChanges(since) {
+    // Return changes since the given timestamp
+    return await this.db.query(
+      'SELECT * FROM changes WHERE updated_at > ?',
+      [since]
+    );
+  }
+
+  async applyChange(change) {
+    // Apply a change received from the mesh
+    await this.db.query(
+      'INSERT OR REPLACE INTO ?? SET ?',
+      [change.table, change.data]
+    );
+  }
+
+  async validate(data) {
+    // Validate data before applying
+    return { valid: true };
+  }
+}</code></pre>
+
+            <h2 class="text-2xl font-bold mb-4">Required Methods</h2>
+            <div class="space-y-4 mb-8">
+                <div class="bg-mountain-800 rounded-lg p-4">
+                    <code class="theme-accent">init()</code>
+                    <p class="text-mountain-400 mt-2">Called once when the adapter is loaded. Initialize connections here.</p>
+                </div>
+                <div class="bg-mountain-800 rounded-lg p-4">
+                    <code class="theme-accent">getSchema()</code>
+                    <p class="text-mountain-400 mt-2">Returns the data schema this adapter manages.</p>
+                </div>
+                <div class="bg-mountain-800 rounded-lg p-4">
+                    <code class="theme-accent">fetchChanges(since)</code>
+                    <p class="text-mountain-400 mt-2">Returns all changes since the given timestamp for sync.</p>
+                </div>
+                <div class="bg-mountain-800 rounded-lg p-4">
+                    <code class="theme-accent">applyChange(change)</code>
+                    <p class="text-mountain-400 mt-2">Applies a change received from another node.</p>
+                </div>
+                <div class="bg-mountain-800 rounded-lg p-4">
+                    <code class="theme-accent">validate(data)</code>
+                    <p class="text-mountain-400 mt-2">Validates data before applying. Return <code>{ valid: true }</code> or <code>{ valid: false, error: '...' }</code>.</p>
+                </div>
+            </div>
+
+            <h2 class="text-2xl font-bold mb-4">Registering Your Adapter</h2>
+            <pre class="language-javascript rounded-lg mb-8"><code>import { YAKMESHNode } from '@yakmesh/core';
+import { MyAdapter } from './my-adapter.js';
+
+const node = new YAKMESHNode();
+
+// Register the adapter
+node.registerAdapter(new MyAdapter({
+  connectionString: 'postgres://localhost/mydb'
+}));
+
+// Start the node
+await node.start();</code></pre>
+
+            <h2 class="text-2xl font-bold mb-4">Example: SQLite Adapter</h2>
+            <pre class="language-javascript rounded-lg mb-8"><code>import { BaseAdapter } from '@yakmesh/core/adapters';
+import initSqlJs from 'sql.js';
+
+class SQLiteAdapter extends BaseAdapter {
+  constructor(dbPath) {
+    super('sqlite', '1.0.0');
+    this.dbPath = dbPath;
+  }
+
+  async init() {
+    const SQL = await initSqlJs();
+    const data = fs.readFileSync(this.dbPath);
+    this.db = new SQL.Database(data);
+  }
+
+  getSchema() {
+    const tables = this.db.exec(
+      "SELECT name FROM sqlite_master WHERE type='table'"
+    );
+    return { tables: tables[0].values.flat() };
+  }
+
+  async fetchChanges(since) {
+    // Implementation depends on your change tracking strategy
+  }
+
+  async applyChange(change) {
+    this.db.run(change.sql, change.params);
+  }
+}</code></pre>
+
+            <div class="theme-callout border rounded-xl p-6 mt-8">
+                <h3 class="text-lg font-semibold mb-2">Pro Tip</h3>
+                <p class="text-mountain-300">
+                    Use the <code class="theme-accent">this.emit()</code> method inherited from BaseAdapter to emit events 
+                    that the mesh can react to, like <code>'change'</code>, <code>'error'</code>, or custom events.
+                </p>
+            </div>
+
+            <!-- Journey Navigation -->
+            <div class="border-t border-mountain-700 mt-12 pt-8">
+                <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <a href="configuration.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">
+                        <div class="text-xs text-mountain-400 mb-1">← Previous</div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">⚙️</span>
+                            <span class="font-semibold group-hover:text-theme-accent">Configuration</span>
+                        </div>
+                        <p class="text-mountain-400 text-sm mt-1">System configuration options</p>
+                    </a>
+                    <a href="webserver.html" class="flex-1 block bg-mountain-800 border border-theme-primary rounded-xl p-4 hover:border-theme-accent transition group">
+                        <div class="text-xs text-mountain-400 mb-1">Next →</div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">🌐</span>
+                            <span class="font-semibold group-hover:text-theme-accent">Web Server</span>
+                        </div>
+                        <p class="text-mountain-400 text-sm mt-1">Built-in web interface</p>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+  <footer class="docs-footer">
+    <p>© 2026 YAKMESH™</p>
+  </footer><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script src="docs.js"></script>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="webserver">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="favicon.ico" sizes="32x32">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <title>Web Server | YAKMESH Documentation</title>
+    <meta name="description" content="HTTP REST API and WebSocket server for YAKMESH nodes.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        theme: { primary: '#2563eb', secondary: '#1d4ed8', accent: '#3b82f6', bg: '#1e3a5f', glow: 'rgba(37, 99, 235, 0.1)' },
+                        mountain: { 300: '#88b4a6', 400: '#6a9a8a', 700: '#2e4c43', 800: '#1f332d', 900: '#101a16' }
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="stylesheet" href="docs.css">
+    <style>
+        .theme-accent { color: #60a5fa; }
+        .theme-accent-hover:hover { color: #93c5fd; }
+        .theme-badge { background: rgba(37, 99, 235, 0.2); color: #60a5fa; }
+        .theme-border { border-color: #2563eb; }
+        .theme-callout { background: rgba(37, 99, 235, 0.1); border-color: #1d4ed8; }
+        .active-link { background: rgba(37, 99, 235, 0.2) !important; color: #60a5fa !important; }
+    </style>
+</head>
+<body class="bg-mountain-900 text-white min-h-screen">
+    
+  <nav class="docs-sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-logo">
+      <span class="logo-icon">🏔️</span>
+      <span class="logo-text">Yakmesh</span>
+    </a>
+    <ul class="sidebar-nav">
+      <li><a href="index.html"><span>🏠</span> <span>Overview</span></a></li>
+      <li><a href="getting-started.html"><span>🚀</span> <span>Getting Started</span></a></li>
+      <li><a href="doko.html"><span>🧺</span> <span>DOKO</span></a></li>
+      <li><a href="namche.html"><span>🚪</span> <span>NAMCHE</span></a></li>
+      <li><a href="sherpa.html"><span>🧗</span> <span>SHERPA</span></a></li>
+      <li><a href="nakpak.html"><span>🎒</span> <span>NAKPAK</span></a></li>
+      <li><a href="annex.html"><span>🌉</span> <span>ANNEX</span></a></li>
+      <li><a href="yak-protocol.html"><span class="yak-icon"></span> <span>YAK</span></a></li>
+      <li><a href="mantra.html"><span>🕉️</span> <span>MANTRA</span></a></li>
+      <li><a href="stupa.html"><span>🛕</span> <span>STUPA</span></a></li>
+      <li><a href="lama.html"><span>🔮</span> <span>LAMA</span></a></li>
+      <li><a href="mani.html"><span>⏱️</span> <span>MANI</span></a></li>
+      <li><a href="karma.html"><span>☯️</span> <span>KARMA</span></a></li>
+      <li><a href="mandala.html"><span>🌐</span> <span>MANDALA</span></a></li>
+      <li><a href="tattva.html"><span>🔯</span> <span>TATTVA</span></a></li>
+      <li><a href="geo-proof.html"><span>🌍</span> <span>PRAMAAN</span></a></li>
+      <li><a href="trust-security.html"><span>🔒</span> <span>SURAKSHA</span></a></li>
+      <li><a href="docs-bundle.html"><span>📚</span> <span>GRANTH</span></a></li>
+      <li><a href="api.html"><span>📡</span> <span>API</span></a></li>
+    </ul>
+  </nav>
+
+  <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+    </svg>
+  </button>
+
+  <!-- Mobile overlay for tap-to-close sidebar -->
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="docs-main" id="mainContent">
+
+        <div class="docs-content">
+            <div class="flex items-center gap-3 mb-4">
+                <span class="text-4xl">🌐</span>
+                <div>
+                    <div class="flex items-center gap-3">
+                        <h1 class="text-4xl font-bold">Embedded Web Server</h1>
+                        <span class="theme-badge text-xs px-2 py-1 rounded-full">Base Camp</span>
+                    </div>
+                    <p class="theme-accent">HTTP REST API & Automatic HTTPS</p>
+                </div>
+            </div>
+            <p class="text-xl text-mountain-300 mb-8">
+                YAKMESH includes an optional embedded web server powered by Caddy, 
+                enabling true self-hosting with automatic HTTPS.
+            </p>
+            
+            <h2 class="text-2xl font-bold mt-12 mb-4">Quick Start</h2>
+            <pre class="language-javascript rounded-lg mb-8"><code>import { YakmeshWebServer } from 'yakmesh/webserver';
+
+const server = new YakmeshWebServer({
+  port: 8080,
+  root: './htdocs'
+});
+
+await server.start();
+// Web server running at http://localhost:8080</code></pre>
+            
+            <h2 class="text-2xl font-bold mt-12 mb-4">CLI Usage</h2>
+            <pre class="language-bash rounded-lg mb-8"><code># Install Caddy (automatic on first start)
+npx yakmesh web install
+
+# Start web server
+npx yakmesh web start --port 8080 --root ./htdocs
+
+# With automatic HTTPS (requires domain pointed to your server)
+npx yakmesh web start --domain mysite.com --https</code></pre>
+            
+            <h2 class="text-2xl font-bold mt-12 mb-4">Configuration Options</h2>
+            <div class="overflow-x-auto mb-8">
+                <table class="w-full">
+                    <thead class="bg-mountain-800">
+                        <tr>
+                            <th class="px-4 py-2 text-left">Option</th>
+                            <th class="px-4 py-2 text-left">Default</th>
+                            <th class="px-4 py-2 text-left">Description</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-mountain-700">
+                        <tr><td class="px-4 py-2"><code class="theme-accent">port</code></td><td class="px-4 py-2">8080</td><td class="px-4 py-2">HTTP port</td></tr>
+                        <tr><td class="px-4 py-2"><code class="theme-accent">root</code></td><td class="px-4 py-2">./htdocs</td><td class="px-4 py-2">Document root directory</td></tr>
+                        <tr><td class="px-4 py-2"><code class="theme-accent">domain</code></td><td class="px-4 py-2">null</td><td class="px-4 py-2">Domain for auto-HTTPS</td></tr>
+                        <tr><td class="px-4 py-2"><code class="theme-accent">autoHttps</code></td><td class="px-4 py-2">false</td><td class="px-4 py-2">Enable Let's Encrypt SSL</td></tr>
+                        <tr><td class="px-4 py-2"><code class="theme-accent">phpEnabled</code></td><td class="px-4 py-2">false</td><td class="px-4 py-2">Enable PHP via FastCGI</td></tr>
+                        <tr><td class="px-4 py-2"><code class="theme-accent">phpPort</code></td><td class="px-4 py-2">9000</td><td class="px-4 py-2">PHP-FPM/CGI port</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <h2 class="text-2xl font-bold mt-12 mb-4">Full Stack Example</h2>
+            <p class="text-mountain-300 mb-4">Run the mesh network AND web server together:</p>
+            <pre class="language-javascript rounded-lg mb-8"><code>import { YakmeshNode } from 'yakmesh';
+import { YakmeshWebServer } from 'yakmesh/webserver';
+
+// Start mesh node
+const mesh = new YakmeshNode({ port: 9001 });
+await mesh.start();
+
+// Start web server
+const web = new YakmeshWebServer({ port: 8080 });
+await web.start();
+
+// Now you have:
+// - Mesh network on ws://localhost:9001
+// - Website on http://localhost:8080</code></pre>
+            
+            <h2 class="text-2xl font-bold mt-12 mb-4">Why Caddy?</h2>
+            <ul class="list-disc list-inside text-mountain-300 space-y-2 mb-8">
+                <li><strong class="text-white">Automatic HTTPS</strong> - Free SSL via Let's Encrypt, zero config</li>
+                <li><strong class="text-white">Single Binary</strong> - No dependencies, just drop in and run</li>
+                <li><strong class="text-white">Cross-Platform</strong> - Windows, Linux, macOS, ARM</li>
+                <li><strong class="text-white">Open Source</strong> - Apache 2.0 license, no royalties</li>
+                <li><strong class="text-white">Modern</strong> - HTTP/2, HTTP/3, WebSockets out of the box</li>
+            </ul>
+            
+            <h2 class="text-2xl font-bold mt-12 mb-4">PHP Support</h2>
+            <p class="text-mountain-300 mb-4">
+                To run PHP applications (like phpBB), you need php-cgi running:
+            </p>
+            <pre class="language-bash rounded-lg mb-8"><code># Start PHP FastCGI (in another terminal)
+php-cgi -b 127.0.0.1:9000
+
+# Then start YAKMESH with PHP enabled
+npx yakmesh web start --php --root ./htdocs</code></pre>
+            
+            <div class="theme-callout rounded-lg p-6 border-l-4 mt-12">
+                <h3 class="text-xl font-bold theme-accent mb-2">🏠 Self-Hosting Philosophy</h3>
+                <p class="text-mountain-300">
+                    YAKMESH is built for digital sovereignty. The embedded web server 
+                    means you don't need to rely on third-party hosting. Your node, 
+                    your website, your data - all running from a single command.
+                </p>
+            </div>
+
+            <!-- Journey Navigation -->
+            <div class="border-t border-mountain-700 mt-12 pt-8">
+                <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <a href="adapters.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">
+                        <div class="text-xs text-mountain-400 mb-1">← Previous</div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">🔌</span>
+                            <span class="font-semibold group-hover:text-theme-accent">Adapters</span>
+                        </div>
+                        <p class="text-mountain-400 text-sm mt-1">External system integrations</p>
+                    </a>
+                    <a href="api.html" class="flex-1 block bg-mountain-800 border border-theme-primary rounded-xl p-4 hover:border-theme-accent transition group">
+                        <div class="text-xs text-mountain-400 mb-1">Next →</div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">📡</span>
+                            <span class="font-semibold group-hover:text-theme-accent">API Reference</span>
+                        </div>
+                        <p class="text-mountain-400 text-sm mt-1">REST API documentation</p>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+  <footer class="docs-footer">
+    <p>© 2026 YAKMESH™</p>
+  </footer><script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+    <script src="docs.js"></script>
+
+  
+</body>
+</html>
+
+
+
+
+
+
+
+
+
