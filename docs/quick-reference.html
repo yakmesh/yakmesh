@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="reference">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="favicon.ico" sizes="32x32">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <title>Quick Reference | YAKMESH Documentation</title>
+    <meta name="description" content="YAKMESH quick reference card - protocols, CLI commands, API exports, and version history.">
+    <link rel="stylesheet" href="tailwind.min.css">
+    <link rel="stylesheet" href="prism-tomorrow.min.css">
+    <link rel="stylesheet" href="docs.css">
+    <style>
+        .theme-accent { color: #f59e0b; }
+        .theme-accent-hover:hover { color: #fbbf24; }
+        .theme-badge { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+        .theme-border { border-color: #d97706; }
+        .theme-callout { background: rgba(245, 158, 11, 0.1); border-color: #b45309; }
+        .active-link { background: rgba(245, 158, 11, 0.2) !important; color: #f59e0b !important; }
+        .ref-table { width: 100%; border-collapse: collapse; }
+        .ref-table th { text-align: left; padding: 0.5rem; background: rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .ref-table td { padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        .ref-table code { background: rgba(0,0,0,0.3); padding: 0.125rem 0.375rem; border-radius: 0.25rem; font-size: 0.875rem; }
+        .version-tag { display: inline-block; background: rgba(245, 158, 11, 0.2); color: #f59e0b; padding: 0.125rem 0.5rem; border-radius: 0.25rem; font-weight: 600; font-size: 0.875rem; }
+    </style>
+</head>
+<body class="bg-mountain-900 text-white min-h-screen">
+  <nav class="docs-sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-logo">
+      <span class="logo-icon">🏔️</span>
+      <span class="logo-text">Yakmesh</span>
+    </a>
+    <ul class="sidebar-nav">
+      <li><a href="index.html"><span>🏠</span> <span>Overview</span></a></li>
+      <li><a href="getting-started.html"><span>🚀</span> <span>Getting Started</span></a></li>
+      <li><a href="doko.html"><span>🧺</span> <span>DOKO</span></a></li>
+      <li><a href="namche.html"><span>🚪</span> <span>NAMCHE</span></a></li>
+      <li><a href="sherpa.html"><span>🧗</span> <span>SHERPA</span></a></li>
+      <li><a href="nakpak.html"><span>🎒</span> <span>NAKPAK</span></a></li>
+      <li><a href="annex.html"><span>🌉</span> <span>ANNEX</span></a></li>
+      <li><a href="yak-protocol.html"><span class="yak-icon"></span> <span>YAK</span></a></li>
+      <li><a href="mantra.html"><span>🕉️</span> <span>MANTRA</span></a></li>
+      <li><a href="stupa.html"><span>🛕</span> <span>STUPA</span></a></li>
+      <li><a href="lama.html"><span>🔮</span> <span>LAMA</span></a></li>
+      <li><a href="mani.html"><span>⏱️</span> <span>MANI</span></a></li>
+      <li><a href="karma.html"><span>☯️</span> <span>KARMA</span></a></li>
+      <li><a href="mandala.html"><span>🌐</span> <span>MANDALA</span></a></li>
+      <li><a href="tattva.html"><span>🔯</span> <span>TATTVA</span></a></li>
+      <li><a href="geo-proof.html"><span>🌍</span> <span>PRAMAAN</span></a></li>
+      <li><a href="trust-security.html"><span>🔒</span> <span>SURAKSHA</span></a></li>
+      <li><a href="docs-bundle.html"><span>📚</span> <span>GRANTH</span></a></li>
+      <li><a href="api.html"><span>📡</span> <span>API</span></a></li>
+      <li><a href="quick-reference.html" class="active"><span>📋</span> <span>Quick Ref</span></a></li>
+    </ul>
+  </nav>
+
+  <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+    </svg>
+  </button>
+
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="docs-main" id="mainContent">
+    <div class="docs-content max-w-5xl">
+      <h1 class="text-4xl font-bold mb-2">📋 Quick Reference</h1>
+      <p class="text-xl text-mountain-300 mb-8">
+        Everything at a glance — protocols, commands, APIs, and version history.
+      </p>
+
+      <!-- Version History -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+          <span>📅</span> Version History
+        </h2>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+          <table class="ref-table">
+            <thead>
+              <tr>
+                <th>Version</th>
+                <th>Highlights</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="version-tag">v2.6.6</span></td>
+                <td>Philosophy page, Himalayan tribute, favicon fixes, docs bundle sync</td>
+              </tr>
+              <tr>
+                <td><span class="version-tag">v2.6.5</span></td>
+                <td>Production Tailwind CSS build, remove CDN dependency</td>
+              </tr>
+              <tr>
+                <td><span class="version-tag">v2.6.4</span></td>
+                <td>YAK icon fix, sidebar toggle fix, protocol stack complete</td>
+              </tr>
+              <tr>
+                <td><span class="version-tag">v2.6.3</span></td>
+                <td>YAK icon refinements, sidebar improvements</td>
+              </tr>
+              <tr>
+                <td><span class="version-tag">v2.6.0</span></td>
+                <td>GRANTH embedded docs, Himalayan naming, KARMA trust tiers</td>
+              </tr>
+              <tr>
+                <td><span class="version-tag">v2.5.0</span></td>
+                <td>Geographic Exclusion (PRAMAAN) — "Physics Don't Lie"</td>
+              </tr>
+              <tr>
+                <td><span class="version-tag">v2.3.0</span></td>
+                <td>Mesh test expansion, structured logging, bug fixes</td>
+              </tr>
+              <tr>
+                <td><span class="version-tag">v2.2.0</span></td>
+                <td>Consolidation release (includes v2.0.1 and v2.1.0)</td>
+              </tr>
+              <tr>
+                <td><span class="version-tag">v2.0.0</span></td>
+                <td>NAMCHE Gateway, DOKO Identity, Hybrid Trust, mTLS</td>
+              </tr>
+              <tr>
+                <td><span class="version-tag">v1.7.0</span></td>
+                <td>SLH-DSA backup signatures, monitoring dashboard</td>
+              </tr>
+              <tr>
+                <td><span class="version-tag">v1.6.0</span></td>
+                <td>NAKPAK onion routing, ANNEX encrypted channels</td>
+              </tr>
+              <tr>
+                <td><span class="version-tag">v1.5.1</span></td>
+                <td>SHERPA peer discovery, beacon protocol</td>
+              </tr>
+              <tr>
+                <td><span class="version-tag">v1.4.0</span></td>
+                <td>Gossip protocol (KHATA), mesh networking foundation</td>
+              </tr>
+              <tr>
+                <td><span class="version-tag">v1.0.0</span></td>
+                <td>Initial release — post-quantum crypto foundation</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Protocol Stack -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+          <span>🏗️</span> Protocol Stack
+        </h2>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+          <table class="ref-table">
+            <thead>
+              <tr>
+                <th>Protocol</th>
+                <th>Purpose</th>
+                <th>Key Feature</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>YAK://</code></td>
+                <td>URL scheme</td>
+                <td>Custom protocol handler for mesh resources</td>
+              </tr>
+              <tr>
+                <td><code>GRANTH</code></td>
+                <td>Embedded docs</td>
+                <td>SHA3-256 hash-verified, tamper-proof bundle</td>
+              </tr>
+              <tr>
+                <td><code>KHATA</code></td>
+                <td>Gossip</td>
+                <td>Epidemic-style message propagation with TTL</td>
+              </tr>
+              <tr>
+                <td><code>ANNEX</code></td>
+                <td>Encrypted channels</td>
+                <td>ML-KEM-768 + XChaCha20-Poly1305</td>
+              </tr>
+              <tr>
+                <td><code>NAKPAK</code></td>
+                <td>Onion routing</td>
+                <td>3-hop anonymous routing, Sphinx packets</td>
+              </tr>
+              <tr>
+                <td><code>SHERPA</code></td>
+                <td>Peer discovery</td>
+                <td>DHT-less beacon discovery, RTT measurement</td>
+              </tr>
+              <tr>
+                <td><code>STUPA</code></td>
+                <td>Broadcasts</td>
+                <td>Priority-based emergency beacons</td>
+              </tr>
+              <tr>
+                <td><code>LAMA</code></td>
+                <td>Consensus</td>
+                <td>Deterministic agreement, no voting</td>
+              </tr>
+              <tr>
+                <td><code>MANI</code></td>
+                <td>Time sync</td>
+                <td>Precision time source hierarchy</td>
+              </tr>
+              <tr>
+                <td><code>MANTRA</code></td>
+                <td>Propagation</td>
+                <td>Prayer wheel-style epidemic spreading</td>
+              </tr>
+              <tr>
+                <td><code>MANDALA</code></td>
+                <td>Topology</td>
+                <td>Mesh geometry, partition healing</td>
+              </tr>
+              <tr>
+                <td><code>ECHO</code></td>
+                <td>Discovery</td>
+                <td>8D virtual coordinates, encrypted probes</td>
+              </tr>
+              <tr>
+                <td><code>PULSE</code></td>
+                <td>Heartbeat</td>
+                <td>Cryptographic liveness detection</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Identity & Security -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+          <span>🔒</span> Identity & Security (SURAKSHA)
+        </h2>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+          <h3 class="text-lg font-semibold mb-3">NAMCHE Gateway — 7 Mathematical Gates</h3>
+          <table class="ref-table mb-6">
+            <tbody>
+              <tr><td><strong>1. CRYPTO</strong></td><td>ML-DSA-65 signature verification (NIST FIPS 204)</td></tr>
+              <tr><td><strong>2. TEMPORAL</strong></td><td>Challenge/response timing analysis</td></tr>
+              <tr><td><strong>3. BEHAVIORAL</strong></td><td>Pattern consistency over time</td></tr>
+              <tr><td><strong>4. HARDWARE</strong></td><td>AES-NI timing attestation (real silicon proof)</td></tr>
+              <tr><td><strong>5. NETWORK</strong></td><td>Latency fingerprinting</td></tr>
+              <tr><td><strong>6. GEOGRAPHIC</strong></td><td>Speed-of-light location proof</td></tr>
+              <tr><td><strong>7. SOCIAL</strong></td><td>Cross-node vouching from Guardians</td></tr>
+            </tbody>
+          </table>
+          
+          <h3 class="text-lg font-semibold mb-3">KARMA Trust Tiers</h3>
+          <table class="ref-table mb-6">
+            <thead>
+              <tr><th>Tier</th><th>Nepali Name</th><th>Multiplier</th><th>Requirements</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>ORACLE</td><td>SARATHI (सारथी)</td><td>2.0×</td><td>Atomic clock + AES-NI + 30 days</td></tr>
+              <tr><td>ANCHOR</td><td>SAMRAT (सम्राट)</td><td>1.5×</td><td>GPS+PPS + AES-NI + 14 days</td></tr>
+              <tr><td>SENTINEL</td><td>SIPAHI (सिपाही)</td><td>1.25×</td><td>PTP + AES-NI + 7 days</td></tr>
+              <tr><td>PARTICIPANT</td><td>PATHIK (पथिक)</td><td>1.0×</td><td>NTP + AES-NI verified</td></tr>
+              <tr><td>OBSERVER</td><td>PARYATAK (पर्यटक)</td><td>0.25×</td><td>New/unverified nodes</td></tr>
+            </tbody>
+          </table>
+
+          <h3 class="text-lg font-semibold mb-3">Defense Systems</h3>
+          <ul class="list-disc list-inside text-mountain-300 space-y-1">
+            <li><strong>Replay Protection</strong> — Nonce tracking, timestamp validation, sequence enforcement</li>
+            <li><strong>Rate Limiting</strong> — Adaptive connection and message rate controls</li>
+            <li><strong>Sybil Defense</strong> — Proof-of-work challenges, behavioral reputation tracking</li>
+            <li><strong>Strike System</strong> — "Three Strikes — Then Math Speaks" (progressive trust reduction)</li>
+            <li><strong>Silicon Parity</strong> — "One Silicon = One Vote" (anti-ASIC/farm defense)</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Geographic Proof -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+          <span>🌍</span> Geographic Proof (PRAMAAN)
+        </h2>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+          <p class="text-mountain-300 mb-4">"We prove where you CANNOT be, not where you ARE"</p>
+          <table class="ref-table">
+            <thead>
+              <tr><th>RTT</th><th>Minimum Distance</th><th>Physics</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>1ms</td><td>≥100 km</td><td rowspan="5" class="text-mountain-400">Fiber: 199,861 km/s (0.67c)<br>Vacuum: 299,792 km/s</td></tr>
+              <tr><td>5ms</td><td>≥500 km</td></tr>
+              <tr><td>10ms</td><td>≥999 km</td></tr>
+              <tr><td>50ms</td><td>≥4,997 km</td></tr>
+              <tr><td>100ms</td><td>≥9,993 km</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- CLI Commands -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+          <span>💻</span> CLI Commands
+        </h2>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+          <h3 class="text-lg font-semibold mb-3">Basic Operations</h3>
+          <pre class="bg-black/30 rounded-lg p-4 mb-4 overflow-x-auto"><code class="language-bash">npx yakmesh init              # Initialize new node
+npx yakmesh start             # Start node
+npx yakmesh status            # Show node status
+npx yakmesh peers             # List connected peers
+npx yakmesh info              # Detailed node info
+npx yakmesh join &lt;endpoint&gt;   # Connect to peer</code></pre>
+
+          <h3 class="text-lg font-semibold mb-3">YAK:// Protocol</h3>
+          <pre class="bg-black/30 rounded-lg p-4 mb-4 overflow-x-auto"><code class="language-bash">npx yakmesh protocol register            # Register yak:// with OS
+npx yakmesh protocol unregister          # Unregister yak://
+npx yakmesh protocol test &lt;url&gt;          # Test URL parsing
+npx yakmesh protocol open &lt;url&gt;          # Open in browser
+npx yakmesh protocol bookmark add &lt;n&gt; &lt;t&gt; # Add bookmark
+npx yakmesh protocol bookmark list       # List bookmarks</code></pre>
+
+          <h3 class="text-lg font-semibold mb-3">Geographic Proof</h3>
+          <pre class="bg-black/30 rounded-lg p-4 mb-4 overflow-x-auto"><code class="language-bash">npx yakmesh geo status        # Geo proof status
+npx yakmesh geo landmarks     # List landmarks
+npx yakmesh geo zones         # List exclusion zones
+npx yakmesh geo prove         # Generate proof
+npx yakmesh geo verify &lt;id&gt;   # Verify another node
+npx yakmesh geo physics       # Show physics constants</code></pre>
+
+          <h3 class="text-lg font-semibold mb-3">Documentation</h3>
+          <pre class="bg-black/30 rounded-lg p-4 overflow-x-auto"><code class="language-bash">npx yakmesh docs info         # Bundle information
+npx yakmesh docs verify       # Verify bundle integrity
+npx yakmesh docs list         # List all files
+npx yakmesh docs serve        # Start local docs server</code></pre>
+        </div>
+      </section>
+
+      <!-- API Exports -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+          <span>📦</span> API Exports
+        </h2>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+          <pre class="bg-black/30 rounded-lg p-4 mb-4 overflow-x-auto"><code class="language-javascript">import { 
+  YakmeshNode,           // Main node class
+  NAMCHE,                // 7-gate identity verification
+  DOKO,                  // Distributed identity
+  SHERPA,                // Peer discovery
+  NAKPAK,                // Onion routing
+  ANNEX,                 // Encrypted channels
+  KHATA,                 // Gossip protocol
+  GeographicProof,       // Location verification
+  HardwareAttestation,   // AES-NI verification
+  TrustTier,             // KARMA trust levels
+  StrikeSystem,          // 3-strike system
+  SybilDetection,        // Fake identity detection
+  CodeProofProtocol,     // Code verification
+  CodebaseLock,          // Runtime file locking
+} from 'yakmesh';
+
+// Network identity
+import { 
+  deriveNetworkName, 
+  deriveVerificationPhrase 
+} from 'yakmesh/oracle/network-identity.js';
+
+// Embedded docs
+import { 
+  BUNDLE_HASH, 
+  BUNDLE_VERSION, 
+  getDocsFile,
+  verifyFile,
+} from 'yakmesh/embedded-docs/index.js';</code></pre>
+        </div>
+      </section>
+
+      <!-- REST API Endpoints -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+          <span>🌐</span> REST API Endpoints
+        </h2>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+          <div class="grid md:grid-cols-2 gap-6">
+            <div>
+              <h3 class="text-lg font-semibold mb-3">Core</h3>
+              <table class="ref-table text-sm">
+                <tbody>
+                  <tr><td><code>GET /health</code></td><td>Node health</td></tr>
+                  <tr><td><code>GET /node</code></td><td>Node identity</td></tr>
+                  <tr><td><code>GET /peers</code></td><td>Connected peers</td></tr>
+                  <tr><td><code>GET /dashboard</code></td><td>Web UI</td></tr>
+                  <tr><td><code>GET /metrics</code></td><td>Prometheus</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div>
+              <h3 class="text-lg font-semibold mb-3">Network</h3>
+              <table class="ref-table text-sm">
+                <tbody>
+                  <tr><td><code>POST /connect</code></td><td>Connect to peer</td></tr>
+                  <tr><td><code>POST /data</code></td><td>Submit data</td></tr>
+                  <tr><td><code>POST /rumor</code></td><td>Spread gossip</td></tr>
+                  <tr><td><code>GET /gossip</code></td><td>Gossip stats</td></tr>
+                  <tr><td><code>GET /replication</code></td><td>Sync status</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div>
+              <h3 class="text-lg font-semibold mb-3">Oracle (TATTVA)</h3>
+              <table class="ref-table text-sm">
+                <tbody>
+                  <tr><td><code>GET /oracle/status</code></td><td>Code proof status</td></tr>
+                  <tr><td><code>POST /oracle/challenge</code></td><td>Issue challenge</td></tr>
+                  <tr><td><code>GET /oracle/peers</code></td><td>Verified peers</td></tr>
+                  <tr><td><code>POST /oracle/submit</code></td><td>Submit content</td></tr>
+                  <tr><td><code>GET /oracle/consensus</code></td><td>Consensus state</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div>
+              <h3 class="text-lg font-semibold mb-3">Geographic</h3>
+              <table class="ref-table text-sm">
+                <tbody>
+                  <tr><td><code>GET /geo/status</code></td><td>Geo proof status</td></tr>
+                  <tr><td><code>GET /geo/landmarks</code></td><td>List landmarks</td></tr>
+                  <tr><td><code>GET /geo/zones</code></td><td>Exclusion zones</td></tr>
+                  <tr><td><code>POST /geo/prove</code></td><td>Generate proof</td></tr>
+                  <tr><td><code>POST /geo/verify</code></td><td>Verify proof</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div>
+              <h3 class="text-lg font-semibold mb-3">Security</h3>
+              <table class="ref-table text-sm">
+                <tbody>
+                  <tr><td><code>GET /security/status</code></td><td>Security overview</td></tr>
+                  <tr><td><code>GET /security/namche/gates</code></td><td>Gate status</td></tr>
+                  <tr><td><code>GET /security/doko/stats</code></td><td>DOKO stats</td></tr>
+                  <tr><td><code>POST /security/doko/verify</code></td><td>Verify identity</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div>
+              <h3 class="text-lg font-semibold mb-3">Time</h3>
+              <table class="ref-table text-sm">
+                <tbody>
+                  <tr><td><code>GET /time/status</code></td><td>Time source</td></tr>
+                  <tr><td><code>GET /time/detect</code></td><td>Detect sources</td></tr>
+                  <tr><td><code>GET /time/capabilities</code></td><td>Timing caps</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Quick Start -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+          <span>🚀</span> Quick Start
+        </h2>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+          <pre class="bg-black/30 rounded-lg p-4 mb-4 overflow-x-auto"><code class="language-bash">npm install yakmesh
+npx yakmesh init --name "My Node" --port 3000
+npx yakmesh start</code></pre>
+          <pre class="bg-black/30 rounded-lg p-4 overflow-x-auto"><code class="language-javascript">import { YakmeshNode } from 'yakmesh';
+
+const node = new YakmeshNode({
+  node: { name: 'My Node', region: 'local' },
+  network: { httpPort: 3000, wsPort: 9001 },
+});
+
+await node.start();</code></pre>
+        </div>
+      </section>
+
+      <!-- Himalayan Naming -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+          <span>🏔️</span> Himalayan Naming
+        </h2>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+          <p class="text-mountain-300 mb-4">YAKMESH honors mountain peoples with Nepali/Tibetan naming:</p>
+          <div class="grid md:grid-cols-2 gap-4">
+            <table class="ref-table text-sm">
+              <tbody>
+                <tr><td><strong>NAMCHE</strong></td><td>Named after Namche Bazaar, Sherpa gateway</td></tr>
+                <tr><td><strong>SHERPA</strong></td><td>Mountain guides who lead the way</td></tr>
+                <tr><td><strong>KARMA</strong></td><td>Buddhist concept of cause and effect</td></tr>
+                <tr><td><strong>TATTVA</strong></td><td>Sanskrit for "essence" or "truth"</td></tr>
+                <tr><td><strong>GRANTH</strong></td><td>Sanskrit for "text" or "scripture"</td></tr>
+                <tr><td><strong>SURAKSHA</strong></td><td>Hindi for "security" or "protection"</td></tr>
+                <tr><td><strong>PRAMAAN</strong></td><td>Sanskrit for "proof" or "evidence"</td></tr>
+              </tbody>
+            </table>
+            <table class="ref-table text-sm">
+              <tbody>
+                <tr><td><strong>DOKO</strong></td><td>Nepali basket carried by porters</td></tr>
+                <tr><td><strong>MANTRA</strong></td><td>Sacred utterance, repeated prayer</td></tr>
+                <tr><td><strong>STUPA</strong></td><td>Buddhist monument, sacred structure</td></tr>
+                <tr><td><strong>LAMA</strong></td><td>Tibetan teacher, wise guide</td></tr>
+                <tr><td><strong>MANI</strong></td><td>Prayer wheels, time cycles</td></tr>
+                <tr><td><strong>MANDALA</strong></td><td>Sacred geometric pattern</td></tr>
+                <tr><td><strong>NAKPAK</strong></td><td>Layered backpack, nested protection</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- Navigation -->
+      <div class="mt-12 flex flex-col sm:flex-row gap-4">
+        <a href="api.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">
+          <div class="text-xs text-mountain-400 mb-1">← Previous</div>
+          <div class="flex items-center gap-2">
+            <span class="text-xl">📡</span>
+            <span class="font-semibold group-hover:text-theme-accent">API Reference</span>
+          </div>
+          <p class="text-mountain-400 text-sm mt-1">Complete REST API documentation</p>
+        </a>
+        <a href="getting-started.html" class="flex-1 block bg-mountain-800 border border-theme-primary rounded-xl p-4 hover:border-theme-accent transition group">
+          <div class="text-xs text-mountain-400 mb-1">🔄 Start Over</div>
+          <div class="flex items-center gap-2">
+            <span class="text-xl">🚀</span>
+            <span class="font-semibold group-hover:text-theme-accent">Getting Started</span>
+          </div>
+          <p class="text-mountain-400 text-sm mt-1">Begin your YAKMESH journey!</p>
+        </a>
+      </div>
+    </div>
+  </main>
+
+  <footer class="docs-footer">
+    <p>© 2026 YAKMESH™</p>
+  </footer>
+
+  <script src="prism.min.js"></script>
+  <script src="prism-bash.min.js"></script>
+  <script src="prism-javascript.min.js"></script>
+  <script src="docs.js"></script>
+</body>
+</html>

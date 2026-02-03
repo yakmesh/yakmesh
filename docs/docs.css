@@ -1808,7 +1808,7 @@ body:has(.docs-sidebar.icon-only) .docs-footer {
 }
 
 /* ============================================
-   YAK ICON - Yakmesh logo (32x30 ICO, 4KB)
+   YAK ICON - Yakmesh logo (local SVG)
    ============================================ */
 
 .yak-icon {
@@ -1817,7 +1817,7 @@ body:has(.docs-sidebar.icon-only) .docs-footer {
   height: 1.5em;
   vertical-align: -0.4em;
   margin-right: 0.03em;
-  background-image: url("../assets/yakmesh.ico");
+  background-image: url("yak-icon.svg");
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
