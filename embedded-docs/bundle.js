@@ -6,7 +6,7 @@
  * Regenerate with: npm run build:docs
  * Source: website/docs/
  * 
- * @generated 2026-02-02T06:51:38.629Z
+ * @generated 2026-02-03T05:14:32.891Z
  * @module embedded-docs/bundle
  */
 
@@ -14,18 +14,18 @@
  * Master hash of the entire documentation bundle.
  * Computed as: SHA3-256(sorted individual file hashes joined)
  */
-export const BUNDLE_HASH = 'ea172ead802e15f4d5a1dc2c4599cabdaf2d2faf05cfb021e5c39e97bab2625e';
+export const BUNDLE_HASH = 'ca99e517608f0ca8cc4df3735368eb259e74f60cc7c038cc82026e82a1660b9c';
 
 /**
  * Version of the documentation bundle.
  * Matches the npm package version at build time.
  */
-export const BUNDLE_VERSION = '2.6.6';
+export const BUNDLE_VERSION = '2.6.7';
 
 /**
  * Build timestamp (ISO 8601)
  */
-export const BUNDLE_BUILT_AT = '2026-02-02T06:51:38.629Z';
+export const BUNDLE_BUILT_AT = '2026-02-03T05:14:32.891Z';
 
 /**
  * Index of all files in the documentation bundle.
@@ -39,23 +39,23 @@ export const BUNDLE_BUILT_AT = '2026-02-02T06:51:38.629Z';
  */
 export const FILE_INDEX = {
   "adapters.html": {
-    "hash": "eefb4091cd686f09dd2d261fef49d198fc3d53d7c8491259da896200c108431f",
-    "size": 10797,
+    "hash": "0ece7be073fb46688eeaf5b0b8dedd2076332bad791e334dd81ca4d52f355f3c",
+    "size": 10667,
     "contentType": "text/html; charset=utf-8"
   },
   "advanced-systems.html": {
-    "hash": "9908b558b9bdd6d64fb045f964d1dee11c13a61ca7140ccfec7dd5635f7850ee",
-    "size": 21941,
+    "hash": "51187d729686ad069b27112ea27abdd92bf399104e7c16c1dbd88fd0df41ffaf",
+    "size": 21811,
     "contentType": "text/html; charset=utf-8"
   },
   "annex.html": {
-    "hash": "32d0f6a24f606c39465a41578be365d10f6ed517db7d10901becd941d72242b2",
-    "size": 26842,
+    "hash": "42c34c1b530e1bad8192a8ffc40a28267892fb2522f9cd3ea572d99f3c0d34af",
+    "size": 26712,
     "contentType": "text/html; charset=utf-8"
   },
   "api.html": {
-    "hash": "40d33558a14697d2a27356773304d0b0a782c3006e3629c329cfcd2a308ff505",
-    "size": 17925,
+    "hash": "d613a66270fac7e040938968951ae81de47c0620a4f8c7265d4cbbc6b9a51980",
+    "size": 17704,
     "contentType": "text/html; charset=utf-8"
   },
   "apple-touch-icon.png": {
@@ -64,23 +64,28 @@ export const FILE_INDEX = {
     "contentType": "image/png"
   },
   "cli.html": {
-    "hash": "6c8a02d1a7b089a53b4018ca8469d1e47bb9b3fb4950b1598e2ae1b4ebabbfdc",
-    "size": 37711,
+    "hash": "200042c45537dc298032179a0e6152941e9bda42347bb0e5cc8e473a9b082467",
+    "size": 37518,
     "contentType": "text/html; charset=utf-8"
   },
   "configuration.html": {
-    "hash": "81a9d7ab5434a60062c22990e150281fe686b3ea05dbb0567af8aad4278e6010",
-    "size": 32161,
+    "hash": "e42645768660588f8e1adf653dc96c9cc6b36209077626b35a6bcf3d7246765a",
+    "size": 31905,
     "contentType": "text/html; charset=utf-8"
   },
+  "CRYPTO-AGILITY.md": {
+    "hash": "7108ebe9e2ec7cb30df81ebe2620f2643b9f35bb8e16de3acb872d714c1ba79c",
+    "size": 5943,
+    "contentType": "application/octet-stream"
+  },
   "docs-bundle.html": {
-    "hash": "ef25a3df4b66425ac638d9021349011e5d67f891b7aff25be2f2fcca7091efdf",
-    "size": 18719,
+    "hash": "6164a8e6e2c299f0108aa29b709f43d588767cbcdcb7c84e2c16071d59924fac",
+    "size": 18504,
     "contentType": "text/html; charset=utf-8"
   },
   "docs.css": {
-    "hash": "1482d36401c884a98107fc8e49ba8e06711d8cb0f2809d49968763c34edf4af0",
-    "size": 38849,
+    "hash": "42e02a43cb985b1a753289fc959c5b32085232cfcb0a52df20aed3cb7e215ceb",
+    "size": 38651,
     "contentType": "text/css; charset=utf-8"
   },
   "docs.js": {
@@ -89,8 +94,8 @@ export const FILE_INDEX = {
     "contentType": "application/javascript; charset=utf-8"
   },
   "doko.html": {
-    "hash": "ab12048cde57fb74ff4d04669abb9d0e8945019141a4f783f37de75ea3b3f596",
-    "size": 19927,
+    "hash": "23f34697219ee2a695e675e3c23a855aee3d63fa800bb3fb1573814eee782011",
+    "size": 19797,
     "contentType": "text/html; charset=utf-8"
   },
   "favicon.ico": {
@@ -104,13 +109,13 @@ export const FILE_INDEX = {
     "contentType": "image/svg+xml"
   },
   "geo-proof.html": {
-    "hash": "508a8617b61aadf0eafbb51df8219fb097c871498c491c381ff67d904f1632ab",
-    "size": 14562,
+    "hash": "0a8b9926010823b8eb80d65947e42fea85a2d01409226ef438692acbac67d107",
+    "size": 14369,
     "contentType": "text/html; charset=utf-8"
   },
   "getting-started.html": {
-    "hash": "37a23ebc88daa9bd85b21cdc62a3ccdfe133a2d1b1ddd57f7aa958f042afc10d",
-    "size": 12478,
+    "hash": "785953cb20b4cad3417c8caabdc75a63004e72b5f3d61ab84d677f68f3acc91e",
+    "size": 12285,
     "contentType": "text/html; charset=utf-8"
   },
   "icon.svg": {
@@ -119,63 +124,128 @@ export const FILE_INDEX = {
     "contentType": "image/svg+xml"
   },
   "index.html": {
-    "hash": "07f51ad3659f435f4788742f096ecb0a8b968dae52c78db1d62eb2cefce77c66",
-    "size": 12600,
+    "hash": "b992e7b82eefe30c0d7ea49f8db591cc0f234d2ec29bbcf014aafae122f59cd4",
+    "size": 12470,
     "contentType": "text/html; charset=utf-8"
   },
   "karma.html": {
-    "hash": "7131466fd3677ffabd3664e0fc65297d67aa865263cca7384a7ea2145a57cdb3",
-    "size": 17225,
+    "hash": "c65e2d9be2a48316973e354c758f7189085d7e306ba60cb57394b9d61319ce34",
+    "size": 17032,
     "contentType": "text/html; charset=utf-8"
   },
   "lama.html": {
-    "hash": "b879061edb96f271015b6d55fd98cd2c82fb806f829032a927e7622d747e64a6",
-    "size": 15584,
+    "hash": "e201ed8f9d99293cc2da0576103a3671bf6b2e536e102220796d5fc82844d2c7",
+    "size": 15391,
     "contentType": "text/html; charset=utf-8"
   },
   "mandala.html": {
-    "hash": "934c54ee63b905e75352d3252e9bd080436bbdbc1ac1c9b05a5fbaba40bebbd9",
-    "size": 19148,
+    "hash": "2202384fe7d61225d3a25fe66fe2c3f2c7db1007fc4d28fc40dbef1dd45f6bc8",
+    "size": 18933,
     "contentType": "text/html; charset=utf-8"
   },
   "mani.html": {
-    "hash": "18a568ae5423a5711a1f5cf10b8fd0b0510f88d6d809b1ec6df8648c63b980a4",
-    "size": 15094,
+    "hash": "34e75071e26539576d9063f925541576ee811cad6195656e1d9e82183b57506c",
+    "size": 14901,
     "contentType": "text/html; charset=utf-8"
   },
   "mantra.html": {
-    "hash": "4214315d2fd72d8ea70d8b75d1c56636aafde12723349456495a72a9860e92b0",
-    "size": 20188,
+    "hash": "45b01d3f4e1306a116795ad3847382c6ac2cd3be725ca7b1b5df3e80ba41b82c",
+    "size": 20058,
     "contentType": "text/html; charset=utf-8"
   },
   "mesh.html": {
-    "hash": "7801c522b4b226d9575beb9c710dd5e79e9d61bba843e473956d380ddfd1067c",
-    "size": 45286,
+    "hash": "3a35916ced661fa99febd47a5b1ff0bb57759ee664a0355f24559b6c90b95f1f",
+    "size": 45030,
     "contentType": "text/html; charset=utf-8"
+  },
+  "MTLS-RESEARCH.md": {
+    "hash": "84408ddd7bde5a37b7213a19584a750c32899a37b574b38b5a95c62bf70fbc0b",
+    "size": 11640,
+    "contentType": "application/octet-stream"
   },
   "nakpak.html": {
-    "hash": "86da9c88647c1035b2c44f8b32964b4e81833c2477c72074e2390458d73d8c7a",
-    "size": 15204,
+    "hash": "f18c86f18699b60a5f06e2d1f6935fbcfa8259f44e85976a6723c2496fb0b850",
+    "size": 15074,
     "contentType": "text/html; charset=utf-8"
+  },
+  "NAMCHE-SPEC.md": {
+    "hash": "8c3679c603fddfd2a1c3fdc44c9f760f7e707e04304456d58736d39a43321d89",
+    "size": 18361,
+    "contentType": "application/octet-stream"
   },
   "namche.html": {
-    "hash": "290eabdec52658abc90d911a38f9ca7cc8ff79021ef656ca58f9f34a03ef602b",
-    "size": 16270,
+    "hash": "74ae669912a3e8da1fb1776069a74944bdfe43e880bd5ab2dba5b8820b4449ea",
+    "size": 16140,
     "contentType": "text/html; charset=utf-8"
+  },
+  "PEERQUANTA-YAKMESH-INTEGRATION.md": {
+    "hash": "5f50086107e1004c39a26af815772bc472143a0fb1b1072f043eb628a73951f4",
+    "size": 19419,
+    "contentType": "application/octet-stream"
+  },
+  "PRECISION-DISCLOSURE.md": {
+    "hash": "b32891cf022f8948ae25f9c451ab9f581504a48783fa317b4ae40409e100a5d5",
+    "size": 3410,
+    "contentType": "application/octet-stream"
+  },
+  "prism-bash.min.js": {
+    "hash": "e9ed50a568f2f8113caa53dda799bfbc7d074c712433db496dba8b9e71d0e343",
+    "size": 6143,
+    "contentType": "application/javascript; charset=utf-8"
+  },
+  "prism-javascript.min.js": {
+    "hash": "7bb6be3fdddd2ac2fc8a4ad68fa190d461850921f9ac6928e871b32472c18786",
+    "size": 4611,
+    "contentType": "application/javascript; charset=utf-8"
+  },
+  "prism-json.min.js": {
+    "hash": "0ce3a454e0e9efc29a50223cd7247cb688c07e6bb722f069706b3a99c1324927",
+    "size": 449,
+    "contentType": "application/javascript; charset=utf-8"
+  },
+  "prism-tomorrow.min.css": {
+    "hash": "9179b9147b12e07d1c9e7a0565475860f276f4b76035cd23cfcd213fa20f5f2c",
+    "size": 1313,
+    "contentType": "text/css; charset=utf-8"
+  },
+  "prism.min.js": {
+    "hash": "a88598132a632644959e079d1186f3daa393b353918e612f75650fac8fec6e20",
+    "size": 18997,
+    "contentType": "application/javascript; charset=utf-8"
   },
   "privacy.html": {
-    "hash": "1bce22fc729aeb365b00fa9a021808b60a601273286c2a9be0da87b1e4353910",
-    "size": 7604,
+    "hash": "026ad6c318d238becce9f3011deac76409f6f063e7b9079a588ebec7c9cc16a0",
+    "size": 7591,
     "contentType": "text/html; charset=utf-8"
   },
+  "quick-reference.html": {
+    "hash": "f7fb45f4222f02cb2cdd9df9835dbc0c345c7cc7411322f08849fa1b74c744c7",
+    "size": 26315,
+    "contentType": "text/html; charset=utf-8"
+  },
+  "README.md": {
+    "hash": "2be7cbaf44a61c1fb1322e42c3162d7c0f88f9edd8703d886d8f2bff79c1ef5f",
+    "size": 3646,
+    "contentType": "application/octet-stream"
+  },
+  "ROADMAP-2.4.0.md": {
+    "hash": "be9a125424ca5e80753e8bd012adce81ffda7bb90c7dd169d17eaa1b36abcb2e",
+    "size": 16277,
+    "contentType": "application/octet-stream"
+  },
+  "ROADMAP-2.5.0.md": {
+    "hash": "5cb1d570311d87c1b4a92f97eb73ac32f03522007043d59027cc43b4d2ebe2b4",
+    "size": 6408,
+    "contentType": "application/octet-stream"
+  },
   "sherpa.html": {
-    "hash": "9a38fa24f09c1a6740ea7095937557fa53fe3646ae4d8700a174e303cc118cda",
-    "size": 13655,
+    "hash": "d3f68b99746cb77c8e0d9d3a43f98efba0f988e0ef29a913670a3a0c3d7ab9d0",
+    "size": 13462,
     "contentType": "text/html; charset=utf-8"
   },
   "stupa.html": {
-    "hash": "f05ded47009f4c42c1dcdd0858ddc548c1569347fd777ab2f0cdd3c8f05129d4",
-    "size": 16009,
+    "hash": "7ded9314ac913942570e5a7dc4dae0bf814f7b38291b1575df48bf1788026a2e",
+    "size": 15816,
     "contentType": "text/html; charset=utf-8"
   },
   "tailwind.min.css": {
@@ -184,34 +254,44 @@ export const FILE_INDEX = {
     "contentType": "text/css; charset=utf-8"
   },
   "tattva.html": {
-    "hash": "b166040a50beaa1758aab2220d0a89fa205eed6dcd3011eb6dc2230cbde43bf0",
-    "size": 39722,
+    "hash": "dfd3c79c1cefc1777d7b95504abe689a68797d6fb57a9ff2abbd81340d247404",
+    "size": 39466,
     "contentType": "text/html; charset=utf-8"
   },
   "terms.html": {
-    "hash": "0417d30c274f48da3fe99868af1687c32c01a6db22d89f968d4556e126dbb3b2",
-    "size": 6657,
+    "hash": "d783e24604254136f4cd43f76913ea39f042e7636e7a75f0c779db6086b31cbf",
+    "size": 6644,
     "contentType": "text/html; charset=utf-8"
   },
   "time-sources.html": {
-    "hash": "69e8e305478c62fad19a489538498105dde80cc60b1072daa1a7c9cffca8e297",
-    "size": 42639,
+    "hash": "65098e6bd7444580b0835cf092ba7b59c26593dcda6c05721a4f54e49b415815",
+    "size": 42383,
     "contentType": "text/html; charset=utf-8"
   },
+  "TME-FAQ.md": {
+    "hash": "67b65d94d2e8f967294a84cf025494985399c4cee24840ff4c752f16aa506f24",
+    "size": 6970,
+    "contentType": "application/octet-stream"
+  },
   "trademark-policy.html": {
-    "hash": "eda90eaf877966d333ca4f207c24277dd6909af7d11f6fb938a1efcbf8c6b259",
-    "size": 6309,
+    "hash": "6a3b77254ae4fedf60534cc10e0e258bdc485c042b6b8256c3978048f9586e0e",
+    "size": 6272,
     "contentType": "text/html; charset=utf-8"
   },
   "trust-security.html": {
-    "hash": "7dc72c7ea1f03c7a77512c1c8112a9b17dc46b03a2f5ad59321058ce60891d9b",
-    "size": 21982,
+    "hash": "6ba5136e0708b94a08d611ef5c365dbfc7c181e1658213994318c8cb5c729497",
+    "size": 21852,
     "contentType": "text/html; charset=utf-8"
   },
   "webserver.html": {
-    "hash": "4bd08cfcbce4ab0a1a9e36d2c6fe03de157145966846f155818a1bc66bcb1f21",
-    "size": 11368,
+    "hash": "06077f5e8dac3df6835af4514261a26c222b54d9baba6bf84f9373742bf9d8dc",
+    "size": 11175,
     "contentType": "text/html; charset=utf-8"
+  },
+  "WHITEPAPER.md": {
+    "hash": "e5e7471cda3b4bb5f46ebab3a49944c221461b29018b8a46691539a15462fa7c",
+    "size": 23836,
+    "contentType": "application/octet-stream"
   },
   "yak-icon.png": {
     "hash": "876eae51f04539a39052aa373010c741f629a8ed75f0832be3fe3e61806259e8",
@@ -224,14 +304,9 @@ export const FILE_INDEX = {
     "contentType": "image/svg+xml"
   },
   "yak-protocol.html": {
-    "hash": "95f87f992c08955bd055e23b42f5cadc04a4301ee1f582fb5fc355c916e5cdf2",
-    "size": 17767,
+    "hash": "f2ec49bb3123912c4babe7760fc0098455ed1fb4c6f477048ec5d73e2f563ddf",
+    "size": 17574,
     "contentType": "text/html; charset=utf-8"
-  },
-  "yakmesh-logo.webp": {
-    "hash": "a1dfe4d2484eb02d5d424a9ff2d7eb2dc30b95d0689d3929b912233b9abe25e9",
-    "size": 4226,
-    "contentType": "application/octet-stream"
   },
   "assets/silhouettes/adapters.svg": {
     "hash": "32866be4a0383dd4b0fa894d6fb167ea2af5858c591c3c654bb6a3070994d793",
