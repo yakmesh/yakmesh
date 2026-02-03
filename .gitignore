@@ -40,3 +40,4 @@ php-timing-test.php
 
 # Config files with sensitive data
 test-nodes/data-*/
+memory-bank/
