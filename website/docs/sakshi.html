@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="sakshi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="favicon.ico" sizes="32x32">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <title>SAKSHI Observational System | YAKMESH Documentation</title>
+    <meta name="description" content="YAKMESH SAKSHI observational capability system. The math testifies, not the node.">
+    <link rel="stylesheet" href="tailwind.min.css">
+    <link rel="stylesheet" href="prism-tomorrow.min.css">
+    <link rel="stylesheet" href="docs.css">
+    <style>
+        .theme-accent { color: #8b5cf6; }
+        .theme-accent-hover:hover { color: #a78bfa; }
+        .theme-badge { background: rgba(139, 92, 246, 0.2); color: #a78bfa; }
+        .theme-border { border-color: #8b5cf6; }
+        .theme-callout { background: rgba(139, 92, 246, 0.1); border-color: #7c3aed; }
+        .active-link { background: rgba(139, 92, 246, 0.2) !important; color: #a78bfa !important; }
+        .module-card-sakshi { background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(124, 58, 237, 0.1)); border-left: 4px solid #8b5cf6; }
+        .module-card-vivaad { background: linear-gradient(135deg, rgba(249, 115, 22, 0.15), rgba(234, 88, 12, 0.1)); border-left: 4px solid #f97316; }
+        .module-card-setu { background: linear-gradient(135deg, rgba(6, 182, 212, 0.15), rgba(8, 145, 178, 0.1)); border-left: 4px solid #06b6d4; }
+        .philosophy-quote { font-style: italic; background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(124, 58, 237, 0.1)); border-left: 4px solid #8b5cf6; }
+        .anti-pattern { background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(220, 38, 38, 0.1)); border-left: 4px solid #ef4444; }
+        .correct-pattern { background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(22, 163, 74, 0.1)); border-left: 4px solid #22c55e; }
+        .cause-table { width: 100%; border-collapse: collapse; }
+        .cause-table th, .cause-table td { padding: 0.75rem; text-align: left; border-bottom: 1px solid #2e4c43; }
+        .cause-table th { color: #8b5cf6; font-weight: 600; background: rgba(139, 92, 246, 0.1); }
+        .cause-table code { background: #1f332d; padding: 0.25rem 0.5rem; border-radius: 4px; }
+        .percent-bar { height: 8px; background: #374151; border-radius: 4px; overflow: hidden; }
+        .percent-fill { height: 100%; background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
+        .sanskrit-term { font-style: italic; color: #a78bfa; }
+        .warning-box { background: rgba(251, 191, 36, 0.1); border: 1px solid #f59e0b; border-radius: 0.5rem; }
+        .tabset { display: flex; border-bottom: 2px solid #374151; margin-bottom: 1rem; }
+        .tab { padding: 0.75rem 1.5rem; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -2px; }
+        .tab.active { border-bottom-color: #8b5cf6; color: #a78bfa; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+    </style>
+</head>
+<body class="bg-mountain-900 text-white min-h-screen">
+    
+  <nav class="docs-sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-logo">
+      <span class="logo-icon">🏔️</span>
+      <span class="logo-text">Yakmesh</span>
+    </a>
+    <ul class="sidebar-nav">
+      <li><a href="index.html"><span>🏠</span> <span>Overview</span></a></li>
+      <li><a href="getting-started.html"><span>🚀</span> <span>Getting Started</span></a></li>
+      <li><a href="doko.html"><span>🧺</span> <span>DOKO</span></a></li>
+      <li><a href="namche.html"><span>🚪</span> <span>NAMCHE</span></a></li>
+      <li><a href="sherpa.html"><span>🧗</span> <span>SHERPA</span></a></li>
+      <li><a href="nakpak.html"><span>🎒</span> <span>NAKPAK</span></a></li>
+      <li><a href="annex.html"><span>🌉</span> <span>ANNEX</span></a></li>
+      <li><a href="yak-protocol.html"><span class="yak-icon"></span> <span>YAK</span></a></li>
+      <li><a href="mantra.html"><span>🕉️</span> <span>MANTRA</span></a></li>
+      <li><a href="stupa.html"><span>🛕</span> <span>STUPA</span></a></li>
+      <li><a href="lama.html"><span>🔮</span> <span>LAMA</span></a></li>
+      <li><a href="mani.html"><span>⏱️</span> <span>MANI</span></a></li>
+      <li><a href="karma.html"><span>☯️</span> <span>KARMA</span></a></li>
+      <li><a href="mandala.html"><span>🌐</span> <span>MANDALA</span></a></li>
+      <li><a href="tattva.html"><span>📜</span> <span>TATTVA</span></a></li>
+      <li><a href="tribhuj.html"><span>🔺</span> <span>TRIBHUJ</span></a></li>
+      <li><a href="ypc27.html"><span>🔐</span> <span>YPC-27</span></a></li>
+      <li><a href="sakshi.html" class="active"><span>👁️</span> <span>SAKSHI</span></a></li>
+      <li><a href="geo-proof.html"><span>🌍</span> <span>PRAMAAN</span></a></li>
+      <li><a href="trust-security.html"><span>🔒</span> <span>SURAKSHA</span></a></li>
+      <li><a href="docs-bundle.html"><span>📚</span> <span>GRANTH</span></a></li>
+      <li><a href="api.html"><span>📡</span> <span>API</span></a></li>
+      <li><a href="quick-reference.html"><span>📋</span> <span>Quick Ref</span></a></li>
+    </ul>
+  </nav>
+
+  <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+    </svg>
+  </button>
+
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="docs-main" id="mainContent">
+    <div class="docs-content">
+      
+      <!-- Page Header -->
+      <header class="mb-12">
+        <div class="flex items-center gap-4 mb-4">
+          <span class="text-6xl">👁️</span>
+          <div>
+            <h1 class="text-4xl font-bold theme-accent">SAKSHI</h1>
+            <p class="text-xl text-mountain-300 theme-accent">Secure Attestation & Kapability System for Holistic Integrity</p>
+          </div>
+        </div>
+        <div class="philosophy-quote p-4 rounded-lg mb-4">
+          <p class="text-lg">"The math testifies in place of the node."</p>
+          <p class="text-sm text-mountain-400 mt-2"><span class="sanskrit-term">sākṣī</span> (साक्षी) — Sanskrit for "witness"</p>
+        </div>
+        <div class="flex gap-4">
+          <span class="theme-badge px-3 py-1 rounded-full text-sm">SAKSHI</span>
+          <span class="bg-orange-500/20 text-orange-400 px-3 py-1 rounded-full text-sm">VIVAAD</span>
+          <span class="bg-cyan-500/20 text-cyan-400 px-3 py-1 rounded-full text-sm">SETU</span>
+        </div>
+      </header>
+
+      <!-- Core Philosophy -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+          <span>🧘</span> Core Philosophy
+        </h2>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+          <p class="mb-4 text-lg">
+            SAKSHI represents a fundamental shift from <strong>permission-based security</strong> 
+            to <strong>observation-based verification</strong>. Instead of asking "does this node 
+            have permission?", we ask "can this node prove it computed correctly?"
+          </p>
+          
+          <div class="grid md:grid-cols-2 gap-6 mt-6">
+            <div class="anti-pattern rounded-xl p-6">
+              <h3 class="text-lg font-semibold mb-3 text-red-400">❌ Anti-Patterns (Removed)</h3>
+              <ul class="space-y-2 text-mountain-200">
+                <li>• <strong>Permissions:</strong> "Can this tier do X?"</li>
+                <li>• <strong>Weighted voting:</strong> "Higher tiers count more"</li>
+                <li>• <strong>Denial systems:</strong> "Block nodes that fail"</li>
+                <li>• <strong>Trust hierarchies:</strong> "Some nodes are more trusted"</li>
+              </ul>
+              <p class="text-sm text-red-300 mt-3 italic">
+                "Systems of denial = attack vectors"
+              </p>
+            </div>
+
+            <div class="correct-pattern rounded-xl p-6">
+              <h3 class="text-lg font-semibold mb-3 text-green-400">✅ SAKSHI Patterns</h3>
+              <ul class="space-y-2 text-mountain-200">
+                <li>• <strong>Observation:</strong> "What can this node prove?"</li>
+                <li>• <strong>Agreement:</strong> "Do the computations match?"</li>
+                <li>• <strong>Remediation:</strong> "Why did they disagree?"</li>
+                <li>• <strong>Capability:</strong> "What hardware does it have?"</li>
+              </ul>
+              <p class="text-sm text-green-300 mt-3 italic">
+                "All agreeing attestations are equal"
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- SAKSHI Module -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+          <span>👁️</span> SAKSHI: Witness System
+        </h2>
+
+        <div class="module-card-sakshi rounded-xl p-6 mb-6">
+          <h3 class="text-lg font-semibold mb-3">NodeWitness Class</h3>
+          <p class="text-sm text-mountain-300 mb-4">
+            Observes and records a node's capabilities without granting or denying permissions.
+            <strong>Note:</strong> There is no <code>hasPermission()</code> method — by design.
+          </p>
+          <pre class="bg-mountain-900 rounded-lg p-4 overflow-x-auto"><code class="language-javascript">import { NodeWitness, WITNESS_CAPABILITY } from 'yakmesh/security/sakshi';
+
+// Create witness for a node
+const witness = new NodeWitness(nodeId, {
+  capabilities: [
+    WITNESS_CAPABILITY.AES_NI,
+    WITNESS_CAPABILITY.HARDWARE_RNG,
+    WITNESS_CAPABILITY.GPS_AVAILABLE
+  ],
+  observedSince: Date.now(),
+  lastProofTime: Date.now()
+});
+
+// Observe capabilities (not grant permissions!)
+witness.hasCapability(WITNESS_CAPABILITY.AES_NI);  // → true
+
+// Record attestation
+witness.recordAttestation({
+  type: 'time_sync',
+  value: Date.now(),
+  proof: cryptoProof
+});
+
+// Get reliability score (based on proof history)
+witness.getReliabilityScore();  // → 0.0 to 1.0</code></pre>
+        </div>
+
+        <div class="module-card-sakshi rounded-xl p-6">
+          <h3 class="text-lg font-semibold mb-3">Capability Observation</h3>
+          <p class="text-sm text-mountain-300 mb-4">
+            Witnesses observe hardware capabilities — they don't grant or deny based on them.
+          </p>
+          <pre class="bg-mountain-900 rounded-lg p-4 overflow-x-auto"><code class="language-javascript">// Capability categories
+const WITNESS_CAPABILITY = {
+  // Cryptographic Hardware
+  AES_NI: 'aes_ni',               // AES hardware acceleration
+  SHA_EXTENSIONS: 'sha_ext',       // SHA hardware extensions
+  HARDWARE_RNG: 'hw_rng',          // Hardware random generator
+  
+  // Timing/Location
+  GPS_AVAILABLE: 'gps',            // GPS receiver
+  HIGH_PRECISION_CLOCK: 'hpc',     // High-precision timing
+  NTP_SYNCED: 'ntp',               // NTP synchronization
+  
+  // Compute
+  MULTI_CORE: 'multi_core',        // Multiple CPU cores
+  GPU_COMPUTE: 'gpu',              // GPU for compute
+  
+  // Network
+  LOW_LATENCY: 'low_lat',          // <50ms round-trip
+  HIGH_BANDWIDTH: 'high_bw',       // >100Mbps
+};</code></pre>
+        </div>
+      </section>
+
+      <!-- Attestation Fusion -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+          <span>🔬</span> Attestation Fusion (Not Voting)
+        </h2>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+          <div class="warning-box p-4 mb-6">
+            <p class="text-yellow-400 font-semibold mb-2">⚠️ Key Distinction</p>
+            <p class="text-sm">
+              SAKSHI uses <strong>sensor fusion</strong>, not voting. Multiple witnesses provide 
+              measurements; we combine them using mathematical techniques (weighted average, 
+              outlier rejection) — not political consensus.
+            </p>
+          </div>
+
+          <pre class="bg-mountain-900 rounded-lg p-4 overflow-x-auto"><code class="language-javascript">import { fuseTimeAttestations, checkMathematicalAgreement } from 'yakmesh/security/sakshi';
+
+// Multiple witnesses attest to a timestamp
+const attestations = [
+  { witnessId: 'node1', value: 1704067200000, proof: proof1 },
+  { witnessId: 'node2', value: 1704067200005, proof: proof2 },
+  { witnessId: 'node3', value: 1704067200003, proof: proof3 },
+];
+
+// Fuse attestations (weighted average, not voting)
+const fused = fuseTimeAttestations(attestations);
+// → { value: 1704067200003, confidence: 0.98, spread: 5 }
+
+// Check if nodes agree on a computation
+const result = checkMathematicalAgreement({
+  expected: computeLocally(data),
+  attestations: [
+    { nodeId: 'A', result: resultA },
+    { nodeId: 'B', result: resultB },
+    { nodeId: 'C', result: resultC },
+  ]
+});
+
+// Possible outcomes
+result.status === 'AGREE'              // All match → accept
+result.status === 'RECOMPUTE_AND_VERIFY'  // Mismatch → investigate</code></pre>
+
+          <p class="text-sm text-mountain-400 mt-4">
+            Note: On disagreement, we don't vote or ban — we analyze WHY they disagreed 
+            (see VIVAAD below).
+          </p>
+        </div>
+      </section>
+
+      <!-- VIVAAD Module -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+          <span>🔍</span> VIVAAD: Disagreement Analysis
+        </h2>
+        
+        <div class="philosophy-quote p-4 rounded-lg mb-6" style="background: linear-gradient(135deg, rgba(249, 115, 22, 0.2), rgba(234, 88, 12, 0.1)); border-left-color: #f97316;">
+          <p class="text-lg">"Don't vote on who's wrong — understand why they disagree."</p>
+          <p class="text-sm text-mountain-400 mt-2"><span class="sanskrit-term">vivāda</span> (विवाद) — Sanskrit for "dispute/disagreement"</p>
+        </div>
+
+        <div class="module-card-vivaad rounded-xl p-6 mb-6">
+          <h3 class="text-lg font-semibold mb-3">Disagreement Causes</h3>
+          <p class="text-sm text-mountain-300 mb-4">
+            Most disagreements aren't malicious — they're hardware or timing issues.
+          </p>
+          
+          <div class="grid md:grid-cols-2 gap-4">
+            <div>
+              <h4 class="font-semibold text-orange-400 mb-2">Hardware (~70%)</h4>
+              <ul class="text-sm space-y-1 text-mountain-300">
+                <li>• <code>TIMEOUT</code> — Computation took too long</li>
+                <li>• <code>FLOATING_POINT_VARIANCE</code> — FP precision differs</li>
+                <li>• <code>NO_AES_NI</code> — Missing hardware acceleration</li>
+                <li>• <code>MEMORY_EXHAUSTION</code> — Ran out of RAM</li>
+                <li>• <code>NO_HARDWARE_RNG</code> — Software RNG used</li>
+              </ul>
+            </div>
+            <div>
+              <h4 class="font-semibold text-orange-400 mb-2">Timing (~15%)</h4>
+              <ul class="text-sm space-y-1 text-mountain-300">
+                <li>• <code>CLOCK_DRIFT</code> — NTP not synced</li>
+                <li>• <code>EPOCH_BOUNDARY</code> — Computed at epoch edge</li>
+                <li>• <code>PROCESSING_DELAY</code> — Queue backup</li>
+              </ul>
+            </div>
+            <div>
+              <h4 class="font-semibold text-orange-400 mb-2">Network (~10%)</h4>
+              <ul class="text-sm space-y-1 text-mountain-300">
+                <li>• <code>INCOMPLETE_DATA</code> — Partial message received</li>
+                <li>• <code>MESSAGE_ORDERING</code> — Race condition</li>
+                <li>• <code>STALE_CACHE</code> — Old data used</li>
+              </ul>
+            </div>
+            <div>
+              <h4 class="font-semibold text-red-400 mb-2">Byzantine (~5%)</h4>
+              <ul class="text-sm space-y-1 text-mountain-300">
+                <li>• <code>DELIBERATE_WRONG</code> — Intentional lie</li>
+                <li>• <code>SYBIL_SUSPECTED</code> — Fake identity</li>
+                <li>• <code>ECLIPSE_ATTACK</code> — Isolated from network</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+
+        <div class="module-card-vivaad rounded-xl p-6">
+          <h3 class="text-lg font-semibold mb-3">Analyze Disagreement</h3>
+          <pre class="bg-mountain-900 rounded-lg p-4 overflow-x-auto"><code class="language-javascript">import { analyzeDisagreement, createRemediationPlan } from 'yakmesh/security/sakshi';
+
+// When two nodes disagree
+const analysis = analyzeDisagreement({
+  expected: ourResult,
+  received: theirResult,
+  witnessProfile: theirWitness,
+  networkContext: { latency: 150, packetLoss: 0.01 }
+});
+
+// → {
+//   likelyCause: 'TIMEOUT',
+//   confidence: 0.85,
+//   category: 'HARDWARE',
+//   evidence: ['computation_time: 5200ms', 'deadline: 5000ms']
+// }
+
+// Get remediation (not punishment!)
+const plan = createRemediationPlan(analysis);
+// → {
+//   action: 'RETRY_WITH_LONGER_TIMEOUT',
+//   suggestedTimeout: 7000,
+//   notifyOperator: false
+// }</code></pre>
+        </div>
+      </section>
+
+      <!-- Remediation Actions -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+          <span>🔧</span> Remediation (Not Punishment)
+        </h2>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+          <p class="mb-4">
+            VIVAAD provides constructive remediation, not bans or penalties. 
+            <strong>There are no permanent bans</strong> — even Byzantine behavior gets remediation.
+          </p>
+          
+          <table class="cause-table">
+            <thead>
+              <tr>
+                <th>Remediation</th>
+                <th>When Used</th>
+                <th>Duration</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>RETRY_COMPUTATION</code></td>
+                <td>Transient failure, timeout</td>
+                <td>Immediate</td>
+              </tr>
+              <tr>
+                <td><code>SYNC_CLOCK</code></td>
+                <td>Clock drift detected</td>
+                <td>Until synced</td>
+              </tr>
+              <tr>
+                <td><code>REQUEST_REBROADCAST</code></td>
+                <td>Incomplete data</td>
+                <td>Immediate</td>
+              </tr>
+              <tr>
+                <td><code>WAIT_FOR_EPOCH</code></td>
+                <td>Epoch boundary issue</td>
+                <td>Next epoch</td>
+              </tr>
+              <tr>
+                <td><code>SUGGEST_HARDWARE_UPGRADE</code></td>
+                <td>Consistent capability issues</td>
+                <td>Informational</td>
+              </tr>
+              <tr>
+                <td><code>INCREASE_OBSERVATION</code></td>
+                <td>Pattern suggests issues</td>
+                <td>Temporary</td>
+              </tr>
+              <tr>
+                <td><code>QUARANTINE_FOR_ANALYSIS</code></td>
+                <td>Byzantine patterns</td>
+                <td>Until resolved</td>
+              </tr>
+              <tr>
+                <td><code>NOTIFY_OPERATOR</code></td>
+                <td>Needs human attention</td>
+                <td>N/A</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <p class="text-sm text-green-400 mt-4 italic">
+            💡 Even "QUARANTINE_FOR_ANALYSIS" is temporary — the goal is diagnosis, not exile.
+          </p>
+        </div>
+      </section>
+
+      <!-- SETU Bridge -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+          <span>🌉</span> SETU: Trust-Tier Bridge
+        </h2>
+        
+        <div class="philosophy-quote p-4 rounded-lg mb-6" style="background: linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(8, 145, 178, 0.1)); border-left-color: #06b6d4;">
+          <p class="text-lg">"Bridge the old with the new without breaking compatibility."</p>
+          <p class="text-sm text-mountain-400 mt-2"><span class="sanskrit-term">setu</span> (सेतु) — Sanskrit for "bridge"</p>
+        </div>
+
+        <div class="module-card-setu rounded-xl p-6 mb-6">
+          <h3 class="text-lg font-semibold mb-3">Bridging Functions</h3>
+          <p class="text-sm text-mountain-300 mb-4">
+            SETU provides backward-compatible bridges from the old trust-tier system to SAKSHI.
+          </p>
+          <pre class="bg-mountain-900 rounded-lg p-4 overflow-x-auto"><code class="language-javascript">import { 
+  witnessFromTrustProfile,
+  trustProfileFromWitness,
+  checkRevocationAgreement,
+  aggregateAttestations,
+  assessComputationTrust
+} from 'yakmesh/security/sakshi';
+
+// Convert old TrustProfile → new NodeWitness
+const witness = witnessFromTrustProfile(trustProfile);
+
+// Convert back for compatibility
+const profile = trustProfileFromWitness(witness);
+
+// Replace WeightedRevocationCalculator
+const agreement = checkRevocationAgreement({
+  revocationRequests: requests,
+  targetNodeId: nodeToRevoke
+});
+// → { agreed: true, reason: 'ALL_COMPUTATIONS_MATCH' }
+// or → { agreed: false, action: 'RECOMPUTE_AND_VERIFY' }
+
+// Replace calculateEffectiveCount (no more weighted voting!)
+const aggregated = aggregateAttestations(attestations);
+// All agreeing attestations count equally
+
+// Assess trust based on verifiable math
+const trust = assessComputationTrust({
+  nodeId: 'abc123',
+  computations: recentComputations,
+  proofs: cryptoProofs
+});
+// → { score: 0.95, basedOn: 'VERIFIED_COMPUTATIONS', not: 'TIER_LEVEL' }</code></pre>
+        </div>
+      </section>
+
+      <!-- Pattern Tracking -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+          <span>📊</span> Disagreement Pattern Tracking
+        </h2>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+          <p class="mb-4">
+            VIVAAD tracks disagreement patterns over time to identify recurring issues 
+            and suggest systemic fixes.
+          </p>
+          
+          <pre class="bg-mountain-900 rounded-lg p-4 overflow-x-auto"><code class="language-javascript">import { trackDisagreementPattern, getPatternInsights } from 'yakmesh/security/sakshi';
+
+// Track each disagreement
+trackDisagreementPattern({
+  nodeId: 'abc123',
+  cause: 'TIMEOUT',
+  timestamp: Date.now(),
+  context: { computationType: 'PROOF_VERIFICATION' }
+});
+
+// Get insights for a node
+const insights = getPatternInsights('abc123');
+// → {
+//   mostCommonCause: 'TIMEOUT',
+//   frequency: 0.15,  // 15% of computations
+//   trend: 'STABLE',  // or 'IMPROVING', 'DEGRADING'
+//   suggestion: 'Node may benefit from hardware upgrade or reduced load'
+// }
+
+// Get network-wide patterns
+const networkInsights = getPatternInsights();
+// → {
+//   byCategory: { HARDWARE: 0.70, TIMING: 0.15, NETWORK: 0.10, BYZANTINE: 0.05 },
+//   hotspots: ['proof_verification', 'time_sync'],
+//   trend: 'STABLE'
+// }</code></pre>
+        </div>
+      </section>
+
+      <!-- API Reference -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+          <span>📡</span> API Reference
+        </h2>
+        
+        <div class="tabset">
+          <div class="tab active" onclick="showTab('sakshi-api')">SAKSHI</div>
+          <div class="tab" onclick="showTab('vivaad-api')">VIVAAD</div>
+          <div class="tab" onclick="showTab('setu-api')">SETU</div>
+        </div>
+
+        <div id="sakshi-api" class="tab-content active bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+          <table class="cause-table">
+            <thead>
+              <tr>
+                <th>Export</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>NodeWitness</code></td>
+                <td>Observational witness class (no permissions!)</td>
+              </tr>
+              <tr>
+                <td><code>WITNESS_CAPABILITY</code></td>
+                <td>Enum of observable hardware capabilities</td>
+              </tr>
+              <tr>
+                <td><code>fuseTimeAttestations(arr)</code></td>
+                <td>Sensor fusion for time attestations</td>
+              </tr>
+              <tr>
+                <td><code>checkMathematicalAgreement(opts)</code></td>
+                <td>Check if computations agree (no voting)</td>
+              </tr>
+              <tr>
+                <td><code>AGREEMENT_RESULT</code></td>
+                <td>Enum: AGREE, RECOMPUTE_AND_VERIFY</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div id="vivaad-api" class="tab-content bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+          <table class="cause-table">
+            <thead>
+              <tr>
+                <th>Export</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>DISAGREEMENT_CAUSE</code></td>
+                <td>Enum of 16 disagreement causes</td>
+              </tr>
+              <tr>
+                <td><code>CAUSE_CATEGORY</code></td>
+                <td>Enum: HARDWARE, TIMING, NETWORK, BYZANTINE</td>
+              </tr>
+              <tr>
+                <td><code>REMEDIATION</code></td>
+                <td>Enum of 11 remediation actions</td>
+              </tr>
+              <tr>
+                <td><code>analyzeDisagreement(opts)</code></td>
+                <td>Analyze why nodes disagreed</td>
+              </tr>
+              <tr>
+                <td><code>createRemediationPlan(analysis)</code></td>
+                <td>Create constructive remediation plan</td>
+              </tr>
+              <tr>
+                <td><code>trackDisagreementPattern(event)</code></td>
+                <td>Track disagreement for pattern analysis</td>
+              </tr>
+              <tr>
+                <td><code>getPatternInsights(nodeId?)</code></td>
+                <td>Get insights from tracked patterns</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div id="setu-api" class="tab-content bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+          <table class="cause-table">
+            <thead>
+              <tr>
+                <th>Export</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>witnessFromTrustProfile(profile)</code></td>
+                <td>Convert TrustProfile → NodeWitness</td>
+              </tr>
+              <tr>
+                <td><code>trustProfileFromWitness(witness)</code></td>
+                <td>Convert NodeWitness → TrustProfile</td>
+              </tr>
+              <tr>
+                <td><code>checkRevocationAgreement(opts)</code></td>
+                <td>Replace WeightedRevocationCalculator</td>
+              </tr>
+              <tr>
+                <td><code>aggregateAttestations(arr)</code></td>
+                <td>Replace calculateEffectiveCount (no weights!)</td>
+              </tr>
+              <tr>
+                <td><code>assessComputationTrust(opts)</code></td>
+                <td>Trust based on verified math, not tiers</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Version History -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+          <span>📅</span> Version History
+        </h2>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+          <table class="cause-table">
+            <thead>
+              <tr>
+                <th>Version</th>
+                <th>Changes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="theme-badge px-2 py-1 rounded">v2.8.2</span></td>
+                <td>Added SETU bridge functions for trust-tier integration</td>
+              </tr>
+              <tr>
+                <td><span class="theme-badge px-2 py-1 rounded">v2.8.1</span></td>
+                <td>Initial SAKSHI + VIVAAD release. Removed VARNA (anti-yakmesh ethos)</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Journey Navigation -->
+      <div class="border-t border-mountain-700 mt-12 pt-8">
+        <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
+        <div class="flex flex-col sm:flex-row gap-4">
+          <a href="ypc27.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">
+            <div class="text-xs text-mountain-400 mb-1">← Previous</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">🔐</span>
+              <span class="font-semibold group-hover:text-theme-accent">YPC-27 Checksums</span>
+            </div>
+            <p class="text-mountain-400 text-sm mt-1">Quantum-resistant polynomial checksums</p>
+          </a>
+          <a href="geo-proof.html" class="flex-1 block bg-mountain-800 border border-theme-primary rounded-xl p-4 hover:border-theme-accent transition group">
+            <div class="text-xs text-mountain-400 mb-1">Next →</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">🌍</span>
+              <span class="font-semibold group-hover:text-theme-accent">Geographic Proof</span>
+            </div>
+            <p class="text-mountain-400 text-sm mt-1">Physics-based location verification</p>
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <footer class="docs-footer">
+    <p>© 2026 YAKMESH™</p>
+  </footer>
+
+  <script src="prism.min.js"></script>
+  <script src="prism-javascript.min.js"></script>
+  <script src="docs.js"></script>
+  <script>
+    function showTab(tabId) {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      document.querySelector(`[onclick="showTab('${tabId}')"]`).classList.add('active');
+      document.getElementById(tabId).classList.add('active');
+    }
+  </script>
+</body>
+</html>

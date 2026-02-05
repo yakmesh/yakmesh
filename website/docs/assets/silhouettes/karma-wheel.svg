@@ -1,0 +1,137 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMax slice">
+  <defs>
+    <linearGradient id="karmaGlow" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#e11d48" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#101a16" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="wheelCenter" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#fb7185" stop-opacity="0.4"/>
+      <stop offset="50%" stop-color="#e11d48" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#101a16" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="levelGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#fda4af" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#101a16" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  
+  <!-- MOUNTAIN BACKDROP -->
+  <polygon points="0,620 280,300 560,580 0,1080" fill="#1a2a22" opacity="0.35"/>
+  <polygon points="1450,650 1700,280 1920,550 1920,1080 1400,1080" fill="#1a2a22" opacity="0.35"/>
+  
+  <!-- Central karma glow -->
+  <ellipse cx="960" cy="450" rx="400" ry="300" fill="url(#karmaGlow)"/>
+  
+  <!-- WHEEL OF KARMA (Bhavachakra - Wheel of Life) -->
+  
+  <!-- Outer rim (cycle of existence) -->
+  <circle cx="960" cy="520" r="280" fill="none" stroke="#4c0519" stroke-width="20" opacity="0.4"/>
+  <circle cx="960" cy="520" r="280" fill="none" stroke="#e11d48" stroke-width="3" opacity="0.5"/>
+  <circle cx="960" cy="520" r="260" fill="none" stroke="#be123c" stroke-width="1" opacity="0.35"/>
+  
+  <!-- Twelve links of interdependent origination (nidanas) around outer wheel -->
+  <g id="nidanaMarkers">
+    <!-- 12 positions around the wheel -->
+    <circle cx="960" cy="240" r="15" fill="#1a2a22" stroke="#fb7185" stroke-width="1" opacity="0.4"/>
+    <circle cx="1100" cy="270" r="15" fill="#1a2a22" stroke="#fb7185" stroke-width="1" opacity="0.4"/>
+    <circle cx="1210" cy="380" r="15" fill="#1a2a22" stroke="#fb7185" stroke-width="1" opacity="0.4"/>
+    <circle cx="1240" cy="520" r="15" fill="#1a2a22" stroke="#fb7185" stroke-width="1" opacity="0.4"/>
+    <circle cx="1210" cy="660" r="15" fill="#1a2a22" stroke="#fb7185" stroke-width="1" opacity="0.4"/>
+    <circle cx="1100" cy="770" r="15" fill="#1a2a22" stroke="#fb7185" stroke-width="1" opacity="0.4"/>
+    <circle cx="960" cy="800" r="15" fill="#1a2a22" stroke="#fb7185" stroke-width="1" opacity="0.4"/>
+    <circle cx="820" cy="770" r="15" fill="#1a2a22" stroke="#fb7185" stroke-width="1" opacity="0.4"/>
+    <circle cx="710" cy="660" r="15" fill="#1a2a22" stroke="#fb7185" stroke-width="1" opacity="0.4"/>
+    <circle cx="680" cy="520" r="15" fill="#1a2a22" stroke="#fb7185" stroke-width="1" opacity="0.4"/>
+    <circle cx="710" cy="380" r="15" fill="#1a2a22" stroke="#fb7185" stroke-width="1" opacity="0.4"/>
+    <circle cx="820" cy="270" r="15" fill="#1a2a22" stroke="#fb7185" stroke-width="1" opacity="0.4"/>
+  </g>
+  
+  <!-- Six realms (inner sections of wheel) -->
+  <g id="realms">
+    <line x1="960" y1="520" x2="960" y2="280" stroke="#be123c" stroke-width="1.5" opacity="0.35"/>
+    <line x1="960" y1="520" x2="1180" y2="400" stroke="#be123c" stroke-width="1.5" opacity="0.35"/>
+    <line x1="960" y1="520" x2="1180" y2="640" stroke="#be123c" stroke-width="1.5" opacity="0.35"/>
+    <line x1="960" y1="520" x2="960" y2="760" stroke="#be123c" stroke-width="1.5" opacity="0.35"/>
+    <line x1="960" y1="520" x2="740" y2="640" stroke="#be123c" stroke-width="1.5" opacity="0.35"/>
+    <line x1="960" y1="520" x2="740" y2="400" stroke="#be123c" stroke-width="1.5" opacity="0.35"/>
+  </g>
+  
+  <!-- Inner circle (three poisons - ignorance, attachment, aversion) -->
+  <circle cx="960" cy="520" r="100" fill="url(#wheelCenter)"/>
+  <circle cx="960" cy="520" r="100" fill="none" stroke="#fb7185" stroke-width="2" opacity="0.5"/>
+  
+  <!-- Three poisons symbols -->
+  <circle cx="960" cy="480" r="20" fill="#1a2a22" stroke="#e11d48" stroke-width="1.5" opacity="0.5"/>
+  <circle cx="930" cy="550" r="20" fill="#1a2a22" stroke="#e11d48" stroke-width="1.5" opacity="0.5"/>
+  <circle cx="990" cy="550" r="20" fill="#1a2a22" stroke="#e11d48" stroke-width="1.5" opacity="0.5"/>
+  
+  <!-- Central hub (Buddha nature) -->
+  <circle cx="960" cy="520" r="25" fill="#1a2a22" opacity="0.8"/>
+  <circle cx="960" cy="520" r="25" fill="none" stroke="#fb7185" stroke-width="2" opacity="0.6"/>
+  <text x="960" y="525" fill="#fb7185" opacity="0.6" font-size="14" font-family="serif" text-anchor="middle">☯</text>
+  
+  <!-- KARMA LEVELS (Trust tiers) positioned around wheel -->
+  
+  <!-- ENLIGHTENED (top - highest) -->
+  <g id="enlightened">
+    <circle cx="960" cy="180" r="40" fill="url(#levelGlow)"/>
+    <polygon points="960,140 940,175 980,175" fill="#E5E4E2" opacity="0.5"/>
+    <text x="960" y="165" fill="#E5E4E2" opacity="0.5" font-size="10" font-family="monospace" text-anchor="middle">💎</text>
+    <text x="960" y="200" fill="#E5E4E2" opacity="0.4" font-size="9" font-family="monospace" text-anchor="middle">ENLIGHTENED</text>
+    <text x="960" y="215" fill="#d4d4d8" opacity="0.3" font-size="8" font-family="monospace" text-anchor="middle">Level 3</text>
+  </g>
+  
+  <!-- AWAKENED (left upper) -->
+  <g id="awakened">
+    <circle cx="620" cy="400" r="35" fill="url(#levelGlow)"/>
+    <text x="620" y="395" fill="#FFD700" opacity="0.5" font-size="14" font-family="monospace" text-anchor="middle">🥇</text>
+    <text x="620" y="420" fill="#FFD700" opacity="0.4" font-size="9" font-family="monospace" text-anchor="middle">AWAKENED</text>
+    <text x="620" y="435" fill="#facc15" opacity="0.3" font-size="8" font-family="monospace" text-anchor="middle">Level 2</text>
+  </g>
+  
+  <!-- SEEKING (right upper) -->
+  <g id="seeking">
+    <circle cx="1300" cy="400" r="35" fill="url(#levelGlow)"/>
+    <text x="1300" y="395" fill="#CD7F32" opacity="0.5" font-size="14" font-family="monospace" text-anchor="middle">🥉</text>
+    <text x="1300" y="420" fill="#CD7F32" opacity="0.4" font-size="9" font-family="monospace" text-anchor="middle">SEEKING</text>
+    <text x="1300" y="435" fill="#d97706" opacity="0.3" font-size="8" font-family="monospace" text-anchor="middle">Level 1</text>
+  </g>
+  
+  <!-- UNTRUSTED (bottom) -->
+  <g id="untrusted">
+    <circle cx="960" cy="860" r="30" fill="rgba(239, 68, 68, 0.1)"/>
+    <text x="960" y="855" fill="#ef4444" opacity="0.4" font-size="12" font-family="monospace" text-anchor="middle">🚫</text>
+    <text x="960" y="878" fill="#ef4444" opacity="0.35" font-size="8" font-family="monospace" text-anchor="middle">UNTRUSTED</text>
+    <text x="960" y="893" fill="#f87171" opacity="0.25" font-size="7" font-family="monospace" text-anchor="middle">Level 0</text>
+  </g>
+  
+  <!-- Karma flow arrows (progression/regression) -->
+  <path d="M700,380 Q760,300 880,200" fill="none" stroke="#34d399" stroke-width="1" opacity="0.25" marker-end="url(#arrowUp)"/>
+  <path d="M1040,200 Q1160,300 1220,380" fill="none" stroke="#fb7185" stroke-width="1" opacity="0.25" marker-end="url(#arrowDown)"/>
+  
+  <!-- Merit/Demerit indicators -->
+  <text x="750" y="300" fill="#34d399" opacity="0.3" font-size="10" font-family="monospace" transform="rotate(-30,750,300)">+ Merit</text>
+  <text x="1150" y="300" fill="#fb7185" opacity="0.3" font-size="10" font-family="monospace" transform="rotate(30,1150,300)">- Demerit</text>
+  
+  <!-- Evidence sources around wheel -->
+  <g id="evidenceSources">
+    <text x="200" y="500" fill="#fb7185" opacity="0.3" font-size="10" font-family="monospace">SSL ✓</text>
+    <text x="200" y="520" fill="#e11d48" opacity="0.25" font-size="9" font-family="monospace">Certificate</text>
+    
+    <text x="200" y="580" fill="#fb7185" opacity="0.3" font-size="10" font-family="monospace">DOKO ✓</text>
+    <text x="200" y="600" fill="#e11d48" opacity="0.25" font-size="9" font-family="monospace">Identity</text>
+    
+    <text x="1650" y="500" fill="#fb7185" opacity="0.3" font-size="10" font-family="monospace">Mesh ✓</text>
+    <text x="1650" y="520" fill="#e11d48" opacity="0.25" font-size="9" font-family="monospace">Quorum</text>
+    
+    <text x="1650" y="580" fill="#fb7185" opacity="0.3" font-size="10" font-family="monospace">Time ✓</text>
+    <text x="1650" y="600" fill="#e11d48" opacity="0.25" font-size="9" font-family="monospace">Consistency</text>
+  </g>
+  
+  <!-- KARMA label -->
+  <text x="960" y="110" fill="#e11d48" opacity="0.5" font-size="24" font-family="monospace" text-anchor="middle">KARMA</text>
+  <text x="960" y="135" fill="#be123c" opacity="0.35" font-size="12" font-family="monospace" text-anchor="middle">Kinetic Assessment of Reputation &amp; Merit Accumulation</text>
+  
+  <!-- Ground -->
+  <polygon points="0,920 350,890 700,950 1050,900 1400,960 1700,910 1920,970 1920,1080 0,1080" fill="#101a16" opacity="0.75"/>
+</svg>

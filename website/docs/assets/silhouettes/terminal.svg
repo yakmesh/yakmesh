@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMax slice">
+  <defs>
+    <linearGradient id="screenGlow" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#4a8a6a" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#101a16" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- MOUNTAIN BACKDROP -->
+  <polygon points="0,700 200,400 400,650 400,1080 0,1080" fill="#1a2a22" opacity="0.35"/>
+  <polygon points="1500,680 1700,380 1920,620 1920,1080 1500,1080" fill="#1a2a22" opacity="0.35"/>
+  
+  <!-- GIANT TERMINAL WINDOW - center of frame -->
+  <!-- Window frame -->
+  <rect x="300" y="200" width="1320" height="750" rx="20" fill="#0a120e" opacity="0.9"/>
+  <rect x="300" y="200" width="1320" height="750" rx="20" stroke="#2e4c43" stroke-width="3" fill="none" opacity="0.5"/>
+  
+  <!-- Title bar -->
+  <rect x="300" y="200" width="1320" height="50" rx="20" fill="#1a2a22" opacity="0.8"/>
+  <path d="M300,250 L1620,250" stroke="#2e4c43" stroke-width="1" opacity="0.4"/>
+  
+  <!-- Window buttons -->
+  <circle cx="340" cy="225" r="10" fill="#4a3a3a" opacity="0.5"/>
+  <circle cx="375" cy="225" r="10" fill="#4a4a3a" opacity="0.5"/>
+  <circle cx="410" cy="225" r="10" fill="#3a4a3a" opacity="0.5"/>
+  
+  <!-- Title text -->
+  <text x="960" y="232" fill="#3d6a5a" opacity="0.5" font-size="18" font-family="monospace" text-anchor="middle">yakmesh-node — bash</text>
+  
+  <!-- Terminal content area -->
+  <rect x="320" y="270" width="1280" height="660" fill="#0a120e"/>
+  
+  <!-- Screen glow -->
+  <rect x="320" y="270" width="1280" height="660" fill="url(#screenGlow)"/>
+  
+  <!-- CLI COMMANDS - the actual interface -->
+  <!-- Prompt 1 -->
+  <text x="350" y="320" fill="#4a8a6a" opacity="0.6" font-size="22" font-family="monospace">$</text>
+  <text x="380" y="320" fill="#5a9a7a" opacity="0.5" font-size="22" font-family="monospace">yakmesh init</text>
+  
+  <!-- Output 1 -->
+  <text x="350" y="360" fill="#3d6a5a" opacity="0.4" font-size="20" font-family="monospace">✓ Initializing YAKMESH node...</text>
+  <text x="350" y="395" fill="#3d6a5a" opacity="0.35" font-size="20" font-family="monospace">✓ DOKO identity generated</text>
+  <text x="350" y="430" fill="#3d6a5a" opacity="0.35" font-size="20" font-family="monospace">✓ NAMCHE registration complete</text>
+  
+  <!-- Prompt 2 -->
+  <text x="350" y="490" fill="#4a8a6a" opacity="0.6" font-size="22" font-family="monospace">$</text>
+  <text x="380" y="490" fill="#5a9a7a" opacity="0.5" font-size="22" font-family="monospace">yakmesh status</text>
+  
+  <!-- Status output -->
+  <text x="350" y="535" fill="#2e4c43" opacity="0.4" font-size="18" font-family="monospace">┌──────────────────────────────────────────┐</text>
+  <text x="350" y="565" fill="#2e4c43" opacity="0.4" font-size="18" font-family="monospace">│  Node: YAK-7f3a...  Status: ONLINE     │</text>
+  <text x="350" y="595" fill="#2e4c43" opacity="0.4" font-size="18" font-family="monospace">│  Peers: 47          Uptime: 3d 14h     │</text>
+  <text x="350" y="625" fill="#2e4c43" opacity="0.4" font-size="18" font-family="monospace">│  Messages: 12,847   Latency: 23ms      │</text>
+  <text x="350" y="655" fill="#2e4c43" opacity="0.4" font-size="18" font-family="monospace">└──────────────────────────────────────────┘</text>
+  
+  <!-- Prompt 3 -->
+  <text x="350" y="720" fill="#4a8a6a" opacity="0.6" font-size="22" font-family="monospace">$</text>
+  <text x="380" y="720" fill="#5a9a7a" opacity="0.5" font-size="22" font-family="monospace">yakmesh mesh connect</text>
+  
+  <!-- Output 3 -->
+  <text x="350" y="765" fill="#3d6a5a" opacity="0.4" font-size="20" font-family="monospace">Connecting to mesh network...</text>
+  
+  <!-- Blinking cursor -->
+  <rect x="350" y="810" width="12" height="22" fill="#4a8a6a" opacity="0.5">
+    <animate attributeName="opacity" values="0.5;0.1;0.5" dur="1s" repeatCount="indefinite"/>
+  </rect>
+  
+  <!-- Decorative: small mountain in corner of terminal reflection -->
+  <polygon points="1400,850 1500,750 1580,850" fill="#1a2a22" opacity="0.2"/>
+  
+  <!-- Ground -->
+  <polygon points="0,950 400,920 700,970 1000,930 1300,980 1600,940 1920,990 1920,1080 0,1080" fill="#101a16" opacity="0.7"/>
+</svg>

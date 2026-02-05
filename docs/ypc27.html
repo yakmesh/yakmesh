@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="ypc27">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="favicon.ico" sizes="32x32">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <title>YPC-27 Checksums | YAKMESH Documentation</title>
+    <meta name="description" content="YAKMESH YPC-27 quantum-hard packet checksums. 27-trit polynomial checksums resistant to quantum forgery attacks.">
+    <link rel="stylesheet" href="tailwind.min.css">
+    <link rel="stylesheet" href="prism-tomorrow.min.css">
+    <link rel="stylesheet" href="docs.css">
+    <style>
+        .theme-accent { color: #06b6d4; }
+        .theme-accent-hover:hover { color: #22d3ee; }
+        .theme-badge { background: rgba(6, 182, 212, 0.2); color: #22d3ee; }
+        .theme-border { border-color: #06b6d4; }
+        .theme-callout { background: rgba(6, 182, 212, 0.1); border-color: #0891b2; }
+        .active-link { background: rgba(6, 182, 212, 0.2) !important; color: #22d3ee !important; }
+        .checksum-table { width: 100%; border-collapse: collapse; }
+        .checksum-table th, .checksum-table td { padding: 0.75rem; text-align: left; border-bottom: 1px solid #2e4c43; }
+        .checksum-table th { color: #06b6d4; font-weight: 600; background: rgba(6, 182, 212, 0.1); }
+        .checksum-table code { background: #1f332d; padding: 0.25rem 0.5rem; border-radius: 4px; color: #22d3ee; }
+        .module-card { background: linear-gradient(135deg, rgba(6, 182, 212, 0.15), rgba(8, 145, 178, 0.1)); border-left: 4px solid #06b6d4; }
+        .security-card { background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(22, 163, 74, 0.1)); border-left: 4px solid #22c55e; }
+        .math-card { background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(139, 92, 246, 0.1)); border-left: 4px solid #a855f7; }
+        .philosophy-quote { font-style: italic; background: linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(8, 145, 178, 0.1)); border-left: 4px solid #06b6d4; }
+        .trit-display { font-family: monospace; font-size: 1.25rem; letter-spacing: 0.1em; }
+        .trit-neg { color: #ef4444; }
+        .trit-zero { color: #6b7280; }
+        .trit-pos { color: #22c55e; }
+    </style>
+</head>
+<body class="bg-mountain-900 text-white min-h-screen">
+    
+  <nav class="docs-sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-logo">
+      <span class="logo-icon">🏔️</span>
+      <span class="logo-text">Yakmesh</span>
+    </a>
+    <ul class="sidebar-nav">
+      <li><a href="index.html"><span>🏠</span> <span>Overview</span></a></li>
+      <li><a href="getting-started.html"><span>🚀</span> <span>Getting Started</span></a></li>
+      <li><a href="doko.html"><span>🧺</span> <span>DOKO</span></a></li>
+      <li><a href="namche.html"><span>🚪</span> <span>NAMCHE</span></a></li>
+      <li><a href="sherpa.html"><span>🧗</span> <span>SHERPA</span></a></li>
+      <li><a href="nakpak.html"><span>🎒</span> <span>NAKPAK</span></a></li>
+      <li><a href="annex.html"><span>🌉</span> <span>ANNEX</span></a></li>
+      <li><a href="yak-protocol.html"><span class="yak-icon"></span> <span>YAK</span></a></li>
+      <li><a href="mantra.html"><span>🕉️</span> <span>MANTRA</span></a></li>
+      <li><a href="stupa.html"><span>🛕</span> <span>STUPA</span></a></li>
+      <li><a href="lama.html"><span>🔮</span> <span>LAMA</span></a></li>
+      <li><a href="mani.html"><span>⏱️</span> <span>MANI</span></a></li>
+      <li><a href="karma.html"><span>☯️</span> <span>KARMA</span></a></li>
+      <li><a href="mandala.html"><span>🌐</span> <span>MANDALA</span></a></li>
+      <li><a href="tattva.html"><span>📜</span> <span>TATTVA</span></a></li>
+      <li><a href="tribhuj.html"><span>🔺</span> <span>TRIBHUJ</span></a></li>
+      <li><a href="ypc27.html" class="active"><span>🔐</span> <span>YPC-27</span></a></li>
+      <li><a href="sakshi.html"><span>👁️</span> <span>SAKSHI</span></a></li>
+      <li><a href="geo-proof.html"><span>🌍</span> <span>PRAMAAN</span></a></li>
+      <li><a href="trust-security.html"><span>🔒</span> <span>SURAKSHA</span></a></li>
+      <li><a href="docs-bundle.html"><span>📚</span> <span>GRANTH</span></a></li>
+      <li><a href="api.html"><span>📡</span> <span>API</span></a></li>
+      <li><a href="quick-reference.html"><span>📋</span> <span>Quick Ref</span></a></li>
+    </ul>
+  </nav>
+
+  <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+    </svg>
+  </button>
+
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="docs-main" id="mainContent">
+    <div class="docs-content">
+      
+      <!-- Page Header -->
+      <header class="mb-12">
+        <div class="flex items-center gap-4 mb-4">
+          <span class="text-6xl">🔐</span>
+          <div>
+            <h1 class="text-4xl font-bold theme-accent">YPC-27</h1>
+            <p class="text-xl text-mountain-300 theme-accent">Yakmesh Polynomial Checksum — 27 Trits</p>
+          </div>
+        </div>
+        <div class="philosophy-quote p-4 rounded-lg">
+          <p class="text-lg">"Your packets now carry quantum-resistant armor."</p>
+          <p class="text-sm text-mountain-400 mt-2">— v2.7.1 Release Theme</p>
+        </div>
+      </header>
+
+      <!-- Overview -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+          <span>📖</span> Overview
+        </h2>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+          <p class="mb-4">
+            <strong>YPC-27</strong> is a quantum-hard checksum algorithm that protects YAKMESH packets 
+            from forgery. Unlike traditional CRC or hash-based checksums, YPC-27 operates in balanced 
+            ternary space using a 27-trit polynomial ring.
+          </p>
+          <p class="mb-4">
+            Forging a YPC-27 checksum requires solving the <strong>Short Integer Solution (SIS)</strong> 
+            problem — the same hard problem that underpins lattice-based post-quantum cryptography.
+          </p>
+          <div class="grid md:grid-cols-3 gap-4 mt-6">
+            <div class="bg-mountain-700/50 rounded-lg p-4 text-center">
+              <div class="text-3xl font-bold theme-accent">27</div>
+              <div class="text-sm text-mountain-400">Trits</div>
+            </div>
+            <div class="bg-mountain-700/50 rounded-lg p-4 text-center">
+              <div class="text-3xl font-bold theme-accent">7.6T</div>
+              <div class="text-sm text-mountain-400">Possible States (3²⁷)</div>
+            </div>
+            <div class="bg-mountain-700/50 rounded-lg p-4 text-center">
+              <div class="text-3xl font-bold theme-accent">SIS</div>
+              <div class="text-sm text-mountain-400">Hardness Basis</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Why 27 Trits? -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+          <span>🔢</span> Why 27 Trits?
+        </h2>
+        <div class="math-card rounded-xl p-6 mb-4">
+          <h3 class="text-lg font-semibold mb-3">Mathematical Properties</h3>
+          <ul class="space-y-2 text-mountain-200">
+            <li>• <strong>27 = 3³</strong> — perfect cube in the ternary domain</li>
+            <li>• <strong>3²⁷ ≈ 7.6 trillion</strong> possible checksum values</li>
+            <li>• Ring structure: <code class="bg-mountain-800 px-2 py-1 rounded">Z[x]/(x²⁷-1) mod 3</code></li>
+            <li>• Polynomial operations provide algebraic mixing (avalanche)</li>
+          </ul>
+        </div>
+        <div class="security-card rounded-xl p-6">
+          <h3 class="text-lg font-semibold mb-3">Security Properties</h3>
+          <ul class="space-y-2 text-mountain-200">
+            <li>• <strong>Avalanche effect:</strong> Single bit flip → all 27 coefficients change</li>
+            <li>• <strong>SIS hardness:</strong> Finding two messages with same checksum = solving SIS</li>
+            <li>• <strong>Domain separation:</strong> Same data → different checksums per protocol</li>
+            <li>• <strong>Quantum resistant:</strong> No known quantum speedup for SIS</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Trit Representation -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+          <span>🔺</span> Balanced Ternary
+        </h2>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+          <p class="mb-4">YPC-27 uses <strong>balanced ternary</strong> with values {-1, 0, +1}:</p>
+          <div class="flex justify-center gap-8 my-6">
+            <div class="text-center">
+              <div class="trit-display trit-neg text-4xl">T</div>
+              <div class="text-sm text-mountain-400">-1 (negative)</div>
+            </div>
+            <div class="text-center">
+              <div class="trit-display trit-zero text-4xl">0</div>
+              <div class="text-sm text-mountain-400">0 (neutral)</div>
+            </div>
+            <div class="text-center">
+              <div class="trit-display trit-pos text-4xl">1</div>
+              <div class="text-sm text-mountain-400">+1 (positive)</div>
+            </div>
+          </div>
+          <p class="text-sm text-mountain-400">
+            Example checksum: <span class="trit-display"><span class="trit-pos">1</span><span class="trit-neg">T</span><span class="trit-zero">0</span><span class="trit-pos">1</span><span class="trit-pos">1</span><span class="trit-neg">T</span><span class="trit-zero">0</span>...</span> (27 trits total)
+          </p>
+        </div>
+      </section>
+
+      <!-- Usage -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+          <span>💻</span> Usage
+        </h2>
+        
+        <div class="module-card rounded-xl p-6 mb-4">
+          <h3 class="text-lg font-semibold mb-3">Basic Checksum</h3>
+          <pre class="bg-mountain-900 rounded-lg p-4 overflow-x-auto"><code class="language-javascript">import { computeYpc27, verifyYpc27 } from 'yakmesh/oracle/ypc27';
+
+// Compute checksum for any data
+const data = { message: 'Hello, YAKMESH!' };
+const checksum = computeYpc27(data);
+// → { trits: Int8Array(27), base64: 'YXBj...', hex: 'abc123...' }
+
+// Verify checksum
+const isValid = verifyYpc27(data, checksum);
+// → true</code></pre>
+        </div>
+
+        <div class="module-card rounded-xl p-6 mb-4">
+          <h3 class="text-lg font-semibold mb-3">Domain-Separated Checksums</h3>
+          <pre class="bg-mountain-900 rounded-lg p-4 overflow-x-auto"><code class="language-javascript">import { 
+  createStupaChecksum,
+  createNakpakChecksum,
+  createKhataChecksum 
+} from 'yakmesh/oracle/packet-checksum';
+
+// Same data, different domain → different checksums
+const data = { content: 'test' };
+
+const stupaChecksum = createStupaChecksum(data);
+const nakpakChecksum = createNakpakChecksum(data);
+const khataChecksum = createKhataChecksum(data);
+
+// All three are different! (domain separation)
+console.log(stupaChecksum !== nakpakChecksum); // true</code></pre>
+        </div>
+
+        <div class="module-card rounded-xl p-6">
+          <h3 class="text-lg font-semibold mb-3">Wrap & Unwrap Helpers</h3>
+          <pre class="bg-mountain-900 rounded-lg p-4 overflow-x-auto"><code class="language-javascript">import { wrapWithChecksum, unwrapWithChecksum } from 'yakmesh/oracle/packet-checksum';
+
+// Wrap data with checksum
+const wrapped = wrapWithChecksum(myData, 'STUPA');
+// → { data: myData, ypc27: 'YPC27:v1:abc123...' }
+
+// Unwrap and verify
+const { data, valid } = unwrapWithChecksum(wrapped, 'STUPA');
+if (!valid) {
+  console.error('Checksum mismatch - packet may be corrupted or tampered!');
+}</code></pre>
+        </div>
+      </section>
+
+      <!-- Wire Format -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+          <span>📦</span> Wire Format
+        </h2>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+          <p class="mb-4">YPC-27 checksums use a versioned wire format:</p>
+          <pre class="bg-mountain-900 rounded-lg p-4 text-center text-xl">
+<span class="text-cyan-400">YPC27</span>:<span class="text-green-400">v1</span>:<span class="text-yellow-400">&lt;base64-encoded-trits&gt;</span></pre>
+          <table class="checksum-table mt-6">
+            <thead>
+              <tr>
+                <th>Part</th>
+                <th>Description</th>
+                <th>Example</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>YPC27</code></td>
+                <td>Algorithm identifier</td>
+                <td><code>YPC27</code></td>
+              </tr>
+              <tr>
+                <td><code>v1</code></td>
+                <td>Version (for future algorithm updates)</td>
+                <td><code>v1</code></td>
+              </tr>
+              <tr>
+                <td><code>&lt;trits&gt;</code></td>
+                <td>Base64-encoded 27 trits</td>
+                <td><code>YXBjZGVm...</code></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Protocol Integrations -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+          <span>🔗</span> Protocol Integrations
+        </h2>
+        <div class="grid md:grid-cols-2 gap-4">
+          <div class="module-card rounded-xl p-6">
+            <h3 class="text-lg font-semibold mb-2">🛕 STUPA Broadcasts</h3>
+            <p class="text-sm text-mountain-300 mb-3">
+              Beacon messages now include <code>ypc27</code> field. Verified on deserialize.
+            </p>
+            <code class="text-xs">mesh/beacon-broadcast.js</code>
+          </div>
+          <div class="module-card rounded-xl p-6">
+            <h3 class="text-lg font-semibold mb-2">🎒 NAKPAK Packets</h3>
+            <p class="text-sm text-mountain-300 mb-3">
+              Routed packets include checksum. Computed during <code>padToFixedSize()</code>.
+            </p>
+            <code class="text-xs">mesh/nakpak-routing.js</code>
+          </div>
+          <div class="module-card rounded-xl p-6">
+            <h3 class="text-lg font-semibold mb-2">📋 KHATA Protocol</h3>
+            <p class="text-sm text-mountain-300 mb-3">
+              ANNOUNCE, REQUEST, RESPONSE, REVOKE messages all include checksums.
+            </p>
+            <code class="text-xs">security/khata-protocol.js</code>
+          </div>
+          <div class="module-card rounded-xl p-6">
+            <h3 class="text-lg font-semibold mb-2">🧭 SHERPA Discovery</h3>
+            <p class="text-sm text-mountain-300 mb-3">
+              Peer discovery messages protected against tampering.
+            </p>
+            <code class="text-xs">mesh/sherpa-discovery.js</code>
+          </div>
+        </div>
+      </section>
+
+      <!-- Security Analysis -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+          <span>🛡️</span> Security Analysis
+        </h2>
+        <div class="security-card rounded-xl p-6">
+          <h3 class="text-lg font-semibold mb-4">Attack Resistance</h3>
+          <table class="checksum-table">
+            <thead>
+              <tr>
+                <th>Attack</th>
+                <th>Difficulty</th>
+                <th>Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Brute Force</td>
+                <td><span class="theme-badge px-2 py-1 rounded">3²⁷ ≈ 7.6T operations</span></td>
+                <td>Infeasible for online attacks</td>
+              </tr>
+              <tr>
+                <td>Collision (Classical)</td>
+                <td><span class="theme-badge px-2 py-1 rounded">SIS-Hard</span></td>
+                <td>Requires solving lattice problem</td>
+              </tr>
+              <tr>
+                <td>Collision (Quantum)</td>
+                <td><span class="theme-badge px-2 py-1 rounded">No known speedup</span></td>
+                <td>SIS believed quantum-resistant</td>
+              </tr>
+              <tr>
+                <td>Cross-Protocol Replay</td>
+                <td><span class="theme-badge px-2 py-1 rounded">Prevented</span></td>
+                <td>Domain separation ensures uniqueness</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- API Reference -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+          <span>📡</span> API Reference
+        </h2>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+          <h3 class="text-lg font-semibold mb-4">oracle/ypc27.js</h3>
+          <table class="checksum-table">
+            <thead>
+              <tr>
+                <th>Export</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>computeYpc27(data)</code></td>
+                <td>Compute 27-trit checksum for any data</td>
+              </tr>
+              <tr>
+                <td><code>verifyYpc27(data, checksum)</code></td>
+                <td>Verify checksum matches data</td>
+              </tr>
+              <tr>
+                <td><code>tritsToBase64(trits)</code></td>
+                <td>Convert trit array to Base64 string</td>
+              </tr>
+              <tr>
+                <td><code>base64ToTrits(b64)</code></td>
+                <td>Convert Base64 string to trit array</td>
+              </tr>
+            </tbody>
+          </table>
+          
+          <h3 class="text-lg font-semibold mb-4 mt-8">oracle/packet-checksum.js</h3>
+          <table class="checksum-table">
+            <thead>
+              <tr>
+                <th>Export</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>wrapWithChecksum(data, domain)</code></td>
+                <td>Wrap data with domain-separated checksum</td>
+              </tr>
+              <tr>
+                <td><code>unwrapWithChecksum(wrapped, domain)</code></td>
+                <td>Unwrap and verify checksum</td>
+              </tr>
+              <tr>
+                <td><code>createStupaChecksum(msg)</code></td>
+                <td>STUPA-domain checksum</td>
+              </tr>
+              <tr>
+                <td><code>createNakpakChecksum(pkt)</code></td>
+                <td>NAKPAK-domain checksum</td>
+              </tr>
+              <tr>
+                <td><code>createKhataChecksum(msg)</code></td>
+                <td>KHATA-domain checksum</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Version History -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+          <span>📅</span> Version History
+        </h2>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+          <table class="checksum-table">
+            <thead>
+              <tr>
+                <th>Version</th>
+                <th>Changes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="theme-badge px-2 py-1 rounded">v2.7.1</span></td>
+                <td>Initial release of YPC-27 checksums with STUPA, NAKPAK, KHATA integrations</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Journey Navigation -->
+      <div class="border-t border-mountain-700 mt-12 pt-8">
+        <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
+        <div class="flex flex-col sm:flex-row gap-4">
+          <a href="tribhuj.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">
+            <div class="text-xs text-mountain-400 mb-1">← Previous</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">🔺</span>
+              <span class="font-semibold group-hover:text-theme-accent">TRIBHUJ Ternary</span>
+            </div>
+            <p class="text-mountain-400 text-sm mt-1">Balanced ternary mathematics</p>
+          </a>
+          <a href="sakshi.html" class="flex-1 block bg-mountain-800 border border-theme-primary rounded-xl p-4 hover:border-theme-accent transition group">
+            <div class="text-xs text-mountain-400 mb-1">Next →</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">👁️</span>
+              <span class="font-semibold group-hover:text-theme-accent">SAKSHI System</span>
+            </div>
+            <p class="text-mountain-400 text-sm mt-1">Observational capability witnessing</p>
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <footer class="docs-footer">
+    <p>© 2026 YAKMESH™</p>
+  </footer>
+
+  <script src="prism.min.js"></script>
+  <script src="prism-javascript.min.js"></script>
+  <script src="docs.js"></script>
+</body>
+</html>

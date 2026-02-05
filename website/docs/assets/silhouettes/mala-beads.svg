@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMax slice">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#0c1929;stop-opacity:0.95"/>
+      <stop offset="100%" style="stop-color:#0a1220;stop-opacity:1"/>
+    </linearGradient>
+    <linearGradient id="beadGlow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#06b6d4;stop-opacity:0.8"/>
+      <stop offset="100%" style="stop-color:#0891b2;stop-opacity:0.4"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1920" height="1080" fill="url(#bgGrad)"/>
+  
+  <!-- Mountain silhouette -->
+  <polygon points="0,1080 400,600 600,750 900,400 1200,700 1500,500 1920,800 1920,1080" fill="#111827" opacity="0.9"/>
+  
+  <!-- Mala bead strand - 27 beads in circular arrangement -->
+  <g transform="translate(960,540)">
+    <!-- Outer glow ring -->
+    <circle r="320" fill="none" stroke="#06b6d4" stroke-width="2" opacity="0.2"/>
+    
+    <!-- 27 beads arranged in a circle (360/27 ≈ 13.33 degrees each) -->
+    <g fill="url(#beadGlow)">
+      <circle cx="0" cy="-300" r="18"/>
+      <circle cx="70" cy="-292" r="18"/>
+      <circle cx="137" cy="-268" r="18"/>
+      <circle cx="196" cy="-229" r="18"/>
+      <circle cx="245" cy="-177" r="18"/>
+      <circle cx="280" cy="-115" r="18"/>
+      <circle cx="298" cy="-45" r="18"/>
+      <circle cx="300" cy="25" r="18"/>
+      <circle cx="285" cy="95" r="18"/>
+      <circle cx="253" cy="160" r="18"/>
+      <circle cx="207" cy="218" r="18"/>
+      <circle cx="149" cy="262" r="18"/>
+      <circle cx="82" cy="292" r="18"/>
+      <circle cx="10" cy="300" r="18"/>
+      <circle cx="-62" cy="295" r="18"/>
+      <circle cx="-130" cy="275" r="18"/>
+      <circle cx="-192" cy="238" r="18"/>
+      <circle cx="-243" cy="188" r="18"/>
+      <circle cx="-278" cy="127" r="18"/>
+      <circle cx="-296" cy="58" r="18"/>
+      <circle cx="-300" cy="-15" r="18"/>
+      <circle cx="-287" cy="-85" r="18"/>
+      <circle cx="-258" cy="-152" r="18"/>
+      <circle cx="-213" cy="-210" r="18"/>
+      <circle cx="-156" cy="-255" r="18"/>
+      <circle cx="-88" cy="-287" r="18"/>
+      <circle cx="-15" cy="-300" r="18"/>
+    </g>
+    
+    <!-- Guru bead (larger, center bottom) -->
+    <circle cx="10" cy="340" r="28" fill="#22d3ee" opacity="0.9"/>
+    
+    <!-- Thread connecting beads (decorative) -->
+    <circle r="300" fill="none" stroke="#0e7490" stroke-width="3" opacity="0.4"/>
+    
+    <!-- Center text: 27 -->
+    <text x="0" y="15" text-anchor="middle" fill="#06b6d4" font-size="80" font-family="monospace" opacity="0.6">27</text>
+  </g>
+  
+  <!-- Foreground rocks -->
+  <polygon points="0,1080 50,950 150,1000 250,920 350,980 0,1080" fill="#0f172a"/>
+  <polygon points="1920,1080 1870,950 1770,1000 1670,920 1570,980 1920,1080" fill="#0f172a"/>
+</svg>

@@ -1,0 +1,68 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMax slice">
+  <defs>
+    <linearGradient id="skyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a0a2e;stop-opacity:0.95"/>
+      <stop offset="100%" style="stop-color:#0f0a1a;stop-opacity:1"/>
+    </linearGradient>
+    <linearGradient id="eyeGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#a855f7;stop-opacity:0.8"/>
+      <stop offset="100%" style="stop-color:#7c3aed;stop-opacity:0.5"/>
+    </linearGradient>
+    <radialGradient id="irisGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#c084fc;stop-opacity:1"/>
+      <stop offset="70%" style="stop-color:#8b5cf6;stop-opacity:0.6"/>
+      <stop offset="100%" style="stop-color:#6d28d9;stop-opacity:0"/>
+    </radialGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1920" height="1080" fill="url(#skyGrad)"/>
+  
+  <!-- Distant mountains -->
+  <polygon points="0,1080 200,700 400,800 600,650 800,750 1000,600 1200,720 1400,580 1600,700 1800,620 1920,750 1920,1080" fill="#1e1b4b" opacity="0.5"/>
+  
+  <!-- The All-Seeing Eye (Sakshi - Witness) -->
+  <g transform="translate(960, 400)">
+    <!-- Outer eye shape -->
+    <ellipse cx="0" cy="0" rx="280" ry="140" fill="none" stroke="#8b5cf6" stroke-width="4" opacity="0.3"/>
+    <ellipse cx="0" cy="0" rx="260" ry="130" fill="none" stroke="#a855f7" stroke-width="2" opacity="0.5"/>
+    
+    <!-- Eye outline (almond shape) -->
+    <path d="M-280,0 Q0,-180 280,0 Q0,180 -280,0" fill="url(#eyeGrad)" opacity="0.3"/>
+    <path d="M-280,0 Q0,-180 280,0 Q0,180 -280,0" fill="none" stroke="#c084fc" stroke-width="3" opacity="0.6"/>
+    
+    <!-- Iris -->
+    <circle cx="0" cy="0" r="100" fill="url(#irisGlow)"/>
+    <circle cx="0" cy="0" r="100" fill="none" stroke="#a78bfa" stroke-width="2"/>
+    
+    <!-- Pupil -->
+    <circle cx="0" cy="0" r="40" fill="#1e1b4b"/>
+    
+    <!-- Light reflection -->
+    <circle cx="-25" cy="-25" r="15" fill="white" opacity="0.3"/>
+    <circle cx="35" cy="25" r="8" fill="white" opacity="0.2"/>
+    
+    <!-- Radiating observation lines -->
+    <g stroke="#8b5cf6" stroke-width="1" opacity="0.2">
+      <line x1="0" y1="-150" x2="0" y2="-300"/>
+      <line x1="100" y1="-110" x2="200" y2="-220"/>
+      <line x1="150" y1="-30" x2="350" y2="-70"/>
+      <line x1="150" y1="30" x2="350" y2="70"/>
+      <line x1="100" y1="110" x2="200" y2="220"/>
+      <line x1="0" y1="150" x2="0" y2="300"/>
+      <line x1="-100" y1="110" x2="-200" y2="220"/>
+      <line x1="-150" y1="30" x2="-350" y2="70"/>
+      <line x1="-150" y1="-30" x2="-350" y2="-70"/>
+      <line x1="-100" y1="-110" x2="-200" y2="-220"/>
+    </g>
+  </g>
+  
+  <!-- Sanskrit text: साक्षी (Sakshi) -->
+  <text x="960" y="650" text-anchor="middle" fill="#a78bfa" font-size="40" opacity="0.3">साक्षी</text>
+  
+  <!-- Main mountain range -->
+  <polygon points="0,1080 300,750 500,850 700,700 900,800 1100,650 1300,780 1500,620 1700,750 1920,680 1920,1080" fill="#1f2937" opacity="0.9"/>
+  
+  <!-- Foreground -->
+  <polygon points="0,1080 100,950 250,1000 400,920 550,980 700,900 1920,1080" fill="#111827"/>
+</svg>

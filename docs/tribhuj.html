@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="tribhuj">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="favicon.ico" sizes="32x32">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <title>TRIBHUJ Ternary Math | YAKMESH Documentation</title>
+    <meta name="description" content="YAKMESH TRIBHUJ balanced ternary mathematics. Core ternary primitives for quantum-resistant operations.">
+    <link rel="stylesheet" href="tailwind.min.css">
+    <link rel="stylesheet" href="prism-tomorrow.min.css">
+    <link rel="stylesheet" href="docs.css">
+    <style>
+        .theme-accent { color: #f97316; }
+        .theme-accent-hover:hover { color: #fb923c; }
+        .theme-badge { background: rgba(249, 115, 22, 0.2); color: #fb923c; }
+        .theme-border { border-color: #f97316; }
+        .theme-callout { background: rgba(249, 115, 22, 0.1); border-color: #ea580c; }
+        .active-link { background: rgba(249, 115, 22, 0.2) !important; color: #fb923c !important; }
+        .module-card { background: linear-gradient(135deg, rgba(249, 115, 22, 0.15), rgba(234, 88, 12, 0.1)); border-left: 4px solid #f97316; }
+        .trit-card { background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(139, 92, 246, 0.1)); border-left: 4px solid #a855f7; }
+        .logic-card { background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(22, 163, 74, 0.1)); border-left: 4px solid #22c55e; }
+        .philosophy-quote { font-style: italic; background: linear-gradient(135deg, rgba(249, 115, 22, 0.2), rgba(234, 88, 12, 0.1)); border-left: 4px solid #f97316; }
+        .ops-table { width: 100%; border-collapse: collapse; }
+        .ops-table th, .ops-table td { padding: 0.5rem; text-align: center; border: 1px solid #2e4c43; }
+        .ops-table th { color: #f97316; font-weight: 600; background: rgba(249, 115, 22, 0.1); }
+        .ops-table code { background: #1f332d; padding: 0.25rem 0.5rem; border-radius: 4px; }
+        .trit-display { font-family: monospace; font-size: 1.25rem; font-weight: bold; }
+        .trit-neg { color: #ef4444; }
+        .trit-zero { color: #6b7280; }
+        .trit-pos { color: #22c55e; }
+        .sanskrit-term { font-style: italic; color: #fb923c; }
+    </style>
+</head>
+<body class="bg-mountain-900 text-white min-h-screen">
+    
+  <nav class="docs-sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-logo">
+      <span class="logo-icon">🏔️</span>
+      <span class="logo-text">Yakmesh</span>
+    </a>
+    <ul class="sidebar-nav">
+      <li><a href="index.html"><span>🏠</span> <span>Overview</span></a></li>
+      <li><a href="getting-started.html"><span>🚀</span> <span>Getting Started</span></a></li>
+      <li><a href="doko.html"><span>🧺</span> <span>DOKO</span></a></li>
+      <li><a href="namche.html"><span>🚪</span> <span>NAMCHE</span></a></li>
+      <li><a href="sherpa.html"><span>🧗</span> <span>SHERPA</span></a></li>
+      <li><a href="nakpak.html"><span>🎒</span> <span>NAKPAK</span></a></li>
+      <li><a href="annex.html"><span>🌉</span> <span>ANNEX</span></a></li>
+      <li><a href="yak-protocol.html"><span class="yak-icon"></span> <span>YAK</span></a></li>
+      <li><a href="mantra.html"><span>🕉️</span> <span>MANTRA</span></a></li>
+      <li><a href="stupa.html"><span>🛕</span> <span>STUPA</span></a></li>
+      <li><a href="lama.html"><span>🔮</span> <span>LAMA</span></a></li>
+      <li><a href="mani.html"><span>⏱️</span> <span>MANI</span></a></li>
+      <li><a href="karma.html"><span>☯️</span> <span>KARMA</span></a></li>
+      <li><a href="mandala.html"><span>🌐</span> <span>MANDALA</span></a></li>
+      <li><a href="tattva.html"><span>📜</span> <span>TATTVA</span></a></li>
+      <li><a href="tribhuj.html" class="active"><span>🔺</span> <span>TRIBHUJ</span></a></li>
+      <li><a href="ypc27.html"><span>🔐</span> <span>YPC-27</span></a></li>
+      <li><a href="sakshi.html"><span>👁️</span> <span>SAKSHI</span></a></li>
+      <li><a href="geo-proof.html"><span>🌍</span> <span>PRAMAAN</span></a></li>
+      <li><a href="trust-security.html"><span>🔒</span> <span>SURAKSHA</span></a></li>
+      <li><a href="docs-bundle.html"><span>📚</span> <span>GRANTH</span></a></li>
+      <li><a href="api.html"><span>📡</span> <span>API</span></a></li>
+      <li><a href="quick-reference.html"><span>📋</span> <span>Quick Ref</span></a></li>
+    </ul>
+  </nav>
+
+  <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+    </svg>
+  </button>
+
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="docs-main" id="mainContent">
+    <div class="docs-content">
+      
+      <!-- Page Header -->
+      <header class="mb-12">
+        <div class="flex items-center gap-4 mb-4">
+          <span class="text-6xl">🔺</span>
+          <div>
+            <h1 class="text-4xl font-bold theme-accent">TRIBHUJ</h1>
+            <p class="text-xl text-mountain-300 theme-accent">Ternary Radix Implementation — Balanced Harmonic Universal Junction</p>
+          </div>
+        </div>
+        <div class="philosophy-quote p-4 rounded-lg">
+          <p class="text-lg">"Three states: deny, abstain, affirm — the fundamental language of nature."</p>
+          <p class="text-sm text-mountain-400 mt-2"><span class="sanskrit-term">tribhuj</span> (त्रिभुज) — Sanskrit for "triangle" (three-sided)</p>
+        </div>
+      </header>
+
+      <!-- Overview -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+          <span>📖</span> Overview
+        </h2>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+          <p class="mb-4">
+            <strong>TRIBHUJ</strong> provides the mathematical foundation for balanced ternary operations 
+            throughout YAKMESH. Unlike binary (0, 1), balanced ternary uses three values: <strong>-1, 0, +1</strong>.
+          </p>
+          <p class="mb-4">
+            This enables natural representation of states like "reject/neutral/accept", 
+            "disagree/abstain/agree", and "invalid/pending/valid" — concepts that require awkward 
+            encoding in binary.
+          </p>
+          <div class="grid md:grid-cols-3 gap-4 mt-6">
+            <div class="bg-mountain-700/50 rounded-lg p-4 text-center">
+              <div class="trit-display trit-neg text-4xl">T</div>
+              <div class="text-sm text-mountain-400">-1 (Negative/Deny)</div>
+            </div>
+            <div class="bg-mountain-700/50 rounded-lg p-4 text-center">
+              <div class="trit-display trit-zero text-4xl">0</div>
+              <div class="text-sm text-mountain-400">0 (Neutral/Abstain)</div>
+            </div>
+            <div class="bg-mountain-700/50 rounded-lg p-4 text-center">
+              <div class="trit-display trit-pos text-4xl">1</div>
+              <div class="text-sm text-mountain-400">+1 (Positive/Affirm)</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Why Balanced Ternary? -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+          <span>⚖️</span> Why Balanced Ternary?
+        </h2>
+        <div class="grid md:grid-cols-2 gap-4">
+          <div class="module-card rounded-xl p-6">
+            <h3 class="text-lg font-semibold mb-3">Advantages</h3>
+            <ul class="space-y-2 text-mountain-200">
+              <li>• <strong>No sign bit needed:</strong> Negative numbers are natural</li>
+              <li>• <strong>Symmetric around zero:</strong> Same range positive/negative</li>
+              <li>• <strong>Rounding is trivial:</strong> Just truncate</li>
+              <li>• <strong>Efficient multiplication:</strong> By ±1 is just sign flip</li>
+              <li>• <strong>Natural for consensus:</strong> -1/0/+1 maps to disagree/abstain/agree</li>
+            </ul>
+          </div>
+          <div class="trit-card rounded-xl p-6">
+            <h3 class="text-lg font-semibold mb-3">Historical Context</h3>
+            <p class="text-sm text-mountain-300 mb-3">
+              Balanced ternary was used in the Soviet <strong>Setun</strong> computer (1958) — 
+              the only ternary computer to enter mass production. It was more efficient than 
+              contemporary binary machines.
+            </p>
+            <p class="text-sm text-mountain-300">
+              YAKMESH revives this elegant number system for post-quantum cryptography, 
+              where ternary operations provide algebraic properties essential for lattice-based security.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Core Types -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+          <span>🧱</span> Core Types
+        </h2>
+
+        <div class="module-card rounded-xl p-6 mb-4">
+          <h3 class="text-lg font-semibold mb-3">Trit Class</h3>
+          <p class="text-sm text-mountain-300 mb-4">A single balanced ternary digit.</p>
+          <pre class="bg-mountain-900 rounded-lg p-4 overflow-x-auto"><code class="language-javascript">import { Trit } from 'yakmesh/oracle/tribhuj';
+
+// Create trits
+const negative = Trit.from(-1);  // or Trit.NEG
+const zero = Trit.from(0);       // or Trit.ZERO
+const positive = Trit.from(1);   // or Trit.POS
+
+// Arithmetic
+negative.add(positive);   // → Trit(0)
+positive.multiply(negative); // → Trit(-1)
+negative.negate();        // → Trit(+1)
+
+// Logic
+positive.and(negative);   // → Trit(-1) (min)
+positive.or(negative);    // → Trit(+1) (max)
+
+// Comparison
+negative.equals(Trit.NEG);  // → true
+positive.compareTo(zero);   // → 1 (greater)</code></pre>
+        </div>
+
+        <div class="module-card rounded-xl p-6">
+          <h3 class="text-lg font-semibold mb-3">TritArray Class</h3>
+          <p class="text-sm text-mountain-300 mb-4">Fixed-length array of trits for multi-trit operations.</p>
+          <pre class="bg-mountain-900 rounded-lg p-4 overflow-x-auto"><code class="language-javascript">import { TritArray } from 'yakmesh/oracle/tribhuj';
+
+// Create from values
+const arr = TritArray.from([1, 0, -1, 1, -1]);
+
+// Operations
+arr.negate();           // Flip all signs
+arr.add(otherArr);      // Element-wise addition
+arr.multiply(otherArr); // Element-wise multiplication
+
+// Polynomial operations (for YPC-27)
+arr.polyMultiply(otherArr, 27);  // Ring multiplication
+
+// Conversion
+arr.toInt8Array();      // → Int8Array([-1, 0, 1, ...])
+arr.toBase64();         // → "YWJj..."
+TritArray.fromBase64("YWJj...", 27);
+
+// Consensus
+TritArray.consensus([arr1, arr2, arr3]); // Majority vote per trit</code></pre>
+        </div>
+      </section>
+
+      <!-- Ternary Logic Operations -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+          <span>🔣</span> Ternary Logic Operations
+        </h2>
+        
+        <div class="grid md:grid-cols-2 gap-4 mb-6">
+          <div class="logic-card rounded-xl p-6">
+            <h3 class="text-lg font-semibold mb-3">AND (Minimum)</h3>
+            <p class="text-sm text-mountain-300 mb-4">Returns the lesser value. Think: "strongest objection wins"</p>
+            <table class="ops-table text-sm">
+              <thead>
+                <tr><th>AND</th><th class="trit-neg">-1</th><th class="trit-zero">0</th><th class="trit-pos">+1</th></tr>
+              </thead>
+              <tbody>
+                <tr><th class="trit-neg">-1</th><td class="trit-neg">-1</td><td class="trit-neg">-1</td><td class="trit-neg">-1</td></tr>
+                <tr><th class="trit-zero">0</th><td class="trit-neg">-1</td><td class="trit-zero">0</td><td class="trit-zero">0</td></tr>
+                <tr><th class="trit-pos">+1</th><td class="trit-neg">-1</td><td class="trit-zero">0</td><td class="trit-pos">+1</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="logic-card rounded-xl p-6">
+            <h3 class="text-lg font-semibold mb-3">OR (Maximum)</h3>
+            <p class="text-sm text-mountain-300 mb-4">Returns the greater value. Think: "strongest endorsement wins"</p>
+            <table class="ops-table text-sm">
+              <thead>
+                <tr><th>OR</th><th class="trit-neg">-1</th><th class="trit-zero">0</th><th class="trit-pos">+1</th></tr>
+              </thead>
+              <tbody>
+                <tr><th class="trit-neg">-1</th><td class="trit-neg">-1</td><td class="trit-zero">0</td><td class="trit-pos">+1</td></tr>
+                <tr><th class="trit-zero">0</th><td class="trit-zero">0</td><td class="trit-zero">0</td><td class="trit-pos">+1</td></tr>
+                <tr><th class="trit-pos">+1</th><td class="trit-pos">+1</td><td class="trit-pos">+1</td><td class="trit-pos">+1</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="module-card rounded-xl p-6">
+          <h3 class="text-lg font-semibold mb-3">Consensus (Majority)</h3>
+          <p class="text-sm text-mountain-300 mb-4">
+            For multiple inputs, returns the majority vote. Used for multi-node agreement.
+          </p>
+          <pre class="bg-mountain-900 rounded-lg p-4 overflow-x-auto"><code class="language-javascript">import { ternaryConsensus } from 'yakmesh/oracle/tribhuj';
+
+// Three nodes validating the same data
+const votes = [Trit.POS, Trit.POS, Trit.NEG];
+const result = ternaryConsensus(votes);  // → Trit.POS (2 vs 1)
+
+// With abstention
+const votes2 = [Trit.POS, Trit.ZERO, Trit.NEG];
+const result2 = ternaryConsensus(votes2);  // → Trit.ZERO (no majority)
+
+// Array consensus (per-element)
+const arrays = [arr1, arr2, arr3];
+const consensus = TritArray.consensus(arrays);  // Majority per position</code></pre>
+        </div>
+      </section>
+
+      <!-- Arithmetic -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+          <span>➕</span> Ternary Arithmetic
+        </h2>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+          <p class="mb-4">Balanced ternary arithmetic follows simple rules:</p>
+          
+          <div class="grid md:grid-cols-2 gap-6 mt-6">
+            <div>
+              <h4 class="font-semibold mb-2 theme-accent">Addition</h4>
+              <table class="ops-table text-sm">
+                <thead>
+                  <tr><th>+</th><th class="trit-neg">-1</th><th class="trit-zero">0</th><th class="trit-pos">+1</th></tr>
+                </thead>
+                <tbody>
+                  <tr><th class="trit-neg">-1</th><td>-2*</td><td class="trit-neg">-1</td><td class="trit-zero">0</td></tr>
+                  <tr><th class="trit-zero">0</th><td class="trit-neg">-1</td><td class="trit-zero">0</td><td class="trit-pos">+1</td></tr>
+                  <tr><th class="trit-pos">+1</th><td class="trit-zero">0</td><td class="trit-pos">+1</td><td>+2*</td></tr>
+                </tbody>
+              </table>
+              <p class="text-xs text-mountain-400 mt-2">* Overflow: -2 → (+1, carry -1), +2 → (-1, carry +1)</p>
+            </div>
+
+            <div>
+              <h4 class="font-semibold mb-2 theme-accent">Multiplication</h4>
+              <table class="ops-table text-sm">
+                <thead>
+                  <tr><th>×</th><th class="trit-neg">-1</th><th class="trit-zero">0</th><th class="trit-pos">+1</th></tr>
+                </thead>
+                <tbody>
+                  <tr><th class="trit-neg">-1</th><td class="trit-pos">+1</td><td class="trit-zero">0</td><td class="trit-neg">-1</td></tr>
+                  <tr><th class="trit-zero">0</th><td class="trit-zero">0</td><td class="trit-zero">0</td><td class="trit-zero">0</td></tr>
+                  <tr><th class="trit-pos">+1</th><td class="trit-neg">-1</td><td class="trit-zero">0</td><td class="trit-pos">+1</td></tr>
+                </tbody>
+              </table>
+              <p class="text-xs text-mountain-400 mt-2">No overflow in single-trit multiplication</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Polynomial Ring -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+          <span>🔁</span> Polynomial Ring Operations
+        </h2>
+        <div class="trit-card rounded-xl p-6">
+          <p class="mb-4">
+            YPC-27 checksums operate in the polynomial ring <code class="bg-mountain-800 px-2 py-1 rounded">Z[x]/(x²⁷-1) mod 3</code>.
+            TRIBHUJ provides the primitive operations:
+          </p>
+          <pre class="bg-mountain-900 rounded-lg p-4 overflow-x-auto"><code class="language-javascript">import { TritArray } from 'yakmesh/oracle/tribhuj';
+
+// Create polynomials (coefficients as trits)
+const poly1 = TritArray.from([1, 0, -1, 0, 1, ...]); // 27 trits
+const poly2 = TritArray.from([0, 1, 1, -1, 0, ...]); // 27 trits
+
+// Ring multiplication: (a * b) mod (x^27 - 1) mod 3
+const product = poly1.polyMultiply(poly2, 27);
+
+// This wraps coefficients: x^27 = 1, x^28 = x, etc.
+// Result is always a 27-trit polynomial</code></pre>
+          <p class="text-sm text-mountain-400 mt-4">
+            This ring structure is what makes YPC-27 checksums algebraically mixing — 
+            changing one input bit affects all 27 output coefficients.
+          </p>
+        </div>
+      </section>
+
+      <!-- Usage in YAKMESH -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+          <span>🔗</span> YAKMESH Integrations
+        </h2>
+        <div class="grid md:grid-cols-2 gap-4">
+          <div class="module-card rounded-xl p-6">
+            <h3 class="text-lg font-semibold mb-2">🔐 YPC-27 Checksums</h3>
+            <p class="text-sm text-mountain-300">
+              27-trit polynomial checksums use TRIBHUJ for all ternary operations.
+            </p>
+          </div>
+          <div class="module-card rounded-xl p-6">
+            <h3 class="text-lg font-semibold mb-2">📜 TATTVA Validation</h3>
+            <p class="text-sm text-mountain-300">
+              VALID/INVALID/PENDING mapped to +1/−1/0 trits.
+            </p>
+          </div>
+          <div class="module-card rounded-xl p-6">
+            <h3 class="text-lg font-semibold mb-2">🔮 LAMA Consensus</h3>
+            <p class="text-sm text-mountain-300">
+              Multi-node validation uses ternary consensus for agreement.
+            </p>
+          </div>
+          <div class="module-card rounded-xl p-6">
+            <h3 class="text-lg font-semibold mb-2">👁️ SAKSHI Attestation</h3>
+            <p class="text-sm text-mountain-300">
+              Witness fusion uses balanced ternary for agreement detection.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- API Reference -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+          <span>📡</span> API Reference
+        </h2>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+          <h3 class="text-lg font-semibold mb-4">oracle/tribhuj.js Exports</h3>
+          <table class="ops-table text-left">
+            <thead>
+              <tr>
+                <th class="text-left">Export</th>
+                <th class="text-left">Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>Trit</code></td>
+                <td class="text-left">Single balanced ternary digit class</td>
+              </tr>
+              <tr>
+                <td><code>Trit.NEG, .ZERO, .POS</code></td>
+                <td class="text-left">Constant trit values</td>
+              </tr>
+              <tr>
+                <td><code>TritArray</code></td>
+                <td class="text-left">Fixed-length trit array class</td>
+              </tr>
+              <tr>
+                <td><code>ternaryConsensus(trits)</code></td>
+                <td class="text-left">Majority vote for array of trits</td>
+              </tr>
+              <tr>
+                <td><code>tritAdd(a, b)</code></td>
+                <td class="text-left">Add two trits with carry</td>
+              </tr>
+              <tr>
+                <td><code>tritMultiply(a, b)</code></td>
+                <td class="text-left">Multiply two trits</td>
+              </tr>
+              <tr>
+                <td><code>tritNegate(t)</code></td>
+                <td class="text-left">Flip sign of trit</td>
+              </tr>
+              <tr>
+                <td><code>tritAnd(a, b)</code></td>
+                <td class="text-left">Ternary AND (min)</td>
+              </tr>
+              <tr>
+                <td><code>tritOr(a, b)</code></td>
+                <td class="text-left">Ternary OR (max)</td>
+              </tr>
+            </tbody>
+          </table>
+          
+          <!-- Source Code Link -->
+          <div class="mt-6 pt-4 border-t border-mountain-600">
+            <p class="text-sm text-mountain-400">
+              <strong>Implementation:</strong> 
+              <a href="https://github.com/yakmesh/yakmesh/blob/main/oracle/tribhuj.js" 
+                 class="theme-accent theme-accent-hover" target="_blank" rel="noopener">
+                oracle/tribhuj.js
+              </a>
+              <span class="mx-2">·</span>
+              <span class="text-mountain-500">684 lines · MIT License</span>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Version History -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+          <span>📅</span> Version History
+        </h2>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+          <table class="ops-table text-left">
+            <thead>
+              <tr>
+                <th class="text-left">Version</th>
+                <th class="text-left">Changes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><span class="theme-badge px-2 py-1 rounded">v2.8.0</span></td>
+                <td class="text-left">Initial TRIBHUJ module with Trit, TritArray, ternary logic operations</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Journey Navigation -->
+      <div class="border-t border-mountain-700 mt-12 pt-8">
+        <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
+        <div class="flex flex-col sm:flex-row gap-4">
+          <a href="tattva.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">
+            <div class="text-xs text-mountain-400 mb-1">← Previous</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">📜</span>
+              <span class="font-semibold group-hover:text-theme-accent">TATTVA Validation</span>
+            </div>
+            <p class="text-mountain-400 text-sm mt-1">Self-verifying distributed truth</p>
+          </a>
+          <a href="ypc27.html" class="flex-1 block bg-mountain-800 border border-theme-primary rounded-xl p-4 hover:border-theme-accent transition group">
+            <div class="text-xs text-mountain-400 mb-1">Next →</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">🔐</span>
+              <span class="font-semibold group-hover:text-theme-accent">YPC-27 Checksums</span>
+            </div>
+            <p class="text-mountain-400 text-sm mt-1">Quantum-resistant polynomial checksums</p>
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <footer class="docs-footer">
+    <p>© 2026 YAKMESH™</p>
+  </footer>
+
+  <script src="prism.min.js"></script>
+  <script src="prism-javascript.min.js"></script>
+  <script src="docs.js"></script>
+</body>
+</html>

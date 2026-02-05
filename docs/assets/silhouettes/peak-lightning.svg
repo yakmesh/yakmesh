@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMax slice">
+  <defs>
+    <radialGradient id="peakEnergy" cx="50%" cy="30%" r="60%">
+      <stop offset="0%" stop-color="#5a9a7a" stop-opacity="0.15"/>
+      <stop offset="50%" stop-color="#4a8a6a" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#101a16" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="lightningGlow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#5a9a7a" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#3d6a5a" stop-opacity="0.1"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- MOUNTAIN RANGE - dramatic peaks -->
+  <!-- Far left peak -->
+  <polygon points="0,1080 0,600 200,350 400,650 400,1080" fill="#1a2a22" opacity="0.4"/>
+  
+  <!-- Left major peak -->
+  <polygon points="200,1080 400,500 600,300 800,600 800,1080" fill="#1a2a22" opacity="0.5"/>
+  
+  <!-- THE SUMMIT - center, tallest, the destination -->
+  <polygon points="600,1080 800,600 960,150 1120,600 1320,1080" fill="#1f332d" opacity="0.65"/>
+  <!-- Snow cap -->
+  <polygon points="880,350 960,150 1040,350" fill="#2e4c43" opacity="0.45"/>
+  <!-- Peak outline highlight -->
+  <path d="M800,600 L960,150 L1120,600" stroke="#3d6a5a" stroke-width="2" fill="none" opacity="0.4"/>
+  
+  <!-- Right major peak -->
+  <polygon points="1100,1080 1300,550 1500,350 1700,600 1700,1080" fill="#1a2a22" opacity="0.5"/>
+  
+  <!-- Far right peak -->
+  <polygon points="1550,1080 1700,500 1920,400 1920,1080" fill="#1a2a22" opacity="0.4"/>
+  
+  <!-- Peak energy glow -->
+  <ellipse cx="960" cy="350" rx="400" ry="300" fill="url(#peakEnergy)"/>
+  
+  <!-- LIGHTNING BOLTS from the summit -->
+  <!-- Main bolt left -->
+  <path d="M920,200 L850,350 L900,350 L800,550 L870,550 L750,750" 
+        stroke="url(#lightningGlow)" stroke-width="4" fill="none" opacity="0.6"/>
+  <!-- Secondary branches -->
+  <path d="M850,350 L780,400" stroke="#4a8a6a" stroke-width="2" fill="none" opacity="0.35"/>
+  <path d="M870,550 L820,620" stroke="#4a8a6a" stroke-width="2" fill="none" opacity="0.3"/>
+  
+  <!-- Main bolt right -->
+  <path d="M1000,200 L1070,340 L1020,340 L1120,530 L1050,530 L1170,720" 
+        stroke="url(#lightningGlow)" stroke-width="4" fill="none" opacity="0.6"/>
+  <!-- Secondary branches -->
+  <path d="M1070,340 L1140,380" stroke="#4a8a6a" stroke-width="2" fill="none" opacity="0.35"/>
+  <path d="M1050,530 L1100,590" stroke="#4a8a6a" stroke-width="2" fill="none" opacity="0.3"/>
+  
+  <!-- Energy waves radiating from peak -->
+  <ellipse cx="960" cy="200" rx="80" ry="30" stroke="#4a8a6a" stroke-width="1" fill="none" opacity="0.25"/>
+  <ellipse cx="960" cy="200" rx="150" ry="50" stroke="#4a8a6a" stroke-width="1" fill="none" opacity="0.2"/>
+  <ellipse cx="960" cy="200" rx="250" ry="80" stroke="#4a8a6a" stroke-width="1" fill="none" opacity="0.15"/>
+  <ellipse cx="960" cy="200" rx="380" ry="120" stroke="#3d6a5a" stroke-width="1" fill="none" opacity="0.1"/>
+  
+  <!-- Vertical energy beam from peak -->
+  <line x1="960" y1="150" x2="960" y2="50" stroke="#5a9a7a" stroke-width="3" opacity="0.35"/>
+  <line x1="960" y1="150" x2="960" y2="50" stroke="#4a8a6a" stroke-width="8" opacity="0.15"/>
+  
+  <!-- Stars/energy points in the sky -->
+  <circle cx="700" cy="100" r="3" fill="#4a8a6a" opacity="0.25"/>
+  <circle cx="1200" cy="80" r="3" fill="#4a8a6a" opacity="0.25"/>
+  <circle cx="500" cy="200" r="2" fill="#3d6a5a" opacity="0.2"/>
+  <circle cx="1400" cy="180" r="2" fill="#3d6a5a" opacity="0.2"/>
+  
+  <!-- Advanced systems indicator text -->
+  <text x="100" y="100" fill="#3d6a5a" opacity="0.15" font-size="20" font-family="monospace">QUANTUM_STATE: SUPERPOSITION</text>
+  
+  <!-- Foreground ridge -->
+  <polygon points="0,900 300,850 600,920 900,870 1200,930 1500,880 1920,950 1920,1080 0,1080" fill="#101a16" opacity="0.85"/>
+</svg>

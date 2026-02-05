@@ -1,0 +1,107 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMax slice">
+  <defs>
+    <linearGradient id="connectionGlow" x1="0%" y1="50%" x2="100%" y2="50%">
+      <stop offset="0%" stop-color="#3d6a5a" stop-opacity="0.15"/>
+      <stop offset="50%" stop-color="#4a8a6a" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#3d6a5a" stop-opacity="0.15"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- MOUNTAIN BACKDROP -->
+  <polygon points="0,700 200,400 400,650 400,1080 0,1080" fill="#1a2a22" opacity="0.35"/>
+  <polygon points="1550,680 1750,380 1920,620 1920,1080 1550,1080" fill="#1a2a22" opacity="0.35"/>
+  
+  <!-- LEFT SIDE - External systems (puzzle pieces) -->
+  
+  <!-- Database block -->
+  <rect x="100" y="300" width="180" height="120" rx="10" fill="#1a2a22" opacity="0.7"/>
+  <rect x="100" y="300" width="180" height="120" rx="10" stroke="#2e4c43" stroke-width="2" fill="none" opacity="0.4"/>
+  <ellipse cx="190" cy="340" rx="60" ry="20" fill="#2e4c43" opacity="0.5"/>
+  <rect x="130" y="340" width="120" height="50" fill="#2e4c43" opacity="0.3"/>
+  <ellipse cx="190" cy="390" rx="60" ry="20" fill="#2e4c43" opacity="0.4"/>
+  <text x="190" y="440" fill="#3d6a5a" opacity="0.4" font-size="16" font-family="monospace" text-anchor="middle">DATABASE</text>
+  <!-- Puzzle tab right -->
+  <rect x="280" y="340" width="40" height="40" fill="#1a2a22" opacity="0.7"/>
+  
+  <!-- API block -->
+  <rect x="100" y="500" width="180" height="120" rx="10" fill="#1a2a22" opacity="0.7"/>
+  <rect x="100" y="500" width="180" height="120" rx="10" stroke="#2e4c43" stroke-width="2" fill="none" opacity="0.4"/>
+  <text x="190" y="550" fill="#3d6a5a" opacity="0.5" font-size="18" font-family="monospace" text-anchor="middle">{REST}</text>
+  <text x="190" y="580" fill="#2e4c43" opacity="0.35" font-size="14" font-family="monospace" text-anchor="middle">External API</text>
+  <text x="190" y="640" fill="#3d6a5a" opacity="0.4" font-size="16" font-family="monospace" text-anchor="middle">API</text>
+  <!-- Puzzle tab right -->
+  <rect x="280" y="540" width="40" height="40" fill="#1a2a22" opacity="0.7"/>
+  
+  <!-- Message Queue block -->
+  <rect x="100" y="700" width="180" height="120" rx="10" fill="#1a2a22" opacity="0.7"/>
+  <rect x="100" y="700" width="180" height="120" rx="10" stroke="#2e4c43" stroke-width="2" fill="none" opacity="0.4"/>
+  <rect x="130" y="740" width="40" height="30" fill="#2e4c43" opacity="0.4"/>
+  <rect x="175" y="740" width="40" height="30" fill="#2e4c43" opacity="0.35"/>
+  <rect x="220" y="740" width="40" height="30" fill="#2e4c43" opacity="0.3"/>
+  <text x="190" y="840" fill="#3d6a5a" opacity="0.4" font-size="16" font-family="monospace" text-anchor="middle">QUEUE</text>
+  <!-- Puzzle tab right -->
+  <rect x="280" y="740" width="40" height="40" fill="#1a2a22" opacity="0.7"/>
+  
+  <!-- CENTER - YAKMESH Adapter Hub -->
+  <rect x="600" y="350" width="350" height="400" rx="20" fill="#0a120e" opacity="0.85"/>
+  <rect x="600" y="350" width="350" height="400" rx="20" stroke="#3d6a5a" stroke-width="3" fill="none" opacity="0.5"/>
+  
+  <!-- Puzzle slots on left -->
+  <rect x="580" y="380" width="40" height="40" fill="#0a120e" opacity="0.85"/>
+  <rect x="580" y="530" width="40" height="40" fill="#0a120e" opacity="0.85"/>
+  <rect x="580" y="680" width="40" height="40" fill="#0a120e" opacity="0.85"/>
+  
+  <!-- Hub content -->
+  <text x="775" y="420" fill="#4a8a6a" opacity="0.6" font-size="28" font-family="monospace" text-anchor="middle">YAKMESH</text>
+  <text x="775" y="455" fill="#3d6a5a" opacity="0.45" font-size="22" font-family="monospace" text-anchor="middle">ADAPTERS</text>
+  
+  <!-- Adapter icons inside hub -->
+  <rect x="650" y="500" width="80" height="60" rx="5" fill="#1a2a22" opacity="0.6"/>
+  <text x="690" y="540" fill="#3d6a5a" opacity="0.4" font-size="12" font-family="monospace" text-anchor="middle">SQL</text>
+  
+  <rect x="750" y="500" width="80" height="60" rx="5" fill="#1a2a22" opacity="0.6"/>
+  <text x="790" y="540" fill="#3d6a5a" opacity="0.4" font-size="12" font-family="monospace" text-anchor="middle">HTTP</text>
+  
+  <rect x="850" y="500" width="80" height="60" rx="5" fill="#1a2a22" opacity="0.6"/>
+  <text x="890" y="540" fill="#3d6a5a" opacity="0.4" font-size="12" font-family="monospace" text-anchor="middle">MQ</text>
+  
+  <rect x="700" y="600" width="80" height="60" rx="5" fill="#1a2a22" opacity="0.6"/>
+  <text x="740" y="640" fill="#3d6a5a" opacity="0.4" font-size="12" font-family="monospace" text-anchor="middle">WS</text>
+  
+  <rect x="800" y="600" width="80" height="60" rx="5" fill="#1a2a22" opacity="0.6"/>
+  <text x="840" y="640" fill="#3d6a5a" opacity="0.4" font-size="12" font-family="monospace" text-anchor="middle">gRPC</text>
+  
+  <!-- CONNECTION LINES - left to center -->
+  <line x1="320" y1="360" x2="580" y2="400" stroke="#3d6a5a" stroke-width="3" opacity="0.4"/>
+  <line x1="320" y1="560" x2="580" y2="550" stroke="#3d6a5a" stroke-width="3" opacity="0.4"/>
+  <line x1="320" y1="760" x2="580" y2="700" stroke="#3d6a5a" stroke-width="3" opacity="0.4"/>
+  
+  <!-- Connection glow -->
+  <rect x="320" y="340" width="260" height="450" fill="url(#connectionGlow)"/>
+  
+  <!-- RIGHT SIDE - YAKMESH Network -->
+  <circle cx="1400" cy="550" r="180" fill="#1a2a22" opacity="0.6"/>
+  <circle cx="1400" cy="550" r="180" stroke="#4a8a6a" stroke-width="3" fill="none" opacity="0.5"/>
+  <circle cx="1400" cy="550" r="120" stroke="#3d6a5a" stroke-width="2" fill="none" opacity="0.3"/>
+  <circle cx="1400" cy="550" r="60" fill="#2e4c43" opacity="0.4"/>
+  <text x="1400" y="545" fill="#4a8a6a" opacity="0.5" font-size="20" font-family="monospace" text-anchor="middle">MESH</text>
+  <text x="1400" y="570" fill="#3d6a5a" opacity="0.4" font-size="14" font-family="monospace" text-anchor="middle">NETWORK</text>
+  
+  <!-- Network nodes -->
+  <circle cx="1280" cy="420" r="15" fill="#3d6a5a" opacity="0.4"/>
+  <circle cx="1520" cy="440" r="15" fill="#3d6a5a" opacity="0.4"/>
+  <circle cx="1300" cy="680" r="15" fill="#3d6a5a" opacity="0.4"/>
+  <circle cx="1500" cy="660" r="15" fill="#3d6a5a" opacity="0.4"/>
+  
+  <!-- Connection from hub to network -->
+  <line x1="950" y1="550" x2="1220" y2="550" stroke="#4a8a6a" stroke-width="4" opacity="0.5"/>
+  <polygon points="1220,540 1240,550 1220,560" fill="#4a8a6a" opacity="0.5"/>
+  
+  <!-- Data flow indicators -->
+  <circle cx="1050" cy="550" r="5" fill="#5a9a7a" opacity="0.5"/>
+  <circle cx="1120" cy="550" r="5" fill="#5a9a7a" opacity="0.5"/>
+  <circle cx="1180" cy="550" r="5" fill="#5a9a7a" opacity="0.5"/>
+  
+  <!-- Ground -->
+  <polygon points="0,920 300,900 600,950 900,920 1200,970 1500,930 1920,980 1920,1080 0,1080" fill="#101a16" opacity="0.75"/>
+</svg>

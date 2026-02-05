@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMax slice">
+  <defs>
+    <linearGradient id="peakGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a2e;stop-opacity:0.9"/>
+      <stop offset="100%" style="stop-color:#0f0f1a;stop-opacity:1"/>
+    </linearGradient>
+    <linearGradient id="snowGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#f97316;stop-opacity:0.3"/>
+      <stop offset="50%" style="stop-color:#ea580c;stop-opacity:0.1"/>
+      <stop offset="100%" style="stop-color:#c2410c;stop-opacity:0"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Background gradient -->
+  <rect width="1920" height="1080" fill="url(#peakGrad)"/>
+  
+  <!-- Three peaks - balanced ternary symbolism (-1, 0, +1) -->
+  <!-- Left peak (negative) -->
+  <polygon points="200,1080 500,500 800,1080" fill="#1f2937" opacity="0.8"/>
+  <polygon points="350,750 500,500 650,750" fill="url(#snowGrad)"/>
+  
+  <!-- Center peak (zero/neutral - tallest) -->
+  <polygon points="700,1080 960,300 1220,1080" fill="#1f2937" opacity="0.9"/>
+  <polygon points="830,550 960,300 1090,550" fill="url(#snowGrad)"/>
+  
+  <!-- Right peak (positive) -->
+  <polygon points="1120,1080 1420,500 1720,1080" fill="#1f2937" opacity="0.8"/>
+  <polygon points="1270,750 1420,500 1570,750" fill="url(#snowGrad)"/>
+  
+  <!-- Ternary symbols floating above peaks -->
+  <text x="500" y="420" fill="#f97316" font-size="60" font-family="monospace" opacity="0.4">T</text>
+  <text x="940" y="220" fill="#6b7280" font-size="60" font-family="monospace" opacity="0.4">0</text>
+  <text x="1400" y="420" fill="#22c55e" font-size="60" font-family="monospace" opacity="0.4">1</text>
+  
+  <!-- Foreground ridge -->
+  <polygon points="0,1080 100,900 300,950 500,880 700,920 900,850 1100,900 1300,870 1500,910 1700,860 1920,920 1920,1080" fill="#111827"/>
+</svg>

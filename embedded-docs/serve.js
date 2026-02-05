@@ -17,15 +17,16 @@ import { getContentType } from './index.js';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // Documentation location:
-// In development: ../website/docs (sibling to yakmesh-node)
-// In production (npm package): ./website/docs (included in package)
-const DOCS_DIR = existsSync(join(__dirname, '../../website/docs'))
-  ? join(__dirname, '../../website/docs')     // Development: sibling folder
-  : join(__dirname, '../website/docs');       // Production: in package
+// Priority 1: Internal (bundled with package) - website/docs inside yakmesh-node
+// Priority 2: External (sibling folder) - website/docs next to yakmesh-node
+// This ensures npm package uses bundled docs, dev can use either
+const DOCS_DIR = existsSync(join(__dirname, '../website/docs'))
+  ? join(__dirname, '../website/docs')        // Bundled: inside package
+  : join(__dirname, '../../website/docs');    // Development: sibling folder
 
-const ASSETS_DIR = existsSync(join(__dirname, '../../website/assets'))
-  ? join(__dirname, '../../website/assets')   // Development
-  : join(__dirname, '../website/assets');     // Production
+const ASSETS_DIR = existsSync(join(__dirname, '../website/assets'))
+  ? join(__dirname, '../website/assets')      // Bundled: inside package
+  : join(__dirname, '../../website/assets');  // Development: sibling folder
 
 /**
  * Get a documentation file by path

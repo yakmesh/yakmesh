@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMax slice">
+  <defs>
+    <linearGradient id="stupaGlow" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#101a16" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="signalPulse" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#fde68a" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#101a16" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  
+  <!-- MOUNTAIN BACKDROP -->
+  <polygon points="0,700 200,400 400,650 0,1080" fill="#1a2a22" opacity="0.35"/>
+  <polygon points="1550,650 1750,350 1920,580 1920,1080 1550,1080" fill="#1a2a22" opacity="0.35"/>
+  
+  <!-- Central STUPA (Sacred Tower) -->
+  <ellipse cx="960" cy="300" rx="300" ry="150" fill="url(#stupaGlow)"/>
+  
+  <!-- Stupa base (harmika - square base) -->
+  <polygon points="860,800 1060,800 1080,750 840,750" fill="#1a2a22" opacity="0.8"/>
+  <polygon points="860,800 1060,800 1080,750 840,750" stroke="#f59e0b" stroke-width="2" fill="none" opacity="0.4"/>
+  
+  <!-- Stupa dome (anda - hemisphere) -->
+  <ellipse cx="960" cy="700" rx="140" ry="70" fill="#1a2a22" opacity="0.85"/>
+  <ellipse cx="960" cy="700" rx="140" ry="70" stroke="#fbbf24" stroke-width="3" fill="none" opacity="0.5"/>
+  <ellipse cx="960" cy="650" rx="120" ry="55" fill="#1a2a22" opacity="0.85"/>
+  <ellipse cx="960" cy="650" rx="120" ry="55" stroke="#f59e0b" stroke-width="2" fill="none" opacity="0.4"/>
+  
+  <!-- Stupa tower (yasti - central pillar) -->
+  <rect x="940" y="400" width="40" height="250" fill="#1a2a22" opacity="0.85"/>
+  <rect x="940" y="400" width="40" height="250" stroke="#fbbf24" stroke-width="2" fill="none" opacity="0.5"/>
+  
+  <!-- Stupa tiers (chattra - umbrellas representing priority levels) -->
+  <!-- CRITICAL tier (top) -->
+  <polygon points="920,420 1000,420 1020,400 900,400" fill="#fbbf24" opacity="0.5"/>
+  <text x="960" y="390" fill="#fde68a" opacity="0.5" font-size="10" font-family="monospace" text-anchor="middle">CRITICAL</text>
+  
+  <!-- FLASH tier -->
+  <polygon points="910,470 1010,470 1030,450 890,450" fill="#f59e0b" opacity="0.45"/>
+  <text x="960" y="440" fill="#fbbf24" opacity="0.4" font-size="10" font-family="monospace" text-anchor="middle">FLASH</text>
+  
+  <!-- IMMEDIATE tier -->
+  <polygon points="900,520 1020,520 1040,500 880,500" fill="#d97706" opacity="0.4"/>
+  <text x="960" y="490" fill="#f59e0b" opacity="0.35" font-size="10" font-family="monospace" text-anchor="middle">IMMEDIATE</text>
+  
+  <!-- PRIORITY tier -->
+  <polygon points="890,570 1030,570 1050,550 870,550" fill="#b45309" opacity="0.35"/>
+  <text x="960" y="540" fill="#d97706" opacity="0.3" font-size="10" font-family="monospace" text-anchor="middle">PRIORITY</text>
+  
+  <!-- ROUTINE tier (base of tower) -->
+  <polygon points="880,620 1040,620 1060,600 860,600" fill="#92400e" opacity="0.3"/>
+  <text x="960" y="590" fill="#b45309" opacity="0.25" font-size="10" font-family="monospace" text-anchor="middle">ROUTINE</text>
+  
+  <!-- Pinnacle (finial) -->
+  <circle cx="960" cy="380" r="15" fill="#fbbf24" opacity="0.6"/>
+  <polygon points="960,340 950,370 970,370" fill="#fde68a" opacity="0.5"/>
+  
+  <!-- Broadcast waves emanating from stupa -->
+  <!-- First ring (innermost) -->
+  <ellipse cx="960" cy="500" rx="200" ry="100" fill="none" stroke="#fbbf24" stroke-width="2" opacity="0.4" stroke-dasharray="10,5"/>
+  <!-- Second ring -->
+  <ellipse cx="960" cy="500" rx="300" ry="150" fill="none" stroke="#f59e0b" stroke-width="2" opacity="0.3" stroke-dasharray="10,5"/>
+  <!-- Third ring -->
+  <ellipse cx="960" cy="500" rx="400" ry="200" fill="none" stroke="#d97706" stroke-width="1.5" opacity="0.25" stroke-dasharray="10,5"/>
+  <!-- Fourth ring (outermost) -->
+  <ellipse cx="960" cy="500" rx="500" ry="250" fill="none" stroke="#b45309" stroke-width="1" opacity="0.2" stroke-dasharray="10,5"/>
+  
+  <!-- Receiving nodes (smaller stupas/towers) -->
+  <!-- Left node -->
+  <rect x="200" y="600" width="20" height="100" fill="#1a2a22" opacity="0.7"/>
+  <polygon points="190,620 230,620 240,600 180,600" fill="#f59e0b" opacity="0.3"/>
+  <ellipse cx="210" cy="700" rx="40" ry="20" fill="#1a2a22" opacity="0.6"/>
+  <ellipse cx="210" cy="700" rx="40" ry="20" stroke="#fbbf24" stroke-width="1" fill="none" opacity="0.3"/>
+  <text x="210" y="750" fill="#f59e0b" opacity="0.35" font-size="12" font-family="monospace" text-anchor="middle">NODE A</text>
+  
+  <!-- Right node -->
+  <rect x="1700" y="580" width="20" height="120" fill="#1a2a22" opacity="0.7"/>
+  <polygon points="1690,600 1730,600 1740,580 1680,580" fill="#f59e0b" opacity="0.3"/>
+  <ellipse cx="1710" cy="700" rx="50" ry="25" fill="#1a2a22" opacity="0.6"/>
+  <ellipse cx="1710" cy="700" rx="50" ry="25" stroke="#fbbf24" stroke-width="1" fill="none" opacity="0.3"/>
+  <text x="1710" y="755" fill="#f59e0b" opacity="0.35" font-size="12" font-family="monospace" text-anchor="middle">NODE B</text>
+  
+  <!-- Bottom left node -->
+  <rect x="400" y="750" width="15" height="80" fill="#1a2a22" opacity="0.6"/>
+  <polygon points="392,765 423,765 430,750 385,750" fill="#d97706" opacity="0.25"/>
+  <ellipse cx="407" cy="830" rx="30" ry="15" fill="#1a2a22" opacity="0.5"/>
+  <text x="407" y="870" fill="#d97706" opacity="0.3" font-size="10" font-family="monospace" text-anchor="middle">NODE C</text>
+  
+  <!-- Bottom right node -->
+  <rect x="1500" y="770" width="15" height="70" fill="#1a2a22" opacity="0.6"/>
+  <polygon points="1492,785 1523,785 1530,770 1485,770" fill="#d97706" opacity="0.25"/>
+  <ellipse cx="1507" cy="840" rx="30" ry="15" fill="#1a2a22" opacity="0.5"/>
+  <text x="1507" y="880" fill="#d97706" opacity="0.3" font-size="10" font-family="monospace" text-anchor="middle">NODE D</text>
+  
+  <!-- Message path indicators (arrows) -->
+  <line x1="460" y1="500" x2="280" y2="620" stroke="#fbbf24" stroke-width="1.5" opacity="0.35"/>
+  <polygon points="280,620 295,610 290,625" fill="#fbbf24" opacity="0.35"/>
+  
+  <line x1="1460" y1="500" x2="1640" y2="600" stroke="#fbbf24" stroke-width="1.5" opacity="0.35"/>
+  <polygon points="1640,600 1625,590 1630,605" fill="#fbbf24" opacity="0.35"/>
+  
+  <line x1="660" y1="650" x2="470" y2="780" stroke="#f59e0b" stroke-width="1" opacity="0.25"/>
+  <polygon points="470,780 485,770 480,785" fill="#f59e0b" opacity="0.25"/>
+  
+  <line x1="1260" y1="650" x2="1450" y2="800" stroke="#f59e0b" stroke-width="1" opacity="0.25"/>
+  <polygon points="1450,800 1435,790 1440,805" fill="#f59e0b" opacity="0.25"/>
+  
+  <!-- Signal pulses -->
+  <circle cx="960" cy="380" r="25" fill="url(#signalPulse)"/>
+  <circle cx="960" cy="380" r="40" fill="none" stroke="#fde68a" stroke-width="1" opacity="0.2"/>
+  
+  <!-- STUPA label -->
+  <text x="960" y="850" fill="#fbbf24" opacity="0.5" font-size="24" font-family="monospace" text-anchor="middle">STUPA</text>
+  <text x="960" y="875" fill="#f59e0b" opacity="0.35" font-size="12" font-family="monospace" text-anchor="middle">Signal Transmission Unit for Peer Awareness</text>
+  
+  <!-- Ground -->
+  <polygon points="0,920 300,900 600,950 900,920 1200,970 1500,930 1920,980 1920,1080 0,1080" fill="#101a16" opacity="0.75"/>
+</svg>

@@ -28,9 +28,179 @@
  */
 
 import { TIME_SOURCE } from './trust-tier.js';
+import { Trit, POSITIVE, NEGATIVE, NEUTRAL, TritState } from '../oracle/tribhuj.js';
 import { createLogger } from '../utils/logger.js';
 
 const log = createLogger('security:sakshi');
+
+// =============================================================================
+// TERNARY OBSERVATION RESULT
+// =============================================================================
+
+/**
+ * Ternary Observation States for SAKSHI
+ * 
+ * Aligns with TRIBHUJ balanced ternary:
+ *   AGREED   (+1) = Observations match, math verified
+ *   PENDING   (0) = Inconclusive, need more observations
+ *   DISAGREED (-1) = Observations conflict, requires investigation
+ */
+export const OBSERVATION_STATE = Object.freeze({
+  AGREED: POSITIVE,      // +1: All observations agree
+  PENDING: NEUTRAL,      // 0: Inconclusive/need more data
+  DISAGREED: NEGATIVE,   // -1: Observations conflict
+});
+
+/**
+ * ObservationResult - Ternary result for SAKSHI observations
+ * 
+ * Like ValidationResult, but for observational consensus:
+ * - AGREED: "The math matches across all witnesses"
+ * - PENDING: "We need more witnesses or time to conclude"
+ * - DISAGREED: "Witnesses report conflicting observations"
+ * 
+ * The third state (PENDING) is crucial for SAKSHI's philosophy:
+ * "Observe without judging" - sometimes we genuinely don't know yet.
+ */
+export class ObservationResult {
+  #state;      // Trit: AGREED(+1), DISAGREED(-1), PENDING(0)
+  #reason;
+  #data;       // Observation-specific data
+  #confidence;
+  
+  /**
+   * @param {number|Trit} state - Ternary state: +1 (agreed), -1 (disagreed), 0 (pending)
+   * @param {string|null} reason - Reason for disagreed/pending state
+   * @param {object|null} data - Observation data
+   * @param {number} confidence - Confidence level 0-1
+   */
+  constructor(state, reason = null, data = null, confidence = 1.0) {
+    if (state instanceof Trit) {
+      this.#state = state;
+    } else if (typeof state === 'boolean') {
+      // BACKWARDS COMPAT: true → AGREED, false → DISAGREED
+      this.#state = new Trit(state ? POSITIVE : NEGATIVE);
+    } else {
+      this.#state = new Trit(state);
+    }
+    
+    this.#reason = reason;
+    this.#data = data ? Object.freeze({ ...data }) : null;
+    this.#confidence = Math.max(0, Math.min(1, confidence));
+    
+    Object.freeze(this);
+  }
+  
+  // ─────────────────────────────────────────────────────────────────────────
+  // Ternary State Accessors
+  // ─────────────────────────────────────────────────────────────────────────
+  
+  /** The ternary state as a Trit */
+  get state() { return this.#state; }
+  
+  /** Did all observations agree? (+1) */
+  get isAgreed() { return this.#state.isPositive; }
+  
+  /** Did observations conflict? (-1) */
+  get isDisagreed() { return this.#state.isNegative; }
+  
+  /** Is this inconclusive/pending? (0) */
+  get isPending() { return this.#state.isNeutral; }
+  
+  // ─────────────────────────────────────────────────────────────────────────
+  // Backwards Compatibility (boolean interface)
+  // ─────────────────────────────────────────────────────────────────────────
+  
+  /** @deprecated Use isAgreed instead. Returns true only for AGREED state. */
+  get agreed() { return this.#state.isPositive; }
+  
+  get reason() { return this.#reason; }
+  get data() { return this.#data; }
+  get confidence() { return this.#confidence; }
+  
+  // ─────────────────────────────────────────────────────────────────────────
+  // Static Constructors
+  // ─────────────────────────────────────────────────────────────────────────
+  
+  /** Create an AGREED (+1) result - observations match */
+  static agreed(data = null, confidence = 1.0) {
+    return new ObservationResult(POSITIVE, null, data, confidence);
+  }
+  
+  /** Create a DISAGREED (-1) result - observations conflict */
+  static disagreed(reason, data = null) {
+    return new ObservationResult(NEGATIVE, reason, data, 0);
+  }
+  
+  /** Create a PENDING (0) result - need more observations */
+  static pending(reason = 'AWAITING_OBSERVATIONS', data = null, confidence = 0.5) {
+    return new ObservationResult(NEUTRAL, reason, data, confidence);
+  }
+  
+  // ─────────────────────────────────────────────────────────────────────────
+  // Ternary Logic Operations
+  // ─────────────────────────────────────────────────────────────────────────
+  
+  /**
+   * Combine two observations using ternary AND.
+   * Both must AGREE for result to be AGREED.
+   * If either DISAGREES, result is DISAGREED.
+   * Otherwise PENDING.
+   */
+  and(other) {
+    const newState = this.#state.and(other.state);
+    const reason = this.#reason || other.reason;
+    const confidence = Math.min(this.#confidence, other.confidence);
+    return new ObservationResult(newState, reason, this.#data || other.data, confidence);
+  }
+  
+  /**
+   * Combine two observations using ternary OR.
+   * Either AGREEING makes result AGREED.
+   * Both must DISAGREE for result to be DISAGREED.
+   * Otherwise PENDING.
+   */
+  or(other) {
+    const newState = this.#state.or(other.state);
+    const reason = this.isAgreed ? null : (this.#reason || other.reason);
+    const confidence = Math.max(this.#confidence, other.confidence);
+    return new ObservationResult(newState, reason, this.#data || other.data, confidence);
+  }
+  
+  /**
+   * Consensus: do observations agree?
+   * If both have same state, return that state.
+   * If they differ, return PENDING.
+   */
+  consensus(other) {
+    const newState = this.#state.consensus(other.state);
+    const reason = newState.isNeutral ? 'OBSERVATION_DISAGREEMENT' : this.#reason;
+    const confidence = newState.isNeutral ? 0.5 : this.#confidence;
+    return new ObservationResult(newState, reason, this.#data, confidence);
+  }
+  
+  // ─────────────────────────────────────────────────────────────────────────
+  // Serialization
+  // ─────────────────────────────────────────────────────────────────────────
+  
+  toJSON() {
+    return Object.freeze({
+      state: this.#state.value,
+      agreed: this.#state.isPositive,   // Backwards compat
+      isAgreed: this.#state.isPositive,
+      isDisagreed: this.#state.isNegative,
+      isPending: this.#state.isNeutral,
+      reason: this.#reason,
+      data: this.#data,
+      confidence: this.#confidence,
+    });
+  }
+  
+  toString() {
+    const stateStr = this.isAgreed ? 'AGREED' : (this.isDisagreed ? 'DISAGREED' : 'PENDING');
+    return `ObservationResult(${stateStr}${this.#reason ? ': ' + this.#reason : ''})`;
+  }
+}
 
 // =============================================================================
 // CAPABILITY PROFILES
@@ -389,13 +559,30 @@ export function fuseTimeAttestations(attestations) {
  * This replaces "voting" - we don't ask "who agrees?"
  * We ask "does the math match?"
  * 
+ * Returns TERNARY result (TRIBHUJ-aligned):
+ *   AGREED (+1)   - All observations match
+ *   PENDING (0)   - Not enough observations to conclude
+ *   DISAGREED (-1) - Observations conflict, needs investigation
+ * 
  * @param {Array<{witness: NodeWitness, value: any}>} observations
  * @param {Function} equalityFn - How to compare values (default: strict equality)
- * @returns {Object} Agreement result
+ * @param {Object} options - Agreement options
+ * @returns {ObservationResult} Ternary agreement result
  */
-export function checkMathematicalAgreement(observations, equalityFn = (a, b) => a === b) {
+export function checkMathematicalAgreement(observations, equalityFn = (a, b) => a === b, options = {}) {
+  const { minObservations = 1 } = options;
+  
   if (observations.length === 0) {
-    return { agreed: false, reason: 'NO_OBSERVATIONS' };
+    // No observations - PENDING (we don't know yet)
+    return ObservationResult.pending('NO_OBSERVATIONS', { count: 0 });
+  }
+  
+  if (observations.length < minObservations) {
+    // Not enough to conclude - PENDING
+    return ObservationResult.pending('INSUFFICIENT_OBSERVATIONS', {
+      count: observations.length,
+      required: minObservations,
+    }, observations.length / minObservations);
   }
 
   // Group by value
@@ -414,31 +601,26 @@ export function checkMathematicalAgreement(observations, equalityFn = (a, b) => 
     }
   }
 
-  // If all agree (one group), the math matches
+  // If all agree (one group), the math matches - AGREED
   if (groups.size === 1) {
     const [[value, members]] = groups;
-    return {
-      agreed: true,
+    return ObservationResult.agreed({
       value,
       contributors: members.length,
-      confidence: 1.0,
-    };
+    }, 1.0);
   }
 
-  // Disagreement - the math doesn't match somewhere
+  // Disagreement - DISAGREED
   // This is a signal to RE-COMPUTE, not to vote
   const groupSizes = [...groups.values()].map(g => g.length);
   const largestGroup = Math.max(...groupSizes);
   
-  return {
-    agreed: false,
-    reason: 'MATHEMATICAL_DISAGREEMENT',
+  return ObservationResult.disagreed('MATHEMATICAL_DISAGREEMENT', {
     groupCount: groups.size,
     largestGroupSize: largestGroup,
     totalObservations: observations.length,
-    // Suggest re-computation
     action: 'RECOMPUTE_AND_VERIFY',
-  };
+  });
 }
 
 /**
@@ -625,6 +807,11 @@ export const REMEDIATION = Object.freeze({
 /**
  * Analyze a disagreement to determine likely cause
  * 
+ * Uses TERNARY assessment (TRIBHUJ-aligned):
+ *   BENIGN (+1)     - Clearly hardware/timing issue (no concern)
+ *   INCONCLUSIVE (0) - Can't determine cause with certainty
+ *   SUSPICIOUS (-1)  - Unexplained, warrants investigation
+ * 
  * @param {Object} context - Disagreement context
  * @param {NodeWitness} context.nodeA - First node
  * @param {NodeWitness} context.nodeB - Second node  
@@ -634,7 +821,7 @@ export const REMEDIATION = Object.freeze({
  * @param {number} context.computeTimeB - How long B took (ms)
  * @param {number} context.expectedTime - Expected computation time
  * @param {number} context.timestampDelta - Time difference between computations
- * @returns {Object} Analysis with likely cause and recommended remediation
+ * @returns {Object} Analysis with likely cause and ternary assessment
  */
 export function analyzeDisagreement(context) {
   const {
@@ -645,13 +832,16 @@ export function analyzeDisagreement(context) {
     timestampDelta = 0,
   } = context;
 
-  // Analysis results
+  // Analysis results with TERNARY assessment
   const analysis = {
     likelyCause: DISAGREEMENT_CAUSE.UNKNOWN,
     confidence: 0,
     factors: [],
     remediation: [],
-    isBenign: true,  // Assume good faith
+    // TERNARY: BENIGN(+1), INCONCLUSIVE(0), SUSPICIOUS(-1)
+    assessment: new Trit(NEUTRAL),  // Start inconclusive
+    // Backwards compat (deprecated)
+    get isBenign() { return this.assessment.isPositive; },
   };
 
   // ==========================================================================
@@ -667,6 +857,7 @@ export function analyzeDisagreement(context) {
     });
     analysis.likelyCause = DISAGREEMENT_CAUSE.COMPUTE_TIMEOUT;
     analysis.confidence = 0.8;
+    analysis.assessment = new Trit(POSITIVE);  // BENIGN - hardware limitation
     analysis.remediation.push(REMEDIATION.EXTEND_DEADLINE);
     analysis.remediation.push(REMEDIATION.NOTE_CAPABILITY);
     return analysis;
@@ -685,6 +876,7 @@ export function analyzeDisagreement(context) {
       });
       analysis.likelyCause = DISAGREEMENT_CAUSE.FLOATING_POINT_VARIANCE;
       analysis.confidence = 0.9;
+      analysis.assessment = new Trit(POSITIVE);  // BENIGN - expected FP behavior
       analysis.remediation.push(REMEDIATION.REDUCE_PRECISION_EXPECTATION);
       // This isn't really a disagreement - they agree within FP precision
       analysis.effectivelyAgree = true;
@@ -701,6 +893,7 @@ export function analyzeDisagreement(context) {
     // Node without AES-NI might timeout or produce different intermediate states
     analysis.likelyCause = DISAGREEMENT_CAUSE.CRYPTO_FAILURE;
     analysis.confidence = 0.7;
+    analysis.assessment = new Trit(POSITIVE);  // BENIGN - hardware difference
     analysis.remediation.push(REMEDIATION.NOTE_CAPABILITY);
     analysis.remediation.push(REMEDIATION.INCREASE_TIMEOUT);
     return analysis;
@@ -719,6 +912,7 @@ export function analyzeDisagreement(context) {
     });
     analysis.likelyCause = DISAGREEMENT_CAUSE.CLOCK_DRIFT;
     analysis.confidence = 0.75;
+    analysis.assessment = new Trit(POSITIVE);  // BENIGN - clock issue
     analysis.remediation.push(REMEDIATION.SYNC_STATE);
     analysis.remediation.push(REMEDIATION.RETRY_COMPUTATION);
     return analysis;
@@ -732,6 +926,7 @@ export function analyzeDisagreement(context) {
     });
     analysis.likelyCause = DISAGREEMENT_CAUSE.STALE_TIMESTAMP;
     analysis.confidence = 0.6;
+    analysis.assessment = new Trit(POSITIVE);  // BENIGN - precision mismatch
     analysis.remediation.push(REMEDIATION.SHARE_RESULT);
     return analysis;
   }
@@ -748,6 +943,7 @@ export function analyzeDisagreement(context) {
     });
     analysis.likelyCause = DISAGREEMENT_CAUSE.INCOMPLETE_DATA;
     analysis.confidence = 0.8;
+    analysis.assessment = new Trit(NEUTRAL);  // INCONCLUSIVE - could be network or malicious
     analysis.remediation.push(REMEDIATION.REQUEST_INPUTS);
     analysis.remediation.push(REMEDIATION.RETRY_COMPUTATION);
     return analysis;
@@ -775,13 +971,14 @@ export function analyzeDisagreement(context) {
     });
     analysis.likelyCause = DISAGREEMENT_CAUSE.UNKNOWN;
     analysis.confidence = 0.5;
-    analysis.isBenign = false;  // Suspicious, but not confirmed malicious
+    analysis.assessment = new Trit(NEGATIVE);  // SUSPICIOUS - no benign explanation
     analysis.remediation.push(REMEDIATION.REQUIRE_BUDDY);
     analysis.remediation.push(REMEDIATION.ESCALATE_TO_MESH);
     return analysis;
   }
 
-  // Default: unknown cause, assume benign, try again
+  // Default: unknown cause, INCONCLUSIVE, try again
+  analysis.assessment = new Trit(NEUTRAL);  // INCONCLUSIVE
   analysis.remediation.push(REMEDIATION.RETRY_COMPUTATION);
   return analysis;
 }
@@ -1016,9 +1213,14 @@ export function trustProfileFromWitness(witness, dokoId) {
  * Instead of weighted voting ("SIRDAR's vote counts 2x"),
  * we check for mathematical agreement on revocation evidence.
  * 
+ * Returns TERNARY result (TRIBHUJ-aligned):
+ *   AGREED (+1)   - Evidence agrees, revocation confirmed
+ *   PENDING (0)   - Not enough evidence to conclude
+ *   DISAGREED (-1) - Evidence conflicts, needs investigation
+ * 
  * @param {Array<{witness: NodeWitness, evidence: Object}>} revocationReports
  * @param {Object} options
- * @returns {Object} Revocation assessment
+ * @returns {ObservationResult} Ternary revocation assessment
  */
 export function checkRevocationAgreement(revocationReports, options = {}) {
   const {
@@ -1027,12 +1229,11 @@ export function checkRevocationAgreement(revocationReports, options = {}) {
   } = options;
 
   if (revocationReports.length < minReports) {
-    return {
-      revoked: false,
-      reason: 'INSUFFICIENT_REPORTS',
+    // Not enough reports - PENDING (need more witnesses)
+    return ObservationResult.pending('INSUFFICIENT_REPORTS', {
       reportCount: revocationReports.length,
       minRequired: minReports,
-    };
+    }, revocationReports.length / minReports);
   }
 
   // Check if reports agree on the revocation reason
@@ -1046,15 +1247,17 @@ export function checkRevocationAgreement(revocationReports, options = {}) {
     }))
   );
 
-  if (!evidenceAgreement.agreed) {
-    // Nodes disagree on what happened - need investigation
-    return {
-      revoked: false,
-      reason: 'EVIDENCE_DISAGREEMENT',
-      action: evidenceAgreement.action,
-      groupCount: evidenceAgreement.groupCount,
+  if (evidenceAgreement.isDisagreed) {
+    // Evidence conflicts - DISAGREED (needs investigation)
+    return ObservationResult.disagreed('EVIDENCE_DISAGREEMENT', {
+      groupCount: evidenceAgreement.data?.groupCount,
       suggestion: 'Gather more evidence or investigate discrepancies',
-    };
+    });
+  }
+  
+  if (evidenceAgreement.isPending) {
+    // Still awaiting consensus
+    return ObservationResult.pending(evidenceAgreement.reason, evidenceAgreement.data);
   }
 
   // All reports agree on the evidence
@@ -1075,25 +1278,21 @@ export function checkRevocationAgreement(revocationReports, options = {}) {
     );
     
     if (!hasPrecisionWitness) {
-      return {
-        revoked: false,
-        reason: 'NO_PRECISION_WITNESS',
+      // Need precision witness - PENDING
+      return ObservationResult.pending('NO_PRECISION_WITNESS', {
         suggestion: 'Wait for confirmation from a precision time node',
         currentReports: revocationReports.length,
-      };
+      }, 0.7);
     }
   }
 
-  // Mathematical agreement achieved
-  return {
-    revoked: true,
-    evidence: JSON.parse(evidenceAgreement.value),
+  // Mathematical agreement achieved - AGREED (revocation confirmed)
+  return ObservationResult.agreed({
+    evidence: JSON.parse(evidenceAgreement.data?.value || '{}'),
     reportCount: revocationReports.length,
     timestamp: timestampFusion.timestamp,
     timestampPrecision: timestampFusion.precision,
-    confidence: evidenceAgreement.confidence,
-    // Note: No "effectiveCount" or "weightedVotes" - just agreement
-  };
+  }, evidenceAgreement.confidence);
 }
 
 /**
@@ -1106,16 +1305,27 @@ export function checkRevocationAgreement(revocationReports, options = {}) {
  * 2. Fuse timestamps with precision weighting (physics, not politics)
  * 3. Rank by reliability for informational purposes only
  * 
+ * Returns TERNARY result (TRIBHUJ-aligned):
+ *   AGREED (+1)   - All attestations agree
+ *   PENDING (0)   - Not enough attestations
+ *   DISAGREED (-1) - Attestations conflict
+ * 
  * @param {Array<{witness: NodeWitness, attestation: Object}>} attestations
- * @returns {Object} Aggregation result
+ * @param {Object} options - Aggregation options
+ * @returns {ObservationResult} Ternary aggregation result
  */
-export function aggregateAttestations(attestations) {
+export function aggregateAttestations(attestations, options = {}) {
+  const { minAttestations = 1 } = options;
+  
   if (attestations.length === 0) {
-    return {
-      agreed: false,
-      reason: 'NO_ATTESTATIONS',
-      count: 0,
-    };
+    return ObservationResult.pending('NO_ATTESTATIONS', { count: 0 });
+  }
+  
+  if (attestations.length < minAttestations) {
+    return ObservationResult.pending('INSUFFICIENT_ATTESTATIONS', {
+      count: attestations.length,
+      required: minAttestations,
+    }, attestations.length / minAttestations);
   }
 
   // Extract the attestation values for agreement check
@@ -1126,15 +1336,17 @@ export function aggregateAttestations(attestations) {
     }))
   );
 
-  // If not agreed, return the disagreement info
-  if (!agreement.agreed) {
-    return {
-      agreed: false,
-      reason: 'ATTESTATION_DISAGREEMENT',
-      action: agreement.action,
-      groupCount: agreement.groupCount,
+  // If disagreed, return the disagreement
+  if (agreement.isDisagreed) {
+    return ObservationResult.disagreed('ATTESTATION_DISAGREEMENT', {
+      groupCount: agreement.data?.groupCount,
       totalAttestations: attestations.length,
-    };
+    });
+  }
+  
+  // If still pending, propagate
+  if (agreement.isPending) {
+    return ObservationResult.pending(agreement.reason, agreement.data, agreement.confidence);
   }
 
   // Attestations agree - fuse any timestamp data
@@ -1149,21 +1361,19 @@ export function aggregateAttestations(attestations) {
   // Rank witnesses by reliability (informational, not gatekeeping)
   const rankedWitnesses = rankByReliability(attestations.map(a => a.witness));
 
-  return {
-    agreed: true,
-    claim: JSON.parse(agreement.value),
+  return ObservationResult.agreed({
+    claim: JSON.parse(agreement.data?.value || '{}'),
     attestationCount: attestations.length,
     // Note: No "effectiveCount" - all agreeing attestations are equal
     timestamp: timestampFusion?.timestamp,
     timestampPrecision: timestampFusion?.precision,
-    confidence: agreement.confidence,
     // Informational: who contributed (sorted by reliability)
     contributors: rankedWitnesses.map(w => ({
       nodeId: w.nodeId,
       capabilityLevel: w.capabilityLevel,
       qualityScore: w.qualityScore,
     })),
-  };
+  }, agreement.confidence);
 }
 
 /**
