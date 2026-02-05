@@ -1,0 +1,22 @@
+# YAKMESH Development Caddyfile
+# Usage: caddy run --config deploy/Caddyfile.dev
+
+{
+    admin off
+}
+
+:8443 {
+    tls internal
+    
+    handle /.well-known/yakmesh/* {
+        reverse_proxy localhost:3000
+    }
+    
+    handle /ws {
+        reverse_proxy localhost:9001
+    }
+    
+    handle {
+        reverse_proxy localhost:3000
+    }
+}

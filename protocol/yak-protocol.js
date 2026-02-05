@@ -751,6 +751,8 @@ const PORT = ${this.port};
 // Built-in routes that map to HTTP endpoints
 const BUILTIN_ROUTES = {
   'dashboard': '/dashboard/',
+  'docs': '/docs/',
+  'docs.yakmesh': '/docs/',
   'site': '/site/',
   'content': '/content/',
   'node': '/node',
@@ -759,11 +761,14 @@ const BUILTIN_ROUTES = {
   'health': '/health',
   'gossip': '/gossip',
   'discovered': '/discovered',
+  'domains': '/domains',
+  'websites': '/websites',
   'security': '/security/status',
   'namche': '/security/namche/gates',
   'doko': '/security/doko/stats',
   'oracle': '/oracle/status',
-  'time': '/time/status'
+  'time': '/time/status',
+  'bookmarks': '/bookmarks'
 };
 
 /**
