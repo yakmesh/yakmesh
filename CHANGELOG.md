@@ -54,10 +54,30 @@ This release formalizes YAKMESH's rejection of voting-based consensus in favor o
 
 **Migration:** Use `SAKSHI` for all capability/observation needs.
 
+#### 🌉 SETU Trust-Tier Bridge
+
+**सेतु (Sanskrit: "bridge")** - Migration path from voting to observation:
+
+- `witnessFromTrustProfile()` - Convert TrustProfile → NodeWitness
+- `trustProfileFromWitness()` - Backward compatibility layer
+- `checkRevocationAgreement()` - Replaces WeightedRevocationCalculator
+- `aggregateAttestations()` - Replaces calculateEffectiveCount()
+- `assessComputationTrust()` - Trust based on math, not node tier
+
+**Key difference from old trust-tier patterns:**
+
+| Old (trust-tier) | New (SAKSHI+SETU) |
+|------------------|-------------------|
+| `getWeight()` → voting power | `qualityScore` → data fusion |
+| `calculateEffectiveCount()` | `aggregateAttestations()` |
+| `WeightedRevocationCalculator` | `checkRevocationAgreement()` |
+| Majority vote wins | Mathematical agreement required |
+
 #### 📊 Test Coverage
 
 - 174 tests passing
 - SAKSHI tests include philosophy validation (no permission methods exist)
+- SETU bridge tests verify no weighted voting
 
 ---
 
