@@ -601,6 +601,9 @@ export class YakmeshNode {
     const app = express();
     this.app = app;  // Store for PeerQuanta endpoints
     
+    // Enable strict routing: /docs and /docs/ are different routes
+    app.set('strict routing', true);
+    
     app.use(express.json({ limit: '1mb' }));  // Limit payload size
     
     // =========================================
