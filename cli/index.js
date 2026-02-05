@@ -289,6 +289,76 @@ program
     }
   });
 
+// ===== OPEN COMMAND =====
+// Quick access to node interfaces
+program
+  .command('open [target]')
+  .description('Open node interfaces in browser (dashboard, docs, health, or yak:// URL)')
+  .option('-p, --port <port>', 'HTTP port of local node', '3000')
+  .action(async (target = 'dashboard', options) => {
+    const port = parseInt(options.port);
+    
+    // Built-in targets
+    const targets = {
+      'dashboard': `http://localhost:${port}/dashboard`,
+      'dash': `http://localhost:${port}/dashboard`,
+      'd': `http://localhost:${port}/dashboard`,
+      'docs': `http://localhost:${port}/docs/`,
+      'documentation': `http://localhost:${port}/docs/`,
+      'health': `http://localhost:${port}/health`,
+      'h': `http://localhost:${port}/health`,
+      'peers': `http://localhost:${port}/peers`,
+      'metrics': `http://localhost:${port}/metrics`,
+    };
+    
+    let url;
+    
+    if (target.startsWith('yak://')) {
+      // Handle yak:// URLs
+      try {
+        const { yakToHttp } = await import('../protocol/yak-protocol.js');
+        url = yakToHttp(target, port);
+      } catch (e) {
+        console.log(chalk.red(`✗ Invalid yak:// URL: ${e.message}`));
+        process.exit(1);
+      }
+    } else if (targets[target.toLowerCase()]) {
+      url = targets[target.toLowerCase()];
+    } else {
+      // Try it as a yak:// URL without prefix
+      try {
+        const { yakToHttp } = await import('../protocol/yak-protocol.js');
+        url = yakToHttp(`yak://${target}`, port);
+      } catch (e) {
+        console.log(chalk.yellow(`Unknown target: ${target}`));
+        console.log(chalk.gray('\nAvailable targets:'));
+        console.log(chalk.gray('  dashboard (d)  - Node dashboard'));
+        console.log(chalk.gray('  docs           - Documentation'));
+        console.log(chalk.gray('  health (h)     - Health check'));
+        console.log(chalk.gray('  peers          - Peer list'));
+        console.log(chalk.gray('  metrics        - Node metrics'));
+        console.log(chalk.gray('  yak://<url>    - Any yak:// URL'));
+        process.exit(1);
+      }
+    }
+    
+    console.log(chalk.cyan(`\n🌐 Opening: ${url}\n`));
+    
+    // Open in default browser
+    const { exec } = await import('child_process');
+    const { platform } = await import('os');
+    
+    const openCmd = platform() === 'win32' ? 'start' :
+                    platform() === 'darwin' ? 'open' : 'xdg-open';
+    
+    exec(`${openCmd} "${url}"`, (err) => {
+      if (err) {
+        console.log(chalk.red('✗ Could not open browser'));
+        console.log(chalk.gray(`  ${err.message}`));
+      }
+    });
+  });
+
 // ===== PROTOCOL COMMAND GROUP =====
 const protocolCmd = program
   .command('protocol')

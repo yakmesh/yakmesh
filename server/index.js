@@ -371,12 +371,17 @@ export class YakmeshNode {
     log.info(`  Node ID:    ${this.identity.identity.nodeId}`);
     log.info(`  HTTP:       http://localhost:${this.boundHttpPort || this.config.network.httpPort}`);
     log.info(`  YAK://      yak://dashboard  (register with: yakmesh protocol register)`);
-    log.info(`  Content:    http://localhost:${this.boundHttpPort || this.config.network.httpPort}/content`);
-    log.info(`  Dashboard:  http://localhost:${this.boundHttpPort || this.config.network.httpPort}/dashboard`);
     log.info(`  WebSocket:  ws://localhost:${this.mesh.boundPort || this.config.network.wsPort}`);
     log.info(`  Algorithm:  ML-DSA-65 (Post-Quantum)`);
     log.info(`  Oracle:     ✓ ${this.oracle.selfHash.slice(0, 16)}...`);
     log.info(`  Network:    ${this.genesisNetwork.networkName} (${this.genesisNetwork.networkId})`);
+    log.info('');
+    log.info('  Quick Access:');
+    log.info(`    Dashboard:     http://localhost:${this.boundHttpPort || this.config.network.httpPort}/dashboard`);
+    log.info(`    Documentation: http://localhost:${this.boundHttpPort || this.config.network.httpPort}/docs/`);
+    log.info(`    Health:        http://localhost:${this.boundHttpPort || this.config.network.httpPort}/health`);
+    log.info('');
+    log.info('  CLI shortcuts:   yakmesh open dashboard | yakmesh open docs');
     if (this.contentStore) {
       const stats = this.contentStore.getStats();
       log.info(`  Content:    ${stats.totalObjects} objects (${stats.verified} verified)`);
