@@ -40,6 +40,7 @@
       <span class="logo-icon">🏔️</span>
       <span class="logo-text">Yakmesh</span>
     </a>
+    <a href="/dashboard" class="sidebar-dashboard-link"><span>📊</span> <span>Dashboard</span></a>
     <ul class="sidebar-nav">
       <li><a href="index.html"><span>🏠</span> <span>Overview</span></a></li>
       <li><a href="getting-started.html"><span>🚀</span> <span>Getting Started</span></a></li>
@@ -251,23 +252,31 @@ TritArray.consensus([arr1, arr2, arr3]); // Majority vote per trit</code></pre>
         </div>
 
         <div class="module-card rounded-xl p-6">
-          <h3 class="text-lg font-semibold mb-3">Consensus (Majority)</h3>
+          <h3 class="text-lg font-semibold mb-3">Ternary Averaging (NOT for Validation)</h3>
           <p class="text-sm text-mountain-300 mb-4">
-            For multiple inputs, returns the majority vote. Used for multi-node agreement.
+            Computes weighted average of ternary values. <strong class="text-red-400">⚠️ Not used for cryptographic validation.</strong>
           </p>
-          <pre class="bg-mountain-900 rounded-lg p-4 overflow-x-auto"><code class="language-javascript">import { ternaryConsensus } from 'yakmesh/oracle/tribhuj';
+          <div class="bg-red-900/30 border border-red-700 rounded-lg p-4 mb-4">
+            <p class="text-sm text-red-300">
+              <strong>Important:</strong> YAKMESH validation is deterministic, not democratic. 
+              If nodes compute different results for the same inputs, it signals a bug or attack — 
+              the correct response is <code>RECOMPUTE_AND_VERIFY</code>, not voting.
+              See <a href="sakshi.html" class="text-red-400 underline">SAKSHI</a> for how actual consensus works.
+            </p>
+          </div>
+          <pre class="bg-mountain-900 rounded-lg p-4 overflow-x-auto"><code class="language-javascript">import { weightedAverage } from 'yakmesh/oracle/tribhuj';
 
-// Three nodes validating the same data
-const votes = [Trit.POS, Trit.POS, Trit.NEG];
-const result = ternaryConsensus(votes);  // → Trit.POS (2 vs 1)
+// Averaging multiple sensor readings (example: temperature trends)
+const readings = [
+  { vote: Trit.POS, weight: 1.0 },   // Sensor A: "rising"
+  { vote: Trit.ZERO, weight: 0.5 },  // Sensor B: "stable" (lower confidence)
+  { vote: Trit.POS, weight: 1.0 },   // Sensor C: "rising"
+];
+const trend = weightedAverage(readings);  // Weighted toward POS
 
-// With abstention
-const votes2 = [Trit.POS, Trit.ZERO, Trit.NEG];
-const result2 = ternaryConsensus(votes2);  // → Trit.ZERO (no majority)
-
-// Array consensus (per-element)
-const arrays = [arr1, arr2, arr3];
-const consensus = TritArray.consensus(arrays);  // Majority per position</code></pre>
+// For cryptographic operations, use SAKSHI instead:
+import { checkMathematicalAgreement } from 'yakmesh/security/sakshi';
+// Returns AGREED | PENDING | DISAGREED (never votes)</code></pre>
         </div>
       </section>
 
