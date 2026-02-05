@@ -497,6 +497,33 @@ pre[class*="language-"] {
   background: var(--glacier-500);
 }
 
+/* Dashboard Link - quick access from docs */
+.sidebar-dashboard-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 1rem;
+  border-radius: 0.375rem;
+  background: linear-gradient(135deg, var(--yakmesh-600), var(--yakmesh-700));
+  color: #fff;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.875rem;
+  transition: background 0.15s, transform 0.15s;
+  border: 1px solid var(--yakmesh-500);
+}
+
+.sidebar-dashboard-link:hover {
+  background: linear-gradient(135deg, var(--yakmesh-500), var(--yakmesh-600));
+  transform: translateY(-1px);
+}
+
+.docs-sidebar.icon-only .sidebar-dashboard-link span:last-child {
+  display: none;
+}
+
 /* Sidebar Logo */
 .sidebar-logo {
   display: flex;
