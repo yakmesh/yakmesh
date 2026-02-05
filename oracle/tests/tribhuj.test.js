@@ -16,7 +16,6 @@ import {
   hexToTrits,
   hexCompare,
   calculatePathBalance,
-  weightedConsensus,
 } from '../tribhuj.js';
 
 // =============================================================================
@@ -70,16 +69,9 @@ const path2 = [POSITIVE, POSITIVE, POSITIVE]; // All forward
 const balance2 = calculatePathBalance(path2);
 console.log(`   Path [+1,+1,+1]: balance=${balance2.balance}, balanced=${balance2.isBalanced}`);
 
-// Weighted consensus demo
-console.log('\n⚖️ Weighted Consensus:');
-const votes = [
-  { vote: POSITIVE, weight: 10 }, // Trusted node says ACCEPT
-  { vote: NEGATIVE, weight: 2 },  // New node says REJECT
-  { vote: NEUTRAL, weight: 5 },   // Medium node abstains
-];
-const consensus = weightedConsensus(votes);
-console.log(`   Votes: [{ACCEPT, w:10}, {REJECT, w:2}, {ABSTAIN, w:5}]`);
-console.log(`   Result: ${consensus.result.toName('consensus')}, confidence: ${(consensus.confidence * 100).toFixed(1)}%`);
+// NOTE: weightedConsensus was REMOVED - YAKMESH validation is deterministic
+console.log('\n⚠️  weightedConsensus REMOVED - validation is deterministic, not democratic');
+console.log('   See security/sakshi.js for proper consensus via checkMathematicalAgreement()');
 
 console.log('\n' + '='.repeat(60));
 console.log('✅ Running test suite...\n');
@@ -339,24 +331,8 @@ describe('TRIBHUJ - Balanced Ternary Mathematics', () => {
       });
     });
 
-    describe('weightedConsensus', () => {
-      it('should compute weighted consensus', () => {
-        const result = weightedConsensus([
-          { vote: POSITIVE, weight: 10 },
-          { vote: NEGATIVE, weight: 2 },
-        ]);
-        assert.strictEqual(result.result.value, POSITIVE);
-        assert.ok(result.confidence > 0.5);
-      });
-
-      it('should return NEUTRAL on close vote', () => {
-        const result = weightedConsensus([
-          { vote: POSITIVE, weight: 5 },
-          { vote: NEGATIVE, weight: 5 },
-        ]);
-        assert.strictEqual(result.result.value, NEUTRAL);
-      });
-    });
+    // NOTE: weightedConsensus tests removed - function deprecated
+    // YAKMESH validation is deterministic, not democratic
   });
 
 });

@@ -35,7 +35,7 @@
 
 import { getOracle, contentHash, deterministicStringify } from './validation-oracle-hardened.js';
 import { CodeProofProtocol } from './code-proof-protocol.js';
-import { Trit, TritState, weightedConsensus, POSITIVE, NEUTRAL, NEGATIVE } from './tribhuj.js';
+import { Trit, TritState, POSITIVE, NEUTRAL, NEGATIVE } from './tribhuj.js';
 import { EventEmitter } from 'events';
 import { createLogger } from '../utils/logger.js';
 
@@ -145,14 +145,26 @@ export class ConsensusVote {
 }
 
 /**
- * Compute consensus result from multiple votes using weighted ternary consensus.
+ * @deprecated DO NOT USE for cryptographic validation.
  * 
- * @param {ConsensusVote[]} votes - Array of votes
+ * This function exists only for backward compatibility and test coverage.
+ * YAKMESH validation is DETERMINISTIC - if nodes compute different results,
+ * the correct response is RECOMPUTE_AND_VERIFY, not voting.
+ * 
+ * For actual consensus, use:
+ *   import { checkMathematicalAgreement } from 'yakmesh/security/sakshi';
+ * 
+ * @param {ConsensusVote[]} votes - Array of votes (for statistics only)
  * @param {object} options - Consensus options
  * @returns {{ result: Trit, confidence: number, summary: object }}
  */
 export function computeTernaryConsensus(votes, options = {}) {
-  const threshold = options.threshold ?? 0.33; // Default: need >1/3 margin
+  // SECURITY: Log warning in development
+  if (typeof process !== 'undefined' && process.env.NODE_ENV !== 'test') {
+    console.warn('[DEPRECATED] computeTernaryConsensus should not be used for validation');
+  }
+  
+  const threshold = options.threshold ?? 0.33;
   
   // Handle empty votes
   if (!votes || votes.length === 0) {
@@ -166,20 +178,33 @@ export function computeTernaryConsensus(votes, options = {}) {
     };
   }
   
-  // Convert to format expected by weightedConsensus (uses 'vote' property)
-  const tritVotes = votes.map(v => ({
-    vote: v.vote,
-    weight: v.weight,
-  }));
+  // Inline weighted average calculation (previously in removed weightedConsensus)
+  let weightedSum = 0;
+  let totalWeight = 0;
   
-  const { result, confidence, details } = weightedConsensus(tritVotes);
+  for (const v of votes) {
+    const voteVal = v.vote instanceof Trit ? v.vote.value : new Trit(v.vote).value;
+    weightedSum += voteVal * v.weight;
+    totalWeight += v.weight;
+  }
+  
+  const normalizedScore = totalWeight > 0 ? weightedSum / totalWeight : 0;
+  const confidence = Math.abs(normalizedScore);
+  
+  // Determine result with threshold
+  let result;
+  if (normalizedScore > 0.33) {
+    result = new Trit(POSITIVE);
+  } else if (normalizedScore < -0.33) {
+    result = new Trit(NEGATIVE);
+  } else {
+    result = new Trit(NEUTRAL);
+  }
   
   // Override result if threshold not met
-  const finalResult = Math.abs(details.normalizedScore) >= threshold 
-    ? result 
-    : new Trit(NEUTRAL);
+  const finalResult = Math.abs(normalizedScore) >= threshold ? result : new Trit(NEUTRAL);
   
-  // Summary stats
+  // Summary stats (useful for debugging, not for voting)
   const summary = {
     total: votes.length,
     accept: votes.filter(v => v.isAccept).length,

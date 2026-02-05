@@ -619,46 +619,11 @@ export function calculatePathBalance(linkQualities) {
   return { balance, isBalanced, quality };
 }
 
-/**
- * Weighted ternary voting for consensus.
- * @param {{ vote: Trit | number, weight: number }[]} votes
- * @returns {{ result: Trit, confidence: number, details: object }}
- */
-export function weightedConsensus(votes) {
-  let weightedSum = 0;
-  let totalWeight = 0;
-  
-  for (const { vote, weight } of votes) {
-    const voteVal = vote instanceof Trit ? vote.value : new Trit(vote).value;
-    weightedSum += voteVal * weight;
-    totalWeight += weight;
-  }
-  
-  const normalizedScore = totalWeight > 0 ? weightedSum / totalWeight : 0;
-  
-  // Determine result with threshold
-  let result;
-  if (normalizedScore > 0.33) {
-    result = new Trit(POSITIVE);
-  } else if (normalizedScore < -0.33) {
-    result = new Trit(NEGATIVE);
-  } else {
-    result = new Trit(NEUTRAL);
-  }
-  
-  const confidence = Math.abs(normalizedScore);
-  
-  return {
-    result,
-    confidence,
-    details: {
-      weightedSum,
-      totalWeight,
-      normalizedScore,
-    },
-  };
-}
-
+// =============================================================================
+// NOTE: weightedConsensus was REMOVED (2026-02-05)
+// YAKMESH validation is deterministic, not democratic.
+// If nodes compute different results, the answer is RECOMPUTE_AND_VERIFY.
+// See security/sakshi.js for proper consensus via checkMathematicalAgreement().
 // =============================================================================
 // EXPORTS SUMMARY
 // =============================================================================
@@ -679,5 +644,4 @@ export default {
   hexToTrits,
   hexCompare,
   calculatePathBalance,
-  weightedConsensus,
 };
