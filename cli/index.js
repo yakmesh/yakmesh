@@ -348,10 +348,19 @@ program
     const { exec } = await import('child_process');
     const { platform } = await import('os');
     
-    const openCmd = platform() === 'win32' ? 'start' :
-                    platform() === 'darwin' ? 'open' : 'xdg-open';
+    const os = platform();
+    let openCmd;
     
-    exec(`${openCmd} "${url}"`, (err) => {
+    if (os === 'win32') {
+      // Windows: start requires empty title when URL has special chars
+      openCmd = `start "" "${url}"`;
+    } else if (os === 'darwin') {
+      openCmd = `open "${url}"`;
+    } else {
+      openCmd = `xdg-open "${url}"`;
+    }
+    
+    exec(openCmd, (err) => {
       if (err) {
         console.log(chalk.red('✗ Could not open browser'));
         console.log(chalk.gray(`  ${err.message}`));
