@@ -954,6 +954,310 @@ export function trackDisagreementPattern(history, nodeId, analysis) {
 }
 
 // =============================================================================
+// TRUST-TIER INTEGRATION BRIDGE
+// =============================================================================
+
+/**
+ * SETU - Bridge between trust-tier and SAKSHI
+ * सेतु (Sanskrit: "bridge")
+ * 
+ * Provides migration path from voting-based trust-tier patterns
+ * to observation-based SAKSHI patterns.
+ */
+
+/**
+ * Create a NodeWitness from a TrustProfile
+ * 
+ * This bridges the old TrustProfile (trust-tier.js) to the new
+ * NodeWitness (sakshi.js) observational system.
+ * 
+ * @param {Object} trustProfile - TrustProfile instance or plain object
+ * @returns {NodeWitness} SAKSHI NodeWitness
+ */
+export function witnessFromTrustProfile(trustProfile) {
+  return new NodeWitness({
+    nodeId: trustProfile.dokoId,
+    timeSource: trustProfile.timeSource || TIME_SOURCE.SYSTEM,
+    hasAESNI: trustProfile.hardwareAttestation?.validation?.hasAESNI || false,
+    networkAgeDays: Math.floor((trustProfile.networkAge || 0) / (24 * 60 * 60 * 1000)),
+    uptimePercent: 0.8,  // Default assumption if not tracked
+    karmaScore: trustProfile.endorsementCount * 1000 || 0,
+  });
+}
+
+/**
+ * Create a TrustProfile-compatible object from a NodeWitness
+ * 
+ * For backwards compatibility with code expecting TrustProfile.
+ * 
+ * @param {NodeWitness} witness - SAKSHI NodeWitness
+ * @param {string} dokoId - DOKO identifier
+ * @returns {Object} TrustProfile-compatible object
+ */
+export function trustProfileFromWitness(witness, dokoId) {
+  return {
+    dokoId: dokoId || witness.nodeId,
+    timeSource: witness.timeSource,
+    networkAge: witness.networkAgeDays * 24 * 60 * 60 * 1000,
+    // Note: We don't expose getWeight() - that's the voting pattern we're removing
+    // Instead, provide precision-based quality score
+    qualityScore: witness.qualityScore,
+    timePrecision: witness.timePrecision,
+    reliabilityCoefficient: witness.reliabilityCoefficient,
+    capabilityLevel: witness.capabilityLevel,
+  };
+}
+
+/**
+ * SAKSHI-aligned revocation check
+ * 
+ * Replaces WeightedRevocationCalculator.isRevoked()
+ * 
+ * Instead of weighted voting ("SIRDAR's vote counts 2x"),
+ * we check for mathematical agreement on revocation evidence.
+ * 
+ * @param {Array<{witness: NodeWitness, evidence: Object}>} revocationReports
+ * @param {Object} options
+ * @returns {Object} Revocation assessment
+ */
+export function checkRevocationAgreement(revocationReports, options = {}) {
+  const {
+    minReports = 3,
+    requirePrecisionNode = false,
+  } = options;
+
+  if (revocationReports.length < minReports) {
+    return {
+      revoked: false,
+      reason: 'INSUFFICIENT_REPORTS',
+      reportCount: revocationReports.length,
+      minRequired: minReports,
+    };
+  }
+
+  // Check if reports agree on the revocation reason
+  const evidenceAgreement = checkMathematicalAgreement(
+    revocationReports.map(r => ({
+      witness: r.witness,
+      value: JSON.stringify({
+        reason: r.evidence.reason,
+        targetId: r.evidence.targetId,
+      }),
+    }))
+  );
+
+  if (!evidenceAgreement.agreed) {
+    // Nodes disagree on what happened - need investigation
+    return {
+      revoked: false,
+      reason: 'EVIDENCE_DISAGREEMENT',
+      action: evidenceAgreement.action,
+      groupCount: evidenceAgreement.groupCount,
+      suggestion: 'Gather more evidence or investigate discrepancies',
+    };
+  }
+
+  // All reports agree on the evidence
+  // Fuse the timestamps to establish when it happened
+  const timestampFusion = fuseTimeAttestations(
+    revocationReports
+      .filter(r => r.evidence.timestamp)
+      .map(r => ({
+        witness: r.witness,
+        timestamp: r.evidence.timestamp,
+      }))
+  );
+
+  // Check for at least one precision node if required
+  if (requirePrecisionNode) {
+    const hasPrecisionWitness = revocationReports.some(r => 
+      [TIME_SOURCE.ATOMIC, TIME_SOURCE.GPS, TIME_SOURCE.PTP].includes(r.witness.timeSource)
+    );
+    
+    if (!hasPrecisionWitness) {
+      return {
+        revoked: false,
+        reason: 'NO_PRECISION_WITNESS',
+        suggestion: 'Wait for confirmation from a precision time node',
+        currentReports: revocationReports.length,
+      };
+    }
+  }
+
+  // Mathematical agreement achieved
+  return {
+    revoked: true,
+    evidence: JSON.parse(evidenceAgreement.value),
+    reportCount: revocationReports.length,
+    timestamp: timestampFusion.timestamp,
+    timestampPrecision: timestampFusion.precision,
+    confidence: evidenceAgreement.confidence,
+    // Note: No "effectiveCount" or "weightedVotes" - just agreement
+  };
+}
+
+/**
+ * SAKSHI-aligned attestation aggregation
+ * 
+ * Replaces calculateEffectiveCount() (weighted voting)
+ * 
+ * Instead of "SIRDAR's attestation counts 2x", we:
+ * 1. Check if attestations mathematically agree
+ * 2. Fuse timestamps with precision weighting (physics, not politics)
+ * 3. Rank by reliability for informational purposes only
+ * 
+ * @param {Array<{witness: NodeWitness, attestation: Object}>} attestations
+ * @returns {Object} Aggregation result
+ */
+export function aggregateAttestations(attestations) {
+  if (attestations.length === 0) {
+    return {
+      agreed: false,
+      reason: 'NO_ATTESTATIONS',
+      count: 0,
+    };
+  }
+
+  // Extract the attestation values for agreement check
+  const agreement = checkMathematicalAgreement(
+    attestations.map(a => ({
+      witness: a.witness,
+      value: JSON.stringify(a.attestation.claim),
+    }))
+  );
+
+  // If not agreed, return the disagreement info
+  if (!agreement.agreed) {
+    return {
+      agreed: false,
+      reason: 'ATTESTATION_DISAGREEMENT',
+      action: agreement.action,
+      groupCount: agreement.groupCount,
+      totalAttestations: attestations.length,
+    };
+  }
+
+  // Attestations agree - fuse any timestamp data
+  const withTimestamps = attestations.filter(a => a.attestation.timestamp);
+  const timestampFusion = withTimestamps.length > 0
+    ? fuseTimeAttestations(withTimestamps.map(a => ({
+        witness: a.witness,
+        timestamp: a.attestation.timestamp,
+      })))
+    : null;
+
+  // Rank witnesses by reliability (informational, not gatekeeping)
+  const rankedWitnesses = rankByReliability(attestations.map(a => a.witness));
+
+  return {
+    agreed: true,
+    claim: JSON.parse(agreement.value),
+    attestationCount: attestations.length,
+    // Note: No "effectiveCount" - all agreeing attestations are equal
+    timestamp: timestampFusion?.timestamp,
+    timestampPrecision: timestampFusion?.precision,
+    confidence: agreement.confidence,
+    // Informational: who contributed (sorted by reliability)
+    contributors: rankedWitnesses.map(w => ({
+      nodeId: w.nodeId,
+      capabilityLevel: w.capabilityLevel,
+      qualityScore: w.qualityScore,
+    })),
+  };
+}
+
+/**
+ * Check if a computation should be trusted
+ * 
+ * SAKSHI approach: We don't trust based on WHO computed it,
+ * we trust based on WHETHER the math is verifiable.
+ * 
+ * @param {Object} computation - The computation result
+ * @param {NodeWitness} computedBy - Who performed the computation
+ * @param {Object} options - Verification options
+ * @returns {Object} Trust assessment
+ */
+export function assessComputationTrust(computation, computedBy, options = {}) {
+  const {
+    requireVerification = false,
+    verifications = [],
+  } = options;
+
+  // Base trust: Is the computation mathematically verifiable?
+  const isVerifiable = computation.proof !== undefined || 
+                       computation.checksum !== undefined ||
+                       computation.signature !== undefined;
+
+  if (!isVerifiable && !requireVerification) {
+    // No proof, but verification not required
+    // Trust is based on being able to reproduce
+    return {
+      trusted: true,
+      basis: 'REPRODUCIBLE',
+      suggestion: 'Verify by independent recomputation if critical',
+      computedBy: {
+        nodeId: computedBy.nodeId,
+        capabilityLevel: computedBy.capabilityLevel,
+        // Note: No "weight" or "trustLevel" - just capability info
+      },
+    };
+  }
+
+  if (!isVerifiable && requireVerification) {
+    return {
+      trusted: false,
+      basis: 'UNVERIFIABLE',
+      action: 'REQUEST_PROOF',
+      suggestion: 'Ask the computing node to provide verifiable proof',
+    };
+  }
+
+  // Has proof - check if we have verifications
+  if (verifications.length === 0) {
+    return {
+      trusted: true,
+      basis: 'HAS_PROOF',
+      proofType: computation.proof ? 'PROOF' : computation.checksum ? 'CHECKSUM' : 'SIGNATURE',
+      suggestion: 'Independently verify the proof for higher confidence',
+    };
+  }
+
+  // Check if verifications agree
+  const verificationAgreement = checkMathematicalAgreement(
+    verifications.map(v => ({
+      witness: v.verifier,
+      value: v.verified ? 'VALID' : 'INVALID',
+    }))
+  );
+
+  if (verificationAgreement.agreed && verificationAgreement.value === 'VALID') {
+    return {
+      trusted: true,
+      basis: 'VERIFIED',
+      verifierCount: verifications.length,
+      confidence: verificationAgreement.confidence,
+    };
+  }
+
+  if (verificationAgreement.agreed && verificationAgreement.value === 'INVALID') {
+    return {
+      trusted: false,
+      basis: 'VERIFICATION_FAILED',
+      verifierCount: verifications.length,
+      action: 'RECOMPUTE',
+    };
+  }
+
+  // Verifiers disagree
+  return {
+    trusted: false,
+    basis: 'VERIFIERS_DISAGREE',
+    action: verificationAgreement.action,
+    suggestion: 'Need more verifiers or investigate disagreement',
+  };
+}
+
+// =============================================================================
 // EXPORTS
 // =============================================================================
 
@@ -985,4 +1289,11 @@ export default {
   analyzeDisagreement,
   createRemediationPlan,
   trackDisagreementPattern,
+  
+  // Trust-tier bridge (SETU)
+  witnessFromTrustProfile,
+  trustProfileFromWitness,
+  checkRevocationAgreement,
+  aggregateAttestations,
+  assessComputationTrust,
 };

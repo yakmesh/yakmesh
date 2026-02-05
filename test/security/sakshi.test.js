@@ -31,6 +31,12 @@ import {
   analyzeDisagreement,
   createRemediationPlan,
   trackDisagreementPattern,
+  // Trust-tier bridge (SETU)
+  witnessFromTrustProfile,
+  trustProfileFromWitness,
+  checkRevocationAgreement,
+  aggregateAttestations,
+  assessComputationTrust,
 } from '../../security/sakshi.js';
 import { TIME_SOURCE } from '../../security/trust-tier.js';
 
@@ -948,5 +954,290 @@ describe('VIVAAD Philosophy', () => {
     
     const buddyStep = plan.steps.find(s => s.action === 'ASSIGN_BUDDY');
     expect(buddyStep.afterFailures).toBeDefined();  // Only after failures
+  });
+});
+
+// =============================================================================
+// SETU - TRUST-TIER BRIDGE TESTS
+// =============================================================================
+
+describe('SETU Trust-Tier Bridge', () => {
+  describe('witnessFromTrustProfile', () => {
+    it('converts TrustProfile to NodeWitness', () => {
+      const trustProfile = {
+        dokoId: 'doko-123',
+        timeSource: TIME_SOURCE.ATOMIC,
+        hardwareAttestation: { validation: { hasAESNI: true } },
+        networkAge: 30 * 24 * 60 * 60 * 1000,  // 30 days in ms
+        endorsementCount: 5,
+      };
+
+      const witness = witnessFromTrustProfile(trustProfile);
+
+      expect(witness.nodeId).toBe('doko-123');
+      expect(witness.timeSource).toBe(TIME_SOURCE.ATOMIC);
+      expect(witness.hasAESNI).toBe(true);
+      expect(witness.networkAgeDays).toBe(30);
+    });
+
+    it('handles missing hardware attestation', () => {
+      const trustProfile = {
+        dokoId: 'doko-456',
+        timeSource: TIME_SOURCE.NTP,
+      };
+
+      const witness = witnessFromTrustProfile(trustProfile);
+
+      expect(witness.hasAESNI).toBe(false);
+      expect(witness.networkAgeDays).toBe(0);
+    });
+  });
+
+  describe('trustProfileFromWitness', () => {
+    it('converts NodeWitness back to TrustProfile-compatible object', () => {
+      const witness = new NodeWitness({
+        nodeId: 'node-789',
+        timeSource: TIME_SOURCE.GPS,
+        hasAESNI: true,
+        networkAgeDays: 14,
+        uptimePercent: 0.95,
+      });
+
+      const profile = trustProfileFromWitness(witness, 'doko-789');
+
+      expect(profile.dokoId).toBe('doko-789');
+      expect(profile.timeSource).toBe(TIME_SOURCE.GPS);
+      expect(profile.networkAge).toBe(14 * 24 * 60 * 60 * 1000);
+      expect(profile.qualityScore).toBeDefined();
+      expect(profile.timePrecision).toBeDefined();
+      // Note: No getWeight() - that's the voting pattern we removed
+      expect(profile.weight).toBeUndefined();
+    });
+  });
+
+  describe('checkRevocationAgreement', () => {
+    it('requires minimum reports', () => {
+      const reports = [
+        { witness: new NodeWitness({ nodeId: 'w1' }), evidence: { reason: 'malicious' } },
+      ];
+
+      const result = checkRevocationAgreement(reports, { minReports: 3 });
+
+      expect(result.revoked).toBe(false);
+      expect(result.reason).toBe('INSUFFICIENT_REPORTS');
+    });
+
+    it('requires evidence agreement (not weighted voting)', () => {
+      const reports = [
+        { witness: new NodeWitness({ nodeId: 'w1' }), evidence: { reason: 'malicious', targetId: 'bad-node' } },
+        { witness: new NodeWitness({ nodeId: 'w2' }), evidence: { reason: 'spam', targetId: 'bad-node' } },  // Different reason!
+        { witness: new NodeWitness({ nodeId: 'w3' }), evidence: { reason: 'malicious', targetId: 'bad-node' } },
+      ];
+
+      const result = checkRevocationAgreement(reports, { minReports: 3 });
+
+      // Even 2 vs 1, we don't just take majority - we need AGREEMENT
+      expect(result.revoked).toBe(false);
+      expect(result.reason).toBe('EVIDENCE_DISAGREEMENT');
+      expect(result.action).toBe('RECOMPUTE_AND_VERIFY');
+    });
+
+    it('revokes when all reports agree', () => {
+      const reports = [
+        { witness: new NodeWitness({ nodeId: 'w1' }), evidence: { reason: 'malicious', targetId: 'bad-node', timestamp: 1000 } },
+        { witness: new NodeWitness({ nodeId: 'w2' }), evidence: { reason: 'malicious', targetId: 'bad-node', timestamp: 1001 } },
+        { witness: new NodeWitness({ nodeId: 'w3' }), evidence: { reason: 'malicious', targetId: 'bad-node', timestamp: 1002 } },
+      ];
+
+      const result = checkRevocationAgreement(reports, { minReports: 3 });
+
+      expect(result.revoked).toBe(true);
+      expect(result.evidence.reason).toBe('malicious');
+      expect(result.reportCount).toBe(3);
+      // Note: No "effectiveCount" or "weightedVotes"
+      expect(result.effectiveCount).toBeUndefined();
+    });
+
+    it('can require precision node witness', () => {
+      const reports = [
+        { witness: new NodeWitness({ nodeId: 'w1', timeSource: TIME_SOURCE.NTP }), evidence: { reason: 'bad', targetId: 'x' } },
+        { witness: new NodeWitness({ nodeId: 'w2', timeSource: TIME_SOURCE.NTP }), evidence: { reason: 'bad', targetId: 'x' } },
+        { witness: new NodeWitness({ nodeId: 'w3', timeSource: TIME_SOURCE.SYSTEM }), evidence: { reason: 'bad', targetId: 'x' } },
+      ];
+
+      const result = checkRevocationAgreement(reports, { 
+        minReports: 3, 
+        requirePrecisionNode: true 
+      });
+
+      expect(result.revoked).toBe(false);
+      expect(result.reason).toBe('NO_PRECISION_WITNESS');
+    });
+  });
+
+  describe('aggregateAttestations', () => {
+    it('checks for mathematical agreement, not weighted voting', () => {
+      const attestations = [
+        { witness: new NodeWitness({ nodeId: 'w1' }), attestation: { claim: { valid: true }, timestamp: 1000 } },
+        { witness: new NodeWitness({ nodeId: 'w2' }), attestation: { claim: { valid: true }, timestamp: 1001 } },
+        { witness: new NodeWitness({ nodeId: 'w3' }), attestation: { claim: { valid: true }, timestamp: 1002 } },
+      ];
+
+      const result = aggregateAttestations(attestations);
+
+      expect(result.agreed).toBe(true);
+      expect(result.claim.valid).toBe(true);
+      expect(result.attestationCount).toBe(3);
+      // No "effectiveCount" - all agreeing attestations are equal
+      expect(result.effectiveCount).toBeUndefined();
+    });
+
+    it('returns disagreement info when attestations conflict', () => {
+      const attestations = [
+        { witness: new NodeWitness({ nodeId: 'w1' }), attestation: { claim: { valid: true } } },
+        { witness: new NodeWitness({ nodeId: 'w2' }), attestation: { claim: { valid: false } } },  // Disagrees!
+      ];
+
+      const result = aggregateAttestations(attestations);
+
+      expect(result.agreed).toBe(false);
+      expect(result.reason).toBe('ATTESTATION_DISAGREEMENT');
+      expect(result.action).toBe('RECOMPUTE_AND_VERIFY');
+    });
+
+    it('provides contributors ranked by reliability (informational only)', () => {
+      const attestations = [
+        { 
+          witness: new NodeWitness({ nodeId: 'reliable', uptimePercent: 0.99 }), 
+          attestation: { claim: { x: 1 } } 
+        },
+        { 
+          witness: new NodeWitness({ nodeId: 'new', uptimePercent: 0.5 }), 
+          attestation: { claim: { x: 1 } } 
+        },
+      ];
+
+      const result = aggregateAttestations(attestations);
+
+      expect(result.agreed).toBe(true);
+      expect(result.contributors[0].nodeId).toBe('reliable');  // Sorted by reliability
+      expect(result.contributors[1].nodeId).toBe('new');
+    });
+  });
+
+  describe('assessComputationTrust', () => {
+    it('trusts reproducible computations regardless of who computed', () => {
+      const computation = { result: 42 };  // No proof, but reproducible
+      const computedBy = new NodeWitness({ nodeId: 'new-node' });
+
+      const assessment = assessComputationTrust(computation, computedBy);
+
+      expect(assessment.trusted).toBe(true);
+      expect(assessment.basis).toBe('REPRODUCIBLE');
+      // Note: No "weight" or "trustLevel" check
+      expect(assessment.computedBy.weight).toBeUndefined();
+    });
+
+    it('trusts computations with proofs', () => {
+      const computation = { result: 42, checksum: 'abc123' };
+      const computedBy = new NodeWitness({ nodeId: 'any-node' });
+
+      const assessment = assessComputationTrust(computation, computedBy);
+
+      expect(assessment.trusted).toBe(true);
+      expect(assessment.basis).toBe('HAS_PROOF');
+    });
+
+    it('requires proof when verification is required', () => {
+      const computation = { result: 42 };  // No proof
+      const computedBy = new NodeWitness({ nodeId: 'any-node' });
+
+      const assessment = assessComputationTrust(computation, computedBy, { 
+        requireVerification: true 
+      });
+
+      expect(assessment.trusted).toBe(false);
+      expect(assessment.basis).toBe('UNVERIFIABLE');
+      expect(assessment.action).toBe('REQUEST_PROOF');
+    });
+
+    it('checks verifier agreement when verifications provided', () => {
+      const computation = { result: 42, checksum: 'abc' };
+      const computedBy = new NodeWitness({ nodeId: 'computer' });
+      const verifications = [
+        { verifier: new NodeWitness({ nodeId: 'v1' }), verified: true },
+        { verifier: new NodeWitness({ nodeId: 'v2' }), verified: true },
+      ];
+
+      const assessment = assessComputationTrust(computation, computedBy, { verifications });
+
+      expect(assessment.trusted).toBe(true);
+      expect(assessment.basis).toBe('VERIFIED');
+      expect(assessment.verifierCount).toBe(2);
+    });
+
+    it('fails if verifiers disagree', () => {
+      const computation = { result: 42, proof: 'xyz' };
+      const computedBy = new NodeWitness({ nodeId: 'computer' });
+      const verifications = [
+        { verifier: new NodeWitness({ nodeId: 'v1' }), verified: true },
+        { verifier: new NodeWitness({ nodeId: 'v2' }), verified: false },  // Disagrees!
+      ];
+
+      const assessment = assessComputationTrust(computation, computedBy, { verifications });
+
+      expect(assessment.trusted).toBe(false);
+      expect(assessment.basis).toBe('VERIFIERS_DISAGREE');
+    });
+  });
+});
+
+// =============================================================================
+// SETU PHILOSOPHY TESTS
+// =============================================================================
+
+describe('SETU Philosophy', () => {
+  it('no weighted voting in revocation checks', () => {
+    // checkRevocationAgreement doesn't use weights
+    const reports = [
+      { witness: new NodeWitness({ nodeId: 'w1' }), evidence: { reason: 'x', targetId: 'y' } },
+      { witness: new NodeWitness({ nodeId: 'w2' }), evidence: { reason: 'x', targetId: 'y' } },
+      { witness: new NodeWitness({ nodeId: 'w3' }), evidence: { reason: 'x', targetId: 'y' } },
+    ];
+
+    const result = checkRevocationAgreement(reports, { minReports: 3 });
+
+    // Result has no weight-related fields
+    expect(result.effectiveCount).toBeUndefined();
+    expect(result.weightedVotes).toBeUndefined();
+    expect(result.threshold).toBeUndefined();
+  });
+
+  it('attestation count is actual count, not weighted', () => {
+    const attestations = [
+      { witness: new NodeWitness({ nodeId: 'w1' }), attestation: { claim: { ok: true } } },
+      { witness: new NodeWitness({ nodeId: 'w2' }), attestation: { claim: { ok: true } } },
+    ];
+
+    const result = aggregateAttestations(attestations);
+
+    expect(result.attestationCount).toBe(2);  // Actual count
+    expect(result.effectiveCount).toBeUndefined();  // No weighted count
+  });
+
+  it('trust is based on math verifiability, not node tier', () => {
+    // A new node's computation is just as trusted as an old node's
+    // if the math is verifiable
+    const newNode = new NodeWitness({ nodeId: 'new', networkAgeDays: 0 });
+    const veteranNode = new NodeWitness({ nodeId: 'veteran', networkAgeDays: 365 });
+
+    const computation = { result: 42, checksum: 'abc' };
+
+    const newNodeAssessment = assessComputationTrust(computation, newNode);
+    const veteranAssessment = assessComputationTrust(computation, veteranNode);
+
+    // Both are equally trusted - because the math is verifiable
+    expect(newNodeAssessment.trusted).toBe(veteranAssessment.trusted);
+    expect(newNodeAssessment.basis).toBe(veteranAssessment.basis);
   });
 });
