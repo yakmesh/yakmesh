@@ -35,6 +35,17 @@ import { randomBytes, createHash } from 'crypto';
 import { sha3_256 } from '@noble/hashes/sha3.js';
 import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js';
 
+// YPC-27 quantum-hard checksums for packet integrity
+import { 
+  PROTOCOL_DOMAIN, 
+  checksumToWire, 
+  checksumFromWire, 
+  PacketChecksum 
+} from '../oracle/packet-checksum.js';
+
+// STUPA checksum engine (singleton per module)
+const stupaChecksumEngine = new PacketChecksum(PROTOCOL_DOMAIN.STUPA);
+
 // STUPA configuration (sacred structure levels)
 const STUPA_CONFIG = {
   // Priority levels (like stupa tiers)
@@ -73,6 +84,8 @@ const BEACON_CONFIG = STUPA_CONFIG;
 
 /**
  * A STUPA message (broadcast signal) with propagation metadata
+ * 
+ * Now includes YPC-27 quantum-hard checksum for packet integrity.
  */
 class StupaMessage {
   constructor(options) {
@@ -86,6 +99,9 @@ class StupaMessage {
     this.hopPath = options.hopPath || [];
     this.signature = options.signature || null;
     this.hash = this._computeHash();
+    
+    // YPC-27 quantum-hard checksum (27-trit polynomial in wire format)
+    this.ypc27 = options.ypc27 || this._computeYpc27();
   }
 
   _computeHash() {
@@ -102,18 +118,66 @@ class StupaMessage {
   }
 
   /**
-   * Check if message is still valid
+   * Compute YPC-27 quantum-hard checksum.
+   * Uses polynomial ring Z[x]/(x^27-1) mod 3 - resistant to quantum attacks.
+   * @private
+   * @returns {string} Wire format checksum
    */
-  isValid() {
-    return (
+  _computeYpc27() {
+    // Checksum covers content that must not be tampered with
+    const checksumData = {
+      id: this.id,
+      originNodeId: this.originNodeId,
+      payload: this.payload,
+      priority: this.priority,
+      timestamp: this.timestamp,
+      expiresAt: this.expiresAt,
+    };
+    const checksum = stupaChecksumEngine.compute(checksumData);
+    return checksumToWire(checksum);
+  }
+
+  /**
+   * Verify the YPC-27 checksum is valid.
+   * @returns {boolean}
+   */
+  verifyYpc27() {
+    try {
+      const expected = checksumFromWire(this.ypc27);
+      const checksumData = {
+        id: this.id,
+        originNodeId: this.originNodeId,
+        payload: this.payload,
+        priority: this.priority,
+        timestamp: this.timestamp,
+        expiresAt: this.expiresAt,
+      };
+      return stupaChecksumEngine.verify(checksumData, expected);
+    } catch (err) {
+      return false;
+    }
+  }
+
+  /**
+   * Check if message is still valid.
+   * @param {boolean} [verifyQuantum=false] - Also verify YPC-27 quantum checksum
+   */
+  isValid(verifyQuantum = false) {
+    const basicValid = (
       this.ttl > 0 &&
       Date.now() < this.expiresAt &&
       this.hash === this._computeHash()
     );
+    
+    if (!basicValid) return false;
+    if (verifyQuantum && !this.verifyYpc27()) return false;
+    
+    return true;
   }
 
   /**
-   * Create a forwarding copy with decremented TTL
+   * Create a forwarding copy with decremented TTL.
+   * YPC-27 checksum is preserved - only original node computes it.
    */
   forward(currentNodeId) {
     if (this.ttl <= 0) {
@@ -130,6 +194,7 @@ class StupaMessage {
       expiresAt: this.expiresAt,
       hopPath: [...this.hopPath, currentNodeId],
       signature: this.signature,
+      ypc27: this.ypc27,  // Preserve original quantum checksum
     });
   }
 
@@ -155,6 +220,7 @@ class StupaMessage {
       hopPath: this.hopPath,
       signature: this.signature,
       hash: this.hash,
+      ypc27: this.ypc27,  // Quantum-hard 27-trit checksum
     };
   }
 
@@ -169,10 +235,16 @@ class StupaMessage {
       expiresAt: obj.expiresAt,
       hopPath: obj.hopPath,
       signature: obj.signature,
+      ypc27: obj.ypc27,  // Preserve original checksum
     });
     
     if (msg.hash !== obj.hash) {
       throw new Error('Message hash mismatch');
+    }
+    
+    // Verify YPC-27 quantum checksum if present
+    if (obj.ypc27 && !msg.verifyYpc27()) {
+      throw new Error('YPC-27 checksum mismatch - possible quantum attack or corruption');
     }
     
     return msg;

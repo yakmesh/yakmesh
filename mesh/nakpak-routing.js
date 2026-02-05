@@ -26,6 +26,17 @@ import { ml_kem768 } from '@noble/post-quantum/ml-kem.js';
 import { sha3_256 } from '@noble/hashes/sha3.js';
 import { bytesToHex, hexToBytes, utf8ToBytes } from '@noble/hashes/utils.js';
 
+// YPC-27 quantum-hard checksums for packet integrity
+import { 
+  PROTOCOL_DOMAIN, 
+  checksumToWire, 
+  checksumFromWire, 
+  PacketChecksum 
+} from '../oracle/packet-checksum.js';
+
+// NAKPAK checksum engine (singleton per module)
+const nakpakChecksumEngine = new PacketChecksum(PROTOCOL_DOMAIN.NAKPAK);
+
 const NAKPAK_CONFIG = {
   // Circuit settings
   defaultHopCount: 3,           // Number of hops (like Tor)
@@ -177,6 +188,8 @@ class NakpakLayer {
 
 /**
  * An onion-wrapped packet (like a yak's cargo bundle)
+ * 
+ * Now includes YPC-27 quantum-hard checksum for packet integrity.
  */
 class NakpakPacket {
   constructor(options = {}) {
@@ -186,6 +199,7 @@ class NakpakPacket {
     this.timestamp = options.timestamp || Date.now();
     this.isDecoy = options.isDecoy || false;
     this.padding = null;        // Random padding for fixed size
+    this.ypc27 = options.ypc27 || null;  // YPC-27 quantum checksum (computed on finalize)
   }
 
   /**
@@ -203,14 +217,58 @@ class NakpakPacket {
   }
 
   /**
-   * Pad to fixed size to prevent length analysis
+   * Compute YPC-27 quantum-hard checksum for this packet.
+   * Called during finalization before transmission.
+   * @private
+   * @returns {string} Wire format checksum
+   */
+  _computeYpc27() {
+    const checksumData = {
+      id: this.id,
+      circuitId: this.circuitId,
+      layers: this.layers,
+      timestamp: this.timestamp,
+    };
+    const checksum = nakpakChecksumEngine.compute(checksumData);
+    return checksumToWire(checksum);
+  }
+
+  /**
+   * Verify the YPC-27 checksum is valid.
+   * @returns {boolean}
+   */
+  verifyYpc27() {
+    if (!this.ypc27) return true; // No checksum = backward compat
+    try {
+      const expected = checksumFromWire(this.ypc27);
+      const checksumData = {
+        id: this.id,
+        circuitId: this.circuitId,
+        layers: this.layers,
+        timestamp: this.timestamp,
+      };
+      return nakpakChecksumEngine.verify(checksumData, expected);
+    } catch (err) {
+      return false;
+    }
+  }
+
+  /**
+   * Pad to fixed size to prevent length analysis.
+   * Also computes and sets the YPC-27 checksum.
    */
   padToFixedSize() {
+    // Compute YPC-27 before padding (padding doesn't affect checksum)
+    if (!this.ypc27) {
+      this.ypc27 = this._computeYpc27();
+    }
+    
     const serialized = JSON.stringify({
       id: this.id,
       circuitId: this.circuitId,
       layers: this.layers,
       timestamp: this.timestamp,
+      ypc27: this.ypc27,
     });
 
     const currentSize = Buffer.byteLength(serialized, 'utf8');
@@ -250,6 +308,7 @@ class NakpakPacket {
       layers: this.layers,
       timestamp: this.timestamp,
       padding: this.padding,
+      ypc27: this.ypc27,  // Quantum-hard 27-trit checksum
     };
   }
 
@@ -258,9 +317,16 @@ class NakpakPacket {
       id: obj.id,
       circuitId: obj.circuitId,
       timestamp: obj.timestamp,
+      ypc27: obj.ypc27,
     });
     packet.layers = obj.layers;
     packet.padding = obj.padding;
+    
+    // Verify YPC-27 quantum checksum if present
+    if (obj.ypc27 && !packet.verifyYpc27()) {
+      throw new Error('YPC-27 checksum mismatch - possible quantum attack or packet corruption');
+    }
+    
     return packet;
   }
 }

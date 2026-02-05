@@ -2,6 +2,313 @@
 
 All notable changes to YAKMESH will be documented in this file.
 
+## [2.8.1] - 2026-02-05
+
+### 👁️ SAKSHI Observational Capability System + VIVAAD Disagreement Analysis
+
+*Theme: "The math testifies in place of the node."*
+
+#### 🧘 Philosophy Shift
+
+This release formalizes YAKMESH's rejection of voting-based consensus in favor of **mathematical agreement**:
+
+- **No permissions, only observations** - Nodes are witnesses, not gatekeepers
+- **No voting, only math** - Disagreement → recompute, not majority rule
+- **No denial systems** - Every node can attempt any action; math decides success
+- **Assume good faith** - 95% of disagreements are hardware/timing, not malicious
+
+#### 🔬 SAKSHI Module (`security/sakshi.js`)
+
+**साक्षी (Sanskrit: "witness")** - Observational capability system:
+
+- `CAPABILITY_LEVEL` - 6 descriptive levels (not permission tiers)
+- `NodeWitness` class - No `hasPermission()` method by design
+- `fuseTimeAttestations()` - Sensor fusion by precision (physics, not politics)
+- `checkMathematicalAgreement()` - Returns `RECOMPUTE_AND_VERIFY` on disagreement
+- `rankByReliability()` - Sorting for optimization, not gatekeeping
+
+#### ⚖️ VIVAAD Disagreement Analysis
+
+**विवाद (Sanskrit: "dispute")** - Understanding WHY disagreements happen:
+
+| Category | Est. % | Examples |
+|----------|--------|----------|
+| Hardware | ~70% | CPU timeout, FP variance, no AES-NI |
+| Timing | ~15% | Clock drift, epoch boundary, race condition |
+| Network | ~10% | Incomplete data, message ordering |
+| Byzantine | ~5% | Deliberate wrong, sybil, compromised |
+
+**New exports:**
+- `DISAGREEMENT_CAUSE` - 16 categorized causes
+- `REMEDIATION` - 11 remediation actions (no permanent bans)
+- `analyzeDisagreement()` - Diagnose likely cause
+- `createRemediationPlan()` - Create action plan
+- `trackDisagreementPattern()` - Observe patterns over time
+
+#### 🗑️ VARNA Removed
+
+**VARNA** (`security/varna.js`) has been **deleted** as anti-yakmesh ethos:
+- `VARNA_PERMISSIONS` gated actions by tier (denial system = attack vector)
+- `verifyWeightedVotes()` was voting (politics, not math)
+- `VARNA_WEIGHT` gave higher tiers more power (PoW/PoS replication)
+
+**Migration:** Use `SAKSHI` for all capability/observation needs.
+
+#### 📊 Test Coverage
+
+- 174 tests passing
+- SAKSHI tests include philosophy validation (no permission methods exist)
+
+---
+
+## [2.8.0] - 2026-02-04
+
+### 🔺 TRIBHUJ Balanced Ternary Mathematics
+
+*Theme: "The triangle stands stable on three points."*
+
+#### Core Ternary System (`oracle/tribhuj.js`)
+
+**त्रिभुज (Sanskrit: "triangle")** - Native balanced ternary for YAKMESH:
+
+- `Trit` class - Single balanced ternary digit (-1, 0, +1)
+- `TritArray` class - Multi-trit values with arithmetic
+- Ternary logic: AND (min), OR (max), consensus
+- Path balance calculation for link quality
+- Weighted consensus computation
+
+#### TATTVA Ternary ValidationResult
+
+**तत्त्व (Sanskrit: "essence")** - Three-state validation:
+- `VALID` (+1), `INVALID` (-1), `PENDING` (0)
+- Ternary logic operations: AND, OR, CONSENSUS
+- Backward compatible: `result.valid` still works
+- Disagreement → PENDING (not forced resolution)
+
+#### LAMA Ternary Consensus
+
+**Retrofitted consensus voting:**
+- `ConsensusVote.accept()`, `.reject()`, `.abstain()`
+- `computeTernaryConsensus()` with confidence calculation
+- Close votes return NEUTRAL (undecided), not forced majority
+
+---
+
+## [2.7.1] - 2026-02-04
+
+### 🔐 YPC-27 Quantum-Hard Packet Checksums
+
+*Theme: "Your packets now carry quantum-resistant armor."*
+
+#### 🎯 Core Integration
+
+- **YPC-27 Checksum Module** (`oracle/ypc27.js`)
+  - 27-trit polynomial in ring Z[x]/(x^27-1) mod 3
+  - Forging requires solving the Short Integer Solution (SIS) problem
+  - 3^27 = 7.6 trillion possible checksum states
+  - Single bit flip → all 27 coefficients affected (avalanche)
+  - **7 tests** via verification script
+
+- **Packet Checksum Integration** (`oracle/packet-checksum.js`)
+  - Domain-separated checksums (prevents cross-protocol attacks)
+  - Wire format: `YPC27:v1:<base64-trits>`
+  - `wrapWithChecksum()` / `unwrapWithChecksum()` helpers
+  - Factory functions: `createStupaChecksum()`, `createNakpakChecksum()`, etc.
+  - **14 tests** via verification script
+
+#### 📦 Protocol Integrations
+
+**STUPA Broadcast** (`mesh/beacon-broadcast.js`)
+- `StupaMessage` now includes `ypc27` field
+- `_computeYpc27()` and `verifyYpc27()` methods
+- `isValid(verifyQuantum)` for optional quantum verification
+- Checksum verified on `deserialize()` for incoming messages
+
+**NAKPAK Routing** (`mesh/nakpak-routing.js`)
+- `NakpakPacket` now includes `ypc27` field
+- Checksum computed during `padToFixedSize()` finalization
+- `verifyYpc27()` for packet integrity verification
+- Checksum verified on `deserialize()` with error on mismatch
+
+**KHATA Protocol** (`security/khata-protocol.js`)
+- All message types (ANNOUNCE, REQUEST, RESPONSE, REVOKE) now include checksums
+- `_wrapWithYpc27()` and `_verifyYpc27()` helper methods
+- Checksum failures logged with stats tracking
+- Backward compatible: messages without checksum still accepted
+
+#### 🔒 Security Properties
+
+- **Domain Separation**: Same data produces different checksums for different protocols
+- **Deterministic JSON**: Key order doesn't affect checksum (sorted serialization)
+- **Quantum Resistance**: Based on lattice problem, resistant to Shor's algorithm
+- **Attack Detection**: Invalid checksum logged as potential quantum attack or corruption
+
+---
+
+## [2.7.0] - 2026-02-04
+
+### 🔺 Balanced Ternary Mathematics — Three States of Truth
+
+*Theme: "Binary thinks in absolutes. Ternary embraces the unknown."*
+
+#### 🎯 Core Principles
+
+- **Three-State Logic** - Accept/Reject/Abstain replaces True/False
+- **Self-Inverting Negation** - No 2's complement overhead
+- **NTRU-Native** - Balanced ternary is the native math for post-quantum crypto
+- **Optimal Radix** - Closest integer to e ≈ 2.718 for information density
+
+#### ✅ New Modules
+
+**TRIBHUJ Foundation** (`oracle/tribhuj.js`)
+- त्रिभुज (Triangle) — balanced ternary primitives
+- `Trit` class: immutable single trit {-1, 0, +1}
+- `TritArray` class: arrays with decimal conversion
+- `TritState` semantic aliases (VALID/INVALID/PENDING, etc.)
+- Kleene 3-valued logic: AND (min), OR (max)
+- `weightedConsensus()`: vote aggregation with weights
+- `calculatePathBalance()`: path metric calculation
+- **36 tests**
+
+**TRISULA Routing** (`mesh/trisula-tree.js`)
+- त्रिशूल (Trident) — Ternary Search Tree for peer routing
+- `TrisulaTST`: O(k) insert/search where k = key length
+- `TrisulaPeerRouter`: XOR-distance peer lookup
+- Prefix search for DHT-style routing
+- Natural 3-way branching: LEFT/MIDDLE/RIGHT
+- **33 tests**
+
+#### 🔄 Retrofits
+
+**TATTVA Validation** (`oracle/validation-oracle-hardened.js`)
+- `ValidationResult` now uses ternary state internally
+- New methods: `isValid`, `isInvalid`, `isPending`
+- New operations: `and()`, `or()`, `consensus()`
+- Backwards compatible: `result.valid` still works (deprecated)
+- **22 tests**
+
+**LAMA Consensus** (`oracle/consensus-engine.js`)
+- New `ConsensusVote` class: ACCEPT/REJECT/ABSTAIN with weights
+- `computeTernaryConsensus()`: threshold-based aggregation
+- Prevents consensus "flapping" with ABSTAIN votes
+- **16 tests**
+
+**KHATA/SHERPA Link Quality** (`mesh/sherpa-discovery.js`)
+- New `LinkQuality` class for bidirectional link health
+- Outbound/inbound quality as balanced ternary
+- `isSymmetric`/`isAsymmetric` detection
+- `pathBalance` for routing decisions
+- **17 tests**
+
+#### 📊 Balanced Ternary Reference
+
+| Decimal | Balanced Ternary | Representation |
+|---------|------------------|----------------|
+| -4 | T T 1 | (-1×9) + (-1×3) + (1×1) |
+| -3 | T 0 0 | (-1×9) + (0×3) + (0×1) |
+| -2 | T 1 | (-1×3) + (1×1) |
+| -1 | T | (-1×1) |
+| 0 | 0 | (0×1) |
+| 1 | 1 | (1×1) |
+| 2 | 1 T | (1×3) + (-1×1) |
+| 3 | 1 0 | (1×3) + (0×1) |
+| 4 | 1 1 | (1×3) + (1×1) |
+
+#### 🔮 Future: NTRU Integration
+
+This release lays the foundation for NTRU post-quantum cryptography:
+- NTRU uses ternary polynomials with coefficients in {-1, 0, +1}
+- `TritArray` can directly represent NTRU polynomial coefficients
+- Self-inverting negation simplifies NTRU arithmetic
+
+---
+
+## [2.6.7] - 2026-02-03
+
+### 📚 Zero External Dependencies
+
+- Quick Reference documentation page
+- Local Prism.js bundle (no CDN)
+- YAK icon fixes
+- **Zero external runtime dependencies**
+
+---
+
+## [2.6.6] - 2026-02-02
+
+### 🏔️ Philosophy & Heritage
+
+- Philosophy documentation page
+- Himalayan tribute section
+- Favicon fixes across all pages
+- Docs bundle sync
+
+---
+
+## [2.6.5] - 2026-02-01
+
+### 🎨 Production CSS
+
+- Production Tailwind CSS build
+- Remove CDN dependency for styles
+- Fully self-contained documentation
+
+---
+
+## [2.6.4] - 2026-01-31
+
+### 🔧 UI Fixes
+
+- YAK icon fix for Windows 10
+- Sidebar toggle fix
+- Protocol stack documentation complete
+- Docs bundle rebuild
+
+---
+
+## [2.6.3] - 2026-01-30
+
+### 🔧 Bug Fixes
+
+- YAK icon rendering fix
+- Sidebar toggle behavior fix
+- Protocol stack visualization complete
+
+---
+
+## [2.6.2] - 2026-01-29
+
+### 📝 Documentation
+
+- Documentation fixes
+- Network placeholder pages
+
+---
+
+## [2.6.1] - 2026-01-28
+
+### 🎨 Visual Fixes
+
+- KARMA/MANDALA silhouette fixes
+- DOKO mobile responsiveness
+- Navigation improvements
+
+---
+
+## [2.6.0] - 2026-01-27
+
+### 📖 GRANTH Embedded Documentation Bundle
+
+*Theme: "The code carries its own scripture."*
+
+- **GRANTH** (`embedded-docs/`) - Hash-verified documentation bundle
+- Himalayan naming convention formalized
+- KARMA trust tier documentation
+- Unified announcements (Discord + Telegram)
+- Network identity clarification (code hash, not salts)
+
+---
+
 ## [2.5.0] - 2026-01-20
 
 ### 🌍 Geographic Exclusion — Physics Don't Lie

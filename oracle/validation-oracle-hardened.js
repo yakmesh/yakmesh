@@ -44,6 +44,7 @@ import { readFileSync, readdirSync, statSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import { createLogger } from '../utils/logger.js';
+import { Trit, TritState, POSITIVE, NEUTRAL, NEGATIVE } from './tribhuj.js';
 
 const log = createLogger('oracle:validation');
 
@@ -96,16 +97,38 @@ const MODULE_SEAL = createSafeObject({
 
 /**
  * Validation Result - Immutable return type for all validations
+ * 
+ * Now uses TERNARY logic (TRIBHUJ):
+ *   VALID   (+1) = Definitively valid, can propagate
+ *   INVALID (-1) = Definitively invalid, reject
+ *   PENDING  (0) = Indeterminate, awaiting consensus/propagation
+ * 
+ * The PENDING state prevents "flapping" in distributed consensus:
+ * nodes can acknowledge receipt without committing to validity.
  */
 export class ValidationResult {
-  #valid;
+  #state;      // Trit: VALID(+1), INVALID(-1), PENDING(0)
   #reason;
   #proof;
   #timestamp;
   #oracleVersion;
   
-  constructor(valid, reason = null, proof = null) {
-    this.#valid = Boolean(valid);
+  /**
+   * @param {number|Trit} state - Ternary state: +1 (valid), -1 (invalid), 0 (pending)
+   * @param {string|null} reason - Reason for invalid/pending state
+   * @param {object|null} proof - Cryptographic proof
+   */
+  constructor(state, reason = null, proof = null) {
+    // Accept Trit, number, or boolean (backwards compat)
+    if (state instanceof Trit) {
+      this.#state = state;
+    } else if (typeof state === 'boolean') {
+      // BACKWARDS COMPAT: true → VALID, false → INVALID
+      this.#state = new Trit(state ? POSITIVE : NEGATIVE);
+    } else {
+      this.#state = new Trit(state);
+    }
+    
     this.#reason = reason;
     this.#proof = proof ? deepFreeze({ ...proof }) : null;
     this.#timestamp = Date.now();
@@ -115,28 +138,115 @@ export class ValidationResult {
     Object.freeze(this);
   }
   
-  get valid() { return this.#valid; }
+  // ─────────────────────────────────────────────────────────────────────────
+  // Ternary State Accessors
+  // ─────────────────────────────────────────────────────────────────────────
+  
+  /** The ternary state as a Trit */
+  get state() { return this.#state; }
+  
+  /** Is this definitively VALID? (+1) */
+  get isValid() { return this.#state.isPositive; }
+  
+  /** Is this definitively INVALID? (-1) */
+  get isInvalid() { return this.#state.isNegative; }
+  
+  /** Is this PENDING/indeterminate? (0) */
+  get isPending() { return this.#state.isNeutral; }
+  
+  // ─────────────────────────────────────────────────────────────────────────
+  // Backwards Compatibility (boolean interface)
+  // ─────────────────────────────────────────────────────────────────────────
+  
+  /** @deprecated Use isValid instead. Returns true only for VALID state. */
+  get valid() { return this.#state.isPositive; }
+  
   get reason() { return this.#reason; }
   get proof() { return this.#proof; }
   get timestamp() { return this.#timestamp; }
   get oracleVersion() { return this.#oracleVersion; }
   
+  // ─────────────────────────────────────────────────────────────────────────
+  // Static Constructors
+  // ─────────────────────────────────────────────────────────────────────────
+  
+  /** Create a VALID (+1) result */
   static success(proof = null) {
-    return new ValidationResult(true, null, proof);
+    return new ValidationResult(POSITIVE, null, proof);
   }
   
+  /** Create an INVALID (-1) result */
   static failure(reason) {
-    return new ValidationResult(false, reason, null);
+    return new ValidationResult(NEGATIVE, reason, null);
   }
+  
+  /** Create a PENDING (0) result - awaiting consensus/propagation */
+  static pending(reason = 'AWAITING_CONSENSUS', proof = null) {
+    return new ValidationResult(NEUTRAL, reason, proof);
+  }
+  
+  // ─────────────────────────────────────────────────────────────────────────
+  // Ternary Logic Operations
+  // ─────────────────────────────────────────────────────────────────────────
+  
+  /**
+   * Combine two validation results using ternary AND.
+   * Both must be VALID for result to be VALID.
+   * If either is INVALID, result is INVALID.
+   * Otherwise PENDING.
+   */
+  and(other) {
+    const newState = this.#state.and(other.state);
+    const reason = this.#reason || other.reason;
+    const proof = this.#proof || other.proof;
+    return new ValidationResult(newState, reason, proof);
+  }
+  
+  /**
+   * Combine two validation results using ternary OR.
+   * Either being VALID makes result VALID.
+   * Both must be INVALID for result to be INVALID.
+   * Otherwise PENDING.
+   */
+  or(other) {
+    const newState = this.#state.or(other.state);
+    const reason = this.isValid ? null : (this.#reason || other.reason);
+    const proof = this.#proof || other.proof;
+    return new ValidationResult(newState, reason, proof);
+  }
+  
+  /**
+   * Consensus operation: agree on validity.
+   * If both agree (same state), return that state.
+   * If they disagree, return PENDING.
+   */
+  consensus(other) {
+    const newState = this.#state.consensus(other.state);
+    const reason = newState.isNeutral ? 'CONSENSUS_DISAGREEMENT' : this.#reason;
+    return new ValidationResult(newState, reason, this.#proof);
+  }
+  
+  // ─────────────────────────────────────────────────────────────────────────
+  // Serialization
+  // ─────────────────────────────────────────────────────────────────────────
   
   toJSON() {
     return deepFreeze({
-      valid: this.#valid,
+      state: this.#state.value,         // -1, 0, or +1
+      valid: this.#state.isPositive,    // Backwards compat
+      isValid: this.#state.isPositive,
+      isInvalid: this.#state.isNegative,
+      isPending: this.#state.isNeutral,
       reason: this.#reason,
       proof: this.#proof,
       timestamp: this.#timestamp,
       oracleVersion: this.#oracleVersion,
     });
+  }
+  
+  toString() {
+    const stateStr = this.isValid ? 'VALID' : (this.isInvalid ? 'INVALID' : 'PENDING');
+    return `ValidationResult(${stateStr}${this.#reason ? ': ' + this.#reason : ''})`;
   }
 }
 

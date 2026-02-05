@@ -23,6 +23,9 @@ import { sha3_256 } from '@noble/hashes/sha3.js';
 import { bytesToHex, randomBytes, utf8ToBytes } from '@noble/hashes/utils.js';
 import { EventEmitter } from 'events';
 
+// v2.7.0 Ternary Math Integration (TRIBHUJ)
+import { Trit, TritState, calculatePathBalance, POSITIVE, NEUTRAL, NEGATIVE } from '../oracle/tribhuj.js';
+
 // v2.5.0 Geographic Proof Integration
 import {
   GeoProofService,
@@ -69,7 +72,174 @@ const SHERPA_CONFIG = {
   geoRttWindowMs: 60000,        // Window for RTT sample averaging
 };
 
+// =============================================================================
+// v2.7.0 TERNARY LINK QUALITY (TRIBHUJ Integration)
+// =============================================================================
+
+/**
+ * LinkQuality - Ternary bidirectional link health metric.
+ * 
+ * Captures the *direction* of link quality, not just magnitude:
+ *   GOOD (+1)    = Both directions healthy (symmetric, low latency)
+ *   BAD (-1)     = Both directions degraded (symmetric failure)
+ *   NEUTRAL (0)  = Asymmetric (one direction good, other bad)
+ * 
+ * This prevents "flapping" in routing decisions where asymmetric
+ * paths cause unstable route selection.
+ * 
+ * @example
+ * const link = new LinkQuality();
+ * link.recordOutbound(true);   // Our message got through
+ * link.recordInbound(false);   // Their reply didn't arrive
+ * console.log(link.quality);   // NEUTRAL (asymmetric)
+ */
+export class LinkQuality {
+  #outboundSuccesses = 0;
+  #outboundFailures = 0;
+  #inboundSuccesses = 0;
+  #inboundFailures = 0;
+  #lastUpdated = Date.now();
+  
+  /**
+   * Record an outbound message result (we sent, did they receive?)
+   * @param {boolean} success - Whether the outbound message succeeded
+   */
+  recordOutbound(success) {
+    if (success) {
+      this.#outboundSuccesses++;
+    } else {
+      this.#outboundFailures++;
+    }
+    this.#lastUpdated = Date.now();
+  }
+  
+  /**
+   * Record an inbound message result (they sent, did we receive?)
+   * @param {boolean} success - Whether the inbound message was received
+   */
+  recordInbound(success) {
+    if (success) {
+      this.#inboundSuccesses++;
+    } else {
+      this.#inboundFailures++;
+    }
+    this.#lastUpdated = Date.now();
+  }
+  
+  /**
+   * Get outbound quality as Trit
+   * @returns {Trit} +1 if mostly success, -1 if mostly failure, 0 if mixed
+   */
+  get outboundQuality() {
+    const total = this.#outboundSuccesses + this.#outboundFailures;
+    if (total === 0) return new Trit(NEUTRAL);
+    
+    const ratio = this.#outboundSuccesses / total;
+    if (ratio > 0.7) return new Trit(POSITIVE);      // >70% success
+    if (ratio < 0.3) return new Trit(NEGATIVE);      // <30% success
+    return new Trit(NEUTRAL);                         // Mixed
+  }
+  
+  /**
+   * Get inbound quality as Trit
+   * @returns {Trit} +1 if mostly success, -1 if mostly failure, 0 if mixed
+   */
+  get inboundQuality() {
+    const total = this.#inboundSuccesses + this.#inboundFailures;
+    if (total === 0) return new Trit(NEUTRAL);
+    
+    const ratio = this.#inboundSuccesses / total;
+    if (ratio > 0.7) return new Trit(POSITIVE);
+    if (ratio < 0.3) return new Trit(NEGATIVE);
+    return new Trit(NEUTRAL);
+  }
+  
+  /**
+   * Get overall bidirectional link quality.
+   * Uses ternary AND: both directions must be good for overall GOOD.
+   * @returns {Trit} Bidirectional link quality
+   */
+  get quality() {
+    return this.outboundQuality.and(this.inboundQuality);
+  }
+  
+  /**
+   * Check if link is symmetric (both directions have same quality)
+   * @returns {boolean}
+   */
+  get isSymmetric() {
+    return this.outboundQuality.equals(this.inboundQuality);
+  }
+  
+  /**
+   * Check if link is asymmetric (directions have different quality)
+   * @returns {boolean}
+   */
+  get isAsymmetric() {
+    return !this.isSymmetric;
+  }
+  
+  /**
+   * Get path balance using TRIBHUJ.
+   * Balanced path has sum of 0 (equal good/bad in both directions).
+   * @returns {{ sum: number, isBalanced: boolean }}
+   */
+  get pathBalance() {
+    return calculatePathBalance([
+      this.outboundQuality,
+      this.inboundQuality,
+    ]);
+  }
+  
+  /**
+   * Reset counters (e.g., after maintenance window)
+   */
+  reset() {
+    this.#outboundSuccesses = 0;
+    this.#outboundFailures = 0;
+    this.#inboundSuccesses = 0;
+    this.#inboundFailures = 0;
+    this.#lastUpdated = Date.now();
+  }
+  
+  /**
+   * Decay old counts (for rolling window)
+   * @param {number} factor - Decay factor (0-1, e.g., 0.9 = 10% decay)
+   */
+  decay(factor = 0.9) {
+    this.#outboundSuccesses = Math.floor(this.#outboundSuccesses * factor);
+    this.#outboundFailures = Math.floor(this.#outboundFailures * factor);
+    this.#inboundSuccesses = Math.floor(this.#inboundSuccesses * factor);
+    this.#inboundFailures = Math.floor(this.#inboundFailures * factor);
+  }
+  
+  get lastUpdated() { return this.#lastUpdated; }
+  
+  toJSON() {
+    return {
+      outbound: {
+        successes: this.#outboundSuccesses,
+        failures: this.#outboundFailures,
+        quality: this.outboundQuality.value,
+      },
+      inbound: {
+        successes: this.#inboundSuccesses,
+        failures: this.#inboundFailures,
+        quality: this.inboundQuality.value,
+      },
+      overall: {
+        quality: this.quality.value,
+        qualityLabel: this.quality.isPositive ? 'GOOD' : (this.quality.isNegative ? 'BAD' : 'NEUTRAL'),
+        isSymmetric: this.isSymmetric,
+      },
+      lastUpdated: this.#lastUpdated,
+    };
+  }
+}
+
 // ============================================================
+// SHERPA BEACON
+// ============================================================// ============================================================
 // BEACON MESSAGE FORMAT
 // ============================================================
 
