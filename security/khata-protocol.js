@@ -10,14 +10,23 @@
  * - RESPONSE: Reply with matching DOKO(s)
  * - REVOKE: Announce DOKO revocation
  * 
+ * Now includes YPC-27 quantum-hard checksums for message integrity.
+ * 
  * @module security/khata-protocol
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 import { sha3_256 } from '@noble/hashes/sha3.js';
 import { bytesToHex, utf8ToBytes, randomBytes } from '@noble/hashes/utils.js';
 import { EventEmitter } from 'events';
 import { createLogger } from '../utils/logger.js';
+
+// YPC-27 quantum-hard checksums for message integrity
+import { 
+  PROTOCOL_DOMAIN, 
+  wrapWithChecksum, 
+  unwrapWithChecksum 
+} from '../oracle/packet-checksum.js';
 
 const log = createLogger('security:khata');
 
@@ -128,11 +137,35 @@ export class KhataProtocol extends EventEmitter {
   // ═══════════════════════════════════════════════════════════════════════════
 
   /**
+   * Wrap a KHATA message with YPC-27 quantum-hard checksum.
+   * @param {Object} message - The message to wrap
+   * @returns {Object} Message with ypc27 field
+   * @private
+   */
+  _wrapWithYpc27(message) {
+    return wrapWithChecksum(message, PROTOCOL_DOMAIN.KHATA, this.identity?.identity?.nodeId);
+  }
+
+  /**
+   * Verify and unwrap a KHATA message with YPC-27 checksum.
+   * @param {Object} message - The message to verify
+   * @returns {{ message: Object, valid: boolean, error?: string }}
+   * @private
+   */
+  _verifyYpc27(message) {
+    // For backward compatibility, messages without ypc27 are considered valid
+    if (!message.ypc27) {
+      return { message, valid: true };
+    }
+    return unwrapWithChecksum(message, PROTOCOL_DOMAIN.KHATA);
+  }
+
+  /**
    * Create and broadcast an ANNOUNCE message
    * @param {Object} doko - The DOKO to announce
    */
   async announce(doko) {
-    const message = {
+    let message = {
       type: KHATA_MESSAGE.ANNOUNCE,
       messageId: generateMessageId(),
       doko,
@@ -141,6 +174,9 @@ export class KhataProtocol extends EventEmitter {
       hops: 0,
       originNodeId: this.identity.identity.nodeId,
     };
+
+    // Add YPC-27 quantum-hard checksum
+    message = this._wrapWithYpc27(message);
 
     // Mark as seen so we don't process our own message
     const messageHash = computeMessageHash(message);
@@ -161,6 +197,14 @@ export class KhataProtocol extends EventEmitter {
    * Handle incoming ANNOUNCE message
    */
   async handleAnnounce(message, fromPeerId) {
+    // Verify YPC-27 checksum if present (quantum attack detection)
+    const { valid, error } = this._verifyYpc27(message);
+    if (!valid) {
+      log.warn(`YPC-27 checksum failed for ANNOUNCE from ${fromPeerId}: ${error}`);
+      this.stats.checksumFailed = (this.stats.checksumFailed || 0) + 1;
+      return;
+    }
+
     // Check for duplicate
     const messageHash = computeMessageHash(message);
     if (this.seenMessages.has(messageHash)) {
@@ -246,7 +290,7 @@ export class KhataProtocol extends EventEmitter {
     }
 
     const requestId = generateMessageId();
-    const message = {
+    let message = {
       type: KHATA_MESSAGE.REQUEST,
       requestId,
       query,
@@ -261,6 +305,9 @@ export class KhataProtocol extends EventEmitter {
       timestamp: message.timestamp,
     });
     message.signature = this.identity.sign(requestPayload);
+
+    // Add YPC-27 quantum-hard checksum
+    message = this._wrapWithYpc27(message);
 
     // Create promise for response
     return new Promise((resolve, reject) => {
@@ -284,6 +331,14 @@ export class KhataProtocol extends EventEmitter {
    * Handle incoming REQUEST message
    */
   async handleRequest(message, fromPeerId) {
+    // Verify YPC-27 checksum if present
+    const { valid, error } = this._verifyYpc27(message);
+    if (!valid) {
+      log.warn(`YPC-27 checksum failed for REQUEST from ${fromPeerId}: ${error}`);
+      this.stats.checksumFailed = (this.stats.checksumFailed || 0) + 1;
+      return;
+    }
+
     this.stats.requestsReceived++;
 
     const { query, requestId, requesterId } = message;
@@ -302,7 +357,7 @@ export class KhataProtocol extends EventEmitter {
 
     if (doko) {
       // Send response
-      const response = {
+      let response = {
         type: KHATA_MESSAGE.RESPONSE,
         requestId,
         dokos: [doko],
@@ -317,6 +372,9 @@ export class KhataProtocol extends EventEmitter {
         timestamp: response.timestamp,
       });
       response.signature = this.identity.sign(responsePayload);
+
+      // Add YPC-27 quantum-hard checksum
+      response = this._wrapWithYpc27(response);
 
       this.stats.responsesSent++;
 
@@ -339,6 +397,14 @@ export class KhataProtocol extends EventEmitter {
    * Handle incoming RESPONSE message
    */
   async handleResponse(message, fromPeerId) {
+    // Verify YPC-27 checksum if present
+    const { valid, error } = this._verifyYpc27(message);
+    if (!valid) {
+      log.warn(`YPC-27 checksum failed for RESPONSE from ${fromPeerId}: ${error}`);
+      this.stats.checksumFailed = (this.stats.checksumFailed || 0) + 1;
+      return;
+    }
+
     this.stats.responsesReceived++;
 
     const pending = this.pendingRequests.get(message.requestId);
@@ -376,7 +442,7 @@ export class KhataProtocol extends EventEmitter {
    * @param {string} reason - Revocation reason
    */
   async revoke(dokoHash, reason = 'voluntary') {
-    const message = {
+    let message = {
       type: KHATA_MESSAGE.REVOKE,
       dokoHash,
       reason,
@@ -393,6 +459,9 @@ export class KhataProtocol extends EventEmitter {
     });
     message.signature = this.identity.sign(revokePayload);
 
+    // Add YPC-27 quantum-hard checksum
+    message = this._wrapWithYpc27(message);
+
     this.stats.revokesSent++;
     this.emit('revoke-sent', { dokoHash, reason });
 
@@ -408,6 +477,14 @@ export class KhataProtocol extends EventEmitter {
    * Handle incoming REVOKE message
    */
   async handleRevoke(message, fromPeerId) {
+    // Verify YPC-27 checksum if present (CRITICAL for revocations)
+    const { valid, error } = this._verifyYpc27(message);
+    if (!valid) {
+      log.warn(`YPC-27 checksum failed for REVOKE from ${fromPeerId}: ${error}`);
+      this.stats.checksumFailed = (this.stats.checksumFailed || 0) + 1;
+      return;
+    }
+
     // Check for duplicate
     const messageHash = computeMessageHash(message);
     if (this.seenMessages.has(messageHash)) {

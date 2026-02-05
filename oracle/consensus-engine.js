@@ -35,6 +35,7 @@
 
 import { getOracle, contentHash, deterministicStringify } from './validation-oracle-hardened.js';
 import { CodeProofProtocol } from './code-proof-protocol.js';
+import { Trit, TritState, weightedConsensus, POSITIVE, NEUTRAL, NEGATIVE } from './tribhuj.js';
 import { EventEmitter } from 'events';
 import { createLogger } from '../utils/logger.js';
 
@@ -54,6 +55,143 @@ export const DharmicState = {
 
 // Backward compatibility alias
 export const ContentState = DharmicState;
+
+// =============================================================================
+// TERNARY CONSENSUS VOTE (TRIBHUJ Integration)
+// =============================================================================
+
+/**
+ * Consensus Vote - A ternary vote with optional trust weight.
+ * 
+ * In ternary consensus:
+ *   ACCEPT  (+1) = I validate this content as correct
+ *   REJECT  (-1) = I reject this content as invalid  
+ *   ABSTAIN  (0) = I cannot determine validity (propagating/pending)
+ * 
+ * The ABSTAIN state prevents "flapping" where nodes rapidly flip
+ * between accept/reject due to incomplete information.
+ */
+export class ConsensusVote {
+  /** @type {Trit} */
+  #vote;
+  
+  /** @type {string} */
+  #nodeId;
+  
+  /** @type {number} */
+  #weight;
+  
+  /** @type {number} */
+  #timestamp;
+  
+  /** @type {string|null} */
+  #reason;
+
+  /**
+   * @param {string} nodeId - The voting node's ID
+   * @param {number|Trit} vote - The vote value (+1, -1, 0)
+   * @param {object} options - Additional options
+   */
+  constructor(nodeId, vote, options = {}) {
+    this.#nodeId = nodeId;
+    this.#vote = vote instanceof Trit ? vote : new Trit(vote);
+    this.#weight = options.weight ?? 1;
+    this.#timestamp = options.timestamp ?? Date.now();
+    this.#reason = options.reason ?? null;
+    
+    Object.freeze(this);
+  }
+
+  get nodeId() { return this.#nodeId; }
+  get vote() { return this.#vote; }
+  get weight() { return this.#weight; }
+  get timestamp() { return this.#timestamp; }
+  get reason() { return this.#reason; }
+
+  /** Is this an ACCEPT vote? */
+  get isAccept() { return this.#vote.isPositive; }
+  
+  /** Is this a REJECT vote? */
+  get isReject() { return this.#vote.isNegative; }
+  
+  /** Is this an ABSTAIN vote? */
+  get isAbstain() { return this.#vote.isNeutral; }
+
+  /** Create an ACCEPT vote */
+  static accept(nodeId, options = {}) {
+    return new ConsensusVote(nodeId, POSITIVE, options);
+  }
+
+  /** Create a REJECT vote */
+  static reject(nodeId, reason, options = {}) {
+    return new ConsensusVote(nodeId, NEGATIVE, { ...options, reason });
+  }
+
+  /** Create an ABSTAIN vote */
+  static abstain(nodeId, reason = 'AWAITING_VALIDATION', options = {}) {
+    return new ConsensusVote(nodeId, NEUTRAL, { ...options, reason });
+  }
+
+  toJSON() {
+    return {
+      nodeId: this.#nodeId,
+      vote: this.#vote.value,
+      voteLabel: this.isAccept ? 'ACCEPT' : (this.isReject ? 'REJECT' : 'ABSTAIN'),
+      weight: this.#weight,
+      timestamp: this.#timestamp,
+      reason: this.#reason,
+    };
+  }
+}
+
+/**
+ * Compute consensus result from multiple votes using weighted ternary consensus.
+ * 
+ * @param {ConsensusVote[]} votes - Array of votes
+ * @param {object} options - Consensus options
+ * @returns {{ result: Trit, confidence: number, summary: object }}
+ */
+export function computeTernaryConsensus(votes, options = {}) {
+  const threshold = options.threshold ?? 0.33; // Default: need >1/3 margin
+  
+  // Handle empty votes
+  if (!votes || votes.length === 0) {
+    return {
+      result: new Trit(NEUTRAL),
+      confidence: 0,
+      summary: {
+        total: 0, accept: 0, reject: 0, abstain: 0,
+        totalWeight: 0, acceptWeight: 0, rejectWeight: 0,
+      },
+    };
+  }
+  
+  // Convert to format expected by weightedConsensus (uses 'vote' property)
+  const tritVotes = votes.map(v => ({
+    vote: v.vote,
+    weight: v.weight,
+  }));
+  
+  const { result, confidence, details } = weightedConsensus(tritVotes);
+  
+  // Override result if threshold not met
+  const finalResult = Math.abs(details.normalizedScore) >= threshold 
+    ? result 
+    : new Trit(NEUTRAL);
+  
+  // Summary stats
+  const summary = {
+    total: votes.length,
+    accept: votes.filter(v => v.isAccept).length,
+    reject: votes.filter(v => v.isReject).length,
+    abstain: votes.filter(v => v.isAbstain).length,
+    totalWeight: votes.reduce((sum, v) => sum + v.weight, 0),
+    acceptWeight: votes.filter(v => v.isAccept).reduce((sum, v) => sum + v.weight, 0),
+    rejectWeight: votes.filter(v => v.isReject).reduce((sum, v) => sum + v.weight, 0),
+  };
+  
+  return { result: finalResult, confidence, summary };
+}
 
 /**
  * LAMA Consensus Engine
