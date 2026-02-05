@@ -5,12 +5,33 @@
  * - Sidebar toggle (desktop & mobile)
  * - Theme initialization
  * - Active link highlighting
+ * - Dashboard button visibility (localhost only)
  */
 
 document.addEventListener('DOMContentLoaded', function() {
+  initDashboardButton();
   initSidebar();
   initActiveLinks();
 });
+
+/**
+ * Dashboard Button - Only show on localhost (self-hosted docs)
+ * Hide on production website (yakmesh.dev)
+ */
+function initDashboardButton() {
+  const dashboardLink = document.querySelector('.sidebar-dashboard-link');
+  if (!dashboardLink) return;
+  
+  const isLocalhost = window.location.hostname === 'localhost' || 
+                      window.location.hostname === '127.0.0.1' ||
+                      window.location.hostname.startsWith('192.168.') ||
+                      window.location.hostname.startsWith('10.') ||
+                      window.location.protocol === 'file:';
+  
+  if (!isLocalhost) {
+    dashboardLink.style.display = 'none';
+  }
+}
 
 /**
  * Sidebar Toggle (works on all screen sizes)
