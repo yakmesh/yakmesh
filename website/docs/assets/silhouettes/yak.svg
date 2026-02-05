@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMax slice">
+  <defs>
+    <radialGradient id="yakGlow" cx="40%" cy="70%" r="50%">
+      <stop offset="0%" stop-color="#4a8a6a" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#101a16" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  
+  <!-- MOUNTAIN BACKDROP -->
+  <polygon points="0,650 200,350 400,580 400,1080 0,1080" fill="#1a2a22" opacity="0.4"/>
+  <polygon points="300,620 550,280 800,550 800,1080 300,1080" fill="#1a2a22" opacity="0.45"/>
+  <polygon points="1200,600 1450,300 1700,550 1700,1080 1200,1080" fill="#1a2a22" opacity="0.4"/>
+  <polygon points="1600,650 1800,400 1920,600 1920,1080 1600,1080" fill="#1a2a22" opacity="0.35"/>
+  
+  <!-- Mid-ground ridge -->
+  <polygon points="0,800 300,750 600,780 900,720 1200,760 1500,730 1920,800 1920,1080 0,1080" fill="#1a2a22" opacity="0.55"/>
+  
+  <!-- THE MIGHTY YAK - center-left, large and imposing -->
+  <!-- Body - massive and shaggy -->
+  <ellipse cx="700" cy="700" rx="280" ry="180" fill="#101a16"/>
+  
+  <!-- Shaggy fur texture on body -->
+  <path d="M450,680 Q420,720 440,780" stroke="#1f332d" stroke-width="3" fill="none" opacity="0.4"/>
+  <path d="M480,700 Q450,750 470,820" stroke="#1f332d" stroke-width="3" fill="none" opacity="0.4"/>
+  <path d="M520,720 Q490,780 510,860" stroke="#1f332d" stroke-width="3" fill="none" opacity="0.4"/>
+  <path d="M880,700 Q910,750 890,820" stroke="#1f332d" stroke-width="3" fill="none" opacity="0.4"/>
+  <path d="M920,680 Q950,720 930,780" stroke="#1f332d" stroke-width="3" fill="none" opacity="0.4"/>
+  
+  <!-- Shoulder hump -->
+  <ellipse cx="600" cy="600" rx="120" ry="80" fill="#101a16"/>
+  
+  <!-- Head -->
+  <ellipse cx="380" cy="620" rx="100" ry="70" fill="#101a16"/>
+  
+  <!-- Snout -->
+  <ellipse cx="290" cy="650" rx="50" ry="35" fill="#101a16"/>
+  
+  <!-- HORNS - curved and powerful -->
+  <path d="M350,570 Q280,480 200,500" stroke="#101a16" stroke-width="25" fill="none"/>
+  <path d="M350,570 Q280,480 200,500" stroke="#2e4c43" stroke-width="3" fill="none" opacity="0.4"/>
+  <path d="M410,570 Q480,480 560,500" stroke="#101a16" stroke-width="25" fill="none"/>
+  <path d="M410,570 Q480,480 560,500" stroke="#2e4c43" stroke-width="3" fill="none" opacity="0.4"/>
+  
+  <!-- Eye -->
+  <circle cx="340" cy="600" r="8" fill="#2e4c43" opacity="0.5"/>
+  
+  <!-- Nostril -->
+  <ellipse cx="260" cy="660" rx="8" ry="5" fill="#1a2a22" opacity="0.4"/>
+  
+  <!-- Legs - sturdy -->
+  <rect x="520" y="850" width="50" height="150" fill="#101a16"/>
+  <rect x="620" y="860" width="50" height="140" fill="#101a16"/>
+  <rect x="750" y="855" width="50" height="145" fill="#101a16"/>
+  <rect x="850" y="850" width="50" height="150" fill="#101a16"/>
+  
+  <!-- Hooves -->
+  <ellipse cx="545" cy="1000" rx="30" ry="15" fill="#1a2a22" opacity="0.6"/>
+  <ellipse cx="645" cy="1000" rx="30" ry="15" fill="#1a2a22" opacity="0.6"/>
+  <ellipse cx="775" cy="1000" rx="30" ry="15" fill="#1a2a22" opacity="0.6"/>
+  <ellipse cx="875" cy="1000" rx="30" ry="15" fill="#1a2a22" opacity="0.6"/>
+  
+  <!-- Tail -->
+  <path d="M980,680 Q1050,720 1030,850" stroke="#101a16" stroke-width="20" fill="none"/>
+  <path d="M1030,850 Q1020,920 1050,950" stroke="#1f332d" stroke-width="15" fill="none" opacity="0.5"/>
+  
+  <!-- Yak outline highlight -->
+  <ellipse cx="700" cy="700" rx="280" ry="180" stroke="#2e4c43" stroke-width="2" fill="none" opacity="0.25"/>
+  <ellipse cx="380" cy="620" rx="100" ry="70" stroke="#2e4c43" stroke-width="1.5" fill="none" opacity="0.2"/>
+  
+  <!-- Yak glow -->
+  <ellipse cx="650" cy="750" rx="400" ry="250" fill="url(#yakGlow)"/>
+  
+  <!-- Path behind the yak -->
+  <path d="M1100,900 Q1300,850 1500,880 Q1700,850 1920,900" stroke="#3d6a5a" stroke-width="2" fill="none" opacity="0.2" stroke-dasharray="15,8"/>
+  
+  <!-- Ground -->
+  <polygon points="0,920 200,900 400,940 600,910 800,950 1000,920 1200,960 1400,930 1600,970 1800,940 1920,980 1920,1080 0,1080" fill="#101a16" opacity="0.7"/>
+</svg>

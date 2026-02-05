@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMax slice">
+  <defs>
+    <linearGradient id="mountainGlow" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#101a16" stop-opacity="0"/>
+      <stop offset="50%" stop-color="#2e4c43" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#3d6a5a" stop-opacity="0.25"/>
+    </linearGradient>
+    <linearGradient id="pathUp" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3d7a5a" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#101a16" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- MOUNTAIN RANGE - right side of backdrop, destination peaks -->
+  <!-- Far background peaks -->
+  <polygon points="800,1080 1100,500 1400,1080" fill="#1a2a22" opacity="0.4"/>
+  <polygon points="1100,1080 1350,380 1600,800 1700,1080" fill="#1a2a22" opacity="0.5"/>
+  <polygon points="1400,1080 1600,450 1800,700 1920,850 1920,1080" fill="#1a2a22" opacity="0.45"/>
+  
+  <!-- Main peak - the destination -->
+  <polygon points="1200,1080 1450,300 1700,900 1920,1080" fill="#1f332d" opacity="0.6"/>
+  <!-- Snow cap highlight -->
+  <polygon points="1400,420 1450,300 1500,420" fill="#2e4c43" opacity="0.35"/>
+  
+  <!-- Foreground ridge -->
+  <polygon points="600,1080 900,750 1200,900 1500,820 1920,950 1920,1080" fill="#101a16" opacity="0.8"/>
+  
+  <!-- The winding path up the mountain -->
+  <path d="M200,1080 Q400,950 600,900 Q850,820 1000,700 Q1200,550 1350,400" 
+        stroke="#3d6a5a" stroke-width="3" fill="none" opacity="0.2" stroke-dasharray="20,10"/>
+  <!-- Path glow -->
+  <path d="M180,1080 Q400,940 600,890 Q850,810 1000,690 Q1200,540 1360,390" 
+        stroke="#4a8a6a" stroke-width="8" fill="none" opacity="0.08"/>
+  
+  <!-- SHERPA SILHOUETTE - left side, pointing the way -->
+  <!-- Body -->
+  <ellipse cx="180" cy="720" rx="45" ry="55" fill="#101a16"/>
+  <!-- Head -->
+  <circle cx="180" cy="640" r="35" fill="#101a16"/>
+  <!-- Hat brim -->
+  <ellipse cx="180" cy="620" rx="42" ry="12" fill="#101a16"/>
+  
+  <!-- Legs -->
+  <polygon points="150,770 140,900 165,900 170,770" fill="#101a16"/>
+  <polygon points="210,770 200,890 225,890 220,770" fill="#101a16"/>
+  
+  <!-- Pointing arm - showing the way -->
+  <polygon points="220,690 380,580 390,600 230,710" fill="#101a16"/>
+  <!-- Other arm with walking stick -->
+  <polygon points="140,700 100,850 115,855 155,710" fill="#101a16"/>
+  <!-- Walking stick -->
+  <line x1="100" y1="850" x2="80" y2="950" stroke="#101a16" stroke-width="6"/>
+  
+  <!-- Backpack hint -->
+  <ellipse cx="155" cy="720" rx="25" ry="35" fill="#1a2a22" opacity="0.5"/>
+  
+  <!-- Sherpa outline highlights -->
+  <circle cx="180" cy="640" r="35" stroke="#2e4c43" stroke-width="1.5" fill="none" opacity="0.3"/>
+  <path d="M220,690 L370,590" stroke="#2e4c43" stroke-width="1" opacity="0.25"/>
+  
+  <!-- Ground/snow texture near sherpa -->
+  <path d="M0,950 Q100,920 200,950 Q350,930 500,960" stroke="#2e4c43" stroke-width="1" fill="none" opacity="0.2"/>
+  
+  <!-- Stars/waypoint markers along the path -->
+  <circle cx="600" cy="870" r="3" fill="#4a8a6a" opacity="0.2"/>
+  <circle cx="900" cy="720" r="3" fill="#4a8a6a" opacity="0.25"/>
+  <circle cx="1150" cy="580" r="3" fill="#4a8a6a" opacity="0.3"/>
+  <circle cx="1350" cy="400" r="4" fill="#5a9a7a" opacity="0.35"/>
+</svg>

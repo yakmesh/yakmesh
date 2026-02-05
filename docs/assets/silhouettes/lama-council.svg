@@ -1,0 +1,141 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMax slice">
+  <defs>
+    <linearGradient id="wisdomGlow" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#a855f7" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#101a16" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="enlightenment" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#c084fc" stop-opacity="0.3"/>
+      <stop offset="70%" stop-color="#7c3aed" stop-opacity="0.1"/>
+      <stop offset="100%" stop-color="#101a16" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="nodeWisdom" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#a855f7" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#101a16" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  
+  <!-- MOUNTAIN BACKDROP -->
+  <polygon points="0,600 250,300 500,550 0,1080" fill="#1a2a22" opacity="0.35"/>
+  <polygon points="1500,620 1720,280 1920,520 1920,1080 1450,1080" fill="#1a2a22" opacity="0.35"/>
+  <polygon points="600,700 850,350 1100,680 600,1080" fill="#1a2a22" opacity="0.25"/>
+  
+  <!-- Central enlightenment glow -->
+  <ellipse cx="960" cy="450" rx="400" ry="300" fill="url(#wisdomGlow)"/>
+  
+  <!-- LAMA COUNCIL - Five seated lamas forming consensus -->
+  
+  <!-- Central Lama (largest, highest) - The Truth -->
+  <g id="centralLama">
+    <!-- Meditation cushion -->
+    <ellipse cx="960" cy="720" rx="80" ry="25" fill="#1a2a22" opacity="0.8"/>
+    <ellipse cx="960" cy="720" rx="80" ry="25" stroke="#a855f7" stroke-width="2" fill="none" opacity="0.4"/>
+    
+    <!-- Robed body -->
+    <path d="M900,720 Q900,620 920,580 Q960,550 1000,580 Q1020,620 1020,720 Z" fill="#1a2a22" opacity="0.85"/>
+    <path d="M900,720 Q900,620 920,580 Q960,550 1000,580 Q1020,620 1020,720 Z" stroke="#9333ea" stroke-width="2" fill="none" opacity="0.5"/>
+    
+    <!-- Head -->
+    <ellipse cx="960" cy="540" rx="30" ry="35" fill="#1a2a22" opacity="0.85"/>
+    <ellipse cx="960" cy="540" rx="30" ry="35" stroke="#a855f7" stroke-width="2" fill="none" opacity="0.5"/>
+    
+    <!-- Wisdom halo -->
+    <circle cx="960" cy="500" r="60" fill="url(#enlightenment)"/>
+    <circle cx="960" cy="500" r="70" fill="none" stroke="#c084fc" stroke-width="1" opacity="0.3"/>
+    <circle cx="960" cy="500" r="85" fill="none" stroke="#a855f7" stroke-width="1" opacity="0.2"/>
+    
+    <!-- Third eye (insight) -->
+    <circle cx="960" cy="525" r="5" fill="#c084fc" opacity="0.6"/>
+    
+    <!-- Dharma text floating -->
+    <text x="960" y="460" fill="#c084fc" opacity="0.4" font-size="10" font-family="monospace" text-anchor="middle">CONSENSUS</text>
+  </g>
+  
+  <!-- Left Lama 1 -->
+  <g id="leftLama1">
+    <ellipse cx="720" cy="770" rx="60" ry="20" fill="#1a2a22" opacity="0.7"/>
+    <path d="M680,770 Q680,690 695,660 Q720,640 745,660 Q760,690 760,770 Z" fill="#1a2a22" opacity="0.75"/>
+    <path d="M680,770 Q680,690 695,660 Q720,640 745,660 Q760,690 760,770 Z" stroke="#7c3aed" stroke-width="1.5" fill="none" opacity="0.4"/>
+    <ellipse cx="720" cy="628" rx="22" ry="26" fill="#1a2a22" opacity="0.75"/>
+    <ellipse cx="720" cy="628" rx="22" ry="26" stroke="#a855f7" stroke-width="1.5" fill="none" opacity="0.4"/>
+    <circle cx="720" cy="595" r="35" fill="url(#nodeWisdom)"/>
+    <text x="720" y="565" fill="#a855f7" opacity="0.35" font-size="9" font-family="monospace" text-anchor="middle">VALIDATE</text>
+  </g>
+  
+  <!-- Left Lama 2 -->
+  <g id="leftLama2">
+    <ellipse cx="520" cy="800" rx="50" ry="18" fill="#1a2a22" opacity="0.6"/>
+    <path d="M485,800 Q485,730 497,705 Q520,690 543,705 Q555,730 555,800 Z" fill="#1a2a22" opacity="0.65"/>
+    <path d="M485,800 Q485,730 497,705 Q520,690 543,705 Q555,730 555,800 Z" stroke="#6d28d9" stroke-width="1" fill="none" opacity="0.35"/>
+    <ellipse cx="520" cy="678" rx="18" ry="22" fill="#1a2a22" opacity="0.65"/>
+    <ellipse cx="520" cy="678" rx="18" ry="22" stroke="#7c3aed" stroke-width="1" fill="none" opacity="0.35"/>
+    <circle cx="520" cy="650" r="28" fill="url(#nodeWisdom)"/>
+    <text x="520" y="625" fill="#7c3aed" opacity="0.3" font-size="8" font-family="monospace" text-anchor="middle">ATTEST</text>
+  </g>
+  
+  <!-- Right Lama 1 -->
+  <g id="rightLama1">
+    <ellipse cx="1200" cy="770" rx="60" ry="20" fill="#1a2a22" opacity="0.7"/>
+    <path d="M1160,770 Q1160,690 1175,660 Q1200,640 1225,660 Q1240,690 1240,770 Z" fill="#1a2a22" opacity="0.75"/>
+    <path d="M1160,770 Q1160,690 1175,660 Q1200,640 1225,660 Q1240,690 1240,770 Z" stroke="#7c3aed" stroke-width="1.5" fill="none" opacity="0.4"/>
+    <ellipse cx="1200" cy="628" rx="22" ry="26" fill="#1a2a22" opacity="0.75"/>
+    <ellipse cx="1200" cy="628" rx="22" ry="26" stroke="#a855f7" stroke-width="1.5" fill="none" opacity="0.4"/>
+    <circle cx="1200" cy="595" r="35" fill="url(#nodeWisdom)"/>
+    <text x="1200" y="565" fill="#a855f7" opacity="0.35" font-size="9" font-family="monospace" text-anchor="middle">CONFIRM</text>
+  </g>
+  
+  <!-- Right Lama 2 -->
+  <g id="rightLama2">
+    <ellipse cx="1400" cy="800" rx="50" ry="18" fill="#1a2a22" opacity="0.6"/>
+    <path d="M1365,800 Q1365,730 1377,705 Q1400,690 1423,705 Q1435,730 1435,800 Z" fill="#1a2a22" opacity="0.65"/>
+    <path d="M1365,800 Q1365,730 1377,705 Q1400,690 1423,705 Q1435,730 1435,800 Z" stroke="#6d28d9" stroke-width="1" fill="none" opacity="0.35"/>
+    <ellipse cx="1400" cy="678" rx="18" ry="22" fill="#1a2a22" opacity="0.65"/>
+    <ellipse cx="1400" cy="678" rx="18" ry="22" stroke="#7c3aed" stroke-width="1" fill="none" opacity="0.35"/>
+    <circle cx="1400" cy="650" r="28" fill="url(#nodeWisdom)"/>
+    <text x="1400" y="625" fill="#7c3aed" opacity="0.3" font-size="8" font-family="monospace" text-anchor="middle">AGREE</text>
+  </g>
+  
+  <!-- Wisdom connection lines (consensus links) -->
+  <line x1="760" y1="640" x2="900" y2="580" stroke="#a855f7" stroke-width="1" opacity="0.25" stroke-dasharray="4,4"/>
+  <line x1="555" y1="690" x2="700" y2="660" stroke="#7c3aed" stroke-width="1" opacity="0.2" stroke-dasharray="4,4"/>
+  <line x1="1160" y1="640" x2="1020" y2="580" stroke="#a855f7" stroke-width="1" opacity="0.25" stroke-dasharray="4,4"/>
+  <line x1="1365" y1="690" x2="1220" y2="660" stroke="#7c3aed" stroke-width="1" opacity="0.2" stroke-dasharray="4,4"/>
+  
+  <!-- Cross-connections (mesh of agreement) -->
+  <line x1="760" y1="660" x2="1160" y2="660" stroke="#9333ea" stroke-width="1" opacity="0.15" stroke-dasharray="8,4"/>
+  <line x1="555" y1="700" x2="1365" y2="700" stroke="#7c3aed" stroke-width="0.5" opacity="0.1" stroke-dasharray="8,4"/>
+  
+  <!-- Content hash symbol (what they're contemplating) -->
+  <g id="contentHash">
+    <rect x="940" y="400" width="40" height="30" fill="#1a2a22" opacity="0.8" rx="4"/>
+    <rect x="940" y="400" width="40" height="30" stroke="#c084fc" stroke-width="1" fill="none" opacity="0.4" rx="4"/>
+    <text x="960" y="420" fill="#c084fc" opacity="0.5" font-size="10" font-family="monospace" text-anchor="middle">#</text>
+    
+    <!-- Hash rays -->
+    <line x1="960" y1="395" x2="960" y2="370" stroke="#a855f7" stroke-width="1" opacity="0.3"/>
+    <line x1="985" y1="408" x2="1005" y2="398" stroke="#a855f7" stroke-width="1" opacity="0.25"/>
+    <line x1="935" y1="408" x2="915" y2="398" stroke="#a855f7" stroke-width="1" opacity="0.25"/>
+  </g>
+  
+  <!-- Dharmic state progression indicators -->
+  <g id="stateFlow">
+    <text x="100" y="900" fill="#6d28d9" opacity="0.3" font-size="11" font-family="monospace">PENDING</text>
+    <text x="100" y="920" fill="#7c3aed" opacity="0.25" font-size="9" font-family="monospace">→ teaching received</text>
+    
+    <text x="350" y="900" fill="#7c3aed" opacity="0.35" font-size="11" font-family="monospace">VALIDATED</text>
+    <text x="350" y="920" fill="#9333ea" opacity="0.25" font-size="9" font-family="monospace">→ one lama accepts</text>
+    
+    <text x="620" y="900" fill="#9333ea" opacity="0.4" font-size="11" font-family="monospace">ATTESTATION</text>
+    <text x="620" y="920" fill="#a855f7" opacity="0.25" font-size="9" font-family="monospace">→ multiple lamas confirm</text>
+    
+    <text x="920" y="900" fill="#a855f7" opacity="0.5" font-size="12" font-family="monospace">CONSENSUS</text>
+    <text x="920" y="920" fill="#c084fc" opacity="0.3" font-size="9" font-family="monospace">→ all agree on truth</text>
+  </g>
+  
+  <!-- LAMA label -->
+  <text x="960" y="850" fill="#a855f7" opacity="0.5" font-size="24" font-family="monospace" text-anchor="middle">LAMA</text>
+  <text x="960" y="875" fill="#9333ea" opacity="0.35" font-size="12" font-family="monospace" text-anchor="middle">Locally Attested Multi-Agreement</text>
+  
+  <!-- Ground -->
+  <polygon points="0,920 400,900 700,960 1000,910 1300,970 1600,920 1920,980 1920,1080 0,1080" fill="#101a16" opacity="0.75"/>
+</svg>

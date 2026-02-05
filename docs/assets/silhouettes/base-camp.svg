@@ -1,0 +1,81 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMax slice">
+  <defs>
+    <linearGradient id="skyGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#101a16" stop-opacity="1"/>
+      <stop offset="60%" stop-color="#1a2a22" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#1f332d" stop-opacity="0.4"/>
+    </linearGradient>
+    <radialGradient id="campGlow" cx="50%" cy="90%" r="50%">
+      <stop offset="0%" stop-color="#4a8a6a" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#101a16" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  
+  <!-- DISTANT MOUNTAIN RANGE -->
+  <!-- Far peaks - very subtle -->
+  <polygon points="0,600 200,300 400,550 400,1080 0,1080" fill="#1a2a22" opacity="0.35"/>
+  <polygon points="300,580 550,250 800,520 800,1080 300,1080" fill="#1a2a22" opacity="0.4"/>
+  <polygon points="700,550 960,180 1220,540 1220,1080 700,1080" fill="#1a2a22" opacity="0.45"/>
+  <polygon points="1100,560 1350,280 1600,530 1600,1080 1100,1080" fill="#1a2a22" opacity="0.4"/>
+  <polygon points="1500,590 1750,320 1920,550 1920,1080 1500,1080" fill="#1a2a22" opacity="0.35"/>
+  
+  <!-- Main peak - Everest analog -->
+  <polygon points="750,650 960,180 1170,650" fill="#1f332d" opacity="0.55"/>
+  <!-- Snow cap -->
+  <polygon points="900,320 960,180 1020,320" fill="#2e4c43" opacity="0.35"/>
+  
+  <!-- Mid-ground ridge -->
+  <polygon points="0,800 300,700 600,750 900,680 1200,720 1500,690 1920,780 1920,1080 0,1080" fill="#1a2a22" opacity="0.6"/>
+  
+  <!-- Camp glow -->
+  <ellipse cx="960" cy="950" rx="600" ry="200" fill="url(#campGlow)"/>
+  
+  <!-- FOREGROUND - Base camp area -->
+  <polygon points="0,850 400,820 700,860 1000,830 1300,870 1600,840 1920,880 1920,1080 0,1080" fill="#101a16" opacity="0.9"/>
+  
+  <!-- TENTS - spread across camp -->
+  <!-- Tent 1 - left -->
+  <polygon points="250,920 320,850 390,920" fill="#1f332d" opacity="0.7"/>
+  <polygon points="280,920 320,870 360,920" fill="#2e4c43" opacity="0.4"/>
+  <line x1="320" y1="850" x2="320" y2="840" stroke="#3d6a5a" stroke-width="2" opacity="0.3"/>
+  
+  <!-- Tent 2 - center-left -->
+  <polygon points="550,900 640,810 730,900" fill="#1f332d" opacity="0.75"/>
+  <polygon points="585,900 640,840 695,900" fill="#2e4c43" opacity="0.45"/>
+  <line x1="640" y1="810" x2="640" y2="795" stroke="#3d6a5a" stroke-width="3" opacity="0.35"/>
+  
+  <!-- Tent 3 - center (main/largest) -->
+  <polygon points="880,880 980,760 1080,880" fill="#1f332d" opacity="0.8"/>
+  <polygon points="920,880 980,800 1040,880" fill="#2e4c43" opacity="0.5"/>
+  <line x1="980" y1="760" x2="980" y2="740" stroke="#4a8a6a" stroke-width="4" opacity="0.4"/>
+  <!-- Door flap hint -->
+  <polygon points="960,880 980,830 1000,880" fill="#3d6a5a" opacity="0.25"/>
+  
+  <!-- Tent 4 - center-right -->
+  <polygon points="1200,905 1280,825 1360,905" fill="#1f332d" opacity="0.7"/>
+  <polygon points="1230,905 1280,855 1330,905" fill="#2e4c43" opacity="0.4"/>
+  <line x1="1280" y1="825" x2="1280" y2="812" stroke="#3d6a5a" stroke-width="2" opacity="0.3"/>
+  
+  <!-- Tent 5 - right -->
+  <polygon points="1520,925 1580,865 1640,925" fill="#1f332d" opacity="0.65"/>
+  <polygon points="1545,925 1580,885 1615,925" fill="#2e4c43" opacity="0.35"/>
+  <line x1="1580" y1="865" x2="1580" y2="855" stroke="#3d6a5a" stroke-width="2" opacity="0.25"/>
+  
+  <!-- PRAYER FLAGS between tent poles -->
+  <path d="M320,840 Q480,800 640,795" stroke="#3d6a5a" stroke-width="1" fill="none" opacity="0.25"/>
+  <path d="M640,795 Q810,770 980,740" stroke="#3d6a5a" stroke-width="1" fill="none" opacity="0.3"/>
+  <path d="M980,740 Q1130,780 1280,812" stroke="#3d6a5a" stroke-width="1" fill="none" opacity="0.25"/>
+  
+  <!-- Small flag triangles -->
+  <polygon points="420,815 435,810 428,822" fill="#4a8a6a" opacity="0.2"/>
+  <polygon points="520,798 535,792 528,805" fill="#4a8a6a" opacity="0.2"/>
+  <polygon points="750,775 765,768 758,782" fill="#4a8a6a" opacity="0.25"/>
+  <polygon points="850,762 865,755 858,769" fill="#4a8a6a" opacity="0.25"/>
+  <polygon points="1080,765 1095,758 1088,772" fill="#4a8a6a" opacity="0.2"/>
+  <polygon points="1180,788 1195,782 1188,795" fill="#4a8a6a" opacity="0.2"/>
+  
+  <!-- Ground texture hints -->
+  <path d="M100,980 Q200,970 300,985" stroke="#2e4c43" stroke-width="1" fill="none" opacity="0.15"/>
+  <path d="M500,990 Q650,975 800,992" stroke="#2e4c43" stroke-width="1" fill="none" opacity="0.15"/>
+  <path d="M1100,985 Q1250,972 1400,988" stroke="#2e4c43" stroke-width="1" fill="none" opacity="0.15"/>
+</svg>

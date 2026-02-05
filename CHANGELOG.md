@@ -2,6 +2,38 @@
 
 All notable changes to YAKMESH will be documented in this file.
 
+## [2.8.2] - 2026-02-05
+
+### 📦 Documentation Release: TRIBHUJ Ternary Systems
+
+*Theme: "The math testifies in place of the node."*
+
+#### 📚 Documentation
+
+- **TRIBHUJ** - Balanced ternary mathematics system (`{-1, 0, +1}`) with 684-line implementation
+- **YPC-27** - 27-trit quantum-hard checksums (SIS hardness proof)
+- **SAKSHI** - Observational capability system reference (no permissions, only observations)
+- **Protocol Stack** - Updated to 20 layers with new modules
+- **Cross-linking** - YPC-27 integration callouts in STUPA, NAKPAK, SHERPA docs
+- **Version badges** - All pages updated to v2.8.2
+
+#### 🔐 Security
+
+- **khata-trust-integration.js** - ML-DSA-65 signature verification for silicon challenge responses
+
+#### 📦 Packaging
+
+- **Self-hosted docs** - website/ folder now bundled in npm package
+- **embedded-docs/serve.js** - Updated path resolution for bundled docs
+- **81 documentation files** - HTML, CSS, assets included for offline serving
+
+#### 🔺 TRIBHUJ Acronym Update
+
+- Changed from "Jugaad" to "Junction" for better international adoption
+- Full: "Ternary Radix Implementation — Balanced Harmonic Universal Junction"
+
+---
+
 ## [2.8.1] - 2026-02-05
 
 ### 👁️ SAKSHI Observational Capability System + VIVAAD Disagreement Analysis

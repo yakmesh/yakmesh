@@ -14,7 +14,8 @@
 
 import { EventEmitter } from 'events';
 import { sha3_256 } from '@noble/hashes/sha3.js';
-import { bytesToHex, randomBytes } from '@noble/hashes/utils.js';
+import { bytesToHex, randomBytes, hexToBytes, utf8ToBytes } from '@noble/hashes/utils.js';
+import { ml_dsa65 } from '@noble/post-quantum/ml-dsa.js';
 import { createLogger } from '../utils/logger.js';
 import { MESH_REVOCATION_MESSAGES } from './mesh-revocation.js';
 import { SILICON_PARITY_MESSAGES } from './silicon-parity.js';
@@ -400,7 +401,30 @@ export class KhataTrustIntegration extends EventEmitter {
         fingerprint: message.identity.aesFingerprint,
       });
       
-      // TODO: Verify signature with responder's public key
+      // Verify signature with responder's public key from trust registry
+      if (this.trustRegistry && message.responderId) {
+        try {
+          const profile = await this.trustRegistry.getProfile(message.responderId);
+          if (profile?.publicKey) {
+            const payloadBytes = utf8ToBytes(payload);
+            const publicKey = hexToBytes(profile.publicKey);
+            const signature = hexToBytes(message.signature);
+            
+            // ml_dsa65.verify(signature, message, publicKey)
+            const sigValid = ml_dsa65.verify(signature, payloadBytes, publicKey);
+            if (!sigValid) {
+              result.valid = false;
+              result.issues.push('Invalid signature on silicon response');
+            }
+          } else {
+            // No public key available - log but don't fail (node may be new)
+            log.debug('khata-trust', `No public key for responder ${message.responderId}`);
+          }
+        } catch (error) {
+          log.warn('khata-trust', `Signature verification error: ${error.message}`);
+          result.issues.push('Signature verification failed');
+        }
+      }
     }
     
     // Check for VM indicators

@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMax slice">
+  <defs>
+    <radialGradient id="earthGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#3d6a5a" stop-opacity="0.15"/>
+      <stop offset="70%" stop-color="#2e4c43" stop-opacity="0.08"/>
+      <stop offset="100%" stop-color="#101a16" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="exclusionZone" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#4a1a1a" stop-opacity="0.1"/>
+      <stop offset="100%" stop-color="#101a16" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  
+  <!-- EARTH - large globe dominating the view -->
+  <circle cx="960" cy="600" r="450" fill="#1a2a22" opacity="0.5"/>
+  <circle cx="960" cy="600" r="450" stroke="#2e4c43" stroke-width="2" fill="none" opacity="0.4"/>
+  
+  <!-- Continent outlines - stylized -->
+  <path d="M650,400 Q700,350 800,380 Q850,420 820,500 Q750,550 680,520 Q620,480 650,400" fill="#1f332d" opacity="0.5"/>
+  <path d="M900,350 Q1000,320 1100,380 Q1150,450 1100,550 Q1000,600 920,520 Q880,420 900,350" fill="#1f332d" opacity="0.5"/>
+  <path d="M1150,500 Q1250,480 1300,550 Q1280,650 1200,680 Q1120,650 1150,500" fill="#1f332d" opacity="0.45"/>
+  <path d="M700,600 Q780,580 850,650 Q820,750 720,780 Q650,720 700,600" fill="#1f332d" opacity="0.45"/>
+  
+  <!-- Globe grid lines -->
+  <ellipse cx="960" cy="600" rx="450" ry="150" stroke="#3d6a5a" stroke-width="1" fill="none" opacity="0.2"/>
+  <ellipse cx="960" cy="600" rx="350" ry="450" stroke="#3d6a5a" stroke-width="1" fill="none" opacity="0.2"/>
+  <ellipse cx="960" cy="600" rx="150" ry="450" stroke="#3d6a5a" stroke-width="1" fill="none" opacity="0.15"/>
+  
+  <!-- Earth glow -->
+  <circle cx="960" cy="600" r="480" fill="url(#earthGlow)"/>
+  
+  <!-- SATELLITES orbiting -->
+  <!-- Satellite 1 -->
+  <ellipse cx="960" cy="600" rx="550" ry="200" stroke="#3d6a5a" stroke-width="1" fill="none" opacity="0.2" transform="rotate(-20, 960, 600)"/>
+  <circle cx="1480" cy="520" r="8" fill="#4a8a6a" opacity="0.5"/>
+  <line x1="1475" y1="515" x2="1485" y2="525" stroke="#4a8a6a" stroke-width="2" opacity="0.4"/>
+  <line x1="1485" y1="515" x2="1475" y2="525" stroke="#4a8a6a" stroke-width="2" opacity="0.4"/>
+  
+  <!-- Satellite 2 -->
+  <ellipse cx="960" cy="600" rx="520" ry="180" stroke="#3d6a5a" stroke-width="1" fill="none" opacity="0.15" transform="rotate(25, 960, 600)"/>
+  <circle cx="480" cy="480" r="6" fill="#4a8a6a" opacity="0.4"/>
+  
+  <!-- Satellite 3 -->
+  <circle cx="1100" cy="180" r="6" fill="#4a8a6a" opacity="0.35"/>
+  
+  <!-- EXCLUSION ZONE - marked area on globe -->
+  <ellipse cx="1100" cy="550" rx="100" ry="80" fill="url(#exclusionZone)"/>
+  <ellipse cx="1100" cy="550" rx="100" ry="80" stroke="#5a3a3a" stroke-width="2" fill="none" opacity="0.3" stroke-dasharray="10,5"/>
+  
+  <!-- RTT measurement lines from satellites to ground -->
+  <line x1="1480" y1="520" x2="1100" y2="550" stroke="#4a8a6a" stroke-width="1" opacity="0.25" stroke-dasharray="5,5"/>
+  <line x1="480" y1="480" x2="700" y2="600" stroke="#4a8a6a" stroke-width="1" opacity="0.2" stroke-dasharray="5,5"/>
+  <line x1="1100" y1="180" x2="1000" y2="380" stroke="#4a8a6a" stroke-width="1" opacity="0.2" stroke-dasharray="5,5"/>
+  
+  <!-- Speed of light indicator -->
+  <text x="1300" y="480" fill="#4a8a6a" opacity="0.25" font-size="18" font-family="monospace">c = 299,792 km/s</text>
+  
+  <!-- Ground station markers -->
+  <circle cx="750" cy="650" r="5" fill="#5a9a7a" opacity="0.4"/>
+  <circle cx="1050" cy="500" r="5" fill="#5a9a7a" opacity="0.4"/>
+  
+  <!-- Physics law hint -->
+  <text x="100" y="950" fill="#3d6a5a" opacity="0.2" font-size="24" font-family="serif" font-style="italic">Physics Don't Lie</text>
+  
+  <!-- Mountain silhouette at bottom for grounding -->
+  <polygon points="0,950 150,850 300,920 450,870 600,940 750,880 900,950 1050,890 1200,960 1350,900 1500,970 1650,910 1800,980 1920,920 1920,1080 0,1080" fill="#101a16" opacity="0.8"/>
+</svg>

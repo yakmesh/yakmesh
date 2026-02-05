@@ -1,0 +1,116 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMax slice">
+  <defs>
+    <linearGradient id="wheelGlow" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#f97316" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#101a16" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="centerGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#fdba74" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#101a16" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  
+  <!-- MOUNTAIN BACKDROP -->
+  <polygon points="0,650 180,380 380,620 0,1080" fill="#1a2a22" opacity="0.3"/>
+  <polygon points="1550,600 1750,320 1920,580 1920,1080 1550,1080" fill="#1a2a22" opacity="0.3"/>
+  
+  <!-- LEFT SIDE - Prayer flags strung across -->
+  <line x1="100" y1="200" x2="500" y2="280" stroke="#2e4c43" stroke-width="2" opacity="0.4"/>
+  
+  <!-- Prayer flags -->
+  <polygon points="150,205 150,250 180,240" fill="#ea580c" opacity="0.25"/>
+  <polygon points="200,215 200,260 230,250" fill="#f97316" opacity="0.25"/>
+  <polygon points="250,225 250,270 280,260" fill="#fdba74" opacity="0.2"/>
+  <polygon points="300,235 300,280 330,270" fill="#f97316" opacity="0.25"/>
+  <polygon points="350,245 350,290 380,280" fill="#ea580c" opacity="0.25"/>
+  <polygon points="400,255 400,300 430,290" fill="#fdba74" opacity="0.2"/>
+  
+  <!-- CENTER - Large Prayer Wheel -->
+  <ellipse cx="960" cy="500" rx="300" ry="300" fill="url(#centerGlow)"/>
+  
+  <!-- Outer wheel ring -->
+  <circle cx="960" cy="500" r="280" fill="#0a120e" opacity="0.9"/>
+  <circle cx="960" cy="500" r="280" stroke="#ea580c" stroke-width="4" fill="none" opacity="0.5"/>
+  <circle cx="960" cy="500" r="260" stroke="#f97316" stroke-width="2" fill="none" opacity="0.35"/>
+  <circle cx="960" cy="500" r="240" stroke="#2e4c43" stroke-width="1" fill="none" opacity="0.3"/>
+  
+  <!-- Wheel spokes (8 sections like a dharma wheel) -->
+  <line x1="960" y1="220" x2="960" y2="780" stroke="#f97316" stroke-width="2" opacity="0.3"/>
+  <line x1="680" y1="500" x2="1240" y2="500" stroke="#f97316" stroke-width="2" opacity="0.3"/>
+  <line x1="762" y1="302" x2="1158" y2="698" stroke="#f97316" stroke-width="2" opacity="0.25"/>
+  <line x1="762" y1="698" x2="1158" y2="302" stroke="#f97316" stroke-width="2" opacity="0.25"/>
+  
+  <!-- Inner decorative circles -->
+  <circle cx="960" cy="500" r="180" stroke="#ea580c" stroke-width="1.5" fill="none" opacity="0.3"/>
+  <circle cx="960" cy="500" r="120" stroke="#f97316" stroke-width="2" fill="none" opacity="0.4"/>
+  <circle cx="960" cy="500" r="60" fill="#1a2a22" opacity="0.8"/>
+  <circle cx="960" cy="500" r="60" stroke="#fdba74" stroke-width="3" fill="none" opacity="0.5"/>
+  
+  <!-- Om Mani Padme Hum symbols (simplified as decorative elements) -->
+  <circle cx="960" cy="280" r="20" fill="#f97316" opacity="0.4"/>
+  <circle cx="1140" cy="360" r="20" fill="#ea580c" opacity="0.35"/>
+  <circle cx="1180" cy="500" r="20" fill="#f97316" opacity="0.4"/>
+  <circle cx="1140" cy="640" r="20" fill="#ea580c" opacity="0.35"/>
+  <circle cx="960" cy="720" r="20" fill="#f97316" opacity="0.4"/>
+  <circle cx="780" cy="640" r="20" fill="#ea580c" opacity="0.35"/>
+  <circle cx="740" cy="500" r="20" fill="#f97316" opacity="0.4"/>
+  <circle cx="780" cy="360" r="20" fill="#ea580c" opacity="0.35"/>
+  
+  <!-- Center text -->
+  <text x="960" y="490" fill="#fdba74" opacity="0.6" font-size="28" font-family="serif" text-anchor="middle">ॐ</text>
+  <text x="960" y="520" fill="#f97316" opacity="0.4" font-size="14" font-family="monospace" text-anchor="middle">MANTRA</text>
+  
+  <!-- Rotation arrows suggesting spinning -->
+  <path d="M 1250,400 Q 1280,500 1250,600" stroke="#fdba74" stroke-width="3" fill="none" opacity="0.3"/>
+  <polygon points="1250,600 1240,580 1260,585" fill="#fdba74" opacity="0.3"/>
+  
+  <path d="M 670,600 Q 640,500 670,400" stroke="#fdba74" stroke-width="3" fill="none" opacity="0.3"/>
+  <polygon points="670,400 680,420 660,415" fill="#fdba74" opacity="0.3"/>
+  
+  <!-- Messages emanating from wheel (mantras spreading) -->
+  <!-- Right side messages -->
+  <rect x="1320" y="350" width="150" height="30" rx="5" fill="#1a2a22" opacity="0.6"/>
+  <line x1="1240" y1="450" x2="1320" y2="365" stroke="#f97316" stroke-width="1" opacity="0.3" stroke-dasharray="4,4"/>
+  
+  <rect x="1380" y="450" width="180" height="30" rx="5" fill="#1a2a22" opacity="0.6"/>
+  <line x1="1240" y1="500" x2="1380" y2="465" stroke="#f97316" stroke-width="1" opacity="0.3" stroke-dasharray="4,4"/>
+  
+  <rect x="1350" y="550" width="160" height="30" rx="5" fill="#1a2a22" opacity="0.6"/>
+  <line x1="1240" y1="540" x2="1350" y2="565" stroke="#f97316" stroke-width="1" opacity="0.3" stroke-dasharray="4,4"/>
+  
+  <rect x="1300" y="650" width="140" height="30" rx="5" fill="#1a2a22" opacity="0.6"/>
+  <line x1="1200" y1="600" x2="1300" y2="665" stroke="#f97316" stroke-width="1" opacity="0.3" stroke-dasharray="4,4"/>
+  
+  <!-- Left side messages -->
+  <rect x="450" y="350" width="150" height="30" rx="5" fill="#1a2a22" opacity="0.6"/>
+  <line x1="680" y1="450" x2="600" y2="365" stroke="#f97316" stroke-width="1" opacity="0.3" stroke-dasharray="4,4"/>
+  
+  <rect x="350" y="450" width="180" height="30" rx="5" fill="#1a2a22" opacity="0.6"/>
+  <line x1="680" y1="500" x2="530" y2="465" stroke="#f97316" stroke-width="1" opacity="0.3" stroke-dasharray="4,4"/>
+  
+  <rect x="400" y="550" width="160" height="30" rx="5" fill="#1a2a22" opacity="0.6"/>
+  <line x1="680" y1="540" x2="560" y2="565" stroke="#f97316" stroke-width="1" opacity="0.3" stroke-dasharray="4,4"/>
+  
+  <rect x="480" y="650" width="140" height="30" rx="5" fill="#1a2a22" opacity="0.6"/>
+  <line x1="720" y1="600" x2="620" y2="665" stroke="#f97316" stroke-width="1" opacity="0.3" stroke-dasharray="4,4"/>
+  
+  <!-- Small prayer wheels at bottom -->
+  <circle cx="200" cy="800" r="60" fill="#1a2a22" opacity="0.7"/>
+  <circle cx="200" cy="800" r="60" stroke="#ea580c" stroke-width="2" fill="none" opacity="0.4"/>
+  <circle cx="200" cy="800" r="40" stroke="#f97316" stroke-width="1" fill="none" opacity="0.3"/>
+  <line x1="200" y1="740" x2="200" y2="860" stroke="#f97316" stroke-width="1" opacity="0.25"/>
+  <line x1="140" y1="800" x2="260" y2="800" stroke="#f97316" stroke-width="1" opacity="0.25"/>
+  
+  <circle cx="1720" cy="780" r="70" fill="#1a2a22" opacity="0.7"/>
+  <circle cx="1720" cy="780" r="70" stroke="#ea580c" stroke-width="2" fill="none" opacity="0.4"/>
+  <circle cx="1720" cy="780" r="50" stroke="#f97316" stroke-width="1" fill="none" opacity="0.3"/>
+  <line x1="1720" y1="710" x2="1720" y2="850" stroke="#f97316" stroke-width="1" opacity="0.25"/>
+  <line x1="1650" y1="780" x2="1790" y2="780" stroke="#f97316" stroke-width="1" opacity="0.25"/>
+  
+  <!-- Labels -->
+  <text x="200" y="880" fill="#f97316" opacity="0.35" font-size="12" font-family="monospace" text-anchor="middle">NODE A</text>
+  <text x="1720" y="870" fill="#f97316" opacity="0.35" font-size="12" font-family="monospace" text-anchor="middle">NODE B</text>
+  
+  <!-- Ground -->
+  <polygon points="0,920 300,900 600,950 900,920 1200,970 1500,930 1920,980 1920,1080 0,1080" fill="#101a16" opacity="0.75"/>
+</svg>

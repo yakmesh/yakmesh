@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMax slice">
+  <defs>
+    <linearGradient id="fortressGlow" x1="50%" y1="100%" x2="50%" y2="0%">
+      <stop offset="0%" stop-color="#4a8a6a" stop-opacity="0.1"/>
+      <stop offset="100%" stop-color="#101a16" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- MOUNTAIN BACKDROP behind fortress -->
+  <polygon points="0,500 200,200 400,450 400,1080 0,1080" fill="#1a2a22" opacity="0.35"/>
+  <polygon points="300,480 550,150 800,420 800,1080 300,1080" fill="#1a2a22" opacity="0.4"/>
+  <polygon points="1200,450 1400,180 1600,400 1600,1080 1200,1080" fill="#1a2a22" opacity="0.4"/>
+  <polygon points="1500,500 1700,220 1920,480 1920,1080 1500,1080" fill="#1a2a22" opacity="0.35"/>
+  
+  <!-- THE FORTRESS - massive walls -->
+  <!-- Left wall section -->
+  <rect x="200" y="500" width="250" height="580" fill="#101a16"/>
+  <rect x="200" y="500" width="250" height="580" stroke="#2e4c43" stroke-width="2" fill="none" opacity="0.35"/>
+  
+  <!-- Left tower -->
+  <rect x="150" y="350" width="120" height="730" fill="#101a16"/>
+  <polygon points="150,350 210,280 270,350" fill="#101a16"/>
+  <rect x="150" y="350" width="120" height="730" stroke="#2e4c43" stroke-width="1.5" fill="none" opacity="0.3"/>
+  
+  <!-- Left battlements -->
+  <rect x="200" y="480" width="30" height="40" fill="#101a16"/>
+  <rect x="250" y="480" width="30" height="40" fill="#101a16"/>
+  <rect x="300" y="480" width="30" height="40" fill="#101a16"/>
+  <rect x="350" y="480" width="30" height="40" fill="#101a16"/>
+  <rect x="400" y="480" width="30" height="40" fill="#101a16"/>
+  
+  <!-- Right wall section -->
+  <rect x="1470" y="500" width="250" height="580" fill="#101a16"/>
+  <rect x="1470" y="500" width="250" height="580" stroke="#2e4c43" stroke-width="2" fill="none" opacity="0.35"/>
+  
+  <!-- Right tower -->
+  <rect x="1580" y="350" width="120" height="730" fill="#101a16"/>
+  <polygon points="1580,350 1640,280 1700,350" fill="#101a16"/>
+  <rect x="1580" y="350" width="120" height="730" stroke="#2e4c43" stroke-width="1.5" fill="none" opacity="0.3"/>
+  
+  <!-- Right battlements -->
+  <rect x="1490" y="480" width="30" height="40" fill="#101a16"/>
+  <rect x="1540" y="480" width="30" height="40" fill="#101a16"/>
+  <rect x="1590" y="480" width="30" height="40" fill="#101a16"/>
+  <rect x="1640" y="480" width="30" height="40" fill="#101a16"/>
+  <rect x="1690" y="480" width="30" height="40" fill="#101a16"/>
+  
+  <!-- CENTER GATE TOWER - main entrance -->
+  <rect x="850" y="400" width="220" height="680" fill="#1f332d" opacity="0.8"/>
+  <rect x="850" y="400" width="220" height="680" stroke="#3d6a5a" stroke-width="2" fill="none" opacity="0.4"/>
+  
+  <!-- Gate tower top -->
+  <polygon points="820,400 960,300 1100,400" fill="#1f332d" opacity="0.8"/>
+  <polygon points="820,400 960,300 1100,400" stroke="#3d6a5a" stroke-width="2" fill="none" opacity="0.4"/>
+  
+  <!-- Gate opening -->
+  <path d="M900,1080 L900,700 Q960,650 1020,700 L1020,1080 Z" fill="#0a120e" opacity="0.9"/>
+  <path d="M900,700 Q960,650 1020,700" stroke="#4a8a6a" stroke-width="2" fill="none" opacity="0.4"/>
+  
+  <!-- Gate portcullis bars -->
+  <line x1="920" y1="700" x2="920" y2="1080" stroke="#2e4c43" stroke-width="3" opacity="0.4"/>
+  <line x1="960" y1="680" x2="960" y2="1080" stroke="#2e4c43" stroke-width="3" opacity="0.4"/>
+  <line x1="1000" y1="700" x2="1000" y2="1080" stroke="#2e4c43" stroke-width="3" opacity="0.4"/>
+  
+  <!-- Connecting walls -->
+  <polygon points="450,520 850,520 850,1080 450,1080" fill="#1a2a22" opacity="0.6"/>
+  <polygon points="1070,520 1470,520 1470,1080 1070,1080" fill="#1a2a22" opacity="0.6"/>
+  
+  <!-- Battlements on connecting walls -->
+  <rect x="500" y="500" width="25" height="35" fill="#1a2a22" opacity="0.7"/>
+  <rect x="560" y="500" width="25" height="35" fill="#1a2a22" opacity="0.7"/>
+  <rect x="620" y="500" width="25" height="35" fill="#1a2a22" opacity="0.7"/>
+  <rect x="680" y="500" width="25" height="35" fill="#1a2a22" opacity="0.7"/>
+  <rect x="740" y="500" width="25" height="35" fill="#1a2a22" opacity="0.7"/>
+  
+  <rect x="1120" y="500" width="25" height="35" fill="#1a2a22" opacity="0.7"/>
+  <rect x="1180" y="500" width="25" height="35" fill="#1a2a22" opacity="0.7"/>
+  <rect x="1240" y="500" width="25" height="35" fill="#1a2a22" opacity="0.7"/>
+  <rect x="1300" y="500" width="25" height="35" fill="#1a2a22" opacity="0.7"/>
+  <rect x="1360" y="500" width="25" height="35" fill="#1a2a22" opacity="0.7"/>
+  
+  <!-- Shield emblem on gate tower -->
+  <path d="M930,500 L960,480 L990,500 L990,560 Q960,590 930,560 Z" fill="#2e4c43" opacity="0.5"/>
+  <path d="M930,500 L960,480 L990,500 L990,560 Q960,590 930,560 Z" stroke="#4a8a6a" stroke-width="1.5" fill="none" opacity="0.4"/>
+  
+  <!-- Fortress glow -->
+  <rect x="450" y="500" width="1020" height="580" fill="url(#fortressGlow)"/>
+  
+  <!-- Tower lights -->
+  <circle cx="210" cy="400" r="5" fill="#4a8a6a" opacity="0.35"/>
+  <circle cx="1640" cy="400" r="5" fill="#4a8a6a" opacity="0.35"/>
+  <circle cx="960" cy="350" r="6" fill="#5a9a7a" opacity="0.45"/>
+</svg>

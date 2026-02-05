@@ -585,7 +585,9 @@ export class NamcheGateway extends EventEmitter {
         const proofValid = ml_dsa65.verify(signature, payloadBytes, publicKey);
 
         if (proofValid) {
-          // TODO: Also verify the verifier is a known trusted node
+          // TODO: Integrate with SAKSHI observational verification
+          // SAKSHI philosophy: Binary verification (signature valid or not),
+          // NOT tier-weighted voting (SIRDAR counts more than PATHIK)
           // For now, we accept any valid signature
           validProofs++;
         }
@@ -611,7 +613,9 @@ export class NamcheGateway extends EventEmitter {
     // Verify the revocation is signed by the DOKO owner
     if (revocation.revokedBy !== originalDoko.nodeId) {
       // Only owner can revoke (for now)
-      // TODO: Support mesh-consensus revocation
+      // TODO: Integrate SAKSHI checkRevocationAgreement() for mesh revocation
+      // SAKSHI uses mathematical agreement (do nodes agree on what happened?)
+      // NOT tier-weighted voting (SIRDAR's revocation counts 2x)
       return { success: false, reason: 'Only DOKO owner can revoke' };
     }
 

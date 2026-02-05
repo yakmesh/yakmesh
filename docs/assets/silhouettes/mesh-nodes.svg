@@ -1,0 +1,113 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMax slice">
+  <defs>
+    <radialGradient id="nodeGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#5a9a7a" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#101a16" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="pulseGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#4a8a6a" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#101a16" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  
+  <!-- MOUNTAIN BACKDROP - subtle -->
+  <polygon points="0,750 200,450 400,700 400,1080 0,1080" fill="#1a2a22" opacity="0.3"/>
+  <polygon points="1500,720 1700,420 1920,680 1920,1080 1500,1080" fill="#1a2a22" opacity="0.3"/>
+  
+  <!-- THE MESH NETWORK - interconnected nodes filling the space -->
+  
+  <!-- Central node - the user's node -->
+  <circle cx="960" cy="500" r="50" fill="#1f332d" opacity="0.8"/>
+  <circle cx="960" cy="500" r="50" stroke="#4a8a6a" stroke-width="3" fill="none" opacity="0.6"/>
+  <circle cx="960" cy="500" r="70" fill="url(#nodeGlow)"/>
+  <circle cx="960" cy="500" r="20" fill="#4a8a6a" opacity="0.5"/>
+  
+  <!-- Layer 1 nodes - closest peers -->
+  <circle cx="650" cy="350" r="35" fill="#1a2a22" opacity="0.7"/>
+  <circle cx="650" cy="350" r="35" stroke="#3d6a5a" stroke-width="2" fill="none" opacity="0.5"/>
+  <circle cx="650" cy="350" r="12" fill="#3d6a5a" opacity="0.4"/>
+  
+  <circle cx="1270" cy="380" r="35" fill="#1a2a22" opacity="0.7"/>
+  <circle cx="1270" cy="380" r="35" stroke="#3d6a5a" stroke-width="2" fill="none" opacity="0.5"/>
+  <circle cx="1270" cy="380" r="12" fill="#3d6a5a" opacity="0.4"/>
+  
+  <circle cx="750" cy="680" r="35" fill="#1a2a22" opacity="0.7"/>
+  <circle cx="750" cy="680" r="35" stroke="#3d6a5a" stroke-width="2" fill="none" opacity="0.5"/>
+  <circle cx="750" cy="680" r="12" fill="#3d6a5a" opacity="0.4"/>
+  
+  <circle cx="1170" cy="700" r="35" fill="#1a2a22" opacity="0.7"/>
+  <circle cx="1170" cy="700" r="35" stroke="#3d6a5a" stroke-width="2" fill="none" opacity="0.5"/>
+  <circle cx="1170" cy="700" r="12" fill="#3d6a5a" opacity="0.4"/>
+  
+  <!-- Layer 2 nodes - further out -->
+  <circle cx="380" cy="280" r="25" fill="#1a2a22" opacity="0.6"/>
+  <circle cx="380" cy="280" r="25" stroke="#2e4c43" stroke-width="1.5" fill="none" opacity="0.4"/>
+  
+  <circle cx="480" cy="550" r="25" fill="#1a2a22" opacity="0.6"/>
+  <circle cx="480" cy="550" r="25" stroke="#2e4c43" stroke-width="1.5" fill="none" opacity="0.4"/>
+  
+  <circle cx="1500" cy="320" r="25" fill="#1a2a22" opacity="0.6"/>
+  <circle cx="1500" cy="320" r="25" stroke="#2e4c43" stroke-width="1.5" fill="none" opacity="0.4"/>
+  
+  <circle cx="1420" cy="580" r="25" fill="#1a2a22" opacity="0.6"/>
+  <circle cx="1420" cy="580" r="25" stroke="#2e4c43" stroke-width="1.5" fill="none" opacity="0.4"/>
+  
+  <circle cx="550" cy="820" r="25" fill="#1a2a22" opacity="0.6"/>
+  <circle cx="550" cy="820" r="25" stroke="#2e4c43" stroke-width="1.5" fill="none" opacity="0.4"/>
+  
+  <circle cx="1350" cy="850" r="25" fill="#1a2a22" opacity="0.6"/>
+  <circle cx="1350" cy="850" r="25" stroke="#2e4c43" stroke-width="1.5" fill="none" opacity="0.4"/>
+  
+  <!-- Layer 3 nodes - edge of network -->
+  <circle cx="200" cy="400" r="18" fill="#1a2a22" opacity="0.5"/>
+  <circle cx="300" cy="650" r="18" fill="#1a2a22" opacity="0.5"/>
+  <circle cx="1680" cy="450" r="18" fill="#1a2a22" opacity="0.5"/>
+  <circle cx="1600" cy="750" r="18" fill="#1a2a22" opacity="0.5"/>
+  <circle cx="960" cy="200" r="18" fill="#1a2a22" opacity="0.5"/>
+  <circle cx="960" cy="900" r="18" fill="#1a2a22" opacity="0.5"/>
+  
+  <!-- CONNECTIONS - mesh links -->
+  <!-- From center to layer 1 -->
+  <line x1="960" y1="500" x2="650" y2="350" stroke="#3d6a5a" stroke-width="3" opacity="0.4"/>
+  <line x1="960" y1="500" x2="1270" y2="380" stroke="#3d6a5a" stroke-width="3" opacity="0.4"/>
+  <line x1="960" y1="500" x2="750" y2="680" stroke="#3d6a5a" stroke-width="3" opacity="0.4"/>
+  <line x1="960" y1="500" x2="1170" y2="700" stroke="#3d6a5a" stroke-width="3" opacity="0.4"/>
+  
+  <!-- Layer 1 to layer 1 (peer connections) -->
+  <line x1="650" y1="350" x2="750" y2="680" stroke="#2e4c43" stroke-width="2" opacity="0.25"/>
+  <line x1="1270" y1="380" x2="1170" y2="700" stroke="#2e4c43" stroke-width="2" opacity="0.25"/>
+  
+  <!-- Layer 1 to layer 2 -->
+  <line x1="650" y1="350" x2="380" y2="280" stroke="#2e4c43" stroke-width="2" opacity="0.3"/>
+  <line x1="650" y1="350" x2="480" y2="550" stroke="#2e4c43" stroke-width="2" opacity="0.3"/>
+  <line x1="1270" y1="380" x2="1500" y2="320" stroke="#2e4c43" stroke-width="2" opacity="0.3"/>
+  <line x1="1270" y1="380" x2="1420" y2="580" stroke="#2e4c43" stroke-width="2" opacity="0.3"/>
+  <line x1="750" y1="680" x2="480" y2="550" stroke="#2e4c43" stroke-width="2" opacity="0.3"/>
+  <line x1="750" y1="680" x2="550" y2="820" stroke="#2e4c43" stroke-width="2" opacity="0.3"/>
+  <line x1="1170" y1="700" x2="1420" y2="580" stroke="#2e4c43" stroke-width="2" opacity="0.3"/>
+  <line x1="1170" y1="700" x2="1350" y2="850" stroke="#2e4c43" stroke-width="2" opacity="0.3"/>
+  
+  <!-- Layer 2 to layer 3 -->
+  <line x1="380" y1="280" x2="200" y2="400" stroke="#1f332d" stroke-width="1.5" opacity="0.2"/>
+  <line x1="480" y1="550" x2="300" y2="650" stroke="#1f332d" stroke-width="1.5" opacity="0.2"/>
+  <line x1="1500" y1="320" x2="1680" y2="450" stroke="#1f332d" stroke-width="1.5" opacity="0.2"/>
+  <line x1="1420" y1="580" x2="1600" y2="750" stroke="#1f332d" stroke-width="1.5" opacity="0.2"/>
+  <line x1="380" y1="280" x2="960" y2="200" stroke="#1f332d" stroke-width="1.5" opacity="0.2"/>
+  <line x1="1500" y1="320" x2="960" y2="200" stroke="#1f332d" stroke-width="1.5" opacity="0.2"/>
+  <line x1="550" y1="820" x2="960" y2="900" stroke="#1f332d" stroke-width="1.5" opacity="0.2"/>
+  <line x1="1350" y1="850" x2="960" y2="900" stroke="#1f332d" stroke-width="1.5" opacity="0.2"/>
+  
+  <!-- Pulse waves from center node -->
+  <circle cx="960" cy="500" r="100" stroke="#4a8a6a" stroke-width="1" fill="none" opacity="0.15"/>
+  <circle cx="960" cy="500" r="200" stroke="#3d6a5a" stroke-width="1" fill="none" opacity="0.1"/>
+  <circle cx="960" cy="500" r="350" stroke="#2e4c43" stroke-width="1" fill="none" opacity="0.08"/>
+  
+  <!-- Data packets traveling (small dots on lines) -->
+  <circle cx="800" cy="420" r="4" fill="#5a9a7a" opacity="0.5"/>
+  <circle cx="1100" cy="440" r="4" fill="#5a9a7a" opacity="0.5"/>
+  <circle cx="850" cy="590" r="4" fill="#4a8a6a" opacity="0.4"/>
+  <circle cx="1060" cy="600" r="4" fill="#4a8a6a" opacity="0.4"/>
+  
+  <!-- Ground -->
+  <polygon points="0,950 300,930 600,970 900,940 1200,980 1500,950 1920,1000 1920,1080 0,1080" fill="#101a16" opacity="0.7"/>
+</svg>

@@ -51,6 +51,9 @@ test-nodes/
 # Assets (keep logo for branding)
 # assets/
 
+# Include website/ for self-hosted documentation
+# website/ - EXPLICITLY INCLUDED (not ignored)
+
 # Build artifacts
 *.log
 .DS_Store

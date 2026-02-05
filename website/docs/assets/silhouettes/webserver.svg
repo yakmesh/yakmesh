@@ -1,0 +1,145 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMax slice">
+  <defs>
+    <radialGradient id="globeGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#4a8a6a" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#101a16" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="dataStream" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3d6a5a" stop-opacity="0"/>
+      <stop offset="50%" stop-color="#5a9a7a" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#3d6a5a" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- MOUNTAIN BACKDROP -->
+  <polygon points="0,600 150,350 350,580 500,280 700,600 700,1080 0,1080" fill="#1a2a22" opacity="0.3"/>
+  <polygon points="1400,650 1550,380 1700,550 1920,420 1920,1080 1400,1080" fill="#1a2a22" opacity="0.3"/>
+  
+  <!-- LEFT SIDE - Server rack -->
+  <rect x="100" y="300" width="250" height="450" rx="10" fill="#0a120e" opacity="0.9"/>
+  <rect x="100" y="300" width="250" height="450" rx="10" stroke="#2e4c43" stroke-width="3" fill="none" opacity="0.5"/>
+  
+  <!-- Server rack units -->
+  <rect x="120" y="320" width="210" height="60" rx="3" fill="#1a2a22" opacity="0.7"/>
+  <rect x="120" y="320" width="210" height="60" rx="3" stroke="#2e4c43" stroke-width="1" fill="none" opacity="0.3"/>
+  <circle cx="140" cy="350" r="5" fill="#4a8a6a" opacity="0.6"/>
+  <circle cx="160" cy="350" r="5" fill="#3d6a5a" opacity="0.4"/>
+  <rect x="200" y="340" width="80" height="8" fill="#2e4c43" opacity="0.4"/>
+  <rect x="200" y="355" width="60" height="8" fill="#2e4c43" opacity="0.3"/>
+  
+  <rect x="120" y="400" width="210" height="60" rx="3" fill="#1a2a22" opacity="0.7"/>
+  <rect x="120" y="400" width="210" height="60" rx="3" stroke="#2e4c43" stroke-width="1" fill="none" opacity="0.3"/>
+  <circle cx="140" cy="430" r="5" fill="#5a9a7a" opacity="0.6"/>
+  <circle cx="160" cy="430" r="5" fill="#4a8a6a" opacity="0.5"/>
+  <rect x="200" y="420" width="100" height="8" fill="#2e4c43" opacity="0.4"/>
+  <rect x="200" y="435" width="70" height="8" fill="#2e4c43" opacity="0.3"/>
+  
+  <rect x="120" y="480" width="210" height="60" rx="3" fill="#1a2a22" opacity="0.7"/>
+  <rect x="120" y="480" width="210" height="60" rx="3" stroke="#2e4c43" stroke-width="1" fill="none" opacity="0.3"/>
+  <circle cx="140" cy="510" r="5" fill="#4a8a6a" opacity="0.5"/>
+  <circle cx="160" cy="510" r="5" fill="#3d6a5a" opacity="0.4"/>
+  <rect x="200" y="500" width="90" height="8" fill="#2e4c43" opacity="0.4"/>
+  <rect x="200" y="515" width="55" height="8" fill="#2e4c43" opacity="0.3"/>
+  
+  <rect x="120" y="560" width="210" height="60" rx="3" fill="#1a2a22" opacity="0.7"/>
+  <rect x="120" y="560" width="210" height="60" rx="3" stroke="#2e4c43" stroke-width="1" fill="none" opacity="0.3"/>
+  <circle cx="140" cy="590" r="5" fill="#5a9a7a" opacity="0.6"/>
+  <circle cx="160" cy="590" r="5" fill="#4a8a6a" opacity="0.4"/>
+  <rect x="200" y="580" width="75" height="8" fill="#2e4c43" opacity="0.4"/>
+  <rect x="200" y="595" width="50" height="8" fill="#2e4c43" opacity="0.3"/>
+  
+  <rect x="120" y="640" width="210" height="60" rx="3" fill="#1a2a22" opacity="0.7"/>
+  <rect x="120" y="640" width="210" height="60" rx="3" stroke="#2e4c43" stroke-width="1" fill="none" opacity="0.3"/>
+  <circle cx="140" cy="670" r="5" fill="#4a8a6a" opacity="0.5"/>
+  <circle cx="160" cy="670" r="5" fill="#3d6a5a" opacity="0.4"/>
+  <rect x="200" y="660" width="85" height="8" fill="#2e4c43" opacity="0.4"/>
+  <rect x="200" y="675" width="60" height="8" fill="#2e4c43" opacity="0.3"/>
+  
+  <!-- Server label -->
+  <text x="225" y="780" fill="#4a8a6a" opacity="0.5" font-size="20" font-family="monospace" text-anchor="middle">WEB SERVER</text>
+  
+  <!-- CENTER - Connection lines radiating out -->
+  <line x1="350" y1="400" x2="750" y2="350" stroke="#3d6a5a" stroke-width="2" opacity="0.4"/>
+  <line x1="350" y1="480" x2="750" y2="430" stroke="#3d6a5a" stroke-width="2" opacity="0.4"/>
+  <line x1="350" y1="520" x2="750" y2="520" stroke="#4a8a6a" stroke-width="3" opacity="0.5"/>
+  <line x1="350" y1="560" x2="750" y2="620" stroke="#3d6a5a" stroke-width="2" opacity="0.4"/>
+  <line x1="350" y1="640" x2="750" y2="700" stroke="#3d6a5a" stroke-width="2" opacity="0.4"/>
+  
+  <!-- Data packets flowing -->
+  <circle cx="450" cy="520" r="6" fill="#5a9a7a" opacity="0.5"/>
+  <circle cx="550" cy="520" r="6" fill="#5a9a7a" opacity="0.5"/>
+  <circle cx="650" cy="520" r="6" fill="#5a9a7a" opacity="0.5"/>
+  
+  <!-- CENTER - Globe -->
+  <circle cx="960" cy="520" r="220" fill="url(#globeGlow)"/>
+  <circle cx="960" cy="520" r="200" fill="#0a120e" opacity="0.9"/>
+  <circle cx="960" cy="520" r="200" stroke="#3d6a5a" stroke-width="3" fill="none" opacity="0.6"/>
+  
+  <!-- Globe latitude lines -->
+  <ellipse cx="960" cy="520" rx="200" ry="60" fill="none" stroke="#2e4c43" stroke-width="1.5" opacity="0.35"/>
+  <ellipse cx="960" cy="420" rx="150" ry="40" fill="none" stroke="#2e4c43" stroke-width="1.5" opacity="0.3"/>
+  <ellipse cx="960" cy="620" rx="150" ry="40" fill="none" stroke="#2e4c43" stroke-width="1.5" opacity="0.3"/>
+  
+  <!-- Globe longitude lines -->
+  <ellipse cx="960" cy="520" rx="60" ry="200" fill="none" stroke="#2e4c43" stroke-width="1.5" opacity="0.35"/>
+  <ellipse cx="960" cy="520" rx="130" ry="200" fill="none" stroke="#2e4c43" stroke-width="1.5" opacity="0.3"/>
+  
+  <!-- Continents suggested by polygons -->
+  <polygon points="880,400 920,380 970,400 960,450 900,440" fill="#2e4c43" opacity="0.4"/>
+  <polygon points="1000,380 1060,400 1080,450 1040,480 990,450" fill="#2e4c43" opacity="0.35"/>
+  <polygon points="840,500 890,480 920,520 880,560 830,540" fill="#2e4c43" opacity="0.4"/>
+  <polygon points="980,540 1040,520 1100,550 1080,620 1020,640 960,600" fill="#2e4c43" opacity="0.35"/>
+  <polygon points="900,620 940,590 990,610 970,680 920,670" fill="#2e4c43" opacity="0.35"/>
+  
+  <!-- Connection points on globe -->
+  <circle cx="870" cy="450" r="8" fill="#4a8a6a" opacity="0.6"/>
+  <circle cx="1040" cy="420" r="8" fill="#4a8a6a" opacity="0.6"/>
+  <circle cx="860" cy="540" r="8" fill="#5a9a7a" opacity="0.6"/>
+  <circle cx="1060" cy="580" r="8" fill="#4a8a6a" opacity="0.6"/>
+  <circle cx="950" cy="640" r="8" fill="#4a8a6a" opacity="0.6"/>
+  
+  <!-- YAKMESH text in globe -->
+  <text x="960" y="510" fill="#4a8a6a" opacity="0.5" font-size="24" font-family="monospace" text-anchor="middle">YAKMESH</text>
+  <text x="960" y="540" fill="#3d6a5a" opacity="0.4" font-size="16" font-family="monospace" text-anchor="middle">WEB</text>
+  
+  <!-- RIGHT SIDE - Client devices -->
+  <line x1="1160" y1="350" x2="1450" y2="280" stroke="#3d6a5a" stroke-width="2" opacity="0.4"/>
+  <line x1="1160" y1="430" x2="1500" y2="400" stroke="#3d6a5a" stroke-width="2" opacity="0.4"/>
+  <line x1="1160" y1="520" x2="1550" y2="520" stroke="#4a8a6a" stroke-width="3" opacity="0.5"/>
+  <line x1="1160" y1="610" x2="1500" y2="640" stroke="#3d6a5a" stroke-width="2" opacity="0.4"/>
+  <line x1="1160" y1="690" x2="1450" y2="760" stroke="#3d6a5a" stroke-width="2" opacity="0.4"/>
+  
+  <!-- Desktop client -->
+  <rect x="1480" y="240" width="100" height="80" rx="5" fill="#1a2a22" opacity="0.7"/>
+  <rect x="1480" y="240" width="100" height="80" rx="5" stroke="#2e4c43" stroke-width="2" fill="none" opacity="0.4"/>
+  <rect x="1490" y="250" width="80" height="50" fill="#2e4c43" opacity="0.3"/>
+  <rect x="1510" y="320" width="40" height="8" fill="#2e4c43" opacity="0.4"/>
+  
+  <!-- Laptop client -->
+  <rect x="1540" y="380" width="90" height="60" rx="5" fill="#1a2a22" opacity="0.7"/>
+  <rect x="1540" y="380" width="90" height="60" rx="5" stroke="#2e4c43" stroke-width="2" fill="none" opacity="0.4"/>
+  <polygon points="1530,440 1640,440 1650,460 1520,460" fill="#1a2a22" opacity="0.7"/>
+  
+  <!-- Mobile client -->
+  <rect x="1580" y="480" width="50" height="80" rx="8" fill="#1a2a22" opacity="0.7"/>
+  <rect x="1580" y="480" width="50" height="80" rx="8" stroke="#2e4c43" stroke-width="2" fill="none" opacity="0.4"/>
+  <rect x="1588" y="490" width="34" height="55" fill="#2e4c43" opacity="0.3"/>
+  
+  <!-- Tablet client -->
+  <rect x="1540" y="620" width="80" height="60" rx="5" fill="#1a2a22" opacity="0.7"/>
+  <rect x="1540" y="620" width="80" height="60" rx="5" stroke="#2e4c43" stroke-width="2" fill="none" opacity="0.4"/>
+  <rect x="1548" y="628" width="64" height="44" fill="#2e4c43" opacity="0.3"/>
+  
+  <!-- Terminal client -->
+  <rect x="1480" y="740" width="100" height="60" rx="5" fill="#1a2a22" opacity="0.7"/>
+  <rect x="1480" y="740" width="100" height="60" rx="5" stroke="#2e4c43" stroke-width="2" fill="none" opacity="0.4"/>
+  <text x="1530" y="775" fill="#4a8a6a" opacity="0.4" font-size="10" font-family="monospace" text-anchor="middle">&gt;_</text>
+  
+  <!-- Data flow on main line -->
+  <circle cx="1250" cy="520" r="5" fill="#5a9a7a" opacity="0.5"/>
+  <circle cx="1350" cy="520" r="5" fill="#5a9a7a" opacity="0.5"/>
+  <circle cx="1450" cy="520" r="5" fill="#5a9a7a" opacity="0.5"/>
+  
+  <!-- Ground -->
+  <polygon points="0,900 400,880 700,930 1000,890 1400,950 1700,900 1920,940 1920,1080 0,1080" fill="#101a16" opacity="0.75"/>
+</svg>

@@ -1,0 +1,169 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMax slice">
+  <defs>
+    <linearGradient id="mandalaGlow" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#14b8a6" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#101a16" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="nodeGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#2dd4bf" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#101a16" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="centerGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#5eead4" stop-opacity="0.5"/>
+      <stop offset="40%" stop-color="#14b8a6" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#101a16" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  
+  <!-- MOUNTAIN BACKDROP -->
+  <polygon points="0,600 300,280 600,550 0,1080" fill="#1a2a22" opacity="0.6"/>
+  <polygon points="1400,620 1680,260 1920,520 1920,1080 1350,1080" fill="#1a2a22" opacity="0.6"/>
+  
+  <!-- Central mandala glow -->
+  <ellipse cx="960" cy="480" rx="450" ry="350" fill="url(#mandalaGlow)"/>
+  
+  <!-- MANDALA SACRED GEOMETRY -->
+  
+  <!-- Outer circle (boundary of the universe) -->
+  <circle cx="960" cy="480" r="320" fill="none" stroke="#0d9488" stroke-width="2" opacity="0.6"/>
+  <circle cx="960" cy="480" r="300" fill="none" stroke="#14b8a6" stroke-width="1" opacity="0.5" stroke-dasharray="20,10"/>
+  
+  <!-- Middle circles (realms of connection) -->
+  <circle cx="960" cy="480" r="220" fill="none" stroke="#0d9488" stroke-width="1.5" opacity="0.6"/>
+  <circle cx="960" cy="480" r="140" fill="none" stroke="#14b8a6" stroke-width="1" opacity="0.55"/>
+  
+  <!-- Inner sacred center -->
+  <circle cx="960" cy="480" r="60" fill="url(#centerGlow)"/>
+  <circle cx="960" cy="480" r="60" fill="none" stroke="#2dd4bf" stroke-width="2" opacity="0.7"/>
+  
+  <!-- Central hub node -->
+  <circle cx="960" cy="480" r="25" fill="#1a2a22" opacity="0.95"/>
+  <circle cx="960" cy="480" r="25" fill="none" stroke="#5eead4" stroke-width="2" opacity="0.85"/>
+  <text x="960" y="485" fill="#5eead4" opacity="0.85" font-size="12" font-family="monospace" text-anchor="middle">HUB</text>
+  
+  <!-- 8 cardinal direction nodes (primary connections) -->
+  <g id="cardinalNodes">
+    <!-- North -->
+    <circle cx="960" cy="200" r="30" fill="url(#nodeGlow)"/>
+    <circle cx="960" cy="200" r="18" fill="#1a2a22" stroke="#14b8a6" stroke-width="2" opacity="0.7"/>
+    <line x1="960" y1="455" x2="960" y2="230" stroke="#14b8a6" stroke-width="1.5" opacity="0.4"/>
+    
+    <!-- Northeast -->
+    <circle cx="1180" cy="280" r="25" fill="url(#nodeGlow)"/>
+    <circle cx="1180" cy="280" r="15" fill="#1a2a22" stroke="#0d9488" stroke-width="1.5" opacity="0.6"/>
+    <line x1="980" y1="460" x2="1165" y2="295" stroke="#0d9488" stroke-width="1" opacity="0.35"/>
+    
+    <!-- East -->
+    <circle cx="1280" cy="480" r="30" fill="url(#nodeGlow)"/>
+    <circle cx="1280" cy="480" r="18" fill="#1a2a22" stroke="#14b8a6" stroke-width="2" opacity="0.7"/>
+    <line x1="985" y1="480" x2="1250" y2="480" stroke="#14b8a6" stroke-width="1.5" opacity="0.4"/>
+    
+    <!-- Southeast -->
+    <circle cx="1180" cy="680" r="25" fill="url(#nodeGlow)"/>
+    <circle cx="1180" cy="680" r="15" fill="#1a2a22" stroke="#0d9488" stroke-width="1.5" opacity="0.6"/>
+    <line x1="980" y1="500" x2="1165" y2="665" stroke="#0d9488" stroke-width="1" opacity="0.35"/>
+    
+    <!-- South -->
+    <circle cx="960" cy="760" r="30" fill="url(#nodeGlow)"/>
+    <circle cx="960" cy="760" r="18" fill="#1a2a22" stroke="#14b8a6" stroke-width="2" opacity="0.7"/>
+    <line x1="960" y1="505" x2="960" y2="730" stroke="#14b8a6" stroke-width="1.5" opacity="0.4"/>
+    
+    <!-- Southwest -->
+    <circle cx="740" cy="680" r="25" fill="url(#nodeGlow)"/>
+    <circle cx="740" cy="680" r="15" fill="#1a2a22" stroke="#0d9488" stroke-width="1.5" opacity="0.6"/>
+    <line x1="940" y1="500" x2="755" y2="665" stroke="#0d9488" stroke-width="1" opacity="0.35"/>
+    
+    <!-- West -->
+    <circle cx="640" cy="480" r="30" fill="url(#nodeGlow)"/>
+    <circle cx="640" cy="480" r="18" fill="#1a2a22" stroke="#14b8a6" stroke-width="2" opacity="0.7"/>
+    <line x1="935" y1="480" x2="670" y2="480" stroke="#14b8a6" stroke-width="1.5" opacity="0.4"/>
+    
+    <!-- Northwest -->
+    <circle cx="740" cy="280" r="25" fill="url(#nodeGlow)"/>
+    <circle cx="740" cy="280" r="15" fill="#1a2a22" stroke="#0d9488" stroke-width="1.5" opacity="0.6"/>
+    <line x1="940" y1="460" x2="755" y2="295" stroke="#0d9488" stroke-width="1" opacity="0.35"/>
+  </g>
+  
+  <!-- Outer ring nodes (extended network) -->
+  <g id="outerNodes">
+    <!-- NNE -->
+    <circle cx="1080" cy="180" r="15" fill="#1a2a22" stroke="#0d9488" stroke-width="1" opacity="0.5"/>
+    <line x1="975" y1="210" x2="1065" y2="190" stroke="#0d9488" stroke-width="0.5" opacity="0.25"/>
+    
+    <!-- ENE -->
+    <circle cx="1320" cy="350" r="15" fill="#1a2a22" stroke="#0d9488" stroke-width="1" opacity="0.5"/>
+    <line x1="1195" y1="290" x2="1305" y2="345" stroke="#0d9488" stroke-width="0.5" opacity="0.25"/>
+    
+    <!-- ESE -->
+    <circle cx="1320" cy="610" r="15" fill="#1a2a22" stroke="#0d9488" stroke-width="1" opacity="0.5"/>
+    <line x1="1195" y1="670" x2="1305" y2="615" stroke="#0d9488" stroke-width="0.5" opacity="0.25"/>
+    
+    <!-- SSE -->
+    <circle cx="1080" cy="800" r="15" fill="#1a2a22" stroke="#0d9488" stroke-width="1" opacity="0.5"/>
+    <line x1="975" y1="770" x2="1065" y2="790" stroke="#0d9488" stroke-width="0.5" opacity="0.25"/>
+    
+    <!-- SSW -->
+    <circle cx="840" cy="800" r="15" fill="#1a2a22" stroke="#0d9488" stroke-width="1" opacity="0.5"/>
+    <line x1="945" y1="770" x2="855" y2="790" stroke="#0d9488" stroke-width="0.5" opacity="0.25"/>
+    
+    <!-- WSW -->
+    <circle cx="600" cy="610" r="15" fill="#1a2a22" stroke="#0d9488" stroke-width="1" opacity="0.5"/>
+    <line x1="725" y1="670" x2="615" y2="615" stroke="#0d9488" stroke-width="0.5" opacity="0.25"/>
+    
+    <!-- WNW -->
+    <circle cx="600" cy="350" r="15" fill="#1a2a22" stroke="#0d9488" stroke-width="1" opacity="0.5"/>
+    <line x1="725" y1="290" x2="615" y2="345" stroke="#0d9488" stroke-width="0.5" opacity="0.25"/>
+    
+    <!-- NNW -->
+    <circle cx="840" cy="180" r="15" fill="#1a2a22" stroke="#0d9488" stroke-width="1" opacity="0.5"/>
+    <line x1="945" y1="210" x2="855" y2="190" stroke="#0d9488" stroke-width="0.5" opacity="0.25"/>
+  </g>
+  
+  <!-- Far reach nodes (edge of network) -->
+  <g id="edgeNodes">
+    <circle cx="200" cy="400" r="12" fill="#1a2a22" stroke="#0d9488" stroke-width="1" opacity="0.35"/>
+    <circle cx="300" cy="700" r="12" fill="#1a2a22" stroke="#0d9488" stroke-width="1" opacity="0.35"/>
+    <circle cx="1620" cy="400" r="12" fill="#1a2a22" stroke="#0d9488" stroke-width="1" opacity="0.35"/>
+    <circle cx="1720" cy="600" r="12" fill="#1a2a22" stroke="#0d9488" stroke-width="1" opacity="0.35"/>
+    <circle cx="480" cy="850" r="10" fill="#1a2a22" stroke="#0d9488" stroke-width="1" opacity="0.3"/>
+    <circle cx="1440" cy="850" r="10" fill="#1a2a22" stroke="#0d9488" stroke-width="1" opacity="0.3"/>
+    
+    <!-- Long-range connections -->
+    <line x1="600" y1="350" x2="215" y2="400" stroke="#0d9488" stroke-width="0.5" opacity="0.15" stroke-dasharray="5,5"/>
+    <line x1="600" y1="610" x2="315" y2="695" stroke="#0d9488" stroke-width="0.5" opacity="0.15" stroke-dasharray="5,5"/>
+    <line x1="1320" y1="350" x2="1605" y2="400" stroke="#0d9488" stroke-width="0.5" opacity="0.15" stroke-dasharray="5,5"/>
+    <line x1="1320" y1="610" x2="1705" y2="595" stroke="#0d9488" stroke-width="0.5" opacity="0.15" stroke-dasharray="5,5"/>
+  </g>
+  
+  <!-- Cross-connections (sacred geometry pattern) -->
+  <g id="crossConnections">
+    <!-- Diagonal cross-braces -->
+    <line x1="760" y1="290" x2="1160" y2="670" stroke="#2dd4bf" stroke-width="0.5" opacity="0.15" stroke-dasharray="8,4"/>
+    <line x1="1160" y1="290" x2="760" y2="670" stroke="#2dd4bf" stroke-width="0.5" opacity="0.15" stroke-dasharray="8,4"/>
+    
+    <!-- Ring connections -->
+    <path d="M960,200 Q1100,180 1180,280" fill="none" stroke="#14b8a6" stroke-width="0.5" opacity="0.2"/>
+    <path d="M1180,280 Q1280,380 1280,480" fill="none" stroke="#14b8a6" stroke-width="0.5" opacity="0.2"/>
+    <path d="M1280,480 Q1280,580 1180,680" fill="none" stroke="#14b8a6" stroke-width="0.5" opacity="0.2"/>
+    <path d="M1180,680 Q1100,780 960,760" fill="none" stroke="#14b8a6" stroke-width="0.5" opacity="0.2"/>
+    <path d="M960,760 Q820,780 740,680" fill="none" stroke="#14b8a6" stroke-width="0.5" opacity="0.2"/>
+    <path d="M740,680 Q640,580 640,480" fill="none" stroke="#14b8a6" stroke-width="0.5" opacity="0.2"/>
+    <path d="M640,480 Q640,380 740,280" fill="none" stroke="#14b8a6" stroke-width="0.5" opacity="0.2"/>
+    <path d="M740,280 Q820,180 960,200" fill="none" stroke="#14b8a6" stroke-width="0.5" opacity="0.2"/>
+  </g>
+  
+  <!-- Message flow indicators -->
+  <g id="messageFlow">
+    <text x="150" y="350" fill="#2dd4bf" opacity="0.3" font-size="10" font-family="monospace">HELLO →</text>
+    <text x="1700" y="350" fill="#2dd4bf" opacity="0.3" font-size="10" font-family="monospace">← WELCOME</text>
+    <text x="150" y="550" fill="#14b8a6" opacity="0.25" font-size="9" font-family="monospace">GOSSIP ↔</text>
+    <text x="1700" y="550" fill="#14b8a6" opacity="0.25" font-size="9" font-family="monospace">↔ SYNC</text>
+  </g>
+  
+  <!-- MANDALA label -->
+  <text x="960" y="100" fill="#14b8a6" opacity="0.5" font-size="24" font-family="monospace" text-anchor="middle">MANDALA</text>
+  <text x="960" y="125" fill="#0d9488" opacity="0.35" font-size="12" font-family="monospace" text-anchor="middle">Mesh Architecture for Network Distribution &amp; Layered Aggregation</text>
+  
+  <!-- Ground -->
+  <polygon points="0,900 400,870 800,920 1200,880 1600,930 1920,890 1920,1080 0,1080" fill="#101a16" opacity="0.75"/>
+</svg>

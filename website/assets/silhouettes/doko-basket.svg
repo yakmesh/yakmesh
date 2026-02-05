@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMax slice">
+  <defs>
+    <linearGradient id="docGlow" x1="100%" y1="50%" x2="0%" y2="50%">
+      <stop offset="0%" stop-color="#4a8a6a" stop-opacity="0.1"/>
+      <stop offset="100%" stop-color="#101a16" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- MOUNTAIN BACKDROP - right side -->
+  <polygon points="1000,1080 1300,400 1600,800 1920,600 1920,1080" fill="#1a2a22" opacity="0.5"/>
+  <polygon points="1400,1080 1600,500 1800,750 1920,700 1920,1080" fill="#1f332d" opacity="0.45"/>
+  <polygon points="1600,1080 1750,600 1920,800 1920,1080" fill="#1a2a22" opacity="0.4"/>
+  
+  <!-- Mid-ground terrain -->
+  <polygon points="0,1080 200,800 500,850 800,780 1100,820 1400,750 1700,800 1920,720 1920,1080" fill="#1a2a22" opacity="0.6"/>
+  
+  <!-- Path winding down -->
+  <path d="M1700,720 Q1400,800 1100,750 Q800,850 500,800 Q300,880 100,820" 
+        stroke="#3d6a5a" stroke-width="2" fill="none" opacity="0.2" stroke-dasharray="15,8"/>
+  
+  <!-- DOKO CARRIER - right side of frame, walking the path -->
+  <!-- Body - bent forward under load -->
+  <ellipse cx="1650" cy="680" rx="35" ry="50" fill="#101a16" transform="rotate(-15, 1650, 680)"/>
+  <!-- Head -->
+  <circle cx="1620" cy="610" r="28" fill="#101a16"/>
+  <!-- Hat -->
+  <ellipse cx="1620" cy="598" rx="35" ry="10" fill="#101a16"/>
+  
+  <!-- Legs - walking -->
+  <polygon points="1625,725 1600,850 1620,855 1640,730" fill="#101a16"/>
+  <polygon points="1665,720 1680,840 1700,835 1680,715" fill="#101a16"/>
+  
+  <!-- Arms holding tumpline -->
+  <polygon points="1590,630 1560,700 1575,705 1600,640" fill="#101a16"/>
+  <polygon points="1650,640 1680,710 1695,700 1665,635" fill="#101a16"/>
+  
+  <!-- THE DOKO BASKET - large, conical, on the back -->
+  <polygon points="1680,550 1750,700 1620,720 1640,560" fill="#1f332d" opacity="0.8"/>
+  <!-- Basket weave pattern -->
+  <line x1="1660" y1="580" x2="1720" y2="620" stroke="#3d6a5a" stroke-width="1" opacity="0.3"/>
+  <line x1="1655" y1="620" x2="1730" y2="660" stroke="#3d6a5a" stroke-width="1" opacity="0.3"/>
+  <line x1="1645" y1="660" x2="1740" y2="695" stroke="#3d6a5a" stroke-width="1" opacity="0.3"/>
+  <line x1="1680" y1="560" x2="1670" y2="700" stroke="#3d6a5a" stroke-width="1" opacity="0.25"/>
+  <line x1="1710" y1="590" x2="1700" y2="710" stroke="#3d6a5a" stroke-width="1" opacity="0.25"/>
+  
+  <!-- Tumpline (head strap) -->
+  <path d="M1620,620 Q1640,580 1680,560" stroke="#2e4c43" stroke-width="2" fill="none" opacity="0.4"/>
+  
+  <!-- Documents/scrolls peeking from basket -->
+  <rect x="1665" y="545" width="25" height="35" rx="2" fill="#2e4c43" opacity="0.5"/>
+  <rect x="1695" y="555" width="20" height="30" rx="2" fill="#3d6a5a" opacity="0.4"/>
+  <line x1="1670" y1="555" x2="1685" y2="555" stroke="#4a8a6a" stroke-width="1" opacity="0.3"/>
+  <line x1="1670" y1="562" x2="1685" y2="562" stroke="#4a8a6a" stroke-width="1" opacity="0.3"/>
+  
+  <!-- Figure highlight outline -->
+  <circle cx="1620" cy="610" r="28" stroke="#2e4c43" stroke-width="1" fill="none" opacity="0.25"/>
+  
+  <!-- LEFT SIDE - distant village/origin -->
+  <polygon points="0,850 100,820 200,850 200,1080 0,1080" fill="#1a2a22" opacity="0.5"/>
+  <!-- Small structure hints -->
+  <polygon points="80,840 100,810 120,840" fill="#1f332d" opacity="0.4"/>
+  <polygon points="140,850 160,825 180,850" fill="#1f332d" opacity="0.35"/>
+  
+  <!-- Document glow from basket area -->
+  <ellipse cx="1700" cy="650" rx="150" ry="100" fill="url(#docGlow)"/>
+  
+  <!-- Ground texture -->
+  <path d="M200,920 Q400,900 600,930" stroke="#2e4c43" stroke-width="1" fill="none" opacity="0.15"/>
+  <path d="M800,910 Q1000,895 1200,915" stroke="#2e4c43" stroke-width="1" fill="none" opacity="0.15"/>
+</svg>

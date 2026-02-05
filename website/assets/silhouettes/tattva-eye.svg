@@ -1,0 +1,78 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMax slice">
+  <defs>
+    <radialGradient id="oracleGlow" cx="50%" cy="40%" r="50%">
+      <stop offset="0%" stop-color="#5a9a7a" stop-opacity="0.2"/>
+      <stop offset="50%" stop-color="#4a8a6a" stop-opacity="0.1"/>
+      <stop offset="100%" stop-color="#101a16" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  
+  <!-- MOUNTAIN FRAME - like viewing through a mountain pass -->
+  <!-- Left mountain wall -->
+  <polygon points="0,0 400,0 300,300 200,600 250,900 400,1080 0,1080" fill="#101a16"/>
+  <path d="M300,300 Q250,500 200,600 Q220,800 400,1080" stroke="#2e4c43" stroke-width="2" fill="none" opacity="0.3"/>
+  
+  <!-- Right mountain wall -->
+  <polygon points="1920,0 1520,0 1620,300 1720,600 1670,900 1520,1080 1920,1080" fill="#101a16"/>
+  <path d="M1620,300 Q1670,500 1720,600 Q1700,800 1520,1080" stroke="#2e4c43" stroke-width="2" fill="none" opacity="0.3"/>
+  
+  <!-- THE ALL-SEEING EYE - center -->
+  <!-- Outer eye shape -->
+  <ellipse cx="960" cy="450" rx="450" ry="280" fill="#0a120e" opacity="0.8"/>
+  <ellipse cx="960" cy="450" rx="450" ry="280" stroke="#2e4c43" stroke-width="3" fill="none" opacity="0.4"/>
+  
+  <!-- Eye glow -->
+  <ellipse cx="960" cy="450" rx="480" ry="300" fill="url(#oracleGlow)"/>
+  
+  <!-- Iris -->
+  <circle cx="960" cy="450" r="180" fill="#1a2a22" opacity="0.8"/>
+  <circle cx="960" cy="450" r="180" stroke="#3d6a5a" stroke-width="2" fill="none" opacity="0.5"/>
+  
+  <!-- Iris detail rings -->
+  <circle cx="960" cy="450" r="150" stroke="#2e4c43" stroke-width="1" fill="none" opacity="0.3"/>
+  <circle cx="960" cy="450" r="120" stroke="#2e4c43" stroke-width="1" fill="none" opacity="0.25"/>
+  
+  <!-- Pupil -->
+  <circle cx="960" cy="450" r="80" fill="#0a120e" opacity="0.9"/>
+  <circle cx="960" cy="450" r="80" stroke="#4a8a6a" stroke-width="2" fill="none" opacity="0.4"/>
+  
+  <!-- Light reflection in eye -->
+  <circle cx="920" cy="420" r="20" fill="#3d6a5a" opacity="0.4"/>
+  <circle cx="1000" cy="400" r="10" fill="#4a8a6a" opacity="0.3"/>
+  
+  <!-- VERIFICATION RAYS emanating from the eye -->
+  <line x1="960" y1="450" x2="400" y2="200" stroke="#3d6a5a" stroke-width="2" opacity="0.2"/>
+  <line x1="960" y1="450" x2="300" y2="450" stroke="#3d6a5a" stroke-width="2" opacity="0.2"/>
+  <line x1="960" y1="450" x2="400" y2="700" stroke="#3d6a5a" stroke-width="2" opacity="0.2"/>
+  <line x1="960" y1="450" x2="1520" y2="200" stroke="#3d6a5a" stroke-width="2" opacity="0.2"/>
+  <line x1="960" y1="450" x2="1620" y2="450" stroke="#3d6a5a" stroke-width="2" opacity="0.2"/>
+  <line x1="960" y1="450" x2="1520" y2="700" stroke="#3d6a5a" stroke-width="2" opacity="0.2"/>
+  
+  <!-- Verification checkmarks at ray endpoints -->
+  <path d="M395,195 L405,205 L420,185" stroke="#4a8a6a" stroke-width="2" fill="none" opacity="0.4"/>
+  <path d="M1515,195 L1525,205 L1540,185" stroke="#4a8a6a" stroke-width="2" fill="none" opacity="0.4"/>
+  <path d="M395,695 L405,705 L420,685" stroke="#4a8a6a" stroke-width="2" fill="none" opacity="0.4"/>
+  <path d="M1515,695 L1525,705 L1540,685" stroke="#4a8a6a" stroke-width="2" fill="none" opacity="0.4"/>
+  
+  <!-- BINARY/DATA STREAMS flowing to eye -->
+  <text x="450" y="300" fill="#3d6a5a" opacity="0.2" font-size="14" font-family="monospace" transform="rotate(-20, 450, 300)">10110101</text>
+  <text x="480" y="350" fill="#2e4c43" opacity="0.15" font-size="12" font-family="monospace" transform="rotate(-15, 480, 350)">01101001</text>
+  <text x="1400" y="280" fill="#3d6a5a" opacity="0.2" font-size="14" font-family="monospace" transform="rotate(20, 1400, 280)">11010110</text>
+  <text x="1370" y="340" fill="#2e4c43" opacity="0.15" font-size="12" font-family="monospace" transform="rotate(15, 1370, 340)">10011010</text>
+  
+  <!-- Oracle node indicators -->
+  <circle cx="500" cy="600" r="6" fill="#4a8a6a" opacity="0.35"/>
+  <circle cx="1420" cy="600" r="6" fill="#4a8a6a" opacity="0.35"/>
+  <circle cx="960" cy="800" r="8" fill="#5a9a7a" opacity="0.4"/>
+  
+  <!-- Connecting lines between oracle nodes -->
+  <line x1="500" y1="600" x2="960" y2="800" stroke="#3d6a5a" stroke-width="1" fill="none" opacity="0.2"/>
+  <line x1="1420" y1="600" x2="960" y2="800" stroke="#3d6a5a" stroke-width="1" fill="none" opacity="0.2"/>
+  <line x1="500" y1="600" x2="1420" y2="600" stroke="#3d6a5a" stroke-width="1" fill="none" opacity="0.15"/>
+  
+  <!-- Ground with oracle presence -->
+  <polygon points="0,900 400,870 700,920 960,880 1220,930 1520,890 1920,950 1920,1080 0,1080" fill="#101a16" opacity="0.8"/>
+  
+  <!-- "VERIFIED" text subtle -->
+  <text x="960" y="1000" fill="#4a8a6a" opacity="0.2" font-size="32" font-family="monospace" text-anchor="middle">VERIFIED</text>
+</svg>

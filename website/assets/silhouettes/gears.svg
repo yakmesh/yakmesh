@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMax slice">
+  <defs>
+    <linearGradient id="gearGlow" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#4a8a6a" stop-opacity="0.1"/>
+      <stop offset="100%" stop-color="#101a16" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- MOUNTAIN BACKDROP -->
+  <polygon points="0,680 200,380 400,620 400,1080 0,1080" fill="#1a2a22" opacity="0.35"/>
+  <polygon points="1550,650 1750,350 1920,600 1920,1080 1550,1080" fill="#1a2a22" opacity="0.35"/>
+  
+  <!-- MAIN GEAR - large, center-left -->
+  <circle cx="650" cy="500" r="280" fill="#0a120e" opacity="0.8"/>
+  <!-- Gear teeth -->
+  <polygon points="650,200 620,220 620,180 680,180 680,220" fill="#1f332d" opacity="0.7"/>
+  <polygon points="650,800 620,780 620,820 680,820 680,780" fill="#1f332d" opacity="0.7"/>
+  <polygon points="370,500 390,470 350,470 350,530 390,530" fill="#1f332d" opacity="0.7"/>
+  <polygon points="930,500 910,470 950,470 950,530 910,530" fill="#1f332d" opacity="0.7"/>
+  <!-- Diagonal teeth -->
+  <polygon points="448,298 480,280 460,320 420,340 400,300" fill="#1f332d" opacity="0.7"/>
+  <polygon points="852,298 820,280 840,320 880,340 900,300" fill="#1f332d" opacity="0.7"/>
+  <polygon points="448,702 480,720 460,680 420,660 400,700" fill="#1f332d" opacity="0.7"/>
+  <polygon points="852,702 820,720 840,680 880,660 900,700" fill="#1f332d" opacity="0.7"/>
+  
+  <!-- Gear inner details -->
+  <circle cx="650" cy="500" r="280" stroke="#2e4c43" stroke-width="3" fill="none" opacity="0.4"/>
+  <circle cx="650" cy="500" r="220" stroke="#2e4c43" stroke-width="2" fill="none" opacity="0.3"/>
+  <circle cx="650" cy="500" r="80" fill="#1a2a22" opacity="0.6"/>
+  <circle cx="650" cy="500" r="80" stroke="#3d6a5a" stroke-width="2" fill="none" opacity="0.4"/>
+  <circle cx="650" cy="500" r="30" fill="#2e4c43" opacity="0.5"/>
+  
+  <!-- Spokes -->
+  <line x1="650" y1="280" x2="650" y2="420" stroke="#2e4c43" stroke-width="15" opacity="0.4"/>
+  <line x1="650" y1="580" x2="650" y2="720" stroke="#2e4c43" stroke-width="15" opacity="0.4"/>
+  <line x1="430" y1="500" x2="570" y2="500" stroke="#2e4c43" stroke-width="15" opacity="0.4"/>
+  <line x1="730" y1="500" x2="870" y2="500" stroke="#2e4c43" stroke-width="15" opacity="0.4"/>
+  
+  <!-- SECONDARY GEAR - interlocking, right -->
+  <circle cx="1150" cy="620" r="200" fill="#0a120e" opacity="0.75"/>
+  <!-- Gear teeth -->
+  <polygon points="1150,400 1125,420 1125,390 1175,390 1175,420" fill="#1a2a22" opacity="0.6"/>
+  <polygon points="1150,840 1125,820 1125,850 1175,850 1175,820" fill="#1a2a22" opacity="0.6"/>
+  <polygon points="950,620 970,595 940,595 940,645 970,645" fill="#1a2a22" opacity="0.6"/>
+  <polygon points="1350,620 1330,595 1360,595 1360,645 1330,645" fill="#1a2a22" opacity="0.6"/>
+  <!-- Diagonal teeth -->
+  <polygon points="1008,478 1030,465 1020,495 990,510 978,488" fill="#1a2a22" opacity="0.6"/>
+  <polygon points="1292,478 1270,465 1280,495 1310,510 1322,488" fill="#1a2a22" opacity="0.6"/>
+  <polygon points="1008,762 1030,775 1020,745 990,730 978,752" fill="#1a2a22" opacity="0.6"/>
+  <polygon points="1292,762 1270,775 1280,745 1310,730 1322,752" fill="#1a2a22" opacity="0.6"/>
+  
+  <!-- Secondary gear inner -->
+  <circle cx="1150" cy="620" r="200" stroke="#2e4c43" stroke-width="2" fill="none" opacity="0.35"/>
+  <circle cx="1150" cy="620" r="150" stroke="#2e4c43" stroke-width="1.5" fill="none" opacity="0.25"/>
+  <circle cx="1150" cy="620" r="50" fill="#1a2a22" opacity="0.5"/>
+  <circle cx="1150" cy="620" r="50" stroke="#3d6a5a" stroke-width="1.5" fill="none" opacity="0.35"/>
+  
+  <!-- SMALL GEAR - top right -->
+  <circle cx="1400" cy="300" r="100" fill="#0a120e" opacity="0.7"/>
+  <circle cx="1400" cy="300" r="100" stroke="#2e4c43" stroke-width="1.5" fill="none" opacity="0.3"/>
+  <circle cx="1400" cy="300" r="25" fill="#1a2a22" opacity="0.4"/>
+  
+  <!-- CONFIG SLIDERS - right side -->
+  <!-- Slider track 1 -->
+  <rect x="1550" y="350" width="200" height="10" rx="5" fill="#1a2a22" opacity="0.5"/>
+  <circle cx="1680" cy="355" r="15" fill="#3d6a5a" opacity="0.5"/>
+  <text x="1550" y="335" fill="#3d6a5a" opacity="0.3" font-size="16" font-family="monospace">encryption</text>
+  
+  <!-- Slider track 2 -->
+  <rect x="1550" y="420" width="200" height="10" rx="5" fill="#1a2a22" opacity="0.5"/>
+  <circle cx="1720" cy="425" r="15" fill="#4a8a6a" opacity="0.5"/>
+  <text x="1550" y="405" fill="#3d6a5a" opacity="0.3" font-size="16" font-family="monospace">timeout</text>
+  
+  <!-- Slider track 3 -->
+  <rect x="1550" y="490" width="200" height="10" rx="5" fill="#1a2a22" opacity="0.5"/>
+  <circle cx="1620" cy="495" r="15" fill="#3d6a5a" opacity="0.5"/>
+  <text x="1550" y="475" fill="#3d6a5a" opacity="0.3" font-size="16" font-family="monospace">verbosity</text>
+  
+  <!-- Toggle switches -->
+  <rect x="1550" y="560" width="60" height="30" rx="15" fill="#1a2a22" opacity="0.5"/>
+  <circle cx="1595" cy="575" r="12" fill="#4a8a6a" opacity="0.5"/>
+  <text x="1620" y="580" fill="#3d6a5a" opacity="0.3" font-size="14" font-family="monospace">autoConnect</text>
+  
+  <rect x="1550" y="610" width="60" height="30" rx="15" fill="#1a2a22" opacity="0.5"/>
+  <circle cx="1565" cy="625" r="12" fill="#2e4c43" opacity="0.4"/>
+  <text x="1620" y="630" fill="#2e4c43" opacity="0.25" font-size="14" font-family="monospace">debug</text>
+  
+  <!-- Gear glow -->
+  <ellipse cx="800" cy="550" rx="500" ry="350" fill="url(#gearGlow)"/>
+  
+  <!-- Ground -->
+  <polygon points="0,920 300,900 600,950 900,920 1200,970 1500,930 1920,980 1920,1080 0,1080" fill="#101a16" opacity="0.75"/>
+</svg>

@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMax slice">
+  <defs>
+    <linearGradient id="packetGlow" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#4a8a6a" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#101a16" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- MOUNTAIN BACKDROP -->
+  <polygon points="0,700 250,350 500,650 500,1080 0,1080" fill="#1a2a22" opacity="0.4"/>
+  <polygon points="400,680 700,280 1000,620 1000,1080 400,1080" fill="#1a2a22" opacity="0.45"/>
+  <polygon points="900,700 1200,300 1500,650 1500,1080 900,1080" fill="#1a2a22" opacity="0.5"/>
+  <polygon points="1400,720 1700,380 1920,680 1920,1080 1400,1080" fill="#1a2a22" opacity="0.45"/>
+  
+  <!-- Central peak -->
+  <polygon points="800,750 1000,350 1200,750" fill="#1f332d" opacity="0.55"/>
+  <polygon points="950,450 1000,350 1050,450" fill="#2e4c43" opacity="0.35"/>
+  
+  <!-- GIANT NAKPAK (BACKPACK) - center of frame, showing layers -->
+  <!-- Outer layer (L3) -->
+  <path d="M700,1080 L650,650 Q700,500 960,480 Q1220,500 1270,650 L1220,1080 Z" fill="#1a2a22" opacity="0.7"/>
+  <path d="M650,650 Q700,500 960,480 Q1220,500 1270,650" stroke="#2e4c43" stroke-width="2" fill="none" opacity="0.4"/>
+  
+  <!-- Middle layer (L2) -->
+  <path d="M750,1080 L710,700 Q760,580 960,560 Q1160,580 1210,700 L1170,1080 Z" fill="#1f332d" opacity="0.6"/>
+  <path d="M710,700 Q760,580 960,560 Q1160,580 1210,700" stroke="#3d6a5a" stroke-width="2" fill="none" opacity="0.35"/>
+  
+  <!-- Inner layer (L1 - payload) -->
+  <path d="M800,1080 L770,750 Q820,660 960,645 Q1100,660 1150,750 L1120,1080 Z" fill="#2e4c43" opacity="0.5"/>
+  <path d="M770,750 Q820,660 960,645 Q1100,660 1150,750" stroke="#4a8a6a" stroke-width="2" fill="none" opacity="0.4"/>
+  
+  <!-- Center glow - the payload -->
+  <ellipse cx="960" cy="850" rx="120" ry="180" fill="url(#packetGlow)"/>
+  
+  <!-- Layer labels - subtle -->
+  <text x="620" y="800" fill="#3d6a5a" opacity="0.25" font-size="24" font-family="monospace">L3</text>
+  <text x="680" y="850" fill="#4a8a6a" opacity="0.3" font-size="22" font-family="monospace">L2</text>
+  <text x="745" y="900" fill="#5a9a7a" opacity="0.35" font-size="20" font-family="monospace">L1</text>
+  
+  <!-- Shoulder straps going up -->
+  <path d="M800,650 Q750,400 700,200" stroke="#2e4c43" stroke-width="8" fill="none" opacity="0.3"/>
+  <path d="M1120,650 Q1170,400 1220,200" stroke="#2e4c43" stroke-width="8" fill="none" opacity="0.3"/>
+  
+  <!-- Encryption lock symbols on each layer -->
+  <circle cx="960" cy="520" r="15" stroke="#4a8a6a" stroke-width="2" fill="none" opacity="0.3"/>
+  <rect x="952" y="530" width="16" height="12" fill="#4a8a6a" opacity="0.25"/>
+  
+  <circle cx="960" cy="600" r="12" stroke="#3d6a5a" stroke-width="2" fill="none" opacity="0.25"/>
+  <rect x="953" y="608" width="14" height="10" fill="#3d6a5a" opacity="0.2"/>
+  
+  <circle cx="960" cy="680" r="10" stroke="#2e4c43" stroke-width="2" fill="none" opacity="0.2"/>
+  <rect x="954" y="687" width="12" height="8" fill="#2e4c43" opacity="0.15"/>
+  
+  <!-- Ground -->
+  <polygon points="0,950 400,920 700,960 1000,930 1300,970 1600,940 1920,980 1920,1080 0,1080" fill="#101a16" opacity="0.8"/>
+</svg>
