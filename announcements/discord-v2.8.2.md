@@ -7,11 +7,11 @@ Hey Sherpas! 👋
 ## 🔺 TRIBHUJ — Balanced Ternary
 
 YAKMESH now speaks in **three states**:
-```
--1 = INVALID / REJECT
- 0 = PENDING / ABSTAIN
-+1 = VALID / ACCEPT
-```
+
+> **-1** = INVALID / REJECT
+> **0** = PENDING / ABSTAIN
+> **+1** = VALID / ACCEPT
+
 Nature doesn't do binary. Middle ground is real.
 
 ## 🔐 YPC-27 — Quantum-Hard Checksums
