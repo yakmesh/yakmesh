@@ -148,6 +148,11 @@ body::after {
   background-image: url('assets/silhouettes/webserver.svg');
 }
 
+/* Tutorials - Base camp for beginners */
+[data-theme="tutorials"] body::after {
+  background-image: url('assets/silhouettes/base-camp.svg');
+}
+
 /* API Reference - Endpoints */
 [data-theme="api"] body::after {
   background-image: url('assets/silhouettes/api-endpoints.svg');
