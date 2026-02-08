@@ -14,6 +14,7 @@ export {
   ContentMetadata,
   ConsensusProof,
   computeContentHash,
+  deriveContentName,
 } from './store.js';
 
 export { createContentAPI } from './api.js';

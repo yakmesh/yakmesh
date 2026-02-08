@@ -7,10 +7,12 @@
  * Phase 1: Simple builtin routes + content addressing
  * 
  * Examples:
- *   yak://dashboard          → Node dashboard
- *   yak://site               → Hosted website
- *   yak://peers              → Connected peers
- *   yak://content/<hash>     → Content by hash (immutable)
+ *   yak://dashboard                → Node dashboard
+ *   yak://site                     → Hosted website
+ *   yak://peers                    → Connected peers
+ *   yak://content/<hash>           → Content by hash (immutable)
+ *   yak://qubit-lattice-prism      → Content by iO name (human-readable)
+ *   yak://qubit-lattice-prism/path → Content with path
  * 
  * How it works:
  * 1. Register yak:// protocol with OS (Windows Registry, macOS, Linux)
@@ -22,7 +24,7 @@
  *   yakmesh bookmark add alice <target>
  * 
  * @module protocol/yak-protocol
- * @version 2.2.0
+ * @version 2.3.0
  */
 
 import { existsSync, writeFileSync, mkdirSync, readFileSync } from 'fs';
@@ -30,6 +32,9 @@ import { join, dirname } from 'path';
 import { execSync, spawn } from 'child_process';
 import { platform } from 'os';
 import { fileURLToPath } from 'url';
+
+// Import iO name validation
+import { isValidIoName } from '../oracle/network-identity.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -582,13 +587,22 @@ export function parseYakUrl(url) {
     };
   }
   
+  // Check for iO name (3-word quantum wordlist pattern like "qubit-lattice-prism")
+  if (isValidIoName(host)) {
+    return {
+      type: 'io-content',
+      ioName: host,
+      path: `/content/${host}${subpath}`,  // Content API resolves iO names to hashes
+    };
+  }
+  
   // Check for "content/" prefix explicitly
   if (host === 'content' && parts.length > 1) {
-    const hash = parts[1];
+    const hashOrName = parts[1];
     return {
       type: 'content',
-      hash: hash,
-      path: `/content/${hash}`,
+      hash: hashOrName,  // Could be hash or iO name - API resolves both
+      path: `/content/${hashOrName}`,
     };
   }
   

@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="tutorials">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="../favicon.ico" sizes="32x32">
+    <link rel="icon" href="../icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+    <title>YAK:// Protocol - YAKMESH Tutorials</title>
+    <meta name="description" content="Learn how to use the yak:// protocol to share and retrieve content across the YAKMESH network with cryptographic links.">
+    
+    <link rel="stylesheet" href="../tailwind.min.css">
+    <link rel="stylesheet" href="../prism-tomorrow.min.css">
+    <link rel="stylesheet" href="../docs.css">
+    <style>
+        .theme-accent { color: #10b981; }
+        .theme-badge { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+        .tutorial-card { background: rgba(30, 41, 59, 0.5); border: 1px solid #334155; border-radius: 0.75rem; padding: 1.5rem; margin-bottom: 1.5rem; }
+        .tutorial-card:hover { border-color: #10b981; }
+        .step-number { display: inline-flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; background: #10b981; color: white; border-radius: 50%; font-weight: bold; margin-right: 0.75rem; }
+        .theme-callout { background: rgba(16, 185, 129, 0.1); border: 1px solid #059669; border-radius: 0.75rem; padding: 1.5rem; margin: 1.5rem 0; }
+        .warning-callout { background: rgba(245, 158, 11, 0.1); border: 1px solid #d97706; border-radius: 0.75rem; padding: 1.5rem; margin: 1.5rem 0; }
+        .info-callout { background: rgba(59, 130, 246, 0.1); border: 1px solid #3b82f6; border-radius: 0.75rem; padding: 1.5rem; margin: 1.5rem 0; }
+    </style>
+</head>
+<body class="bg-mountain-900 text-white min-h-screen">
+    
+  <nav class="docs-sidebar" id="sidebar">
+    <a href="../index.html" class="sidebar-logo">
+      <span class="logo-icon">🏔️</span>
+      <span class="logo-text">Yakmesh</span>
+    </a>
+    <a href="/dashboard" class="sidebar-dashboard-link"><span>📊</span> <span>Dashboard</span></a>
+    <ul class="sidebar-nav">
+      <li><a href="../index.html"><span>🏠</span> <span>Overview</span></a></li>
+      <li><a href="../getting-started.html"><span>🚀</span> <span>Getting Started</span></a></li>
+      <li><a href="../tutorials.html" class="active"><span>📖</span> <span>Tutorials</span></a></li>
+      <li><a href="../doko.html"><span>🧺</span> <span>DOKO</span></a></li>
+      <li><a href="../namche.html"><span>🚪</span> <span>NAMCHE</span></a></li>
+      <li><a href="../sherpa.html"><span>🧗</span> <span>SHERPA</span></a></li>
+      <li><a href="../nakpak.html"><span>🎒</span> <span>NAKPAK</span></a></li>
+      <li><a href="../annex.html"><span>🌉</span> <span>ANNEX</span></a></li>
+      <li><a href="../yak-protocol.html"><span class="yak-icon"></span> <span>YAK</span></a></li>
+      <li><a href="../mantra.html"><span>🕉️</span> <span>MANTRA</span></a></li>
+      <li><a href="../stupa.html"><span>🛕</span> <span>STUPA</span></a></li>
+      <li><a href="../lama.html"><span>🔮</span> <span>LAMA</span></a></li>
+      <li><a href="../mani.html"><span>⏱️</span> <span>MANI</span></a></li>
+      <li><a href="../karma.html"><span>☯️</span> <span>KARMA</span></a></li>
+      <li><a href="../mandala.html"><span>🌐</span> <span>MANDALA</span></a></li>
+      <li><a href="../tattva.html"><span>🔯</span> <span>TATTVA</span></a></li>
+      <li><a href="../tribhuj.html"><span>🔺</span> <span>TRIBHUJ</span></a></li>
+      <li><a href="../ypc27.html"><span>🔐</span> <span>YPC-27</span></a></li>
+      <li><a href="../sakshi.html"><span>👁️</span> <span>SAKSHI</span></a></li>
+      <li><a href="../geo-proof.html"><span>🌍</span> <span>PRAMAAN</span></a></li>
+      <li><a href="../trust-security.html"><span>🔒</span> <span>SURAKSHA</span></a></li>
+      <li><a href="../docs-bundle.html"><span>📚</span> <span>GRANTH</span></a></li>
+      <li><a href="../api.html"><span>📡</span> <span>API</span></a></li>
+      <li><a href="../quick-reference.html"><span>📋</span> <span>Quick Ref</span></a></li>
+    </ul>
+  </nav>
+
+  <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+    </svg>
+  </button>
+
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="docs-main" id="mainContent">
+    <div class="docs-content">
+      
+      <!-- Breadcrumb -->
+      <div class="mb-6">
+        <a href="../tutorials.html" class="theme-accent hover:underline">← Back to Tutorials</a>
+      </div>
+      
+      <!-- Page Header -->
+      <div class="mb-8">
+        <div class="flex items-center gap-3 mb-2">
+          <span class="text-4xl">🐃</span>
+          <h1 class="text-4xl font-bold">YAK:// Protocol</h1>
+          <span class="theme-badge text-xs px-2 py-1 rounded-full">10 min</span>
+        </div>
+        <p class="theme-accent text-lg">Share content with cryptographic links that work everywhere</p>
+        <p class="text-mountain-300 mt-2">
+          The yak:// protocol lets you create permanent, content-addressed links to your files and folders.
+          These links are cryptographically verifiable and work across the entire YAKMESH network.
+        </p>
+      </div>
+
+      <!-- What is YAK Protocol -->
+      <div class="theme-callout mb-8">
+        <h3 class="font-bold text-lg mb-3">🐃 What is yak://?</h3>
+        <p class="text-mountain-300 mb-4">
+          The <code class="bg-mountain-800 px-2 py-1 rounded theme-accent">yak://</code> protocol is YAKMESH's 
+          content-addressing system. Unlike regular URLs that point to a server location, yak:// links 
+          point to the <strong>content itself</strong>.
+        </p>
+        <ul class="text-mountain-300 space-y-2">
+          <li>• <strong>Content-addressed:</strong> The link is derived from the content's cryptographic hash</li>
+          <li>• <strong>Self-verifying:</strong> If the content changes, the link changes</li>
+          <li>• <strong>Decentralized:</strong> Any YAKMESH node can serve the content</li>
+          <li>• <strong>Post-quantum secure:</strong> Uses quantum-resistant cryptographic primitives</li>
+        </ul>
+      </div>
+
+      <!-- Anatomy of a YAK link -->
+      <div class="tutorial-card">
+        <h3 class="font-bold text-xl mb-4">Anatomy of a YAK:// Link</h3>
+        <p class="text-mountain-300 mb-4">
+          YAKMESH uses human-readable <strong>iO names</strong> instead of ugly hashes:
+        </p>
+        <pre class="language-text"><code>yak://qubit-lattice-prism/path/to/file.txt</code></pre>
+        <div class="bg-mountain-800 rounded-lg p-4 mt-4">
+          <ul class="text-mountain-300 space-y-2 text-sm">
+            <li><code class="text-emerald-400">yak://</code> — Protocol identifier</li>
+            <li><code class="text-emerald-400">qubit-lattice-prism</code> — iO name (human-readable content address)</li>
+            <li><code class="text-emerald-400">/path/to/file.txt</code> — Optional path within the content</li>
+          </ul>
+        </div>
+        <div class="info-callout mt-4">
+          <p class="text-sm text-mountain-300">
+            <strong>💡 Why iO names?</strong> Instead of cryptographic hashes like "QmX7k2n9...", YAKMESH derives 
+            a 3-word name from a 256-word quantum-themed wordlist. The name is deterministic — 
+            the same content always produces the same iO name. Easy to share verbally!
+          </p>
+        </div>
+      </div>
+
+      <!-- Step 1: Ensure YAKMESH is Running -->
+      <div class="tutorial-card">
+        <h3 class="font-bold text-xl mb-4">
+          <span class="step-number">1</span>
+          Ensure YAKMESH is Running
+        </h3>
+        <p class="text-mountain-300 mb-4">
+          Before using the yak:// protocol, make sure your YAKMESH node is running:
+        </p>
+        <pre class="language-bash"><code># Check if YAKMESH is running
+yakmesh status
+
+# Start if needed
+yakmesh start</code></pre>
+        <p class="text-mountain-300 mt-4">
+          You should see a status indicating the node is active and connected to the mesh.
+        </p>
+      </div>
+
+      <!-- Step 2: Register the Protocol -->
+      <div class="tutorial-card">
+        <h3 class="font-bold text-xl mb-4">
+          <span class="step-number">2</span>
+          Register the Protocol Handler
+        </h3>
+        <p class="text-mountain-300 mb-4">
+          To open yak:// links directly from your browser, register YAKMESH as the protocol handler:
+        </p>
+        <pre class="language-bash"><code># Register yak:// protocol with your system
+yakmesh yak register-handler
+
+# Output: 
+# ✓ Protocol handler registered
+# You can now open yak:// links in your browser</code></pre>
+        
+        <div class="info-callout mt-4">
+          <p class="text-sm text-mountain-300">
+            <strong>Note:</strong> On Windows, this adds a registry entry. On macOS/Linux, it registers 
+            with xdg-open or Launch Services. You may need admin/sudo privileges.
+          </p>
+        </div>
+      </div>
+
+      <!-- Step 3: Share Content -->
+      <div class="tutorial-card">
+        <h3 class="font-bold text-xl mb-4">
+          <span class="step-number">3</span>
+          Share Content
+        </h3>
+        <p class="text-mountain-300 mb-4">
+          You can share files, folders, or entire directories using the yak:// protocol:
+        </p>
+        
+        <h4 class="font-bold text-lg mt-6 mb-3">Share a Single File</h4>
+        <pre class="language-bash"><code># Register a single file
+yakmesh yak add myfile.txt
+
+# Output:
+# ✓ File added to YAK network
+# Link: yak://photon-cipher-node/myfile.txt
+# iO code: photon-cipher-node</code></pre>
+        
+        <h4 class="font-bold text-lg mt-6 mb-3">Share a Directory</h4>
+        <pre class="language-bash"><code># Register an entire directory (recursive)
+yakmesh yak add ./my-website/
+
+# Output:
+# ✓ Directory added (42 files, 2.3 MB)
+# Link: yak://qubit-lattice-prism/
+# 
+# Individual files accessible:
+#   yak://qubit-lattice-prism/index.html
+#   yak://qubit-lattice-prism/css/style.css
+#   yak://qubit-lattice-prism/images/logo.png</code></pre>
+
+        <h4 class="font-bold text-lg mt-6 mb-3">Programmatic (JavaScript)</h4>
+        <pre class="language-javascript"><code>import { createNode } from 'yakmesh';
+
+async function shareContent() {
+  const node = await createNode();
+  await node.start();
+  
+  // Share a file
+  const result = await node.yak.add('./document.pdf');
+  console.log('File link:', result.yakUrl);
+  // yak://fermion-hash-crystal/document.pdf
+  console.log('iO code:', result.ioName);
+  // fermion-hash-crystal
+  
+  // Share a directory
+  const dirResult = await node.yak.add('./my-website/', { 
+    recursive: true 
+  });
+  console.log('Directory link:', dirResult.yakUrl);
+  // yak://qubit-lattice-prism/
+  
+  // Share with metadata
+  const richResult = await node.yak.add('./photo.jpg', {
+    name: 'Vacation Photo',
+    description: 'Beach sunset',
+    tags: ['photo', 'vacation', '2025']
+  });
+  console.log('Share this iO code:', richResult.ioName);
+  // Just tell your friend: "hadron-merkle-wave"
+}
+
+shareContent();</code></pre>
+      </div>
+
+      <!-- Step 4: Retrieve Content -->
+      <div class="tutorial-card">
+        <h3 class="font-bold text-xl mb-4">
+          <span class="step-number">4</span>
+          Retrieve Content
+        </h3>
+        <p class="text-mountain-300 mb-4">
+          Retrieving content from a yak:// link is just as easy:
+        </p>
+        
+        <h4 class="font-bold text-lg mt-6 mb-3">Via CLI</h4>
+        <pre class="language-bash"><code># Download using iO name (human-readable)
+yakmesh yak get yak://hadron-merkle-wave/myfile.txt
+
+# Output:
+# ✓ Resolving iO name: hadron-merkle-wave
+# ✓ Downloading from 3 peers...
+# ✓ Saved to: ./myfile.txt (1.2 KB)
+
+# Download to specific location
+yakmesh yak get yak://hadron-merkle-wave/myfile.txt -o ~/Downloads/
+
+# Download a directory
+yakmesh yak get yak://qubit-lattice-prism/ -o ./website-copy/</code></pre>
+
+        <h4 class="font-bold text-lg mt-6 mb-3">Via Browser</h4>
+        <p class="text-mountain-300 mb-4">
+          If you registered the protocol handler, just paste the yak:// link in your browser:
+        </p>
+        <div class="bg-mountain-800 rounded-lg p-4 text-center">
+          <code class="theme-accent font-mono">yak://hadron-merkle-wave/myfile.txt</code>
+        </div>
+        <p class="text-mountain-400 text-sm mt-4">
+          Your YAKMESH node will intercept the request and serve the content locally.
+        </p>
+
+        <h4 class="font-bold text-lg mt-6 mb-3">Programmatic (JavaScript)</h4>
+        <pre class="language-javascript"><code>import { createNode } from 'yakmesh';
+
+async function retrieveContent() {
+  const node = await createNode();
+  await node.start();
+  
+  // Get file content using iO name
+  const content = await node.yak.get('yak://hadron-merkle-wave/myfile.txt');
+  console.log('Content:', content.toString());
+  
+  // Stream large files
+  const stream = await node.yak.getStream('yak://photon-cipher-node/video.mp4');
+  stream.pipe(fs.createWriteStream('./video.mp4'));
+  
+  // Get metadata without downloading
+  const meta = await node.yak.stat('yak://qubit-lattice-prism/');
+  console.log('Size:', meta.size);
+  console.log('Files:', meta.files);
+  console.log('Peers:', meta.providers.length);
+  console.log('iO name:', meta.ioName);
+}
+
+retrieveContent();</code></pre>
+      </div>
+
+      <!-- Step 5: Useful CLI Commands -->
+      <div class="tutorial-card">
+        <h3 class="font-bold text-xl mb-4">
+          <span class="step-number">5</span>
+          Useful CLI Commands
+        </h3>
+        <p class="text-mountain-300 mb-4">
+          Here's a quick reference of yak:// CLI commands:
+        </p>
+        
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-mountain-700">
+                <th class="text-left py-2 px-3">Command</th>
+                <th class="text-left py-2 px-3">Description</th>
+              </tr>
+            </thead>
+            <tbody class="text-mountain-300">
+              <tr class="border-b border-mountain-800">
+                <td class="py-2 px-3 font-mono text-emerald-400">yakmesh yak add &lt;path&gt;</td>
+                <td class="py-2 px-3">Add file/directory and get yak:// link</td>
+              </tr>
+              <tr class="border-b border-mountain-800">
+                <td class="py-2 px-3 font-mono text-emerald-400">yakmesh yak get &lt;link&gt;</td>
+                <td class="py-2 px-3">Download content from yak:// link</td>
+              </tr>
+              <tr class="border-b border-mountain-800">
+                <td class="py-2 px-3 font-mono text-emerald-400">yakmesh yak stat &lt;link&gt;</td>
+                <td class="py-2 px-3">Show metadata (size, peers, etc.)</td>
+              </tr>
+              <tr class="border-b border-mountain-800">
+                <td class="py-2 px-3 font-mono text-emerald-400">yakmesh yak ls &lt;link&gt;</td>
+                <td class="py-2 px-3">List contents of a directory link</td>
+              </tr>
+              <tr class="border-b border-mountain-800">
+                <td class="py-2 px-3 font-mono text-emerald-400">yakmesh yak pin &lt;link&gt;</td>
+                <td class="py-2 px-3">Pin content locally (prevent garbage collection)</td>
+              </tr>
+              <tr class="border-b border-mountain-800">
+                <td class="py-2 px-3 font-mono text-emerald-400">yakmesh yak unpin &lt;link&gt;</td>
+                <td class="py-2 px-3">Unpin content (allow garbage collection)</td>
+              </tr>
+              <tr class="border-b border-mountain-800">
+                <td class="py-2 px-3 font-mono text-emerald-400">yakmesh yak pins</td>
+                <td class="py-2 px-3">List all pinned content</td>
+              </tr>
+              <tr>
+                <td class="py-2 px-3 font-mono text-emerald-400">yakmesh yak register-handler</td>
+                <td class="py-2 px-3">Register yak:// protocol with OS</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- How It Works -->
+      <div class="tutorial-card">
+        <h3 class="font-bold text-xl mb-4">🔬 How It Works</h3>
+        <p class="text-mountain-300 mb-4">
+          When you share content with yak://:
+        </p>
+        <ol class="text-mountain-300 space-y-3 ml-4">
+          <li>
+            <strong>1. Content is hashed:</strong> Your file/directory is processed through NAKPAK 
+            (YAKMESH's content-addressing system) to generate a unique cryptographic fingerprint.
+          </li>
+          <li>
+            <strong>2. iO name derived:</strong> The hash is converted to a human-readable 3-word name 
+            using a 256-word quantum-themed wordlist. Same content = same name, always.
+          </li>
+          <li>
+            <strong>3. Announced to the network:</strong> Your node announces that it has this content, 
+            making it discoverable by other nodes.
+          </li>
+          <li>
+            <strong>4. Verified on retrieval:</strong> When someone fetches the content, their node 
+            verifies the cryptographic fingerprint matches — guaranteeing integrity.
+          </li>
+        </ol>
+      </div>
+
+      <!-- Summary -->
+      <div class="theme-callout">
+        <h3 class="font-bold text-lg mb-3">✅ Summary</h3>
+        <p class="text-mountain-300 mb-4">
+          You've learned how to use the yak:// protocol to share and retrieve content:
+        </p>
+        <ul class="text-mountain-300 space-y-2">
+          <li>✓ Understand how content-addressed links work</li>
+          <li>✓ Register the yak:// protocol handler</li>
+          <li>✓ Share files and directories with permanent links</li>
+          <li>✓ Retrieve content via CLI, browser, or JavaScript</li>
+          <li>✓ Use CLI commands for managing yak:// content</li>
+        </ul>
+        <p class="text-mountain-400 text-sm mt-4">
+          <strong>Next:</strong> Learn how to join the mesh network and connect with peers →
+        </p>
+      </div>
+
+      <!-- Troubleshooting -->
+      <div class="warning-callout mt-8">
+        <h3 class="font-bold text-lg mb-3" style="color: #fbbf24;">🔧 Troubleshooting</h3>
+        <ul class="text-mountain-300 space-y-3">
+          <li>
+            <strong>Link not found / No peers?</strong><br>
+            <span class="text-mountain-400">The original node sharing the content must be online. Check with <code class="bg-mountain-800 px-2 py-1 rounded">yakmesh yak stat &lt;link&gt;</code></span>
+          </li>
+          <li>
+            <strong>Protocol handler not working?</strong><br>
+            <span class="text-mountain-400">Try running <code class="bg-mountain-800 px-2 py-1 rounded">yakmesh yak register-handler</code> with admin privileges.</span>
+          </li>
+          <li>
+            <strong>Download stuck?</strong><br>
+            <span class="text-mountain-400">Check your mesh connection: <code class="bg-mountain-800 px-2 py-1 rounded">yakmesh mesh peers</code></span>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Navigation Footer -->
+      <div class="border-t border-mountain-700 mt-12 pt-8">
+        <div class="flex flex-col sm:flex-row gap-4">
+          <a href="host-website.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-emerald-500 transition group">
+            <div class="text-xs text-mountain-400 mb-1">← Previous</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">🌐</span>
+              <span class="font-semibold group-hover:text-emerald-400">Host a Website</span>
+            </div>
+          </a>
+          <a href="mesh-network.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-emerald-500 transition group">
+            <div class="text-xs text-mountain-400 mb-1">Next →</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">🕸️</span>
+              <span class="font-semibold group-hover:text-emerald-400">Join the Mesh Network</span>
+            </div>
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <script src="../prism.min.js"></script>
+  <script src="../prism-javascript.min.js"></script>
+  <script src="../prism-bash.min.js"></script>
+  <script src="../docs.js"></script>
+</body>
+</html>

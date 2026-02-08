@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="tutorials">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="../favicon.ico" sizes="32x32">
+    <link rel="icon" href="../icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+    <title>Troubleshooting FAQ - YAKMESH Tutorials</title>
+    <meta name="description" content="Solutions to common YAKMESH problems - node startup issues, connection problems, dashboard troubleshooting, and more.">
+    
+    <link rel="stylesheet" href="../tailwind.min.css">
+    <link rel="stylesheet" href="../prism-tomorrow.min.css">
+    <link rel="stylesheet" href="../docs.css">
+    <style>
+        .theme-accent { color: #10b981; }
+        .theme-accent-hover:hover { color: #34d399; }
+        .theme-badge { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+        .theme-border { border-color: #10b981; }
+        .tutorial-card { background: rgba(30, 41, 59, 0.5); border: 1px solid #334155; border-radius: 0.75rem; padding: 1.5rem; margin-bottom: 1.5rem; }
+        .tutorial-card:hover { border-color: #10b981; }
+        .problem { color: #f87171; font-weight: 600; }
+        .solution { color: #34d399; }
+        .faq-item { border-left: 3px solid #334155; padding-left: 1rem; margin-bottom: 1.5rem; }
+        .faq-item:hover { border-left-color: #10b981; }
+        .warning-box { background: rgba(251, 191, 36, 0.1); border: 1px solid #fbbf24; border-radius: 0.5rem; padding: 1rem; margin: 1rem 0; }
+        .tip-box { background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; border-radius: 0.5rem; padding: 1rem; margin: 1rem 0; }
+        .info-box { background: rgba(59, 130, 246, 0.1); border: 1px solid #3b82f6; border-radius: 0.5rem; padding: 1rem; margin: 1rem 0; }
+        .section-icon { font-size: 2rem; margin-right: 0.75rem; }
+    </style>
+</head>
+<body class="bg-mountain-900 text-white min-h-screen">
+    
+  <nav class="docs-sidebar" id="sidebar">
+    <a href="../index.html" class="sidebar-logo">
+      <span class="logo-icon">🏔️</span>
+      <span class="logo-text">Yakmesh</span>
+    </a>
+    <a href="/dashboard" class="sidebar-dashboard-link"><span>📊</span> <span>Dashboard</span></a>
+    <ul class="sidebar-nav">
+      <li><a href="../index.html"><span>🏠</span> <span>Overview</span></a></li>
+      <li><a href="../getting-started.html"><span>🚀</span> <span>Getting Started</span></a></li>
+      <li><a href="../tutorials.html" class="active"><span>📖</span> <span>Tutorials</span></a></li>
+      <li><a href="../doko.html"><span>🧺</span> <span>DOKO</span></a></li>
+      <li><a href="../namche.html"><span>🚪</span> <span>NAMCHE</span></a></li>
+      <li><a href="../sherpa.html"><span>🧗</span> <span>SHERPA</span></a></li>
+      <li><a href="../nakpak.html"><span>🎒</span> <span>NAKPAK</span></a></li>
+      <li><a href="../annex.html"><span>🌉</span> <span>ANNEX</span></a></li>
+      <li><a href="../yak-protocol.html"><span class="yak-icon"></span> <span>YAK</span></a></li>
+      <li><a href="../mantra.html"><span>🕉️</span> <span>MANTRA</span></a></li>
+      <li><a href="../stupa.html"><span>🛕</span> <span>STUPA</span></a></li>
+      <li><a href="../lama.html"><span>🔮</span> <span>LAMA</span></a></li>
+      <li><a href="../mani.html"><span>⏱️</span> <span>MANI</span></a></li>
+      <li><a href="../karma.html"><span>☯️</span> <span>KARMA</span></a></li>
+      <li><a href="../mandala.html"><span>🌐</span> <span>MANDALA</span></a></li>
+      <li><a href="../tattva.html"><span>🔯</span> <span>TATTVA</span></a></li>
+      <li><a href="../tribhuj.html"><span>🔺</span> <span>TRIBHUJ</span></a></li>
+      <li><a href="../ypc27.html"><span>🔐</span> <span>YPC-27</span></a></li>
+      <li><a href="../sakshi.html"><span>👁️</span> <span>SAKSHI</span></a></li>
+      <li><a href="../geo-proof.html"><span>🌍</span> <span>PRAMAAN</span></a></li>
+      <li><a href="../trust-security.html"><span>🔒</span> <span>SURAKSHA</span></a></li>
+      <li><a href="../docs-bundle.html"><span>📚</span> <span>GRANTH</span></a></li>
+      <li><a href="../api.html"><span>📡</span> <span>API</span></a></li>
+      <li><a href="../quick-reference.html"><span>📋</span> <span>Quick Ref</span></a></li>
+    </ul>
+  </nav>
+
+  <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+    </svg>
+  </button>
+
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="docs-main" id="mainContent">
+    <div class="docs-content">
+      
+      <!-- Breadcrumb -->
+      <nav class="mb-6">
+        <a href="../tutorials.html" class="text-mountain-400 hover:text-white transition">← Back to Tutorials</a>
+      </nav>
+
+      <!-- Page Header -->
+      <div class="mb-8">
+        <div class="flex items-center gap-3 mb-2">
+          <span class="text-4xl">🩺</span>
+          <h1 class="text-4xl font-bold">Troubleshooting FAQ</h1>
+          <span class="theme-badge text-xs px-2 py-1 rounded-full">Reference</span>
+        </div>
+        <p class="theme-accent text-lg">Solutions to common YAKMESH problems</p>
+        <p class="text-mountain-300 mt-2">
+          Having issues? Find quick solutions to the most common problems here.
+        </p>
+      </div>
+
+      <!-- Quick Jump -->
+      <div class="tutorial-card">
+        <h2 class="text-xl font-bold mb-4">🔗 Quick Navigation</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+          <a href="#node-startup" class="bg-mountain-800 rounded-lg p-3 hover:bg-mountain-700 transition">
+            <span class="text-red-400">⚠️</span> Node Won't Start
+          </a>
+          <a href="#peer-connection" class="bg-mountain-800 rounded-lg p-3 hover:bg-mountain-700 transition">
+            <span class="text-red-400">🔌</span> Can't Connect to Peers
+          </a>
+          <a href="#dashboard" class="bg-mountain-800 rounded-lg p-3 hover:bg-mountain-700 transition">
+            <span class="text-red-400">📊</span> Dashboard Not Loading
+          </a>
+          <a href="#yak-links" class="bg-mountain-800 rounded-lg p-3 hover:bg-mountain-700 transition">
+            <span class="text-red-400">🔗</span> yak:// Links Not Working
+          </a>
+          <a href="#performance" class="bg-mountain-800 rounded-lg p-3 hover:bg-mountain-700 transition">
+            <span class="text-red-400">🐌</span> Slow Performance
+          </a>
+          <a href="#time-sync" class="bg-mountain-800 rounded-lg p-3 hover:bg-mountain-700 transition">
+            <span class="text-red-400">⏱️</span> Time Sync Issues
+          </a>
+          <a href="#getting-help" class="bg-mountain-800 rounded-lg p-3 hover:bg-mountain-700 transition">
+            <span class="text-emerald-400">💬</span> Getting Help
+          </a>
+        </div>
+      </div>
+
+      <!-- Section 1: Node Won't Start -->
+      <div class="tutorial-card" id="node-startup">
+        <div class="flex items-center mb-4">
+          <span class="section-icon">⚠️</span>
+          <h2 class="text-2xl font-bold">Node Won't Start</h2>
+        </div>
+
+        <div class="faq-item">
+          <p class="problem mb-2">Error: EADDRINUSE - Port already in use</p>
+          <p class="solution mb-3">→ Another process is using the port (usually 3000 or 8080)</p>
+          <p class="text-mountain-300 mb-3">This happens when you try to start a second instance or a previous instance didn't shut down properly.</p>
+          
+          <h4 class="font-semibold mb-2">Find and kill the process:</h4>
+          <pre class="language-bash mb-3"><code># Windows - Find process on port 3000
+netstat -ano | findstr :3000
+# Kill the process (replace 12345 with actual PID)
+taskkill /PID 12345 /F
+
+# macOS/Linux - Find and kill in one command
+lsof -ti:3000 | xargs kill -9
+
+# Or just use a different port:
+yakmesh start --port 3001</code></pre>
+        </div>
+
+        <div class="faq-item">
+          <p class="problem mb-2">Error: Cannot find module '...'</p>
+          <p class="solution mb-3">→ Dependencies are missing or corrupted</p>
+          <p class="text-mountain-300 mb-3">This usually happens after an incomplete update or a corrupted node_modules folder.</p>
+          
+          <h4 class="font-semibold mb-2">Reinstall dependencies:</h4>
+          <pre class="language-bash mb-3"><code># Remove existing node_modules and reinstall
+rm -rf node_modules
+npm install
+
+# If that doesn't work, clear npm cache too
+npm cache clean --force
+rm -rf node_modules package-lock.json
+npm install</code></pre>
+        </div>
+
+        <div class="faq-item">
+          <p class="problem mb-2">Error: Permission denied (EACCES)</p>
+          <p class="solution mb-3">→ File permission issues or need elevated privileges</p>
+          
+          <h4 class="font-semibold mb-2">Windows:</h4>
+          <pre class="language-bash mb-3"><code># Run terminal as Administrator
+# Right-click Terminal → Run as Administrator
+yakmesh start</code></pre>
+
+          <h4 class="font-semibold mb-2">macOS/Linux:</h4>
+          <pre class="language-bash mb-3"><code># Fix ownership of the directory
+sudo chown -R $USER:$USER ~/.yakmesh
+
+# If binding to port below 1024 (not recommended)
+sudo yakmesh start --port 443</code></pre>
+          
+          <div class="warning-box">
+            <p class="text-sm"><strong>⚠️ Avoid running as root</strong> unless absolutely necessary. Instead, use ports above 1024 or fix file permissions.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 2: Can't Connect to Peers -->
+      <div class="tutorial-card" id="peer-connection">
+        <div class="flex items-center mb-4">
+          <span class="section-icon">🔌</span>
+          <h2 class="text-2xl font-bold">Can't Connect to Peers</h2>
+        </div>
+
+        <div class="faq-item">
+          <p class="problem mb-2">0 peers connected / "No peers available"</p>
+          <p class="solution mb-3">→ Check your network and firewall settings</p>
+          
+          <h4 class="font-semibold mb-2">1. Check firewall settings:</h4>
+          <pre class="language-bash mb-3"><code># Windows - Allow through firewall
+netsh advfirewall firewall add rule name="YAKMESH" dir=in action=allow protocol=TCP localport=8080
+netsh advfirewall firewall add rule name="YAKMESH UDP" dir=in action=allow protocol=UDP localport=8080
+
+# Linux (ufw)
+sudo ufw allow 8080/tcp
+sudo ufw allow 8080/udp
+
+# macOS - Allow in System Preferences → Security → Firewall → Options</code></pre>
+        </div>
+
+        <div class="faq-item">
+          <p class="problem mb-2">Can connect locally but not to internet peers</p>
+          <p class="solution mb-3">→ NAT/Router issues - ports may not be forwarded</p>
+          <p class="text-mountain-300 mb-3">If you're behind a router, you may need to set up port forwarding or use UPnP.</p>
+          
+          <h4 class="font-semibold mb-2">Options:</h4>
+          <ul class="list-disc list-inside text-mountain-300 space-y-2">
+            <li><strong>Enable UPnP</strong> in your router settings (automatic port forwarding)</li>
+            <li><strong>Manual port forward</strong>: Forward TCP/UDP 8080 to your computer's local IP</li>
+            <li><strong>Use NAT traversal</strong>: <code class="bg-mountain-800 px-2 py-1 rounded">yakmesh start --enable-nat-traversal</code></li>
+          </ul>
+          
+          <div class="tip-box mt-3">
+            <p class="text-sm"><strong>💡 Quick test:</strong> Visit <a href="https://canyouseeme.org" target="_blank" class="theme-accent theme-accent-hover">canyouseeme.org</a> and check if port 8080 is open.</p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <p class="problem mb-2">Bootstrap servers unreachable</p>
+          <p class="solution mb-3">→ Network issue or bootstrap servers temporarily down</p>
+          
+          <h4 class="font-semibold mb-2">Test connectivity:</h4>
+          <pre class="language-bash mb-3"><code># Test if you can reach bootstrap servers
+ping bootstrap.yakmesh.network
+
+# If that fails, check your internet
+ping 8.8.8.8
+
+# Try alternative bootstrap servers
+yakmesh start --bootstrap "bootstrap2.yakmesh.network:8080"</code></pre>
+          
+          <p class="text-mountain-300">If bootstrap servers are down, you can still connect by manually adding known peer addresses.</p>
+        </div>
+      </div>
+
+      <!-- Section 3: Dashboard Not Loading -->
+      <div class="tutorial-card" id="dashboard">
+        <div class="flex items-center mb-4">
+          <span class="section-icon">📊</span>
+          <h2 class="text-2xl font-bold">Dashboard Not Loading</h2>
+        </div>
+
+        <div class="faq-item">
+          <p class="problem mb-2">Browser shows "Connection refused" or blank page</p>
+          <p class="solution mb-3">→ Server might not be running or wrong address</p>
+          
+          <h4 class="font-semibold mb-2">Check if server is running:</h4>
+          <pre class="language-bash mb-3"><code># Check if yakmesh process is running
+# Windows
+tasklist | findstr yakmesh
+
+# macOS/Linux
+ps aux | grep yakmesh
+
+# Check what's listening on port 3000
+# Windows
+netstat -an | findstr 3000
+
+# macOS/Linux
+lsof -i :3000</code></pre>
+        </div>
+
+        <div class="faq-item">
+          <p class="problem mb-2">Works with 127.0.0.1 but not localhost (or vice versa)</p>
+          <p class="solution mb-3">→ DNS or hosts file issue</p>
+          <p class="text-mountain-300 mb-3">Some systems have localhost mapped differently. Try both:</p>
+          <ul class="list-disc list-inside text-mountain-300 space-y-1">
+            <li><code class="bg-mountain-800 px-2 py-1 rounded">http://localhost:3000/dashboard</code></li>
+            <li><code class="bg-mountain-800 px-2 py-1 rounded">http://127.0.0.1:3000/dashboard</code></li>
+          </ul>
+        </div>
+
+        <div class="faq-item">
+          <p class="problem mb-2">Dashboard looks broken / old version</p>
+          <p class="solution mb-3">→ Browser cache issue</p>
+          
+          <h4 class="font-semibold mb-2">Clear cache:</h4>
+          <ul class="list-disc list-inside text-mountain-300 space-y-2">
+            <li><strong>Hard refresh:</strong> <kbd class="bg-mountain-700 px-2 py-1 rounded">Ctrl+Shift+R</kbd> (Windows/Linux) or <kbd class="bg-mountain-700 px-2 py-1 rounded">Cmd+Shift+R</kbd> (macOS)</li>
+            <li><strong>Clear site data:</strong> Open DevTools (F12) → Application → Clear Storage</li>
+            <li><strong>Incognito mode:</strong> Try accessing in a private/incognito window</li>
+          </ul>
+        </div>
+
+        <div class="faq-item">
+          <p class="problem mb-2">Can't access from another device on same network</p>
+          <p class="solution mb-3">→ Firewall blocking or wrong binding address</p>
+          
+          <pre class="language-bash mb-3"><code># Start with binding to all interfaces
+yakmesh start --host 0.0.0.0 --port 3000
+
+# Then access from other device using your computer's IP:
+# http://192.168.1.100:3000/dashboard</code></pre>
+        </div>
+      </div>
+
+      <!-- Section 4: yak:// Links Not Working -->
+      <div class="tutorial-card" id="yak-links">
+        <div class="flex items-center mb-4">
+          <span class="section-icon">🔗</span>
+          <h2 class="text-2xl font-bold">yak:// Links Not Working</h2>
+        </div>
+
+        <div class="faq-item">
+          <p class="problem mb-2">Browser doesn't recognize yak:// protocol</p>
+          <p class="solution mb-3">→ Protocol handler not registered</p>
+          
+          <h4 class="font-semibold mb-2">Register the protocol:</h4>
+          <pre class="language-bash mb-3"><code># Run the registration command
+yakmesh register-protocol
+
+# Windows: This adds a registry entry
+# macOS: This updates Info.plist handlers
+# Linux: This creates a .desktop file in ~/.local/share/applications</code></pre>
+          
+          <p class="text-mountain-300">You may need to restart your browser after registration.</p>
+        </div>
+
+        <div class="faq-item">
+          <p class="problem mb-2">yak:// links open but content doesn't load</p>
+          <p class="solution mb-3">→ Node not running or content not available</p>
+          
+          <h4 class="font-semibold mb-2">Checklist:</h4>
+          <ul class="list-disc list-inside text-mountain-300 space-y-2">
+            <li><strong>Is your node running?</strong> Check the dashboard at <code class="bg-mountain-800 px-1 rounded">localhost:3000</code></li>
+            <li><strong>Are you connected to peers?</strong> You need peers to find content</li>
+            <li><strong>Is the content still available?</strong> Content may have expired or been removed</li>
+            <li><strong>Check content hash:</strong> Verify the hash in the URL is correct</li>
+          </ul>
+        </div>
+
+        <div class="faq-item">
+          <p class="problem mb-2">"Content not found on mesh"</p>
+          <p class="solution mb-3">→ No peers have the content cached</p>
+          <p class="text-mountain-300 mb-3">Content on the mesh is distributed - if no one has it cached, it won't be available.</p>
+          
+          <div class="info-box">
+            <p class="text-sm"><strong>ℹ️ How YAKMESH content works:</strong> Content is stored across the network. 
+            If the original uploader and all seeders go offline, content becomes unavailable until someone 
+            with a copy comes back online.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 5: Slow Performance -->
+      <div class="tutorial-card" id="performance">
+        <div class="flex items-center mb-4">
+          <span class="section-icon">🐌</span>
+          <h2 class="text-2xl font-bold">Slow Performance</h2>
+        </div>
+
+        <div class="faq-item">
+          <p class="problem mb-2">Downloads are very slow</p>
+          <p class="solution mb-3">→ Check peer count - need enough good peers</p>
+          
+          <h4 class="font-semibold mb-2">Check peer status:</h4>
+          <pre class="language-bash mb-3"><code># View connected peers
+yakmesh peers list
+
+# Check peer quality scores
+yakmesh peers stats
+
+# Optimal range: 10-50 peers
+# Too few = slow downloads
+# Too many = connection overhead</code></pre>
+        </div>
+
+        <div class="faq-item">
+          <p class="problem mb-2">High CPU usage</p>
+          <p class="solution mb-3">→ Too many operations or verification backlog</p>
+          
+          <h4 class="font-semibold mb-2">Reduce load:</h4>
+          <pre class="language-bash mb-3"><code># Limit concurrent operations
+yakmesh config set max-concurrent-downloads 3
+yakmesh config set max-concurrent-uploads 3
+
+# Reduce verification intensity
+yakmesh config set verification-threads 2
+
+# Check what's consuming resources
+yakmesh status --verbose</code></pre>
+        </div>
+
+        <div class="faq-item">
+          <p class="problem mb-2">Running out of disk space</p>
+          <p class="solution mb-3">→ Cache and stored content building up</p>
+          
+          <h4 class="font-semibold mb-2">Clean up storage:</h4>
+          <pre class="language-bash mb-3"><code># Check storage usage
+yakmesh storage stats
+
+# Clear cache (won't delete your files)
+yakmesh cache clear
+
+# Set cache size limit
+yakmesh config set cache-size-limit 5GB
+
+# Clean old content
+yakmesh storage prune --older-than 30d</code></pre>
+        </div>
+
+        <div class="faq-item">
+          <p class="problem mb-2">Network congestion / bandwidth issues</p>
+          <p class="solution mb-3">→ Set upload/download limits</p>
+          
+          <pre class="language-bash mb-3"><code># Limit bandwidth usage
+yakmesh config set max-upload-rate 10MB
+yakmesh config set max-download-rate 50MB
+
+# Schedule heavy operations for off-peak hours
+yakmesh config set quiet-hours "02:00-06:00"</code></pre>
+        </div>
+      </div>
+
+      <!-- Section 6: Time Sync Issues -->
+      <div class="tutorial-card" id="time-sync">
+        <div class="flex items-center mb-4">
+          <span class="section-icon">⏱️</span>
+          <h2 class="text-2xl font-bold">Time Sync Issues</h2>
+        </div>
+
+        <div class="faq-item">
+          <p class="problem mb-2">Warning: Clock drift detected / MANI time sync failed</p>
+          <p class="solution mb-3">→ System clock is out of sync with network time</p>
+          <p class="text-mountain-300 mb-3">YAKMESH uses the MANI time synchronization system which is critical for content verification and consensus.</p>
+          
+          <h4 class="font-semibold mb-2">Sync your system clock:</h4>
+          <pre class="language-bash mb-3"><code># Windows - Sync with internet time
+w32tm /resync /force
+
+# macOS - Enable automatic time
+sudo sntp -sS time.apple.com
+
+# Linux - Use systemd-timesyncd or chrony
+sudo timedatectl set-ntp true
+sudo systemctl restart systemd-timesyncd</code></pre>
+        </div>
+
+        <div class="faq-item">
+          <p class="problem mb-2">MANI can't reach time sources</p>
+          <p class="solution mb-3">→ Firewall blocking NTP or mesh time servers</p>
+          
+          <h4 class="font-semibold mb-2">Allow NTP traffic:</h4>
+          <pre class="language-bash mb-3"><code># Windows
+netsh advfirewall firewall add rule name="NTP" dir=out action=allow protocol=UDP remoteport=123
+
+# Linux
+sudo ufw allow out 123/udp
+
+# Test NTP connectivity
+ntpdate -q pool.ntp.org</code></pre>
+          
+          <div class="tip-box">
+            <p class="text-sm"><strong>💡 Tip:</strong> MANI uses multiple time sources including NTP servers and mesh peer consensus. 
+            If external NTP is blocked, it can still sync from trusted peers.</p>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <p class="problem mb-2">Conflicts with other NTP software</p>
+          <p class="solution mb-3">→ Multiple time sync services running</p>
+          <p class="text-mountain-300 mb-3">If you have other NTP clients (like chrony, ntpd), they may conflict with MANI.</p>
+          
+          <pre class="language-bash mb-3"><code># Check what's managing time
+timedatectl status
+
+# Disable conflicting service (example)
+sudo systemctl stop ntpd
+sudo systemctl disable ntpd
+
+# Let MANI handle time sync
+yakmesh config set mani-time-sync enabled</code></pre>
+        </div>
+      </div>
+
+      <!-- Section 7: Getting Help -->
+      <div class="tutorial-card" id="getting-help">
+        <div class="flex items-center mb-4">
+          <span class="section-icon">💬</span>
+          <h2 class="text-2xl font-bold">Getting Help</h2>
+        </div>
+
+        <div class="faq-item">
+          <p class="text-lg mb-3 theme-accent font-semibold">Enable Debug Mode</p>
+          <p class="text-mountain-300 mb-3">Debug mode provides detailed logging to help diagnose issues:</p>
+          
+          <pre class="language-bash mb-3"><code># Start with debug output
+yakmesh start --debug
+
+# Or enable debug for specific module
+yakmesh start --debug=network
+yakmesh start --debug=storage
+yakmesh start --debug=mani
+
+# Save debug output to file
+yakmesh start --debug > yakmesh-debug.log 2>&1</code></pre>
+        </div>
+
+        <div class="faq-item">
+          <p class="text-lg mb-3 theme-accent font-semibold">Log File Locations</p>
+          <div class="bg-mountain-800 rounded-lg p-4 font-mono text-sm space-y-2">
+            <div><span class="text-blue-400">Windows:</span> <span class="text-gray-300">%APPDATA%\yakmesh\logs\</span></div>
+            <div><span class="text-blue-400">macOS:</span> <span class="text-gray-300">~/Library/Logs/yakmesh/</span></div>
+            <div><span class="text-blue-400">Linux:</span> <span class="text-gray-300">~/.yakmesh/logs/</span></div>
+          </div>
+          
+          <pre class="language-bash mt-3"><code># Open logs folder
+yakmesh logs --open
+
+# View recent logs
+yakmesh logs --tail 100
+
+# Search logs for errors
+yakmesh logs --grep "ERROR"</code></pre>
+        </div>
+
+        <div class="faq-item">
+          <p class="text-lg mb-3 theme-accent font-semibold">Report Issues on GitHub</p>
+          <p class="text-mountain-300 mb-3">Found a bug or have a feature request? Open an issue on GitHub:</p>
+          
+          <a href="https://github.com/yakmesh/yakmesh-node/issues" target="_blank" 
+             class="inline-flex items-center gap-2 bg-mountain-800 hover:bg-mountain-700 px-4 py-2 rounded-lg transition">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+            Open GitHub Issues
+          </a>
+          
+          <div class="info-box mt-4">
+            <p class="text-sm"><strong>ℹ️ When reporting issues, include:</strong></p>
+            <ul class="list-disc list-inside text-sm text-mountain-300 mt-2 space-y-1">
+              <li>YAKMESH version (<code class="bg-mountain-800 px-1 rounded">yakmesh --version</code>)</li>
+              <li>Operating system and version</li>
+              <li>Steps to reproduce the problem</li>
+              <li>Relevant log output (sanitize any private data)</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="faq-item">
+          <p class="text-lg mb-3 theme-accent font-semibold">Community Resources</p>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <a href="#" class="flex items-center gap-3 bg-mountain-800 hover:bg-mountain-700 p-3 rounded-lg transition">
+              <span class="text-2xl">💬</span>
+              <div>
+                <div class="font-semibold">Discord</div>
+                <div class="text-sm text-mountain-400">Real-time community chat</div>
+              </div>
+            </a>
+            <a href="#" class="flex items-center gap-3 bg-mountain-800 hover:bg-mountain-700 p-3 rounded-lg transition">
+              <span class="text-2xl">📣</span>
+              <div>
+                <div class="font-semibold">Telegram</div>
+                <div class="text-sm text-mountain-400">Updates and announcements</div>
+              </div>
+            </a>
+            <a href="#" class="flex items-center gap-3 bg-mountain-800 hover:bg-mountain-700 p-3 rounded-lg transition">
+              <span class="text-2xl">🐦</span>
+              <div>
+                <div class="font-semibold">Twitter/X</div>
+                <div class="text-sm text-mountain-400">@yakmesh</div>
+              </div>
+            </a>
+            <a href="#" class="flex items-center gap-3 bg-mountain-800 hover:bg-mountain-700 p-3 rounded-lg transition">
+              <span class="text-2xl">📚</span>
+              <div>
+                <div class="font-semibold">Forum</div>
+                <div class="text-sm text-mountain-400">In-depth discussions</div>
+              </div>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Still Stuck -->
+      <div class="bg-amber-900/30 border border-amber-600 rounded-xl p-6 mb-8">
+        <h2 class="text-xl font-bold mb-2 text-amber-400">🤔 Still Stuck?</h2>
+        <p class="text-mountain-300 mb-4">
+          If none of these solutions worked, try these steps in order:
+        </p>
+        <ol class="list-decimal list-inside text-mountain-300 space-y-2">
+          <li><strong>Restart your node</strong> - Sometimes a fresh start fixes things</li>
+          <li><strong>Update to latest version</strong> - <code class="bg-mountain-800 px-2 py-1 rounded">npm update -g yakmesh</code></li>
+          <li><strong>Check GitHub issues</strong> - Someone may have already solved your problem</li>
+          <li><strong>Ask in Discord</strong> - The community is usually quick to help</li>
+          <li><strong>Fresh install</strong> - As a last resort, backup keys and reinstall</li>
+        </ol>
+      </div>
+
+      <!-- Navigation Footer -->
+      <div class="border-t border-mountain-700 mt-12 pt-8">
+        <div class="flex flex-col sm:flex-row gap-4">
+          <a href="mobile-access.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-emerald-500 transition group">
+            <div class="text-xs text-mountain-400 mb-1">← Previous</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">📱</span>
+              <span class="font-semibold group-hover:text-emerald-400">Mobile Access</span>
+            </div>
+          </a>
+          <a href="../tutorials.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-emerald-500 transition group">
+            <div class="text-xs text-mountain-400 mb-1">Back to</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">📖</span>
+              <span class="font-semibold group-hover:text-emerald-400">All Tutorials</span>
+            </div>
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <footer class="docs-footer">
+    <p>© 2026 YAKMESH™</p>
+  </footer>
+
+  <script src="../prism.min.js"></script>
+  <script src="../prism-bash.min.js"></script>
+  <script src="../prism-javascript.min.js"></script>
+  <script src="../docs.js"></script>
+</body>
+</html>

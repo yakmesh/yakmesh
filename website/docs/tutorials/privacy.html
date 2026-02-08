@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="tutorials">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="../favicon.ico" sizes="32x32">
+    <link rel="icon" href="../icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+    <title>Privacy Guide - YAKMESH Tutorials</title>
+    <meta name="description" content="Understand what YAKMESH shares and what stays private. Control your visibility and protect your identity on the mesh network.">
+    
+    <link rel="stylesheet" href="../tailwind.min.css">
+    <link rel="stylesheet" href="../prism-tomorrow.min.css">
+    <link rel="stylesheet" href="../docs.css">
+    <style>
+        .theme-accent { color: #10b981; }
+        .theme-accent-hover:hover { color: #34d399; }
+        .theme-badge { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+        .theme-border { border-color: #10b981; }
+        .theme-callout { background: rgba(16, 185, 129, 0.1); border-color: #059669; }
+        .active-link { background: rgba(16, 185, 129, 0.2) !important; color: #34d399 !important; }
+        .tutorial-card { background: rgba(30, 41, 59, 0.5); border: 1px solid #334155; border-radius: 0.75rem; padding: 1.5rem; margin-bottom: 1.5rem; }
+        .step-number { display: inline-flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; background: #10b981; color: white; border-radius: 50%; font-weight: bold; margin-right: 0.75rem; flex-shrink: 0; }
+        .privacy-table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+        .privacy-table th, .privacy-table td { padding: 0.75rem; text-align: left; border-bottom: 1px solid #334155; }
+        .privacy-table th { color: #10b981; font-weight: 600; }
+        .shared { color: #fbbf24; }
+        .private { color: #10b981; }
+        .analogy-box { background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 0.5rem; padding: 1rem; margin: 1rem 0; }
+        .analogy-box::before { content: '💡 '; }
+        .config-box { background: rgba(30, 41, 59, 0.8); border: 1px solid #475569; border-radius: 0.5rem; padding: 1rem; margin: 1rem 0; }
+    </style>
+</head>
+<body class="bg-mountain-900 text-white min-h-screen">
+    
+  <nav class="docs-sidebar" id="sidebar">
+    <a href="../index.html" class="sidebar-logo">
+      <span class="logo-icon">🏔️</span>
+      <span class="logo-text">Yakmesh</span>
+    </a>
+    <a href="/dashboard" class="sidebar-dashboard-link"><span>📊</span> <span>Dashboard</span></a>
+    <ul class="sidebar-nav">
+      <li><a href="../index.html"><span>🏠</span> <span>Overview</span></a></li>
+      <li><a href="../getting-started.html"><span>🚀</span> <span>Getting Started</span></a></li>
+      <li><a href="../tutorials.html" class="active"><span>📖</span> <span>Tutorials</span></a></li>
+      <li><a href="../doko.html"><span>🧺</span> <span>DOKO</span></a></li>
+      <li><a href="../namche.html"><span>🚪</span> <span>NAMCHE</span></a></li>
+      <li><a href="../sherpa.html"><span>🧗</span> <span>SHERPA</span></a></li>
+      <li><a href="../nakpak.html"><span>🎒</span> <span>NAKPAK</span></a></li>
+      <li><a href="../annex.html"><span>🌉</span> <span>ANNEX</span></a></li>
+      <li><a href="../yak-protocol.html"><span class="yak-icon"></span> <span>YAK</span></a></li>
+      <li><a href="../mantra.html"><span>🕉️</span> <span>MANTRA</span></a></li>
+      <li><a href="../stupa.html"><span>🛕</span> <span>STUPA</span></a></li>
+      <li><a href="../lama.html"><span>🔮</span> <span>LAMA</span></a></li>
+      <li><a href="../mani.html"><span>⏱️</span> <span>MANI</span></a></li>
+      <li><a href="../karma.html"><span>☯️</span> <span>KARMA</span></a></li>
+      <li><a href="../mandala.html"><span>🌐</span> <span>MANDALA</span></a></li>
+      <li><a href="../tattva.html"><span>🔯</span> <span>TATTVA</span></a></li>
+      <li><a href="../tribhuj.html"><span>🔺</span> <span>TRIBHUJ</span></a></li>
+      <li><a href="../ypc27.html"><span>🔐</span> <span>YPC-27</span></a></li>
+      <li><a href="../sakshi.html"><span>👁️</span> <span>SAKSHI</span></a></li>
+      <li><a href="../geo-proof.html"><span>🌍</span> <span>PRAMAAN</span></a></li>
+      <li><a href="../trust-security.html"><span>🔒</span> <span>SURAKSHA</span></a></li>
+      <li><a href="../docs-bundle.html"><span>📚</span> <span>GRANTH</span></a></li>
+      <li><a href="../api.html"><span>📡</span> <span>API</span></a></li>
+      <li><a href="../quick-reference.html"><span>📋</span> <span>Quick Ref</span></a></li>
+    </ul>
+  </nav>
+
+  <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+    </svg>
+  </button>
+
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="docs-main" id="mainContent">
+    <div class="docs-content">
+      
+      <!-- Breadcrumb -->
+      <nav class="text-sm text-mountain-400 mb-6">
+        <a href="../tutorials.html" class="hover:text-white transition">Tutorials</a>
+        <span class="mx-2">/</span>
+        <span class="text-white">Privacy Guide</span>
+      </nav>
+
+      <!-- Page Header -->
+      <div class="mb-8">
+        <div class="flex items-center gap-3 mb-2">
+          <span class="text-4xl">🔏</span>
+          <h1 class="text-4xl font-bold">Privacy Guide</h1>
+          <span class="theme-badge text-xs px-2 py-1 rounded-full">10 min read</span>
+        </div>
+        <p class="theme-accent text-lg">What's shared, what's private, and how to control it</p>
+        <p class="text-mountain-300 mt-2">
+          Understand exactly what information YAKMESH reveals and what stays completely private.
+          Learn how to maximize your anonymity on the mesh.
+        </p>
+      </div>
+
+      <!-- Section 1: The Big Picture -->
+      <div class="tutorial-card">
+        <h2 class="text-2xl font-bold mb-4 flex items-center">
+          <span class="step-number">1</span>
+          The Big Picture
+        </h2>
+        <p class="text-mountain-300 mb-4">
+          YAKMESH is designed with privacy as a core principle. Unlike traditional services that 
+          know everything about you, YAKMESH only shares what's absolutely necessary for the 
+          network to function.
+        </p>
+        
+        <div class="analogy-box">
+          <strong>Think of it like this:</strong> In a traditional web service, you're walking 
+          through a building with security cameras everywhere—every move is recorded. In YAKMESH, 
+          you're in a dark maze where others can only see the flashlight beam you're pointing, 
+          not who's holding it.
+        </div>
+
+        <p class="text-mountain-300 mt-4">
+          The key insight: <strong>YAKMESH separates identity from content</strong>. Your node 
+          has a public identity (for the network), but that identity doesn't have to be linked 
+          to you personally.
+        </p>
+      </div>
+
+      <!-- Section 2: What YAKMESH Shares -->
+      <div class="tutorial-card">
+        <h2 class="text-2xl font-bold mb-4 flex items-center">
+          <span class="step-number">2</span>
+          What YAKMESH Shares
+        </h2>
+        <p class="text-mountain-300 mb-4">
+          For the network to work, some information must be visible. Here's what other nodes 
+          can see about you:
+        </p>
+        
+        <table class="privacy-table">
+          <thead>
+            <tr>
+              <th>Information</th>
+              <th>Who Sees It</th>
+              <th>Why It's Needed</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="shared">🔑 Node ID (public key)</td>
+              <td class="text-mountain-300">All connected peers</td>
+              <td class="text-mountain-400">To identify and authenticate your node</td>
+            </tr>
+            <tr>
+              <td class="shared">📋 Content hashes you host</td>
+              <td class="text-mountain-300">Nodes you share with</td>
+              <td class="text-mountain-400">So others know what content you have</td>
+            </tr>
+            <tr>
+              <td class="shared">🌐 Mesh connection status</td>
+              <td class="text-mountain-300">Direct peers only</td>
+              <td class="text-mountain-400">To maintain network connections</td>
+            </tr>
+            <tr>
+              <td class="shared">⏱️ Time capability level</td>
+              <td class="text-mountain-300">Peers during trust checks</td>
+              <td class="text-mountain-400">For KARMA trust scoring</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p class="text-mountain-300 mt-4">
+          <strong>Important:</strong> Your Node ID is like a username—it identifies your node 
+          but doesn't reveal who you are in real life. You can generate a new identity anytime.
+        </p>
+      </div>
+
+      <!-- Section 3: What Stays Private -->
+      <div class="tutorial-card">
+        <h2 class="text-2xl font-bold mb-4 flex items-center">
+          <span class="step-number">3</span>
+          What Stays Private
+        </h2>
+        <p class="text-mountain-300 mb-4">
+          These things are <strong>never</strong> shared with the network:
+        </p>
+        
+        <ul class="space-y-4 text-mountain-300">
+          <li class="flex items-start gap-3">
+            <span class="text-green-400 text-xl">🛡️</span>
+            <div>
+              <strong class="text-white private">Your IP address</strong> (behind the mesh)<br>
+              <span class="text-sm">When routing through the mesh, intermediate nodes only see 
+              the previous and next hop—not your real IP. Direct connections still expose IP 
+              to that specific peer.</span>
+            </div>
+          </li>
+          <li class="flex items-start gap-3">
+            <span class="text-green-400 text-xl">🔐</span>
+            <div>
+              <strong class="text-white private">Your content</strong> (encrypted)<br>
+              <span class="text-sm">Content is encrypted at rest in STUPA storage. Even if 
+              someone accesses your disk, they can't read your files without the keys.</span>
+            </div>
+          </li>
+          <li class="flex items-start gap-3">
+            <span class="text-green-400 text-xl">👤</span>
+            <div>
+              <strong class="text-white private">Your real identity</strong> (anonymous by default)<br>
+              <span class="text-sm">YAKMESH never asks for your name, email, or any personal 
+              information. Your node is just a cryptographic key pair.</span>
+            </div>
+          </li>
+          <li class="flex items-start gap-3">
+            <span class="text-green-400 text-xl">📍</span>
+            <div>
+              <strong class="text-white private">Your location</strong> (unless you enable geo-proof)<br>
+              <span class="text-sm">Geographic proof is opt-in. Without it, nobody knows where 
+              you're running from.</span>
+            </div>
+          </li>
+          <li class="flex items-start gap-3">
+            <span class="text-green-400 text-xl">🔑</span>
+            <div>
+              <strong class="text-white private">Your private keys</strong> (never leave your device)<br>
+              <span class="text-sm">Only your public key is shared. Private keys stay on your 
+              machine and are never transmitted.</span>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Section 4: What Peers Can See -->
+      <div class="tutorial-card">
+        <h2 class="text-2xl font-bold mb-4 flex items-center">
+          <span class="step-number">4</span>
+          What Your Peers Can See About You
+        </h2>
+        <p class="text-mountain-300 mb-4">
+          Different peers have different visibility levels:
+        </p>
+        
+        <div class="config-box mb-4">
+          <h4 class="font-semibold text-white mb-2">🔌 Direct Peers (you connect to them directly)</h4>
+          <ul class="text-sm text-mountain-400 space-y-1">
+            <li>• Your IP address (unavoidable for direct TCP/UDP connections)</li>
+            <li>• Your node ID and public key</li>
+            <li>• When you're online/offline</li>
+            <li>• Content you're requesting or serving to them</li>
+          </ul>
+        </div>
+
+        <div class="config-box mb-4">
+          <h4 class="font-semibold text-white mb-2">🔀 Relay Peers (routing your traffic)</h4>
+          <ul class="text-sm text-mountain-400 space-y-1">
+            <li>• Previous hop and next hop only</li>
+            <li>• Encrypted packet size and timing</li>
+            <li>• <strong>Cannot see:</strong> origin, destination, or content</li>
+          </ul>
+        </div>
+
+        <div class="config-box">
+          <h4 class="font-semibold text-white mb-2">🌍 The Broader Network</h4>
+          <ul class="text-sm text-mountain-400 space-y-1">
+            <li>• Your node ID exists (if you participate in gossip)</li>
+            <li>• Content hashes you've announced</li>
+            <li>• <strong>Cannot see:</strong> your IP, location, or what you're browsing</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Section 5: Privacy Settings -->
+      <div class="tutorial-card">
+        <h2 class="text-2xl font-bold mb-4 flex items-center">
+          <span class="step-number">5</span>
+          Privacy Settings in Config
+        </h2>
+        <p class="text-mountain-300 mb-4">
+          You can customize your privacy level in <code class="bg-mountain-800 px-2 py-1 rounded">yakmesh.config.js</code>:
+        </p>
+        
+        <pre class="language-javascript mb-4"><code>export default {
+  // Privacy settings
+  privacy: {
+    // Don't announce content to the network
+    // (you can still serve content to direct peers)
+    announceContent: false,
+    
+    // Use onion routing for all outbound requests
+    forceOnionRouting: true,
+    
+    // Minimum number of relay hops
+    minRelayHops: 3,
+    
+    // Don't participate in mesh gossip
+    // (reduces visibility but limits features)
+    disableGossip: false,
+    
+    // Reject direct connections (relay only)
+    relayOnly: false,
+  },
+  
+  // Geo-proof is opt-in
+  geoProof: {
+    enabled: false,  // Don't reveal location
+  },
+}</code></pre>
+
+        <p class="text-mountain-300 mt-4">
+          <strong>Trade-off:</strong> More privacy often means reduced functionality. For example, 
+          <code class="bg-mountain-800 px-2 py-1 rounded">disableGossip</code> hides you from the 
+          network but means you won't discover peers automatically.
+        </p>
+      </div>
+
+      <!-- Section 6: Anonymous Mode -->
+      <div class="tutorial-card">
+        <h2 class="text-2xl font-bold mb-4 flex items-center">
+          <span class="step-number">6</span>
+          Anonymous Mode
+        </h2>
+        <p class="text-mountain-300 mb-4">
+          For maximum privacy, enable full anonymous mode:
+        </p>
+        
+        <pre class="language-bash mb-4"><code># Start node in anonymous mode
+npx yakmesh start --anonymous
+
+# Or set in config
+npx yakmesh config set privacy.anonymousMode true</code></pre>
+
+        <p class="text-mountain-300 mb-4">
+          Anonymous mode enables these protections automatically:
+        </p>
+
+        <ul class="space-y-2 text-mountain-300">
+          <li class="flex items-start gap-3">
+            <span class="text-green-400">✓</span>
+            <span>Forces all traffic through onion routing (3+ hops)</span>
+          </li>
+          <li class="flex items-start gap-3">
+            <span class="text-green-400">✓</span>
+            <span>Disables content announcements</span>
+          </li>
+          <li class="flex items-start gap-3">
+            <span class="text-green-400">✓</span>
+            <span>Generates ephemeral session keys (rotated frequently)</span>
+          </li>
+          <li class="flex items-start gap-3">
+            <span class="text-green-400">✓</span>
+            <span>Adds random delays to timing analysis resistance</span>
+          </li>
+          <li class="flex items-start gap-3">
+            <span class="text-green-400">✓</span>
+            <span>Pads packets to uniform sizes</span>
+          </li>
+        </ul>
+
+        <div class="analogy-box mt-4">
+          <strong>Trade-off warning:</strong> Anonymous mode is slower (more hops, delays) and 
+          uses more bandwidth (padding). It also limits your ability to host content for others. 
+          Use it when privacy is more important than performance.
+        </div>
+      </div>
+
+      <!-- Section 7: What About Metadata? -->
+      <div class="tutorial-card">
+        <h2 class="text-2xl font-bold mb-4 flex items-center">
+          <span class="step-number">7</span>
+          What About Metadata?
+        </h2>
+        <p class="text-mountain-300 mb-4">
+          Metadata (data about data) can be just as revealing as content. Here's how YAKMESH 
+          handles it:
+        </p>
+        
+        <table class="privacy-table">
+          <thead>
+            <tr>
+              <th>Metadata Type</th>
+              <th>Protection Level</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="text-mountain-300">Request timing</td>
+              <td class="private">Random delays in anonymous mode</td>
+            </tr>
+            <tr>
+              <td class="text-mountain-300">Packet sizes</td>
+              <td class="private">Padded to uniform sizes in anonymous mode</td>
+            </tr>
+            <tr>
+              <td class="text-mountain-300">Connection patterns</td>
+              <td class="shared">Visible to direct peers; hidden behind relays</td>
+            </tr>
+            <tr>
+              <td class="text-mountain-300">Online times</td>
+              <td class="shared">Direct peers know when you connect</td>
+            </tr>
+            <tr>
+              <td class="text-mountain-300">Content request frequency</td>
+              <td class="private">Encrypted and routed through mesh</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <p class="text-mountain-300 mt-4">
+          <strong>Best practice:</strong> Use multiple direct peers so no single peer sees all 
+          your activity patterns. The mesh naturally distributes your traffic.
+        </p>
+      </div>
+
+      <!-- Summary -->
+      <div class="bg-mountain-800/50 rounded-xl p-6 border border-mountain-700 mb-8">
+        <h2 class="text-xl font-bold mb-4">📌 Key Takeaways</h2>
+        <ul class="space-y-2 text-mountain-300">
+          <li>✓ <strong>Shared:</strong> Node ID, content hashes, connection status</li>
+          <li>✓ <strong>Private:</strong> IP (behind mesh), content (encrypted), real identity, location</li>
+          <li>✓ Privacy settings in config let you control visibility</li>
+          <li>✓ Anonymous mode provides maximum protection with performance trade-offs</li>
+          <li>✓ Direct peers see more than relay peers</li>
+          <li>✓ You can regenerate your node identity anytime for a fresh start</li>
+        </ul>
+      </div>
+
+      <!-- Navigation Footer -->
+      <div class="border-t border-mountain-700 mt-12 pt-8">
+        <div class="flex flex-col sm:flex-row gap-4">
+          <a href="trust-karma.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-emerald-500 transition group">
+            <div class="text-xs text-mountain-400 mb-1">← Previous</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">☯️</span>
+              <span class="font-semibold group-hover:text-emerald-400">Trust & Reputation</span>
+            </div>
+          </a>
+          <a href="security-basics.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-emerald-500 transition group">
+            <div class="text-xs text-mountain-400 mb-1">Next →</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">🛡️</span>
+              <span class="font-semibold group-hover:text-emerald-400">Security for Non-Techies</span>
+            </div>
+          </a>
+        </div>
+      </div>
+
+      <!-- Version Badge -->
+      <div class="mt-8 pt-6 border-t border-mountain-700">
+        <span class="inline-block text-xs theme-badge px-2 py-1 rounded">v2.8.2</span>
+        <span class="text-mountain-500 text-sm ml-2">Last updated: February 2026</span>
+      </div>
+
+    </div>
+  </main>
+
+  <script src="../prism.min.js"></script>
+  <script src="../prism-javascript.min.js"></script>
+  <script src="../prism-bash.min.js"></script>
+  <script src="../docs.js"></script>
+</body>
+</html>

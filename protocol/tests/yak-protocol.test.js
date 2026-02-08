@@ -65,8 +65,9 @@ describe('BookmarkManager', () => {
     });
     
     it('should get bookmark target', () => {
-      bookmarkManager.add('docs', '/site/docs');
-      const target = bookmarkManager.get('docs');
+      // Use a non-builtin name (docs is a builtin route)
+      bookmarkManager.add('mydocs', '/site/docs');
+      const target = bookmarkManager.get('mydocs');
       assert.strictEqual(target, '/site/docs');
     });
     
@@ -167,6 +168,38 @@ describe('YAK:// URL Parsing', () => {
       const shortHash = 'a'.repeat(32);
       const result = parseYakUrl(`yak://${shortHash}`);
       assert.strictEqual(result.type, 'unknown');
+    });
+  });
+  
+  describe('iO Name Resolution', () => {
+    it('should resolve valid 3-word iO names', () => {
+      // Valid iO name from QUANTUM_WORDLIST
+      const result = parseYakUrl('yak://qubit-lattice-prism');
+      assert.strictEqual(result.type, 'io-content');
+      assert.strictEqual(result.ioName, 'qubit-lattice-prism');
+    });
+    
+    it('should handle iO name subpaths', () => {
+      const result = parseYakUrl('yak://photon-cipher-node/vacation-photos');
+      assert.strictEqual(result.type, 'io-content');
+      assert.strictEqual(result.ioName, 'photon-cipher-node');
+      assert.ok(result.path.includes('/vacation-photos'));
+    });
+    
+    it('should reject invalid iO names (wrong word count)', () => {
+      const result = parseYakUrl('yak://qubit-lattice');  // Only 2 words
+      assert.strictEqual(result.type, 'unknown');
+    });
+    
+    it('should reject invalid iO names (not in wordlist)', () => {
+      const result = parseYakUrl('yak://apple-banana-cherry');  // Not quantum words
+      assert.strictEqual(result.type, 'unknown');
+    });
+    
+    it('should be case-insensitive for iO names', () => {
+      const result = parseYakUrl('yak://QUBIT-LATTICE-PRISM');
+      assert.strictEqual(result.type, 'io-content');
+      assert.strictEqual(result.ioName, 'qubit-lattice-prism');
     });
   });
   
