@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="tutorials">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="favicon.ico" sizes="32x32">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <title>Tutorials - YAKMESH Documentation</title>
+    <meta name="description" content="Step-by-step tutorials for using YAKMESH. Host websites, share content, and build decentralized apps.">
+    
+    <link rel="stylesheet" href="tailwind.min.css">
+    <link rel="stylesheet" href="prism-tomorrow.min.css">
+    <link rel="stylesheet" href="docs.css">
+    <style>
+        .theme-accent { color: #10b981; }
+        .theme-accent-hover:hover { color: #34d399; }
+        .theme-badge { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+        .theme-border { border-color: #10b981; }
+        .theme-callout { background: rgba(16, 185, 129, 0.1); border-color: #059669; }
+        .active-link { background: rgba(16, 185, 129, 0.2) !important; color: #34d399 !important; }
+        .tutorial-card { background: rgba(30, 41, 59, 0.5); border: 1px solid #334155; border-radius: 0.75rem; padding: 1.5rem; margin-bottom: 1.5rem; }
+        .tutorial-card:hover { border-color: #10b981; }
+        .step-number { display: inline-flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; background: #10b981; color: white; border-radius: 50%; font-weight: bold; margin-right: 0.75rem; }
+    </style>
+</head>
+<body class="bg-mountain-900 text-white min-h-screen">
+    
+  <nav class="docs-sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-logo">
+      <span class="logo-icon">🏔️</span>
+      <span class="logo-text">Yakmesh</span>
+    </a>
+    <a href="/dashboard" class="sidebar-dashboard-link"><span>📊</span> <span>Dashboard</span></a>
+    <ul class="sidebar-nav">
+      <li><a href="index.html"><span>🏠</span> <span>Overview</span></a></li>
+      <li><a href="getting-started.html"><span>🚀</span> <span>Getting Started</span></a></li>
+      <li><a href="tutorials.html" class="active"><span>📖</span> <span>Tutorials</span></a></li>
+      <li><a href="doko.html"><span>🧺</span> <span>DOKO</span></a></li>
+      <li><a href="namche.html"><span>🚪</span> <span>NAMCHE</span></a></li>
+      <li><a href="sherpa.html"><span>🧗</span> <span>SHERPA</span></a></li>
+      <li><a href="nakpak.html"><span>🎒</span> <span>NAKPAK</span></a></li>
+      <li><a href="annex.html"><span>🌉</span> <span>ANNEX</span></a></li>
+      <li><a href="yak-protocol.html"><span class="yak-icon"></span> <span>YAK</span></a></li>
+      <li><a href="mantra.html"><span>🕉️</span> <span>MANTRA</span></a></li>
+      <li><a href="stupa.html"><span>🛕</span> <span>STUPA</span></a></li>
+      <li><a href="lama.html"><span>🔮</span> <span>LAMA</span></a></li>
+      <li><a href="mani.html"><span>⏱️</span> <span>MANI</span></a></li>
+      <li><a href="karma.html"><span>☯️</span> <span>KARMA</span></a></li>
+      <li><a href="mandala.html"><span>🌐</span> <span>MANDALA</span></a></li>
+      <li><a href="tattva.html"><span>🔯</span> <span>TATTVA</span></a></li>
+      <li><a href="tribhuj.html"><span>🔺</span> <span>TRIBHUJ</span></a></li>
+      <li><a href="ypc27.html"><span>🔐</span> <span>YPC-27</span></a></li>
+      <li><a href="sakshi.html"><span>👁️</span> <span>SAKSHI</span></a></li>
+      <li><a href="geo-proof.html"><span>🌍</span> <span>PRAMAAN</span></a></li>
+      <li><a href="trust-security.html"><span>🔒</span> <span>SURAKSHA</span></a></li>
+      <li><a href="docs-bundle.html"><span>📚</span> <span>GRANTH</span></a></li>
+      <li><a href="api.html"><span>📡</span> <span>API</span></a></li>
+      <li><a href="quick-reference.html"><span>📋</span> <span>Quick Ref</span></a></li>
+    </ul>
+  </nav>
+
+  <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+    </svg>
+  </button>
+
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="docs-main" id="mainContent">
+    <div class="docs-content">
+      
+      <!-- Page Header -->
+      <div class="flex items-center gap-3 mb-4">
+        <span class="text-4xl">📖</span>
+        <div>
+          <h1 class="text-4xl font-bold">Tutorials</h1>
+          <p class="theme-accent">Practical guides for real-world use cases</p>
+        </div>
+      </div>
+      <p class="text-xl text-mountain-300 mb-8">
+        Step-by-step instructions for hosting websites, sharing content, and building on YAKMESH.
+      </p>
+
+      <!-- Quick Links -->
+      <div class="grid md:grid-cols-3 gap-4 mb-12">
+        <a href="#host-website" class="tutorial-card block">
+          <div class="text-2xl mb-2">🌐</div>
+          <h3 class="font-bold mb-1">Host a Website</h3>
+          <p class="text-sm text-mountain-400">Serve your site locally and to the internet</p>
+        </a>
+        <a href="#yak-protocol" class="tutorial-card block">
+          <div class="text-2xl mb-2">🐃</div>
+          <h3 class="font-bold mb-1">YAK:// Protocol</h3>
+          <p class="text-sm text-mountain-400">Share content with yak:// links</p>
+        </a>
+        <a href="#mesh-network" class="tutorial-card block">
+          <div class="text-2xl mb-2">🕸️</div>
+          <h3 class="font-bold mb-1">Join the Mesh</h3>
+          <p class="text-sm text-mountain-400">Connect to the YAKMESH network</p>
+        </a>
+      </div>
+
+      <!-- =========== TUTORIAL 1: HOST A WEBSITE =========== -->
+      <section id="host-website" class="mb-16">
+        <h2 class="text-3xl font-bold mb-6 flex items-center gap-3">
+          <span class="text-4xl">🌐</span> Tutorial 1: Host a Website
+        </h2>
+        
+        <p class="text-mountain-300 mb-6">
+          This tutorial shows you how to serve a static website using YAKMESH. Your site will be 
+          accessible on your local network and optionally to the internet.
+        </p>
+
+        <!-- Step 1 -->
+        <div class="tutorial-card">
+          <h3 class="text-xl font-bold mb-3"><span class="step-number">1</span> Install YAKMESH</h3>
+          <p class="text-mountain-300 mb-4">First, install YAKMESH globally (or in your project):</p>
+          <pre class="language-bash"><code># Global install (recommended for beginners)
+npm install -g yakmesh
+
+# Or project-local
+npm install yakmesh</code></pre>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="tutorial-card">
+          <h3 class="text-xl font-bold mb-3"><span class="step-number">2</span> Create Your Website Folder</h3>
+          <p class="text-mountain-300 mb-4">Create a folder with your website files:</p>
+          <pre class="language-bash"><code>mkdir my-website
+cd my-website
+
+# Create a simple index.html
+echo '&lt;!DOCTYPE html&gt;
+&lt;html&gt;
+&lt;head&gt;&lt;title&gt;My YAKMESH Site&lt;/title&gt;&lt;/head&gt;
+&lt;body&gt;
+  &lt;h1&gt;Hello from YAKMESH!&lt;/h1&gt;
+  &lt;p&gt;This site is served by a quantum-resistant mesh network.&lt;/p&gt;
+&lt;/body&gt;
+&lt;/html&gt;' > index.html</code></pre>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="tutorial-card">
+          <h3 class="text-xl font-bold mb-3"><span class="step-number">3</span> Create Configuration</h3>
+          <p class="text-mountain-300 mb-4">Create a <code>yakmesh.config.js</code> file:</p>
+          <pre class="language-javascript"><code>// yakmesh.config.js
+module.exports = {
+  // Server settings
+  port: 3000,
+  host: '0.0.0.0',  // Listen on all interfaces (LAN accessible)
+  
+  // Website folder
+  webserver: {
+    enabled: true,
+    root: './',      // Serve files from current folder
+    index: 'index.html'
+  },
+  
+  // Dashboard (optional)
+  dashboard: true,
+  
+  // Mesh settings (optional)
+  mesh: {
+    enabled: true,
+    discovery: true  // Find other YAKMESH nodes
+  }
+};</code></pre>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="tutorial-card">
+          <h3 class="text-xl font-bold mb-3"><span class="step-number">4</span> Start the Server</h3>
+          <p class="text-mountain-300 mb-4">Launch your YAKMESH node:</p>
+          <pre class="language-bash"><code># If installed globally
+yakmesh start
+
+# If installed locally
+npx yakmesh start</code></pre>
+          <p class="text-mountain-300 mt-4">You should see output like:</p>
+          <pre class="language-bash"><code>🏔️ YAKMESH v2.8.2 starting...
+✓ Codebase locked: 65 files protected
+✓ Oracle System initialized
+✓ Webserver ready
+🌐 Server running at http://localhost:3000
+📊 Dashboard at http://localhost:3000/dashboard</code></pre>
+        </div>
+
+        <!-- Step 5 -->
+        <div class="tutorial-card">
+          <h3 class="text-xl font-bold mb-3"><span class="step-number">5</span> Access Your Site</h3>
+          <p class="text-mountain-300 mb-4">Your website is now accessible:</p>
+          <ul class="list-disc list-inside text-mountain-300 space-y-2">
+            <li><strong>Local:</strong> <code>http://localhost:3000</code></li>
+            <li><strong>LAN:</strong> <code>http://192.168.x.x:3000</code> (your computer's IP)</li>
+            <li><strong>Dashboard:</strong> <code>http://localhost:3000/dashboard</code></li>
+          </ul>
+        </div>
+
+        <!-- Exposing to Internet -->
+        <div class="tutorial-card border-yellow-500">
+          <h3 class="text-xl font-bold mb-3">🌍 Exposing to the Internet</h3>
+          <p class="text-mountain-300 mb-4">To make your site accessible from anywhere:</p>
+          
+          <h4 class="font-bold mt-4 mb-2">Option A: Port Forwarding (Home Network)</h4>
+          <ol class="list-decimal list-inside text-mountain-300 space-y-2 mb-4">
+            <li>Log into your router admin panel (usually <code>192.168.1.1</code>)</li>
+            <li>Find "Port Forwarding" settings</li>
+            <li>Forward external port 80 or 443 to your computer's IP, port 3000</li>
+            <li>Get your public IP from <code>whatismyip.com</code></li>
+          </ol>
+          
+          <h4 class="font-bold mt-4 mb-2">Option B: Cloudflare Tunnel (Recommended)</h4>
+          <pre class="language-bash"><code># Install cloudflared
+npm install -g cloudflared
+
+# Create a tunnel
+cloudflared tunnel --url http://localhost:3000</code></pre>
+          <p class="text-mountain-300 mt-2">This gives you a free HTTPS URL without port forwarding.</p>
+          
+          <h4 class="font-bold mt-4 mb-2">Option C: VPS Hosting</h4>
+          <p class="text-mountain-300">Deploy to a VPS (DigitalOcean, Linode, etc.) and run YAKMESH there.</p>
+        </div>
+      </section>
+
+      <!-- =========== TUTORIAL 2: YAK PROTOCOL =========== -->
+      <section id="yak-protocol" class="mb-16">
+        <h2 class="text-3xl font-bold mb-6 flex items-center gap-3">
+          <span class="text-4xl">🐃</span> Tutorial 2: Using the YAK:// Protocol
+        </h2>
+        
+        <p class="text-mountain-300 mb-6">
+          The <code>yak://</code> protocol is YAKMESH's native content addressing system. 
+          It lets you share content with cryptographic links that work across the mesh.
+        </p>
+
+        <!-- What is YAK -->
+        <div class="tutorial-card">
+          <h3 class="text-xl font-bold mb-3">What is yak://</h3>
+          <p class="text-mountain-300 mb-4">YAK links look like this:</p>
+          <pre class="language-bash"><code>yak://abc123def456.../my-file.txt
+yak://node-id/path/to/resource</code></pre>
+          <p class="text-mountain-300 mt-4">
+            Unlike HTTP, YAK links are <strong>content-addressed</strong>. The link includes 
+            a cryptographic hash of the content, so you can verify what you receive is authentic.
+          </p>
+        </div>
+
+        <!-- Register Protocol -->
+        <div class="tutorial-card">
+          <h3 class="text-xl font-bold mb-3"><span class="step-number">1</span> Register the Protocol</h3>
+          <p class="text-mountain-300 mb-4">On Windows, register yak:// as a URL handler:</p>
+          <pre class="language-bash"><code># Run as Administrator
+yakmesh register-protocol</code></pre>
+          <p class="text-mountain-300 mt-4">This allows your browser to open yak:// links directly.</p>
+        </div>
+
+        <!-- Share Content -->
+        <div class="tutorial-card">
+          <h3 class="text-xl font-bold mb-3"><span class="step-number">2</span> Share Content</h3>
+          <p class="text-mountain-300 mb-4">Add content to your node and get a yak:// link:</p>
+          <pre class="language-javascript"><code>// In your application
+const yakmesh = require('yakmesh');
+
+// Add content to DOKO (content store)
+const result = await yakmesh.doko.put('Hello, YAKMESH!', {
+  type: 'text/plain',
+  name: 'greeting.txt'
+});
+
+console.log('Share this link:', result.yakUrl);
+// Output: yak://abc123.../greeting.txt</code></pre>
+        </div>
+
+        <!-- Retrieve Content -->
+        <div class="tutorial-card">
+          <h3 class="text-xl font-bold mb-3"><span class="step-number">3</span> Retrieve Content</h3>
+          <p class="text-mountain-300 mb-4">Fetch content using a yak:// link:</p>
+          <pre class="language-javascript"><code>// Fetch from yak:// link
+const content = await yakmesh.doko.get('yak://abc123.../greeting.txt');
+console.log(content); // "Hello, YAKMESH!"</code></pre>
+        </div>
+
+        <!-- CLI Usage -->
+        <div class="tutorial-card">
+          <h3 class="text-xl font-bold mb-3">CLI Commands</h3>
+          <pre class="language-bash"><code># Share a file
+yakmesh share ./my-document.pdf
+
+# Open a yak:// link
+yakmesh open yak://abc123.../document.pdf
+
+# List your shared content
+yakmesh doko list</code></pre>
+        </div>
+      </section>
+
+      <!-- =========== TUTORIAL 3: MESH NETWORK =========== -->
+      <section id="mesh-network" class="mb-16">
+        <h2 class="text-3xl font-bold mb-6 flex items-center gap-3">
+          <span class="text-4xl">🕸️</span> Tutorial 3: Joining the Mesh Network
+        </h2>
+        
+        <p class="text-mountain-300 mb-6">
+          YAKMESH nodes automatically discover and connect to each other. Here's how to 
+          participate in the mesh.
+        </p>
+
+        <!-- Enable Mesh -->
+        <div class="tutorial-card">
+          <h3 class="text-xl font-bold mb-3"><span class="step-number">1</span> Enable Mesh Networking</h3>
+          <p class="text-mountain-300 mb-4">In your <code>yakmesh.config.js</code>:</p>
+          <pre class="language-javascript"><code>module.exports = {
+  mesh: {
+    enabled: true,
+    discovery: true,     // Auto-discover peers
+    announce: true,      // Announce to discovery servers
+    maxPeers: 50        // Maximum connections
+  },
+  
+  // Optional: Connect to specific peers
+  bootstrap: [
+    'https://yakmesh.dev/.well-known/yakmesh',
+    'https://seed1.yakmesh.network'
+  ]
+};</code></pre>
+        </div>
+
+        <!-- Check Peers -->
+        <div class="tutorial-card">
+          <h3 class="text-xl font-bold mb-3"><span class="step-number">2</span> Check Connected Peers</h3>
+          <p class="text-mountain-300 mb-4">View your mesh connections:</p>
+          <pre class="language-bash"><code># CLI command
+yakmesh peers
+
+# Or via API
+curl http://localhost:3000/api/mesh/peers</code></pre>
+          <p class="text-mountain-300 mt-4">Output shows connected nodes, their trust levels, and latency.</p>
+        </div>
+
+        <!-- What You Get -->
+        <div class="tutorial-card">
+          <h3 class="text-xl font-bold mb-3">What the Mesh Provides</h3>
+          <ul class="list-disc list-inside text-mountain-300 space-y-2">
+            <li><strong>Content Availability:</strong> Your shared content remains accessible even when you're offline (cached by peers)</li>
+            <li><strong>Time Synchronization:</strong> Atomic-precision timing via MANI protocol</li>
+            <li><strong>Peer Discovery:</strong> Automatic finding of nearby nodes via SHERPA</li>
+            <li><strong>Geographic Proofs:</strong> Prove your location without revealing exact coordinates</li>
+            <li><strong>Redundancy:</strong> Data replicated across trusted peers</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- =========== ADDITIONAL FEATURES =========== -->
+      <section id="features" class="mb-16">
+        <h2 class="text-3xl font-bold mb-6 flex items-center gap-3">
+          <span class="text-4xl">⚡</span> Additional Features
+        </h2>
+
+        <div class="grid md:grid-cols-2 gap-4">
+          <div class="tutorial-card">
+            <h3 class="font-bold mb-2">📊 Dashboard</h3>
+            <p class="text-sm text-mountain-400 mb-2">Monitor your node's health, peers, and activity.</p>
+            <pre class="language-bash"><code>yakmesh open dashboard</code></pre>
+          </div>
+          
+          <div class="tutorial-card">
+            <h3 class="font-bold mb-2">📚 Self-Hosted Docs</h3>
+            <p class="text-sm text-mountain-400 mb-2">Full documentation available offline.</p>
+            <pre class="language-bash"><code>yakmesh open docs</code></pre>
+          </div>
+          
+          <div class="tutorial-card">
+            <h3 class="font-bold mb-2">🔒 Quantum-Resistant Crypto</h3>
+            <p class="text-sm text-mountain-400 mb-2">All communications use ML-KEM + ML-DSA.</p>
+            <pre class="language-bash"><code>yakmesh status --crypto</code></pre>
+          </div>
+          
+          <div class="tutorial-card">
+            <h3 class="font-bold mb-2">⏱️ Time Sources</h3>
+            <p class="text-sm text-mountain-400 mb-2">Atomic-precision timing from multiple sources.</p>
+            <pre class="language-bash"><code>yakmesh time-sources</code></pre>
+          </div>
+        </div>
+      </section>
+
+      <!-- What's Next -->
+      <section class="mb-16">
+        <h2 class="text-2xl font-bold mb-4">What's Next?</h2>
+        <p class="text-mountain-300 mb-4">
+          YAKMESH is actively being developed. Upcoming features include:
+        </p>
+        <ul class="list-disc list-inside text-mountain-300 space-y-2">
+          <li><strong>QRL Integration:</strong> Native support for Quantum Resistant Ledger (QRL 2.0/Zond)</li>
+          <li><strong>IPFS Bridge:</strong> Interoperability with IPFS content addressing</li>
+          <li><strong>Mobile Apps:</strong> iOS and Android nodes</li>
+          <li><strong>Browser Extension:</strong> Native yak:// support in browsers</li>
+        </ul>
+      </section>
+
+      <!-- Version Badge -->
+      <div class="mt-12 pt-6 border-t border-mountain-700">
+        <span class="inline-block text-xs theme-badge px-2 py-1 rounded">v2.8.2</span>
+        <span class="text-mountain-500 text-sm ml-2">Last updated: February 2026</span>
+      </div>
+
+    </div>
+  </main>
+
+  <script src="prism.min.js"></script>
+  <script src="prism-javascript.min.js"></script>
+  <script src="prism-bash.min.js"></script>
+  <script src="docs.js"></script>
+</body>
+</html>
+

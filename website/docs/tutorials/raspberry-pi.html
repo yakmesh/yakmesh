@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="tutorials">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="../favicon.ico" sizes="32x32">
+    <link rel="icon" href="../icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+    <title>Running on Raspberry Pi - YAKMESH Tutorials</title>
+    <meta name="description" content="Set up a dedicated always-on YAKMESH node on a Raspberry Pi. Complete hardware and software guide.">
+    
+    <link rel="stylesheet" href="../tailwind.min.css">
+    <link rel="stylesheet" href="../prism-tomorrow.min.css">
+    <link rel="stylesheet" href="../docs.css">
+    <style>
+        .theme-accent { color: #10b981; }
+        .theme-accent-hover:hover { color: #34d399; }
+        .theme-badge { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+        .theme-border { border-color: #10b981; }
+        .theme-callout { background: rgba(16, 185, 129, 0.1); border-color: #059669; }
+        .active-link { background: rgba(16, 185, 129, 0.2) !important; color: #34d399 !important; }
+        .tutorial-card { background: rgba(30, 41, 59, 0.5); border: 1px solid #334155; border-radius: 0.75rem; padding: 1.5rem; margin-bottom: 1.5rem; }
+        .step-number { display: inline-flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; background: #10b981; color: white; border-radius: 50%; font-weight: bold; margin-right: 0.75rem; flex-shrink: 0; }
+        .step-header { display: flex; align-items: center; margin-bottom: 1rem; }
+    </style>
+</head>
+<body class="bg-mountain-900 text-white min-h-screen">
+    
+  <nav class="docs-sidebar" id="sidebar">
+    <a href="../index.html" class="sidebar-logo">
+      <span class="logo-icon">🏔️</span>
+      <span class="logo-text">Yakmesh</span>
+    </a>
+    <a href="/dashboard" class="sidebar-dashboard-link"><span>📊</span> <span>Dashboard</span></a>
+    <ul class="sidebar-nav">
+      <li><a href="../index.html"><span>🏠</span> <span>Overview</span></a></li>
+      <li><a href="../getting-started.html"><span>🚀</span> <span>Getting Started</span></a></li>
+      <li><a href="../tutorials.html" class="active"><span>📖</span> <span>Tutorials</span></a></li>
+      <li><a href="../doko.html"><span>🧺</span> <span>DOKO</span></a></li>
+      <li><a href="../namche.html"><span>🚪</span> <span>NAMCHE</span></a></li>
+      <li><a href="../sherpa.html"><span>🧗</span> <span>SHERPA</span></a></li>
+      <li><a href="../nakpak.html"><span>🎒</span> <span>NAKPAK</span></a></li>
+      <li><a href="../annex.html"><span>🌉</span> <span>ANNEX</span></a></li>
+      <li><a href="../yak-protocol.html"><span class="yak-icon"></span> <span>YAK</span></a></li>
+      <li><a href="../mantra.html"><span>🕉️</span> <span>MANTRA</span></a></li>
+      <li><a href="../stupa.html"><span>🛕</span> <span>STUPA</span></a></li>
+      <li><a href="../lama.html"><span>🔮</span> <span>LAMA</span></a></li>
+      <li><a href="../mani.html"><span>⏱️</span> <span>MANI</span></a></li>
+      <li><a href="../karma.html"><span>☯️</span> <span>KARMA</span></a></li>
+      <li><a href="../mandala.html"><span>🌐</span> <span>MANDALA</span></a></li>
+      <li><a href="../tattva.html"><span>🔯</span> <span>TATTVA</span></a></li>
+      <li><a href="../tribhuj.html"><span>🔺</span> <span>TRIBHUJ</span></a></li>
+      <li><a href="../ypc27.html"><span>🔐</span> <span>YPC-27</span></a></li>
+      <li><a href="../sakshi.html"><span>👁️</span> <span>SAKSHI</span></a></li>
+      <li><a href="../geo-proof.html"><span>🌍</span> <span>PRAMAAN</span></a></li>
+      <li><a href="../trust-security.html"><span>🔒</span> <span>SURAKSHA</span></a></li>
+      <li><a href="../docs-bundle.html"><span>📚</span> <span>GRANTH</span></a></li>
+      <li><a href="../api.html"><span>📡</span> <span>API</span></a></li>
+      <li><a href="../quick-reference.html"><span>📋</span> <span>Quick Ref</span></a></li>
+    </ul>
+  </nav>
+
+  <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+    </svg>
+  </button>
+
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="docs-main" id="mainContent">
+    <div class="docs-content">
+      
+      <!-- Breadcrumb -->
+      <nav class="mb-6">
+        <a href="../tutorials.html" class="text-mountain-400 hover:text-white transition">← Back to Tutorials</a>
+      </nav>
+
+      <!-- Page Header -->
+      <div class="mb-8">
+        <div class="flex items-center gap-3 mb-2">
+          <span class="text-4xl">🍓</span>
+          <h1 class="text-4xl font-bold">Running on Raspberry Pi</h1>
+          <span class="theme-badge text-xs px-2 py-1 rounded-full">20 min</span>
+        </div>
+        <p class="theme-accent text-lg">Set up a dedicated always-on YAKMESH node</p>
+        <p class="text-mountain-300 mt-2">
+          Turn a Raspberry Pi into a 24/7 YAKMESH node. Low power, always connected, perfect for mesh networking.
+        </p>
+      </div>
+
+      <!-- What You'll Learn -->
+      <div class="tutorial-card">
+        <h2 class="text-xl font-bold mb-4">📋 What You'll Learn</h2>
+        <ul class="space-y-2 text-mountain-300">
+          <li>• Choose the right Raspberry Pi hardware</li>
+          <li>• Install and configure Raspberry Pi OS</li>
+          <li>• Install Node.js on ARM architecture</li>
+          <li>• Install and configure YAKMESH</li>
+          <li>• Set up auto-start on boot with systemd</li>
+          <li>• Optimize for low power and reliability</li>
+        </ul>
+      </div>
+
+      <!-- Hardware Requirements -->
+      <div class="tutorial-card">
+        <div class="step-header">
+          <span class="step-number">1</span>
+          <h2 class="text-xl font-bold">Hardware Requirements</h2>
+        </div>
+        
+        <h3 class="font-semibold text-lg mb-3">Recommended Hardware</h3>
+        <div class="overflow-x-auto mb-6">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-mountain-700">
+                <th class="text-left py-2 px-3">Component</th>
+                <th class="text-left py-2 px-3">Minimum</th>
+                <th class="text-left py-2 px-3">Recommended</th>
+              </tr>
+            </thead>
+            <tbody class="text-mountain-300">
+              <tr class="border-b border-mountain-800">
+                <td class="py-2 px-3 font-semibold">Raspberry Pi Model</td>
+                <td class="py-2 px-3">Pi 3B+ (1GB)</td>
+                <td class="py-2 px-3 theme-accent">Pi 4 (4GB) or Pi 5</td>
+              </tr>
+              <tr class="border-b border-mountain-800">
+                <td class="py-2 px-3 font-semibold">Storage</td>
+                <td class="py-2 px-3">16GB microSD</td>
+                <td class="py-2 px-3 theme-accent">32GB+ microSD or SSD</td>
+              </tr>
+              <tr class="border-b border-mountain-800">
+                <td class="py-2 px-3 font-semibold">Power Supply</td>
+                <td class="py-2 px-3">5V 2.5A</td>
+                <td class="py-2 px-3 theme-accent">5V 3A (USB-C for Pi 4/5)</td>
+              </tr>
+              <tr class="border-b border-mountain-800">
+                <td class="py-2 px-3 font-semibold">Cooling</td>
+                <td class="py-2 px-3">Heatsinks</td>
+                <td class="py-2 px-3 theme-accent">Active fan or case with fan</td>
+              </tr>
+              <tr class="border-b border-mountain-800">
+                <td class="py-2 px-3 font-semibold">Network</td>
+                <td class="py-2 px-3">WiFi</td>
+                <td class="py-2 px-3 theme-accent">Ethernet (more reliable)</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="theme-callout rounded-lg p-4 border">
+          <p class="font-semibold theme-accent mb-1">💡 Why Pi 4 with 4GB+?</p>
+          <p class="text-sm text-mountain-300">
+            YAKMESH uses post-quantum cryptography which requires more memory than classical crypto. 
+            The Pi 4's improved CPU and RAM handle ML-DSA-65 signatures efficiently.
+          </p>
+        </div>
+      </div>
+
+      <!-- OS Setup -->
+      <div class="tutorial-card">
+        <div class="step-header">
+          <span class="step-number">2</span>
+          <h2 class="text-xl font-bold">Install Raspberry Pi OS</h2>
+        </div>
+        
+        <h3 class="font-semibold text-lg mb-3">Download and Flash</h3>
+        <ol class="list-decimal list-inside space-y-3 text-mountain-300 mb-4">
+          <li>Download <a href="https://www.raspberrypi.com/software/" class="theme-accent theme-accent-hover" target="_blank">Raspberry Pi Imager</a></li>
+          <li>Insert your microSD card into your computer</li>
+          <li>Open Raspberry Pi Imager and select:
+            <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
+              <li><strong>OS:</strong> Raspberry Pi OS Lite (64-bit) - no desktop needed</li>
+              <li><strong>Storage:</strong> Your microSD card</li>
+            </ul>
+          </li>
+          <li>Click the gear icon (⚙️) for advanced options:
+            <ul class="list-disc list-inside ml-6 mt-2 space-y-1">
+              <li>Set hostname: <code class="bg-mountain-800 px-1 rounded">yakmesh-node</code></li>
+              <li>Enable SSH with password or public key</li>
+              <li>Set username and password</li>
+              <li>Configure WiFi (if not using Ethernet)</li>
+              <li>Set locale and timezone</li>
+            </ul>
+          </li>
+          <li>Click Write and wait for completion</li>
+        </ol>
+
+        <h3 class="font-semibold text-lg mb-3">First Boot</h3>
+        <pre class="language-bash mb-4"><code># Insert SD card into Pi and power on
+# Wait 2-3 minutes for first boot to complete
+# Find your Pi's IP address from your router, or use:
+ping yakmesh-node.local
+
+# SSH into your Pi
+ssh pi@yakmesh-node.local
+# Enter your password when prompted</code></pre>
+
+        <h3 class="font-semibold text-lg mb-3">Initial System Update</h3>
+        <pre class="language-bash"><code># Update package lists and upgrade
+sudo apt update && sudo apt upgrade -y
+
+# Install essential tools
+sudo apt install -y curl git build-essential
+
+# Reboot to apply any kernel updates
+sudo reboot</code></pre>
+      </div>
+
+      <!-- Install Node.js -->
+      <div class="tutorial-card">
+        <div class="step-header">
+          <span class="step-number">3</span>
+          <h2 class="text-xl font-bold">Install Node.js on ARM</h2>
+        </div>
+        <p class="text-mountain-300 mb-4">
+          YAKMESH requires Node.js 20 or later. We'll use NodeSource for the latest ARM builds.
+        </p>
+
+        <h3 class="font-semibold text-lg mb-3">Install Node.js 22 LTS</h3>
+        <pre class="language-bash mb-4"><code># Add NodeSource repository for Node.js 22
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
+
+# Install Node.js
+sudo apt install -y nodejs
+
+# Verify installation
+node --version   # Should show v22.x.x
+npm --version    # Should show 10.x.x</code></pre>
+
+        <h3 class="font-semibold text-lg mb-3">Alternative: Using nvm (Node Version Manager)</h3>
+        <pre class="language-bash"><code># Install nvm
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+
+# Reload shell
+source ~/.bashrc
+
+# Install Node.js 22
+nvm install 22
+nvm use 22
+nvm alias default 22</code></pre>
+
+        <div class="theme-callout rounded-lg p-4 border mt-4">
+          <p class="font-semibold theme-accent mb-1">⚠️ ARM Architecture Note</p>
+          <p class="text-sm text-mountain-300">
+            Raspberry Pi uses ARM64 (aarch64) architecture. All npm packages with native bindings 
+            will be compiled during installation, which may take longer than on x86.
+          </p>
+        </div>
+      </div>
+
+      <!-- Install YAKMESH -->
+      <div class="tutorial-card">
+        <div class="step-header">
+          <span class="step-number">4</span>
+          <h2 class="text-xl font-bold">Install YAKMESH</h2>
+        </div>
+
+        <h3 class="font-semibold text-lg mb-3">Create Project Directory</h3>
+        <pre class="language-bash mb-4"><code># Create a dedicated directory
+mkdir -p ~/yakmesh
+cd ~/yakmesh
+
+# Initialize npm project
+npm init -y
+
+# Install YAKMESH
+npm install yakmesh</code></pre>
+
+        <h3 class="font-semibold text-lg mb-3">Initialize Node</h3>
+        <pre class="language-bash mb-4"><code># Generate node identity and config
+npx yakmesh init
+
+# This creates:
+# - yakmesh.config.js (configuration)
+# - data/ directory (node data and keys)</code></pre>
+
+        <h3 class="font-semibold text-lg mb-3">Configure for Pi</h3>
+        <p class="text-mountain-300 mb-3">
+          Edit <code class="bg-mountain-800 px-2 py-1 rounded">yakmesh.config.js</code> for optimal Pi performance:
+        </p>
+        <pre class="language-javascript"><code>// yakmesh.config.js - Raspberry Pi optimized
+export default {
+  node: {
+    name: 'pi-yakmesh-node',
+  },
+  
+  server: {
+    host: '0.0.0.0',  // Accept connections from network
+    port: 3000,
+  },
+  
+  websocket: {
+    port: 9001,
+  },
+  
+  // Reduce memory usage on constrained devices
+  performance: {
+    maxPeers: 50,           // Limit peer connections
+    cacheSize: '256mb',     // Reduce cache for 1GB Pi
+    gcInterval: 300000,     // Garbage collect every 5 min
+  },
+  
+  // Enable logging to file for debugging
+  logging: {
+    level: 'info',
+    file: './data/yakmesh.log',
+  },
+};</code></pre>
+
+        <h3 class="font-semibold text-lg mb-3">Test Run</h3>
+        <pre class="language-bash"><code># Start YAKMESH to verify it works
+npx yakmesh start
+
+# You should see the startup messages
+# Press Ctrl+C to stop for now</code></pre>
+      </div>
+
+      <!-- Auto-start with systemd -->
+      <div class="tutorial-card">
+        <div class="step-header">
+          <span class="step-number">5</span>
+          <h2 class="text-xl font-bold">Auto-Start on Boot (systemd)</h2>
+        </div>
+        <p class="text-mountain-300 mb-4">
+          Create a systemd service so YAKMESH starts automatically when the Pi boots.
+        </p>
+
+        <h3 class="font-semibold text-lg mb-3">Create Service File</h3>
+        <pre class="language-bash mb-4"><code># Create the systemd service file
+sudo nano /etc/systemd/system/yakmesh.service</code></pre>
+
+        <p class="text-mountain-300 mb-3">Paste this content:</p>
+        <pre class="language-bash mb-4"><code>[Unit]
+Description=YAKMESH Node
+Documentation=https://yakmesh.com/docs
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/yakmesh
+ExecStart=/usr/bin/npx yakmesh start
+Restart=always
+RestartSec=10
+
+# Security hardening
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/pi/yakmesh/data
+
+# Resource limits
+MemoryMax=1G
+CPUQuota=80%
+
+# Environment
+Environment=NODE_ENV=production
+
+[Install]
+WantedBy=multi-user.target</code></pre>
+
+        <h3 class="font-semibold text-lg mb-3">Enable and Start Service</h3>
+        <pre class="language-bash mb-4"><code># Reload systemd to recognize new service
+sudo systemctl daemon-reload
+
+# Enable auto-start on boot
+sudo systemctl enable yakmesh
+
+# Start the service now
+sudo systemctl start yakmesh
+
+# Check status
+sudo systemctl status yakmesh</code></pre>
+
+        <h3 class="font-semibold text-lg mb-3">Useful Service Commands</h3>
+        <pre class="language-bash"><code># View logs
+sudo journalctl -u yakmesh -f
+
+# Restart service
+sudo systemctl restart yakmesh
+
+# Stop service
+sudo systemctl stop yakmesh
+
+# Disable auto-start
+sudo systemctl disable yakmesh</code></pre>
+      </div>
+
+      <!-- Power and Networking -->
+      <div class="tutorial-card">
+        <div class="step-header">
+          <span class="step-number">6</span>
+          <h2 class="text-xl font-bold">Power and Networking Tips</h2>
+        </div>
+
+        <h3 class="font-semibold text-lg mb-3">Stable Power Supply</h3>
+        <ul class="space-y-2 text-mountain-300 mb-4">
+          <li>• Use the official Raspberry Pi power supply (5V 3A for Pi 4/5)</li>
+          <li>• Avoid USB hubs or phone chargers - they may cause undervoltage</li>
+          <li>• Consider a UPS HAT for power outage protection</li>
+          <li>• Check for undervoltage warnings: <code class="bg-mountain-800 px-1 rounded">vcgencmd get_throttled</code></li>
+        </ul>
+
+        <h3 class="font-semibold text-lg mb-3">Network Reliability</h3>
+        <ul class="space-y-2 text-mountain-300 mb-4">
+          <li>• <strong>Use Ethernet</strong> whenever possible - WiFi can be unreliable for 24/7 operation</li>
+          <li>• If using WiFi, configure a static IP to prevent DHCP issues</li>
+          <li>• Consider a powered USB Ethernet adapter for gigabit speeds on Pi 3</li>
+        </ul>
+
+        <h3 class="font-semibold text-lg mb-3">Static IP Configuration</h3>
+        <pre class="language-bash mb-4"><code># Edit dhcpcd configuration
+sudo nano /etc/dhcpcd.conf
+
+# Add at the end (adjust for your network):
+interface eth0
+static ip_address=192.168.1.100/24
+static routers=192.168.1.1
+static domain_name_servers=1.1.1.1 8.8.8.8
+
+# Restart networking
+sudo systemctl restart dhcpcd</code></pre>
+
+        <h3 class="font-semibold text-lg mb-3">Firewall Configuration</h3>
+        <pre class="language-bash"><code># Install and configure ufw
+sudo apt install -y ufw
+
+# Allow SSH (important - don't lock yourself out!)
+sudo ufw allow ssh
+
+# Allow YAKMESH ports
+sudo ufw allow 3000/tcp    # Dashboard
+sudo ufw allow 9001/tcp    # WebSocket
+
+# Enable firewall
+sudo ufw enable
+
+# Check status
+sudo ufw status</code></pre>
+      </div>
+
+      <!-- Performance Considerations -->
+      <div class="tutorial-card">
+        <div class="step-header">
+          <span class="step-number">7</span>
+          <h2 class="text-xl font-bold">Performance Considerations</h2>
+        </div>
+
+        <h3 class="font-semibold text-lg mb-3">Temperature Monitoring</h3>
+        <p class="text-mountain-300 mb-3">
+          Post-quantum crypto is CPU-intensive. Monitor temperatures to prevent throttling:
+        </p>
+        <pre class="language-bash mb-4"><code># Check current temperature
+vcgencmd measure_temp
+
+# Monitor continuously
+watch -n 1 vcgencmd measure_temp
+
+# Install htop for system monitoring
+sudo apt install -y htop</code></pre>
+
+        <div class="theme-callout rounded-lg p-4 border mb-4">
+          <p class="font-semibold theme-accent mb-1">🌡️ Temperature Guidelines</p>
+          <ul class="text-sm text-mountain-300 space-y-1">
+            <li>• <strong>&lt;60°C:</strong> Normal operation</li>
+            <li>• <strong>60-80°C:</strong> Warm but acceptable with cooling</li>
+            <li>• <strong>&gt;80°C:</strong> Throttling begins - improve cooling</li>
+            <li>• <strong>&gt;85°C:</strong> Heavy throttling - add active cooling</li>
+          </ul>
+        </div>
+
+        <h3 class="font-semibold text-lg mb-3">SSD for Better Performance</h3>
+        <p class="text-mountain-300 mb-3">
+          For maximum reliability and speed, boot from an SSD instead of microSD:
+        </p>
+        <pre class="language-bash mb-4"><code># Check if your Pi supports USB boot (Pi 4/5)
+vcgencmd bootloader_version
+
+# Use Raspberry Pi Imager to flash OS to SSD
+# Then update boot order in raspi-config:
+sudo raspi-config
+# Advanced Options → Boot Order → USB Boot</code></pre>
+
+        <h3 class="font-semibold text-lg mb-3">Memory Optimization</h3>
+        <pre class="language-bash"><code># Reduce GPU memory (headless server doesn't need it)
+sudo nano /boot/config.txt
+
+# Add or modify:
+gpu_mem=16
+
+# Enable zram for better memory management
+sudo apt install -y zram-tools
+sudo systemctl enable zramswap
+sudo reboot</code></pre>
+      </div>
+
+      <!-- Access Dashboard -->
+      <div class="tutorial-card">
+        <h2 class="text-xl font-bold mb-4">✅ Access Your Node</h2>
+        <p class="text-mountain-300 mb-4">
+          Once running, access your YAKMESH dashboard from any device on your network:
+        </p>
+        <pre class="language-bash mb-4"><code># From your computer's browser, go to:
+http://yakmesh-node.local:3000/dashboard
+
+# Or use the IP address:
+http://192.168.1.100:3000/dashboard</code></pre>
+
+        <h3 class="font-semibold text-lg mb-3">Verify Node Health</h3>
+        <pre class="language-bash"><code># Check node status via API
+curl http://yakmesh-node.local:3000/health
+
+# Expected response:
+{
+  "status": "healthy",
+  "network": "your-network-name",
+  "algorithm": "ML-DSA-65",
+  "peers": 5,
+  "uptime": "2h 15m"
+}</code></pre>
+      </div>
+
+      <!-- Success -->
+      <div class="bg-emerald-900/30 border border-emerald-600 rounded-xl p-6 mb-8">
+        <h2 class="text-xl font-bold mb-2 text-emerald-400">🎉 Your Pi Node is Ready!</h2>
+        <p class="text-mountain-300 mb-4">
+          Your Raspberry Pi is now running a dedicated YAKMESH node 24/7. It will:
+        </p>
+        <ul class="space-y-1 text-mountain-300">
+          <li>• Automatically start when the Pi boots</li>
+          <li>• Restart if it crashes</li>
+          <li>• Connect to peers and participate in the mesh</li>
+          <li>• Serve your dashboard on port 3000</li>
+        </ul>
+      </div>
+
+      <!-- Maintenance Tips -->
+      <div class="tutorial-card">
+        <h2 class="text-xl font-bold mb-4">🔧 Maintenance Tips</h2>
+        <div class="space-y-4">
+          <div>
+            <p class="font-semibold text-white mb-1">Keep software updated</p>
+            <pre class="language-bash text-sm"><code>sudo apt update && sudo apt upgrade -y
+cd ~/yakmesh && npm update yakmesh</code></pre>
+          </div>
+          <div>
+            <p class="font-semibold text-white mb-1">Backup your node identity</p>
+            <pre class="language-bash text-sm"><code># Copy to your computer
+scp -r pi@yakmesh-node.local:~/yakmesh/data ./yakmesh-backup</code></pre>
+          </div>
+          <div>
+            <p class="font-semibold text-white mb-1">Check logs for issues</p>
+            <pre class="language-bash text-sm"><code>sudo journalctl -u yakmesh --since "1 hour ago"</code></pre>
+          </div>
+        </div>
+      </div>
+
+      <!-- Navigation Footer -->
+      <div class="border-t border-mountain-700 mt-12 pt-8">
+        <div class="flex flex-col sm:flex-row gap-4">
+          <a href="domain-setup.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-emerald-500 transition group">
+            <div class="text-xs text-mountain-400 mb-1">← Previous</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">🌍</span>
+              <span class="font-semibold group-hover:text-emerald-400">Using with a Domain Name</span>
+            </div>
+          </a>
+          <a href="mobile-access.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-emerald-500 transition group">
+            <div class="text-xs text-mountain-400 mb-1">Next →</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">📱</span>
+              <span class="font-semibold group-hover:text-emerald-400">Mobile Access</span>
+            </div>
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <footer class="docs-footer">
+    <p>© 2026 YAKMESH™</p>
+  </footer>
+
+  <script src="../prism.min.js"></script>
+  <script src="../prism-bash.min.js"></script>
+  <script src="../prism-javascript.min.js"></script>
+  <script src="../docs.js"></script>
+</body>
+</html>

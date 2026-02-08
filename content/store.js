@@ -19,6 +19,9 @@ import { existsSync, mkdirSync, writeFileSync, readFileSync, readdirSync, unlink
 import { join, dirname } from 'path';
 import { createLogger } from '../utils/logger.js';
 
+// Import iO system for human-readable content names
+import { deriveNetworkName } from '../oracle/network-identity.js';
+
 const log = createLogger('content:store');
 
 /**
@@ -64,11 +67,23 @@ export function computeContentHash(content) {
 }
 
 /**
+ * Derive human-readable iO name from content hash
+ * Uses 3-word quantum wordlist for memorable, shareable names
+ * 
+ * @param {string} hash - SHA3-256 content hash (hex)
+ * @returns {string} Human-readable name like "qubit-lattice-prism"
+ */
+export function deriveContentName(hash) {
+  return deriveNetworkName(hash, 3);  // 3 words = 24 bits = 16M+ unique names
+}
+
+/**
  * Content metadata
  */
 class ContentMetadata {
   constructor(options = {}) {
     this.hash = options.hash;
+    this.ioName = options.ioName || null;  // Auto-generated iO name (human-readable)
     this.contentType = options.contentType || ContentType.BINARY;
     this.size = options.size || 0;
     this.createdAt = options.createdAt || Date.now();
@@ -76,13 +91,14 @@ class ContentMetadata {
     this.status = options.status || ContentStatus.LOCAL;
     this.consensusProof = options.consensusProof || null;
     this.tags = options.tags || [];
-    this.name = options.name || null;  // Optional human-readable name
+    this.name = options.name || null;  // Optional custom name (user-provided)
     this.ttl = options.ttl || 0;       // 0 = permanent
   }
 
   toJSON() {
     return {
       hash: this.hash,
+      ioName: this.ioName,
       contentType: this.contentType,
       size: this.size,
       createdAt: this.createdAt,
@@ -213,6 +229,18 @@ export class ContentStore {
         const json = JSON.parse(readFileSync(metaPath, 'utf8'));
         const meta = ContentMetadata.fromJSON(json);
         this.metaCache.set(meta.hash, meta);
+        
+        // Index iO name (auto-generated or derive if missing from old data)
+        if (meta.ioName) {
+          this.nameIndex.set(meta.ioName, meta.hash);
+        } else {
+          // Backfill ioName for content stored before iO naming was added
+          const ioName = deriveContentName(meta.hash);
+          meta.ioName = ioName;
+          this.nameIndex.set(ioName, meta.hash);
+        }
+        
+        // Index custom name if provided
         if (meta.name) {
           this.nameIndex.set(meta.name, meta.hash);
         }
@@ -258,12 +286,16 @@ export class ContentStore {
     // Check if already exists
     if (this.has(hash)) {
       const existing = this.getMeta(hash);
-      return { hash, status: 'exists', meta: existing };
+      return { hash, ioName: existing.ioName, status: 'exists', meta: existing };
     }
+
+    // Generate iO name for human-readable sharing
+    const ioName = deriveContentName(hash);
 
     // Create metadata
     const meta = new ContentMetadata({
       hash,
+      ioName,
       contentType: options.contentType || this._detectContentType(content),
       size,
       publishedBy: this.identity?.identity?.nodeId || options.publishedBy || 'unknown',
@@ -290,8 +322,11 @@ export class ContentStore {
 
     // Update caches
     this.metaCache.set(hash, meta);
+    
+    // Index both iO name and custom name for lookup
+    this.nameIndex.set(ioName, hash);  // iO name always indexed
     if (meta.name) {
-      this.nameIndex.set(meta.name, hash);
+      this.nameIndex.set(meta.name, hash);  // Custom name if provided
     }
     this._addToContentCache(hash, content);
 
@@ -300,7 +335,8 @@ export class ContentStore {
       await this.publish(hash);
     }
 
-    return { hash, status: 'stored', meta };
+    log.info('Content stored', { hash: hash.slice(0, 16), ioName, size });
+    return { hash, ioName, status: 'stored', meta };
   }
 
   /**

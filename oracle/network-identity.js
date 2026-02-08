@@ -453,6 +453,22 @@ export function createNetworkIdentity(oracle) {
   return new NetworkIdentity(oracle.selfHash);
 }
 
+/**
+ * Check if a string is a valid iO name (3 words from QUANTUM_WORDLIST)
+ * @param {string} name - The name to validate (e.g., "qubit-lattice-prism")
+ * @returns {boolean} True if valid iO name
+ */
+export function isValidIoName(name) {
+  if (!name || typeof name !== 'string') return false;
+  
+  const words = name.toLowerCase().split('-');
+  if (words.length !== 3) return false;
+  
+  // Check each word is in the wordlist
+  const wordSet = new Set(QUANTUM_WORDLIST);
+  return words.every(word => wordSet.has(word));
+}
+
 export { QUANTUM_WORDLIST };
 
 

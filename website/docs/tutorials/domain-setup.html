@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="tutorials">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="../favicon.ico" sizes="32x32">
+    <link rel="icon" href="../icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+    <title>Using with a Domain Name - YAKMESH Tutorials</title>
+    <meta name="description" content="Point your own domain name to your YAKMESH node with HTTPS. Complete guide to DNS, SSL, and reverse proxy setup.">
+    
+    <link rel="stylesheet" href="../tailwind.min.css">
+    <link rel="stylesheet" href="../prism-tomorrow.min.css">
+    <link rel="stylesheet" href="../docs.css">
+    <style>
+        .theme-accent { color: #10b981; }
+        .theme-accent-hover:hover { color: #34d399; }
+        .theme-badge { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+        .theme-border { border-color: #10b981; }
+        .theme-callout { background: rgba(16, 185, 129, 0.1); border-color: #059669; }
+        .active-link { background: rgba(16, 185, 129, 0.2) !important; color: #34d399 !important; }
+        .tutorial-card { background: rgba(30, 41, 59, 0.5); border: 1px solid #334155; border-radius: 0.75rem; padding: 1.5rem; margin-bottom: 1.5rem; }
+        .step-number { display: inline-flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; background: #10b981; color: white; border-radius: 50%; font-weight: bold; margin-right: 0.75rem; flex-shrink: 0; }
+        .step-header { display: flex; align-items: center; margin-bottom: 1rem; }
+    </style>
+</head>
+<body class="bg-mountain-900 text-white min-h-screen">
+    
+  <nav class="docs-sidebar" id="sidebar">
+    <a href="../index.html" class="sidebar-logo">
+      <span class="logo-icon">🏔️</span>
+      <span class="logo-text">Yakmesh</span>
+    </a>
+    <a href="/dashboard" class="sidebar-dashboard-link"><span>📊</span> <span>Dashboard</span></a>
+    <ul class="sidebar-nav">
+      <li><a href="../index.html"><span>🏠</span> <span>Overview</span></a></li>
+      <li><a href="../getting-started.html"><span>🚀</span> <span>Getting Started</span></a></li>
+      <li><a href="../tutorials.html" class="active"><span>📖</span> <span>Tutorials</span></a></li>
+      <li><a href="../doko.html"><span>🧺</span> <span>DOKO</span></a></li>
+      <li><a href="../namche.html"><span>🚪</span> <span>NAMCHE</span></a></li>
+      <li><a href="../sherpa.html"><span>🧗</span> <span>SHERPA</span></a></li>
+      <li><a href="../nakpak.html"><span>🎒</span> <span>NAKPAK</span></a></li>
+      <li><a href="../annex.html"><span>🌉</span> <span>ANNEX</span></a></li>
+      <li><a href="../yak-protocol.html"><span class="yak-icon"></span> <span>YAK</span></a></li>
+      <li><a href="../mantra.html"><span>🕉️</span> <span>MANTRA</span></a></li>
+      <li><a href="../stupa.html"><span>🛕</span> <span>STUPA</span></a></li>
+      <li><a href="../lama.html"><span>🔮</span> <span>LAMA</span></a></li>
+      <li><a href="../mani.html"><span>⏱️</span> <span>MANI</span></a></li>
+      <li><a href="../karma.html"><span>☯️</span> <span>KARMA</span></a></li>
+      <li><a href="../mandala.html"><span>🌐</span> <span>MANDALA</span></a></li>
+      <li><a href="../tattva.html"><span>🔯</span> <span>TATTVA</span></a></li>
+      <li><a href="../tribhuj.html"><span>🔺</span> <span>TRIBHUJ</span></a></li>
+      <li><a href="../ypc27.html"><span>🔐</span> <span>YPC-27</span></a></li>
+      <li><a href="../sakshi.html"><span>👁️</span> <span>SAKSHI</span></a></li>
+      <li><a href="../geo-proof.html"><span>🌍</span> <span>PRAMAAN</span></a></li>
+      <li><a href="../trust-security.html"><span>🔒</span> <span>SURAKSHA</span></a></li>
+      <li><a href="../docs-bundle.html"><span>📚</span> <span>GRANTH</span></a></li>
+      <li><a href="../api.html"><span>📡</span> <span>API</span></a></li>
+      <li><a href="../quick-reference.html"><span>📋</span> <span>Quick Ref</span></a></li>
+    </ul>
+  </nav>
+
+  <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+    </svg>
+  </button>
+
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="docs-main" id="mainContent">
+    <div class="docs-content">
+      
+      <!-- Breadcrumb -->
+      <nav class="mb-6">
+        <a href="../tutorials.html" class="text-mountain-400 hover:text-white transition">← Back to Tutorials</a>
+      </nav>
+
+      <!-- Page Header -->
+      <div class="mb-8">
+        <div class="flex items-center gap-3 mb-2">
+          <span class="text-4xl">🌍</span>
+          <h1 class="text-4xl font-bold">Using with a Domain Name</h1>
+          <span class="theme-badge text-xs px-2 py-1 rounded-full">15 min</span>
+        </div>
+        <p class="theme-accent text-lg">Point example.com to your YAKMESH node</p>
+        <p class="text-mountain-300 mt-2">
+          Make your node accessible via a custom domain with HTTPS. Professional setup for production deployments.
+        </p>
+      </div>
+
+      <!-- What You'll Learn -->
+      <div class="tutorial-card">
+        <h2 class="text-xl font-bold mb-4">📋 What You'll Learn</h2>
+        <ul class="space-y-2 text-mountain-300">
+          <li>• Configure DNS records (A, CNAME) for your domain</li>
+          <li>• Set up free HTTPS with Let's Encrypt</li>
+          <li>• Optional: Use Cloudflare for CDN and DDoS protection</li>
+          <li>• Optional: Configure nginx as a reverse proxy</li>
+          <li>• Update YAKMESH config for custom domain</li>
+        </ul>
+      </div>
+
+      <!-- Prerequisites -->
+      <div class="tutorial-card">
+        <h2 class="text-xl font-bold mb-4">⚡ Prerequisites</h2>
+        <ul class="space-y-2 text-mountain-300">
+          <li>• A running YAKMESH node (see <a href="../getting-started.html" class="theme-accent theme-accent-hover">Getting Started</a>)</li>
+          <li>• A domain name you control (e.g., from Namecheap, GoDaddy, Cloudflare)</li>
+          <li>• A public IP address (port forwarding configured on your router)</li>
+          <li>• Basic terminal access to your server</li>
+        </ul>
+      </div>
+
+      <!-- Step 1: Get Your Public IP -->
+      <div class="tutorial-card">
+        <div class="step-header">
+          <span class="step-number">1</span>
+          <h2 class="text-xl font-bold">Get Your Public IP Address</h2>
+        </div>
+        <p class="text-mountain-300 mb-4">
+          First, find your server's public IP address. This is what your domain will point to.
+        </p>
+        <pre class="language-bash mb-4"><code># On Linux/Mac
+curl ifconfig.me
+
+# On Windows PowerShell
+(Invoke-WebRequest -Uri "https://api.ipify.org").Content</code></pre>
+        <p class="text-mountain-300 mb-4">
+          You should get an IP address like <code class="bg-mountain-800 px-2 py-1 rounded">203.0.113.45</code>.
+        </p>
+        <div class="theme-callout rounded-lg p-4 border">
+          <p class="font-semibold theme-accent mb-1">💡 Dynamic IP?</p>
+          <p class="text-sm text-mountain-300">
+            If your ISP assigns a dynamic IP, consider using a dynamic DNS service like 
+            <a href="https://www.duckdns.org" class="theme-accent theme-accent-hover" target="_blank">DuckDNS</a> or 
+            <a href="https://www.noip.com" class="theme-accent theme-accent-hover" target="_blank">No-IP</a>.
+          </p>
+        </div>
+      </div>
+
+      <!-- Step 2: Configure DNS -->
+      <div class="tutorial-card">
+        <div class="step-header">
+          <span class="step-number">2</span>
+          <h2 class="text-xl font-bold">Configure DNS Records</h2>
+        </div>
+        <p class="text-mountain-300 mb-4">
+          Log in to your domain registrar's DNS management panel and add these records:
+        </p>
+
+        <h3 class="font-semibold text-lg mb-3">Option A: Root Domain (example.com)</h3>
+        <div class="overflow-x-auto mb-6">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-mountain-700">
+                <th class="text-left py-2 px-3">Type</th>
+                <th class="text-left py-2 px-3">Name</th>
+                <th class="text-left py-2 px-3">Value</th>
+                <th class="text-left py-2 px-3">TTL</th>
+              </tr>
+            </thead>
+            <tbody class="text-mountain-300">
+              <tr class="border-b border-mountain-800">
+                <td class="py-2 px-3 font-mono theme-accent">A</td>
+                <td class="py-2 px-3">@</td>
+                <td class="py-2 px-3">203.0.113.45</td>
+                <td class="py-2 px-3">3600</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3 class="font-semibold text-lg mb-3">Option B: Subdomain (mesh.example.com)</h3>
+        <div class="overflow-x-auto mb-6">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-mountain-700">
+                <th class="text-left py-2 px-3">Type</th>
+                <th class="text-left py-2 px-3">Name</th>
+                <th class="text-left py-2 px-3">Value</th>
+                <th class="text-left py-2 px-3">TTL</th>
+              </tr>
+            </thead>
+            <tbody class="text-mountain-300">
+              <tr class="border-b border-mountain-800">
+                <td class="py-2 px-3 font-mono theme-accent">A</td>
+                <td class="py-2 px-3">mesh</td>
+                <td class="py-2 px-3">203.0.113.45</td>
+                <td class="py-2 px-3">3600</td>
+              </tr>
+              <tr class="border-b border-mountain-800">
+                <td class="py-2 px-3 font-mono theme-accent">CNAME</td>
+                <td class="py-2 px-3">www.mesh</td>
+                <td class="py-2 px-3">mesh.example.com</td>
+                <td class="py-2 px-3">3600</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p class="text-mountain-300">
+          DNS changes can take up to 48 hours to propagate, but usually complete within 15-30 minutes.
+        </p>
+        <pre class="language-bash mt-4"><code># Verify DNS propagation
+nslookup mesh.example.com
+# Or use dig
+dig mesh.example.com +short</code></pre>
+      </div>
+
+      <!-- Step 3: Port Forwarding -->
+      <div class="tutorial-card">
+        <div class="step-header">
+          <span class="step-number">3</span>
+          <h2 class="text-xl font-bold">Configure Port Forwarding</h2>
+        </div>
+        <p class="text-mountain-300 mb-4">
+          If your YAKMESH node is behind a router, forward these ports to your server:
+        </p>
+        <div class="overflow-x-auto mb-4">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-mountain-700">
+                <th class="text-left py-2 px-3">Port</th>
+                <th class="text-left py-2 px-3">Protocol</th>
+                <th class="text-left py-2 px-3">Purpose</th>
+              </tr>
+            </thead>
+            <tbody class="text-mountain-300">
+              <tr class="border-b border-mountain-800">
+                <td class="py-2 px-3 font-mono theme-accent">80</td>
+                <td class="py-2 px-3">TCP</td>
+                <td class="py-2 px-3">HTTP (for Let's Encrypt verification)</td>
+              </tr>
+              <tr class="border-b border-mountain-800">
+                <td class="py-2 px-3 font-mono theme-accent">443</td>
+                <td class="py-2 px-3">TCP</td>
+                <td class="py-2 px-3">HTTPS (secure traffic)</td>
+              </tr>
+              <tr class="border-b border-mountain-800">
+                <td class="py-2 px-3 font-mono theme-accent">3000</td>
+                <td class="py-2 px-3">TCP</td>
+                <td class="py-2 px-3">YAKMESH Dashboard (if exposed directly)</td>
+              </tr>
+              <tr class="border-b border-mountain-800">
+                <td class="py-2 px-3 font-mono theme-accent">9001</td>
+                <td class="py-2 px-3">TCP</td>
+                <td class="py-2 px-3">WebSocket peer connections</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="theme-callout rounded-lg p-4 border">
+          <p class="font-semibold theme-accent mb-1">🔒 Security Note</p>
+          <p class="text-sm text-mountain-300">
+            Only forward the ports you actually need. If using nginx as a reverse proxy, you only need 80 and 443.
+          </p>
+        </div>
+      </div>
+
+      <!-- Step 4: HTTPS with Let's Encrypt -->
+      <div class="tutorial-card">
+        <div class="step-header">
+          <span class="step-number">4</span>
+          <h2 class="text-xl font-bold">Set Up HTTPS with Let's Encrypt</h2>
+        </div>
+        <p class="text-mountain-300 mb-4">
+          Let's Encrypt provides free SSL certificates. We'll use Certbot to automate the process.
+        </p>
+
+        <h3 class="font-semibold text-lg mb-3">Install Certbot</h3>
+        <pre class="language-bash mb-4"><code># Ubuntu/Debian
+sudo apt update
+sudo apt install certbot
+
+# CentOS/RHEL
+sudo yum install certbot
+
+# macOS with Homebrew
+brew install certbot</code></pre>
+
+        <h3 class="font-semibold text-lg mb-3">Obtain Certificate (Standalone Mode)</h3>
+        <p class="text-mountain-300 mb-3">
+          Stop any service using port 80, then run:
+        </p>
+        <pre class="language-bash mb-4"><code># Stop YAKMESH temporarily
+npx yakmesh stop
+
+# Get certificate
+sudo certbot certonly --standalone -d mesh.example.com
+
+# Certificate files will be saved to:
+# /etc/letsencrypt/live/mesh.example.com/fullchain.pem
+# /etc/letsencrypt/live/mesh.example.com/privkey.pem</code></pre>
+
+        <h3 class="font-semibold text-lg mb-3">Auto-Renewal</h3>
+        <p class="text-mountain-300 mb-3">
+          Set up automatic certificate renewal:
+        </p>
+        <pre class="language-bash mb-4"><code># Test renewal
+sudo certbot renew --dry-run
+
+# Certbot automatically adds a cron job for renewal</code></pre>
+      </div>
+
+      <!-- Step 5: Configure YAKMESH -->
+      <div class="tutorial-card">
+        <div class="step-header">
+          <span class="step-number">5</span>
+          <h2 class="text-xl font-bold">Configure YAKMESH for HTTPS</h2>
+        </div>
+        <p class="text-mountain-300 mb-4">
+          Update your <code class="bg-mountain-800 px-2 py-1 rounded">yakmesh.config.js</code> to use SSL:
+        </p>
+        <pre class="language-javascript mb-4"><code>// yakmesh.config.js
+export default {
+  node: {
+    name: 'my-mesh-node',
+    publicUrl: 'https://mesh.example.com',
+  },
+  
+  server: {
+    port: 443,
+    ssl: {
+      enabled: true,
+      cert: '/etc/letsencrypt/live/mesh.example.com/fullchain.pem',
+      key: '/etc/letsencrypt/live/mesh.example.com/privkey.pem',
+    },
+  },
+  
+  websocket: {
+    port: 9001,
+    ssl: {
+      enabled: true,
+      cert: '/etc/letsencrypt/live/mesh.example.com/fullchain.pem',
+      key: '/etc/letsencrypt/live/mesh.example.com/privkey.pem',
+    },
+  },
+};</code></pre>
+        <p class="text-mountain-300">
+          Restart YAKMESH to apply changes:
+        </p>
+        <pre class="language-bash mt-3"><code>npx yakmesh start</code></pre>
+      </div>
+
+      <!-- Step 6: Cloudflare (Optional) -->
+      <div class="tutorial-card">
+        <div class="step-header">
+          <span class="step-number">6</span>
+          <h2 class="text-xl font-bold">Cloudflare Integration (Optional)</h2>
+        </div>
+        <p class="text-mountain-300 mb-4">
+          Cloudflare provides free CDN, DDoS protection, and simplified SSL. Here's how to set it up:
+        </p>
+
+        <h3 class="font-semibold text-lg mb-3">Add Your Domain to Cloudflare</h3>
+        <ol class="list-decimal list-inside space-y-2 text-mountain-300 mb-4">
+          <li>Create a free account at <a href="https://cloudflare.com" class="theme-accent theme-accent-hover" target="_blank">cloudflare.com</a></li>
+          <li>Add your domain and scan existing DNS records</li>
+          <li>Update your domain's nameservers to Cloudflare's (provided during setup)</li>
+          <li>Wait for nameserver propagation (up to 24 hours)</li>
+        </ol>
+
+        <h3 class="font-semibold text-lg mb-3">Configure Proxy Settings</h3>
+        <div class="overflow-x-auto mb-4">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-mountain-700">
+                <th class="text-left py-2 px-3">Record</th>
+                <th class="text-left py-2 px-3">Proxy Status</th>
+                <th class="text-left py-2 px-3">Notes</th>
+              </tr>
+            </thead>
+            <tbody class="text-mountain-300">
+              <tr class="border-b border-mountain-800">
+                <td class="py-2 px-3">A (mesh)</td>
+                <td class="py-2 px-3 text-orange-400">🟠 Proxied</td>
+                <td class="py-2 px-3">Dashboard traffic goes through Cloudflare</td>
+              </tr>
+              <tr class="border-b border-mountain-800">
+                <td class="py-2 px-3">A (ws.mesh)</td>
+                <td class="py-2 px-3 text-gray-400">⚪ DNS Only</td>
+                <td class="py-2 px-3">WebSocket traffic bypasses proxy</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3 class="font-semibold text-lg mb-3">SSL/TLS Settings</h3>
+        <p class="text-mountain-300 mb-3">
+          In Cloudflare dashboard → SSL/TLS:
+        </p>
+        <ul class="space-y-1 text-mountain-300 mb-4">
+          <li>• Set encryption mode to <strong>Full (strict)</strong> if you have Let's Encrypt</li>
+          <li>• Or use <strong>Full</strong> with Cloudflare Origin Certificates</li>
+          <li>• Enable <strong>Always Use HTTPS</strong></li>
+        </ul>
+
+        <div class="theme-callout rounded-lg p-4 border">
+          <p class="font-semibold theme-accent mb-1">⚠️ WebSocket Consideration</p>
+          <p class="text-sm text-mountain-300">
+            Cloudflare's free tier supports WebSockets, but for best performance with YAKMESH peer connections, 
+            use a separate subdomain (e.g., ws.mesh.example.com) with proxy disabled.
+          </p>
+        </div>
+      </div>
+
+      <!-- Step 7: Nginx Reverse Proxy (Optional) -->
+      <div class="tutorial-card">
+        <div class="step-header">
+          <span class="step-number">7</span>
+          <h2 class="text-xl font-bold">Nginx Reverse Proxy (Optional)</h2>
+        </div>
+        <p class="text-mountain-300 mb-4">
+          If you're running multiple services, nginx can route traffic to YAKMESH:
+        </p>
+
+        <h3 class="font-semibold text-lg mb-3">Install nginx</h3>
+        <pre class="language-bash mb-4"><code># Ubuntu/Debian
+sudo apt install nginx
+
+# Start nginx
+sudo systemctl start nginx
+sudo systemctl enable nginx</code></pre>
+
+        <h3 class="font-semibold text-lg mb-3">Configure Virtual Host</h3>
+        <p class="text-mountain-300 mb-3">
+          Create <code class="bg-mountain-800 px-2 py-1 rounded">/etc/nginx/sites-available/yakmesh</code>:
+        </p>
+        <pre class="language-bash mb-4"><code>server {
+    listen 80;
+    server_name mesh.example.com;
+    return 301 https://$server_name$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name mesh.example.com;
+
+    ssl_certificate /etc/letsencrypt/live/mesh.example.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/mesh.example.com/privkey.pem;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256;
+    ssl_prefer_server_ciphers off;
+
+    # Security headers
+    add_header X-Frame-Options DENY;
+    add_header X-Content-Type-Options nosniff;
+    add_header X-XSS-Protection "1; mode=block";
+
+    # Dashboard and API
+    location / {
+        proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    # WebSocket connections
+    location /ws {
+        proxy_pass http://127.0.0.1:9001;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host $host;
+        proxy_read_timeout 86400;
+    }
+}</code></pre>
+
+        <h3 class="font-semibold text-lg mb-3">Enable and Test</h3>
+        <pre class="language-bash"><code># Enable the site
+sudo ln -s /etc/nginx/sites-available/yakmesh /etc/nginx/sites-enabled/
+
+# Test configuration
+sudo nginx -t
+
+# Reload nginx
+sudo systemctl reload nginx</code></pre>
+      </div>
+
+      <!-- Step 8: Update YAKMESH for Proxy -->
+      <div class="tutorial-card">
+        <div class="step-header">
+          <span class="step-number">8</span>
+          <h2 class="text-xl font-bold">Update Config for Reverse Proxy</h2>
+        </div>
+        <p class="text-mountain-300 mb-4">
+          When using nginx, YAKMESH runs on localhost without SSL (nginx handles it):
+        </p>
+        <pre class="language-javascript mb-4"><code>// yakmesh.config.js - behind reverse proxy
+export default {
+  node: {
+    name: 'my-mesh-node',
+    publicUrl: 'https://mesh.example.com',
+  },
+  
+  server: {
+    host: '127.0.0.1',  // Only accept local connections
+    port: 3000,
+    ssl: { enabled: false },  // nginx handles SSL
+    trustProxy: true,  // Trust X-Forwarded headers
+  },
+  
+  websocket: {
+    host: '127.0.0.1',
+    port: 9001,
+    publicUrl: 'wss://mesh.example.com/ws',
+  },
+};</code></pre>
+      </div>
+
+      <!-- Verification -->
+      <div class="tutorial-card">
+        <h2 class="text-xl font-bold mb-4">✅ Verify Your Setup</h2>
+        <p class="text-mountain-300 mb-4">
+          Test that everything works:
+        </p>
+        <pre class="language-bash mb-4"><code># Check HTTPS is working
+curl -I https://mesh.example.com
+
+# Check health endpoint
+curl https://mesh.example.com/health
+
+# Test WebSocket (requires wscat: npm install -g wscat)
+wscat -c wss://mesh.example.com/ws</code></pre>
+        <p class="text-mountain-300">
+          You should see your node responding with valid SSL certificates and health status.
+        </p>
+      </div>
+
+      <!-- Troubleshooting -->
+      <div class="tutorial-card">
+        <h2 class="text-xl font-bold mb-4">🔧 Troubleshooting</h2>
+        <div class="space-y-4">
+          <div>
+            <p class="font-semibold text-white mb-1">DNS not resolving?</p>
+            <p class="text-sm text-mountain-300">Wait longer for propagation, or try <code class="bg-mountain-800 px-1 rounded">nslookup</code> from different networks.</p>
+          </div>
+          <div>
+            <p class="font-semibold text-white mb-1">Certificate errors?</p>
+            <p class="text-sm text-mountain-300">Ensure certificates are readable by YAKMESH/nginx. Check permissions with <code class="bg-mountain-800 px-1 rounded">ls -la /etc/letsencrypt/live/</code>.</p>
+          </div>
+          <div>
+            <p class="font-semibold text-white mb-1">Connection refused?</p>
+            <p class="text-sm text-mountain-300">Check firewall rules with <code class="bg-mountain-800 px-1 rounded">sudo ufw status</code> and port forwarding on your router.</p>
+          </div>
+          <div>
+            <p class="font-semibold text-white mb-1">WebSocket failing?</p>
+            <p class="text-sm text-mountain-300">Ensure nginx config has proper WebSocket upgrade headers. Check logs with <code class="bg-mountain-800 px-1 rounded">sudo tail -f /var/log/nginx/error.log</code>.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Success -->
+      <div class="bg-emerald-900/30 border border-emerald-600 rounded-xl p-6 mb-8">
+        <h2 class="text-xl font-bold mb-2 text-emerald-400">🎉 You Did It!</h2>
+        <p class="text-mountain-300">
+          Your YAKMESH node is now accessible via your custom domain with secure HTTPS.
+          Share your public URL <code class="bg-mountain-800 px-2 py-1 rounded">https://mesh.example.com</code> 
+          with peers so they can connect to your node.
+        </p>
+      </div>
+
+      <!-- Navigation Footer -->
+      <div class="border-t border-mountain-700 mt-12 pt-8">
+        <div class="flex flex-col sm:flex-row gap-4">
+          <a href="security-basics.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-emerald-500 transition group">
+            <div class="text-xs text-mountain-400 mb-1">← Previous</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">🛡️</span>
+              <span class="font-semibold group-hover:text-emerald-400">Security Basics</span>
+            </div>
+          </a>
+          <a href="raspberry-pi.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-emerald-500 transition group">
+            <div class="text-xs text-mountain-400 mb-1">Next →</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">🍓</span>
+              <span class="font-semibold group-hover:text-emerald-400">Running on Raspberry Pi</span>
+            </div>
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <footer class="docs-footer">
+    <p>© 2026 YAKMESH™</p>
+  </footer>
+
+  <script src="../prism.min.js"></script>
+  <script src="../prism-bash.min.js"></script>
+  <script src="../prism-javascript.min.js"></script>
+  <script src="../docs.js"></script>
+</body>
+</html>
