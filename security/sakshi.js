@@ -1468,6 +1468,358 @@ export function assessComputationTrust(computation, computedBy, options = {}) {
 }
 
 // =============================================================================
+// BEHAVIOR VELOCITY MONITORING
+// =============================================================================
+
+/**
+ * VEGATI - Velocity-based Behavior Change Detection
+ * वेगति (Sanskrit: "velocity, momentum")
+ * 
+ * Monitors nodes for sudden behavioral changes that may indicate:
+ * - Compromised hardware/keys
+ * - Reputation farming then abuse
+ * - Insider threat activation
+ * 
+ * Uses exponential moving average to establish behavioral baselines,
+ * then triggers alerts when current behavior deviates significantly.
+ */
+
+/**
+ * Velocity alert severity levels
+ */
+export const VELOCITY_ALERT = Object.freeze({
+  NORMAL: 'normal',           // Within expected variance
+  ELEVATED: 'elevated',       // Notable change, monitor closely
+  WARNING: 'warning',         // Significant deviation
+  CRITICAL: 'critical',       // Dramatic behavioral shift
+});
+
+/**
+ * Behavior dimensions tracked for velocity detection
+ */
+export const BEHAVIOR_DIMENSION = Object.freeze({
+  MESSAGE_RATE: 'message_rate',         // Messages per minute
+  GOSSIP_RATIO: 'gossip_ratio',         // Gossip vs direct messages
+  ERROR_RATE: 'error_rate',             // Invalid messages/signatures
+  ATTESTATION_RATE: 'attestation_rate', // Revocation attestations filed
+  CONNECTION_CHURN: 'connection_churn', // Connect/disconnect frequency
+  RESPONSE_LATENCY: 'response_latency', // Average response time
+});
+
+/**
+ * BehaviorVelocityMonitor - Tracks behavioral baselines and detects anomalies
+ * 
+ * Each node builds a behavioral "fingerprint" over time.
+ * Sudden changes from this fingerprint trigger velocity alerts.
+ */
+export class BehaviorVelocityMonitor {
+  constructor(options = {}) {
+    this.profiles = new Map();  // nodeId -> BehaviorProfile
+    
+    // Configuration
+    this.config = {
+      // EMA smoothing factor (0-1, lower = slower adaptation)
+      emaSmoothingFactor: options.emaSmoothingFactor || 0.1,
+      
+      // Minimum observations before establishing baseline
+      minObservationsForBaseline: options.minObservationsForBaseline || 50,
+      
+      // Standard deviation thresholds for alerts
+      thresholds: {
+        elevated: options.elevatedThreshold || 2.0,   // 2 sigma
+        warning: options.warningThreshold || 3.0,     // 3 sigma
+        critical: options.criticalThreshold || 4.0,   // 4 sigma
+      },
+      
+      // Cooldown period after alert before re-alerting (ms)
+      alertCooldown: options.alertCooldown || 60000,
+      
+      // Profile retention (ms)
+      profileTTL: options.profileTTL || 7 * 24 * 60 * 60 * 1000, // 7 days
+    };
+    
+    // Alert callbacks
+    this.alertCallbacks = [];
+    
+    log.info('vegati', 'Behavior velocity monitor initialized');
+  }
+
+  /**
+   * Register a callback for velocity alerts
+   */
+  onAlert(callback) {
+    this.alertCallbacks.push(callback);
+  }
+
+  /**
+   * Record an observation for a node
+   * 
+   * @param {string} nodeId - Node identifier
+   * @param {string} dimension - Which behavior dimension (from BEHAVIOR_DIMENSION)
+   * @param {number} value - Observed value
+   * @returns {Object} Current velocity status for this dimension
+   */
+  observe(nodeId, dimension, value) {
+    let profile = this.profiles.get(nodeId);
+    
+    if (!profile) {
+      profile = this._createProfile(nodeId);
+      this.profiles.set(nodeId, profile);
+    }
+    
+    profile.lastSeen = Date.now();
+    
+    // Get or create dimension stats
+    let stats = profile.dimensions.get(dimension);
+    if (!stats) {
+      stats = {
+        count: 0,
+        ema: value,          // Exponential moving average
+        emVar: 0,            // Exponential moving variance
+        lastValue: value,
+        lastAlert: 0,
+        alertCount: 0,
+      };
+      profile.dimensions.set(dimension, stats);
+    }
+    
+    stats.count++;
+    stats.lastValue = value;
+    
+    // Update EMA (baseline)
+    const alpha = this.config.emaSmoothingFactor;
+    const delta = value - stats.ema;
+    stats.ema = stats.ema + alpha * delta;
+    
+    // Update exponential moving variance (for std dev calculation)
+    stats.emVar = (1 - alpha) * (stats.emVar + alpha * delta * delta);
+    
+    // Only check velocity once we have baseline
+    if (stats.count < this.config.minObservationsForBaseline) {
+      return {
+        status: VELOCITY_ALERT.NORMAL,
+        reason: 'BUILDING_BASELINE',
+        progress: stats.count / this.config.minObservationsForBaseline,
+      };
+    }
+    
+    // Calculate z-score (standard deviations from mean)
+    const stdDev = Math.sqrt(stats.emVar);
+    const zScore = stdDev > 0 ? Math.abs(delta) / stdDev : 0;
+    
+    // Determine alert level
+    let alertLevel = VELOCITY_ALERT.NORMAL;
+    if (zScore >= this.config.thresholds.critical) {
+      alertLevel = VELOCITY_ALERT.CRITICAL;
+    } else if (zScore >= this.config.thresholds.warning) {
+      alertLevel = VELOCITY_ALERT.WARNING;
+    } else if (zScore >= this.config.thresholds.elevated) {
+      alertLevel = VELOCITY_ALERT.ELEVATED;
+    }
+    
+    // Emit alert if significant and not in cooldown
+    const now = Date.now();
+    if (alertLevel !== VELOCITY_ALERT.NORMAL && 
+        now - stats.lastAlert > this.config.alertCooldown) {
+      stats.lastAlert = now;
+      stats.alertCount++;
+      
+      const alert = {
+        nodeId,
+        dimension,
+        level: alertLevel,
+        zScore,
+        currentValue: value,
+        baselineEma: stats.ema,
+        baselineStdDev: stdDev,
+        deviation: delta,
+        alertCount: stats.alertCount,
+        timestamp: now,
+      };
+      
+      // Emit to callbacks
+      for (const callback of this.alertCallbacks) {
+        try {
+          callback(alert);
+        } catch (e) {
+          log.error('vegati', 'Alert callback error', { error: e.message });
+        }
+      }
+      
+      log.warn('vegati', `Velocity alert: ${alertLevel}`, {
+        nodeId,
+        dimension,
+        zScore: zScore.toFixed(2),
+        deviation: delta.toFixed(4),
+      });
+    }
+    
+    return {
+      status: alertLevel,
+      zScore,
+      deviation: delta,
+      baseline: stats.ema,
+      stdDev,
+    };
+  }
+
+  /**
+   * Get the current behavioral profile for a node
+   */
+  getProfile(nodeId) {
+    const profile = this.profiles.get(nodeId);
+    if (!profile) return null;
+    
+    const dimensions = {};
+    for (const [dim, stats] of profile.dimensions) {
+      dimensions[dim] = {
+        baseline: stats.ema,
+        stdDev: Math.sqrt(stats.emVar),
+        observations: stats.count,
+        lastValue: stats.lastValue,
+        alertCount: stats.alertCount,
+        hasBaseline: stats.count >= this.config.minObservationsForBaseline,
+      };
+    }
+    
+    return {
+      nodeId: profile.nodeId,
+      createdAt: profile.createdAt,
+      lastSeen: profile.lastSeen,
+      dimensions,
+    };
+  }
+
+  /**
+   * Get nodes with active alerts
+   */
+  getActiveAlerts() {
+    const alerts = [];
+    const now = Date.now();
+    
+    for (const profile of this.profiles.values()) {
+      for (const [dim, stats] of profile.dimensions) {
+        if (stats.alertCount > 0 && now - stats.lastAlert < this.config.alertCooldown * 2) {
+          const stdDev = Math.sqrt(stats.emVar);
+          const zScore = stdDev > 0 ? Math.abs(stats.lastValue - stats.ema) / stdDev : 0;
+          
+          let level = VELOCITY_ALERT.NORMAL;
+          if (zScore >= this.config.thresholds.critical) level = VELOCITY_ALERT.CRITICAL;
+          else if (zScore >= this.config.thresholds.warning) level = VELOCITY_ALERT.WARNING;
+          else if (zScore >= this.config.thresholds.elevated) level = VELOCITY_ALERT.ELEVATED;
+          
+          if (level !== VELOCITY_ALERT.NORMAL) {
+            alerts.push({
+              nodeId: profile.nodeId,
+              dimension: dim,
+              level,
+              zScore,
+              totalAlerts: stats.alertCount,
+              lastAlert: stats.lastAlert,
+            });
+          }
+        }
+      }
+    }
+    
+    return alerts;
+  }
+
+  /**
+   * Get aggregate velocity statistics
+   */
+  getStats() {
+    let totalProfiles = 0;
+    let profilesWithBaseline = 0;
+    let activeAlerts = 0;
+    const alertsByLevel = {
+      [VELOCITY_ALERT.ELEVATED]: 0,
+      [VELOCITY_ALERT.WARNING]: 0,
+      [VELOCITY_ALERT.CRITICAL]: 0,
+    };
+    
+    for (const profile of this.profiles.values()) {
+      totalProfiles++;
+      let hasAnyBaseline = false;
+      
+      for (const [dim, stats] of profile.dimensions) {
+        if (stats.count >= this.config.minObservationsForBaseline) {
+          hasAnyBaseline = true;
+        }
+        
+        if (stats.alertCount > 0) {
+          const stdDev = Math.sqrt(stats.emVar);
+          const zScore = stdDev > 0 ? Math.abs(stats.lastValue - stats.ema) / stdDev : 0;
+          
+          if (zScore >= this.config.thresholds.critical) {
+            activeAlerts++;
+            alertsByLevel[VELOCITY_ALERT.CRITICAL]++;
+          } else if (zScore >= this.config.thresholds.warning) {
+            activeAlerts++;
+            alertsByLevel[VELOCITY_ALERT.WARNING]++;
+          } else if (zScore >= this.config.thresholds.elevated) {
+            activeAlerts++;
+            alertsByLevel[VELOCITY_ALERT.ELEVATED]++;
+          }
+        }
+      }
+      
+      if (hasAnyBaseline) profilesWithBaseline++;
+    }
+    
+    return {
+      totalProfiles,
+      profilesWithBaseline,
+      activeAlerts,
+      alertsByLevel,
+    };
+  }
+
+  /**
+   * Cleanup old profiles
+   */
+  cleanup() {
+    const now = Date.now();
+    let removed = 0;
+    
+    for (const [nodeId, profile] of this.profiles) {
+      if (now - profile.lastSeen > this.config.profileTTL) {
+        this.profiles.delete(nodeId);
+        removed++;
+      }
+    }
+    
+    if (removed > 0) {
+      log.info('vegati', `Cleaned up ${removed} stale profiles`);
+    }
+    
+    return removed;
+  }
+
+  _createProfile(nodeId) {
+    return {
+      nodeId,
+      createdAt: Date.now(),
+      lastSeen: Date.now(),
+      dimensions: new Map(),
+    };
+  }
+}
+
+// Singleton instance
+let _velocityMonitor = null;
+
+/**
+ * Get the singleton velocity monitor instance
+ */
+export function getVelocityMonitor(options) {
+  if (!_velocityMonitor) {
+    _velocityMonitor = new BehaviorVelocityMonitor(options);
+  }
+  return _velocityMonitor;
+}
+
+// =============================================================================
 // EXPORTS
 // =============================================================================
 
@@ -1506,4 +1858,10 @@ export default {
   checkRevocationAgreement,
   aggregateAttestations,
   assessComputationTrust,
+  
+  // Velocity detection (VEGATI)
+  VELOCITY_ALERT,
+  BEHAVIOR_DIMENSION,
+  BehaviorVelocityMonitor,
+  getVelocityMonitor,
 };

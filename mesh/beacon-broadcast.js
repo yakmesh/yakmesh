@@ -55,11 +55,13 @@ const STUPA_CONFIG = {
     IMMEDIATE: 2,       // Time-sensitive (second tier)
     FLASH: 3,           // Emergency (third tier)
     CRITICAL: 4,        // Life/safety critical (pinnacle)
+    REVOCATION: 5,      // Identity revocation - highest priority (beyond pinnacle)
   },
   
   // Propagation settings
   defaultTTL: 10,               // Default hop count
   maxTTL: 50,                   // Maximum hop count
+  revocationTTL: 100,           // Extra hops for revocation messages
   deduplicationWindowMs: 60000, // 1 minute dedup window
   receiptTimeout: 30000,        // 30s to collect receipts
   
@@ -76,8 +78,19 @@ const STUPA_CONFIG = {
     IMMEDIATE: 5,
     FLASH: 10,
     CRITICAL: 100,
+    REVOCATION: 1000,           // Revocations bypass most rate limits
   },
 };
+
+/**
+ * Revocation broadcast payload types
+ */
+export const REVOCATION_BROADCAST_TYPE = Object.freeze({
+  ATTESTATION: 'revocation:attestation',    // New attestation against a DOKO
+  THRESHOLD_MET: 'revocation:threshold',    // Revocation threshold reached
+  CERTIFICATE: 'revocation:certificate',    // Signed revocation certificate
+  KEY_COMPROMISE: 'revocation:key_compromise', // Urgent: key compromise notification
+});
 
 // Legacy export for backward compatibility
 const BEACON_CONFIG = STUPA_CONFIG;
@@ -719,6 +732,102 @@ class StupaBroadcast {
     return this.broadcast(payload, {
       ...options,
       priority: STUPA_CONFIG.priorities.FLASH,
+    });
+  }
+
+  /**
+   * Send revocation broadcast - highest priority emergency channel
+   * 
+   * Used for rapid propagation of:
+   * - New revocation attestations
+   * - Revocation threshold reached
+   * - Key compromise notifications
+   * - Signed revocation certificates
+   * 
+   * These messages bypass normal rate limits and get maximum TTL
+   * to ensure network-wide propagation as fast as possible.
+   * 
+   * @param {string} type - One of REVOCATION_BROADCAST_TYPE
+   * @param {Object} revocationData - Revocation-specific payload
+   * @param {Object} options - Additional options
+   * @returns {Object} Broadcast result with messageId
+   */
+  sendRevocation(type, revocationData, options = {}) {
+    const payload = {
+      type,
+      ...revocationData,
+      urgency: 'MAXIMUM',
+      broadcastedAt: Date.now(),
+    };
+
+    console.log(`🚨 STUPA Revocation broadcast: ${type}`, {
+      dokoId: revocationData.dokoId,
+      reason: revocationData.reason,
+    });
+
+    return this.broadcast(payload, {
+      ...options,
+      priority: STUPA_CONFIG.priorities.REVOCATION,
+      ttl: STUPA_CONFIG.revocationTTL,
+      confirmDelivery: true,
+      // Mark as non-expiring for longer (10 minutes)
+      expiresAt: Date.now() + 10 * 60 * 1000,
+    });
+  }
+
+  /**
+   * Broadcast a revocation attestation
+   * Call this when filing an attestation against a DOKO
+   */
+  broadcastAttestation(attestation) {
+    return this.sendRevocation(REVOCATION_BROADCAST_TYPE.ATTESTATION, {
+      dokoId: attestation.dokoId,
+      reason: attestation.reason,
+      attesterId: attestation.attesterId,
+      timestamp: attestation.timestamp,
+      evidence: attestation.evidence,
+      signature: attestation.signature,
+    });
+  }
+
+  /**
+   * Broadcast that revocation threshold has been met
+   * Call this when 2/3 attestations reached for a DOKO
+   */
+  broadcastThresholdMet(dokoId, revocationStatus) {
+    return this.sendRevocation(REVOCATION_BROADCAST_TYPE.THRESHOLD_MET, {
+      dokoId,
+      reason: revocationStatus.reason,
+      attestationCount: revocationStatus.attestationCount,
+      threshold: revocationStatus.threshold,
+      activeNodes: revocationStatus.activeNodes,
+      confidence: revocationStatus.confidence,
+    });
+  }
+
+  /**
+   * Broadcast a signed revocation certificate
+   * Call this after threshold is met to distribute proof
+   */
+  broadcastRevocationCertificate(certificate) {
+    return this.sendRevocation(REVOCATION_BROADCAST_TYPE.CERTIFICATE, {
+      dokoId: certificate.dokoId,
+      reason: certificate.reason,
+      certificate,
+    });
+  }
+
+  /**
+   * Broadcast key compromise notification - URGENT
+   * Call this when a node's private key has been compromised
+   */
+  broadcastKeyCompromise(dokoId, compromiseInfo = {}) {
+    return this.sendRevocation(REVOCATION_BROADCAST_TYPE.KEY_COMPROMISE, {
+      dokoId,
+      reason: 'KEY_COMPROMISED',
+      reportedBy: this.nodeId,
+      compromiseInfo,
+      urgentAction: 'IMMEDIATE_REVOCATION_REQUIRED',
     });
   }
 
