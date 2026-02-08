@@ -597,6 +597,361 @@ export const MESH_REVOCATION_MESSAGES = {
   ATTESTATION: 'mesh:attestation',      // Single attestation
   ATTESTATIONS_SYNC: 'mesh:attest-sync', // Bulk attestation sync
   REVOCATION_CERT: 'mesh:revoke-cert',   // Completed revocation certificate
+  ATTESTATION_DISPUTE: 'mesh:attest-dispute', // Challenge an attestation
 };
+
+// =============================================================================
+// ATTESTATION ACCOUNTABILITY
+// =============================================================================
+
+/**
+ * ZIMMEDARI - Attestation Accountability Tracker
+ * ज़िम्मेदारी (Hindi: "responsibility, accountability")
+ * 
+ * Tracks the accuracy of attestations filed by nodes.
+ * If a node files provably false attestations, they lose karma.
+ * 
+ * This prevents:
+ * - Coordinated attacks against innocent nodes
+ * - Frivolous attestations without evidence
+ * - "Crying wolf" revocation attempts
+ * 
+ * Accountability is determined by:
+ * 1. If attested node later proves legitimacy (attestation was wrong)
+ * 2. If attestation is counter-attested by majority
+ * 3. If attestation is withdrawn by filer
+ */
+
+/**
+ * Attestation accuracy states
+ */
+export const ATTESTATION_ACCURACY = Object.freeze({
+  PENDING: 'pending',           // Not yet determined
+  VALIDATED: 'validated',       // Attestation was correct
+  DISPUTED: 'disputed',         // Under dispute
+  FALSE_POSITIVE: 'false_positive', // Attested node was innocent
+  WITHDRAWN: 'withdrawn',       // Filer withdrew attestation
+});
+
+/**
+ * AttestationAccountability - Tracks who files what and their accuracy
+ */
+export class AttestationAccountability extends EventEmitter {
+  constructor(options = {}) {
+    super();
+    
+    // nodeId -> AttesterRecord
+    this.attesters = new Map();
+    
+    // dokoId -> dispute info
+    this.disputes = new Map();
+    
+    this.config = {
+      // Accuracy tracking window (ms)
+      trackingWindow: options.trackingWindow || 30 * 24 * 60 * 60 * 1000, // 30 days
+      
+      // Minimum attestations before accuracy matters
+      minAttestationsForAccuracy: options.minAttestationsForAccuracy || 5,
+      
+      // Accuracy thresholds
+      accuracyThreshold: {
+        unreliable: options.unreliableThreshold || 0.5,  // Below 50% = unreliable
+        suspicious: options.suspiciousThreshold || 0.7,  // Below 70% = suspicious
+        reliable: options.reliableThreshold || 0.9,      // Above 90% = reliable
+      },
+      
+      // Karma penalties for false attestations
+      falseAttestationPenalty: options.falseAttestationPenalty || 0.2,
+      
+      // Karma reward for validated attestations
+      validatedReward: options.validatedReward || 0.02,
+    };
+    
+    log.info('zimmedari', 'Attestation accountability initialized');
+  }
+
+  /**
+   * Record an attestation being filed
+   */
+  recordAttestation(attesterId, targetDokoId, reason) {
+    let record = this.attesters.get(attesterId);
+    if (!record) {
+      record = this._createAttesterRecord(attesterId);
+      this.attesters.set(attesterId, record);
+    }
+    
+    record.totalFiled++;
+    record.lastFiled = Date.now();
+    record.attestations.push({
+      targetDokoId,
+      reason,
+      filedAt: Date.now(),
+      accuracy: ATTESTATION_ACCURACY.PENDING,
+    });
+    
+    // Limit history size
+    if (record.attestations.length > 1000) {
+      record.attestations = record.attestations.slice(-500);
+    }
+  }
+
+  /**
+   * Mark an attestation as validated (was correct)
+   */
+  markValidated(attesterId, targetDokoId) {
+    const record = this.attesters.get(attesterId);
+    if (!record) return false;
+    
+    const attestation = record.attestations.find(
+      a => a.targetDokoId === targetDokoId && a.accuracy === ATTESTATION_ACCURACY.PENDING
+    );
+    
+    if (!attestation) return false;
+    
+    attestation.accuracy = ATTESTATION_ACCURACY.VALIDATED;
+    attestation.validatedAt = Date.now();
+    record.validated++;
+    
+    this.emit('attestation-validated', {
+      attesterId,
+      targetDokoId,
+      accuracy: this.getAccuracy(attesterId),
+    });
+    
+    return true;
+  }
+
+  /**
+   * Mark an attestation as false positive (was wrong)
+   * This triggers karma penalty
+   */
+  markFalsePositive(attesterId, targetDokoId, evidence = null) {
+    const record = this.attesters.get(attesterId);
+    if (!record) return false;
+    
+    const attestation = record.attestations.find(
+      a => a.targetDokoId === targetDokoId && a.accuracy === ATTESTATION_ACCURACY.PENDING
+    );
+    
+    if (!attestation) return false;
+    
+    attestation.accuracy = ATTESTATION_ACCURACY.FALSE_POSITIVE;
+    attestation.falsifiedAt = Date.now();
+    attestation.evidence = evidence;
+    record.falsePositives++;
+    
+    this.emit('attestation-false-positive', {
+      attesterId,
+      targetDokoId,
+      evidence,
+      falsePositiveCount: record.falsePositives,
+      accuracy: this.getAccuracy(attesterId),
+      penalty: this.config.falseAttestationPenalty,
+    });
+    
+    log.warn('zimmedari', 'False positive attestation recorded', {
+      attesterId,
+      targetDokoId,
+      accuracy: this.getAccuracy(attesterId),
+    });
+    
+    return true;
+  }
+
+  /**
+   * Mark an attestation as disputed (under investigation)
+   */
+  markDisputed(attesterId, targetDokoId, disputeReason) {
+    const record = this.attesters.get(attesterId);
+    if (!record) return false;
+    
+    const attestation = record.attestations.find(
+      a => a.targetDokoId === targetDokoId && a.accuracy === ATTESTATION_ACCURACY.PENDING
+    );
+    
+    if (!attestation) return false;
+    
+    attestation.accuracy = ATTESTATION_ACCURACY.DISPUTED;
+    attestation.disputedAt = Date.now();
+    attestation.disputeReason = disputeReason;
+    
+    this.disputes.set(targetDokoId, {
+      attesterId,
+      disputeReason,
+      disputedAt: Date.now(),
+    });
+    
+    this.emit('attestation-disputed', {
+      attesterId,
+      targetDokoId,
+      disputeReason,
+    });
+    
+    return true;
+  }
+
+  /**
+   * File a dispute against an attestation
+   * Returns dispute info for gossip propagation
+   */
+  fileDispute(disputerId, targetDokoId, originalAttesterId, evidence) {
+    const dispute = {
+      type: 'attestation_dispute',
+      disputerId,
+      targetDokoId,
+      originalAttesterId,
+      evidence,
+      filedAt: Date.now(),
+    };
+    
+    // Mark the original attestation as disputed
+    this.markDisputed(originalAttesterId, targetDokoId, `Disputed by ${disputerId}`);
+    
+    log.info('zimmedari', 'Dispute filed against attestation', {
+      disputerId,
+      originalAttesterId,
+      targetDokoId,
+    });
+    
+    return dispute;
+  }
+
+  /**
+   * Get accuracy ratio for an attester
+   */
+  getAccuracy(attesterId) {
+    const record = this.attesters.get(attesterId);
+    if (!record) return null;
+    
+    const resolved = record.validated + record.falsePositives;
+    if (resolved < this.config.minAttestationsForAccuracy) {
+      return {
+        accuracy: null,
+        reason: 'INSUFFICIENT_DATA',
+        resolved,
+        required: this.config.minAttestationsForAccuracy,
+      };
+    }
+    
+    const accuracyRatio = record.validated / resolved;
+    
+    let status = 'normal';
+    if (accuracyRatio >= this.config.accuracyThreshold.reliable) {
+      status = 'reliable';
+    } else if (accuracyRatio < this.config.accuracyThreshold.unreliable) {
+      status = 'unreliable';
+    } else if (accuracyRatio < this.config.accuracyThreshold.suspicious) {
+      status = 'suspicious';
+    }
+    
+    return {
+      accuracy: accuracyRatio,
+      status,
+      validated: record.validated,
+      falsePositives: record.falsePositives,
+      pending: record.attestations.filter(a => a.accuracy === ATTESTATION_ACCURACY.PENDING).length,
+      total: record.totalFiled,
+    };
+  }
+
+  /**
+   * Get attester record
+   */
+  getAttesterRecord(attesterId) {
+    return this.attesters.get(attesterId) || null;
+  }
+
+  /**
+   * Get statistics
+   */
+  getStats() {
+    let totalAttesters = 0;
+    let totalAttestations = 0;
+    let totalValidated = 0;
+    let totalFalsePositives = 0;
+    let unreliableAttesters = 0;
+    
+    for (const record of this.attesters.values()) {
+      totalAttesters++;
+      totalAttestations += record.totalFiled;
+      totalValidated += record.validated;
+      totalFalsePositives += record.falsePositives;
+      
+      const accuracy = this.getAccuracy(record.attesterId);
+      if (accuracy?.status === 'unreliable') {
+        unreliableAttesters++;
+      }
+    }
+    
+    return {
+      totalAttesters,
+      totalAttestations,
+      totalValidated,
+      totalFalsePositives,
+      unreliableAttesters,
+      activeDisputes: this.disputes.size,
+      overallAccuracy: totalValidated > 0 ? totalValidated / (totalValidated + totalFalsePositives) : null,
+    };
+  }
+
+  /**
+   * Cleanup old records
+   */
+  cleanup() {
+    const now = Date.now();
+    const cutoff = now - this.config.trackingWindow;
+    let removed = 0;
+    
+    for (const [attesterId, record] of this.attesters) {
+      // Remove attestations older than tracking window
+      const originalLength = record.attestations.length;
+      record.attestations = record.attestations.filter(a => a.filedAt > cutoff);
+      
+      // If no recent attestations, remove the record
+      if (record.attestations.length === 0 && record.lastFiled < cutoff) {
+        this.attesters.delete(attesterId);
+        removed++;
+      }
+    }
+    
+    // Cleanup old disputes
+    for (const [dokoId, dispute] of this.disputes) {
+      if (dispute.disputedAt < cutoff) {
+        this.disputes.delete(dokoId);
+      }
+    }
+    
+    if (removed > 0) {
+      log.info('zimmedari', `Cleaned up ${removed} stale attester records`);
+    }
+    
+    return removed;
+  }
+
+  _createAttesterRecord(attesterId) {
+    return {
+      attesterId,
+      totalFiled: 0,
+      validated: 0,
+      falsePositives: 0,
+      firstSeen: Date.now(),
+      lastFiled: null,
+      attestations: [],
+    };
+  }
+}
+
+// Singleton instance
+let _accountabilityInstance = null;
+
+/**
+ * Get the singleton accountability tracker instance
+ */
+export function getAttestationAccountability(options) {
+  if (!_accountabilityInstance) {
+    _accountabilityInstance = new AttestationAccountability(options);
+  }
+  return _accountabilityInstance;
+}
 
 export default MeshRevocation;

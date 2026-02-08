@@ -7,8 +7,37 @@
  * - Gossip message floods
  * - Cross-network attack attempts
  * 
+ * Trust-Proportional Limits:
+ * - Trusted nodes get higher limits (they've earned it)
+ * - But trusted nodes get STRICTER penalties if they abuse (betrayal tax)
+ * - This balances power with accountability
+ * 
  * @module mesh/rate-limiter
  */
+
+/**
+ * Trust levels for rate limiting
+ * Higher trust = higher limits, but also higher abuse penalties
+ */
+export const TRUST_LEVEL = Object.freeze({
+  UNKNOWN: 'unknown',       // New/unverified nodes
+  SUSPICIOUS: 'suspicious', // Nodes with some bad behavior
+  NORMAL: 'normal',         // Regular nodes
+  TRUSTED: 'trusted',       // Established good actors
+  VETERAN: 'veteran',       // Long-term high-trust nodes
+});
+
+/**
+ * Trust-proportional multipliers
+ * Format: { limit: multiplier, penalty: multiplier }
+ */
+const TRUST_MULTIPLIERS = Object.freeze({
+  [TRUST_LEVEL.UNKNOWN]: { limit: 0.5, penalty: 1.0 },    // Half limits, normal penalty
+  [TRUST_LEVEL.SUSPICIOUS]: { limit: 0.25, penalty: 1.5 }, // Quarter limits, 1.5x penalty
+  [TRUST_LEVEL.NORMAL]: { limit: 1.0, penalty: 1.0 },     // Base limits
+  [TRUST_LEVEL.TRUSTED]: { limit: 2.0, penalty: 2.0 },    // 2x limits, 2x penalty
+  [TRUST_LEVEL.VETERAN]: { limit: 5.0, penalty: 3.0 },    // 5x limits, 3x penalty (betrayal tax)
+});
 
 /**
  * Sliding window rate limiter with per-IP and per-node tracking
@@ -16,11 +45,11 @@
 export class ConnectionRateLimiter {
   constructor(options = {}) {
     this.config = {
-      // Connection rate limits
+      // Connection rate limits (base values)
       maxConnectionsPerMinute: options.maxConnectionsPerMinute || 10,
       maxConnectionsPerHour: options.maxConnectionsPerHour || 60,
       
-      // Message rate limits  
+      // Message rate limits (base values)
       maxMessagesPerSecond: options.maxMessagesPerSecond || 50,
       maxMessagesPerMinute: options.maxMessagesPerMinute || 500,
       
@@ -31,7 +60,7 @@ export class ConnectionRateLimiter {
       maxGossipPerSecond: options.maxGossipPerSecond || 20,
       maxRumorsPerMinute: options.maxRumorsPerMinute || 100,
       
-      // Ban thresholds
+      // Ban thresholds (adjusted by trust penalty multiplier)
       banThreshold: options.banThreshold || 5,  // violations before ban
       banDuration: options.banDuration || 300000, // 5 minutes
       
@@ -47,8 +76,50 @@ export class ConnectionRateLimiter {
     this.violations = new Map();   // IP -> { count, lastViolation }
     this.banned = new Map();       // IP -> banExpiry timestamp
     
+    // Trust level cache (nodeId -> TRUST_LEVEL)
+    this.trustLevels = new Map();
+    
     // Start cleanup interval
     this._cleanupInterval = setInterval(() => this._cleanup(), this.config.cleanupInterval);
+  }
+  
+  /**
+   * Set trust level for a node (call this when trust changes)
+   * @param {string} nodeId - Node identifier
+   * @param {string} trustLevel - One of TRUST_LEVEL values
+   */
+  setTrustLevel(nodeId, trustLevel) {
+    if (!Object.values(TRUST_LEVEL).includes(trustLevel)) {
+      trustLevel = TRUST_LEVEL.NORMAL;
+    }
+    this.trustLevels.set(nodeId, trustLevel);
+  }
+  
+  /**
+   * Get trust level for a node
+   */
+  getTrustLevel(nodeId) {
+    return this.trustLevels.get(nodeId) || TRUST_LEVEL.UNKNOWN;
+  }
+  
+  /**
+   * Get effective limit based on trust level
+   * @private
+   */
+  _getEffectiveLimit(baseLimit, nodeId) {
+    const trustLevel = this.getTrustLevel(nodeId);
+    const multiplier = TRUST_MULTIPLIERS[trustLevel]?.limit || 1.0;
+    return Math.ceil(baseLimit * multiplier);
+  }
+  
+  /**
+   * Get effective penalty based on trust level
+   * Higher trust = higher penalty (betrayal tax)
+   * @private
+   */
+  _getEffectivePenalty(nodeId) {
+    const trustLevel = this.getTrustLevel(nodeId);
+    return TRUST_MULTIPLIERS[trustLevel]?.penalty || 1.0;
   }
   
   /**
@@ -67,21 +138,34 @@ export class ConnectionRateLimiter {
   
   /**
    * Record a violation and potentially ban
+   * Uses trust-proportional penalty (higher trust = stricter penalty)
    */
-  _recordViolation(ip, reason) {
-    const record = this.violations.get(ip) || { count: 0, reasons: [] };
-    record.count++;
+  _recordViolation(ip, reason, nodeId = null) {
+    const record = this.violations.get(ip) || { count: 0, reasons: [], nodeId };
+    const penaltyMultiplier = nodeId ? this._getEffectivePenalty(nodeId) : 1.0;
+    
+    // Apply penalty multiplier - trusted nodes get penalized harder
+    const effectivePenalty = penaltyMultiplier;
+    record.count += effectivePenalty;
     record.lastViolation = Date.now();
     record.reasons.push(reason);
+    if (nodeId) record.nodeId = nodeId;
     this.violations.set(ip, record);
     
-    if (record.count >= this.config.banThreshold) {
-      this.banned.set(ip, Date.now() + this.config.banDuration);
-      console.warn(`🚫 Banned IP ${ip} for ${this.config.banDuration/1000}s. Reasons: ${record.reasons.slice(-3).join(', ')}`);
+    // Effective ban threshold (lower for high-trust nodes that betray)
+    const effectiveThreshold = this.config.banThreshold / penaltyMultiplier;
+    
+    if (record.count >= effectiveThreshold) {
+      // Ban duration is also extended for trusted nodes that abuse
+      const effectiveBanDuration = this.config.banDuration * penaltyMultiplier;
+      this.banned.set(ip, Date.now() + effectiveBanDuration);
+      
+      const trustLevel = nodeId ? this.getTrustLevel(nodeId) : TRUST_LEVEL.UNKNOWN;
+      console.warn(`🚫 Banned IP ${ip} for ${effectiveBanDuration/1000}s (trust: ${trustLevel}, penalty: ${penaltyMultiplier}x). Reasons: ${record.reasons.slice(-3).join(', ')}`);
       return true;
     }
     
-    console.warn(`⚠️ Rate limit violation from ${ip}: ${reason} (${record.count}/${this.config.banThreshold})`);
+    console.warn(`⚠️ Rate limit violation from ${ip}: ${reason} (${record.count.toFixed(1)}/${effectiveThreshold} with ${penaltyMultiplier}x penalty)`);
     return false;
   }
   
@@ -177,8 +261,12 @@ export class ConnectionRateLimiter {
   
   /**
    * Check if a message from a node is allowed
+   * Uses trust-proportional limits
    */
-  checkMessage(nodeIdOrIp) {
+  checkMessage(nodeIdOrIp, nodeId = null) {
+    // If only one arg and it looks like a nodeId, use it for trust lookup
+    const effectiveNodeId = nodeId || (nodeIdOrIp.startsWith('DOKO-') ? nodeIdOrIp : null);
+    
     const now = Date.now();
     const record = this.messages.get(nodeIdOrIp) || { 
       count: 0, 
@@ -199,8 +287,12 @@ export class ConnectionRateLimiter {
       record.windowStart = now;
     }
     
+    // Get trust-proportional limits
+    const effectivePerSecond = this._getEffectiveLimit(this.config.maxMessagesPerSecond, effectiveNodeId);
+    const effectivePerMinute = this._getEffectiveLimit(this.config.maxMessagesPerMinute, effectiveNodeId);
+    
     // Check per-second limit
-    if (record.secondCount >= this.config.maxMessagesPerSecond) {
+    if (record.secondCount >= effectivePerSecond) {
       return { 
         allowed: false, 
         reason: 'Message rate exceeded (per second)',
@@ -209,7 +301,7 @@ export class ConnectionRateLimiter {
     }
     
     // Check per-minute limit
-    if (record.count >= this.config.maxMessagesPerMinute) {
+    if (record.count >= effectivePerMinute) {
       return { 
         allowed: false, 
         reason: 'Message rate exceeded (per minute)',
@@ -225,6 +317,7 @@ export class ConnectionRateLimiter {
   
   /**
    * Check if a gossip/rumor from a node is allowed
+   * Uses trust-proportional limits
    */
   checkGossip(nodeId) {
     const now = Date.now();
@@ -247,13 +340,17 @@ export class ConnectionRateLimiter {
       record.windowStart = now;
     }
     
+    // Get trust-proportional limits
+    const effectivePerSecond = this._getEffectiveLimit(this.config.maxGossipPerSecond, nodeId);
+    const effectivePerMinute = this._getEffectiveLimit(this.config.maxRumorsPerMinute, nodeId);
+    
     // Check per-second limit
-    if (record.secondCount >= this.config.maxGossipPerSecond) {
+    if (record.secondCount >= effectivePerSecond) {
       return { allowed: false, reason: 'Gossip rate exceeded (per second)' };
     }
     
     // Check per-minute limit
-    if (record.count >= this.config.maxRumorsPerMinute) {
+    if (record.count >= effectivePerMinute) {
       return { allowed: false, reason: 'Gossip rate exceeded (per minute)' };
     }
     
@@ -267,6 +364,19 @@ export class ConnectionRateLimiter {
    * Get statistics for monitoring
    */
   getStats() {
+    // Count nodes by trust level
+    const trustDistribution = {
+      [TRUST_LEVEL.UNKNOWN]: 0,
+      [TRUST_LEVEL.SUSPICIOUS]: 0,
+      [TRUST_LEVEL.NORMAL]: 0,
+      [TRUST_LEVEL.TRUSTED]: 0,
+      [TRUST_LEVEL.VETERAN]: 0,
+    };
+    
+    for (const level of this.trustLevels.values()) {
+      trustDistribution[level] = (trustDistribution[level] || 0) + 1;
+    }
+    
     return {
       activeConnections: this.connections.size,
       activeMessageTracking: this.messages.size,
@@ -275,6 +385,8 @@ export class ConnectionRateLimiter {
       violations: this.violations.size,
       banned: this.banned.size,
       bannedIPs: Array.from(this.banned.keys()),
+      trustLevelsTracked: this.trustLevels.size,
+      trustDistribution,
     };
   }
   
