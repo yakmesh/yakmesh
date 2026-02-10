@@ -47,6 +47,48 @@ Changes to the timing/oracle layer must:
 
 ---
 
+## 📚 Documentation Guidelines
+
+### Adding New Documentation Pages
+
+When adding new pages to the `docs/` directory:
+
+1. **Update the navigation manifest** in `docs/nav-order.json`:
+   - Add your new page at the appropriate position in the `pages` array
+   - Include: `file`, `icon`, `title`, and `description`
+
+2. **Run the navigation update script**:
+   ```bash
+   node scripts/update-docs-nav.cjs
+   ```
+   This automatically updates prev/next links in all affected pages.
+
+3. **Update the sidebar** in all doc pages:
+   - Add the new page to the sidebar nav list in every `.html` file
+   - Use consistent icon and title
+
+### Navigation Order
+
+The canonical page order is defined in `docs/nav-order.json`. This ensures:
+- Consistent prev/next links across all pages
+- Single source of truth for navigation
+- Easy insertion of new pages without manual link updates
+
+**Example: Adding a new page "DHARMA" between KATHA and VANI**
+
+1. Edit `docs/nav-order.json`:
+   ```json
+   { "file": "katha.html", "icon": "💬", "title": "KATHA", "description": "Rich chat" },
+   { "file": "dharma.html", "icon": "☸️", "title": "DHARMA", "description": "New protocol" },
+   { "file": "vani.html", "icon": "🎙️", "title": "VANI", "description": "Voice calls" },
+   ```
+
+2. Run: `node scripts/update-docs-nav.cjs`
+
+3. This updates KATHA (next→DHARMA), creates correct links in DHARMA, and updates VANI (prev→DHARMA).
+
+---
+
 ## 🏷️ Branding & Trademark
 
 **YAKMESH** is a trademark of the YAKMESH Project (PeerQuanta).
