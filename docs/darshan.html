@@ -450,39 +450,44 @@ viewer.on('stream:completed', ({ streamId, attestation }) => {});
         </code></pre>
       </section>
 
-      <!-- Related Protocols -->
+      <!-- Related Protocols (compact badges) -->
       <section class="mt-8" id="related">
         <h2 class="text-2xl font-bold mb-4">🔗 Related Protocols</h2>
-        <div class="grid md:grid-cols-3 gap-4">
-          <a href="gumba.html" class="block p-4 bg-mountain-800/50 rounded-lg hover:bg-mountain-800">
-            <span class="text-2xl">🛕</span>
-            <h3 class="font-semibold mt-2">GUMBA</h3>
-            <p class="text-sm text-mountain-400">Access control for DARSHAN streams</p>
+        <div class="flex flex-wrap gap-2">
+          <a href="gumba.html" class="inline-flex items-center gap-1 px-3 py-1 bg-mountain-800/50 rounded-lg hover:bg-mountain-800 text-sm">
+            <span>🛕</span> GUMBA <span class="text-mountain-400">— Access control</span>
           </a>
-          <a href="annex.html" class="block p-4 bg-mountain-800/50 rounded-lg hover:bg-mountain-800">
-            <span class="text-2xl">🌉</span>
-            <h3 class="font-semibold mt-2">ANNEX</h3>
-            <p class="text-sm text-mountain-400">E2E encrypted tunnel transport</p>
+          <a href="annex.html" class="inline-flex items-center gap-1 px-3 py-1 bg-mountain-800/50 rounded-lg hover:bg-mountain-800 text-sm">
+            <span>🌉</span> ANNEX <span class="text-mountain-400">— E2E encryption</span>
           </a>
-          <a href="yurt.html" class="block p-4 bg-mountain-800/50 rounded-lg hover:bg-mountain-800">
-            <span class="text-2xl">🏕️</span>
-            <h3 class="font-semibold mt-2">YURT</h3>
-            <p class="text-sm text-mountain-400">Content hosting alternatives</p>
+          <a href="yurt.html" class="inline-flex items-center gap-1 px-3 py-1 bg-mountain-800/50 rounded-lg hover:bg-mountain-800 text-sm">
+            <span>🏕️</span> YURT <span class="text-mountain-400">— Hosting</span>
           </a>
         </div>
       </section>
 
-      <!-- Navigation -->
-      <nav class="docs-pagination">
-        <a href="vani.html" class="docs-pagination-link">
-          <span class="docs-pagination-dir">← Previous</span>
-          <span class="docs-pagination-title">VANI</span>
-        </a>
-        <a href="stupa.html" class="docs-pagination-link text-right">
-          <span class="docs-pagination-dir">Next →</span>
-          <span class="docs-pagination-title">STUPA</span>
-        </a>
-      </nav>
+      <!-- Journey Navigation -->
+      <div class="border-t border-mountain-700 mt-12 pt-8">
+        <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
+        <div class="flex flex-col sm:flex-row gap-4">
+          <a href="vani.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-purple-500 transition group">
+            <div class="text-xs text-mountain-400 mb-1">← Previous</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">🎙️</span>
+              <span class="font-semibold group-hover:text-purple-400">VANI</span>
+            </div>
+            <p class="text-mountain-400 text-sm mt-1">Voice & video calls</p>
+          </a>
+          <a href="stupa.html" class="flex-1 block bg-mountain-800 border border-purple-700 rounded-xl p-4 hover:border-purple-500 transition group">
+            <div class="text-xs text-mountain-400 mb-1">Next →</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">🛕</span>
+              <span class="font-semibold group-hover:text-purple-400">STUPA</span>
+            </div>
+            <p class="text-mountain-400 text-sm mt-1">Emergency broadcasts</p>
+          </a>
+        </div>
+      </div>
     </div>
   </main>
 

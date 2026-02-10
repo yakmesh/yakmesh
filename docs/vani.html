@@ -531,14 +531,14 @@ CALL_END_REASON.PARTICIPANT_LEFT // Group participant left
       <!-- NAT & Firewall -->
       <section class="callout theme-callout mt-8" id="nat-traversal">
         <h2>🌐 NAT Traversal</h2>
-        <p>VANI uses ICE (Interactive Connectivity Establishment) with STUN servers for NAT traversal:</p>
+        <p>VANI uses ICE (Interactive Connectivity Establishment) for NAT traversal with three connection strategies:</p>
         <ul class="list-disc list-inside mt-2 space-y-1">
           <li><strong>Direct P2P</strong>: When both peers are on public IPs or same LAN</li>
           <li><strong>STUN</strong>: Discovers public IP and port mapping for NAT punch-through</li>
-          <li><strong>TURN</strong>: Relay server fallback for symmetric NAT (configure your own)</li>
-          <li><strong>Mesh Relay</strong>: Can fallback to mesh network for signaling if ICE fails</li>
+          <li><strong>Mesh Relay (preferred)</strong>: Fallback to Yakmesh mesh network for media relay — no external servers needed</li>
+          <li><strong>TURN</strong>: Optional external relay for symmetric NAT (configure your own if needed)</li>
         </ul>
-        <p class="mt-4">Default STUN servers are Google's public servers. For production, configure your own TURN server for reliable connectivity behind strict NATs.</p>
+        <p class="mt-4 text-yellow-300">⚠️ <strong>Ethos Note:</strong> The default configuration uses empty ICE servers, relying on mesh relay instead of external STUN/TURN. For hybrid deployments, you may optionally configure your own STUN/TURN servers — but Yakmesh's mesh relay is the recommended, fully decentralized approach.</p>
       </section>
 
       <!-- Integration Example -->
@@ -649,11 +649,28 @@ document.getElementById('callBtn').onclick = () => {
         </code></pre>
       </section>
 
-                  <!-- Navigation -->
-      <nav class="docs-nav-footer">
-        <a href="katha.html">← KATHA</a>
-        <a href="darshan.html" class="ml-auto">DARSHAN →</a>
-      </nav>
+      <!-- Journey Navigation -->
+      <div class="border-t border-mountain-700 mt-12 pt-8">
+        <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
+        <div class="flex flex-col sm:flex-row gap-4">
+          <a href="katha.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-rose-500 transition group">
+            <div class="text-xs text-mountain-400 mb-1">← Previous</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">💬</span>
+              <span class="font-semibold group-hover:text-rose-400">KATHA</span>
+            </div>
+            <p class="text-mountain-400 text-sm mt-1">Rich chat features</p>
+          </a>
+          <a href="darshan.html" class="flex-1 block bg-mountain-800 border border-rose-700 rounded-xl p-4 hover:border-rose-500 transition group">
+            <div class="text-xs text-mountain-400 mb-1">Next →</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">👁️</span>
+              <span class="font-semibold group-hover:text-rose-400">DARSHAN</span>
+            </div>
+            <p class="text-mountain-400 text-sm mt-1">Content streaming</p>
+          </a>
+        </div>
+      </div>
     </div>
   </main>
 
