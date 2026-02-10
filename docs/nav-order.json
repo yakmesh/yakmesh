@@ -16,6 +16,7 @@
     { "file": "mantra.html", "icon": "🕉️", "title": "MANTRA", "description": "Message protocol" },
     { "file": "katha.html", "icon": "💬", "title": "KATHA", "description": "Rich chat features" },
     { "file": "vani.html", "icon": "🎙️", "title": "VANI", "description": "Voice/video calls" },
+    { "file": "darshan.html", "icon": "👁️", "title": "DARSHAN", "description": "Content streaming" },
     { "file": "stupa.html", "icon": "🛕", "title": "STUPA", "description": "Emergency broadcasts" },
     { "file": "lama.html", "icon": "🔮", "title": "LAMA", "description": "Distributed consensus" },
     { "file": "mani.html", "icon": "⏱️", "title": "MANI", "description": "Time synchronization" },
