@@ -52,7 +52,8 @@
       <li><a href="mantra.html"><span>🕉️</span> <span>MANTRA</span></a></li>
       <li><a href="katha.html"><span>💬</span> <span>KATHA</span></a></li>
       <li><a href="vani.html"><span>🎙️</span> <span>VANI</span></a></li>
-            <li><a href="darshan.html"><span>👁️</span> <span>DARSHAN</span></a></li>`n<li><a href="stupa.html"><span>🛕</span> <span>STUPA</span></a></li>
+      <li><a href="darshan.html"><span>👁️</span> <span>DARSHAN</span></a></li>
+      <li><a href="stupa.html"><span>🛕</span> <span>STUPA</span></a></li>
       <li><a href="lama.html"><span>🔮</span> <span>LAMA</span></a></li>
       <li><a href="mani.html"><span>⏱️</span> <span>MANI</span></a></li>
       <li><a href="karma.html"><span>☯️</span> <span>KARMA</span></a></li>
@@ -285,11 +286,13 @@ if (result.gates & gateway.GATE.SIGNATURE_OK) {
             <h2 class="text-2xl font-bold mb-4">Events</h2>
             <div class="bg-mountain-800 rounded-xl p-6 mb-8">
                 <pre class="text-sm overflow-x-auto"><code class="language-javascript">gateway.on('verification-passed', ({ nodeId, dokoHash, gates }) => {
-  console.log(`Node ${nodeId} verified successfully`);
+  console.log(
+ode ${nodeId} verified successfully`);
 });
 
 gateway.on('verification-failed', ({ nodeId, failedGate, error }) => {
-  console.log(`Node ${nodeId} failed at gate ${failedGate}: ${error}`);
+  console.log(
+ode ${nodeId} failed at gate ${failedGate}: ${error}`);
 });
 
 gateway.on('doko-cached', ({ nodeId, expiresAt }) => {
