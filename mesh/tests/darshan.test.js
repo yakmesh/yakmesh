@@ -713,6 +713,84 @@ describe('DarshanGateway', () => {
     expect(stats.contentRegistered).toBe(1);
     expect(stats.registeredContent).toBe(1);
   });
+  
+  // Exclusion (moderation) tests
+  it('excludes content from listings', async () => {
+    const reg = await gateway.registerContent({ path: '/videos/test.mp4', name: 'V' });
+    expect(gateway.listContent().length).toBe(1);
+    
+    const result = gateway.excludeContent(reg.content.contentId, {
+      excludedBy: 'admin-1',
+      reason: 'community-guidelines',
+    });
+    
+    expect(result.success).toBe(true);
+    expect(gateway.listContent().length).toBe(0);  // Hidden from public listing
+  });
+  
+  it('includes excluded content when requested', async () => {
+    const reg = await gateway.registerContent({ path: '/videos/test.mp4', name: 'V' });
+    gateway.excludeContent(reg.content.contentId);
+    
+    const publicList = gateway.listContent();
+    const adminList = gateway.listContent({ includeExcluded: true });
+    
+    expect(publicList.length).toBe(0);
+    expect(adminList.length).toBe(1);
+    expect(adminList[0].excluded).toBe(true);
+  });
+  
+  it('reinstates excluded content', async () => {
+    const reg = await gateway.registerContent({ path: '/videos/test.mp4', name: 'V' });
+    gateway.excludeContent(reg.content.contentId);
+    expect(gateway.listContent().length).toBe(0);
+    
+    const result = gateway.reinstateContent(reg.content.contentId);
+    expect(result.success).toBe(true);
+    expect(gateway.listContent().length).toBe(1);
+  });
+  
+  it('fails to exclude non-existent content', () => {
+    const result = gateway.excludeContent('nonexistent');
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('CONTENT_NOT_FOUND');
+  });
+  
+  it('fails to reinstate non-excluded content', async () => {
+    const reg = await gateway.registerContent({ path: '/videos/test.mp4', name: 'V' });
+    const result = gateway.reinstateContent(reg.content.contentId);
+    expect(result.success).toBe(false);
+    expect(result.error).toBe('NOT_EXCLUDED');
+  });
+  
+  it('checks if content is excluded', async () => {
+    const reg = await gateway.registerContent({ path: '/videos/test.mp4', name: 'V' });
+    expect(gateway.isExcluded(reg.content.contentId)).toBe(false);
+    
+    gateway.excludeContent(reg.content.contentId);
+    expect(gateway.isExcluded(reg.content.contentId)).toBe(true);
+  });
+  
+  it('lists all exclusions', async () => {
+    const reg1 = await gateway.registerContent({ path: '/videos/test.mp4', name: 'V1' });
+    const reg2 = await gateway.registerContent({ path: '/docs/readme.txt', name: 'V2' });
+    
+    gateway.excludeContent(reg1.content.contentId, { reason: 'spam' });
+    gateway.excludeContent(reg2.content.contentId, { reason: 'abuse' });
+    
+    const exclusions = gateway.listExclusions();
+    expect(exclusions.length).toBe(2);
+    expect(exclusions.map(e => e.reason)).toContain('spam');
+    expect(exclusions.map(e => e.reason)).toContain('abuse');
+  });
+  
+  it('includes exclusion count in stats', async () => {
+    const reg = await gateway.registerContent({ path: '/videos/test.mp4', name: 'V' });
+    gateway.excludeContent(reg.content.contentId);
+    
+    const stats = gateway.getStats();
+    expect(stats.excludedContent).toBe(1);
+  });
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
