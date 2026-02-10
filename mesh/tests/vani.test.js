@@ -108,9 +108,10 @@ describe('VANI Configuration', () => {
     expect(VANI_CONFIG.maxParticipants).toBe(10);
   });
 
-  test('has default STUN servers', () => {
-    expect(VANI_CONFIG.iceServers.length).toBeGreaterThan(0);
-    expect(VANI_CONFIG.iceServers[0].urls).toContain('stun');
+  test('iceServers is configurable (empty by default)', () => {
+    // ETHOS: No external dependencies by default, use mesh relay
+    expect(Array.isArray(VANI_CONFIG.iceServers)).toBe(true);
+    // Can be configured if needed for hybrid deployments
   });
 
   test('has all message types defined', () => {
@@ -175,6 +176,30 @@ describe('Media Types', () => {
     expect(MEDIA_TYPE.AUDIO).toBe('audio');
     expect(MEDIA_TYPE.VIDEO).toBe('video');
     expect(MEDIA_TYPE.SCREEN).toBe('screen');
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// VANI CONFIG ETHOS TESTS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe('VANI_CONFIG Ethos', () => {
+  test('iceServers is empty by default (no external dependencies)', () => {
+    // CRITICAL: Yakmesh ethos - no hardcoded external services
+    expect(VANI_CONFIG.iceServers).toEqual([]);
+  });
+  
+  test('mesh relay is enabled by default', () => {
+    expect(VANI_CONFIG.meshRelayEnabled).toBe(true);
+  });
+  
+  test('mesh relay timeout is reasonable', () => {
+    expect(VANI_CONFIG.meshRelayTimeout).toBe(5000);
+  });
+  
+  test('config does not contain google.com references', () => {
+    const configString = JSON.stringify(VANI_CONFIG);
+    expect(configString).not.toContain('google.com');
   });
 });
 

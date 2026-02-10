@@ -815,6 +815,10 @@ export class DarshanGateway extends EventEmitter {
     this.attestations = new Map();  // attestationId -> DarshanAttestation
     this.attestationsBySession = new Map();  // sessionId -> attestationId
     
+    // Content exclusions (moderation)
+    // Excluded content exists but is hidden from listContent()
+    this.exclusions = new Map();  // contentId -> { excludedBy, reason, timestamp }
+    
     // Access control (GUMBA integration)
     this.accessController = options.accessController || null;
     
@@ -902,10 +906,81 @@ export class DarshanGateway extends EventEmitter {
   }
   
   /**
-   * List all registered content
+   * List all registered content (respects exclusions)
+   * @param {Object} options - List options
+   * @param {boolean} options.includeExcluded - Include excluded content (for admins)
    */
-  listContent() {
-    return Array.from(this.contents.values()).map(c => c.getPublicMetadata());
+  listContent(options = {}) {
+    const { includeExcluded = false } = options;
+    return Array.from(this.contents.values())
+      .filter(c => includeExcluded || !this.exclusions.has(c.contentId))
+      .map(c => ({
+        ...c.getPublicMetadata(),
+        excluded: this.exclusions.has(c.contentId),
+      }));
+  }
+  
+  /**
+   * Exclude content from public listing (moderation)
+   * Content still exists and can be streamed directly if contentId is known.
+   * This is the "polite" moderation model: hide, don't delete.
+   * 
+   * @param {string} contentId - Content to exclude
+   * @param {Object} options - Exclusion options
+   * @param {string} options.excludedBy - ID of admin/mod who excluded
+   * @param {string} options.reason - Reason for exclusion
+   */
+  excludeContent(contentId, options = {}) {
+    if (!this.contents.has(contentId)) {
+      return { success: false, error: 'CONTENT_NOT_FOUND' };
+    }
+    
+    const exclusion = {
+      contentId,
+      excludedBy: options.excludedBy || 'system',
+      reason: options.reason || 'unspecified',
+      timestamp: Date.now(),
+    };
+    
+    this.exclusions.set(contentId, exclusion);
+    this.emit('content:excluded', exclusion);
+    log.info('Content excluded', { contentId, reason: exclusion.reason });
+    
+    return { success: true, exclusion };
+  }
+  
+  /**
+   * Remove exclusion (reinstate content in listings)
+   */
+  reinstateContent(contentId) {
+    if (!this.exclusions.has(contentId)) {
+      return { success: false, error: 'NOT_EXCLUDED' };
+    }
+    
+    this.exclusions.delete(contentId);
+    this.emit('content:reinstated', { contentId });
+    return { success: true };
+  }
+  
+  /**
+   * Check if content is excluded
+   */
+  isExcluded(contentId) {
+    return this.exclusions.has(contentId);
+  }
+  
+  /**
+   * Get exclusion info
+   */
+  getExclusion(contentId) {
+    return this.exclusions.get(contentId) || null;
+  }
+  
+  /**
+   * List all exclusions
+   */
+  listExclusions() {
+    return Array.from(this.exclusions.values());
   }
   
   /**
@@ -1092,6 +1167,7 @@ export class DarshanGateway extends EventEmitter {
       ...this.stats,
       activeStreams: this.streams.size,
       registeredContent: this.contents.size,
+      excludedContent: this.exclusions.size,
       activeViewers: this.streamsByViewer.size,
     };
   }

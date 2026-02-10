@@ -35,13 +35,15 @@ export const VANI_CONFIG = Object.freeze({
   reconnectTimeout: 15000,         // Reconnect attempt window
   maxParticipants: 10,             // Max participants in group call
   
-  // Default STUN/TURN servers
-  iceServers: [
-    { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' },
-    { urls: 'stun:stun2.l.google.com:19302' },
-    { urls: 'stun:stun3.l.google.com:19302' },
-  ],
+  // ICE servers for NAT traversal
+  // ⚠️ ETHOS: Empty by default — Yakmesh mesh relay is preferred
+  // For hybrid deployments, configure your own STUN/TURN servers:
+  //   iceServers: [{ urls: 'stun:your.stun.server:3478' }]
+  iceServers: [],
+  
+  // Mesh relay settings (preferred over external STUN/TURN)
+  meshRelayEnabled: true,
+  meshRelayTimeout: 5000,  // Try mesh relay after 5s of ICE failure
   
   // Message types
   messageTypes: {
