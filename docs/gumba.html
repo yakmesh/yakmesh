@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="gumba">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="favicon.ico" sizes="32x32">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <title>GUMBA - Access Control | YAKMESH Documentation</title>
+    <meta name="description" content="GUMBA: Guarded Universal Message Bundle Access. Novel proof-based access control where keys never leave the host.">
+    
+    <link rel="stylesheet" href="tailwind.min.css">
+    <link rel="stylesheet" href="prism-tomorrow.min.css">
+    <link rel="stylesheet" href="docs.css">
+    <style>
+        /* Page-specific theme - Warm Temple/Monastery theme (amber/gold) */
+        .theme-accent { color: #fbbf24; }
+        .theme-accent-hover:hover { color: #fcd34d; }
+        .theme-badge { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
+        .theme-border { border-color: #f59e0b; }
+        .theme-callout { background: rgba(251, 191, 36, 0.1); border-color: #d97706; }
+        .active-link { background: rgba(251, 191, 36, 0.2) !important; color: #fbbf24 !important; }
+        .proof-card { background: rgba(30, 41, 59, 0.5); border: 1px solid #334155; border-radius: 0.75rem; padding: 1.5rem; }
+        .proof-card:hover { border-color: #f59e0b; }
+        .role-badge { display: inline-block; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-size: 0.75rem; font-weight: 600; }
+        .role-owner { background: #7c3aed; color: white; }
+        .role-admin { background: #2563eb; color: white; }
+        .role-member { background: #059669; color: white; }
+        .role-reader { background: #6b7280; color: white; }
+    </style>
+</head>
+<body class="bg-mountain-900 text-white min-h-screen">
+    
+  <nav class="docs-sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-logo">
+      <span class="logo-icon">🏔️</span>
+      <span class="logo-text">Yakmesh</span>
+    </a>
+    <a href="/dashboard" class="sidebar-dashboard-link"><span>📊</span> <span>Dashboard</span></a>
+    <ul class="sidebar-nav">
+      <li><a href="index.html"><span>🏠</span> <span>Overview</span></a></li>
+      <li><a href="getting-started.html"><span>🚀</span> <span>Getting Started</span></a></li>
+      <li><a href="tutorials.html"><span>📖</span> <span>Tutorials</span></a></li>
+      <li><a href="doko.html"><span>🧺</span> <span>DOKO</span></a></li>
+      <li><a href="namche.html"><span>🚪</span> <span>NAMCHE</span></a></li>
+      <li><a href="sherpa.html"><span>🧗</span> <span>SHERPA</span></a></li>
+      <li><a href="nakpak.html"><span>🎒</span> <span>NAKPAK</span></a></li>
+      <li><a href="annex.html"><span>🌉</span> <span>ANNEX</span></a></li>
+      <li><a href="gumba.html" class="active"><span>🛕</span> <span>GUMBA</span></a></li>
+      <li><a href="yurt.html"><span>🏕️</span> <span>YURT</span></a></li>
+      <li><a href="yak-protocol.html"><span class="yak-icon"></span> <span>YAK</span></a></li>
+      <li><a href="mantra.html"><span>🕉️</span> <span>MANTRA</span></a></li>
+      <li><a href="stupa.html"><span>🛕</span> <span>STUPA</span></a></li>
+      <li><a href="lama.html"><span>🔮</span> <span>LAMA</span></a></li>
+      <li><a href="mani.html"><span>⏱️</span> <span>MANI</span></a></li>
+      <li><a href="karma.html"><span>☯️</span> <span>KARMA</span></a></li>
+      <li><a href="mandala.html"><span>🌐</span> <span>MANDALA</span></a></li>
+      <li><a href="tattva.html"><span>🔯</span> <span>TATTVA</span></a></li>
+      <li><a href="tribhuj.html"><span>🔺</span> <span>TRIBHUJ</span></a></li>
+      <li><a href="ypc27.html"><span>🔐</span> <span>YPC-27</span></a></li>
+      <li><a href="sakshi.html"><span>👁️</span> <span>SAKSHI</span></a></li>
+      <li><a href="geo-proof.html"><span>🌍</span> <span>PRAMAAN</span></a></li>
+      <li><a href="trust-security.html"><span>🔒</span> <span>SURAKSHA</span></a></li>
+      <li><a href="docs-bundle.html"><span>📚</span> <span>GRANTH</span></a></li>
+      <li><a href="api.html"><span>📡</span> <span>API</span></a></li>
+      <li><a href="quick-reference.html"><span>📋</span> <span>Quick Ref</span></a></li>
+    </ul>
+  </nav>
+
+  <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+    </svg>
+  </button>
+
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="docs-main" id="mainContent">
+    <div class="docs-content">
+      
+      <!-- Page Header -->
+      <div class="flex items-center gap-3 mb-4">
+        <span class="text-4xl">🛕</span>
+        <div>
+          <h1 class="text-4xl font-bold">GUMBA</h1>
+          <p class="theme-accent">Guarded Universal Message Bundle Access</p>
+        </div>
+      </div>
+      <p class="text-xl text-mountain-300 mb-4">Novel proof-based access control where keys never leave the host</p>
+      <span class="inline-block text-xs theme-badge px-2 py-1 rounded mb-8">v1.0.0</span>
+
+      <!-- Philosophy Quote -->
+      <div class="theme-callout border-l-4 rounded-r-xl p-6 mb-8 italic text-mountain-200">
+        "In the sacred gumba, monks gather in protected spaces. Only those who prove their belonging may enter.
+        <strong class="theme-accent">The key is not the access. The proof is the access.</strong>"
+      </div>
+
+      <!-- Key Insight -->
+      <div class="bg-mountain-800 border border-mountain-700 rounded-xl p-6 mb-8">
+        <h3 class="font-bold text-lg mb-3 theme-accent">The GUMBA Insight</h3>
+        <p class="text-mountain-300 mb-4">
+          Traditional encrypted chat systems distribute keys to participants, creating key management nightmares
+          and security vulnerabilities. GUMBA takes a radically different approach:
+        </p>
+        <div class="grid md:grid-cols-2 gap-4">
+          <div class="proof-card">
+            <h4 class="font-semibold mb-2">❌ Traditional Approach</h4>
+            <ul class="text-mountain-400 text-sm space-y-1">
+              <li>• Keys sent to all participants</li>
+              <li>• Key compromise = full breach</li>
+              <li>• Complex key rotation</li>
+              <li>• Forward secrecy challenges</li>
+            </ul>
+          </div>
+          <div class="proof-card border-amber-500">
+            <h4 class="font-semibold mb-2 theme-accent">✓ GUMBA Approach</h4>
+            <ul class="text-mountain-400 text-sm space-y-1">
+              <li>• Keys never leave the host node</li>
+              <li>• Access via cryptographic proofs</li>
+              <li>• Simple membership verification</li>
+              <li>• Automatic key rotation</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- Overview Section -->
+      <h2 class="text-2xl font-bold mb-4" id="overview">Overview</h2>
+      <p class="text-mountain-300 mb-6">
+        GUMBA establishes protected digital spaces (bundles) where only verified members can access content.
+        Instead of distributing encryption keys, visitors prove their membership through cryptographic proofs,
+        and the host node serves decrypted content via secure ANNEX channels.
+      </p>
+
+      <!-- Architecture Components -->
+      <h2 class="text-2xl font-bold mb-4 mt-12" id="components">Architecture Components</h2>
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+        <div class="proof-card">
+          <div class="text-2xl mb-2">🔑</div>
+          <h3 class="font-bold mb-2">GumbaKey</h3>
+          <p class="text-sm text-mountain-400">
+            Deterministic key derivation from owner secret + bundle ID. 
+            Handles AES-256-GCM encryption with automatic nonce management.
+          </p>
+        </div>
+        <div class="proof-card">
+          <div class="text-2xl mb-2">🌳</div>
+          <h3 class="font-bold mb-2">GumbaMemberTree</h3>
+          <p class="text-sm text-mountain-400">
+            SHA3-256 Merkle tree tracking members and roles. 
+            Provides O(log n) membership proofs.
+          </p>
+        </div>
+        <div class="proof-card">
+          <div class="text-2xl mb-2">🎫</div>
+          <h3 class="font-bold mb-2">GumbaProof</h3>
+          <p class="text-sm text-mountain-400">
+            Three proof types for access verification: Challenge-Response, 
+            Attestation, and Merkle proofs.
+          </p>
+        </div>
+        <div class="proof-card">
+          <div class="text-2xl mb-2">🚪</div>
+          <h3 class="font-bold mb-2">GumbaGate</h3>
+          <p class="text-sm text-mountain-400">
+            Access control layer that issues challenges, verifies proofs, 
+            and manages proof caching.
+          </p>
+        </div>
+        <div class="proof-card">
+          <div class="text-2xl mb-2">📦</div>
+          <h3 class="font-bold mb-2">GumbaBundle</h3>
+          <p class="text-sm text-mountain-400">
+            Encrypted message container with role-based access control 
+            and event emission.
+          </p>
+        </div>
+        <div class="proof-card">
+          <div class="text-2xl mb-2">🏛️</div>
+          <h3 class="font-bold mb-2">GumbaHub</h3>
+          <p class="text-sm text-mountain-400">
+            Node-level manager for multiple bundles. Handles sessions, 
+            access requests, and message delivery.
+          </p>
+        </div>
+      </div>
+
+      <!-- Proof Types -->
+      <h2 class="text-2xl font-bold mb-4 mt-12" id="proof-types">Proof Types</h2>
+      <p class="text-mountain-300 mb-6">
+        GUMBA supports three types of cryptographic proofs for access verification:
+      </p>
+
+      <div class="space-y-6 mb-8">
+        <!-- Challenge-Response -->
+        <div class="proof-card">
+          <div class="flex items-center gap-3 mb-3">
+            <span class="text-2xl">🎯</span>
+            <h3 class="font-bold text-lg">Challenge-Response</h3>
+            <span class="theme-badge text-xs px-2 py-1 rounded">Most Common</span>
+          </div>
+          <p class="text-mountain-300 mb-4">
+            The host issues a random nonce challenge. The visitor signs it with their ML-DSA-65 
+            (post-quantum) private key. The host verifies the signature against the visitor's 
+            registered public key.
+          </p>
+          <pre class="language-javascript"><code>// Host issues challenge
+const challenge = hub.issueChallenge('chat-room', visitorDokoId);
+
+// Visitor signs with their private key
+const signedProof = GumbaProof.signChallenge(challenge, visitorSecretKey);
+
+// Host verifies and grants access
+const result = await hub.handleAccessRequest('chat-room', signedProof, visitorNodeId);</code></pre>
+        </div>
+
+        <!-- Attestation -->
+        <div class="proof-card">
+          <div class="flex items-center gap-3 mb-3">
+            <span class="text-2xl">🤝</span>
+            <h3 class="font-bold text-lg">Attestation</h3>
+            <span class="theme-badge text-xs px-2 py-1 rounded">Delegation</span>
+          </div>
+          <p class="text-mountain-300 mb-4">
+            An existing member with sufficient role can vouch for a new member. This creates 
+            a signed attestation that grants the new member temporary access.
+          </p>
+          <pre class="language-javascript"><code>// Alice (admin) creates attestation for Bob
+const attestation = GumbaProof.createAttestation({
+  bundleId: 'private-room',
+  grantorDokoId: alice.dokoId,
+  granteeDokoId: bob.dokoId,
+  grantorSecretKey: alice.secretKey,
+  grantedRole: GUMBA_ROLE.MEMBER,
+});
+
+// Bob uses attestation to gain access
+const result = await hub.handleAccessRequest('private-room', attestation, bobNodeId);</code></pre>
+        </div>
+
+        <!-- Merkle Proof -->
+        <div class="proof-card">
+          <div class="flex items-center gap-3 mb-3">
+            <span class="text-2xl">🌿</span>
+            <h3 class="font-bold text-lg">Merkle Proof</h3>
+            <span class="theme-badge text-xs px-2 py-1 rounded">Zero-Knowledge</span>
+          </div>
+          <p class="text-mountain-300 mb-4">
+            Proves membership using a Merkle tree path without revealing the full member list. 
+            Useful for privacy-preserving access where member identities should remain hidden.
+          </p>
+          <pre class="language-javascript"><code>// Create membership proof
+const merkleProof = GumbaProof.createMerkleProof(alice.dokoId, bundle.memberTree);
+
+// Verify membership without exposing other members
+const verified = GumbaProof.verifyMerkleProof(merkleProof, bundle.memberTree.getRoot());</code></pre>
+        </div>
+      </div>
+
+      <!-- Role Hierarchy -->
+      <h2 class="text-2xl font-bold mb-4 mt-12" id="roles">Role Hierarchy</h2>
+      <p class="text-mountain-300 mb-6">
+        GUMBA uses a hierarchical role system where higher roles can grant access to lower roles:
+      </p>
+
+      <div class="bg-mountain-800 border border-mountain-700 rounded-xl p-6 mb-8">
+        <div class="flex flex-wrap items-center justify-center gap-4 mb-6">
+          <div class="text-center">
+            <span class="role-badge role-owner">OWNER (4)</span>
+            <p class="text-xs text-mountain-400 mt-1">Full control</p>
+          </div>
+          <span class="text-mountain-500">→</span>
+          <div class="text-center">
+            <span class="role-badge role-admin">ADMIN (3)</span>
+            <p class="text-xs text-mountain-400 mt-1">Manage members</p>
+          </div>
+          <span class="text-mountain-500">→</span>
+          <div class="text-center">
+            <span class="role-badge role-member">MEMBER (2)</span>
+            <p class="text-xs text-mountain-400 mt-1">Post messages</p>
+          </div>
+          <span class="text-mountain-500">→</span>
+          <div class="text-center">
+            <span class="role-badge role-reader">READER (1)</span>
+            <p class="text-xs text-mountain-400 mt-1">Read only</p>
+          </div>
+        </div>
+
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-mountain-600">
+              <th class="text-left py-2 text-mountain-400">Role</th>
+              <th class="text-left py-2 text-mountain-400">Permissions</th>
+            </tr>
+          </thead>
+          <tbody class="text-mountain-300">
+            <tr class="border-b border-mountain-700">
+              <td class="py-2"><span class="role-badge role-owner">OWNER</span></td>
+              <td class="py-2">Full control, cannot be removed, can add/remove any role</td>
+            </tr>
+            <tr class="border-b border-mountain-700">
+              <td class="py-2"><span class="role-badge role-admin">ADMIN</span></td>
+              <td class="py-2">Can add/remove members up to MEMBER role, post messages</td>
+            </tr>
+            <tr class="border-b border-mountain-700">
+              <td class="py-2"><span class="role-badge role-member">MEMBER</span></td>
+              <td class="py-2">Can post messages, can attest readers</td>
+            </tr>
+            <tr>
+              <td class="py-2"><span class="role-badge role-reader">READER</span></td>
+              <td class="py-2">Read-only access to messages</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Security Features -->
+      <h2 class="text-2xl font-bold mb-4 mt-12" id="security">Security Features</h2>
+      <div class="grid md:grid-cols-2 gap-4 mb-8">
+        <div class="proof-card">
+          <h4 class="font-semibold mb-2 theme-accent">🔄 Replay Protection</h4>
+          <p class="text-sm text-mountain-400">
+            Challenge nonces are single-use. Each challenge is removed from the pending pool 
+            after verification, preventing replay attacks.
+          </p>
+        </div>
+        <div class="proof-card">
+          <h4 class="font-semibold mb-2 theme-accent">🔐 Post-Quantum Signatures</h4>
+          <p class="text-sm text-mountain-400">
+            All signatures use ML-DSA-65 (Dilithium), a NIST-approved post-quantum signature algorithm.
+          </p>
+        </div>
+        <div class="proof-card">
+          <h4 class="font-semibold mb-2 theme-accent">🔑 Automatic Key Rotation</h4>
+          <p class="text-sm text-mountain-400">
+            Bundle keys automatically rotate after a configurable message count, 
+            limiting the impact of any potential key compromise.
+          </p>
+        </div>
+        <div class="proof-card">
+          <h4 class="font-semibold mb-2 theme-accent">⏱️ Session Expiry</h4>
+          <p class="text-sm text-mountain-400">
+            Cached access automatically expires. Expired sessions are cleaned up 
+            to prevent stale access.
+          </p>
+        </div>
+        <div class="proof-card">
+          <h4 class="font-semibold mb-2 theme-accent">🚫 Revocation</h4>
+          <p class="text-sm text-mountain-400">
+            Member removal immediately clears proof cache. Revoked members must 
+            re-authenticate (and will fail).
+          </p>
+        </div>
+        <div class="proof-card">
+          <h4 class="font-semibold mb-2 theme-accent">🏠 Self-Custody</h4>
+          <p class="text-sm text-mountain-400">
+            Keys never leave your node. Your messages stay on YOUR hardware. 
+            True digital sovereignty.
+          </p>
+        </div>
+      </div>
+
+      <!-- Access Flow Diagram -->
+      <h2 class="text-2xl font-bold mb-4 mt-12" id="flow">Access Flow</h2>
+      <div class="bg-mountain-800 border border-mountain-700 rounded-xl p-6 mb-8">
+        <pre class="text-sm text-mountain-300 overflow-x-auto">
+┌─────────────────┐                              ┌─────────────────┐
+│  Visitor Node   │                              │   Host Node     │
+│  (has DOKO key) │                              │  (has bundle)   │
+└────────┬────────┘                              └────────┬────────┘
+         │                                                │
+         │  1. Request access to bundle                   │
+         │ ─────────────────────────────────────────────> │
+         │                                                │
+         │  2. Issue challenge (random nonce)             │
+         │ <───────────────────────────────────────────── │
+         │                                                │
+         │  3. Sign challenge with DOKO private key       │
+         │ ─────────────────────────────────────────────> │
+         │                                                │
+         │  4. Verify signature, check membership         │
+         │                                    ┌───────────┴───────────┐
+         │                                    │ • Verify ML-DSA-65 sig │
+         │                                    │ • Check member tree    │
+         │                                    │ • Create session       │
+         │                                    └───────────┬───────────┘
+         │                                                │
+         │  5. Grant access + session token               │
+         │ <───────────────────────────────────────────── │
+         │                                                │
+         │  6. Request messages (with session)            │
+         │ ─────────────────────────────────────────────> │
+         │                                                │
+         │  7. Decrypt & deliver via ANNEX                │
+         │ <───────────────────────────────────────────── │
+         │                                                │
+</pre>
+      </div>
+
+      <!-- Quick Start -->
+      <h2 class="text-2xl font-bold mb-4 mt-12" id="quickstart">Quick Start</h2>
+      <pre class="language-javascript mb-8"><code>import { GumbaHub, GumbaProof, GUMBA_ROLE } from 'yakmesh/mesh/gumba.js';
+
+// Create hub with node identity
+const hub = new GumbaHub(nodeIdentity, annexInstance);
+
+// Create a bundle (encrypted chat room)
+hub.createBundle('team-chat', { name: 'Team Chat Room' });
+
+// Add members
+const bundle = hub.getBundle('team-chat');
+bundle.addMember(aliceDokoId, GUMBA_ROLE.ADMIN, ownerDokoId);
+bundle.addMember(bobDokoId, GUMBA_ROLE.MEMBER, ownerDokoId);
+
+// Register public keys (for verification)
+hub.registerPublicKey(aliceDokoId, alicePublicKey);
+hub.registerPublicKey(bobDokoId, bobPublicKey);
+
+// Handle access request from visitor
+const challenge = hub.issueChallenge('team-chat', visitorDokoId);
+// ... visitor signs challenge ...
+const access = await hub.handleAccessRequest('team-chat', signedProof, visitorNodeId);
+
+if (access.granted) {
+  // Get messages for this session
+  const messages = await hub.getMessages(access.sessionId);
+  
+  // Post a message
+  await hub.postMessage(access.sessionId, { text: 'Hello team!' });
+}</code></pre>
+
+      <!-- Configuration -->
+      <h2 class="text-2xl font-bold mb-4 mt-12" id="config">Configuration</h2>
+      <pre class="language-javascript mb-8"><code>// Default GUMBA configuration
+const GUMBA_CONFIG = {
+  keyRotationThreshold: 10000,    // Rotate key after N messages
+  proofCacheTime: 5 * 60 * 1000,  // 5 minutes cache
+  challengeExpiry: 60 * 1000,     // 1 minute challenge validity
+  attestationMaxAge: 24 * 60 * 60 * 1000, // 24 hour attestation validity
+};</code></pre>
+
+      <!-- Use Cases -->
+      <h2 class="text-2xl font-bold mb-4 mt-12" id="usecases">Use Cases</h2>
+      <div class="grid md:grid-cols-2 gap-4 mb-8">
+        <div class="proof-card">
+          <h4 class="font-semibold mb-2">💬 Private Chat Rooms</h4>
+          <p class="text-sm text-mountain-400">
+            Replace Discord/Slack with self-hosted, post-quantum secure chat. 
+            No facial recognition, no central authority.
+          </p>
+        </div>
+        <div class="proof-card">
+          <h4 class="font-semibold mb-2">📁 Secure File Sharing</h4>
+          <p class="text-sm text-mountain-400">
+            Share sensitive documents with verified team members. 
+            Files never leave your control until access is proven.
+          </p>
+        </div>
+        <div class="proof-card">
+          <h4 class="font-semibold mb-2">🏢 Team Collaboration</h4>
+          <p class="text-sm text-mountain-400">
+            Role-based access for different team levels. 
+            Admins manage members, members contribute, readers observe.
+          </p>
+        </div>
+        <div class="proof-card">
+          <h4 class="font-semibold mb-2">🔒 Whistleblower Channels</h4>
+          <p class="text-sm text-mountain-400">
+            Anonymous access via Merkle proofs. Prove you belong 
+            without revealing your identity to other members.
+          </p>
+        </div>
+      </div>
+
+      <!-- Navigation -->
+      <div class="mt-16 pt-8 border-t border-mountain-700">
+        <div class="flex flex-col sm:flex-row gap-4">
+          <a href="annex.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-amber-500 transition group">
+            <div class="text-xs text-mountain-400 mb-1">← Previous</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">🌉</span>
+              <span class="font-semibold group-hover:text-amber-400">ANNEX</span>
+            </div>
+            <p class="text-mountain-400 text-sm mt-1">P2P encrypted channels</p>
+          </a>
+          <a href="yurt.html" class="flex-1 block bg-mountain-800 border border-amber-700 rounded-xl p-4 hover:border-amber-500 transition group">
+            <div class="text-xs text-mountain-400 mb-1">Next →</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">🏕️</span>
+              <span class="font-semibold group-hover:text-amber-400">YURT</span>
+            </div>
+            <p class="text-mountain-400 text-sm mt-1">Room discovery & yak:// links</p>
+          </a>
+        </div>
+        <div class="mt-4">
+          <a href="gumba-tutorial.html" class="block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-amber-500 transition group text-center">
+            <div class="flex items-center justify-center gap-2">
+              <span class="text-xl">📖</span>
+              <span class="font-semibold group-hover:text-amber-400">GUMBA Tutorial</span>
+              <span class="text-mountain-400 text-sm">— Step-by-step guide to using GUMBA</span>
+            </div>
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <footer class="docs-footer">
+    <p>&copy; 2026 YAKMESH™</p>
+  </footer>
+
+  <script src="prism.min.js"></script>
+  <script src="prism-javascript.min.js"></script>
+  <script src="docs.js"></script>
+</body>
+</html>

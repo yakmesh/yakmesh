@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="gumba">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="favicon.ico" sizes="32x32">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <title>GUMBA Tutorial | YAKMESH Documentation</title>
+    <meta name="description" content="Step-by-step tutorial for using GUMBA proof-based access control in YAKMESH.">
+    
+    <link rel="stylesheet" href="tailwind.min.css">
+    <link rel="stylesheet" href="prism-tomorrow.min.css">
+    <link rel="stylesheet" href="docs.css">
+    <style>
+        .theme-accent { color: #fbbf24; }
+        .theme-accent-hover:hover { color: #fcd34d; }
+        .theme-badge { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
+        .theme-border { border-color: #f59e0b; }
+        .theme-callout { background: rgba(251, 191, 36, 0.1); border-color: #d97706; }
+        .active-link { background: rgba(251, 191, 36, 0.2) !important; color: #fbbf24 !important; }
+        .tutorial-card { background: rgba(30, 41, 59, 0.5); border: 1px solid #334155; border-radius: 0.75rem; padding: 1.5rem; margin-bottom: 1.5rem; }
+        .tutorial-card:hover { border-color: #f59e0b; }
+        .step-number { display: inline-flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; background: #f59e0b; color: white; border-radius: 50%; font-weight: bold; margin-right: 0.75rem; }
+        .warning-box { background: rgba(239, 68, 68, 0.1); border: 1px solid #dc2626; border-radius: 0.5rem; padding: 1rem; }
+        .info-box { background: rgba(59, 130, 246, 0.1); border: 1px solid #2563eb; border-radius: 0.5rem; padding: 1rem; }
+    </style>
+</head>
+<body class="bg-mountain-900 text-white min-h-screen">
+    
+  <nav class="docs-sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-logo">
+      <span class="logo-icon">🏔️</span>
+      <span class="logo-text">Yakmesh</span>
+    </a>
+    <a href="/dashboard" class="sidebar-dashboard-link"><span>📊</span> <span>Dashboard</span></a>
+    <ul class="sidebar-nav">
+      <li><a href="index.html"><span>🏠</span> <span>Overview</span></a></li>
+      <li><a href="getting-started.html"><span>🚀</span> <span>Getting Started</span></a></li>
+      <li><a href="tutorials.html"><span>📖</span> <span>Tutorials</span></a></li>
+      <li><a href="doko.html"><span>🧺</span> <span>DOKO</span></a></li>
+      <li><a href="namche.html"><span>🚪</span> <span>NAMCHE</span></a></li>
+      <li><a href="sherpa.html"><span>🧗</span> <span>SHERPA</span></a></li>
+      <li><a href="nakpak.html"><span>🎒</span> <span>NAKPAK</span></a></li>
+      <li><a href="annex.html"><span>🌉</span> <span>ANNEX</span></a></li>
+      <li><a href="gumba.html" class="active"><span>🛕</span> <span>GUMBA</span></a></li>
+      <li><a href="yurt.html"><span>🏕️</span> <span>YURT</span></a></li>
+      <li><a href="yak-protocol.html"><span class="yak-icon"></span> <span>YAK</span></a></li>
+      <li><a href="mantra.html"><span>🕉️</span> <span>MANTRA</span></a></li>
+      <li><a href="stupa.html"><span>🛕</span> <span>STUPA</span></a></li>
+      <li><a href="lama.html"><span>🔮</span> <span>LAMA</span></a></li>
+      <li><a href="mani.html"><span>⏱️</span> <span>MANI</span></a></li>
+      <li><a href="karma.html"><span>☯️</span> <span>KARMA</span></a></li>
+      <li><a href="mandala.html"><span>🌐</span> <span>MANDALA</span></a></li>
+      <li><a href="tattva.html"><span>🔯</span> <span>TATTVA</span></a></li>
+      <li><a href="tribhuj.html"><span>🔺</span> <span>TRIBHUJ</span></a></li>
+      <li><a href="ypc27.html"><span>🔐</span> <span>YPC-27</span></a></li>
+      <li><a href="sakshi.html"><span>👁️</span> <span>SAKSHI</span></a></li>
+      <li><a href="geo-proof.html"><span>🌍</span> <span>PRAMAAN</span></a></li>
+      <li><a href="trust-security.html"><span>🔒</span> <span>SURAKSHA</span></a></li>
+      <li><a href="docs-bundle.html"><span>📚</span> <span>GRANTH</span></a></li>
+      <li><a href="api.html"><span>📡</span> <span>API</span></a></li>
+      <li><a href="quick-reference.html"><span>📋</span> <span>Quick Ref</span></a></li>
+    </ul>
+  </nav>
+
+  <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+    </svg>
+  </button>
+
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="docs-main" id="mainContent">
+    <div class="docs-content">
+      
+      <!-- Page Header -->
+      <div class="flex items-center gap-3 mb-4">
+        <span class="text-4xl">📖</span>
+        <div>
+          <h1 class="text-4xl font-bold">GUMBA Tutorial</h1>
+          <p class="theme-accent">Build a private chat room in 15 minutes</p>
+        </div>
+      </div>
+      <p class="text-xl text-mountain-300 mb-8">
+        Learn to create and manage GUMBA-protected spaces with step-by-step instructions.
+      </p>
+
+      <!-- Prerequisites -->
+      <div class="info-box mb-8">
+        <h3 class="font-bold mb-2">📋 Prerequisites</h3>
+        <ul class="text-mountain-300 text-sm space-y-1">
+          <li>• YAKMESH node installed and running</li>
+          <li>• Basic understanding of Node.js and async/await</li>
+          <li>• DOKO identity created (see <a href="doko.html" class="theme-accent">DOKO documentation</a>)</li>
+        </ul>
+      </div>
+
+      <!-- Tutorial 1: Create a Private Chat Room -->
+      <section id="tutorial-1" class="mb-16">
+        <h2 class="text-3xl font-bold mb-6 flex items-center gap-3">
+          <span class="text-4xl">💬</span> Tutorial 1: Create a Private Chat Room
+        </h2>
+        
+        <p class="text-mountain-300 mb-6">
+          In this tutorial, you'll create a GUMBA-protected chat room, add members, 
+          and handle access requests from visitors.
+        </p>
+
+        <!-- Step 1 -->
+        <div class="tutorial-card">
+          <h3 class="text-xl font-bold mb-3"><span class="step-number">1</span> Import GUMBA Components</h3>
+          <p class="text-mountain-300 mb-4">First, import the necessary GUMBA components:</p>
+          <pre class="language-javascript"><code>import {
+  GumbaHub,
+  GumbaProof,
+  GUMBA_ROLE,
+  GUMBA_PROOF_TYPE,
+} from 'yakmesh/mesh/gumba.js';
+
+// You'll also need your node's identity
+import { loadIdentity } from 'yakmesh/mesh/identity.js';</code></pre>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="tutorial-card">
+          <h3 class="text-xl font-bold mb-3"><span class="step-number">2</span> Initialize the GUMBA Hub</h3>
+          <p class="text-mountain-300 mb-4">Create a GumbaHub with your node's identity:</p>
+          <pre class="language-javascript"><code>// Load your node's identity
+const identity = await loadIdentity();
+
+// Create the GUMBA hub
+// The second parameter is an ANNEX instance for secure delivery (optional)
+const hub = new GumbaHub(identity, null);
+
+console.log('GUMBA Hub initialized');</code></pre>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="tutorial-card">
+          <h3 class="text-xl font-bold mb-3"><span class="step-number">3</span> Create a Bundle (Chat Room)</h3>
+          <p class="text-mountain-300 mb-4">Create a new encrypted bundle for your chat room:</p>
+          <pre class="language-javascript"><code>// Create a new bundle with a unique ID
+hub.createBundle('team-chat', {
+  name: 'Team Chat Room',
+  description: 'Private discussions for the team',
+});
+
+// Get the bundle reference
+const bundle = hub.getBundle('team-chat');
+
+console.log('Bundle created:', bundle.getInfo());</code></pre>
+          <div class="info-box mt-4">
+            <p class="text-sm text-mountain-300">
+              💡 The bundle ID must be unique within your hub. The bundle is automatically 
+              encrypted with a key derived from your node's secret.
+            </p>
+          </div>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="tutorial-card">
+          <h3 class="text-xl font-bold mb-3"><span class="step-number">4</span> Add Members</h3>
+          <p class="text-mountain-300 mb-4">Add members with appropriate roles:</p>
+          <pre class="language-javascript"><code>// Add Alice as an admin
+bundle.addMember(
+  'doko-alice-abc123',      // Alice's DOKO ID
+  GUMBA_ROLE.ADMIN,         // Role
+  identity.identity.dokoId  // Your DOKO ID (as owner)
+);
+
+// Add Bob as a regular member
+bundle.addMember(
+  'doko-bob-def456',
+  GUMBA_ROLE.MEMBER,
+  identity.identity.dokoId
+);
+
+// Add Carol as read-only
+bundle.addMember(
+  'doko-carol-ghi789',
+  GUMBA_ROLE.READER,
+  identity.identity.dokoId
+);
+
+console.log('Members added:', bundle.memberTree.getMembers());</code></pre>
+        </div>
+
+        <!-- Step 5 -->
+        <div class="tutorial-card">
+          <h3 class="text-xl font-bold mb-3"><span class="step-number">5</span> Register Public Keys</h3>
+          <p class="text-mountain-300 mb-4">Register member public keys for signature verification:</p>
+          <pre class="language-javascript"><code>// Register public keys for each member
+// In production, these would come from KHATA network lookup
+hub.registerPublicKey('doko-alice-abc123', alicePublicKey);
+hub.registerPublicKey('doko-bob-def456', bobPublicKey);
+hub.registerPublicKey('doko-carol-ghi789', carolPublicKey);</code></pre>
+          <div class="warning-box mt-4">
+            <p class="text-sm text-red-300">
+              ⚠️ In production, public keys are resolved via the KHATA protocol. 
+              Manual registration is for testing or pre-cached keys only.
+            </p>
+          </div>
+        </div>
+
+        <!-- Step 6 -->
+        <div class="tutorial-card">
+          <h3 class="text-xl font-bold mb-3"><span class="step-number">6</span> Add Some Messages</h3>
+          <p class="text-mountain-300 mb-4">Add initial messages to the chat room:</p>
+          <pre class="language-javascript"><code>// Add messages (as the owner)
+bundle.addMessage(
+  { text: 'Welcome to the team chat!', type: 'text' },
+  identity.identity.dokoId
+);
+
+bundle.addMessage(
+  { text: 'Please introduce yourselves.', type: 'text' },
+  identity.identity.dokoId
+);
+
+console.log('Messages added');</code></pre>
+        </div>
+
+        <!-- Step 7 -->
+        <div class="tutorial-card">
+          <h3 class="text-xl font-bold mb-3"><span class="step-number">7</span> Handle Access Requests</h3>
+          <p class="text-mountain-300 mb-4">When a visitor wants to access the chat room:</p>
+          <pre class="language-javascript"><code>// Visitor requests access (on their node)
+// Step 1: Issue a challenge
+const challenge = hub.issueChallenge('team-chat', visitorDokoId);
+
+// Step 2: Send challenge to visitor (via mesh network)
+// ... challenge is sent to visitor node ...
+
+// Step 3: Visitor signs the challenge (on their node)
+const signedProof = GumbaProof.signChallenge(challenge, visitorSecretKey);
+
+// Step 4: Visitor sends signed proof back
+// ... signed proof is received ...
+
+// Step 5: Verify and grant access (on your node)
+const access = await hub.handleAccessRequest(
+  'team-chat',
+  signedProof,
+  'visitor-node-id'
+);
+
+if (access.granted) {
+  console.log('Access granted!');
+  console.log('Session ID:', access.sessionId);
+  console.log('Role:', access.role);
+} else {
+  console.log('Access denied:', access.reason);
+}</code></pre>
+        </div>
+
+        <!-- Step 8 -->
+        <div class="tutorial-card">
+          <h3 class="text-xl font-bold mb-3"><span class="step-number">8</span> Serve Messages</h3>
+          <p class="text-mountain-300 mb-4">Retrieve and deliver messages for an active session:</p>
+          <pre class="language-javascript"><code>// Get messages for a session
+const result = await hub.getMessages(access.sessionId);
+
+if (result.error) {
+  console.log('Error:', result.error);
+} else {
+  console.log('Messages:', result.messages);
+  // Messages are decrypted locally before delivery
+}
+
+// Post a message (if the session has write permission)
+const postResult = await hub.postMessage(access.sessionId, {
+  text: 'Hello from visitor!',
+  type: 'text',
+});
+
+console.log('Message posted:', postResult.success);</code></pre>
+        </div>
+      </section>
+
+      <!-- Tutorial 2: Attestation-Based Access -->
+      <section id="tutorial-2" class="mb-16">
+        <h2 class="text-3xl font-bold mb-6 flex items-center gap-3">
+          <span class="text-4xl">🤝</span> Tutorial 2: Attestation-Based Access
+        </h2>
+        
+        <p class="text-mountain-300 mb-6">
+          Learn how existing members can vouch for new members without owner involvement.
+        </p>
+
+        <!-- Step 1 -->
+        <div class="tutorial-card">
+          <h3 class="text-xl font-bold mb-3"><span class="step-number">1</span> Create an Attestation</h3>
+          <p class="text-mountain-300 mb-4">An existing member with sufficient role creates an attestation:</p>
+          <pre class="language-javascript"><code>// Alice (admin) creates attestation for Dave
+const attestation = GumbaProof.createAttestation({
+  bundleId: 'team-chat',
+  grantorDokoId: alice.dokoId,
+  granteeDokoId: 'doko-dave-xyz999',
+  grantorSecretKey: alice.secretKey,
+  grantedRole: GUMBA_ROLE.MEMBER,  // Alice can grant up to MEMBER
+  expiry: Date.now() + 24 * 60 * 60 * 1000,  // Valid for 24 hours
+});
+
+// Alice sends attestation to Dave out-of-band
+// (email, secure message, QR code, etc.)</code></pre>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="tutorial-card">
+          <h3 class="text-xl font-bold mb-3"><span class="step-number">2</span> Use Attestation for Access</h3>
+          <p class="text-mountain-300 mb-4">Dave uses the attestation to request access:</p>
+          <pre class="language-javascript"><code>// Dave presents the attestation to the hub
+const access = await hub.handleAccessRequest(
+  'team-chat',
+  attestation,  // Use attestation as proof
+  'dave-node-id'
+);
+
+if (access.granted) {
+  console.log('Dave granted access via attestation!');
+  console.log('Role:', access.role);  // Should be MEMBER
+}</code></pre>
+        </div>
+
+        <div class="info-box">
+          <h4 class="font-bold mb-2">📝 Attestation Rules</h4>
+          <ul class="text-sm text-mountain-300 space-y-1">
+            <li>• Grantors can only attest roles equal to or below their own role</li>
+            <li>• OWNERs can attest any role except OWNER</li>
+            <li>• ADMINs can attest MEMBER or READER</li>
+            <li>• MEMBERs can only attest READER</li>
+            <li>• READERs cannot create attestations</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Tutorial 3: Anonymous Access with Merkle Proofs -->
+      <section id="tutorial-3" class="mb-16">
+        <h2 class="text-3xl font-bold mb-6 flex items-center gap-3">
+          <span class="text-4xl">🌿</span> Tutorial 3: Anonymous Access
+        </h2>
+        
+        <p class="text-mountain-300 mb-6">
+          Use Merkle proofs for privacy-preserving access where identity should remain hidden.
+        </p>
+
+        <!-- Step 1 -->
+        <div class="tutorial-card">
+          <h3 class="text-xl font-bold mb-3"><span class="step-number">1</span> Generate Merkle Proof</h3>
+          <p class="text-mountain-300 mb-4">Member generates a proof of their membership:</p>
+          <pre class="language-javascript"><code>// Get the bundle's member tree
+const bundle = hub.getBundle('whistleblower-channel');
+
+// Generate Merkle proof (proves membership without revealing to others)
+const merkleProof = GumbaProof.createMerkleProof(
+  alice.dokoId,
+  bundle.memberTree
+);
+
+// The proof contains:
+// - type: MERKLE
+// - dokoId: (can be hidden for true ZK)
+// - proof: Merkle path to root
+// - timestamp</code></pre>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="tutorial-card">
+          <h3 class="text-xl font-bold mb-3"><span class="step-number">2</span> Verify Merkle Proof</h3>
+          <p class="text-mountain-300 mb-4">Verify membership without knowing the full member list:</p>
+          <pre class="language-javascript"><code>// Verify the proof against the known root
+const verified = GumbaProof.verifyMerkleProof(
+  merkleProof,
+  bundle.memberTree.getRoot()
+);
+
+if (verified) {
+  console.log('Member verified via Merkle proof');
+  // Grant read access without logging identity
+}</code></pre>
+        </div>
+
+        <div class="warning-box">
+          <h4 class="font-bold mb-2">⚠️ Privacy Considerations</h4>
+          <p class="text-sm text-red-300 mb-2">
+            True zero-knowledge Merkle proofs require additional work:
+          </p>
+          <ul class="text-sm text-red-300 space-y-1">
+            <li>• The dokoId in the proof can reveal identity</li>
+            <li>• For full anonymity, use commitment schemes</li>
+            <li>• Consider timing attacks on proof generation</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Tutorial 4: Member Management -->
+      <section id="tutorial-4" class="mb-16">
+        <h2 class="text-3xl font-bold mb-6 flex items-center gap-3">
+          <span class="text-4xl">👥</span> Tutorial 4: Managing Members
+        </h2>
+        
+        <div class="tutorial-card">
+          <h3 class="text-xl font-bold mb-3">Add, Promote, and Remove Members</h3>
+          <pre class="language-javascript"><code>const bundle = hub.getBundle('team-chat');
+const ownerDokoId = identity.identity.dokoId;
+
+// Add a new member
+bundle.addMember('doko-eve-new123', GUMBA_ROLE.READER, ownerDokoId);
+
+// Members can be added with different roles
+// (subject to the adder's own role level)
+
+// Remove a member
+bundle.removeMember('doko-eve-new123', ownerDokoId);
+
+// Note: Owner cannot be removed!
+// This will throw an error:
+// bundle.removeMember(ownerDokoId, ownerDokoId);  // Error!
+
+// Check membership
+if (bundle.memberTree.isMember('doko-alice-abc123')) {
+  const role = bundle.memberTree.getRole('doko-alice-abc123');
+  console.log('Alice is a member with role:', role);
+}
+
+// List all members
+const members = bundle.memberTree.getMembers();
+console.log('All members:', members);</code></pre>
+        </div>
+      </section>
+
+      <!-- Complete Example -->
+      <section id="complete-example" class="mb-16">
+        <h2 class="text-3xl font-bold mb-6 flex items-center gap-3">
+          <span class="text-4xl">🎯</span> Complete Example
+        </h2>
+        
+        <div class="tutorial-card">
+          <h3 class="text-xl font-bold mb-3">Full Chat Room Implementation</h3>
+          <pre class="language-javascript"><code>import { GumbaHub, GumbaProof, GUMBA_ROLE } from 'yakmesh/mesh/gumba.js';
+import { loadIdentity } from 'yakmesh/mesh/identity.js';
+
+async function createPrivateChatRoom() {
+  // 1. Load identity and create hub
+  const identity = await loadIdentity();
+  const hub = new GumbaHub(identity, null);
+  
+  // 2. Create the chat room
+  hub.createBundle('private-chat', {
+    name: 'Private Chat',
+  });
+  
+  const bundle = hub.getBundle('private-chat');
+  const ownerDokoId = identity.identity.dokoId;
+  
+  // 3. Add initial members (you'd get these from somewhere)
+  const members = [
+    { dokoId: 'doko-alice-123', role: GUMBA_ROLE.ADMIN, publicKey: '...' },
+    { dokoId: 'doko-bob-456', role: GUMBA_ROLE.MEMBER, publicKey: '...' },
+  ];
+  
+  members.forEach(m => {
+    bundle.addMember(m.dokoId, m.role, ownerDokoId);
+    hub.registerPublicKey(m.dokoId, m.publicKey);
+  });
+  
+  // 4. Add welcome message
+  bundle.addMessage({ text: 'Welcome to the chat!' }, ownerDokoId);
+  
+  // 5. Handle incoming access requests
+  async function handleAccessRequest(visitorDokoId, signedProof, visitorNodeId) {
+    // Verify and grant access
+    const result = await hub.handleAccessRequest(
+      'private-chat',
+      signedProof,
+      visitorNodeId
+    );
+    
+    if (result.granted) {
+      // Send session token to visitor
+      return {
+        success: true,
+        sessionId: result.sessionId,
+        role: result.role,
+      };
+    } else {
+      return {
+        success: false,
+        reason: result.reason,
+      };
+    }
+  }
+  
+  // 6. Handle message requests
+  async function handleGetMessages(sessionId, options = {}) {
+    return await hub.getMessages(sessionId, options);
+  }
+  
+  async function handlePostMessage(sessionId, content) {
+    return await hub.postMessage(sessionId, content);
+  }
+  
+  return {
+    hub,
+    bundle,
+    handleAccessRequest,
+    handleGetMessages,
+    handlePostMessage,
+  };
+}
+
+// Usage
+const chatRoom = await createPrivateChatRoom();
+console.log('Chat room ready!');</code></pre>
+        </div>
+      </section>
+
+      <!-- Navigation -->
+      <div class="mt-16 pt-8 border-t border-mountain-700">
+        <div class="flex flex-col sm:flex-row gap-4">
+          <a href="gumba.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-amber-500 transition group">
+            <div class="text-xs text-mountain-400 mb-1">← Reference</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">🛕</span>
+              <span class="font-semibold group-hover:text-amber-400">GUMBA Documentation</span>
+            </div>
+            <p class="text-mountain-400 text-sm mt-1">Full API reference and concepts</p>
+          </a>
+          <a href="tutorials.html" class="flex-1 block bg-mountain-800 border border-amber-700 rounded-xl p-4 hover:border-amber-500 transition group">
+            <div class="text-xs text-mountain-400 mb-1">More Tutorials →</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">📖</span>
+              <span class="font-semibold group-hover:text-amber-400">All Tutorials</span>
+            </div>
+            <p class="text-mountain-400 text-sm mt-1">Explore other YAKMESH tutorials</p>
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <footer class="docs-footer">
+    <p>&copy; 2026 YAKMESH™</p>
+  </footer>
+
+  <script src="prism.min.js"></script>
+  <script src="prism-javascript.min.js"></script>
+  <script src="docs.js"></script>
+</body>
+</html>
