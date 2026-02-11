@@ -6,7 +6,7 @@
  * Regenerate with: npm run build:docs
  * Source: website/docs/
  * 
- * @generated 2026-02-11T04:33:14.524Z
+ * @generated 2026-02-11T05:03:15.391Z
  * @module embedded-docs/bundle
  */
 
@@ -20,12 +20,12 @@ export const BUNDLE_HASH = '123d3852e8a996f391b32eade0e7d7ecb7ae5dd3f1f392f69181
  * Version of the documentation bundle.
  * Matches the npm package version at build time.
  */
-export const BUNDLE_VERSION = '2.8.2';
+export const BUNDLE_VERSION = '2.9.0';
 
 /**
  * Build timestamp (ISO 8601)
  */
-export const BUNDLE_BUILT_AT = '2026-02-11T04:33:14.524Z';
+export const BUNDLE_BUILT_AT = '2026-02-11T05:03:15.391Z';
 
 /**
  * Index of all files in the documentation bundle.
