@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="katha">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="favicon.ico" sizes="32x32">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <title>KATHA Protocol | YAKMESH Documentation</title>
+  <meta name="description" content="KATHA - Kommunication And Threading Handler Architecture. Rich chat features for the Yakmesh network.">
+  <link rel="stylesheet" href="tailwind.min.css">
+  <link rel="stylesheet" href="prism-tomorrow.min.css">
+  <link rel="stylesheet" href="docs.css">
+  <style>
+    .theme-accent { color: #22d3ee; }
+    .theme-accent-hover:hover { color: #06b6d4; }
+    .theme-badge { background: rgba(6, 182, 212, 0.2); color: #22d3ee; }
+    .theme-border { border-color: #06b6d4; }
+    .theme-callout { background: rgba(6, 182, 212, 0.1); border-color: #0891b2; }
+    .active-link { background: rgba(6, 182, 212, 0.2) !important; color: #22d3ee !important; }
+  </style>
+</head>
+<body class="bg-mountain-900 text-white min-h-screen">
+  <nav class="docs-sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-logo">
+      <span class="logo-icon">🏔️</span>
+      <span class="logo-text">Yakmesh</span>
+    </a>
+    <a href="/dashboard" class="sidebar-dashboard-link"><span>📊</span> <span>Dashboard</span></a>
+    <ul class="sidebar-nav">
+      <li><a href="index.html"><span>🏠</span> <span>Overview</span></a></li>
+      <li><a href="getting-started.html"><span>🚀</span> <span>Getting Started</span></a></li>
+      <li><a href="tutorials.html"><span>📖</span> <span>Tutorials</span></a></li>
+      <li><a href="doko.html"><span>🧺</span> <span>DOKO</span></a></li>
+      <li><a href="namche.html"><span>🚪</span> <span>NAMCHE</span></a></li>
+      <li><a href="sherpa.html"><span>🧗</span> <span>SHERPA</span></a></li>
+      <li><a href="nakpak.html"><span>🎒</span> <span>NAKPAK</span></a></li>
+      <li><a href="annex.html"><span>🌉</span> <span>ANNEX</span></a></li>
+      <li><a href="gumba.html"><span>🛕</span> <span>GUMBA</span></a></li>
+      <li><a href="yurt.html"><span>🏕️</span> <span>YURT</span></a></li>
+      <li><a href="yak-protocol.html"><span class="yak-icon"></span> <span>YAK</span></a></li>
+      <li><a href="mantra.html"><span>🕉️</span> <span>MANTRA</span></a></li>
+      <li><a href="katha.html" class="active"><span>💬</span> <span>KATHA</span></a></li>
+      <li><a href="vani.html"><span>🎙️</span> <span>VANI</span></a></li>
+      <li><a href="darshan.html"><span>👁️</span> <span>DARSHAN</span></a></li>
+      <li><a href="stupa.html"><span>🛕</span> <span>STUPA</span></a></li>
+      <li><a href="lama.html"><span>🔮</span> <span>LAMA</span></a></li>
+      <li><a href="mani.html"><span>⏱️</span> <span>MANI</span></a></li>
+      <li><a href="karma.html"><span>☯️</span> <span>KARMA</span></a></li>
+      <li><a href="mandala.html"><span>🌐</span> <span>MANDALA</span></a></li>
+      <li><a href="tattva.html"><span>🔯</span> <span>TATTVA</span></a></li>
+      <li><a href="tribhuj.html"><span>🔺</span> <span>TRIBHUJ</span></a></li>
+      <li><a href="ypc27.html"><span>🔐</span> <span>YPC-27</span></a></li>
+      <li><a href="sakshi.html"><span>👁️</span> <span>SAKSHI</span></a></li>
+      <li><a href="geo-proof.html"><span>🌍</span> <span>PRAMAAN</span></a></li>
+      <li><a href="trust-security.html"><span>🔒</span> <span>SURAKSHA</span></a></li>
+      <li><a href="docs-bundle.html"><span>📚</span> <span>GRANTH</span></a></li>
+      <li><a href="api.html"><span>📡</span> <span>API</span></a></li>
+      <li><a href="quick-reference.html"><span>📋</span> <span>Quick Ref</span></a></li>
+    </ul>
+  </nav>
+
+  <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+    </svg>
+  </button>
+
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="docs-main" id="mainContent">
+    <div class="docs-content">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="text-4xl">💬</span>
+        <div>
+          <h1 class="text-4xl font-bold">KATHA <span class="text-xl text-mountain-400">कथा</span></h1>
+          <p class="theme-accent">Kommunication And Threading Handler Architecture</p>
+        </div>
+      </div>
+      <p class="text-xl text-mountain-300 mb-4">Rich chat features for the Yakmesh network.</p>
+      <span class="inline-block text-xs theme-badge px-2 py-1 rounded mb-8">v1.0.0</span>
+
+      <div class="feature-box">
+        <h3>The Art of Storytelling</h3>
+        <p>
+          In Sanskrit, <strong>कथा (katha)</strong> means "story" or "narrative" — the ancient art of 
+          passing knowledge through conversation. From the great epics recited around fires to intimate 
+          talks between teacher and student, katha represents the living tradition of shared understanding.
+        </p>
+        <p>
+          The KATHA protocol embodies this tradition: messages flow like stories, reactions capture 
+          emotional resonance, threads weave deeper discussions, and typing indicators show when 
+          someone is composing their thoughts.
+        </p>
+      </div>
+
+      <h2 class="text-2xl font-bold mt-12 mb-6">Overview</h2>
+      
+      <p class="text-mountain-300 mb-6">
+        KATHA provides the rich chat layer for Yakmesh, bringing modern messaging features to 
+        decentralized communication:
+      </p>
+
+      <div class="grid md:grid-cols-2 gap-4 mb-8">
+        <div class="p-4 bg-mountain-800 rounded-lg border border-mountain-700">
+          <div class="text-2xl mb-2">📝</div>
+          <h4 class="font-semibold mb-1">Text Messages</h4>
+          <p class="text-mountain-400 text-sm">Rich text with 4000 char limit, reply threading, and edit history</p>
+        </div>
+        <div class="p-4 bg-mountain-800 rounded-lg border border-mountain-700">
+          <div class="text-2xl mb-2">👍</div>
+          <h4 class="font-semibold mb-1">Reactions</h4>
+          <p class="text-mountain-400 text-sm">Emoji reactions with 20 unique emojis per message</p>
+        </div>
+        <div class="p-4 bg-mountain-800 rounded-lg border border-mountain-700">
+          <div class="text-2xl mb-2">✍️</div>
+          <h4 class="font-semibold mb-1">Typing Indicators</h4>
+          <p class="text-mountain-400 text-sm">5-second ephemeral presence showing who's composing</p>
+        </div>
+        <div class="p-4 bg-mountain-800 rounded-lg border border-mountain-700">
+          <div class="text-2xl mb-2">🖼️</div>
+          <h4 class="font-semibold mb-1">Media Embeds</h4>
+          <p class="text-mountain-400 text-sm">Images, GIFs, and files up to 10MB with integrity verification</p>
+        </div>
+        <div class="p-4 bg-mountain-800 rounded-lg border border-mountain-700">
+          <div class="text-2xl mb-2">✓✓</div>
+          <h4 class="font-semibold mb-1">Read Receipts</h4>
+          <p class="text-mountain-400 text-sm">Batched acknowledgments showing who's seen your message</p>
+        </div>
+        <div class="p-4 bg-mountain-800 rounded-lg border border-mountain-700">
+          <div class="text-2xl mb-2">🧵</div>
+          <h4 class="font-semibold mb-1">Threading</h4>
+          <p class="text-mountain-400 text-sm">Reply to specific messages, creating focused conversations</p>
+        </div>
+      </div>
+
+      <h2 class="text-2xl font-bold mt-12 mb-6" id="messages">Messages</h2>
+
+      <p class="text-mountain-300 mb-4">
+        Every chat message is a <code class="theme-accent">KathaMessage</code>:
+      </p>
+
+      <pre class="code-block mb-6"><code class="language-javascript">import { KathaMessage } from './mesh/katha.js';
+
+// Create a message
+const msg = new KathaMessage({
+  channelId: 'general',
+  senderId: myNodeId,
+  content: 'Hello, Yakmesh!',
+});
+
+// Reply to a message
+const reply = new KathaMessage({
+  channelId: 'general',
+  senderId: myNodeId,
+  content: 'Great point!',
+  replyTo: msg.id,  // Links to parent message
+});
+
+// Validate before sending
+const { valid, errors } = msg.validate();
+if (valid) {
+  channel.addMessage(msg);
+}</code></pre>
+
+      <h2 class="text-2xl font-bold mt-12 mb-6" id="reactions">Reactions</h2>
+
+      <p class="text-mountain-300 mb-4">
+        React to messages with emoji:
+      </p>
+
+      <pre class="code-block mb-6"><code class="language-javascript">import { KathaReaction } from './mesh/katha.js';
+
+// Add a reaction
+const reaction = new KathaReaction({
+  messageId: msg.id,
+  channelId: 'general',
+  userId: myNodeId,
+  emoji: '👍',
+  add: true,  // false to remove
+});
+
+// Apply to channel
+channel.applyReaction(reaction);
+
+// Check reaction counts
+const counts = msg.getReactionCounts();
+// { '👍': 3, '❤️': 1, '🎉': 2 }
+
+// Check if user reacted
+if (msg.hasUserReaction('👍', myNodeId)) {
+  console.log('You already reacted!');
+}</code></pre>
+
+      <div class="theme-callout p-4 rounded-lg border mb-6">
+        <strong>Limits:</strong> 20 unique emojis per message, 1 reaction per user per emoji.
+      </div>
+
+      <h2 class="text-2xl font-bold mt-12 mb-6" id="typing">Typing Indicators</h2>
+
+      <p class="text-mountain-300 mb-4">
+        Show when users are composing messages:
+      </p>
+
+      <pre class="code-block mb-6"><code class="language-javascript">import { KathaTyping } from './mesh/katha.js';
+
+// Start typing
+const typing = new KathaTyping({
+  channelId: 'general',
+  userId: myNodeId,
+});
+
+// Send to mesh...
+hub.handleEvent(typing.toJSON());
+
+// Stop typing (explicit)
+const stopTyping = new KathaTyping({
+  channelId: 'general',
+  userId: myNodeId,
+  stop: true,
+});
+
+// Or let it expire automatically (5 seconds)
+// The channel cleans up expired typing indicators</code></pre>
+
+      <h2 class="text-2xl font-bold mt-12 mb-6" id="media">Media Embeds</h2>
+
+      <p class="text-mountain-300 mb-4">
+        Share images, GIFs, and files with integrity verification:
+      </p>
+
+      <pre class="code-block mb-6"><code class="language-javascript">import { KathaMedia, KATHA_CONFIG } from './mesh/katha.js';
+import { readFileSync } from 'fs';
+
+// Create from buffer
+const imageBuffer = readFileSync('photo.jpg');
+const media = KathaMedia.fromBuffer(imageBuffer, {
+  channelId: 'general',
+  senderId: myNodeId,
+  filename: 'photo.jpg',
+  mimeType: 'image/jpeg',
+  mediaType: KATHA_CONFIG.mediaTypes.IMAGE,
+  caption: 'Check out this view!',
+});
+
+// Verify integrity on receive
+if (media.verify()) {
+  const buffer = media.toBuffer();
+  // Display or save the image
+}</code></pre>
+
+      <div class="theme-callout p-4 rounded-lg border mb-6">
+        <strong>Media Types:</strong>
+        <ul class="mt-2 text-sm">
+          <li><code>IMAGE</code> - Static images (JPEG, PNG, WebP)</li>
+          <li><code>GIF</code> - Animated GIFs</li>
+          <li><code>FILE</code> - Any file attachment</li>
+        </ul>
+        <p class="mt-2 text-sm">Maximum size: 10MB. Data is base64 encoded with SHA3-256 hash for verification.</p>
+      </div>
+
+      <h2 class="text-2xl font-bold mt-12 mb-6" id="read-receipts">Read Receipts</h2>
+
+      <p class="text-mountain-300 mb-4">
+        Track who has read messages (batched for efficiency):
+      </p>
+
+      <pre class="code-block mb-6"><code class="language-javascript">import { KathaReadReceipt } from './mesh/katha.js';
+
+// Batch multiple read acknowledgments
+const receipt = new KathaReadReceipt({
+  channelId: 'general',
+  userId: myNodeId,
+  lastReadId: latestMessageId,  // Everything up to this message
+});
+
+// Or list specific messages
+receipt.addMessage('msg-1');
+receipt.addMessage('msg-2');
+receipt.addMessage('msg-3');
+
+// Check who read a message
+const readers = channel.getReadBy(messageId);
+// ['user-1', 'user-2', 'user-3']</code></pre>
+
+      <h2 class="text-2xl font-bold mt-12 mb-6" id="edit-delete">Edit & Delete</h2>
+
+      <pre class="code-block mb-6"><code class="language-javascript">import { KathaEdit, KathaDelete } from './mesh/katha.js';
+
+// Edit a message (only sender can edit)
+const edit = new KathaEdit({
+  messageId: msg.id,
+  channelId: 'general',
+  userId: myNodeId,
+  newContent: 'Updated: Hello, Yakmesh!',
+});
+channel.editMessage(edit);
+// msg.editedAt is now set
+
+// Delete a message (only sender can delete)
+const del = new KathaDelete({
+  messageId: msg.id,
+  channelId: 'general',
+  userId: myNodeId,
+});
+channel.deleteMessage(del);
+// If message has replies, content becomes '[deleted]'</code></pre>
+
+      <h2 class="text-2xl font-bold mt-12 mb-6" id="channel">Channel Management</h2>
+
+      <p class="text-mountain-300 mb-4">
+        <code class="theme-accent">KathaChannel</code> manages all chat state for a single channel:
+      </p>
+
+      <pre class="code-block mb-6"><code class="language-javascript">import { KathaChannel, KathaMessage } from './mesh/katha.js';
+
+const channel = new KathaChannel('general');
+
+// Add messages
+channel.addMessage(msg1);
+channel.addMessage(msg2);
+
+// Get messages with filters
+const recent = channel.getMessages({ limit: 50 });
+const before = channel.getMessages({ before: timestamp });
+const after = channel.getMessages({ after: timestamp });
+const topLevel = channel.getMessages({ threadOnly: false });
+
+// Get thread replies
+const replies = channel.getThreadReplies(parentMessageId);
+
+// Track typing
+channel.setTyping('user-1', true);
+const typingUsers = channel.getTypingUsers();
+
+// Channel stats
+const stats = channel.getStats();
+// { channelId, messageCount, threadCount, typingUsers }</code></pre>
+
+      <h2 class="text-2xl font-bold mt-12 mb-6" id="hub">KathaHub - Multi-Channel Manager</h2>
+
+      <p class="text-mountain-300 mb-4">
+        <code class="theme-accent">KathaHub</code> manages multiple channels and handles incoming events:
+      </p>
+
+      <pre class="code-block mb-6"><code class="language-javascript">import { KathaHub, KATHA_CONFIG } from './mesh/katha.js';
+
+const hub = new KathaHub();
+
+// Channels are created on demand
+const general = hub.getChannel('general');
+const random = hub.getChannel('random');
+
+// Handle incoming events from the mesh
+hub.handleEvent(incomingMessage);
+
+// Register event handlers
+hub.on(KATHA_CONFIG.messageTypes.TEXT, (event, result) => {
+  console.log('New message:', event.content);
+});
+
+hub.on(KATHA_CONFIG.messageTypes.REACTION_ADD, (event, result) => {
+  console.log(${event.userId} reacted with );
+});
+
+hub.on(KATHA_CONFIG.messageTypes.TYPING_START, (event) => {
+  showTypingIndicator(event.userId, event.channelId);
+});
+
+// Global stats
+const stats = hub.getStats();
+// { channelCount: 2, totalMessages: 150, channels: {...} }
+
+// Cleanup on shutdown
+hub.cleanup();</code></pre>
+
+      <h2 class="text-2xl font-bold mt-12 mb-6" id="message-types">Message Types</h2>
+
+      <div class="overflow-x-auto mb-8">
+        <table class="w-full text-sm">
+          <thead class="bg-mountain-800">
+            <tr>
+              <th class="px-4 py-2 text-left">Type</th>
+              <th class="px-4 py-2 text-left">Value</th>
+              <th class="px-4 py-2 text-left">Description</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-mountain-700">
+            <tr><td class="px-4 py-2 font-mono text-xs">TEXT</td><td class="px-4 py-2 text-mountain-400">katha:text</td><td class="px-4 py-2">Chat message</td></tr>
+            <tr><td class="px-4 py-2 font-mono text-xs">REACTION_ADD</td><td class="px-4 py-2 text-mountain-400">katha:reaction:add</td><td class="px-4 py-2">Add emoji reaction</td></tr>
+            <tr><td class="px-4 py-2 font-mono text-xs">REACTION_REMOVE</td><td class="px-4 py-2 text-mountain-400">katha:reaction:remove</td><td class="px-4 py-2">Remove emoji reaction</td></tr>
+            <tr><td class="px-4 py-2 font-mono text-xs">TYPING_START</td><td class="px-4 py-2 text-mountain-400">katha:typing:start</td><td class="px-4 py-2">User started typing</td></tr>
+            <tr><td class="px-4 py-2 font-mono text-xs">TYPING_STOP</td><td class="px-4 py-2 text-mountain-400">katha:typing:stop</td><td class="px-4 py-2">User stopped typing</td></tr>
+            <tr><td class="px-4 py-2 font-mono text-xs">READ_RECEIPT</td><td class="px-4 py-2 text-mountain-400">katha:read</td><td class="px-4 py-2">Read acknowledgment</td></tr>
+            <tr><td class="px-4 py-2 font-mono text-xs">EDIT</td><td class="px-4 py-2 text-mountain-400">katha:edit</td><td class="px-4 py-2">Message edit</td></tr>
+            <tr><td class="px-4 py-2 font-mono text-xs">DELETE</td><td class="px-4 py-2 text-mountain-400">katha:delete</td><td class="px-4 py-2">Message deletion</td></tr>
+            <tr><td class="px-4 py-2 font-mono text-xs">MEDIA</td><td class="px-4 py-2 text-mountain-400">katha:media</td><td class="px-4 py-2">Image/GIF/file attachment</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2 class="text-2xl font-bold mt-12 mb-6" id="integration">Integration with GUMBA</h2>
+
+      <p class="text-mountain-300 mb-4">
+        KATHA messages travel through GUMBA bundles for private rooms:
+      </p>
+
+      <pre class="code-block mb-6"><code class="language-javascript">// KATHA message
+const msg = new KathaMessage({
+  channelId: bundleId,
+  senderId: myMemberId,
+  content: 'Private room message',
+});
+
+// Wrap in GUMBA content envelope
+const envelope = bundle.encrypt(msg.toJSON());
+
+// Send through mesh
+network.broadcast(envelope);</code></pre>
+
+      <div class="flex flex-col sm:flex-row gap-4 mt-12">
+        <a href="mantra.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-amber-500 transition group">
+          <div class="text-xs text-mountain-400 mb-1">← Previous</div>
+          <div class="flex items-center gap-2">
+            <span class="text-xl">🕉️</span>
+            <span class="font-semibold group-hover:text-amber-400">MANTRA</span>
+          </div>
+          <p class="text-mountain-400 text-sm mt-1">Message protocol</p>
+        </a>
+        <a href="vani.html" class="flex-1 block bg-mountain-800 border border-amber-700 rounded-xl p-4 hover:border-amber-500 transition group">
+          <div class="text-xs text-mountain-400 mb-1">Next →</div>
+          <div class="flex items-center gap-2">
+            <span class="text-xl">🎙️</span>
+            <span class="font-semibold group-hover:text-amber-400">VANI</span>
+          </div>
+          <p class="text-mountain-400 text-sm mt-1">Voice/video calls</p>
+        </a>
+      </div>
+    </div>
+  </main>
+
+  <script src="prism.min.js"></script>
+  <script src="docs.js"></script>
+</body>
+</html>

@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="vani">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="favicon.ico" sizes="32x32">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <title>VANI Protocol | YAKMESH Documentation</title>
+  <meta name="description" content="VANI - Voice And Networked Interaction. WebRTC voice and video calling for the Yakmesh network.">
+  <link rel="stylesheet" href="tailwind.min.css">
+  <link rel="stylesheet" href="prism-tomorrow.min.css">
+  <link rel="stylesheet" href="docs.css">
+  <style>
+    .theme-accent { color: #fb7185; }
+    .theme-accent-hover:hover { color: #f43f5e; }
+    .theme-badge { background: rgba(244, 63, 94, 0.2); color: #fb7185; }
+    .theme-border { border-color: #f43f5e; }
+    .theme-callout { background: rgba(244, 63, 94, 0.1); border-color: #e11d48; }
+    .active-link { background: rgba(244, 63, 94, 0.2) !important; color: #fb7185 !important; }
+  </style>
+</head>
+<body class="bg-mountain-900 text-white min-h-screen">
+  <nav class="docs-sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-logo">
+      <span class="logo-icon">🏔️</span>
+      <span class="logo-text">Yakmesh</span>
+    </a>
+    <a href="/dashboard" class="sidebar-dashboard-link"><span>📊</span> <span>Dashboard</span></a>
+    <ul class="sidebar-nav">
+      <li><a href="index.html"><span>🏠</span> <span>Overview</span></a></li>
+      <li><a href="getting-started.html"><span>🚀</span> <span>Getting Started</span></a></li>
+      <li><a href="tutorials.html"><span>📖</span> <span>Tutorials</span></a></li>
+      <li><a href="doko.html"><span>🧺</span> <span>DOKO</span></a></li>
+      <li><a href="namche.html"><span>🚪</span> <span>NAMCHE</span></a></li>
+      <li><a href="sherpa.html"><span>🧗</span> <span>SHERPA</span></a></li>
+      <li><a href="nakpak.html"><span>🎒</span> <span>NAKPAK</span></a></li>
+      <li><a href="annex.html"><span>🌉</span> <span>ANNEX</span></a></li>
+      <li><a href="gumba.html"><span>🛕</span> <span>GUMBA</span></a></li>
+      <li><a href="yurt.html"><span>🏕️</span> <span>YURT</span></a></li>
+      <li><a href="yak-protocol.html"><span class="yak-icon"></span> <span>YAK</span></a></li>
+      <li><a href="mantra.html"><span>🕉️</span> <span>MANTRA</span></a></li>
+      <li><a href="katha.html"><span>💬</span> <span>KATHA</span></a></li>
+      <li><a href="vani.html" class="active"><span>🎙️</span> <span>VANI</span></a></li>
+      <li><a href="darshan.html"><span>👁️</span> <span>DARSHAN</span></a></li>
+      <li><a href="stupa.html"><span>🛕</span> <span>STUPA</span></a></li>
+      <li><a href="lama.html"><span>🔮</span> <span>LAMA</span></a></li>
+      <li><a href="mani.html"><span>⏱️</span> <span>MANI</span></a></li>
+      <li><a href="karma.html"><span>☯️</span> <span>KARMA</span></a></li>
+      <li><a href="mandala.html"><span>🌐</span> <span>MANDALA</span></a></li>
+      <li><a href="tattva.html"><span>🔯</span> <span>TATTVA</span></a></li>
+      <li><a href="tribhuj.html"><span>🔺</span> <span>TRIBHUJ</span></a></li>
+      <li><a href="ypc27.html"><span>🔐</span> <span>YPC-27</span></a></li>
+      <li><a href="sakshi.html"><span>👁️</span> <span>SAKSHI</span></a></li>
+      <li><a href="geo-proof.html"><span>🌍</span> <span>PRAMAAN</span></a></li>
+      <li><a href="trust-security.html"><span>🔒</span> <span>SURAKSHA</span></a></li>
+      <li><a href="docs-bundle.html"><span>📚</span> <span>GRANTH</span></a></li>
+      <li><a href="api.html"><span>📡</span> <span>API</span></a></li>
+      <li><a href="quick-reference.html"><span>📋</span> <span>Quick Ref</span></a></li>
+    </ul>
+  </nav>
+
+  <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+    </svg>
+  </button>
+
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="docs-main" id="mainContent">
+    <div class="docs-content">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="text-4xl">🎙️</span>
+        <div>
+          <h1 class="text-4xl font-bold">VANI <span class="text-xl text-mountain-400">वाणी</span></h1>
+          <p class="theme-accent">Voice And Networked Interaction</p>
+        </div>
+      </div>
+      <p class="text-xl text-mountain-300 mb-4">WebRTC voice and video calling for the Yakmesh network.</p>
+      <span class="inline-block text-xs theme-badge px-2 py-1 rounded mb-8">v1.0.0</span>
+
+      <!-- Architecture -->
+      <section class="callout theme-callout" id="architecture">
+        <h2>🏗️ Architecture</h2>
+        <p>VANI provides real-time voice and video communication using WebRTC for media transport and the Yakmesh mesh network for signaling:</p>
+        <pre><code class="language-text">
+┌──────────────────────────────────────────────────────────────────┐
+│                         VANI ARCHITECTURE                         │
+├──────────────────────────────────────────────────────────────────┤
+│                                                                    │
+│  ┌─────────────┐          Mesh Signaling          ┌─────────────┐ │
+│  │   Alice     │ ◄────── SDP, ICE ────────────► │    Bob      │  │
+│  │  VaniHub    │         OFFER/ANSWER            │  VaniHub    │  │
+│  └──────┬──────┘                                  └──────┬──────┘ │
+│         │                                                │        │
+│         │  WebRTC P2P                                    │        │
+│         └──────────── Media Stream ──────────────────────┘        │
+│                    (Audio/Video/Screen)                           │
+│                                                                    │
+├──────────────────────────────────────────────────────────────────┤
+│  Key Benefits:                                                     │
+│  • No central media server - P2P encrypted streams                 │
+│  • Signaling via mesh - no STUN/TURN dependency for setup          │
+│  • GUMBA integration - private calls in access-controlled rooms    │
+│  • Multi-party support - group calls up to 10 participants         │
+└──────────────────────────────────────────────────────────────────┘
+        </code></pre>
+      </section>
+
+      <!-- How It Works -->
+      <section class="mt-8" id="how-it-works">
+        <h2 class="section-title theme-border">📞 How It Works</h2>
+        <div class="card-grid">
+          <div class="card">
+            <h3>1. Call Initiation</h3>
+            <p>Caller sends a <code>CALL_OFFER</code> signal through the mesh network with media preferences and caller info.</p>
+          </div>
+          <div class="card">
+            <h3>2. Call Answer</h3>
+            <p>Callee accepts with <code>CALL_ANSWER</code> or rejects with <code>CALL_REJECT</code>. Both signals route through mesh.</p>
+          </div>
+          <div class="card">
+            <h3>3. WebRTC Negotiation</h3>
+            <p><code>SDP_OFFER</code> and <code>SDP_ANSWER</code> exchange session descriptions. <code>ICE_CANDIDATE</code> signals help establish connectivity.</p>
+          </div>
+          <div class="card">
+            <h3>4. Media Streaming</h3>
+            <p>Once ICE completes, WebRTC creates a direct P2P connection for encrypted audio/video streams.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Quick Start -->
+      <section class="mt-8" id="quick-start">
+        <h2 class="section-title theme-border">🚀 Quick Start</h2>
+        <pre><code class="language-javascript">
+import { VaniHub, MEDIA_TYPE, CALL_STATE } from 'yakmesh/mesh/vani.js';
+
+// Create hub with local peer ID
+const hub = new VaniHub({
+  localPeerId: meshNode.id,
+  onSignal: (signal) => meshNode.broadcast(signal)
+});
+
+// Handle incoming mesh signals
+meshNode.on('message', (msg) => {
+  if (msg.type?.startsWith('vani:')) {
+    hub.handleSignal(msg);
+  }
+});
+
+// Listen for incoming calls
+hub.on('incomingCall', ({ call }) => {
+  console.log('Incoming call from:', call.participants.keys());
+  // Show UI to accept/reject
+});
+
+// Start a video call
+const call = await hub.startCall({
+  targetPeerIds: 'peer-bob-123',
+  mediaType: [MEDIA_TYPE.AUDIO, MEDIA_TYPE.VIDEO]
+});
+
+// Handle remote streams
+hub.on('remoteStream', ({ peerId, stream }) => {
+  const video = document.getElementById('remoteVideo');
+  video.srcObject = stream;
+});
+        </code></pre>
+      </section>
+
+      <!-- Call States -->
+      <section class="mt-8" id="call-states">
+        <h2 class="section-title theme-border">📊 Call States</h2>
+        <table class="docs-table">
+          <thead>
+            <tr>
+              <th>State</th>
+              <th>Description</th>
+              <th>Next States</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>idle</code></td>
+              <td>No active call</td>
+              <td>initiating, incoming</td>
+            </tr>
+            <tr>
+              <td><code>initiating</code></td>
+              <td>Creating call offer</td>
+              <td>ringing</td>
+            </tr>
+            <tr>
+              <td><code>ringing</code></td>
+              <td>Waiting for callee to answer</td>
+              <td>connecting, ended</td>
+            </tr>
+            <tr>
+              <td><code>incoming</code></td>
+              <td>Received call, awaiting user action</td>
+              <td>connecting, ended</td>
+            </tr>
+            <tr>
+              <td><code>connecting</code></td>
+              <td>Exchanging SDP and ICE candidates</td>
+              <td>connected, failed</td>
+            </tr>
+            <tr>
+              <td><code>connected</code></td>
+              <td>Media streaming active</td>
+              <td>reconnecting, ended</td>
+            </tr>
+            <tr>
+              <td><code>reconnecting</code></td>
+              <td>Connection temporarily lost</td>
+              <td>connected, failed</td>
+            </tr>
+            <tr>
+              <td><code>ended</code></td>
+              <td>Call terminated normally</td>
+              <td>idle</td>
+            </tr>
+            <tr>
+              <td><code>failed</code></td>
+              <td>Call failed to connect</td>
+              <td>idle</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- Signal Types -->
+      <section class="mt-8" id="signal-types">
+        <h2 class="section-title theme-border">📡 Signal Types</h2>
+        <table class="docs-table">
+          <thead>
+            <tr>
+              <th>Signal</th>
+              <th>Purpose</th>
+              <th>Payload</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>vani:call:offer</code></td>
+              <td>Initiate a call</td>
+              <td>mediaType, displayName, groupCall, bundleId</td>
+            </tr>
+            <tr>
+              <td><code>vani:call:answer</code></td>
+              <td>Accept a call</td>
+              <td>displayName, mediaType</td>
+            </tr>
+            <tr>
+              <td><code>vani:call:reject</code></td>
+              <td>Decline a call</td>
+              <td>reason</td>
+            </tr>
+            <tr>
+              <td><code>vani:call:end</code></td>
+              <td>Terminate a call</td>
+              <td>reason</td>
+            </tr>
+            <tr>
+              <td><code>vani:call:busy</code></td>
+              <td>Callee is in another call</td>
+              <td>-</td>
+            </tr>
+            <tr>
+              <td><code>vani:sdp:offer</code></td>
+              <td>WebRTC SDP offer</td>
+              <td>sdp</td>
+            </tr>
+            <tr>
+              <td><code>vani:sdp:answer</code></td>
+              <td>WebRTC SDP answer</td>
+              <td>sdp</td>
+            </tr>
+            <tr>
+              <td><code>vani:ice:candidate</code></td>
+              <td>ICE candidate for NAT traversal</td>
+              <td>candidate, sdpMid, sdpMLineIndex</td>
+            </tr>
+            <tr>
+              <td><code>vani:mute:audio</code></td>
+              <td>Audio mute state change</td>
+              <td>muted</td>
+            </tr>
+            <tr>
+              <td><code>vani:mute:video</code></td>
+              <td>Video mute state change</td>
+              <td>muted</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- API Reference -->
+      <section class="mt-8" id="api">
+        <h2 class="section-title theme-border">📖 API Reference</h2>
+        
+        <h3 class="mt-6 text-xl font-semibold">VaniHub</h3>
+        <p class="text-mountain-300 mb-4">Multi-call manager - the main entry point for voice/video.</p>
+        
+        <pre><code class="language-javascript">
+// Constructor
+new VaniHub({
+  localPeerId: string,              // Your mesh node ID
+  iceServers?: RTCIceServer[],      // Optional custom STUN/TURN servers
+  onSignal: (signal) => void        // Callback to send signals via mesh
+})
+
+// Methods
+hub.startCall(options) → Promise&lt;VaniCall&gt;  // Start outgoing call
+hub.handleSignal(signal)                     // Process incoming signal
+hub.acceptCall(callId) → Promise&lt;VaniCall&gt;  // Accept incoming call
+hub.rejectCall(callId, reason?)              // Reject incoming call
+hub.endCall(callId, reason?)                 // End active call
+hub.getCall(callId) → VaniCall | null        // Get call by ID
+hub.getActiveCall() → VaniCall | null        // Get current active call
+hub.getStats() → object                      // Get hub statistics
+hub.cleanup()                                // Clean up all resources
+
+// Events
+hub.on('incomingCall', ({ call, signal }) => {})  // New incoming call
+hub.on('stateChange', ({ callId, state }) => {})  // Call state changed
+hub.on('remoteStream', ({ peerId, stream }) => {})// Remote media stream
+hub.on('participantJoin', ({ participant }) => {})// Participant joined
+hub.on('participantLeave', ({ participant }) => {})// Participant left
+hub.on('error', ({ callId, code, error }) => {})  // Error occurred
+        </code></pre>
+
+        <h3 class="mt-6 text-xl font-semibold">VaniCall</h3>
+        <p class="text-mountain-300 mb-4">Individual call session with WebRTC management.</p>
+        
+        <pre><code class="language-javascript">
+// Properties
+call.id          // Unique call ID
+call.state       // Current call state
+call.isInitiator // true if we started the call
+call.isGroupCall // true if multi-party call
+call.bundleId    // GUMBA bundle ID for private calls
+call.mediaType   // Array of MEDIA_TYPE values
+call.participants// Map of peerId → VaniParticipant
+call.localStream // Local MediaStream
+call.createdAt   // Timestamp when call was created
+call.connectedAt // Timestamp when call connected (null if not yet)
+call.duration    // Call duration in ms
+
+// Methods
+call.initiate(peerIds)     // Start call to peer(s)
+call.accept(callerPeerId)  // Accept incoming call
+call.reject(reason?)       // Reject incoming call
+call.end(reason?)          // Hang up
+call.handleSignal(signal)  // Process signaling message
+call.setAudioEnabled(bool) // Mute/unmute audio
+call.setVideoEnabled(bool) // Enable/disable video
+call.cleanup()             // Release all resources
+call.getDuration() → number// Get call duration
+call.toJSON() → object     // Serialize call info
+        </code></pre>
+
+        <h3 class="mt-6 text-xl font-semibold">VaniSignal</h3>
+        <p class="text-mountain-300 mb-4">Signaling message builders.</p>
+        
+        <pre><code class="language-javascript">
+// Static factory methods
+VaniSignal.offer(options)       // Create call offer
+VaniSignal.answer(options)      // Create call answer
+VaniSignal.reject(options)      // Create call rejection
+VaniSignal.end(options)         // Create call end
+VaniSignal.sdpOffer(options)    // Create SDP offer
+VaniSignal.sdpAnswer(options)   // Create SDP answer
+VaniSignal.iceCandidate(options)// Create ICE candidate
+
+// Instance methods
+signal.validate() → { valid, errors }  // Validate signal
+signal.toJSON() → object               // Serialize
+VaniSignal.fromJSON(json)              // Deserialize
+        </code></pre>
+
+        <h3 class="mt-6 text-xl font-semibold">VaniParticipant</h3>
+        <p class="text-mountain-300 mb-4">Represents a participant in a call.</p>
+        
+        <pre><code class="language-javascript">
+// Properties
+participant.id              // Unique participant ID
+participant.peerId          // Mesh peer ID
+participant.displayName     // Display name
+participant.joinedAt        // When they joined
+participant.audioEnabled    // Audio is on
+participant.videoEnabled    // Video is on
+participant.screenSharing   // Screen sharing active
+participant.connectionState // WebRTC connection state
+participant.remoteStream    // Their MediaStream
+        </code></pre>
+      </section>
+
+      <!-- Group Calls -->
+      <section class="mt-8" id="group-calls">
+        <h2 class="section-title theme-border">👥 Group Calls</h2>
+        <p class="text-mountain-300 mb-4">VANI supports multi-party calls with up to 10 participants using mesh topology.</p>
+        
+        <pre><code class="language-javascript">
+// Start a group call
+const call = await hub.startCall({
+  targetPeerIds: ['peer-alice', 'peer-bob', 'peer-charlie'],
+  mediaType: [MEDIA_TYPE.AUDIO, MEDIA_TYPE.VIDEO],
+  isGroupCall: true
+});
+
+// Track participants
+hub.on('participantJoin', ({ callId, participant }) => {
+  console.log(participant.displayName, 'joined');
+});
+
+hub.on('participantLeave', ({ callId, participant, reason }) => {
+  console.log(participant.displayName, 'left:', reason);
+});
+
+// Each participant has their own stream
+hub.on('remoteStream', ({ callId, peerId, stream }) => {
+  // Create video element for this participant
+  const video = document.createElement('video');
+  video.id = 'video-' + peerId;
+  video.srcObject = stream;
+  video.autoplay = true;
+  document.getElementById('participants').appendChild(video);
+});
+        </code></pre>
+      </section>
+
+      <!-- GUMBA Integration -->
+      <section class="mt-8" id="gumba-integration">
+        <h2 class="section-title theme-border">🔐 Private Room Calls (GUMBA)</h2>
+        <p class="text-mountain-300 mb-4">VANI integrates with GUMBA for access-controlled voice/video in private rooms.</p>
+        
+        <pre><code class="language-javascript">
+// Start a call in a private GUMBA room
+const call = await hub.startCall({
+  targetPeerIds: roomMemberPeerIds,
+  bundleId: gumbaBundle.id,  // Links call to GUMBA access control
+  mediaType: [MEDIA_TYPE.AUDIO]
+});
+
+// The bundleId is included in CALL_OFFER signals
+// Receivers can verify membership before accepting
+call.bundleId // → 'gumba-bundle-123'
+        </code></pre>
+      </section>
+
+      <!-- Configuration -->
+      <section class="mt-8" id="configuration">
+        <h2 class="section-title theme-border">⚙️ Configuration</h2>
+        
+        <pre><code class="language-javascript">
+import { VANI_CONFIG } from 'yakmesh/mesh/vani.js';
+
+// Default configuration
+VANI_CONFIG.callTimeout        // 30000ms - ring timeout
+VANI_CONFIG.iceGatheringTimeout// 10000ms - ICE gathering
+VANI_CONFIG.reconnectTimeout   // 15000ms - reconnection window  
+VANI_CONFIG.maxParticipants    // 10 - max group size
+
+// Default STUN servers
+VANI_CONFIG.iceServers // Google STUN servers
+
+// Custom STUN/TURN servers
+const hub = new VaniHub({
+  localPeerId: myId,
+  iceServers: [
+    { urls: 'stun:stun.example.com:3478' },
+    { 
+      urls: 'turn:turn.example.com:3478',
+      username: 'user',
+      credential: 'pass'
+    }
+  ],
+  onSignal: sendViaMesh
+});
+
+// Media constraints
+VANI_CONFIG.defaultConstraints.audio.echoCancellation  // true
+VANI_CONFIG.defaultConstraints.audio.noiseSuppression  // true
+VANI_CONFIG.defaultConstraints.video.width.ideal       // 1280
+VANI_CONFIG.defaultConstraints.video.height.ideal      // 720
+VANI_CONFIG.defaultConstraints.video.frameRate.ideal   // 30
+        </code></pre>
+      </section>
+
+      <!-- Error Handling -->
+      <section class="mt-8" id="error-handling">
+        <h2 class="section-title theme-border">⚠️ Error Handling</h2>
+        
+        <pre><code class="language-javascript">
+hub.on('error', ({ callId, code, error }) => {
+  switch (code) {
+    case 'MEDIA_ACCESS_DENIED':
+      // User denied camera/microphone access
+      alert('Please allow camera and microphone access');
+      break;
+    case 'SDP_CREATE_FAILED':
+      // WebRTC SDP creation failed
+      console.error('Failed to create offer/answer:', error);
+      break;
+    case 'SDP_NEGOTIATION_FAILED':
+      // SDP exchange failed
+      console.error('Connection negotiation failed:', error);
+      break;
+    case 'SDP_ANSWER_FAILED':
+      // Failed to set remote SDP answer
+      console.error('Failed to process answer:', error);
+      break;
+  }
+});
+
+// Call end reasons
+import { CALL_END_REASON } from 'yakmesh/mesh/vani.js';
+
+CALL_END_REASON.NORMAL    // Normal hangup
+CALL_END_REASON.REJECTED  // Callee rejected
+CALL_END_REASON.BUSY      // Callee in another call
+CALL_END_REASON.TIMEOUT   // No answer (30s)
+CALL_END_REASON.FAILED    // Connection failed
+CALL_END_REASON.NETWORK_ERROR // Network issue
+CALL_END_REASON.PARTICIPANT_LEFT // Group participant left
+        </code></pre>
+      </section>
+
+      <!-- NAT & Firewall -->
+      <section class="callout theme-callout mt-8" id="nat-traversal">
+        <h2>🌐 NAT Traversal</h2>
+        <p>VANI uses ICE (Interactive Connectivity Establishment) for NAT traversal with three connection strategies:</p>
+        <ul class="list-disc list-inside mt-2 space-y-1">
+          <li><strong>Direct P2P</strong>: When both peers are on public IPs or same LAN</li>
+          <li><strong>STUN</strong>: Discovers public IP and port mapping for NAT punch-through</li>
+          <li><strong>Mesh Relay (preferred)</strong>: Fallback to Yakmesh mesh network for media relay — no external servers needed</li>
+          <li><strong>TURN</strong>: Optional external relay for symmetric NAT (configure your own if needed)</li>
+        </ul>
+        <p class="mt-4 text-yellow-300">⚠️ <strong>Ethos Note:</strong> The default configuration uses empty ICE servers, relying on mesh relay instead of external STUN/TURN. For hybrid deployments, you may optionally configure your own STUN/TURN servers — but Yakmesh's mesh relay is the recommended, fully decentralized approach.</p>
+      </section>
+
+      <!-- Integration Example -->
+      <section class="mt-8" id="full-example">
+        <h2 class="section-title theme-border">📋 Complete Example</h2>
+        
+        <pre><code class="language-javascript">
+import { VaniHub, MEDIA_TYPE, CALL_STATE, CALL_END_REASON } from 'yakmesh/mesh/vani.js';
+
+class CallManager {
+  constructor(meshNode) {
+    this.meshNode = meshNode;
+    this.hub = new VaniHub({
+      localPeerId: meshNode.id,
+      onSignal: (signal) => meshNode.send(signal.toPeer, signal)
+    });
+    
+    this.setupEventHandlers();
+    this.setupMeshHandlers();
+  }
+  
+  setupEventHandlers() {
+    // Incoming call notification
+    this.hub.on('incomingCall', ({ call }) => {
+      const caller = Array.from(call.participants.values())[0];
+      this.showIncomingCallUI(call.id, caller.displayName);
+    });
+    
+    // State changes
+    this.hub.on('stateChange', ({ callId, state }) => {
+      this.updateCallUI(callId, state);
+    });
+    
+    // Remote video
+    this.hub.on('remoteStream', ({ peerId, stream }) => {
+      this.attachRemoteStream(peerId, stream);
+    });
+  }
+  
+  setupMeshHandlers() {
+    this.meshNode.on('message', (msg) => {
+      if (msg.type?.startsWith('vani:')) {
+        this.hub.handleSignal(msg);
+      }
+    });
+  }
+  
+  async startVideoCall(peerId) {
+    const call = await this.hub.startCall({
+      targetPeerIds: peerId,
+      mediaType: [MEDIA_TYPE.AUDIO, MEDIA_TYPE.VIDEO]
+    });
+    
+    // Attach local preview
+    const preview = document.getElementById('localVideo');
+    preview.srcObject = call.localStream;
+    
+    return call;
+  }
+  
+  async acceptCall(callId) {
+    const call = await this.hub.acceptCall(callId);
+    document.getElementById('localVideo').srcObject = call.localStream;
+  }
+  
+  rejectCall(callId) {
+    this.hub.rejectCall(callId, CALL_END_REASON.REJECTED);
+  }
+  
+  hangUp() {
+    const call = this.hub.getActiveCall();
+    if (call) {
+      this.hub.endCall(call.id);
+    }
+  }
+  
+  toggleMute() {
+    const call = this.hub.getActiveCall();
+    if (call) {
+      const audioTrack = call.localStream?.getAudioTracks()[0];
+      if (audioTrack) {
+        audioTrack.enabled = !audioTrack.enabled;
+        call.setAudioEnabled(audioTrack.enabled);
+      }
+    }
+  }
+  
+  attachRemoteStream(peerId, stream) {
+    let video = document.getElementById('remote-' + peerId);
+    if (!video) {
+      video = document.createElement('video');
+      video.id = 'remote-' + peerId;
+      video.autoplay = true;
+      document.getElementById('remoteVideos').appendChild(video);
+    }
+    video.srcObject = stream;
+  }
+}
+
+// Usage
+const meshNode = await createMeshNode();
+const callManager = new CallManager(meshNode);
+
+// Start a call
+document.getElementById('callBtn').onclick = () => {
+  callManager.startVideoCall('peer-bob-123');
+};
+        </code></pre>
+      </section>
+
+      <!-- Journey Navigation -->
+      <div class="border-t border-mountain-700 mt-12 pt-8">
+        <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
+        <div class="flex flex-col sm:flex-row gap-4">
+          <a href="katha.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-rose-500 transition group">
+            <div class="text-xs text-mountain-400 mb-1">← Previous</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">💬</span>
+              <span class="font-semibold group-hover:text-rose-400">KATHA</span>
+            </div>
+            <p class="text-mountain-400 text-sm mt-1">Rich chat features</p>
+          </a>
+          <a href="darshan.html" class="flex-1 block bg-mountain-800 border border-rose-700 rounded-xl p-4 hover:border-rose-500 transition group">
+            <div class="text-xs text-mountain-400 mb-1">Next →</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">👁️</span>
+              <span class="font-semibold group-hover:text-rose-400">DARSHAN</span>
+            </div>
+            <p class="text-mountain-400 text-sm mt-1">Content streaming</p>
+          </a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="prism.min.js"></script>
+  <script src="prism-javascript.min.js"></script>
+  <script src="docs.js"></script>
+</body>
+</html>
