@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="darshan">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="favicon.ico" sizes="32x32">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <title>DARSHAN Protocol | YAKMESH Documentation</title>
+  <meta name="description" content="DARSHAN - Decentralized Archive Remote Streaming and Hosting Access Network. View-not-copy content streaming for Yakmesh.">
+  <link rel="stylesheet" href="tailwind.min.css">
+  <link rel="stylesheet" href="prism-tomorrow.min.css">
+  <link rel="stylesheet" href="docs.css">
+  <style>
+    .theme-accent { color: #c084fc; }
+    .theme-accent-hover:hover { color: #a855f7; }
+    .theme-badge { background: rgba(168, 85, 247, 0.2); color: #c084fc; }
+    .theme-border { border-color: #a855f7; }
+    .theme-callout { background: rgba(168, 85, 247, 0.1); border-color: #9333ea; }
+    .active-link { background: rgba(168, 85, 247, 0.2) !important; color: #c084fc !important; }
+  </style>
+</head>
+<body class="bg-mountain-900 text-white min-h-screen">
+  <nav class="docs-sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-logo">
+      <span class="logo-icon">🏔️</span>
+      <span class="logo-text">Yakmesh</span>
+    </a>
+    <a href="/dashboard" class="sidebar-dashboard-link"><span>📊</span> <span>Dashboard</span></a>
+    <ul class="sidebar-nav">
+      <li><a href="index.html"><span>🏠</span> <span>Overview</span></a></li>
+      <li><a href="getting-started.html"><span>🚀</span> <span>Getting Started</span></a></li>
+      <li><a href="tutorials.html"><span>📖</span> <span>Tutorials</span></a></li>
+      <li><a href="doko.html"><span>🧺</span> <span>DOKO</span></a></li>
+      <li><a href="namche.html"><span>🚪</span> <span>NAMCHE</span></a></li>
+      <li><a href="sherpa.html"><span>🧗</span> <span>SHERPA</span></a></li>
+      <li><a href="nakpak.html"><span>🎒</span> <span>NAKPAK</span></a></li>
+      <li><a href="annex.html"><span>🌉</span> <span>ANNEX</span></a></li>
+      <li><a href="gumba.html"><span>🛕</span> <span>GUMBA</span></a></li>
+      <li><a href="yurt.html"><span>🏕️</span> <span>YURT</span></a></li>
+      <li><a href="yak-protocol.html"><span class="yak-icon"></span> <span>YAK</span></a></li>
+      <li><a href="mantra.html"><span>🕉️</span> <span>MANTRA</span></a></li>
+      <li><a href="katha.html"><span>💬</span> <span>KATHA</span></a></li>
+      <li><a href="vani.html"><span>🎙️</span> <span>VANI</span></a></li>
+      <li><a href="darshan.html" class="active"><span>👁️</span> <span>DARSHAN</span></a></li>
+      <li><a href="stupa.html"><span>🛕</span> <span>STUPA</span></a></li>
+      <li><a href="lama.html"><span>🔮</span> <span>LAMA</span></a></li>
+      <li><a href="mani.html"><span>⏱️</span> <span>MANI</span></a></li>
+      <li><a href="karma.html"><span>☯️</span> <span>KARMA</span></a></li>
+      <li><a href="mandala.html"><span>🌐</span> <span>MANDALA</span></a></li>
+      <li><a href="tattva.html"><span>🔯</span> <span>TATTVA</span></a></li>
+      <li><a href="tribhuj.html"><span>🔺</span> <span>TRIBHUJ</span></a></li>
+      <li><a href="ypc27.html"><span>🔐</span> <span>YPC-27</span></a></li>
+      <li><a href="sakshi.html"><span>👁️</span> <span>SAKSHI</span></a></li>
+      <li><a href="geo-proof.html"><span>🌍</span> <span>PRAMAAN</span></a></li>
+      <li><a href="trust-security.html"><span>🔒</span> <span>SURAKSHA</span></a></li>
+      <li><a href="docs-bundle.html"><span>📚</span> <span>GRANTH</span></a></li>
+      <li><a href="api.html"><span>📡</span> <span>API</span></a></li>
+      <li><a href="quick-reference.html"><span>📋</span> <span>Quick Ref</span></a></li>
+    </ul>
+  </nav>
+
+  <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+    </svg>
+  </button>
+
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="docs-main" id="mainContent">
+    <div class="docs-content">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="text-4xl">👁️</span>
+        <div>
+          <h1 class="text-4xl font-bold">DARSHAN <span class="text-xl text-mountain-400">दर्शन</span></h1>
+          <p class="theme-accent">Decentralized Archive Remote Streaming and Hosting Access Network</p>
+        </div>
+      </div>
+      <p class="text-xl text-mountain-300 mb-4">View content without copying it. The host remains sovereign.</p>
+      <span class="inline-block text-xs theme-badge px-2 py-1 rounded mb-8">v1.0.0</span>
+
+      <!-- Philosophy -->
+      <section class="callout theme-callout" id="philosophy">
+        <h2>🧘 Philosophy</h2>
+        <blockquote class="border-l-4 theme-border pl-4 my-4 italic text-mountain-300">
+          "Content stays on the altar. Pilgrims come to see."
+        </blockquote>
+        <p>In Hindu tradition, <em>darshan</em> (दर्शन) is the sacred act of beholding a deity — receiving the blessing of sight without possessing the divine. DARSHAN brings this principle to digital content:</p>
+        <ul class="list-disc pl-6 space-y-2 mt-4">
+          <li><strong>View ≠ Copy</strong> — Content decrypts during streaming, not before</li>
+          <li><strong>Host Sovereignty</strong> — You control bandwidth, quality, and access</li>
+          <li><strong>No Upload Required</strong> — Stream directly from your machine</li>
+          <li><strong>Proof of Viewing</strong> — Cryptographic attestation of view events</li>
+        </ul>
+      </section>
+
+      <!-- Paradigm Shift -->
+      <section class="mt-8" id="paradigm">
+        <h2 class="text-2xl font-bold mb-4">🔄 The Paradigm Shift</h2>
+        <pre><code class="language-text">
+OLD MODEL (dying):
+  Creator → Upload → Central Server → Download × N
+            ↑ bandwidth waste          ↑ copies everywhere
+
+DARSHAN MODEL (novel):
+  Creator's Node → Mesh Tunnel → Viewer's Node
+        ↑                              ↑
+   Content stays home           View, not copy
+        </code></pre>
+        <p class="mt-4">Why upload your videos to YouTube when viewers can stream directly from you? DARSHAN eliminates the middleman while keeping you in control.</p>
+      </section>
+
+      <!-- Architecture -->
+      <section class="mt-8 callout theme-callout" id="architecture">
+        <h2>🏗️ Architecture</h2>
+        <pre><code class="language-text">
+┌─────────────────────────────────────────────────────────────┐
+│  HOST NODE                                                  │
+│  ┌─────────────────────┐                                   │
+│  │  Local Content      │ ← Never leaves unless permitted   │
+│  │  - Videos           │                                   │
+│  │  - Documents        │                                   │
+│  │  - Live streams     │                                   │
+│  └─────────┬───────────┘                                   │
+│            │                                                │
+│  ┌─────────▼───────────┐                                   │
+│  │  DARSHAN Gateway    │ ← Streams bytes on-demand         │
+│  │  - Access control   │ ← GUMBA proofs for permission     │
+│  │  - Bandwidth shaping│ ← Host controls quality           │
+│  │  - View attestation │ ← Prove viewing, not copying      │
+│  └─────────┬───────────┘                                   │
+└────────────┼────────────────────────────────────────────────┘
+             │
+    ═══════════════ MESH TUNNEL (ANNEX E2E) ════════════════
+             │
+┌────────────▼────────────────────────────────────────────────┐
+│  VIEWER NODE                                                │
+│  ┌─────────────────────┐                                   │
+│  │  Virtual Mount      │ ← Appears as local file           │
+│  │  /yak/alice/video   │ ← But bytes stream in real-time   │
+│  └─────────────────────┘                                   │
+│            OR                                               │
+│  ┌─────────────────────┐                                   │
+│  │  In-App Viewer      │ ← Direct playback, no file saved  │
+│  └─────────────────────┘                                   │
+└─────────────────────────────────────────────────────────────┘
+        </code></pre>
+      </section>
+
+      <!-- Core Concepts -->
+      <section class="mt-8" id="concepts">
+        <h2 class="text-2xl font-bold mb-4">📦 Core Concepts</h2>
+        
+        <h3 class="text-xl font-semibold mt-6 mb-2 theme-accent">DarshanContent</h3>
+        <p>Metadata describing streamable content (never the content itself):</p>
+        <pre><code class="language-javascript">
+import { DarshanContent } from 'yakmesh/mesh/darshan.js';
+
+const content = new DarshanContent({
+  hostNodeId: myNode.id,
+  path: '/videos/my-film.mp4',     // Local path (private)
+  name: 'My Amazing Film',         // Public metadata
+  contentType: 'video',
+  size: 524288000,                 // 500MB
+  duration: 7200,                  // 2 hours
+  permissions: ['view'],           // View-only, no download
+});
+        </code></pre>
+
+        <h3 class="text-xl font-semibold mt-6 mb-2 theme-accent">DarshanGateway</h3>
+        <p>Host-side server that controls access and streams content:</p>
+        <pre><code class="language-javascript">
+import { DarshanGateway } from 'yakmesh/mesh/darshan.js';
+
+const gateway = new DarshanGateway(identity, {
+  fileReader: myFileReader,
+  accessController: gumbaGate,  // GUMBA integration
+});
+
+// Register content for sharing
+await gateway.registerContent({
+  path: '/videos/my-film.mp4',
+  name: 'My Amazing Film',
+  contentType: 'video',
+});
+
+// Handle stream requests
+gateway.on('stream:started', ({ streamId, viewerId }) => {
+  console.log(\Streaming to \\);
+});
+        </code></pre>
+
+        <h3 class="text-xl font-semibold mt-6 mb-2 theme-accent">DarshanViewer</h3>
+        <p>Client-side viewer that requests and displays content:</p>
+        <pre><code class="language-javascript">
+import { DarshanViewer } from 'yakmesh/mesh/darshan.js';
+
+const viewer = new DarshanViewer(identity, {
+  sendMessage: mesh.send,  // Mesh transport
+});
+
+// Start viewing
+const stream = await viewer.startStream(hostId, contentId, {
+  quality: 'high',
+  onProgress: ({ percent }) => updateProgressBar(percent),
+  onChunk: (chunk) => videoPlayer.appendBuffer(chunk.data),
+});
+
+// Control playback
+viewer.seek(stream.streamId, 60000);  // Seek to 1 minute
+viewer.pause(stream.streamId);
+viewer.resume(stream.streamId);
+        </code></pre>
+
+        <h3 class="text-xl font-semibold mt-6 mb-2 theme-accent">DarshanMount</h3>
+        <p>Virtual filesystem mount for OS integration:</p>
+        <pre><code class="language-javascript">
+import { DarshanMount } from 'yakmesh/mesh/darshan.js';
+
+const mount = new DarshanMount({
+  mountPoint: '/yak',
+  viewer: myViewer,
+  cachePolicy: 'none',  // No local storage
+});
+
+await mount.mount();
+
+// Content appears as files in /yak/
+mount.addContent('alice-node', aliceVideo, '/yak/alice/film.mp4');
+
+// Now accessible via standard file APIs!
+// vlc /yak/alice/film.mp4
+        </code></pre>
+      </section>
+
+      <!-- Proof of Viewing -->
+      <section class="mt-8 callout theme-callout" id="attestation">
+        <h2>📜 Proof of Viewing</h2>
+        <p>DARSHAN generates cryptographic proof that viewing occurred without copying:</p>
+        <pre><code class="language-javascript">
+import { DarshanAttestation } from 'yakmesh/mesh/darshan.js';
+
+// Generated after viewing completes
+const attestation = new DarshanAttestation({
+  contentHash: 'sha256:abc...',
+  viewerId: viewerNode.id,
+  hostId: hostNode.id,
+  streamId: stream.id,
+  startTime: Date.now() - 7200000,
+  endTime: Date.now(),
+  bytesReceived: 524288000,
+  completionPercent: 100,
+});
+
+// Sign by both parties
+await attestation.signByViewer(viewerPrivateKey);
+await attestation.signByHost(hostPrivateKey);
+
+// Verify
+const valid = attestation.verify();  // true
+        </code></pre>
+        <p class="mt-4">These attestations can be used for:</p>
+        <ul class="list-disc pl-6 space-y-1">
+          <li>Proof of access for subscription validation</li>
+          <li>View counts that can't be faked</li>
+          <li>Consumption analytics without tracking</li>
+          <li>Payment triggers for pay-per-view</li>
+        </ul>
+      </section>
+
+      <!-- GUMBA Integration -->
+      <section class="mt-8" id="gumba-integration">
+        <h2 class="text-2xl font-bold mb-4">🔐 GUMBA Integration</h2>
+        <p>DARSHAN integrates with GUMBA for permission-based access:</p>
+        <pre><code class="language-javascript">
+// Gateway with GUMBA access control
+const gateway = new DarshanGateway(identity, {
+  accessController: {
+    checkAccess: async (viewerId, contentId, proof) => {
+      // Verify GUMBA proof
+      return await gumbaGate.verifyProof(proof, {
+        holder: viewerId,
+        requiredGroup: contentId,
+        requiredRole: 'viewer',
+      });
+    }
+  }
+});
+
+// Viewer must provide GUMBA proof
+const stream = await viewer.startStream(hostId, contentId, {
+  accessProof: await gumbaGate.generateProof(credentials),
+});
+        </code></pre>
+      </section>
+
+      <!-- Lazy Streaming -->
+      <section class="mt-8 callout theme-callout" id="streaming">
+        <h2>⚡ Lazy Byte Streaming</h2>
+        <p>Content is streamed lazily — only requested bytes are transmitted:</p>
+        <pre><code class="language-javascript">
+// Seek to 50% without downloading first half
+await viewer.seek(streamId, contentSize * 0.5);
+
+// Stream with byte-range requests
+const request = new DarshanRequest({
+  type: 'stream:request',
+  contentId,
+  byteStart: 262144000,  // Start at 250MB
+  byteEnd: 262144000 + 1048576,  // 1MB chunk
+});
+
+// Each chunk is integrity-verified
+const chunk = new DarshanChunk({
+  streamId,
+  sequenceNumber: 250,
+  data: encryptedBytes,
+  hash: 'sha256:xyz...',  // Verify integrity
+});
+        </code></pre>
+      </section>
+
+      <!-- Use Cases -->
+      <section class="mt-8" id="use-cases">
+        <h2 class="text-2xl font-bold mb-4">🎯 Use Cases</h2>
+        
+        <div class="grid md:grid-cols-2 gap-4 mt-4">
+          <div class="p-4 bg-mountain-800/50 rounded-lg">
+            <h3 class="font-semibold theme-accent">🎬 Independent Filmmakers</h3>
+            <p class="text-sm text-mountain-300">Stream your films directly to viewers. No YouTube compression. No algorithm censorship. Full control over your art.</p>
+          </div>
+          
+          <div class="p-4 bg-mountain-800/50 rounded-lg">
+            <h3 class="font-semibold theme-accent">📚 Confidential Documents</h3>
+            <p class="text-sm text-mountain-300">Legal documents viewed but never stored on client devices. Perfect for sensitive materials requiring read-only access.</p>
+          </div>
+          
+          <div class="p-4 bg-mountain-800/50 rounded-lg">
+            <h3 class="font-semibold theme-accent">🎵 Music Previews</h3>
+            <p class="text-sm text-mountain-300">Let listeners preview tracks without downloading. Prove they listened before triggering payments.</p>
+          </div>
+          
+          <div class="p-4 bg-mountain-800/50 rounded-lg">
+            <h3 class="font-semibold theme-accent">📊 Live Dashboards</h3>
+            <p class="text-sm text-mountain-300">Stream real-time data visualizations. Viewers see current state without accumulating history.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Configuration -->
+      <section class="mt-8 callout theme-callout" id="configuration">
+        <h2>⚙️ Configuration</h2>
+        <pre><code class="language-javascript">
+import { DarshanConfig } from 'yakmesh/mesh/darshan.js';
+
+// Full configuration options
+const config = new DarshanConfig({
+  // Streaming settings
+  defaultChunkSize: 1048576,       // 1MB chunks
+  maxConcurrentStreams: 10,        // Per gateway
+  qualityPresets: {
+    low: { maxBitrate: 500000 },
+    medium: { maxBitrate: 2000000 },
+    high: { maxBitrate: 10000000 },
+  },
+  
+  // Timeouts
+  streamTimeout: 300000,           // 5 minutes idle
+  chunkTimeout: 30000,             // 30 seconds per chunk
+  attestationTimeout: 60000,
+  
+  // Access control
+  requireGumba: true,              // Require GUMBA proofs
+  allowDownload: false,            // View only
+  
+  // Content limits
+  maxContentSize: 10737418240,     // 10GB
+  supportedTypes: ['video', 'audio', 'document'],
+});
+        </code></pre>
+      </section>
+
+      <!-- Security Model -->
+      <section class="mt-8" id="security">
+        <h2 class="text-2xl font-bold mb-4">🔒 Security Model</h2>
+        <ul class="list-disc pl-6 space-y-2">
+          <li><strong>Encryption in Transit</strong> — All streams use ANNEX E2E encryption</li>
+          <li><strong>Chunk Verification</strong> — Each chunk includes SHA-256 hash</li>
+          <li><strong>Access Control</strong> — Optional GUMBA proof requirements</li>
+          <li><strong>No Persistent Storage</strong> — Default cache policy is "none"</li>
+          <li><strong>Rate Limiting</strong> — Hosts control bandwidth allocation</li>
+          <li><strong>Host Sovereignty</strong> — Host can terminate streams at any time</li>
+        </ul>
+      </section>
+
+      <!-- API Reference -->
+      <section class="mt-8" id="api">
+        <h2 class="text-2xl font-bold mb-4">📖 API Reference</h2>
+        
+        <h3 class="text-lg font-semibold mt-6 mb-2">DarshanContent</h3>
+        <table class="w-full text-sm">
+          <tr class="border-b border-mountain-700"><th class="text-left py-2">Property</th><th class="text-left">Type</th><th class="text-left">Description</th></tr>
+          <tr class="border-b border-mountain-700"><td class="py-2"><code>hostNodeId</code></td><td>string</td><td>Node hosting the content</td></tr>
+          <tr class="border-b border-mountain-700"><td class="py-2"><code>contentId</code></td><td>string</td><td>Unique content identifier</td></tr>
+          <tr class="border-b border-mountain-700"><td class="py-2"><code>name</code></td><td>string</td><td>Display name</td></tr>
+          <tr class="border-b border-mountain-700"><td class="py-2"><code>contentType</code></td><td>string</td><td>video, audio, document</td></tr>
+          <tr class="border-b border-mountain-700"><td class="py-2"><code>size</code></td><td>number</td><td>Size in bytes</td></tr>
+          <tr class="border-b border-mountain-700"><td class="py-2"><code>duration</code></td><td>number</td><td>Duration in seconds (media)</td></tr>
+          <tr class="border-b border-mountain-700"><td class="py-2"><code>permissions</code></td><td>string[]</td><td>Allowed operations</td></tr>
+        </table>
+
+        <h3 class="text-lg font-semibold mt-6 mb-2">DarshanGateway Methods</h3>
+        <table class="w-full text-sm">
+          <tr class="border-b border-mountain-700"><th class="text-left py-2">Method</th><th class="text-left">Description</th></tr>
+          <tr class="border-b border-mountain-700"><td class="py-2"><code>registerContent(opts)</code></td><td>Register content for streaming</td></tr>
+          <tr class="border-b border-mountain-700"><td class="py-2"><code>unregisterContent(id)</code></td><td>Remove content from availability</td></tr>
+          <tr class="border-b border-mountain-700"><td class="py-2"><code>handleRequest(request)</code></td><td>Process incoming stream request</td></tr>
+          <tr class="border-b border-mountain-700"><td class="py-2"><code>terminateStream(streamId)</code></td><td>End an active stream</td></tr>
+          <tr class="border-b border-mountain-700"><td class="py-2"><code>getActiveStreams()</code></td><td>List active streams</td></tr>
+        </table>
+
+        <h3 class="text-lg font-semibold mt-6 mb-2">DarshanViewer Methods</h3>
+        <table class="w-full text-sm">
+          <tr class="border-b border-mountain-700"><th class="text-left py-2">Method</th><th class="text-left">Description</th></tr>
+          <tr class="border-b border-mountain-700"><td class="py-2"><code>browse(hostId)</code></td><td>List available content from host</td></tr>
+          <tr class="border-b border-mountain-700"><td class="py-2"><code>startStream(hostId, contentId, opts)</code></td><td>Begin streaming content</td></tr>
+          <tr class="border-b border-mountain-700"><td class="py-2"><code>seek(streamId, position)</code></td><td>Seek to byte position</td></tr>
+          <tr class="border-b border-mountain-700"><td class="py-2"><code>pause(streamId)</code></td><td>Pause streaming</td></tr>
+          <tr class="border-b border-mountain-700"><td class="py-2"><code>resume(streamId)</code></td><td>Resume streaming</td></tr>
+          <tr class="border-b border-mountain-700"><td class="py-2"><code>stop(streamId)</code></td><td>End streaming</td></tr>
+        </table>
+      </section>
+
+      <!-- Events -->
+      <section class="mt-8 callout theme-callout" id="events">
+        <h2>📡 Events</h2>
+        <pre><code class="language-javascript">
+// Gateway events
+gateway.on('stream:started', ({ streamId, viewerId, contentId }) => {});
+gateway.on('stream:progress', ({ streamId, bytesTransferred, percent }) => {});
+gateway.on('stream:completed', ({ streamId, attestation }) => {});
+gateway.on('stream:error', ({ streamId, error }) => {});
+
+// Viewer events
+viewer.on('content:discovered', ({ hostId, contents }) => {});
+viewer.on('stream:started', ({ streamId, hostId, contentId }) => {});
+viewer.on('chunk:received', ({ streamId, sequenceNumber, size }) => {});
+viewer.on('stream:completed', ({ streamId, attestation }) => {});
+        </code></pre>
+      </section>
+
+      <!-- Related Protocols (compact badges) -->
+      <section class="mt-8" id="related">
+        <h2 class="text-2xl font-bold mb-4">🔗 Related Protocols</h2>
+        <div class="flex flex-wrap gap-2">
+          <a href="gumba.html" class="inline-flex items-center gap-1 px-3 py-1 bg-mountain-800/50 rounded-lg hover:bg-mountain-800 text-sm">
+            <span>🛕</span> GUMBA <span class="text-mountain-400">— Access control</span>
+          </a>
+          <a href="annex.html" class="inline-flex items-center gap-1 px-3 py-1 bg-mountain-800/50 rounded-lg hover:bg-mountain-800 text-sm">
+            <span>🌉</span> ANNEX <span class="text-mountain-400">— E2E encryption</span>
+          </a>
+          <a href="yurt.html" class="inline-flex items-center gap-1 px-3 py-1 bg-mountain-800/50 rounded-lg hover:bg-mountain-800 text-sm">
+            <span>🏕️</span> YURT <span class="text-mountain-400">— Hosting</span>
+          </a>
+        </div>
+      </section>
+
+      <!-- Journey Navigation -->
+      <div class="border-t border-mountain-700 mt-12 pt-8">
+        <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
+        <div class="flex flex-col sm:flex-row gap-4">
+          <a href="vani.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-purple-500 transition group">
+            <div class="text-xs text-mountain-400 mb-1">← Previous</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">🎙️</span>
+              <span class="font-semibold group-hover:text-purple-400">VANI</span>
+            </div>
+            <p class="text-mountain-400 text-sm mt-1">Voice & video calls</p>
+          </a>
+          <a href="stupa.html" class="flex-1 block bg-mountain-800 border border-purple-700 rounded-xl p-4 hover:border-purple-500 transition group">
+            <div class="text-xs text-mountain-400 mb-1">Next →</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">🛕</span>
+              <span class="font-semibold group-hover:text-purple-400">STUPA</span>
+            </div>
+            <p class="text-mountain-400 text-sm mt-1">Emergency broadcasts</p>
+          </a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="prism.min.js"></script>
+  <script src="docs.js"></script>
+</body>
+</html>
