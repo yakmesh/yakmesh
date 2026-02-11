@@ -10,13 +10,15 @@
  * 3. Content Signing - All adapter-generated content is signed and verifiable
  * 4. Rate Limiting - Prevents spam/flooding
  * 5. GUMBA Integration - Respects room role permissions
+ * 6. DHARMA Moderation - Behavior-based content filtering (v3.0)
  * 
  * @module adapters/chat-mod-adapter
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 import { EventEmitter } from 'events';
 import { createHash } from 'crypto';
+import { DharmaModerator, MODERATION_ACTIONS } from '../security/dharma-moderation.js';
 
 /**
  * Chat modification capabilities
@@ -128,6 +130,11 @@ export class ChatModAdapter extends EventEmitter {
     this.katha = config.katha || null;
     this.gumba = config.gumba || null;
     
+    // DHARMA content moderation (v3.0)
+    // Behavior-based filtering - no identity discrimination
+    this.moderator = config.moderator || new DharmaModerator();
+    this.enableModeration = config.enableModeration !== false; // Default: enabled
+    
     // Rate limiting state
     this._rateLimitWindow = [];
     this._rateLimitMax = manifest.rateLimit.messages;
@@ -139,6 +146,7 @@ export class ChatModAdapter extends EventEmitter {
       commandsHandled: 0,
       responsesGenerated: 0,
       rateLimitHits: 0,
+      moderationBlocks: 0,
       errors: [],
     };
     
@@ -176,7 +184,12 @@ export class ChatModAdapter extends EventEmitter {
     
     if (response) {
       this.stats.responsesGenerated++;
-      return this._signResponse(response);
+      // DHARMA moderation check on output
+      const moderated = await this._moderateResponse(response, context);
+      if (moderated && moderated.blocked) {
+        return moderated; // Return moderation notice
+      }
+      return this._signResponse(moderated || response);
     }
     
     return null;
@@ -208,7 +221,12 @@ export class ChatModAdapter extends EventEmitter {
     const response = await this.onCommand(command, args, this._sanitizeContext(context));
     
     if (response) {
-      return this._signResponse(response);
+      // DHARMA moderation check on output
+      const moderated = await this._moderateResponse(response, context);
+      if (moderated && moderated.blocked) {
+        return moderated; // Return moderation notice
+      }
+      return this._signResponse(moderated || response);
     }
     
     return null;
@@ -298,6 +316,70 @@ export class ChatModAdapter extends EventEmitter {
         manifestHash: this.manifest.hash,
         timestamp: Date.now(),
       },
+    };
+  }
+  
+  /**
+   * Check content against DHARMA moderation rules
+   * @private
+   * @param {string} content - Content to check
+   * @param {Object} context - Context for logging
+   * @returns {Promise<Object>} Moderation result
+   */
+  async _moderateContent(content, context = {}) {
+    if (!this.enableModeration || !content) {
+      return { allowed: true };
+    }
+    
+    const result = await this.moderator.checkContent(content, {
+      adapterId: this.manifest.id,
+      ...context,
+    });
+    
+    if (!result.allowed) {
+      this.stats.moderationBlocks++;
+      this.emit('content-blocked', {
+        adapterId: this.manifest.id,
+        violationCount: result.violationCount,
+        highestSeverity: result.highestSeverity,
+        timestamp: Date.now(),
+      });
+    }
+    
+    return result;
+  }
+  
+  /**
+   * Moderate adapter output before sending
+   * @param {Object} response - Response to moderate
+   * @param {Object} context - Context
+   * @returns {Promise<Object|null>} Moderated response or null if blocked
+   */
+  async _moderateResponse(response, context = {}) {
+    if (!response) return null;
+    
+    // Extract text content from response
+    const textContent = response.content || response.text || 
+                       (response.card && response.card.title) ||
+                       '';
+    
+    const result = await this._moderateContent(textContent, context);
+    
+    if (!result.allowed) {
+      return {
+        type: 'moderation-notice',
+        content: 'Content blocked by community standards',
+        blocked: true,
+        _adapter: {
+          id: this.manifest.id,
+          moderated: true,
+          timestamp: Date.now(),
+        },
+      };
+    }
+    
+    return response;
+  }
       _verified: true,
     };
   }
