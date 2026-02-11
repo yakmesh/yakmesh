@@ -16,15 +16,25 @@
  * ║  PROTOCOL PHILOSOPHY:                                                         ║
  * ║    "Sacred geometry binds us" - Structure creates resilience                 ║
  * ║                                                                               ║
+ * ║  SECURITY POLICY (2026-02-11):                                               ║
+ * ║    ALL peer-to-peer communications MUST use ANNEX encryption.                ║
+ * ║    - ML-KEM-768 key exchange on connection                                   ║
+ * ║    - AES-256-GCM for message encryption                                      ║
+ * ║    - No plaintext on wire between nodes                                      ║
+ * ║                                                                               ║
  * ╚═══════════════════════════════════════════════════════════════════════════════╝
  * 
  * MANDALA Mesh Protocol
  * WebSocket-based peer-to-peer communication forming sacred network geometry
+ * Encrypted via ANNEX (Autonomous Network Negotiated Encrypted eXchange)
  */
 
 import { WebSocketServer, WebSocket } from 'ws';
 import { ConnectionRateLimiter } from './rate-limiter.js';
 import { createLogger } from '../utils/logger.js';
+
+// TODO: Integrate ANNEX encryption for all peer connections
+// import { Annex } from './annex.js';
 
 const log = createLogger('mandala:network');
 

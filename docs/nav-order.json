@@ -31,6 +31,7 @@
     { "file": "trust-security.html", "icon": "🔒", "title": "SURAKSHA", "description": "Security model", "layer": 23, "purpose": "Security & cryptographic core" },
     { "file": "docs-bundle.html", "icon": "📚", "title": "GRANTH", "description": "Documentation bundle", "layer": 24, "purpose": "Documentation bundle" },
     { "file": "api.html", "icon": "📡", "title": "API", "description": "API reference", "layer": 25, "purpose": "REST interface & endpoints" },
+    { "file": "adapters.html", "icon": "🔌", "title": "Adapters", "description": "Protocol adapters", "layer": 26, "purpose": "Adapters for transport & discovery" },
     { "file": "quick-reference.html", "icon": "📋", "title": "Quick Ref", "description": "Cheat sheet" }
   ]
 }
