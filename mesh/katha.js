@@ -11,8 +11,11 @@
  * 
  * Etymology: कथा (katha) = story, talk, narrative in Sanskrit
  * 
- * KATHA works on top of GUMBA bundles or direct ANNEX channels.
- * Messages are signed and optionally encrypted depending on the transport.
+ * SECURITY POLICY (2026-02-11):
+ * KATHA REQUIRES ANNEX encryption for ALL message transport.
+ * - Direct channels: ANNEX session must be established
+ * - GUMBA bundles: Bundle encryption via ANNEX
+ * - No plaintext messages permitted on wire
  * 
  * @module mesh/katha
  * @license MIT
