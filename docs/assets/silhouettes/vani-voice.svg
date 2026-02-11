@@ -1,0 +1,93 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMax slice">
+  <defs>
+    <radialGradient id="vaniGlow" cx="30%" cy="50%" r="60%">
+      <stop offset="0%" stop-color="#ec4899" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#101a16" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  
+  <!-- MOUNTAIN BACKDROP -->
+  <polygon points="0,600 200,320 420,560 0,1080" fill="#1a2a22" opacity="0.35"/>
+  <polygon points="1550,580 1780,280 1920,520 1920,1080 1550,1080" fill="#1a2a22" opacity="0.35"/>
+  
+  <!-- Sound wave glow -->
+  <ellipse cx="600" cy="550" rx="500" ry="300" fill="url(#vaniGlow)"/>
+  
+  <!-- CONCH SHELL (traditional Himalayan call) -->
+  <!-- Shell body -->
+  <ellipse cx="350" cy="600" rx="120" ry="80" fill="#1a2a22" opacity="0.9"/>
+  <ellipse cx="350" cy="600" rx="120" ry="80" stroke="#ec4899" stroke-width="3" fill="none" opacity="0.5"/>
+  <!-- Shell spiral -->
+  <path d="M380,580 Q420,560 430,600 Q440,640 400,660 Q360,680 340,640" stroke="#f472b6" stroke-width="2" fill="none" opacity="0.4"/>
+  <path d="M395,590 Q425,580 430,610 Q435,640 405,655" stroke="#f9a8d4" stroke-width="1.5" fill="none" opacity="0.3"/>
+  <!-- Shell opening -->
+  <ellipse cx="280" cy="600" rx="40" ry="50" fill="#1a2a22" opacity="0.95"/>
+  <ellipse cx="280" cy="600" rx="40" ry="50" stroke="#ec4899" stroke-width="2" fill="none" opacity="0.5"/>
+  
+  <!-- Person blowing conch -->
+  <circle cx="500" cy="550" r="50" fill="#1a2a22"/>
+  <ellipse cx="520" cy="650" rx="60" ry="80" fill="#1a2a22"/>
+  <!-- Arms holding conch -->
+  <polygon points="470,580 400,580 395,600 460,610" fill="#1a2a22"/>
+  <polygon points="450,620 380,620 375,640 440,650" fill="#1a2a22"/>
+  
+  <!-- SOUND WAVES emanating from conch -->
+  <!-- Wave 1 (closest) -->
+  <path d="M240,500 Q180,600 240,700" stroke="#ec4899" stroke-width="4" fill="none" opacity="0.5"/>
+  <!-- Wave 2 -->
+  <path d="M180,450 Q100,600 180,750" stroke="#f472b6" stroke-width="3" fill="none" opacity="0.4"/>
+  <!-- Wave 3 -->
+  <path d="M120,400 Q20,600 120,800" stroke="#f9a8d4" stroke-width="2" fill="none" opacity="0.3"/>
+  <!-- Wave 4 (farthest) -->
+  <path d="M60,350 Q-60,600 60,850" stroke="#fce7f3" stroke-width="1.5" fill="none" opacity="0.2"/>
+  
+  <!-- RECEIVING PARTICIPANTS (video grid representation) -->
+  <!-- Participant 1 -->
+  <rect x="900" y="400" width="180" height="120" fill="#1a2a22" opacity="0.8" rx="8"/>
+  <rect x="900" y="400" width="180" height="120" stroke="#ec4899" stroke-width="2" fill="none" opacity="0.4" rx="8"/>
+  <circle cx="990" cy="450" r="30" fill="#2a3a32"/>
+  <ellipse cx="990" cy="490" rx="35" ry="20" fill="#2a3a32"/>
+  <circle cx="1055" cy="495" r="8" fill="#22c55e" opacity="0.4"/>
+  <text x="920" y="510" fill="#f472b6" opacity="0.4" font-size="10" font-family="monospace">PEER-A</text>
+  
+  <!-- Participant 2 -->
+  <rect x="1120" y="400" width="180" height="120" fill="#1a2a22" opacity="0.8" rx="8"/>
+  <rect x="1120" y="400" width="180" height="120" stroke="#f472b6" stroke-width="2" fill="none" opacity="0.35" rx="8"/>
+  <circle cx="1210" cy="450" r="30" fill="#2a3a32"/>
+  <ellipse cx="1210" cy="490" rx="35" ry="20" fill="#2a3a32"/>
+  <circle cx="1275" cy="495" r="8" fill="#22c55e" opacity="0.4"/>
+  <text x="1140" y="510" fill="#ec4899" opacity="0.35" font-size="10" font-family="monospace">PEER-B</text>
+  
+  <!-- Participant 3 -->
+  <rect x="1340" y="400" width="180" height="120" fill="#1a2a22" opacity="0.8" rx="8"/>
+  <rect x="1340" y="400" width="180" height="120" stroke="#f9a8d4" stroke-width="2" fill="none" opacity="0.3" rx="8"/>
+  <circle cx="1430" cy="450" r="30" fill="#2a3a32"/>
+  <ellipse cx="1430" cy="490" rx="35" ry="20" fill="#2a3a32"/>
+  <circle cx="1495" cy="495" r="8" fill="#ef4444" opacity="0.4"/>
+  <text x="1360" y="510" fill="#f472b6" opacity="0.3" font-size="10" font-family="monospace">PEER-C</text>
+  
+  <!-- Bottom row -->
+  <rect x="1010" y="560" width="180" height="120" fill="#1a2a22" opacity="0.7" rx="8"/>
+  <rect x="1010" y="560" width="180" height="120" stroke="#ec4899" stroke-width="1.5" fill="none" opacity="0.25" rx="8"/>
+  <circle cx="1100" cy="610" r="25" fill="#2a3a32"/>
+  <text x="1030" y="670" fill="#f472b6" opacity="0.25" font-size="10" font-family="monospace">PEER-D</text>
+  
+  <rect x="1230" y="560" width="180" height="120" fill="#1a2a22" opacity="0.7" rx="8"/>
+  <rect x="1230" y="560" width="180" height="120" stroke="#f472b6" stroke-width="1.5" fill="none" opacity="0.2" rx="8"/>
+  <circle cx="1320" cy="610" r="25" fill="#2a3a32"/>
+  <text x="1250" y="670" fill="#f9a8d4" opacity="0.2" font-size="10" font-family="monospace">PEER-E</text>
+  
+  <!-- Connection lines (mesh, no STUN) -->
+  <path d="M600,600 Q750,450 900,460" stroke="#ec4899" stroke-width="2" fill="none" opacity="0.25" stroke-dasharray="8,4"/>
+  <path d="M600,620 Q850,550 1120,460" stroke="#f472b6" stroke-width="1.5" fill="none" opacity="0.2" stroke-dasharray="8,4"/>
+  <path d="M600,640 Q950,600 1340,460" stroke="#f9a8d4" stroke-width="1" fill="none" opacity="0.15" stroke-dasharray="8,4"/>
+  
+  <!-- Audio level indicators -->
+  <rect x="915" y="380" width="8" height="15" fill="#22c55e" opacity="0.4"/>
+  <rect x="927" y="375" width="8" height="20" fill="#22c55e" opacity="0.4"/>
+  <rect x="939" y="385" width="8" height="10" fill="#22c55e" opacity="0.4"/>
+  
+  <!-- Text: NO STUN -->
+  <text x="1600" y="350" fill="#ec4899" opacity="0.3" font-size="12" font-family="monospace">mesh-relay: true</text>
+  <text x="1600" y="370" fill="#f472b6" opacity="0.25" font-size="11" font-family="monospace">iceServers: []</text>
+</svg>

@@ -189,6 +189,31 @@ html[data-theme="index"]::after {
   background-image: url('assets/silhouettes/witness-eye.svg');
 }
 
+/* GUMBA - Monastery with role hierarchy gates */
+[data-theme="gumba"] body::after {
+  background-image: url('assets/silhouettes/gumba-monastery.svg');
+}
+
+/* YURT - Nomadic tents representing room discovery */
+[data-theme="yurt"] body::after {
+  background-image: url('assets/silhouettes/yurt-tents.svg');
+}
+
+/* KATHA - Storytelling scene with chat elements */
+[data-theme="katha"] body::after {
+  background-image: url('assets/silhouettes/katha-storytelling.svg');
+}
+
+/* VANI - Voice/video calls with conch shell */
+[data-theme="vani"] body::after {
+  background-image: url('assets/silhouettes/vani-voice.svg');
+}
+
+/* DARSHAN - Viewing eye (view-not-copy paradigm) */
+[data-theme="darshan"] body::after {
+  background-image: url('assets/silhouettes/darshan-eye.svg');
+}
+
 code, pre {
   font-family: 'JetBrains Mono', monospace;
 }

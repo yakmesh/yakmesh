@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMax slice">
+  <defs>
+    <linearGradient id="kathaGlow" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#101a16" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- MOUNTAIN BACKDROP -->
+  <polygon points="0,580 180,300 380,520 0,1080" fill="#1a2a22" opacity="0.35"/>
+  <polygon points="1580,550 1780,250 1920,480 1920,1080 1580,1080" fill="#1a2a22" opacity="0.35"/>
+  
+  <!-- Campfire glow -->
+  <ellipse cx="960" cy="850" rx="400" ry="150" fill="url(#kathaGlow)"/>
+  
+  <!-- Central campfire -->
+  <ellipse cx="960" cy="850" rx="60" ry="25" fill="#1a2a22" opacity="0.8"/>
+  <polygon points="930,850 960,750 990,850" fill="#c4b5fd" opacity="0.3"/>
+  <polygon points="945,850 960,780 975,850" fill="#a78bfa" opacity="0.4"/>
+  <polygon points="955,850 960,800 965,850" fill="#8b5cf6" opacity="0.5"/>
+  
+  <!-- Storyteller (center-left) -->
+  <circle cx="650" cy="680" r="45" fill="#1a2a22"/>
+  <ellipse cx="650" cy="770" rx="55" ry="70" fill="#1a2a22"/>
+  <!-- Arms gesturing -->
+  <polygon points="700,740 800,680 810,700 710,760" fill="#1a2a22"/>
+  <polygon points="600,750 520,700 510,720 590,770" fill="#1a2a22"/>
+  
+  <!-- Listener 1 (right) -->
+  <circle cx="1250" cy="700" r="40" fill="#1a2a22"/>
+  <ellipse cx="1250" cy="780" rx="50" ry="60" fill="#1a2a22"/>
+  
+  <!-- Listener 2 (far right) -->
+  <circle cx="1450" cy="720" r="35" fill="#1a2a22" opacity="0.8"/>
+  <ellipse cx="1450" cy="790" rx="45" ry="55" fill="#1a2a22" opacity="0.8"/>
+  
+  <!-- Listener 3 (back left) -->
+  <circle cx="400" cy="650" r="35" fill="#1a2a22" opacity="0.7"/>
+  <ellipse cx="400" cy="715" rx="40" ry="50" fill="#1a2a22" opacity="0.7"/>
+  
+  <!-- SPEECH BUBBLES / CHAT ELEMENTS -->
+  <!-- Main story bubble -->
+  <ellipse cx="850" cy="550" rx="160" ry="80" fill="none" stroke="#8b5cf6" stroke-width="2" opacity="0.4"/>
+  <polygon points="750,620 780,630 720,680" fill="none" stroke="#8b5cf6" stroke-width="2" opacity="0.4"/>
+  <text x="850" y="535" fill="#a78bfa" opacity="0.5" font-size="12" font-family="monospace" text-anchor="middle">message</text>
+  <text x="850" y="555" fill="#c4b5fd" opacity="0.4" font-size="10" font-family="monospace" text-anchor="middle">{ content: "..." }</text>
+  <text x="850" y="575" fill="#8b5cf6" opacity="0.35" font-size="10" font-family="monospace" text-anchor="middle">reactions: [👍 💜]</text>
+  
+  <!-- Reply bubble -->
+  <ellipse cx="1150" cy="480" rx="100" ry="50" fill="none" stroke="#a78bfa" stroke-width="1.5" opacity="0.3"/>
+  <polygon points="1100,525 1130,540 1080,580" fill="none" stroke="#a78bfa" stroke-width="1.5" opacity="0.3"/>
+  <text x="1150" y="475" fill="#c4b5fd" opacity="0.35" font-size="10" font-family="monospace" text-anchor="middle">reply</text>
+  <text x="1150" y="495" fill="#a78bfa" opacity="0.3" font-size="9" font-family="monospace" text-anchor="middle">threadId: ...</text>
+  
+  <!-- Typing indicator -->
+  <ellipse cx="1400" cy="550" rx="60" ry="30" fill="none" stroke="#7c3aed" stroke-width="1" opacity="0.25"/>
+  <circle cx="1375" cy="550" r="6" fill="#8b5cf6" opacity="0.3"/>
+  <circle cx="1400" cy="550" r="6" fill="#a78bfa" opacity="0.25"/>
+  <circle cx="1425" cy="550" r="6" fill="#c4b5fd" opacity="0.2"/>
+  
+  <!-- Reaction emoji floating -->
+  <text x="750" cy="420" fill="#c4b5fd" opacity="0.4" font-size="20">💜</text>
+  <text x="920" cy="400" fill="#a78bfa" opacity="0.35" font-size="18">👍</text>
+  <text x="1050" cy="380" fill="#8b5cf6" opacity="0.3" font-size="16">🔥</text>
+  
+  <!-- Thread lines -->
+  <path d="M850,630 L850,700 L920,750" stroke="#8b5cf6" stroke-width="1" fill="none" opacity="0.2" stroke-dasharray="4,2"/>
+  <path d="M1150,530 L1100,600" stroke="#a78bfa" stroke-width="1" fill="none" opacity="0.15" stroke-dasharray="4,2"/>
+  
+  <!-- Read receipts -->
+  <text x="980" y="600" fill="#6ee7b7" opacity="0.4" font-size="14" font-family="monospace">✓✓</text>
+  
+  <!-- Ground -->
+  <ellipse cx="960" cy="900" rx="600" ry="80" fill="#1a2a22" opacity="0.5"/>
+</svg>
