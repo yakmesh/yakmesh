@@ -197,11 +197,171 @@ class SQLiteAdapter extends BaseAdapter {
   }
 }</code></pre>
 
-            <div class="theme-callout border rounded-xl p-6 mt-8">
+            <div class="theme-callout border rounded-xl p-6 mt-8 mb-12">
                 <h3 class="text-lg font-semibold mb-2">Pro Tip</h3>
                 <p class="text-mountain-300">
                     Use the <code class="theme-accent">this.emit()</code> method inherited from BaseAdapter to emit events 
                     that the mesh can react to, like <code>'change'</code>, <code>'error'</code>, or custom events.
+                </p>
+            </div>
+
+            <!-- Content Adapters Section (3.0) -->
+            <h2 class="text-2xl font-bold mb-4" id="content-adapters">Content Adapters <span class="theme-badge text-sm px-2 py-1 rounded-full ml-2">v3.0</span></h2>
+            <p class="text-mountain-300 mb-4">
+                Content Adapters serve documents via <a href="darshan.html" class="theme-accent">DARSHAN</a> streaming with optional chat integration.
+                They implement a capability-based security model.
+            </p>
+            
+            <h3 class="text-xl font-semibold mb-3">ContentAdapter Interface</h3>
+            <pre class="language-javascript rounded-lg mb-6"><code>import { ContentAdapter, CONTENT_CAPABILITIES } from '@yakmesh/adapters/content-adapter';
+
+class MyContentAdapter extends ContentAdapter {
+  constructor(config) {
+    super({
+      name: 'My Content Source',
+      id: 'my-content',
+      capabilities: [
+        CONTENT_CAPABILITIES.SERVE_PDF,
+        CONTENT_CAPABILITIES.SEARCH_REFERENCE,
+        CONTENT_CAPABILITIES.CHAT_QUOTE,
+      ],
+      ...config,
+    });
+  }
+
+  async lookupReference(reference) {
+    // Parse and look up the reference
+    return { reference, text: 'Content here...', found: true };
+  }
+
+  async getContentStream(contentId) {
+    // Return a stream for DARSHAN's view-not-copy paradigm
+    return fs.createReadStream(this.getContentPath(contentId));
+  }
+}</code></pre>
+
+            <h3 class="text-xl font-semibold mb-3">Capabilities</h3>
+            <div class="overflow-x-auto mb-8">
+                <table class="w-full bg-mountain-800 rounded-lg">
+                    <thead>
+                        <tr class="border-b border-mountain-700">
+                            <th class="text-left p-3 text-mountain-300">Capability</th>
+                            <th class="text-left p-3 text-mountain-300">Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="border-b border-mountain-700">
+                            <td class="p-3"><code class="theme-accent">SERVE_PDF</code></td>
+                            <td class="p-3 text-mountain-400">Serve PDF documents via DARSHAN</td>
+                        </tr>
+                        <tr class="border-b border-mountain-700">
+                            <td class="p-3"><code class="theme-accent">SERVE_TEXT</code></td>
+                            <td class="p-3 text-mountain-400">Serve plain text content</td>
+                        </tr>
+                        <tr class="border-b border-mountain-700">
+                            <td class="p-3"><code class="theme-accent">SEARCH_REFERENCE</code></td>
+                            <td class="p-3 text-mountain-400">Support looking up by reference</td>
+                        </tr>
+                        <tr class="border-b border-mountain-700">
+                            <td class="p-3"><code class="theme-accent">CHAT_QUOTE</code></td>
+                            <td class="p-3 text-mountain-400">Generate quote cards for KATHA chat</td>
+                        </tr>
+                        <tr>
+                            <td class="p-3"><code class="theme-accent">STREAM_NETWORK</code></td>
+                            <td class="p-3 text-mountain-400">Stream content over the mesh</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Chat Mod Adapters Section (3.0) -->
+            <h2 class="text-2xl font-bold mb-4" id="chat-mod-adapters">Chat Mod Adapters <span class="theme-badge text-sm px-2 py-1 rounded-full ml-2">v3.0</span></h2>
+            <p class="text-mountain-300 mb-4">
+                Chat Mod Adapters extend <a href="katha.html" class="theme-accent">KATHA</a> chat with slash commands and 
+                interactive features. They include security measures to prevent abuse.
+            </p>
+            
+            <h3 class="text-xl font-semibold mb-3">ChatModAdapter Interface</h3>
+            <pre class="language-javascript rounded-lg mb-6"><code>import { ChatModAdapter, ChatModManifest, CHAT_MOD_CAPABILITIES } from '@yakmesh/adapters/chat-mod-adapter';
+
+class MyChatMod extends ChatModAdapter {
+  constructor() {
+    super(new ChatModManifest({
+      id: 'my-chat-mod',
+      version: '1.0.0',
+      capabilities: [
+        CHAT_MOD_CAPABILITIES.CMD_SLASH,
+        CHAT_MOD_CAPABILITIES.GEN_QUOTE,
+      ],
+      commands: ['/mycommand', '/help'],
+      rateLimit: { maxPerMinute: 30 },
+    }));
+  }
+
+  async handleCommand(command, args, context) {
+    if (command === '/mycommand') {
+      return this._signResponse({
+        type: 'text',
+        content: 'Hello from my adapter!',
+      });
+    }
+  }
+}</code></pre>
+
+            <h3 class="text-xl font-semibold mb-3">Security Features</h3>
+            <div class="space-y-4 mb-8">
+                <div class="bg-mountain-800 rounded-lg p-4">
+                    <code class="theme-accent">Capability Declaration</code>
+                    <p class="text-mountain-400 mt-2">Adapters must declare what they can do upfront. Undeclared capabilities are blocked.</p>
+                </div>
+                <div class="bg-mountain-800 rounded-lg p-4">
+                    <code class="theme-accent">Rate Limiting</code>
+                    <p class="text-mountain-400 mt-2">Default 30 messages per minute per user. Configurable per adapter.</p>
+                </div>
+                <div class="bg-mountain-800 rounded-lg p-4">
+                    <code class="theme-accent">Response Signing</code>
+                    <p class="text-mountain-400 mt-2">All responses include adapter ID, version, and manifest hash for verification.</p>
+                </div>
+                <div class="bg-mountain-800 rounded-lg p-4">
+                    <code class="theme-accent">Context Sanitization</code>
+                    <p class="text-mountain-400 mt-2">Adapters only receive context data matching their declared capabilities.</p>
+                </div>
+            </div>
+
+            <!-- MLV Bible Example -->
+            <h2 class="text-2xl font-bold mb-4" id="mlv-bible-example">Example: MLV Bible Adapter</h2>
+            <p class="text-mountain-300 mb-4">
+                The <strong>MLV Bible Adapter</strong> demonstrates content + chat integration for scripture distribution.
+                It serves the Modern Literal Version Bible via DARSHAN and adds <code>/bible</code>, <code>/verse</code> commands to KATHA.
+            </p>
+            
+            <pre class="language-javascript rounded-lg mb-6"><code>import { MLVBibleAdapter } from '@yakmesh/adapters/adapter-mlv-bible';
+
+// Create and initialize
+const mlv = new MLVBibleAdapter({
+  contentPath: './mlv-content',
+});
+await mlv.init();
+
+// Register with DARSHAN for P2P streaming
+await mlv.registerWithDarshan(darshan);
+
+// Register with KATHA for chat commands
+mlv.registerWithKatha(katha, chatModRegistry);
+
+// Now users can:
+// - Stream MLV PDFs via DARSHAN (view-not-copy)
+// - Use /bible John 3:16 in chat
+// - Use /verse Gen 1:1-5 for passage lookups</code></pre>
+
+            <div class="theme-callout border rounded-xl p-6 mb-8">
+                <h3 class="text-lg font-semibold mb-2">🕊️ Anti-Censorship Philosophy</h3>
+                <p class="text-mountain-300 mb-3">
+                    Content adapters embody Yakmesh's core principle: <strong>no central authority can block your content</strong>.
+                </p>
+                <p class="text-mountain-400 text-sm">
+                    The MLV Bible Adapter is a template for creating adapters for any belief system or documents.
+                    Each user hosts their own content—peer-to-peer, cryptographically verified, censorship-resistant.
                 </p>
             </div>
 
