@@ -32,6 +32,7 @@
     { "file": "docs-bundle.html", "icon": "📚", "title": "GRANTH", "description": "Documentation bundle", "layer": 24, "purpose": "Documentation bundle" },
     { "file": "api.html", "icon": "📡", "title": "API", "description": "API reference", "layer": 25, "purpose": "REST interface & endpoints" },
     { "file": "adapters.html", "icon": "🔌", "title": "Adapters", "description": "Protocol adapters", "layer": 26, "purpose": "Adapters for transport & discovery" },
+    { "file": "studio.html", "icon": "🎨", "title": "Studio", "description": "YakApp Studio creative suite" },
     { "file": "quick-reference.html", "icon": "📋", "title": "Quick Ref", "description": "Cheat sheet" }
   ]
 }
