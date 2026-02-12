@@ -1,6 +1,6 @@
 {
   "name": "yakbot",
-  "version": "1.0.0",
+  "version": "3.0.0",
   "description": "YakBot - Interactive Discord bot for YAKMESH™ community",
   "main": "index.js",
   "type": "module",
