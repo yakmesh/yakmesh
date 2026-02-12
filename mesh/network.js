@@ -37,6 +37,9 @@ import { createLogger } from '../utils/logger.js';
 // PQ-encrypted point-to-point communication between mesh peers
 import { Annex } from './annex.js';
 
+// TRIBHUJ Key Ratchet — trinary rotating keypairs with gateway attestation
+import { TribhujRatchet, GatewayAttestation } from '../identity/tribhuj-ratchet.js';
+
 const log = createLogger('mandala:network');
 
 /**
@@ -97,6 +100,13 @@ export class MandalaNetwork {
     // Initialized after start() when identity is available
     this.annex = null;
     
+    // TRIBHUJ ratchet - trinary rotating keypairs for forward secrecy
+    this.ratchet = null;
+    this.gateway = null;  // Gateway attestation for gossip verify-once
+    
+    // Track peer ratchet states (their announced TRIBHUJ public keys)
+    this.peerRatchets = new Map(); // nodeId -> { currentPubKey, previousPubKey, epoch }
+    
     // Rate limiter for connection/message flood protection
     this.rateLimiter = new ConnectionRateLimiter(config.rateLimiter || {});
     
@@ -123,6 +133,22 @@ export class MandalaNetwork {
         // Initialize ANNEX encryption layer
         this.annex = new Annex({ identity: this.identity, mesh: this });
         log.info('ANNEX encryption layer initialized');
+        
+        // Initialize TRIBHUJ key ratchet — trinary rotating keypairs
+        this.ratchet = new TribhujRatchet({
+          rotationInterval: config.tribhujRotation || 300000,  // 5min default
+          gracePeriod: config.tribhujGrace || 60000,           // 1min grace
+        });
+        await this.ratchet.initialize();
+        this.ratchet.startAutoRotation();
+        
+        // Gateway attestation — verify gossip once, attest for downstream
+        this.gateway = new GatewayAttestation(
+          this.identity.identity.nodeId,
+          this.ratchet,
+          { attestationTTL: 60000 }
+        );
+        log.info('TRIBHUJ ratchet + gateway attestation initialized');
         
         this._startPingLoop();
         return;
@@ -248,8 +274,10 @@ export class MandalaNetwork {
       timestamp: Date.now(),
     };
 
-    // Sign the message
-    const signed = this.identity.signObject(gossipMsg);
+    // Sign the message — prefer TRIBHUJ ratchet for forward secrecy, fall back to identity
+    const signed = this.ratchet
+      ? this.ratchet.signObject(gossipMsg)
+      : this.identity.signObject(gossipMsg);
     
     this.seenMessages.add(msgId);
     
@@ -268,10 +296,9 @@ export class MandalaNetwork {
       throw new Error(`Peer ${nodeId} not connected`);
     }
     
-    const signed = this.identity.signObject({
-      ...message,
-      timestamp: Date.now(),
-    });
+    const signed = this.ratchet
+      ? this.ratchet.signObject({ ...message, timestamp: Date.now() })
+      : this.identity.signObject({ ...message, timestamp: Date.now() });
     
     this._send(peer.ws, signed);
   }
@@ -359,6 +386,14 @@ export class MandalaNetwork {
       }
       this.annex = null;
     }
+    
+    // Destroy TRIBHUJ ratchet — zero all key material
+    if (this.ratchet) {
+      this.ratchet.destroy();
+      this.ratchet = null;
+    }
+    this.gateway = null;
+    this.peerRatchets.clear();
     
     // Close all peer connections
     for (const [nodeId, peer] of this.peers) {
@@ -555,9 +590,55 @@ export class MandalaNetwork {
         }
       }
 
-      // SECURITY: Verify signature on signed messages from known peers
-      // HELLO/WELCOME are unsigned (peer not yet registered), so _signature check is conditional
-      if (msg._signature && senderPublicKey) {
+      // SECURITY: Verify signatures on messages from known peers
+      // Priority: (1) gateway attestation (fast), (2) TRIBHUJ ratchet, (3) legacy identity
+      
+      // Check for gateway attestation first — "verify once, trust the stamp"
+      if (msg._gwAttest && this.gateway) {
+        const attestResult = this.gateway.verifyAttestation(msg._gwAttest);
+        if (attestResult.valid) {
+          // Attestation valid — skip expensive ML-DSA-65 verify (~0.01ms vs ~2-5ms)
+          log.debug('Accepted via gateway attestation', {
+            type: msg.type,
+            gateway: msg._gwAttest.gateway?.slice(0, 20),
+          });
+        } else {
+          // Attestation invalid — still try full verification below
+          log.debug('Gateway attestation invalid, falling back to full verify', {
+            reason: attestResult.reason,
+          });
+          msg._gwAttest = null; // Clear bad attestation
+        }
+      }
+      
+      // TRIBHUJ ratchet verification (rotating keys)
+      if (msg._tribhujSig && !msg._gwAttest?.hash) {
+        const payload = { ...msg };
+        delete payload._tribhujSig;
+        delete payload._tribhujEpoch;
+        delete payload._tribhujPubKey;
+        
+        const result = this.ratchet
+          ? this.ratchet.verifyObject(msg, msg._tribhujPubKey)
+          : { valid: false, keyState: 'no_ratchet' };
+        
+        if (!result.valid) {
+          log.warn('Rejected message with invalid TRIBHUJ signature', {
+            type: msg.type,
+            epoch: msg._tribhujEpoch,
+            keyState: result.keyState,
+            sender: senderNodeId?.slice(0, 20),
+          });
+          return; // Drop forged message
+        }
+        
+        // If we're also a gateway, attest this for downstream peers
+        if (this.gateway && msg.type === MessageTypes.GOSSIP && msg.id) {
+          msg._gwAttest = this.gateway.attest(msg.id, msg.origin || senderNodeId);
+        }
+      }
+      // Legacy identity verification (permanent key, no ratchet)
+      else if (msg._signature && senderPublicKey && !msg._gwAttest?.hash) {
         const verified = this.identity.verifyObject(msg, senderPublicKey);
         if (!verified) {
           log.warn('Rejected message with invalid signature', {
@@ -566,6 +647,11 @@ export class MandalaNetwork {
             sender: senderNodeId?.slice(0, 20),
           });
           return; // Drop forged message
+        }
+        
+        // Attest for downstream if we have a gateway
+        if (this.gateway && msg.type === MessageTypes.GOSSIP && msg.id) {
+          msg._gwAttest = this.gateway.attest(msg.id, msg.origin || senderNodeId);
         }
       } else if (msg._signature && !senderPublicKey) {
         // Signed message from unknown peer — might be HELLO/WELCOME flow

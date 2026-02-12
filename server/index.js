@@ -677,9 +677,12 @@ export class YakmeshNode {
         return res.status(401).json({ error: 'Missing peer authentication headers' });
       }
       
-      // Reject stale timestamps (>30s drift)
+      // Reject stale timestamps — tightened from 30s to 10s
+      // With TRIBHUJ ratchet and SSE push, nodes maintain tighter time sync.
+      // 10s allows for reasonable network latency while preventing replay attacks.
+      const MAX_AUTH_DRIFT_MS = 10000;
       const drift = Math.abs(Date.now() - parseInt(ts, 10));
-      if (isNaN(drift) || drift > 30000) {
+      if (isNaN(drift) || drift > MAX_AUTH_DRIFT_MS) {
         return res.status(401).json({ error: 'Request timestamp too old or invalid' });
       }
       
@@ -899,6 +902,39 @@ export class YakmeshNode {
       const topic = req.query.topic || null;
       const rumors = this.gossip.getRecentRumors(since, topic);
       res.json({ rumors, serverTime: Date.now() });
+    });
+
+    // SSE endpoint: real-time push of rumors (replaces polling for MeshBridge)
+    // GET /rumors/subscribe?topic=<optional> — Server-Sent Events stream
+    app.get('/rumors/subscribe', (req, res) => {
+      const topicFilter = req.query.topic || null;
+
+      res.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        Connection: 'keep-alive',
+        'X-Accel-Buffering': 'no',  // Disable nginx buffering
+      });
+      res.write('retry: 5000\n\n');  // Auto-reconnect after 5s
+
+      // Listener that forwards matching rumors
+      const onRumor = (topic, data, origin) => {
+        if (topicFilter && topic !== topicFilter) return;
+        const event = JSON.stringify({ topic, data, origin, timestamp: Date.now() });
+        res.write(`data: ${event}\n\n`);
+      };
+
+      // Heartbeat to keep connection alive through proxies
+      const heartbeat = setInterval(() => {
+        res.write(': heartbeat\n\n');
+      }, 15000);
+
+      this.mesh.on('rumor', onRumor);
+
+      req.on('close', () => {
+        this.mesh.off('rumor', onRumor);
+        clearInterval(heartbeat);
+      });
     });
 
     // =========================================
