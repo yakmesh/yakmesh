@@ -1,23 +1,23 @@
 /**
- * YAKMESH Comprehensive Knowledge Base v2.6.6
+ * YAKMESH Comprehensive Knowledge Base v3.0.0
  * 
  * This file contains ALL technical information about YAKMESH
  * for use by YakBot (Discord) and YakAI (Web Assistant).
  * 
- * Last Updated: 2026-02-02
+ * Last Updated: 2026-02-12
  * 
  * @module knowledge-base
  */
 
 export const YAKMESH_KNOWLEDGE_BASE = `
-# YAKMESH v2.6.6 Complete Technical Reference
+# YAKMESH v3.0.0 Complete Technical Reference
 
 ## Overview
 YAKMESH (Yielding Atomic Kernel Modular Encryption Secured Hub) is a post-quantum secure P2P mesh network built for the 2026 threat landscape. It combines quantum-resistant cryptography with physics-based verification to create trustless distributed systems.
 
 **Key Stats:**
-- Version: 2.6.6
-- Tests: 812 (Oracle 98, Protocol 56, Multi-Node 18, Security 390+, BYOND 36)
+- Version: 3.0.0
+- Tests: 812+ (Oracle 98, Protocol 56, Multi-Node 18, Security 390+, BYOND 36)
 - License: MIT
 - Node.js 18+ required
 
@@ -50,9 +50,13 @@ Epidemic-style message propagation.
 
 ### 4. ANNEX - Encrypted Channels
 Autonomous Network Negotiated eXchange.
-- ML-KEM-768 ephemeral key exchange
-- XChaCha20-Poly1305 symmetric encryption
-- Forward secrecy with key rotation
+- ML-KEM-768 ephemeral key exchange (NIST FIPS 203)
+- AES-256-GCM symmetric encryption
+- Forward secrecy with TRIBHUJ key ratchet rotation
+- Session expiry: 1hr timeout + 10K message limit, auto-rekey
+- Replay protection: nonce dedup with 5-min window
+- sharedSecret zeroed immediately after key derivation
+- Transparent encryption on ALL peer-to-peer wire traffic
 - Content-addressed storage integration
 
 ### 5. NAKPAK - Onion Routing
@@ -68,6 +72,30 @@ Secure Hidden Endpoint Resolution Path Architecture.
 - RTT measurement for geo-proofing (performance.now())
 - Automatic landmark discovery
 - Protocol version 1.1 (geo-enabled)
+
+### 7. TRIBHUJ (त्रिभुज) - Trinary Rotating Keypairs (NEW in v3.0)
+Fibonacci-style ML-DSA-65 key ratchet using balanced ternary principles.
+- Two genesis keypairs generated once ("double overhead"), then infinite derivation
+- Key Kn = ML-DSA-65.keygen(SHA3-256(epoch || pub(n-2) || secret(n-1)))
+- Triangle state: {previous(-1), current(0), next(+1)} = balanced ternary
+- Forward secrecy: previous secret keys zeroed on rotation
+- 5-minute auto-rotation, 1-minute grace period for in-flight messages
+- Chain limit 1000 before forced re-genesis
+- Also provides balanced ternary math: Trit(-1,0,+1), TritArray, consensus logic
+
+### 8. Gateway Attestation (NEW in v3.0)
+Verify-once gossip signature optimization.
+- First verifier creates attestation: SHA3-256(messageId + signer + gatewayId + timestamp)
+- Attestation signed with TRIBHUJ ratchet (~0.01ms vs ~2-5ms full ML-DSA-65 verify)
+- Downstream peers check attestation instead of re-verifying original signature
+- 60s TTL, automatically attached to gossip messages
+
+### 9. SSE Real-Time Push (NEW in v3.0)
+Server-Sent Events for instant gossip delivery.
+- GET /rumors/subscribe — real-time gossip stream
+- Replaces 10s HTTP polling (avg 5s latency → near-instant)
+- Topic filtering, 15s heartbeat, auto-cleanup
+- MeshBridge connects via SSE-first with HTTP polling fallback
 - No central bootstrap required
 
 ### 7. STUPA - State Consensus
@@ -653,6 +681,7 @@ YAKMESH honors mountain peoples with Nepali/Tibetan naming:
 ---
 
 ## VERSION HISTORY
+- v3.0.0: TRIBHUJ key ratchet, Gateway Attestation, SSE real-time push, ANNEX hardening, MeshBridge completion, comprehensive security audit (~90 findings addressed)
 - v2.6.6: Philosophy page, Himalayan tribute, favicon fixes
 - v2.6.5: Production Tailwind build, CDN removal
 - v2.6.4: Win10 icon fix, sidebar toggle fix
