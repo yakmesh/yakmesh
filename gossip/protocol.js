@@ -127,6 +127,11 @@ export class MantraProtocol {
     this.seenMessages = new BloomFilter();
     this.pendingRumors = new Map();  // messageId -> { rumor, attempts, targets }
     
+    // Recent rumors buffer (for HTTP polling by MeshBridge)
+    this.recentRumors = [];           // { topic, data, origin, timestamp, messageId }
+    this.maxRecentRumors = 500;       // Keep last 500 rumors
+    this.rumorRetentionMs = 300000;   // 5 min retention
+    
     // Intervals
     this.intervals = [];
     
@@ -194,6 +199,7 @@ export class MantraProtocol {
     };
 
     this.seenMessages.add(messageId);
+    this._bufferRumor(rumor);
     this._propagateRumor(rumor);
     
     return messageId;
@@ -364,6 +370,9 @@ export class MantraProtocol {
       this.seenMessages.reset();
     }
 
+    // Buffer for HTTP API consumers
+    this._bufferRumor(rumor);
+
     // Emit event for application layer
     this.mesh.emit('rumor', rumor.topic, rumor.data, rumor.origin);
 
@@ -489,6 +498,40 @@ export class MantraProtocol {
       [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
     return shuffled.slice(0, Math.min(count, array.length));
+  }
+
+  /**
+   * Buffer a rumor for HTTP API retrieval
+   */
+  _bufferRumor(rumor) {
+    this.recentRumors.push({
+      messageId: rumor.messageId,
+      topic: rumor.topic,
+      data: rumor.data,
+      origin: rumor.origin,
+      timestamp: rumor.timestamp || Date.now(),
+    });
+    
+    // Evict old entries
+    const cutoff = Date.now() - this.rumorRetentionMs;
+    while (this.recentRumors.length > this.maxRecentRumors ||
+           (this.recentRumors.length > 0 && this.recentRumors[0].timestamp < cutoff)) {
+      this.recentRumors.shift();
+    }
+  }
+
+  /**
+   * Get recent rumors (for HTTP API polling)
+   * @param {number} since - Timestamp to filter from (exclusive)
+   * @param {string} [topic] - Optional topic filter
+   * @returns {Array} Matching rumors
+   */
+  getRecentRumors(since = 0, topic = null) {
+    return this.recentRumors.filter(r => {
+      if (r.timestamp <= since) return false;
+      if (topic && r.topic !== topic) return false;
+      return true;
+    });
   }
 
   /**

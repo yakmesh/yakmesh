@@ -892,6 +892,15 @@ export class YakmeshNode {
       res.json({ success: true, messageId });
     });
 
+    // Retrieve recent rumors (for MeshBridge HTTP polling)
+    // Supports ?since=<timestamp>&topic=<topic> filters
+    app.get('/rumors', (req, res) => {
+      const since = parseInt(req.query.since) || 0;
+      const topic = req.query.topic || null;
+      const rumors = this.gossip.getRecentRumors(since, topic);
+      res.json({ rumors, serverTime: Date.now() });
+    });
+
     // =========================================
     // Oracle Endpoints - Self-Verifying Trust
     // =========================================
