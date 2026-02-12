@@ -545,12 +545,32 @@ export class MandalaNetwork {
       
       // Find nodeId for this connection
       let senderNodeId = null;
+      let senderPublicKey = null;
       for (const [nodeId, peer] of this.peers) {
         if (peer.ws === ws) {
           senderNodeId = nodeId;
+          senderPublicKey = peer.identity?.publicKey;
           peer.lastSeen = Date.now();
           break;
         }
+      }
+
+      // SECURITY: Verify signature on signed messages from known peers
+      // HELLO/WELCOME are unsigned (peer not yet registered), so _signature check is conditional
+      if (msg._signature && senderPublicKey) {
+        const verified = this.identity.verifyObject(msg, senderPublicKey);
+        if (!verified) {
+          log.warn('Rejected message with invalid signature', {
+            type: msg.type,
+            signer: msg._signer?.slice(0, 20),
+            sender: senderNodeId?.slice(0, 20),
+          });
+          return; // Drop forged message
+        }
+      } else if (msg._signature && !senderPublicKey) {
+        // Signed message from unknown peer — might be HELLO/WELCOME flow
+        // Allow through since the handshake handler validates identity
+        log.debug('Signed message from unregistered peer, passing through', { type: msg.type });
       }
 
       // Dispatch to handlers
