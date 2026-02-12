@@ -33,8 +33,9 @@ import { WebSocketServer, WebSocket } from 'ws';
 import { ConnectionRateLimiter } from './rate-limiter.js';
 import { createLogger } from '../utils/logger.js';
 
-// TODO: Integrate ANNEX encryption for all peer connections
-// import { Annex } from './annex.js';
+// ANNEX - Autonomous Network Negotiated Encrypted eXchange
+// PQ-encrypted point-to-point communication between mesh peers
+import { Annex } from './annex.js';
 
 const log = createLogger('mandala:network');
 
@@ -92,6 +93,10 @@ export class MandalaNetwork {
     this.messageHandlers = new Map();
     this.seenMessages = new Set(); // For gossip deduplication
     
+    // ANNEX - PQ-encrypted point-to-point channels
+    // Initialized after start() when identity is available
+    this.annex = null;
+    
     // Rate limiter for connection/message flood protection
     this.rateLimiter = new ConnectionRateLimiter(config.rateLimiter || {});
     
@@ -114,6 +119,11 @@ export class MandalaNetwork {
           log.warn('Port was in use, bound to alternate', { originalPort: basePort, boundPort: port });
         }
         log.info('Mesh server listening', { url: `ws://localhost:${port}` });
+        
+        // Initialize ANNEX encryption layer
+        this.annex = new Annex({ identity: this.identity, mesh: this });
+        log.info('ANNEX encryption layer initialized');
+        
         this._startPingLoop();
         return;
       } catch (err) {
@@ -198,6 +208,29 @@ export class MandalaNetwork {
       };
       ws._pendingWelcome = welcomeHandler;
     });
+  }
+
+  /**
+   * Send encrypted message to specific peer via ANNEX
+   * Falls back to plaintext sendTo() if no ANNEX session
+   */
+  async sendEncrypted(nodeId, payload) {
+    if (this.annex) {
+      const session = this.annex.sessions.get(nodeId);
+      if (session?.established && !session.isExpired()) {
+        return await this.annex.send(nodeId, payload);
+      }
+    }
+    // Fallback to signed plaintext
+    log.warn('No ANNEX session, sending unencrypted', { nodeId: nodeId.slice(0, 20) });
+    return this.sendTo(nodeId, payload);
+  }
+
+  /**
+   * Get ANNEX encryption stats
+   */
+  getAnnexStats() {
+    return this.annex?.getStats() || { activeSessions: 0, note: 'ANNEX not initialized' };
   }
 
   /**
@@ -313,6 +346,20 @@ export class MandalaNetwork {
    * Stop the mesh server
    */
   async stop() {
+    // Stop ping loop
+    if (this._pingInterval) {
+      clearInterval(this._pingInterval);
+      this._pingInterval = null;
+    }
+    
+    // Close all ANNEX channels
+    if (this.annex) {
+      for (const nodeId of this.annex.sessions.keys()) {
+        try { await this.annex.closeChannel(nodeId); } catch {}
+      }
+      this.annex = null;
+    }
+    
     // Close all peer connections
     for (const [nodeId, peer] of this.peers) {
       peer.ws.close();
@@ -374,6 +421,15 @@ export class MandalaNetwork {
       });
       
       log.info('Peer connected', { name: msg.identity.name, nodeId: nodeId.slice(0, 20) });
+      
+      // Auto-negotiate ANNEX encrypted channel with new peer
+      if (this.annex) {
+        this.annex.openChannel(nodeId).then(() => {
+          log.info('ANNEX channel established with peer', { nodeId: nodeId.slice(0, 20) });
+        }).catch(err => {
+          log.warn('ANNEX negotiation failed', { nodeId: nodeId.slice(0, 20), error: err.message });
+        });
+      }
     });
 
     // Handle WELCOME
@@ -502,6 +558,13 @@ export class MandalaNetwork {
       for (const handler of handlers) {
         handler(msg, ws, senderNodeId);
       }
+      
+      // Route ANNEX messages — extract envelope and pass correctly
+      if (msg.annex && this.annex) {
+        this.annex._handleAnnexMessage(msg.annex, senderNodeId).catch(err => {
+          log.warn('ANNEX message handling error', { error: err.message });
+        });
+      }
     } catch (e) {
       console.error('Failed to parse message:', e.message);
     }
@@ -511,6 +574,10 @@ export class MandalaNetwork {
     for (const [nodeId, peer] of this.peers) {
       if (peer.ws === ws) {
         log.info('Peer disconnected', { name: peer.identity.name });
+        // Close ANNEX channel for departing peer
+        if (this.annex) {
+          this.annex.closeChannel(nodeId).catch(() => {});
+        }
         this.peers.delete(nodeId);
         break;
       }
@@ -518,13 +585,37 @@ export class MandalaNetwork {
   }
 
   _send(ws, message) {
-    if (ws.readyState === WebSocket.OPEN) {
-      ws.send(JSON.stringify(message));
+    if (ws.readyState !== WebSocket.OPEN) return;
+    
+    // Opportunistic ANNEX encryption: if we have an active session
+    // for this peer, encrypt the message transparently.
+    // This ensures gossip, broadcast, ping — ALL traffic — is encrypted on the wire.
+    if (this.annex) {
+      // Reverse-lookup nodeId from ws
+      for (const [nodeId, peer] of this.peers) {
+        if (peer.ws === ws) {
+          const session = this.annex.sessions.get(nodeId);
+          if (session?.established && !session.isExpired()) {
+            // Send via ANNEX (async, fire-and-forget for broadcast)
+            this.annex.send(nodeId, message).catch(err => {
+              log.warn('ANNEX send failed, falling back to plaintext', { 
+                nodeId: nodeId.slice(0, 20), error: err.message 
+              });
+              ws.send(JSON.stringify(message));
+            });
+            return;
+          }
+          break;
+        }
+      }
     }
+    
+    // Fallback: plaintext (only during handshake before ANNEX is established)
+    ws.send(JSON.stringify(message));
   }
 
   _startPingLoop() {
-    setInterval(() => {
+    this._pingInterval = setInterval(() => {
       const now = Date.now();
       for (const [nodeId, peer] of this.peers) {
         // Check for stale connections
@@ -537,9 +628,11 @@ export class MandalaNetwork {
         }
       }
       
-      // Cleanup old seen messages
+      // LRU eviction — keep newest half instead of clearing all (prevents dedup bypass window)
       if (this.seenMessages.size > 10000) {
-        this.seenMessages.clear();
+        const entries = [...this.seenMessages];
+        const keepCount = Math.floor(entries.length / 2);
+        this.seenMessages = new Set(entries.slice(entries.length - keepCount));
       }
     }, this.config.pingInterval);
   }

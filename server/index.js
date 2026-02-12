@@ -636,14 +636,67 @@ export class YakmeshNode {
     // Apply general limiter to all routes
     app.use(generalLimiter);
     
-    // CORS for dashboard
+    // CORS — restricted to localhost and configured origins
+    const allowedOrigins = new Set([
+      'http://localhost:3000',
+      'http://localhost:3090',
+      'http://127.0.0.1:3000',
+      'http://127.0.0.1:3090',
+      ...(this.config.cors?.allowedOrigins || []),
+    ]);
+    
     app.use((req, res, next) => {
-      res.header('Access-Control-Allow-Origin', '*');
+      const origin = req.headers.origin;
+      if (origin && allowedOrigins.has(origin)) {
+        res.header('Access-Control-Allow-Origin', origin);
+      }
       res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-      res.header('Access-Control-Allow-Headers', 'Content-Type');
+      res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+      res.header('Vary', 'Origin');
       if (req.method === 'OPTIONS') return res.sendStatus(200);
       next();
     });
+    
+    // =========================================
+    // SECURITY: Peer authentication middleware
+    // =========================================
+    // Validates that write requests from peers include a valid node signature
+    const requirePeerAuth = (req, res, next) => {
+      const nodeId = req.headers['x-node-id'];
+      const sig = req.headers['x-node-signature'];
+      const ts = req.headers['x-node-timestamp'];
+      
+      // Skip auth if request is from localhost (dashboard/local tools)
+      const remoteIP = req.ip || req.connection?.remoteAddress;
+      if (remoteIP === '127.0.0.1' || remoteIP === '::1' || remoteIP === '::ffff:127.0.0.1') {
+        return next();
+      }
+      
+      // Require node identity headers for remote requests
+      if (!nodeId || !sig || !ts) {
+        return res.status(401).json({ error: 'Missing peer authentication headers' });
+      }
+      
+      // Reject stale timestamps (>30s drift)
+      const drift = Math.abs(Date.now() - parseInt(ts, 10));
+      if (isNaN(drift) || drift > 30000) {
+        return res.status(401).json({ error: 'Request timestamp too old or invalid' });
+      }
+      
+      // Verify signature over (nodeId + timestamp + body hash)
+      try {
+        const bodyStr = JSON.stringify(req.body || {});
+        const payload = `${nodeId}:${ts}:${bodyStr}`;
+        const verified = this.identity.verify(payload, sig, nodeId);
+        if (!verified) {
+          return res.status(403).json({ error: 'Invalid peer signature' });
+        }
+        req.authenticatedPeer = nodeId;
+        next();
+      } catch (e) {
+        return res.status(403).json({ error: 'Signature verification failed' });
+      }
+    };
     
     // =========================================
     // SECURITY: Input Validation Helpers
@@ -766,7 +819,7 @@ export class YakmeshNode {
 
     // Connect to a peer dynamically
     // SECURITY: Rate limited + URL validation
-    app.post('/connect', writeLimiter, async (req, res) => {
+    app.post('/connect', writeLimiter, requirePeerAuth, async (req, res) => {
       const { address } = req.body;
       
       if (!validateUrl(address)) {
@@ -787,7 +840,7 @@ export class YakmeshNode {
 
     // Simple API endpoint for testing replication
     // SECURITY: Rate limited + input validation
-    app.post('/data', writeLimiter, (req, res) => {
+    app.post('/data', writeLimiter, requirePeerAuth, (req, res) => {
       const { table, data } = req.body;
       
       // Validate inputs
@@ -825,7 +878,7 @@ export class YakmeshNode {
 
     // Spread a rumor
     // SECURITY: Rate limited + input validation
-    app.post('/rumor', writeLimiter, (req, res) => {
+    app.post('/rumor', writeLimiter, requirePeerAuth, (req, res) => {
       const { topic, data } = req.body;
       
       if (!validateString(topic, 64)) {
@@ -928,7 +981,7 @@ export class YakmeshNode {
 
     // Register a peer via handshake
     // SECURITY: Rate limited + input validation
-    app.post('/network/register-peer', writeLimiter, (req, res) => {
+    app.post('/network/register-peer', writeLimiter, requirePeerAuth, (req, res) => {
       if (!this.genesisNetwork) {
         return res.status(503).json({ error: 'Genesis network not initialized' });
       }
@@ -1165,7 +1218,7 @@ export class YakmeshNode {
         node: {
           id: this.identity?.identity?.nodeId || null,
           name: this.config?.node?.name || 'unknown',
-          version: '2.0.1',
+          version: '2.9.0',
           uptime,
           uptimeFormatted: formatUptime(uptime),
         },

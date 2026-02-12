@@ -89,8 +89,9 @@ class BloomFilter {
   }
 
   // Reset when filter gets too full (false positive rate increases)
+  // 70% fill keeps FP rate manageable; 50% was too aggressive (wasted capacity)
   shouldReset() {
-    return this.count > this.size * 0.5;
+    return this.count > this.size * 0.7;
   }
 
   reset() {
@@ -481,7 +482,12 @@ export class MantraProtocol {
    * Select random items from array
    */
   _selectRandom(array, count) {
-    const shuffled = [...array].sort(() => Math.random() - 0.5);
+    // Fisher-Yates shuffle — unbiased (sort-based shuffle is statistically skewed)
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
     return shuffled.slice(0, Math.min(count, array.length));
   }
 

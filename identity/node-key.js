@@ -67,6 +67,8 @@ import { sha3_256 } from '@noble/hashes/sha3.js';
 import { bytesToHex, hexToBytes } from '@noble/hashes/utils.js';
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
+import { createCipheriv, createDecipheriv, scryptSync, randomBytes } from 'crypto';
+import { hostname } from 'os';
 
 // Import iO network identity for obfuscated node IDs
 import { deriveNetworkName, deriveNetworkId } from '../oracle/network-identity.js';
@@ -204,6 +206,82 @@ export class NodeIdentity {
   }
 
   /**
+   * Derive a machine-specific encryption key for secret key storage.
+   * 
+   * PASSPHRASE: Pre-iO node material (codebaseHash + SHA3-256(publicKey))
+   *   - Cryptographically bound to the codebase (wrong code = wrong key)
+   *   - Cryptographically bound to the keypair (wrong node = wrong key)
+   *   - NOT publicly exposed (the iO-obfuscated nodeId is what peers see)
+   * 
+   * SALT: Machine-bound context (hostname + dataDir)
+   *   - Key file is useless if copied to another machine or directory
+   * 
+   * Combined: attacker needs exact machine + exact codebase + exact public key
+   * to derive the decryption key. Three independent axes of binding.
+   * 
+   * @param {string} publicKeyHex - The node's public key (hex)
+   * @param {string} codebaseHash - The codebase hash from the oracle
+   */
+  _deriveStorageKey(publicKeyHex, codebaseHash) {
+    // Pre-iO material: the raw cryptographic inputs BEFORE iO obfuscation
+    // This is the codebase hash + public key hash — not the public nodeId
+    const publicKeyHash = bytesToHex(sha3_256(hexToBytes(publicKeyHex)));
+    const passphrase = `${codebaseHash}:${publicKeyHash}`;
+    
+    const machineContext = `yakmesh:node-key:${hostname()}:${this.dataDir}`;
+    const salt = sha3_256(new TextEncoder().encode(machineContext));
+    // scrypt: N=2^14, r=8, p=1, 32-byte key
+    return scryptSync(passphrase, Buffer.from(salt), 32, {
+      N: 16384, r: 8, p: 1,
+    });
+  }
+
+  /**
+   * Encrypt the secret key for at-rest storage.
+   * Returns { ciphertext, nonce, tag } all hex-encoded.
+   * 
+   * @param {string} secretKeyHex - The secret key to encrypt
+   * @param {string} publicKeyHex - The node's public key (for key derivation)
+   * @param {string} codebaseHash - The codebase hash (for key derivation)
+   */
+  _encryptSecretKey(secretKeyHex, publicKeyHex, codebaseHash) {
+    const key = this._deriveStorageKey(publicKeyHex, codebaseHash);
+    const nonce = randomBytes(12);
+    const cipher = createCipheriv('aes-256-gcm', key, nonce);
+    const encrypted = Buffer.concat([
+      cipher.update(secretKeyHex, 'utf8'),
+      cipher.final(),
+    ]);
+    return {
+      ciphertext: encrypted.toString('hex'),
+      nonce: nonce.toString('hex'),
+      tag: cipher.getAuthTag().toString('hex'),
+    };
+  }
+
+  /**
+   * Decrypt the secret key from at-rest storage.
+   * @param {{ ciphertext: string, nonce: string, tag: string }} enc
+   * @param {string} publicKeyHex - The node's public key (for key derivation)
+   * @param {string} codebaseHash - The codebase hash (for key derivation)
+   * @returns {string} The secret key hex string
+   */
+  _decryptSecretKey(enc, publicKeyHex, codebaseHash) {
+    const key = this._deriveStorageKey(publicKeyHex, codebaseHash);
+    const decipher = createDecipheriv(
+      'aes-256-gcm',
+      key,
+      Buffer.from(enc.nonce, 'hex'),
+    );
+    decipher.setAuthTag(Buffer.from(enc.tag, 'hex'));
+    const decrypted = Buffer.concat([
+      decipher.update(Buffer.from(enc.ciphertext, 'hex')),
+      decipher.final(),
+    ]);
+    return decrypted.toString('utf8');
+  }
+
+  /**
    * Initialize or load node identity
    * 
    * @param {string} nodeName - Human-readable node name
@@ -233,6 +311,36 @@ export class NodeIdentity {
     if (existsSync(this.keyPath)) {
       const data = JSON.parse(readFileSync(this.keyPath, 'utf8'));
       this.identity = data;
+      
+      // Decrypt secret key if stored encrypted
+      // Uses pre-iO material (codebaseHash + publicKey hash) as passphrase
+      const storedCodebaseHash = this.identity.codebaseHash || codebaseHash;
+      if (this.identity.secretKeyEnc && !this.identity.secretKey) {
+        if (!storedCodebaseHash) {
+          throw new Error('Cannot decrypt secret key: codebase hash not available. Pass oracle to init().');
+        }
+        try {
+          this.identity.secretKey = this._decryptSecretKey(
+            this.identity.secretKeyEnc, this.identity.publicKey, storedCodebaseHash
+          );
+        } catch (e) {
+          log.error('Failed to decrypt secret key (wrong machine, codebase, or corrupted file)', { error: e.message });
+          throw new Error('Cannot decrypt node secret key. Wrong machine, different codebase, or file corrupted.');
+        }
+      } else if (this.identity.secretKey && !this.identity.secretKeyEnc) {
+        // Migrate plaintext key to encrypted storage
+        if (storedCodebaseHash) {
+          log.info('Migrating plaintext secret key to encrypted storage');
+          const enc = this._encryptSecretKey(
+            this.identity.secretKey, this.identity.publicKey, storedCodebaseHash
+          );
+          const toStore = { ...this.identity, secretKeyEnc: enc };
+          delete toStore.secretKey;
+          writeFileSync(this.keyPath, JSON.stringify(toStore, null, 2));
+        } else {
+          log.warn('Skipping secret key encryption: codebase hash not yet available');
+        }
+      }
       
       // Check if identity needs regeneration (codebase changed)
       if (codebaseHash && this.identity.codebaseHash && 
@@ -276,14 +384,20 @@ export class NodeIdentity {
       name: nodeName,
       region,
       publicKey: keyPair.publicKey,
-      secretKey: keyPair.secretKey,
+      secretKey: keyPair.secretKey,  // Kept in memory only
       algorithm: keyPair.algorithm,
       nistLevel: keyPair.nistLevel,
       createdAt: Date.now(),
       capabilities: ['listings', 'chat', 'forum', 'qcoa'],
     };
 
-    writeFileSync(this.keyPath, JSON.stringify(this.identity, null, 2));
+    // Encrypt secret key for at-rest storage
+    // Passphrase = pre-iO material (codebaseHash + SHA3-256(publicKey))
+    // This binds the encrypted file to both the codebase AND this specific keypair
+    const secretKeyEnc = this._encryptSecretKey(keyPair.secretKey, keyPair.publicKey, codebaseHash);
+    const toStore = { ...this.identity, secretKeyEnc };
+    delete toStore.secretKey;  // Never write plaintext secret key to disk
+    writeFileSync(this.keyPath, JSON.stringify(toStore, null, 2));
     log.info('Generated new node identity', {
       nodeId,
       network: this.networkName,
