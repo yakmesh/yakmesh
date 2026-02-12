@@ -243,7 +243,7 @@ class AnnexSession {
     }
     
     // Replay protection: sequence must be greater than last received
-    if (expectedSequence <= this.recvSequence && this.recvSequence > 0) {
+    if (typeof expectedSequence !== 'number' || expectedSequence <= this.recvSequence) {
       throw new Error(`Replay detected: sequence ${expectedSequence} <= ${this.recvSequence}`);
     }
     

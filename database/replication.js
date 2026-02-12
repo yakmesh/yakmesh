@@ -169,14 +169,20 @@ export class ReplicationEngine {
    * Sync with a specific peer
    */
   async syncWithPeer(peerNodeId) {
-    // Get last sync state for this peer
-    const result = this.db.exec(
-      `SELECT last_sync_at FROM _replication_state WHERE peer_node_id = '${peerNodeId}'`
-    );
-    
-    const lastSyncAt = result.length > 0 && result[0].values.length > 0 
-      ? result[0].values[0][0] 
-      : 0;
+    // Get last sync state for this peer (parameterized to prevent SQL injection)
+    let lastSyncAt = 0;
+    try {
+      const stmt = this.db.prepare(
+        'SELECT last_sync_at FROM _replication_state WHERE peer_node_id = ?'
+      );
+      stmt.bind([peerNodeId]);
+      if (stmt.step()) {
+        lastSyncAt = stmt.get()[0] || 0;
+      }
+      stmt.free();
+    } catch (e) {
+      log.warn('Failed to query sync state', { peer: peerNodeId.slice(0, 12), error: e.message });
+    }
 
     // Request changes from peer since last sync
     try {
@@ -196,13 +202,20 @@ export class ReplicationEngine {
   applyChange(change) {
     const { table_name, row_id, operation, data, node_id, vector_clock, created_at } = change;
 
-    // Check if we already have this change
-    const existing = this.db.exec(
-      `SELECT id FROM _replication_log 
-       WHERE table_name = '${table_name}' AND row_id = '${row_id}' AND vector_clock = '${vector_clock}'`
-    );
+    // Check if we already have this change (parameterized)
+    let alreadyExists = false;
+    try {
+      const stmt = this.db.prepare(
+        'SELECT id FROM _replication_log WHERE table_name = ? AND row_id = ? AND vector_clock = ?'
+      );
+      stmt.bind([table_name, row_id, vector_clock]);
+      alreadyExists = stmt.step();
+      stmt.free();
+    } catch (e) {
+      log.warn('Failed to check existing change', { error: e.message });
+    }
 
-    if (existing.length > 0 && existing[0].values.length > 0) {
+    if (alreadyExists) {
       return false; // Already applied
     }
 
@@ -223,26 +236,31 @@ export class ReplicationEngine {
    * Get changes since a timestamp
    */
   getChangesSince(since, tables = REPLICATED_TABLES) {
-    const tableList = tables.map(t => `'${t}'`).join(',');
+    const placeholders = tables.map(() => '?').join(',');
     
-    const result = this.db.exec(
-      `SELECT * FROM _replication_log 
-       WHERE created_at > ${since} AND table_name IN (${tableList})
-       ORDER BY created_at ASC
-       LIMIT 1000`
-    );
-
-    if (result.length === 0) return [];
-
-    // Convert to objects
-    const columns = result[0].columns;
-    return result[0].values.map(row => {
-      const obj = {};
-      columns.forEach((col, i) => {
-        obj[col] = row[i];
-      });
-      return obj;
-    });
+    try {
+      const stmt = this.db.prepare(
+        `SELECT * FROM _replication_log 
+         WHERE created_at > ? AND table_name IN (${placeholders})
+         ORDER BY created_at ASC
+         LIMIT 1000`
+      );
+      stmt.bind([since, ...tables]);
+      
+      const columns = stmt.getColumnNames();
+      const results = [];
+      while (stmt.step()) {
+        const row = stmt.get();
+        const obj = {};
+        columns.forEach((col, i) => { obj[col] = row[i]; });
+        results.push(obj);
+      }
+      stmt.free();
+      return results;
+    } catch (e) {
+      log.warn('Failed to get changes', { error: e.message });
+      return [];
+    }
   }
 
   /**
