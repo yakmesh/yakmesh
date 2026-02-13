@@ -30,8 +30,7 @@ import { ContentStore, createContentAPI } from '../content/index.js';
 // Embedded documentation (hardcoded, hash-verified)
 import { getDocsFile, serveDocsFile, getBundleInfo } from '../embedded-docs/index.js';
 
-// Annex - Autonomous Network Negotiated Encrypted eXchange
-import { Annex } from '../mesh/annex.js';
+// Annex lives in mesh/network.js — single instance, no duplication
 
 // SHERPA - Secure Hidden Endpoint Resolution Path Architecture
 import { SherpaDiscovery, createBeaconMiddleware } from '../mesh/sherpa-discovery.js';
@@ -227,8 +226,7 @@ export class YakmeshNode {
     // Content store for public delivery
     this.contentStore = null;
     
-    // Annex - encrypted point-to-point messaging
-    this.annex = null;
+    // Annex lives in mesh.annex — single instance managed by mesh layer
     
     // KOMM Stack — chat, voice, rooms, access control
     this.kathaHub = null;
@@ -364,12 +362,7 @@ export class YakmeshNode {
       }
     });
     
-    // Handle Annex (encrypted direct messages) - separate from gossip
-    this.mesh.on('annex', (data, origin) => {
-      if (this.annex) {
-        this.annex._handleAnnexMessage(data.annex || data, origin);
-      }
-    });
+    // Annex messages handled directly in mesh._handleMessage() — no separate routing needed
 
     // 5. Initialize content store for public delivery
     this.contentStore = new ContentStore({
@@ -378,12 +371,8 @@ export class YakmeshNode {
     });
     await this.contentStore.init(this);
     
-    // 5b. Initialize Annex for encrypted point-to-point messaging
-    this.annex = new Annex({
-      identity: this.identity,
-      mesh: this.mesh,
-    });
-    log.info('✓ Annex channel initialized (encrypted P2P messaging)');
+    // 5b. Annex — initialized inside mesh.start(), no duplicate instance needed
+    log.info('✓ Annex channel ready (single instance in mesh layer)');
     
     // 5c. Initialize KOMM stack (KATHA + VANI + YURT + GUMBA)
     this._initKommStack();
@@ -468,7 +457,7 @@ export class YakmeshNode {
       const stats = this.contentStore.getStats();
       log.info(`  Content:    ${stats.totalObjects} objects (${stats.verified} verified)`);
     }
-    if (this.annex) {
+    if (this.mesh?.annex) {
       log.info(`  Annex:      ✓ Encrypted P2P ready`);
     }
     if (this.kathaHub) {
@@ -514,7 +503,7 @@ export class YakmeshNode {
     this.karmaModel?.stopPromotionChecks?.();  // Stop KARMA auto-promotion
     this.nakpakRouter?.cleanupCircuits?.();  // Cleanup NAKPAK circuits
     this.kommWss?.close();  // Close KOMM WebSocket server
-    this.annex = null;  // Clear annex channels
+    // Annex channels cleaned up by mesh.stop()
     this.gossip?.stop();
     this.replication?.stopSync();
     await this.mesh?.stop();
@@ -656,7 +645,7 @@ export class YakmeshNode {
     log.debug('   KATHA: Chat messaging hub ready');
     
     // GUMBA — Access control (initialized before YURT, which depends on it)
-    this.gumbaHub = new GumbaHub(this.identity, this.annex, {});
+    this.gumbaHub = new GumbaHub(this.identity, this.mesh?.annex, {});
     log.debug('   GUMBA: Access control hub ready');
     
     // YURT — Room directory (depends on identity, gumbaHub, mesh)
