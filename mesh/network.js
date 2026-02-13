@@ -696,7 +696,9 @@ export class MandalaNetwork {
     // Opportunistic ANNEX encryption: if we have an active session
     // for this peer, encrypt the message transparently.
     // This ensures gossip, broadcast, ping — ALL traffic — is encrypted on the wire.
-    if (this.annex) {
+    // SKIP for ANNEX control messages (type 'annex') to prevent infinite recursion:
+    //   _send → annex.send → _sendToMesh → mesh.sendTo → _send → ...
+    if (this.annex && message.type !== 'annex') {
       // Reverse-lookup nodeId from ws
       for (const [nodeId, peer] of this.peers) {
         if (peer.ws === ws) {
