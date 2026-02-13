@@ -14,6 +14,7 @@
 import express from 'express';
 import rateLimit from 'express-rate-limit';
 import { existsSync } from 'fs';
+import { WebSocketServer } from 'ws';
 import { createLogger } from '../utils/logger.js';
 
 const log = createLogger('server:main');
@@ -129,7 +130,10 @@ import { NakpakRouter, NAKPAK_CONFIG } from '../mesh/nakpak-routing.js';
 // ═══════════════════════════════════════════════════════════════════════════════
 // SAKSHI — Observational Witness Consensus
 // ═══════════════════════════════════════════════════════════════════════════════
-import { NodeWitness, ObservationResult, BehaviorVelocityMonitor } from '../security/sakshi.js';
+import { NodeWitness, ObservationResult, BehaviorVelocityMonitor, BEHAVIOR_DIMENSION, VELOCITY_ALERT } from '../security/sakshi.js';
+
+// KARMA Trust Model — SAKSHI observations feed into trust assessment
+import { KarmaTrustModel, KarmaLevel } from '../security/hybrid-trust.js';
 
 // Helper: Format uptime in human-readable format
 function formatUptime(seconds) {
@@ -240,6 +244,12 @@ export class YakmeshNode {
     // SAKSHI — witness consensus
     this.sakshiWitness = null;
     this.velocityMonitor = null;
+    
+    // KARMA — trust model (fed by SAKSHI observations)
+    this.karmaModel = null;
+    
+    // KOMM WebSocket (real-time KATHA/VANI)
+    this.kommWss = null;
     
     // Time source detector
     this.timeSource = null;
@@ -386,7 +396,10 @@ export class YakmeshNode {
     // 5f. Initialize SAKSHI witness consensus
     this._initSakshi();
     
-    // 5g. Initialize SHERPA for decentralized peer discovery
+    // 5g. Initialize KARMA trust model (fed by SAKSHI)
+    this._initKarma();
+    
+    // 5h. Initialize SHERPA for decentralized peer discovery
     this.sherpa = new SherpaDiscovery({
       nodeId: this.identity.identity.nodeId,
       networkName: this.genesisNetwork?.networkName,
@@ -415,6 +428,9 @@ export class YakmeshNode {
     
     // 6. Start HTTP server
     await this._startHttpServer();
+    
+    // 6b. Attach KOMM WebSocket upgrade paths to HTTP server
+    this._initKommWebSocket();
 
     // 7. Connect to bootstrap nodes
     await this._connectToBootstrap();
@@ -466,6 +482,12 @@ export class YakmeshNode {
     if (this.sakshiWitness) {
       log.info(`  SAKSHI:     ✓ Witness consensus active`);
     }
+    if (this.karmaModel) {
+      log.info(`  KARMA:      ✓ Trust model active (SAKSHI → trust pipeline)`);
+    }
+    if (this.kommWss) {
+      log.info(`  KOMM WS:    ✓ Real-time at ws://localhost:${this.httpPort}/komm/ws`);
+    }
     if (this.sherpa) {
       log.info(`  SHERPA:     ✓ Beacon at /.well-known/yakmesh/beacon`);
     }
@@ -488,7 +510,9 @@ export class YakmeshNode {
     this.consensus?.stop();  // Stop consensus engine
     this.yurtHub?.stop();  // Stop YURT room gossip
     this.velocityMonitor?.stop?.();  // Stop velocity monitoring
+    this.karmaModel?.stopPromotionChecks?.();  // Stop KARMA auto-promotion
     this.nakpakRouter?.cleanupCircuits?.();  // Cleanup NAKPAK circuits
+    this.kommWss?.close();  // Close KOMM WebSocket server
     this.annex = null;  // Clear annex channels
     this.gossip?.stop();
     this.replication?.stopSync();
@@ -734,46 +758,230 @@ export class YakmeshNode {
       nodeId: this.identity.identity.nodeId,
     });
     
-    // Wire SAKSHI into consensus engine for observation-based verification
-    if (this.consensus) {
-      this.consensus.on('consensus', (event) => {
-        // Record successful consensus as an observation
-        this.sakshiWitness.observe?.({
-          type: 'consensus',
-          contentHash: event.contentHash,
-          participants: event.votes?.length || 0,
-          timestamp: Date.now(),
-        });
-      });
-      
-      this.consensus.on('conflict-resolved', (event) => {
-        // Record conflict resolution
-        this.sakshiWitness.observe?.({
-          type: 'conflict',
-          winnerHash: event.winnerHash,
-          timestamp: Date.now(),
-        });
-      });
-    }
-    
-    // Monitor peer behavior through mesh events
+    // Track connection churn per peer via velocity monitor
     this.mesh.on('peer:connected', (peerId) => {
-      this.velocityMonitor.recordEvent?.({
-        type: 'peer:connected',
+      this.velocityMonitor.observe(
         peerId,
-        timestamp: Date.now(),
-      });
+        BEHAVIOR_DIMENSION.CONNECTION_CHURN,
+        1 // connect event = +1
+      );
     });
     
     this.mesh.on('peer:disconnected', (peerId) => {
-      this.velocityMonitor.recordEvent?.({
-        type: 'peer:disconnected',
+      this.velocityMonitor.observe(
         peerId,
-        timestamp: Date.now(),
-      });
+        BEHAVIOR_DIMENSION.CONNECTION_CHURN,
+        -1 // disconnect event = -1
+      );
     });
     
+    // Track gossip message rates per origin
+    if (this.gossip) {
+      let messageCountWindow = new Map(); // peerId -> count in current window
+      
+      this.gossip.on('rumor', (rumor) => {
+        if (!rumor.origin) return;
+        const count = (messageCountWindow.get(rumor.origin) || 0) + 1;
+        messageCountWindow.set(rumor.origin, count);
+        this.velocityMonitor.observe(
+          rumor.origin,
+          BEHAVIOR_DIMENSION.MESSAGE_RATE,
+          count
+        );
+      });
+      
+      // Reset message count window every minute
+      setInterval(() => { messageCountWindow.clear(); }, 60000);
+    }
+    
     log.info('✓ SAKSHI initialized (witness consensus + velocity monitoring)');
+  }
+  
+  /**
+   * Initialize KARMA trust model
+   * SAKSHI velocity alerts feed into KARMA trust assessments.
+   */
+  _initKarma() {
+    log.info('☯️ Initializing KARMA...');
+    
+    this.karmaModel = new KarmaTrustModel(this.config.karma || {});
+    
+    // Wire SAKSHI velocity alerts → KARMA trust adjustments
+    if (this.velocityMonitor) {
+      this.velocityMonitor.onAlert((alert) => {
+        const { nodeId, level, dimension, zScore } = alert;
+        
+        // Elevated/Warning → record as beacon sighting (neutral observation)
+        // Critical → negative karma (record as failed verification)
+        if (level === VELOCITY_ALERT.CRITICAL) {
+          log.warn(`☯️ KARMA: Critical velocity alert for ${nodeId.slice(0, 16)}... (${dimension}, z=${zScore.toFixed(1)})`);
+          // Record negative evidence — failed behavioral verification
+          this.karmaModel.recordDokoVerification(nodeId, {
+            verified: false,
+            reason: `Critical velocity anomaly: ${dimension} (z-score ${zScore.toFixed(1)})`,
+          });
+        } else if (level === VELOCITY_ALERT.WARNING) {
+          log.debug(`☯️ KARMA: Warning velocity alert for ${nodeId.slice(0, 16)}... (${dimension})`);
+          // Record beacon sighting (neutral — keeps node active, doesn't penalize)
+          this.karmaModel.recordBeaconSighting(nodeId);
+        }
+        // ELEVATED is ignored — normal variance
+      });
+    }
+    
+    // Wire mesh peer events → KARMA beacon sightings (positive karma accumulation)
+    this.mesh.on('peer:connected', (peerId) => {
+      this.karmaModel.recordBeaconSighting(peerId);
+    });
+    
+    // Wire KARMA trust level changes → log them
+    this.karmaModel.on('promoted', ({ nodeId, from, to, reason }) => {
+      log.info(`☯️ KARMA: Node ${nodeId.slice(0, 16)}... promoted ${from}→${to} (${reason})`);
+    });
+    
+    this.karmaModel.on('demoted', ({ nodeId, from, to, reason }) => {
+      log.warn(`☯️ KARMA: Node ${nodeId.slice(0, 16)}... demoted ${from}→${to} (${reason})`);
+    });
+    
+    log.info('✓ KARMA trust model initialized (SAKSHI → trust assessment pipeline)');
+  }
+  
+  /**
+   * Initialize KOMM WebSocket upgrade on the HTTP server
+   * Provides real-time KATHA messages and VANI signaling over WS.
+   * 
+   * Clients connect to:
+   *   ws://host:port/komm/ws — unified KOMM channel
+   *   Messages are JSON: { type: 'katha:event'|'katha:typing'|'vani:signal'|..., data: {...} }
+   */
+  _initKommWebSocket() {
+    if (!this.http || !this.kathaHub) return;
+    
+    this.kommWss = new WebSocketServer({ noServer: true });
+    
+    // Handle upgrade requests for /komm/ws path
+    this.http.on('upgrade', (request, socket, head) => {
+      const url = new URL(request.url, `http://${request.headers.host}`);
+      
+      if (url.pathname === '/komm/ws') {
+        this.kommWss.handleUpgrade(request, socket, head, (ws) => {
+          this.kommWss.emit('connection', ws, request);
+        });
+      } else {
+        // Not our path — let other upgrade handlers (mesh WS) deal with it
+        // If no handler, the socket just hangs. Destroy it if unhandled.
+      }
+    });
+    
+    // Track connected KOMM WebSocket clients
+    const kommClients = new Set();
+    
+    this.kommWss.on('connection', (ws, request) => {
+      kommClients.add(ws);
+      log.debug('📡 KOMM WS client connected');
+      
+      ws.on('close', () => {
+        kommClients.delete(ws);
+        log.debug('📡 KOMM WS client disconnected');
+      });
+      
+      ws.on('error', () => {
+        kommClients.delete(ws);
+      });
+      
+      // Handle incoming messages from client
+      ws.on('message', (raw) => {
+        try {
+          const msg = JSON.parse(raw.toString());
+          this._handleKommWsMessage(msg, ws);
+        } catch {
+          ws.send(JSON.stringify({ error: 'Invalid JSON' }));
+        }
+      });
+      
+      // Send welcome
+      ws.send(JSON.stringify({
+        type: 'welcome',
+        nodeId: this.identity.identity.nodeId.slice(0, 16),
+        capabilities: ['katha', 'vani', 'yurt'],
+      }));
+    });
+    
+    // Broadcast helper
+    const broadcastKomm = (type, data) => {
+      const msg = JSON.stringify({ type, data, ts: Date.now() });
+      for (const client of kommClients) {
+        if (client.readyState === 1) { // OPEN
+          client.send(msg);
+        }
+      }
+    };
+    
+    // Wire KATHA events → WS broadcast
+    if (this.kathaHub) {
+      this.kathaHub.on?.('message', (msg) => broadcastKomm('katha:message', msg));
+      this.kathaHub.on?.('typing', (data) => broadcastKomm('katha:typing', data));
+      this.kathaHub.on?.('reaction', (data) => broadcastKomm('katha:reaction', data));
+    }
+    
+    // Wire VANI signals → WS broadcast
+    if (this.vaniHub) {
+      this.vaniHub.on?.('signal', (signal) => broadcastKomm('vani:signal', signal));
+      this.vaniHub.on?.('callStateChanged', (state) => broadcastKomm('vani:callState', state));
+    }
+    
+    // Wire YURT room events → WS broadcast
+    if (this.yurtHub) {
+      this.yurtHub.on?.('roomRegistered', (room) => broadcastKomm('yurt:registered', room));
+      this.yurtHub.on?.('roomUnregistered', (room) => broadcastKomm('yurt:unregistered', room));
+    }
+    
+    // Also broadcast gossip-received KATHA/VANI events
+    if (this.gossip) {
+      this.gossip.on('rumor', (rumor) => {
+        if (rumor.topic === 'katha:event' || rumor.topic === 'katha:typing' || 
+            rumor.topic === 'vani:signal') {
+          broadcastKomm(rumor.topic, rumor.data);
+        }
+      });
+    }
+    
+    log.info('✓ KOMM WebSocket initialized at /komm/ws');
+  }
+  
+  /**
+   * Handle incoming KOMM WS messages from clients
+   */
+  _handleKommWsMessage(msg, ws) {
+    const { type, data } = msg;
+    
+    switch (type) {
+      case 'katha:send':
+        if (this.kathaHub?.send) {
+          this.kathaHub.send(data);
+        }
+        break;
+      case 'katha:typing':
+        if (this.kathaHub?.setTyping) {
+          this.kathaHub.setTyping(data);
+        }
+        break;
+      case 'vani:signal':
+        if (this.vaniHub?.signal) {
+          this.vaniHub.signal(data);
+        }
+        break;
+      case 'vani:call':
+        if (this.vaniHub?.initiateCall) {
+          this.vaniHub.initiateCall(data).then(result => {
+            ws.send(JSON.stringify({ type: 'vani:callResult', data: result }));
+          }).catch(() => {});
+        }
+        break;
+      case 'ping':
+        ws.send(JSON.stringify({ type: 'pong', ts: Date.now() }));
+        break;
+    }
   }
   
   /**
@@ -1024,15 +1232,26 @@ export class YakmeshNode {
     }
     
     // =========================================
-    // SAKSHI Witness Status Endpoint
+    // SAKSHI Witness + KARMA Status Endpoint
     // =========================================
     
     if (this.sakshiWitness) {
       app.get('/sakshi/status', (req, res) => {
+        const velocityStats = this.velocityMonitor?.getStats?.() || {};
+        const karmaStats = this.karmaModel?.getStats?.() || {};
+        
         res.json({
           active: true,
-          witnessId: this.identity.identity.nodeId.slice(0, 16) + '...',
-          velocityMonitor: !!this.velocityMonitor,
+          witness: this.sakshiWitness.toJSON(),
+          velocity: {
+            active: !!this.velocityMonitor,
+            ...velocityStats,
+            activeAlerts: this.velocityMonitor?.getActiveAlerts?.() || [],
+          },
+          karma: {
+            active: !!this.karmaModel,
+            ...karmaStats,
+          },
         });
       });
     }
