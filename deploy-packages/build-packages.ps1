@@ -48,16 +48,17 @@ $Downloads = @{
 
 # MINIMAL: Absolute barebones - just what's needed to run a mesh node
 $MinimalDirs = @(
-    'server',      # Express server entry point
-    'mesh',        # P2P networking, WebSocket, SHERPA, Annex
-    'gossip',      # Gossip protocol
-    'oracle',      # Distributed oracle, consensus, code proof
-    'identity',    # Node identity (ML-DSA-65)
-    'content',     # Content store and API
-    'database',    # SQLite/replication
-    'protocol',    # Protocol definitions
-    'security',    # Rate limiting, validation
-    'utils'        # Logger, helpers
+    'server',        # Express server entry point
+    'mesh',          # P2P networking, WebSocket, SHERPA, Annex
+    'gossip',        # Gossip protocol
+    'oracle',        # Distributed oracle, consensus, code proof
+    'identity',      # Node identity (ML-DSA-65)
+    'content',       # Content store and API
+    'database',      # SQLite/replication
+    'protocol',      # Protocol definitions
+    'security',      # Rate limiting, validation
+    'utils',         # Logger, helpers
+    'embedded-docs'  # Inline documentation server
 )
 
 # BASIC: Minimal + useful extras for standard deployments

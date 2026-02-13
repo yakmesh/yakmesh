@@ -1,37 +1,25 @@
-// YAKMESH Production Node Configuration
-// Hostinger VPS
+// Yakmesh Production Configuration Reference
+// ----------------------------------------------------------
+// Not loaded at runtime (start.sh uses yakmesh.config.js).
+// Kept for reference. This file IS oracle-hashed, so it must
+// be byte-identical across all deployments.
+// ----------------------------------------------------------
 export default {
-  nodeId: 'yakmesh-hostinger',
-  
-  // Content API server
-  server: { 
-    port: 3080, 
-    host: '0.0.0.0' 
+  node: {
+    name: 'Yakmesh Node',
+    region: 'production',
   },
-  
-  // Mesh P2P networking
-  mesh: { 
-    port: 9080, 
-    host: '0.0.0.0' 
+  network: {
+    httpPort: 3080,
+    wsPort: 9080,
   },
-  
-  // Peer nodes to connect to
-  peers: [
-    // Add Hostinger production node once deployed
-    // 'wss://peerquanta.com:9001'
+  bootstrap: [
+    'ws://156.67.75.34:9080',   // Hostinger VPS
   ],
-  
-  // Data storage
-  dataDir: './data',
-  
-  // Oracle settings
-  oracle: {
-    timeSource: 'auto',
-    phaseWindow: 30000
+  database: {
+    path: './data/yakmesh.db',
+    replication: { enabled: true, syncInterval: 5000 },
   },
-  
-  // Enable ANNEX encrypted P2P
-  annex: {
-    enabled: true
-  }
+  oracle: { timeSource: 'auto', phaseWindow: 30000 },
+  annex: { enabled: true },
 };
