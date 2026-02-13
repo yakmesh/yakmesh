@@ -14,6 +14,7 @@
 import express from 'express';
 import rateLimit from 'express-rate-limit';
 import { existsSync } from 'fs';
+import { networkInterfaces } from 'os';
 import { WebSocketServer } from 'ws';
 import { createLogger } from '../utils/logger.js';
 
@@ -2278,10 +2279,35 @@ export class YakmeshNode {
   }
 
   async _connectToBootstrap() {
+    // Collect all local addresses for robust self-detection.
+    // Each node lists ALL peers in bootstrap (identical config everywhere).
+    // We skip any endpoint that points back to ourselves.
+    const localAddrs = new Set(['localhost', '127.0.0.1', '::1', '0.0.0.0']);
+    const ifaces = networkInterfaces();
+    for (const addrs of Object.values(ifaces)) {
+      for (const addr of addrs) {
+        localAddrs.add(addr.address);
+      }
+    }
+
+    const ourWsPort = this.mesh.boundPort || this.config.network.wsPort;
+
     for (const endpoint of this.config.bootstrap) {
-      // Don't connect to ourselves
-      if (endpoint.includes(`:${this.config.network.wsPort}`)) continue;
-      
+      // Parse endpoint URL to extract host and port
+      let url;
+      try {
+        url = new URL(endpoint);
+      } catch {
+        log.warn(`  (invalid bootstrap endpoint: ${endpoint})`);
+        continue;
+      }
+
+      const epPort = parseInt(url.port, 10);
+      if (epPort === ourWsPort && localAddrs.has(url.hostname)) {
+        log.debug(`  (skipping self: ${endpoint})`);
+        continue;
+      }
+
       try {
         await this.mesh.connect(endpoint);
       } catch (e) {
