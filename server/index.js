@@ -776,10 +776,11 @@ export class YakmeshNode {
     });
     
     // Track gossip message rates per origin
-    if (this.gossip) {
+    if (this.gossip && this.mesh) {
       let messageCountWindow = new Map(); // peerId -> count in current window
       
-      this.gossip.on('rumor', (rumor) => {
+      this.mesh.on('rumor', (topic, data, origin) => {
+        const rumor = { origin };
         if (!rumor.origin) return;
         const count = (messageCountWindow.get(rumor.origin) || 0) + 1;
         messageCountWindow.set(rumor.origin, count);
@@ -937,11 +938,11 @@ export class YakmeshNode {
     }
     
     // Also broadcast gossip-received KATHA/VANI events
-    if (this.gossip) {
-      this.gossip.on('rumor', (rumor) => {
-        if (rumor.topic === 'katha:event' || rumor.topic === 'katha:typing' || 
-            rumor.topic === 'vani:signal') {
-          broadcastKomm(rumor.topic, rumor.data);
+    if (this.mesh) {
+      this.mesh.on('rumor', (topic, data, origin) => {
+        if (topic === 'katha:event' || topic === 'katha:typing' || 
+            topic === 'vani:signal') {
+          broadcastKomm(topic, data);
         }
       });
     }
