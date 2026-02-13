@@ -144,6 +144,7 @@ class AnnexSession {
     this.kemKeyPair = null;      // Our ephemeral KEM key pair
     this.sharedSecret = null;    // Derived shared secret
     this.encryptionKey = null;   // Current symmetric key
+    this.pendingEncryptionKey = null; // Future key awaiting implicit ack (PFS-safe: forward-looking only)
     this.sendSequence = 0;       // Outbound message counter
     this.recvSequence = -1;      // Inbound message counter (-1 so first msg seq 0 passes)
     this.messageCount = 0;       // Total messages with current key
@@ -167,12 +168,23 @@ class AnnexSession {
   /**
    * Complete key exchange as initiator (encapsulate with peer's public key)
    */
-  encapsulate(peerPublicKey) {
+  encapsulate(peerPublicKey, { defer = false } = {}) {
     const publicKeyBytes = hexToBytes(peerPublicKey);
     const result = ml_kem768.encapsulate(publicKeyBytes);
     
     this.sharedSecret = result.sharedSecret;
-    this.encryptionKey = this._deriveEncryptionKey();
+    const newKey = this._deriveEncryptionKey();
+    
+    if (defer && this.encryptionKey) {
+      // Rekey responder: store new key as pending, keep current active.
+      // PFS-safe: we only hold the FUTURE key, never the past key.
+      // Activation happens implicitly when we receive a message encrypted
+      // with the new key (see decrypt()).
+      this.pendingEncryptionKey = newKey;
+    } else {
+      // Initial handshake or initiator: switch immediately
+      this.encryptionKey = newKey;
+    }
     this.established = true;
     this.lastRekey = Date.now();
     
@@ -189,7 +201,12 @@ class AnnexSession {
     
     const ciphertextBytes = hexToBytes(ciphertext);
     this.sharedSecret = ml_kem768.decapsulate(ciphertextBytes, this.kemKeyPair.secretKey);
+    // Initiator receiving KEY_RESPONSE: switch immediately, zero old key.
+    // The initiator is always "first mover" — its next message triggers
+    // the responder to promote pendingEncryptionKey. Old key material
+    // is never retained (PFS preserved).
     this.encryptionKey = this._deriveEncryptionKey();
+    this.pendingEncryptionKey = null; // Clear any pending state
     this.established = true;
     this.lastRekey = Date.now();
     
@@ -237,6 +254,33 @@ class AnnexSession {
   /**
    * Decrypt a message for this session
    */
+  /**
+   * Decrypt with a specific key (internal helper)
+   */
+  _decryptWithKey(key, encryptedData, expectedSequence) {
+    const nonce = Buffer.from(encryptedData.nonce, 'hex');
+    const ciphertext = Buffer.from(encryptedData.ciphertext, 'hex');
+    const authTag = Buffer.from(encryptedData.authTag, 'hex');
+    
+    const decipher = createDecipheriv(
+      ANNEX_CONFIG.symmetricAlgorithm,
+      key,
+      nonce,
+      { authTagLength: ANNEX_CONFIG.authTagLength }
+    );
+    
+    const aad = Buffer.from(`${this.sessionId}:${expectedSequence}`);
+    decipher.setAAD(aad);
+    decipher.setAuthTag(authTag);
+    
+    const decrypted = Buffer.concat([
+      decipher.update(ciphertext),
+      decipher.final(),
+    ]);
+    
+    return decrypted.toString('utf8');
+  }
+  
   decrypt(encryptedData, expectedSequence) {
     if (!this.established || !this.encryptionKey) {
       throw new Error('Session not established');
@@ -247,31 +291,32 @@ class AnnexSession {
       throw new Error(`Replay detected: sequence ${expectedSequence} <= ${this.recvSequence}`);
     }
     
-    const nonce = Buffer.from(encryptedData.nonce, 'hex');
-    const ciphertext = Buffer.from(encryptedData.ciphertext, 'hex');
-    const authTag = Buffer.from(encryptedData.authTag, 'hex');
-    
-    const decipher = createDecipheriv(
-      ANNEX_CONFIG.symmetricAlgorithm,
-      this.encryptionKey,
-      nonce,
-      { authTagLength: ANNEX_CONFIG.authTagLength }
-    );
-    
-    // Verify AAD
-    const aad = Buffer.from(`${this.sessionId}:${expectedSequence}`);
-    decipher.setAAD(aad);
-    decipher.setAuthTag(authTag);
-    
-    const decrypted = Buffer.concat([
-      decipher.update(ciphertext),
-      decipher.final(),
-    ]);
-    
-    this.recvSequence = expectedSequence;
-    this.lastActivity = Date.now();
-    
-    return decrypted.toString('utf8');
+    try {
+      // Try current key first
+      const result = this._decryptWithKey(this.encryptionKey, encryptedData, expectedSequence);
+      this.recvSequence = expectedSequence;
+      this.lastActivity = Date.now();
+      return result;
+    } catch (err) {
+      // During rekey transition, the initiator has switched to the new key
+      // but the responder is still on the old key. Try the PENDING (future)
+      // key — if it works, promote it to current. This is the implicit ack.
+      //
+      // Security note: we only ever store the FUTURE key as fallback, never
+      // the PAST key. An attacker who dumps memory gets a key they'd have
+      // gotten anyway once activated. PFS of past messages is never at risk.
+      if (this.pendingEncryptionKey) {
+        const result = this._decryptWithKey(this.pendingEncryptionKey, encryptedData, expectedSequence);
+        // Implicit ack: promote pending → current, zero old key
+        this.encryptionKey = this.pendingEncryptionKey;
+        this.pendingEncryptionKey = null;
+        this.recvSequence = expectedSequence;
+        this.lastActivity = Date.now();
+        log.info('Rekey activated via implicit ack', { sessionId: this.sessionId?.slice(0, 16) });
+        return result;
+      }
+      throw err;
+    }
   }
   
   /**
@@ -606,21 +651,33 @@ export class Annex {
   }
   
   async _handleKeyResponse(envelope) {
-    const session = this.pendingHandshakes.get(envelope.senderId);
+    // Check pending handshakes first (initial key exchange)
+    let session = this.pendingHandshakes.get(envelope.senderId);
+    let isRekey = false;
+    
     if (!session) {
-      log.warn('Unexpected key response', { peerId: envelope.senderId?.slice(0, 16) });
-      return;
+      // Check active sessions — this is a rekey response
+      session = this.sessions.get(envelope.senderId);
+      if (!session || !session.established) {
+        log.warn('Unexpected key response', { peerId: envelope.senderId?.slice(0, 16) });
+        return;
+      }
+      isRekey = true;
     }
     
-    // Decapsulate to get shared secret
+    // Decapsulate to get shared secret (saves previous key internally)
     session.decapsulate(envelope.kemCiphertext);
     
-    // Move to active sessions
-    this.pendingHandshakes.delete(envelope.senderId);
-    this.sessions.set(envelope.senderId, session);
-    this.stats.sessionsCreated++;
-    
-    log.info('Channel established with peer', { peerId: envelope.senderId?.slice(0, 16) });
+    if (isRekey) {
+      session.messageCount = 0;
+      log.info('Rekey completed with peer', { peerId: envelope.senderId?.slice(0, 16) });
+    } else {
+      // Move from pending to active
+      this.pendingHandshakes.delete(envelope.senderId);
+      this.sessions.set(envelope.senderId, session);
+      this.stats.sessionsCreated++;
+      log.info('Channel established with peer', { peerId: envelope.senderId?.slice(0, 16) });
+    }
     
     // Resolve the handshake promise
     if (session._resolveHandshake) {
@@ -685,9 +742,13 @@ export class Annex {
     
     log.debug('Re-keying with peer', { peerId: envelope.senderId?.slice(0, 16) });
     
-    // Respond to re-key with new key exchange
+    // Respond to re-key: compute new key but DEFER activation.
+    // The responder keeps encrypting with the current key until it receives
+    // a message from the initiator encrypted with the new key (implicit ack
+    // in decrypt()). This avoids storing the old key — only the future key
+    // is held as pendingEncryptionKey, preserving PFS.
     session.generateKeyPair();
-    const kemCiphertext = session.encapsulate(envelope.kemPublicKey);
+    const kemCiphertext = session.encapsulate(envelope.kemPublicKey, { defer: true });
     session.messageCount = 0;
     
     const response = new AnnexEnvelope({
