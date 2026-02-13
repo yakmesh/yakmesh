@@ -486,7 +486,7 @@ export class YakmeshNode {
       log.info(`  KARMA:      ✓ Trust model active (SAKSHI → trust pipeline)`);
     }
     if (this.kommWss) {
-      log.info(`  KOMM WS:    ✓ Real-time at ws://localhost:${this.httpPort}/komm/ws`);
+      log.info(`  KOMM WS:    ✓ Real-time at ws://localhost:${this.boundHttpPort || this.config.network.httpPort}/komm/ws`);
     }
     if (this.sherpa) {
       log.info(`  SHERPA:     ✓ Beacon at /.well-known/yakmesh/beacon`);
