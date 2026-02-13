@@ -145,7 +145,7 @@ class AnnexSession {
     this.sharedSecret = null;    // Derived shared secret
     this.encryptionKey = null;   // Current symmetric key
     this.sendSequence = 0;       // Outbound message counter
-    this.recvSequence = 0;       // Inbound message counter
+    this.recvSequence = -1;      // Inbound message counter (-1 so first msg seq 0 passes)
     this.messageCount = 0;       // Total messages with current key
     
     // State
@@ -298,12 +298,15 @@ class AnnexSession {
    * Derive symmetric encryption key from shared secret
    */
   _deriveEncryptionKey() {
+    // Sort nodeIds so both sides derive the same key
+    // (localNodeId and remoteNodeId are swapped between initiator/responder)
+    const [first, second] = [this.localNodeId, this.remoteNodeId].sort();
     return createHash('sha3-256')
       .update(this.sharedSecret)
       .update(ANNEX_CONFIG.keyDerivationSalt)
       .update(this.sessionId)
-      .update(this.localNodeId)
-      .update(this.remoteNodeId)
+      .update(first)
+      .update(second)
       .digest();
   }
 }
