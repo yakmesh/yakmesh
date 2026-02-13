@@ -136,8 +136,8 @@ export class MandalaNetwork {
         
         // Initialize TRIBHUJ key ratchet — trinary rotating keypairs
         this.ratchet = new TribhujRatchet({
-          rotationInterval: config.tribhujRotation || 300000,  // 5min default
-          gracePeriod: config.tribhujGrace || 60000,           // 1min grace
+          rotationInterval: this.config.tribhujRotation || 300000,  // 5min default
+          gracePeriod: this.config.tribhujGrace || 60000,           // 1min grace
         });
         await this.ratchet.initialize();
         this.ratchet.startAutoRotation();
