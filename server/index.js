@@ -96,6 +96,41 @@ import YakProtocolHandler, {
   BUILTIN_ROUTES
 } from '../protocol/yak-protocol.js';
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// KOMM STACK — Chat, Voice, Rooms, Access Control
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// KATHA — Chat messaging (text, reactions, typing, threads, read receipts)
+import { KathaHub, KATHA_CONFIG } from '../mesh/katha.js';
+
+// VANI — WebRTC voice/video calling with mesh signaling
+import { VaniHub, VANI_CONFIG, MEDIA_TYPE, CALL_STATE } from '../mesh/vani.js';
+
+// YURT — Decentralized room directory and discovery
+import { YurtHub, YURT_CONFIG } from '../mesh/yurt.js';
+
+// GUMBA — Cryptographic access control (proofs, not keys)
+import { GumbaHub, GUMBA_CONFIG } from '../mesh/gumba.js';
+
+// KOMM API router and gossip wiring
+import { createKommAPI, wireKommGossip } from './komm-api.js';
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// DARSHAN — Content Streaming (view, don't copy)
+// ═══════════════════════════════════════════════════════════════════════════════
+import { DarshanGateway, DARSHAN_CONFIG } from '../mesh/darshan.js';
+import { createDarshanAPI, wireDarshanGossip } from './darshan-api.js';
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// NAKPAK — Post-Quantum Onion Routing
+// ═══════════════════════════════════════════════════════════════════════════════
+import { NakpakRouter, NAKPAK_CONFIG } from '../mesh/nakpak-routing.js';
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SAKSHI — Observational Witness Consensus
+// ═══════════════════════════════════════════════════════════════════════════════
+import { NodeWitness, ObservationResult, BehaviorVelocityMonitor } from '../security/sakshi.js';
+
 // Helper: Format uptime in human-readable format
 function formatUptime(seconds) {
   const days = Math.floor(seconds / 86400);
@@ -189,6 +224,22 @@ export class YakmeshNode {
     
     // Annex - encrypted point-to-point messaging
     this.annex = null;
+    
+    // KOMM Stack — chat, voice, rooms, access control
+    this.kathaHub = null;
+    this.vaniHub = null;
+    this.yurtHub = null;
+    this.gumbaHub = null;
+    
+    // DARSHAN — content streaming
+    this.darshanGateway = null;
+    
+    // NAKPAK — onion routing
+    this.nakpakRouter = null;
+    
+    // SAKSHI — witness consensus
+    this.sakshiWitness = null;
+    this.velocityMonitor = null;
     
     // Time source detector
     this.timeSource = null;
@@ -323,7 +374,19 @@ export class YakmeshNode {
     });
     log.info('✓ Annex channel initialized (encrypted P2P messaging)');
     
-    // 5c. Initialize SHERPA for decentralized peer discovery
+    // 5c. Initialize KOMM stack (KATHA + VANI + YURT + GUMBA)
+    this._initKommStack();
+    
+    // 5d. Initialize DARSHAN content streaming gateway
+    this._initDarshan();
+    
+    // 5e. Initialize NAKPAK onion routing
+    this._initNakpak();
+    
+    // 5f. Initialize SAKSHI witness consensus
+    this._initSakshi();
+    
+    // 5g. Initialize SHERPA for decentralized peer discovery
     this.sherpa = new SherpaDiscovery({
       nodeId: this.identity.identity.nodeId,
       networkName: this.genesisNetwork?.networkName,
@@ -336,7 +399,9 @@ export class YakmeshNode {
         wsPort: this.config.network.wsPort,
         httpPort: this.config.network.httpPort,
         supportsAnnex: true,
-        supportsNakpak: true,
+        supportsNakpak: !!this.nakpakRouter,
+        supportsKomm: !!(this.kathaHub && this.gumbaHub),
+        supportsDarshan: !!this.darshanGateway,
         supportsGossip: true,
       },
       seedEndpoints: this.config.sherpa?.seeds || [],
@@ -389,6 +454,18 @@ export class YakmeshNode {
     if (this.annex) {
       log.info(`  Annex:      ✓ Encrypted P2P ready`);
     }
+    if (this.kathaHub) {
+      log.info(`  KOMM:       ✓ KATHA + VANI + YURT + GUMBA at /komm/`);
+    }
+    if (this.darshanGateway) {
+      log.info(`  DARSHAN:    ✓ Content streaming at /darshan/`);
+    }
+    if (this.nakpakRouter) {
+      log.info(`  NAKPAK:     ✓ Onion routing active (${this.nakpakRouter.knownNodes.size} known nodes)`);
+    }
+    if (this.sakshiWitness) {
+      log.info(`  SAKSHI:     ✓ Witness consensus active`);
+    }
     if (this.sherpa) {
       log.info(`  SHERPA:     ✓ Beacon at /.well-known/yakmesh/beacon`);
     }
@@ -409,6 +486,9 @@ export class YakmeshNode {
     this.adapter?.stopSync();
     this.timeSource?.stop();  // Stop time source monitoring
     this.consensus?.stop();  // Stop consensus engine
+    this.yurtHub?.stop();  // Stop YURT room gossip
+    this.velocityMonitor?.stop?.();  // Stop velocity monitoring
+    this.nakpakRouter?.cleanupCircuits?.();  // Cleanup NAKPAK circuits
     this.annex = null;  // Clear annex channels
     this.gossip?.stop();
     this.replication?.stopSync();
@@ -537,6 +617,163 @@ export class YakmeshNode {
     });
     
     log.info('✓ Time Source initialized');
+  }
+  
+  /**
+   * Initialize the KOMM Stack (KATHA + VANI + YURT + GUMBA)
+   * This provides the chat, voice, room, and access control backend.
+   */
+  _initKommStack() {
+    log.info('💬 Initializing KOMM Stack...');
+    
+    // KATHA — Chat messaging hub
+    this.kathaHub = new KathaHub();
+    log.debug('   KATHA: Chat messaging hub ready');
+    
+    // GUMBA — Access control (initialized before YURT, which depends on it)
+    this.gumbaHub = new GumbaHub(this.identity, this.annex, {});
+    log.debug('   GUMBA: Access control hub ready');
+    
+    // YURT — Room directory (depends on identity, gumbaHub, mesh)
+    this.yurtHub = new YurtHub(this.identity, this.gumbaHub, this.mesh, {});
+    this.yurtHub.start();
+    log.debug('   YURT: Room directory + gossip started');
+    
+    // VANI — Voice/video calling
+    this.vaniHub = new VaniHub({
+      localPeerId: this.identity.identity.nodeId,
+      onSignal: (signal) => {
+        // Forward WebRTC signals through mesh gossip
+        this.gossip.spreadRumor('vani:signal', {
+          signal,
+          origin: this.identity.identity.nodeId,
+        });
+      },
+    });
+    log.debug('   VANI: Voice/video signaling hub ready');
+    
+    // Wire KOMM gossip handlers (incoming KATHA/VANI/YURT/GUMBA rumors)
+    wireKommGossip(this.mesh, this.kathaHub, this.vaniHub, this.yurtHub, this.gumbaHub);
+    
+    log.info('✓ KOMM Stack initialized (KATHA + VANI + YURT + GUMBA)');
+  }
+  
+  /**
+   * Initialize DARSHAN content streaming gateway
+   */
+  _initDarshan() {
+    log.info('📺 Initializing DARSHAN...');
+    
+    this.darshanGateway = new DarshanGateway(this.identity, {
+      maxBandwidth: this.config.darshan?.maxBandwidth || Infinity,
+    });
+    
+    // Wire DARSHAN gossip handlers
+    wireDarshanGossip(this.mesh, this.darshanGateway);
+    
+    log.info('✓ DARSHAN initialized (content streaming gateway)');
+  }
+  
+  /**
+   * Initialize NAKPAK onion routing
+   * Provides post-quantum anonymous routing for sensitive messages.
+   */
+  _initNakpak() {
+    log.info('🧅 Initializing NAKPAK...');
+    
+    this.nakpakRouter = new NakpakRouter({
+      nodeId: this.identity.identity.nodeId,
+      onMessageReceived: (message) => {
+        log.debug(`📦 NAKPAK message received: ${message.id?.slice(0, 16) || 'unknown'}...`);
+        this.mesh.emit('nakpak:message', message);
+      },
+      onForward: (packet) => {
+        // Forward the packet to the next hop via mesh
+        const nextHop = packet.nextHop;
+        if (nextHop && this.mesh.sendTo) {
+          this.mesh.sendTo(nextHop, {
+            type: 'nakpak:relay',
+            packet,
+          });
+        }
+      },
+    });
+    
+    // Register known peers as NAKPAK nodes
+    // Re-register whenever new peers connect
+    this.mesh.on('peer:connected', (peerId, peerInfo) => {
+      if (peerInfo?.publicKey) {
+        this.nakpakRouter.registerNode(peerId, peerInfo.publicKey);
+      }
+    });
+    
+    // Handle incoming NAKPAK relay packets
+    this.mesh.on('rumor', (topic, data, origin) => {
+      if (topic === 'nakpak:relay' && data.packet) {
+        this.nakpakRouter.relay.handlePacket(data.packet);
+      }
+    });
+    
+    log.info('✓ NAKPAK initialized (post-quantum onion routing)');
+  }
+  
+  /**
+   * Initialize SAKSHI witness consensus
+   * Observational capability system for node behavior monitoring.
+   */
+  _initSakshi() {
+    log.info('👁️ Initializing SAKSHI...');
+    
+    this.sakshiWitness = new NodeWitness({
+      nodeId: this.identity.identity.nodeId,
+      ...this.config.sakshi,
+    });
+    
+    // Behavior velocity monitor (detects rapid state changes / anomalies)
+    this.velocityMonitor = new BehaviorVelocityMonitor({
+      nodeId: this.identity.identity.nodeId,
+    });
+    
+    // Wire SAKSHI into consensus engine for observation-based verification
+    if (this.consensus) {
+      this.consensus.on('consensus', (event) => {
+        // Record successful consensus as an observation
+        this.sakshiWitness.observe?.({
+          type: 'consensus',
+          contentHash: event.contentHash,
+          participants: event.votes?.length || 0,
+          timestamp: Date.now(),
+        });
+      });
+      
+      this.consensus.on('conflict-resolved', (event) => {
+        // Record conflict resolution
+        this.sakshiWitness.observe?.({
+          type: 'conflict',
+          winnerHash: event.winnerHash,
+          timestamp: Date.now(),
+        });
+      });
+    }
+    
+    // Monitor peer behavior through mesh events
+    this.mesh.on('peer:connected', (peerId) => {
+      this.velocityMonitor.recordEvent?.({
+        type: 'peer:connected',
+        peerId,
+        timestamp: Date.now(),
+      });
+    });
+    
+    this.mesh.on('peer:disconnected', (peerId) => {
+      this.velocityMonitor.recordEvent?.({
+        type: 'peer:disconnected',
+        peerId,
+        timestamp: Date.now(),
+      });
+    });
+    
+    log.info('✓ SAKSHI initialized (witness consensus + velocity monitoring)');
   }
   
   /**
@@ -732,6 +969,73 @@ export class YakmeshNode {
       validateString,
     });
     app.use('/content', contentAPI);
+    
+    // =========================================
+    // KOMM STACK API (KATHA/VANI/YURT/GUMBA)
+    // Backend for yakapp (GUI) and terminal (CLI) clients
+    // =========================================
+    
+    if (this.kathaHub) {
+      const kommRouter = createKommAPI({
+        kathaHub: this.kathaHub,
+        vaniHub: this.vaniHub,
+        yurtHub: this.yurtHub,
+        gumbaHub: this.gumbaHub,
+        gossip: this.gossip,
+        identity: this.identity,
+        writeLimiter,
+        requirePeerAuth,
+      });
+      app.use('/komm', kommRouter);
+      log.info('📡 KOMM API mounted at /komm');
+    }
+    
+    // =========================================
+    // DARSHAN Content Streaming API
+    // View-don't-copy content delivery
+    // =========================================
+    
+    if (this.darshanGateway) {
+      const darshanRouter = createDarshanAPI({
+        darshanGateway: this.darshanGateway,
+        gossip: this.gossip,
+        identity: this.identity,
+        writeLimiter,
+      });
+      app.use('/darshan', darshanRouter);
+      log.info('📡 DARSHAN API mounted at /darshan');
+    }
+    
+    // =========================================
+    // NAKPAK Status Endpoint
+    // =========================================
+    
+    if (this.nakpakRouter) {
+      app.get('/nakpak/status', (req, res) => {
+        const circuits = this.nakpakRouter.circuits || new Map();
+        const relays = this.nakpakRouter.relays || new Map();
+        res.json({
+          active: true,
+          circuits: circuits.size,
+          relays: relays.size,
+          nodeId: this.identity.identity.nodeId.slice(0, 16) + '...',
+        });
+      });
+    }
+    
+    // =========================================
+    // SAKSHI Witness Status Endpoint
+    // =========================================
+    
+    if (this.sakshiWitness) {
+      app.get('/sakshi/status', (req, res) => {
+        res.json({
+          active: true,
+          witnessId: this.identity.identity.nodeId.slice(0, 16) + '...',
+          velocityMonitor: !!this.velocityMonitor,
+        });
+      });
+    }
     
     // =========================================
     // Embedded Documentation (hardcoded, hash-verified)
