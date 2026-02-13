@@ -457,13 +457,18 @@ export class MandalaNetwork {
       
       log.info('Peer connected', { name: msg.identity.name, nodeId: nodeId.slice(0, 20) });
       
-      // Auto-negotiate ANNEX encrypted channel with new peer
-      if (this.annex) {
+      // Deterministic initiator: lower nodeId always initiates ANNEX
+      // Prevents duplicate sessions when both sides try to openChannel simultaneously
+      const ourNodeId = this.identity.identity.nodeId;
+      if (this.annex && ourNodeId < nodeId) {
+        log.debug('ANNEX: we initiate (lower nodeId)', { us: ourNodeId.slice(0, 12), them: nodeId.slice(0, 12) });
         this.annex.openChannel(nodeId).then(() => {
           log.info('ANNEX channel established with peer', { nodeId: nodeId.slice(0, 20) });
         }).catch(err => {
           log.warn('ANNEX negotiation failed', { nodeId: nodeId.slice(0, 20), error: err.message });
         });
+      } else if (this.annex) {
+        log.debug('ANNEX: waiting for peer to initiate (they have lower nodeId)', { us: ourNodeId.slice(0, 12), them: nodeId.slice(0, 12) });
       }
     });
 
@@ -509,6 +514,18 @@ export class MandalaNetwork {
       if (ws._pendingWelcome) {
         ws._pendingWelcome(msg);
         delete ws._pendingWelcome;
+      }
+      
+      // Deterministic initiator: connector side also checks
+      // Lower nodeId always initiates ANNEX — mirrors the HELLO handler logic
+      const ourNodeId = this.identity.identity.nodeId;
+      if (this.annex && ourNodeId < nodeId) {
+        log.debug('ANNEX: we initiate on WELCOME (lower nodeId)', { us: ourNodeId.slice(0, 12), them: nodeId.slice(0, 12) });
+        this.annex.openChannel(nodeId).then(() => {
+          log.info('ANNEX channel established with peer', { nodeId: nodeId.slice(0, 20) });
+        }).catch(err => {
+          log.warn('ANNEX negotiation failed', { nodeId: nodeId.slice(0, 20), error: err.message });
+        });
       }
     });
 
