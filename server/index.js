@@ -135,6 +135,9 @@ import { NodeWitness, ObservationResult, BehaviorVelocityMonitor, BEHAVIOR_DIMEN
 // KARMA Trust Model — SAKSHI observations feed into trust assessment
 import { KarmaTrustModel, KarmaLevel } from '../security/hybrid-trust.js';
 
+// TRIBHUJ — Balanced ternary for KARMA trit mapping
+import { POSITIVE, NEUTRAL, NEGATIVE, TritState } from '../oracle/tribhuj.js';
+
 // Helper: Format uptime in human-readable format
 function formatUptime(seconds) {
   const days = Math.floor(seconds / 86400);
@@ -860,26 +863,28 @@ export class YakmeshNode {
     
     this.karmaModel = new KarmaTrustModel(this.config.karma || {});
     
-    // Wire SAKSHI velocity alerts → KARMA trust adjustments
+    // Wire SAKSHI velocity alerts → KARMA trust adjustments (ternary: NEGATIVE/NEUTRAL/ignored)
     if (this.velocityMonitor) {
       this.velocityMonitor.onAlert((alert) => {
         const { nodeId, level, dimension, zScore } = alert;
         
-        // Elevated/Warning → record as beacon sighting (neutral observation)
-        // Critical → negative karma (record as failed verification)
+        // ═══ TRIBHUJ ternary mapping ═══
+        // CRITICAL → NEGATIVE karma (record as failed verification)
+        // WARNING  → NEUTRAL observation (beacon sighting — keeps node active)
+        // ELEVATED → ignored (normal variance — no karmic consequence)
         if (level === VELOCITY_ALERT.CRITICAL) {
-          log.warn(`☯️ KARMA: Critical velocity alert for ${nodeId.slice(0, 16)}... (${dimension}, z=${zScore.toFixed(1)})`);
+          log.warn(`☯️ KARMA: Critical velocity alert for ${nodeId.slice(0, 16)}... (${dimension}, z=${zScore.toFixed(1)}) → NEGATIVE`);
           // Record negative evidence — failed behavioral verification
           this.karmaModel.recordDokoVerification(nodeId, {
-            verified: false,
+            passed: false,
             reason: `Critical velocity anomaly: ${dimension} (z-score ${zScore.toFixed(1)})`,
           });
         } else if (level === VELOCITY_ALERT.WARNING) {
-          log.debug(`☯️ KARMA: Warning velocity alert for ${nodeId.slice(0, 16)}... (${dimension})`);
+          log.debug(`☯️ KARMA: Warning velocity alert for ${nodeId.slice(0, 16)}... (${dimension}) → NEUTRAL`);
           // Record beacon sighting (neutral — keeps node active, doesn't penalize)
           this.karmaModel.recordBeaconSighting(nodeId);
         }
-        // ELEVATED is ignored — normal variance
+        // ELEVATED → no karmic consequence (positive path: absence of negative)
       });
     }
     

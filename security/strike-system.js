@@ -14,8 +14,16 @@
  * Mathematical principle: A node can escape one identity,
  * but not its hardware. The silicon remembers.
  * 
+ * Strike verification uses TRIBHUJ balanced ternary:
+ *   POSITIVE (+1): Confirmed by network consensus
+ *   NEUTRAL  ( 0): Pending — awaiting verification
+ *   NEGATIVE (-1): Disputed — contested by the accused node
+ * 
  * @module security/strike-system
  */
+
+// ═══ TRIBHUJ — Balanced ternary for strike verification state ═══
+import { POSITIVE, NEUTRAL, NEGATIVE } from '../oracle/tribhuj.js';
 
 // Constants
 const STRIKE_LEVELS = {
@@ -79,18 +87,39 @@ class StrikeEvent {
     this.timestamp = options.timestamp || Date.now();
     this.attestors = options.attestors || [];
     this.evidence = options.evidence || {};
-    this.verified = false;
+    this.verified = NEUTRAL;          // TRIBHUJ trit: starts NEUTRAL (pending)
   }
 
   /**
-   * Mark this strike as verified by network consensus
+   * Mark this strike as verified by network consensus → POSITIVE
    * @param {string[]} verifyingNodes - Nodes that verified the strike
    */
   verify(verifyingNodes) {
-    this.verified = true;
+    this.verified = POSITIVE;
     this.verifiedBy = verifyingNodes;
     this.verifiedAt = Date.now();
   }
+
+  /**
+   * Mark this strike as disputed by the accused node → NEGATIVE
+   * @param {string} disputedBy - Node disputing the strike
+   * @param {string} disputeReason - Why the strike is disputed
+   */
+  dispute(disputedBy, disputeReason) {
+    this.verified = NEGATIVE;
+    this.disputedBy = disputedBy;
+    this.disputeReason = disputeReason;
+    this.disputedAt = Date.now();
+  }
+
+  /** Check if this strike is confirmed (POSITIVE trit) */
+  get isConfirmed() { return this.verified === POSITIVE; }
+
+  /** Check if this strike is pending (NEUTRAL trit) */
+  get isPending() { return this.verified === NEUTRAL; }
+
+  /** Check if this strike is disputed (NEGATIVE trit) */
+  get isDisputed() { return this.verified === NEGATIVE; }
 
   toJSON() {
     return {
