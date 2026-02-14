@@ -23,8 +23,11 @@
 import { randomBytes, createCipheriv, createDecipheriv, createHash } from 'crypto';
 import { ml_dsa65 } from '@noble/post-quantum/ml-dsa.js';
 import { ml_kem768 } from '@noble/post-quantum/ml-kem.js';
-import { sha3_256 } from '@noble/hashes/sha3.js';
+import { sha3_256 as _nobleSha3 } from '@noble/hashes/sha3.js';
 import { bytesToHex, hexToBytes, utf8ToBytes } from '@noble/hashes/utils.js';
+
+// ACCEL: Hardware-accelerated crypto (SHA3 native, future liboqs PQ)
+import { sha3_256, mlDsa65Sign, mlDsa65Verify, mlKem768Encapsulate, mlKem768Decapsulate } from '../utils/accel.js';
 
 // YPC-27 quantum-hard checksums for packet integrity
 import { 
@@ -94,7 +97,7 @@ class NakpakLayer {
    */
   encapsulateKey(peerPublicKey) {
     const publicKeyBytes = hexToBytes(peerPublicKey);
-    const result = ml_kem768.encapsulate(publicKeyBytes);
+    const result = mlKem768Encapsulate(publicKeyBytes);
     
     this.sharedSecret = result.sharedSecret;
     this.encryptionKey = this._deriveEncryptionKey(this.sharedSecret);
@@ -114,7 +117,7 @@ class NakpakLayer {
     }
     
     const ciphertextBytes = hexToBytes(ciphertext);
-    this.sharedSecret = ml_kem768.decapsulate(ciphertextBytes, this.kemKeyPair.secretKey);
+    this.sharedSecret = mlKem768Decapsulate(ciphertextBytes, this.kemKeyPair.secretKey);
     this.encryptionKey = this._deriveEncryptionKey(this.sharedSecret);
     
     return true;
@@ -582,7 +585,7 @@ class NakpakRelay {
    */
   sign(data) {
     const message = typeof data === 'string' ? utf8ToBytes(data) : data;
-    return bytesToHex(ml_dsa65.sign(message, this.signKeyPair.secretKey));
+    return bytesToHex(mlDsa65Sign(message, this.signKeyPair.secretKey));
   }
 
   /**
@@ -591,7 +594,7 @@ class NakpakRelay {
    */
   verify(data, signature, publicKey) {
     const message = typeof data === 'string' ? utf8ToBytes(data) : data;
-    return ml_dsa65.verify(
+    return mlDsa65Verify(
       hexToBytes(signature),
       message,
       hexToBytes(publicKey)

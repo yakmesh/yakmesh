@@ -63,12 +63,15 @@ import { createLogger } from '../utils/logger.js';
 const log = createLogger('identity:node-key');
 
 import { ml_dsa65 } from '@noble/post-quantum/ml-dsa.js';
-import { sha3_256 } from '@noble/hashes/sha3.js';
+import { sha3_256 as _nobleSha3 } from '@noble/hashes/sha3.js';
 import { bytesToHex, hexToBytes } from '@noble/hashes/utils.js';
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import { createCipheriv, createDecipheriv, scryptSync, randomBytes } from 'crypto';
 import { hostname } from 'os';
+
+// ACCEL: Hardware-accelerated crypto (native SHA3 via OpenSSL/SHA-NI, future liboqs)
+import { sha3_256, mlDsa65Sign, mlDsa65Verify } from '../utils/accel.js';
 
 // Import iO network identity for obfuscated node IDs
 import { deriveNetworkName, deriveNetworkId } from '../oracle/network-identity.js';
@@ -166,8 +169,8 @@ export function signMessage(message, secretKeyHex) {
   const messageBytes = typeof message === 'string' 
     ? new TextEncoder().encode(message)
     : message;
-  // ml_dsa65.sign takes (message, secretKey)
-  const signature = ml_dsa65.sign(messageBytes, secretKey);
+  // ml_dsa65.sign takes (message, secretKey) — ACCEL-accelerated
+  const signature = mlDsa65Sign(messageBytes, secretKey);
   return bytesToHex(signature);
 }
 
@@ -181,8 +184,8 @@ export function verifySignature(message, signatureHex, publicKeyHex) {
     const messageBytes = typeof message === 'string'
       ? new TextEncoder().encode(message)
       : message;
-    // ml_dsa65.verify takes (signature, message, publicKey)
-    return ml_dsa65.verify(signature, messageBytes, publicKey);
+    // ml_dsa65.verify takes (signature, message, publicKey) — ACCEL-accelerated
+    return mlDsa65Verify(signature, messageBytes, publicKey);
   } catch (e) {
     console.error('Signature verification failed:', e.message);
     return false;
