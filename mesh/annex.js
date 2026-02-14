@@ -795,10 +795,20 @@ export class Annex {
   }
   
   _getPeerPublicKey(nodeId) {
-    // Get from mesh peer info
+    // Get from WS peer info first
     if (this.mesh && this.mesh.peers) {
       const peer = this.mesh.peers.get(nodeId);
-      return peer?.identity?.publicKey || null;
+      if (peer?.identity?.publicKey) return peer.identity.publicKey;
+    }
+    // Fallback: relay peer keys stored during signed registration
+    if (this.mesh && this.mesh._relayPeerKeys) {
+      const key = this.mesh._relayPeerKeys.get(nodeId);
+      if (key) return key;
+    }
+    // Fallback: SHERPA registry (populated during relay registration)
+    if (this.mesh && this.mesh.sherpa?.registry) {
+      const regPeer = this.mesh.sherpa.registry.get(nodeId);
+      if (regPeer?.publicKey) return regPeer.publicKey;
     }
     return null;
   }

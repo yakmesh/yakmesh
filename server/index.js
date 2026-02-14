@@ -410,6 +410,9 @@ export class YakmeshNode {
       },
       seedEndpoints: this.config.sherpa?.seeds || [],
     });
+
+    // Expose SHERPA registry on mesh so ANNEX can look up relay peer public keys
+    this.mesh.sherpa = this.sherpa;
     
     // Start SHERPA if seeds are configured or selfEndpoint is set
     if (this.config.sherpa?.enabled !== false) {
@@ -468,8 +471,9 @@ export class YakmeshNode {
       for (const [clientNodeId, lastSeen] of this._relayClients) {
         if (now - lastSeen > RELAY_CLIENT_TTL) {
           this._relayClients.delete(clientNodeId);
-          // Also clear any queued messages for expired client
+          // Also clear any queued messages and cached keys for expired client
           if (this._relayOutbox) this._relayOutbox.delete(clientNodeId);
+          if (this.mesh?._relayPeerKeys) this.mesh._relayPeerKeys.delete(clientNodeId);
           log.debug(`Relay client expired: ${clientNodeId.slice(0, 20)}`);
         }
       }
@@ -1416,10 +1420,30 @@ export class YakmeshNode {
       // Handle relay registration (action: 'register') through the same endpoint
       // so it works through the PHP bridge which only proxies POST /mesh/relay
       if (req.body.action === 'register') {
-        const { nodeId, networkName, publicKey, capabilities } = req.body;
+        const { nodeId, networkName, publicKey, capabilities, signature, timestamp } = req.body;
         if (!nodeId || !networkName) {
           return res.status(400).json({ error: 'nodeId and networkName required for register' });
         }
+
+        // Verify ML-DSA-65 registration signature — no unsigned registrations
+        if (!signature || !publicKey) {
+          return res.status(403).json({ error: 'Signed registration required (signature + publicKey)' });
+        }
+        try {
+          const sigData = JSON.stringify({ action: 'register', nodeId, networkName, timestamp });
+          const valid = this.identity.verify(sigData, signature, publicKey);
+          if (!valid) {
+            return res.status(403).json({ error: 'Invalid registration signature' });
+          }
+        } catch {
+          return res.status(403).json({ error: 'Registration signature verification failed' });
+        }
+
+        // Reject stale registrations (> 5 minutes old)
+        if (timestamp && Math.abs(Date.now() - timestamp) > 300000) {
+          return res.status(403).json({ error: 'Registration timestamp too old (replay protection)' });
+        }
+
         if (this.sherpa) {
           this.sherpa.registry.upsert({
             nodeId,
@@ -1427,15 +1451,21 @@ export class YakmeshNode {
             wsEndpoint: null,
             relayEndpoint: null,
             networkName,
+            publicKey,
             capabilities: { ...capabilities, httpRelay: true },
           });
         }
+
+        // Store publicKey for relay peers (used by ANNEX signature verification)
+        // Attach to mesh so ANNEX._getPeerPublicKey() can find relay peer keys
+        if (!this.mesh._relayPeerKeys) this.mesh._relayPeerKeys = new Map();
+        this.mesh._relayPeerKeys.set(nodeId, publicKey);
 
         // Track relay clients as Map {nodeId → lastSeen} for expiry
         if (!this._relayClients) this._relayClients = new Map();
         this._relayClients.set(nodeId, Date.now());
 
-        log.info(`HTTP relay peer registered: ${nodeId.slice(0, 20)}`);
+        log.info(`HTTP relay peer registered (verified): ${nodeId.slice(0, 20)}`);
         return res.json({ success: true, nodeId: this.identity.identity.nodeId });
       }
 
@@ -1451,17 +1481,18 @@ export class YakmeshNode {
         return res.status(400).json({ error: 'senderNodeId required' });
       }
 
-      // Verify signature if provided
-      if (signature && publicKey) {
-        try {
-          const sigData = JSON.stringify({ messages, senderNodeId });
-          const valid = this.identity.verify(sigData, signature, publicKey);
-          if (!valid) {
-            return res.status(403).json({ error: 'Invalid signature' });
-          }
-        } catch {
-          return res.status(403).json({ error: 'Signature verification failed' });
+      // Require ML-DSA-65 batch signature — no unsigned relay batches accepted
+      if (!signature || !publicKey) {
+        return res.status(403).json({ error: 'Signed relay batch required (signature + publicKey)' });
+      }
+      try {
+        const sigData = JSON.stringify({ messages, senderNodeId });
+        const valid = this.identity.verify(sigData, signature, publicKey);
+        if (!valid) {
+          return res.status(403).json({ error: 'Invalid batch signature' });
         }
+      } catch {
+        return res.status(403).json({ error: 'Batch signature verification failed' });
       }
 
       // Process each message through the mesh layer
@@ -2570,15 +2601,26 @@ export class YakmeshNode {
 
     // Register with the relay via same POST /mesh/relay endpoint (action: 'register')
     // This works through the PHP bridge which only proxies POST to /mesh/relay
+    // ML-DSA-65 signed registration — relay receiver verifies before accepting
+    const regPayload = {
+      action: 'register',
+      nodeId: selfNodeId,
+      networkName: this.genesisNetwork?.networkName,
+      publicKey: this.identity.identity.publicKey,
+      timestamp: Date.now(),
+    };
+    const regSignature = this.identity.sign(JSON.stringify({
+      action: regPayload.action,
+      nodeId: regPayload.nodeId,
+      networkName: regPayload.networkName,
+      timestamp: regPayload.timestamp,
+    }));
+    regPayload.signature = regSignature;
+
     const resp = await fetch(relayUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'register',
-        nodeId: selfNodeId,
-        networkName: this.genesisNetwork?.networkName,
-        publicKey: this.identity.identity.publicKey,
-      }),
+      body: JSON.stringify(regPayload),
       signal: AbortSignal.timeout(10000),
     });
 
@@ -2614,12 +2656,17 @@ export class YakmeshNode {
     // Send any queued outbound messages and receive inbound
     const outbound = this._drainRelayOutbox(candidate.nodeId);
 
+    // ML-DSA-65 signed batch — relay receiver verifies before processing
+    const batchPayload = { messages: outbound, senderNodeId: selfNodeId };
+    const batchSignature = this.identity.sign(JSON.stringify(batchPayload));
+
     const resp = await fetch(relayUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        senderNodeId: selfNodeId,
-        messages: outbound,
+        ...batchPayload,
+        signature: batchSignature,
+        publicKey: this.identity.identity.publicKey,
       }),
       signal: AbortSignal.timeout(15000),
     });
