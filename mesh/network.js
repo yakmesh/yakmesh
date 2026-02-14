@@ -281,10 +281,13 @@ export class MandalaNetwork {
     
     this.seenMessages.add(msgId);
     
-    // Send to all peers
+    // Send to all WS peers
     for (const [nodeId, peer] of this.peers) {
       this._send(peer.ws, signed);
     }
+
+    // Emit for HTTP relay peers (server layer hooks this)
+    this.emit('outbound-gossip', signed, []);
   }
 
   /**
@@ -556,13 +559,16 @@ export class MandalaNetwork {
         this.emit('gossip', msg.payload.gossip, nodeId);
       }
       
-      // Forward to other peers
+      // Forward to other WS peers
       const forwardMsg = { ...msg, ttl: msg.ttl - 1 };
       for (const [peerId, peer] of this.peers) {
         if (peerId !== nodeId && peerId !== msg.origin) {
           this._send(peer.ws, forwardMsg);
         }
       }
+
+      // Also forward to HTTP relay peers (server layer hooks this)
+      this.emit('outbound-gossip', forwardMsg, [nodeId, msg.origin]);
     });
   }
 

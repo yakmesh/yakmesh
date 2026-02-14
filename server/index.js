@@ -422,6 +422,33 @@ export class YakmeshNode {
       this.sherpa.start();
       log.info('✓ SHERPA discovery initialized (decentralized peer discovery)');
     }
+
+    // 5i. Wire gossip → HTTP relay bridge
+    // When mesh broadcasts or forwards gossip, also queue to relay peers
+    // This covers both directions:
+    //   - _relayPollers: nodes WE poll (we initiated relay connection)
+    //   - _relayClients: nodes that poll US (they registered with our relay)
+    this.mesh.on('outbound-gossip', (msg, excludeNodeIds = []) => {
+      const excludeSet = new Set(excludeNodeIds);
+      
+      // Queue for nodes we actively poll (outbound relay connections)
+      if (this._relayPollers && this._relayPollers.size > 0) {
+        for (const [relayNodeId] of this._relayPollers) {
+          if (!excludeSet.has(relayNodeId) && relayNodeId !== msg.origin) {
+            this._queueRelayMessage(relayNodeId, msg);
+          }
+        }
+      }
+
+      // Queue for nodes that registered to poll us (inbound relay clients)
+      if (this._relayClients && this._relayClients.size > 0) {
+        for (const clientNodeId of this._relayClients) {
+          if (!excludeSet.has(clientNodeId) && clientNodeId !== msg.origin) {
+            this._queueRelayMessage(clientNodeId, msg);
+          }
+        }
+      }
+    });
     
     // 6. Start HTTP server
     await this._startHttpServer();
@@ -1288,14 +1315,30 @@ export class YakmeshNode {
 
     // Health check
     app.get('/health', (req, res) => {
+      const wsPeers = this.mesh.getPeers();
+      const relayPollCount = this._relayPollers?.size || 0;
+      const relayClientCount = this._relayClients?.size || 0;
+      const relayOutboxSize = this._relayOutbox 
+        ? [...this._relayOutbox.values()].reduce((sum, q) => sum + q.length, 0) 
+        : 0;
+
       res.json({
         status: 'ok',
         nodeId: this.identity.identity.nodeId,
-        peers: this.mesh.getPeers().length,
+        peers: wsPeers.length,
+        relayPeers: relayPollCount + relayClientCount,
+        relayPollers: relayPollCount,
+        relayClients: relayClientCount,
+        relayOutbox: relayOutboxSize,
+        totalPeers: wsPeers.length + relayPollCount + relayClientCount,
         algorithm: 'ML-DSA-65',
         network: this.genesisNetwork ? {
           name: this.genesisNetwork.networkName,
           id: this.genesisNetwork.networkId,
+        } : null,
+        sherpa: this.sherpa ? {
+          registry: this.sherpa.registry?.size() || 0,
+          candidates: this.sherpa.getConnectionCandidates(10).length,
         } : null,
       });
     });
@@ -1362,6 +1405,11 @@ export class YakmeshNode {
             capabilities: { ...capabilities, httpRelay: true },
           });
         }
+
+        // Track relay clients (nodes that poll us for messages)
+        if (!this._relayClients) this._relayClients = new Set();
+        this._relayClients.add(nodeId);
+
         log.info(`HTTP relay peer registered: ${nodeId.slice(0, 20)}`);
         return res.json({ success: true, nodeId: this.identity.identity.nodeId });
       }
@@ -1396,7 +1444,8 @@ export class YakmeshNode {
       for (const msg of messages) {
         if (msg && typeof msg === 'object' && msg.type) {
           try {
-            this.mesh.emit('message', msg);
+            // Dispatch by msg.type (e.g., 'gossip') — not 'message'
+            this.mesh.emit(msg.type, msg, null, null);
             accepted++;
           } catch {
             // Skip malformed messages
@@ -2549,7 +2598,10 @@ export class YakmeshNode {
     if (data.outbound && Array.isArray(data.outbound)) {
       for (const msg of data.outbound) {
         try {
-          this.mesh.emit('message', msg);
+          // Dispatch by msg.type (e.g., 'gossip', 'hello') — not 'message'
+          if (msg && msg.type) {
+            this.mesh.emit(msg.type, msg, null, null);
+          }
         } catch (e) {
           log.debug(`Relay message process error: ${e.message}`);
         }
