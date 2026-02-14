@@ -412,6 +412,12 @@ export class YakmeshNode {
     
     // Start SHERPA if seeds are configured or selfEndpoint is set
     if (this.config.sherpa?.enabled !== false) {
+      // Wire SHERPA auto-connect: when crawl discovers peers, connect outbound
+      this.sherpa.on('crawl-complete', ({ peersFound }) => {
+        if (peersFound > 0) {
+          this._sherpaAutoConnect();
+        }
+      });
       this.sherpa.start();
       log.info('✓ SHERPA discovery initialized (decentralized peer discovery)');
     }
@@ -1327,6 +1333,97 @@ export class YakmeshNode {
         return res.status(503).json({ error: 'SHERPA not initialized' });
       }
       res.json(this.sherpa.getConnectionCandidates(10));
+    });
+
+    // =========================================
+    // SHERPA HTTP Relay: Mesh messaging over HTTP
+    // =========================================
+    // Allows nodes behind firewalls to exchange mesh messages via HTTP POST
+    // instead of WebSocket. The PHP bridge on yakmesh.dev proxies to this.
+    // Message flow: Remote Node → HTTPS POST yakmesh.dev/mesh/relay → PHP → localhost:3080/mesh/relay
+
+    // Accept inbound mesh messages via HTTP (signed, verified)
+    app.post('/mesh/relay', writeLimiter, (req, res) => {
+      const { messages, senderNodeId, signature, publicKey } = req.body;
+
+      if (!Array.isArray(messages) || messages.length === 0) {
+        return res.status(400).json({ error: 'messages array required' });
+      }
+      if (messages.length > 50) {
+        return res.status(400).json({ error: 'Max 50 messages per relay batch' });
+      }
+      if (!senderNodeId || typeof senderNodeId !== 'string') {
+        return res.status(400).json({ error: 'senderNodeId required' });
+      }
+
+      // Verify signature if provided
+      if (signature && publicKey) {
+        try {
+          const sigData = JSON.stringify({ messages, senderNodeId });
+          const valid = this.identity.verify(sigData, signature, publicKey);
+          if (!valid) {
+            return res.status(403).json({ error: 'Invalid signature' });
+          }
+        } catch {
+          return res.status(403).json({ error: 'Signature verification failed' });
+        }
+      }
+
+      // Process each message through the gossip layer
+      let accepted = 0;
+      for (const msg of messages) {
+        if (msg && typeof msg === 'object' && msg.type) {
+          try {
+            this.mesh.emit('message', msg);
+            accepted++;
+          } catch {
+            // Skip malformed messages
+          }
+        }
+      }
+
+      // Return our own pending outbound messages for this sender (bi-directional relay)
+      const outbound = this._drainRelayOutbox(senderNodeId);
+
+      res.json({
+        accepted,
+        outbound,
+        nodeId: this.identity.identity.nodeId,
+        timestamp: Date.now(),
+      });
+    });
+
+    // Retrieve pending relay messages for a specific node (pull-based)
+    app.get('/mesh/relay/:nodeId', (req, res) => {
+      const outbound = this._drainRelayOutbox(req.params.nodeId);
+      res.json({
+        messages: outbound,
+        nodeId: this.identity.identity.nodeId,
+        timestamp: Date.now(),
+      });
+    });
+
+    // Register as an HTTP-relay peer (for nodes that can't do WS)
+    app.post('/mesh/relay/register', writeLimiter, (req, res) => {
+      const { nodeId, relayEndpoint, publicKey, capabilities } = req.body;
+
+      if (!nodeId || !relayEndpoint) {
+        return res.status(400).json({ error: 'nodeId and relayEndpoint required' });
+      }
+
+      // Register in SHERPA registry as an HTTP-relay peer
+      if (this.sherpa) {
+        this.sherpa.registry.upsert({
+          nodeId,
+          endpoint: relayEndpoint,
+          wsEndpoint: null,  // No WS — HTTP relay only
+          networkName: this.genesisNetwork?.networkName,
+          capabilities: { ...capabilities, httpRelay: true },
+        });
+      }
+
+      log.info(`HTTP relay peer registered: ${nodeId.slice(0, 20)} via ${relayEndpoint}`);
+      res.json({ success: true, nodeId: this.identity.identity.nodeId });
     });
 
     // Replication stats
@@ -2303,6 +2400,86 @@ export class YakmeshNode {
         log.debug(`  (bootstrap ${endpoint} not available)`);
       }
     }
+  }
+
+  /**
+   * SHERPA Auto-Connect: Automatically connect to peers discovered via beacon crawling.
+   * 
+   * This is the missing link that makes SHERPA a complete discovery+connection system.
+   * When crawl-complete fires, we check discovered peers for wsEndpoints we're not
+   * already connected to, and initiate OUTBOUND WebSocket connections.
+   * 
+   * This solves the firewall problem: nodes that can't receive inbound connections
+   * (e.g., behind shared hosting firewalls) discover peers via HTTP beacons (port 443)
+   * and OUTBOUND connect to them. WebSocket is bidirectional once established.
+   */
+  async _sherpaAutoConnect() {
+    if (!this.sherpa || !this.mesh) return;
+
+    const candidates = this.sherpa.getConnectionCandidates(10);
+    const currentPeers = new Set(this.mesh.getPeers().map(p => p.nodeId));
+    const selfNodeId = this.identity.identity.nodeId;
+
+    for (const candidate of candidates) {
+      // Skip self and already-connected peers
+      if (candidate.nodeId === selfNodeId) continue;
+      if (currentPeers.has(candidate.nodeId)) continue;
+
+      const endpoint = candidate.wsEndpoint;
+      if (!endpoint) continue;
+
+      try {
+        log.info(`SHERPA auto-connect → ${endpoint} (${candidate.nodeId.slice(0, 20)})`);
+        await this.mesh.connect(endpoint);
+        this.sherpa.markConnected(candidate.nodeId);
+        log.info(`SHERPA auto-connect ✓ ${candidate.nodeId.slice(0, 20)}`);
+      } catch (e) {
+        this.sherpa.markDisconnected(candidate.nodeId);
+        log.debug(`SHERPA auto-connect failed: ${endpoint} — ${e.message}`);
+      }
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // HTTP Relay Outbox — Store-and-forward messages for HTTP relay peers
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Queue a message for delivery via HTTP relay to a specific node.
+   * Used when no WebSocket connection exists but the peer has registered
+   * an HTTP relay endpoint via SHERPA.
+   */
+  _queueRelayMessage(targetNodeId, message) {
+    if (!this._relayOutbox) this._relayOutbox = new Map();
+
+    let queue = this._relayOutbox.get(targetNodeId);
+    if (!queue) {
+      queue = [];
+      this._relayOutbox.set(targetNodeId, queue);
+    }
+
+    queue.push({ ...message, _relayTs: Date.now() });
+
+    // Cap at 500 messages per peer, evict oldest
+    if (queue.length > 500) {
+      queue.splice(0, queue.length - 500);
+    }
+  }
+
+  /**
+   * Drain (retrieve and clear) outbox messages for a specific relay peer.
+   * Called when the peer polls via GET /mesh/relay/:nodeId or during
+   * bi-directional POST /mesh/relay exchange.
+   */
+  _drainRelayOutbox(targetNodeId) {
+    if (!this._relayOutbox) return [];
+    const queue = this._relayOutbox.get(targetNodeId);
+    if (!queue || queue.length === 0) return [];
+
+    // Drain and return
+    const messages = [...queue];
+    queue.length = 0;
+    return messages;
   }
 
   async _initAdapter() {
