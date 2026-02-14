@@ -398,6 +398,7 @@ export class YakmeshNode {
       verifyFn: (data, sig, pubKey) => this.identity.verify(data, sig, pubKey),
       selfEndpoint: this.config.sherpa?.selfEndpoint || null,
       wsEndpoint: this.config.sherpa?.wsEndpoint || null,
+      relayEndpoint: this.config.sherpa?.relayEndpoint || null,
       capabilities: {
         wsPort: this.config.network.wsPort,
         httpPort: this.config.network.httpPort,
@@ -2425,17 +2426,110 @@ export class YakmeshNode {
       if (candidate.nodeId === selfNodeId) continue;
       if (currentPeers.has(candidate.nodeId)) continue;
 
-      const endpoint = candidate.wsEndpoint;
-      if (!endpoint) continue;
+      // Try WebSocket first (preferred — full duplex)
+      if (candidate.wsEndpoint) {
+        try {
+          log.info(`SHERPA auto-connect WS → ${candidate.wsEndpoint} (${candidate.nodeId.slice(0, 20)})`);
+          await this.mesh.connect(candidate.wsEndpoint);
+          this.sherpa.markConnected(candidate.nodeId);
+          log.info(`SHERPA auto-connect ✓ ${candidate.nodeId.slice(0, 20)} via WS`);
+          continue;  // Success — no need for relay fallback
+        } catch (e) {
+          log.debug(`SHERPA WS failed: ${candidate.wsEndpoint} — ${e.message}`);
+        }
+      }
 
-      try {
-        log.info(`SHERPA auto-connect → ${endpoint} (${candidate.nodeId.slice(0, 20)})`);
-        await this.mesh.connect(endpoint);
-        this.sherpa.markConnected(candidate.nodeId);
-        log.info(`SHERPA auto-connect ✓ ${candidate.nodeId.slice(0, 20)}`);
-      } catch (e) {
+      // Fall back to HTTP relay (half-duplex, firewall traversal)
+      if (candidate.relayEndpoint) {
+        try {
+          log.info(`SHERPA relay register → ${candidate.relayEndpoint} (${candidate.nodeId.slice(0, 20)})`);
+          await this._registerWithRelay(candidate);
+          log.info(`SHERPA relay registered ✓ ${candidate.nodeId.slice(0, 20)}`);
+        } catch (e) {
+          this.sherpa.markDisconnected(candidate.nodeId);
+          log.debug(`SHERPA relay failed: ${candidate.relayEndpoint} — ${e.message}`);
+        }
+      } else {
+        // Neither WS nor relay available
         this.sherpa.markDisconnected(candidate.nodeId);
-        log.debug(`SHERPA auto-connect failed: ${endpoint} — ${e.message}`);
+      }
+    }
+  }
+
+  /**
+   * Register with a peer's HTTP relay endpoint for store-and-forward messaging.
+   * Starts periodic polling to pull inbound messages.
+   */
+  async _registerWithRelay(candidate) {
+    const relayUrl = candidate.relayEndpoint;
+    const selfNodeId = this.identity.identity.nodeId;
+
+    // Register with the relay
+    const resp = await fetch(`${relayUrl}/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        nodeId: selfNodeId,
+        networkName: this.genesisNetwork?.networkName,
+        publicKey: this.identity.identity.publicKey,
+      }),
+      signal: AbortSignal.timeout(10000),
+    });
+
+    if (!resp.ok) throw new Error(`Relay register HTTP ${resp.status}`);
+
+    // Start polling for inbound messages if not already polling
+    if (!this._relayPollers) this._relayPollers = new Map();
+
+    if (!this._relayPollers.has(candidate.nodeId)) {
+      const pollInterval = setInterval(async () => {
+        try {
+          await this._pollRelay(candidate);
+        } catch (e) {
+          log.debug(`Relay poll error ${candidate.nodeId.slice(0, 12)}: ${e.message}`);
+        }
+      }, 30000);  // Poll every 30 seconds
+
+      this._relayPollers.set(candidate.nodeId, pollInterval);
+      this.sherpa.markConnected(candidate.nodeId);
+      
+      // Also do an immediate poll
+      await this._pollRelay(candidate);
+    }
+  }
+
+  /**
+   * Poll a relay endpoint for inbound messages.
+   */
+  async _pollRelay(candidate) {
+    const selfNodeId = this.identity.identity.nodeId;
+    const relayUrl = candidate.relayEndpoint;
+
+    // Send any queued outbound messages and receive inbound
+    const outbound = this._drainRelayOutbox(candidate.nodeId);
+
+    const resp = await fetch(relayUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        senderNodeId: selfNodeId,
+        messages: outbound,
+      }),
+      signal: AbortSignal.timeout(15000),
+    });
+
+    if (!resp.ok) throw new Error(`Relay poll HTTP ${resp.status}`);
+
+    const data = await resp.json();
+
+    // Process inbound messages from relay
+    if (data.outbound && Array.isArray(data.outbound)) {
+      for (const msg of data.outbound) {
+        try {
+          this.mesh.emit('message', msg);
+        } catch (e) {
+          log.debug(`Relay message process error: ${e.message}`);
+        }
       }
     }
   }

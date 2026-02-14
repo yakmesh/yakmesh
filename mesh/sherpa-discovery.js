@@ -257,6 +257,11 @@ class BeaconMessage {
     this.timestamp = options.timestamp || Date.now();
     this.ttl = options.ttl || 3600;  // 1 hour default TTL
     
+    // Explicit reachable endpoints (override auto-constructed from ports)
+    // These let nodes behind firewalls/NAT advertise their actual connectable URLs
+    this.wsEndpoint = options.wsEndpoint || null;       // e.g., "wss://mesh.yakmesh.dev"
+    this.relayEndpoint = options.relayEndpoint || null;  // e.g., "https://yakmesh.dev/mesh/relay"
+
     // Node capabilities
     this.capabilities = {
       wsPort: options.wsPort || null,
@@ -336,6 +341,7 @@ class BeaconMessage {
       nodeId: peerInfo.nodeId,
       endpoint: peerInfo.endpoint,        // e.g., "https://example.com"
       wsEndpoint: peerInfo.wsEndpoint,    // e.g., "wss://example.com:9001"
+      relayEndpoint: peerInfo.relayEndpoint || null,  // e.g., "https://example.com/mesh/relay"
       lastSeen: peerInfo.lastSeen || Date.now(),
       score: peerInfo.score || 1.0,
       networkName: peerInfo.networkName,
@@ -363,7 +369,7 @@ class BeaconMessage {
    * Serialize beacon for HTTP response
    */
   serialize() {
-    return {
+    const data = {
       version: this.version,
       nodeId: this.nodeId,
       networkName: this.networkName,
@@ -376,6 +382,12 @@ class BeaconMessage {
       publicKey: this.publicKey,
       signature: this.signature,
     };
+
+    // Include explicit endpoints if configured (firewall/NAT traversal)
+    if (this.wsEndpoint) data.wsEndpoint = this.wsEndpoint;
+    if (this.relayEndpoint) data.relayEndpoint = this.relayEndpoint;
+
+    return data;
   }
 
   /**
@@ -390,6 +402,9 @@ class BeaconMessage {
       capabilities: this.capabilities,
       geo: this.geo,          // v2.5.0 include geo in signature
       namche: this.namche,    // Include NAMCHE in signature
+      // Include endpoints in signature to prevent tampering
+      wsEndpoint: this.wsEndpoint || undefined,
+      relayEndpoint: this.relayEndpoint || undefined,
     });
   }
 
@@ -466,6 +481,7 @@ class PeerRegistry {
       // Update existing peer
       existing.endpoint = peerInfo.endpoint || existing.endpoint;
       existing.wsEndpoint = peerInfo.wsEndpoint || existing.wsEndpoint;
+      existing.relayEndpoint = peerInfo.relayEndpoint || existing.relayEndpoint;
       existing.lastSeen = Math.max(existing.lastSeen, peerInfo.lastSeen || Date.now());
       existing.score = Math.min(1.0, existing.score + SHERPA_CONFIG.successBonus);
       existing.capabilities = peerInfo.capabilities || existing.capabilities;
@@ -479,6 +495,7 @@ class PeerRegistry {
         nodeId: peerInfo.nodeId,
         endpoint: peerInfo.endpoint,
         wsEndpoint: peerInfo.wsEndpoint,
+        relayEndpoint: peerInfo.relayEndpoint || null,
         lastSeen: peerInfo.lastSeen || Date.now(),
         score: peerInfo.score || 1.0,
         networkName: peerInfo.networkName,
@@ -595,6 +612,7 @@ class SherpaDiscovery extends EventEmitter {
     // Our own endpoint info
     this.selfEndpoint = options.selfEndpoint || null;  // e.g., "https://mynode.com"
     this.wsEndpoint = options.wsEndpoint || null;
+    this.relayEndpoint = options.relayEndpoint || null;  // e.g., "https://mynode.com/mesh/relay"
     this.capabilities = options.capabilities || {};
     
     // v2.5.0 Geographic proof configuration
@@ -688,6 +706,9 @@ class SherpaDiscovery extends EventEmitter {
       supportsNakpak: this.capabilities.supportsNakpak ?? true,
       supportsGossip: this.capabilities.supportsGossip ?? true,
       publicKey: this.publicKey,
+      // Explicit reachable endpoints (firewall/NAT traversal)
+      wsEndpoint: this.wsEndpoint,
+      relayEndpoint: this.relayEndpoint,
       // v2.5.0 Geographic coordinates (if configured)
       supportsGeoProof: this.geoConfig.enabled,
       geoLat: this.geoConfig.lat,
@@ -745,12 +766,16 @@ class SherpaDiscovery extends EventEmitter {
             
             // Add the beacon source as a peer
             if (beacon.nodeId && beacon.nodeId !== this.nodeId) {
+              // Prefer explicit wsEndpoint from beacon (firewall/NAT aware)
+              // Fall back to auto-constructed from hostname:wsPort
+              const autoWsEndpoint = beacon.capabilities?.wsPort 
+                  ? `wss://${new URL(endpoint).hostname}:${beacon.capabilities.wsPort}`
+                  : null;
               this.registry.upsert({
                 nodeId: beacon.nodeId,
                 endpoint: endpoint,
-                wsEndpoint: beacon.capabilities?.wsPort 
-                  ? `wss://${new URL(endpoint).hostname}:${beacon.capabilities.wsPort}`
-                  : null,
+                wsEndpoint: beacon.wsEndpoint || autoWsEndpoint,
+                relayEndpoint: beacon.relayEndpoint || null,
                 networkName: beacon.networkName,
                 capabilities: beacon.capabilities,
               });
@@ -769,6 +794,7 @@ class SherpaDiscovery extends EventEmitter {
                   nodeId: peer.nodeId,
                   endpoint: peer.endpoint,
                   wsEndpoint: peer.wsEndpoint,
+                  relayEndpoint: peer.relayEndpoint,
                   networkName: peer.networkName,
                   lastSeen: peer.lastSeen,
                 });
@@ -877,14 +903,16 @@ class SherpaDiscovery extends EventEmitter {
   }
 
   /**
-   * Get connection candidates for mesh networking
+   * Get connection candidates for mesh networking.
+   * Returns peers that have either a wsEndpoint or relayEndpoint.
    */
   getConnectionCandidates(count = 5) {
     return this.registry.getBestPeers(count)
-      .filter(p => p.wsEndpoint)
+      .filter(p => p.wsEndpoint || p.relayEndpoint)
       .map(p => ({
         nodeId: p.nodeId,
         wsEndpoint: p.wsEndpoint,
+        relayEndpoint: p.relayEndpoint || null,
         score: p.score,
       }));
   }
