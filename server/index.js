@@ -1345,9 +1345,30 @@ export class YakmeshNode {
 
     // Accept inbound mesh messages via HTTP (signed, verified)
     app.post('/mesh/relay', writeLimiter, (req, res) => {
+      // Handle relay registration (action: 'register') through the same endpoint
+      // so it works through the PHP bridge which only proxies POST /mesh/relay
+      if (req.body.action === 'register') {
+        const { nodeId, networkName, publicKey, capabilities } = req.body;
+        if (!nodeId || !networkName) {
+          return res.status(400).json({ error: 'nodeId and networkName required for register' });
+        }
+        if (this.sherpa) {
+          this.sherpa.registry.upsert({
+            nodeId,
+            endpoint: null,
+            wsEndpoint: null,
+            relayEndpoint: null,
+            networkName,
+            capabilities: { ...capabilities, httpRelay: true },
+          });
+        }
+        log.info(`HTTP relay peer registered: ${nodeId.slice(0, 20)}`);
+        return res.json({ success: true, nodeId: this.identity.identity.nodeId });
+      }
+
       const { messages, senderNodeId, signature, publicKey } = req.body;
 
-      if (!Array.isArray(messages) || messages.length === 0) {
+      if (!Array.isArray(messages)) {
         return res.status(400).json({ error: 'messages array required' });
       }
       if (messages.length > 50) {
@@ -2464,11 +2485,13 @@ export class YakmeshNode {
     const relayUrl = candidate.relayEndpoint;
     const selfNodeId = this.identity.identity.nodeId;
 
-    // Register with the relay
-    const resp = await fetch(`${relayUrl}/register`, {
+    // Register with the relay via same POST /mesh/relay endpoint (action: 'register')
+    // This works through the PHP bridge which only proxies POST to /mesh/relay
+    const resp = await fetch(relayUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        action: 'register',
         nodeId: selfNodeId,
         networkName: this.genesisNetwork?.networkName,
         publicKey: this.identity.identity.publicKey,
