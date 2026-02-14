@@ -34,9 +34,12 @@
  */
 
 import { ml_dsa65 } from '@noble/post-quantum/ml-dsa.js';
-import { sha3_256 } from '@noble/hashes/sha3.js';
+import { sha3_256 as _nobleSha3 } from '@noble/hashes/sha3.js';
 import { bytesToHex, hexToBytes } from '@noble/hashes/utils.js';
 import { createLogger } from '../utils/logger.js';
+
+// ACCEL: Hardware-accelerated crypto (native SHA3 via OpenSSL/SHA-NI, future liboqs)
+import { sha3_256, mlDsa65Sign, mlDsa65Verify } from '../utils/accel.js';
 
 const log = createLogger('identity:tribhuj-ratchet');
 
@@ -266,7 +269,7 @@ export class TribhujRatchet {
       ? new TextEncoder().encode(message)
       : message;
     
-    const signature = ml_dsa65.sign(messageBytes, this._current.secretKey);
+    const signature = mlDsa65Sign(messageBytes, this._current.secretKey);
     
     return {
       signature: bytesToHex(signature),
@@ -312,7 +315,7 @@ export class TribhujRatchet {
     // Try current key (POSITIVE / present)
     if (this._current && bytesToHex(this._current.publicKey) === publicKeyHex) {
       try {
-        if (ml_dsa65.verify(signature, messageBytes, publicKey)) {
+        if (mlDsa65Verify(signature, messageBytes, publicKey)) {
           return { valid: true, keyState: 'current' };
         }
       } catch (e) { /* fall through */ }
@@ -321,7 +324,7 @@ export class TribhujRatchet {
     // Try previous key (NEGATIVE / past — grace period)
     if (this._previous && bytesToHex(this._previous.publicKey) === publicKeyHex) {
       try {
-        if (ml_dsa65.verify(signature, messageBytes, publicKey)) {
+        if (mlDsa65Verify(signature, messageBytes, publicKey)) {
           return { valid: true, keyState: 'previous' };
         }
       } catch (e) { /* fall through */ }
@@ -330,7 +333,7 @@ export class TribhujRatchet {
     // Unknown key — verify against the provided public key directly
     // (for messages from peers whose ratchet state we don't track)
     try {
-      if (ml_dsa65.verify(signature, messageBytes, publicKey)) {
+      if (mlDsa65Verify(signature, messageBytes, publicKey)) {
         return { valid: true, keyState: 'external' };
       }
     } catch (e) { /* fall through */ }

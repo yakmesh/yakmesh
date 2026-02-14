@@ -48,6 +48,7 @@
     "./mesh/sherpa-discovery": "./mesh/sherpa-discovery.js",
     "./mesh/annex": "./mesh/annex.js",
     "./mesh/temporal-encoder": "./mesh/temporal-encoder.js",
+    "./utils/accel": "./utils/accel.js",
     "./protocol/yak-protocol": "./protocol/yak-protocol.js",
     "./adapters/byond": "./adapters/adapter-byond/index.js",
     "./adapters/byond/topic-client": "./adapters/adapter-byond/topic-client.js",

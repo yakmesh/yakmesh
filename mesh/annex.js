@@ -27,9 +27,12 @@
 
 import { randomBytes, createCipheriv, createDecipheriv, createHash } from 'crypto';
 import { ml_kem768 } from '@noble/post-quantum/ml-kem.js';
-import { sha3_256 } from '@noble/hashes/sha3.js';
+import { sha3_256 as _nobleSha3 } from '@noble/hashes/sha3.js';
 import { bytesToHex, hexToBytes, utf8ToBytes } from '@noble/hashes/utils.js';
 import { createLogger } from '../utils/logger.js';
+
+// ACCEL: Hardware-accelerated crypto (native SHA3, future native KEM)
+import { sha3_256, mlKem768Encapsulate, mlKem768Decapsulate } from '../utils/accel.js';
 
 // ═══ TRIBHUJ — Balanced ternary for channel lifecycle ═══
 // POSITIVE: ESTABLISHED (secure channel active)
@@ -184,7 +187,7 @@ class AnnexSession {
    */
   encapsulate(peerPublicKey, { defer = false } = {}) {
     const publicKeyBytes = hexToBytes(peerPublicKey);
-    const result = ml_kem768.encapsulate(publicKeyBytes);
+    const result = mlKem768Encapsulate(publicKeyBytes);
     
     this.sharedSecret = result.sharedSecret;
     const newKey = this._deriveEncryptionKey();
@@ -215,7 +218,7 @@ class AnnexSession {
     }
     
     const ciphertextBytes = hexToBytes(ciphertext);
-    this.sharedSecret = ml_kem768.decapsulate(ciphertextBytes, this.kemKeyPair.secretKey);
+    this.sharedSecret = mlKem768Decapsulate(ciphertextBytes, this.kemKeyPair.secretKey);
     // Initiator receiving KEY_RESPONSE: switch immediately, zero old key.
     // The initiator is always "first mover" — its next message triggers
     // the responder to promote pendingEncryptionKey. Old key material

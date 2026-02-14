@@ -17,6 +17,7 @@ import { existsSync } from 'fs';
 import { networkInterfaces } from 'os';
 import { WebSocketServer } from 'ws';
 import { createLogger } from '../utils/logger.js';
+import * as accel from '../utils/accel.js';
 
 const log = createLogger('server:main');
 import { NodeIdentity } from '../identity/node-key.js';
@@ -285,6 +286,22 @@ export class YakmeshNode {
       log.warn('   Node will continue but source files are not protected');
     }
 
+    // 0b. Initialize ACCEL — hardware-accelerated crypto & inference
+    // Probes CPU SIMD (AVX-512/VAES/SHA-NI), NVIDIA GPU (CUDA), AMD NPU (XDNA/DirectML)
+    // Must happen before any crypto operations so native paths are available
+    log.info('⚡ Initializing ACCEL (hardware acceleration)...');
+    const accelResult = await accel.initialize();
+    this._accel = accelResult;
+    const caps = [];
+    if (accel.HW.nativeSha3) caps.push('SHA3-native');
+    if (accel.HW.avx512) caps.push('AVX-512');
+    if (accel.HW.vaes) caps.push('VAES');
+    if (accel.HW.shaNI) caps.push('SHA-NI');
+    if (accel.HW.nvGpu) caps.push(`GPU:${accel.HW.nvGpuName}`);
+    if (accel.HW.amdNpu) caps.push(`NPU:${accel.HW.amdNpuTops}TOPS`);
+    if (accel.HW.nativePQ) caps.push(`PQ:${accel.HW.nativePQBackend}`);
+    log.info(`✓ ACCEL: ${caps.length > 0 ? caps.join(' | ') : 'pure-JS fallback'}`);
+
     // 1. Initialize the Oracle system FIRST (provides codebase hash for identity)
     // This MUST happen before identity initialization
     this._initOracle();
@@ -546,6 +563,21 @@ export class YakmeshNode {
     }
     if (this.sherpa) {
       log.info(`  SHERPA:     ✓ Beacon at /.well-known/yakmesh/beacon`);
+    }
+    // ACCEL status line
+    {
+      const a = accel.HW;
+      const accelParts = [];
+      if (a.nativeSha3) accelParts.push('SHA3');
+      if (a.avx512) accelParts.push('AVX-512');
+      if (a.nvGpu) accelParts.push(`GPU(${a.nvGpuName})`);
+      if (a.amdNpu) accelParts.push(`NPU(${a.amdNpuTops}T)`);
+      if (a.nativePQ) accelParts.push(`PQ(${a.nativePQBackend})`);
+      if (accelParts.length > 0) {
+        log.info(`  ACCEL:      ⚡ ${accelParts.join(' + ')}`);
+      } else {
+        log.info(`  ACCEL:      ○ pure-JS (install liboqs-node / onnxruntime-node for acceleration)`);
+      }
     }
     if (this.adapter) {
       log.info(`  Adapter:    ✓ Enabled`);
@@ -1374,6 +1406,7 @@ export class YakmeshNode {
           registry: this.sherpa.registry?.size() || 0,
           candidates: this.sherpa.getConnectionCandidates(10).length,
         } : null,
+        accel: accel.getStatus(),
       });
     });
 
@@ -1411,6 +1444,17 @@ export class YakmeshNode {
         return res.status(503).json({ error: 'SHERPA not initialized' });
       }
       res.json(this.sherpa.getConnectionCandidates(10));
+    });
+
+    // =========================================
+    // ACCEL: Hardware Acceleration Status
+    // =========================================
+    app.get('/accel', (req, res) => {
+      res.json(accel.getStatus());
+    });
+
+    app.get('/accel/telemetry', (req, res) => {
+      res.json(accel.getTelemetry());
     });
 
     // =========================================
