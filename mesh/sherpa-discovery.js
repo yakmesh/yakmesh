@@ -485,6 +485,7 @@ class PeerRegistry {
       existing.endpoint = peerInfo.endpoint || existing.endpoint;
       existing.wsEndpoint = peerInfo.wsEndpoint || existing.wsEndpoint;
       existing.relayEndpoint = peerInfo.relayEndpoint || existing.relayEndpoint;
+      existing.publicKey = peerInfo.publicKey || existing.publicKey;
       existing.lastSeen = Math.max(existing.lastSeen, peerInfo.lastSeen || Date.now());
       existing.score = Math.min(1.0, existing.score + SHERPA_CONFIG.successBonus);
       existing.capabilities = peerInfo.capabilities || existing.capabilities;
@@ -499,6 +500,7 @@ class PeerRegistry {
         endpoint: peerInfo.endpoint,
         wsEndpoint: peerInfo.wsEndpoint,
         relayEndpoint: peerInfo.relayEndpoint || null,
+        publicKey: peerInfo.publicKey || null,
         lastSeen: peerInfo.lastSeen || Date.now(),
         score: peerInfo.score || 1.0,
         networkName: peerInfo.networkName,
