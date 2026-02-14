@@ -291,19 +291,21 @@ export class MandalaNetwork {
   }
 
   /**
-   * Send message to specific peer
+   * Send message to specific peer (WS or relay fallback)
    */
   sendTo(nodeId, message) {
-    const peer = this.peers.get(nodeId);
-    if (!peer) {
-      throw new Error(`Peer ${nodeId} not connected`);
-    }
-    
     const signed = this.ratchet
       ? this.ratchet.signObject({ ...message, timestamp: Date.now() })
       : this.identity.signObject({ ...message, timestamp: Date.now() });
-    
-    this._send(peer.ws, signed);
+
+    const peer = this.peers.get(nodeId);
+    if (peer) {
+      this._send(peer.ws, signed);
+      return;
+    }
+
+    // Not a WS peer — try relay fallback (server layer hooks this)
+    this.emit('outbound-relay', nodeId, signed);
   }
 
   /**

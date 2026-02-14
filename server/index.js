@@ -423,8 +423,18 @@ export class YakmeshNode {
       log.info('✓ SHERPA discovery initialized (decentralized peer discovery)');
     }
 
-    // 5i. Wire gossip → HTTP relay bridge
-    // When mesh broadcasts or forwards gossip, also queue to relay peers
+    // 5i. Wire mesh → HTTP relay bridge
+    // Route direct messages (sendTo) via relay when no WS connection
+    this.mesh.on('outbound-relay', (targetNodeId, msg) => {
+      if ((this._relayPollers && this._relayPollers.has(targetNodeId)) ||
+          (this._relayClients && this._relayClients.has(targetNodeId))) {
+        this._queueRelayMessage(targetNodeId, msg);
+      } else {
+        log.debug(`No relay path to ${targetNodeId.slice(0, 20)}`);
+      }
+    });
+
+    // Wire gossip broadcasts → relay bridge
     // This covers both directions:
     //   - _relayPollers: nodes WE poll (we initiated relay connection)
     //   - _relayClients: nodes that poll US (they registered with our relay)
@@ -442,13 +452,28 @@ export class YakmeshNode {
 
       // Queue for nodes that registered to poll us (inbound relay clients)
       if (this._relayClients && this._relayClients.size > 0) {
-        for (const clientNodeId of this._relayClients) {
+        for (const [clientNodeId] of this._relayClients) {
           if (!excludeSet.has(clientNodeId) && clientNodeId !== msg.origin) {
             this._queueRelayMessage(clientNodeId, msg);
           }
         }
       }
     });
+
+    // 5j. Expire stale relay clients (no poll for 5 minutes)
+    setInterval(() => {
+      if (!this._relayClients || this._relayClients.size === 0) return;
+      const now = Date.now();
+      const RELAY_CLIENT_TTL = 5 * 60 * 1000; // 5 minutes
+      for (const [clientNodeId, lastSeen] of this._relayClients) {
+        if (now - lastSeen > RELAY_CLIENT_TTL) {
+          this._relayClients.delete(clientNodeId);
+          // Also clear any queued messages for expired client
+          if (this._relayOutbox) this._relayOutbox.delete(clientNodeId);
+          log.debug(`Relay client expired: ${clientNodeId.slice(0, 20)}`);
+        }
+      }
+    }, 60000); // Check every minute
     
     // 6. Start HTTP server
     await this._startHttpServer();
@@ -1406,9 +1431,9 @@ export class YakmeshNode {
           });
         }
 
-        // Track relay clients (nodes that poll us for messages)
-        if (!this._relayClients) this._relayClients = new Set();
-        this._relayClients.add(nodeId);
+        // Track relay clients as Map {nodeId → lastSeen} for expiry
+        if (!this._relayClients) this._relayClients = new Map();
+        this._relayClients.set(nodeId, Date.now());
 
         log.info(`HTTP relay peer registered: ${nodeId.slice(0, 20)}`);
         return res.json({ success: true, nodeId: this.identity.identity.nodeId });
@@ -1439,18 +1464,27 @@ export class YakmeshNode {
         }
       }
 
-      // Process each message through the gossip layer
+      // Process each message through the mesh layer
       let accepted = 0;
       for (const msg of messages) {
         if (msg && typeof msg === 'object' && msg.type) {
           try {
             // Dispatch by msg.type (e.g., 'gossip') — not 'message'
-            this.mesh.emit(msg.type, msg, null, null);
+            this.mesh.emit(msg.type, msg, null, senderNodeId);
+            // Route ANNEX messages arriving via relay
+            if (msg.annex && this.mesh.annex) {
+              this.mesh.annex._handleAnnexMessage(msg.annex, senderNodeId).catch(() => {});
+            }
             accepted++;
           } catch {
             // Skip malformed messages
           }
         }
+      }
+
+      // Refresh relay client last-seen on poll
+      if (this._relayClients && this._relayClients.has(senderNodeId)) {
+        this._relayClients.set(senderNodeId, Date.now());
       }
 
       // Return our own pending outbound messages for this sender (bi-directional relay)
@@ -2600,7 +2634,11 @@ export class YakmeshNode {
         try {
           // Dispatch by msg.type (e.g., 'gossip', 'hello') — not 'message'
           if (msg && msg.type) {
-            this.mesh.emit(msg.type, msg, null, null);
+            this.mesh.emit(msg.type, msg, null, candidate.nodeId);
+            // Route ANNEX messages arriving via relay
+            if (msg.annex && this.mesh.annex) {
+              this.mesh.annex._handleAnnexMessage(msg.annex, candidate.nodeId).catch(() => {});
+            }
           }
         } catch (e) {
           log.debug(`Relay message process error: ${e.message}`);
