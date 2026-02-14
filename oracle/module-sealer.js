@@ -14,9 +14,11 @@
  * @module ModuleSealer
  */
 
-import { sha3_256, sha3_512 } from '@noble/hashes/sha3.js';
+import { sha3_256 as _nobleSha3, sha3_512 } from '@noble/hashes/sha3.js';
 import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js';
 import { ml_dsa65 } from '@noble/post-quantum/ml-dsa.js';
+// ACCEL: Hardware-accelerated crypto
+import { sha3_256, mlDsa65Sign, mlDsa65Verify } from '../utils/accel.js';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -74,7 +76,7 @@ export class SealedModule {
       const pubKeyBytes = hexToBytes(attestation.publicKey);
       
       // IMPORTANT: ml_dsa65.verify(signature, message, publicKey) - signature FIRST!
-      return ml_dsa65.verify(sigBytes, messageBytes, pubKeyBytes);
+      return mlDsa65Verify(sigBytes, messageBytes, pubKeyBytes);
     } catch (e) {
       return false;
     }
@@ -243,7 +245,7 @@ export class ModuleSealer {
     const privKeyBytes = hexToBytes(this.privateKey);
     
     // IMPORTANT: ml_dsa65.sign(message, secretKey) - message FIRST!
-    const signature = ml_dsa65.sign(messageBytes, privKeyBytes);
+    const signature = mlDsa65Sign(messageBytes, privKeyBytes);
     
     return {
       publicKey: this.publicKey,

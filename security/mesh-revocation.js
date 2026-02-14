@@ -11,9 +11,11 @@
  * @version 1.0.0
  */
 
-import { sha3_256 } from '@noble/hashes/sha3.js';
+import { sha3_256 as _nobleSha3 } from '@noble/hashes/sha3.js';
 import { bytesToHex, hexToBytes } from '@noble/hashes/utils.js';
 import { ml_dsa65 } from '@noble/post-quantum/ml-dsa.js';
+// ACCEL: Hardware-accelerated crypto
+import { sha3_256, mlDsa65Sign, mlDsa65Verify } from '../utils/accel.js';
 import { EventEmitter } from 'events';
 import { createLogger } from '../utils/logger.js';
 
@@ -89,7 +91,7 @@ export class Attestation {
    */
   sign(privateKey) {
     const bytes = this.getSignableBytes();
-    const sig = ml_dsa65.sign(bytes, privateKey);
+    const sig = mlDsa65Sign(bytes, privateKey);
     this.signature = bytesToHex(sig);
     return this;
   }
@@ -104,7 +106,7 @@ export class Attestation {
       const bytes = this.getSignableBytes();
       const sig = hexToBytes(this.signature);
       const pubKey = typeof publicKey === 'string' ? hexToBytes(publicKey) : publicKey;
-      return ml_dsa65.verify(sig, bytes, pubKey);
+      return mlDsa65Verify(sig, bytes, pubKey);
     } catch (e) {
       return false;
     }

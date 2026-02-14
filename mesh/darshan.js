@@ -37,9 +37,11 @@
  */
 
 import { randomBytes, createCipheriv, createDecipheriv, createHash } from 'crypto';
-import { sha3_256 } from '@noble/hashes/sha3.js';
+import { sha3_256 as _nobleSha3 } from '@noble/hashes/sha3.js';
 import { bytesToHex, hexToBytes, utf8ToBytes } from '@noble/hashes/utils.js';
 import { ml_dsa65 } from '@noble/post-quantum/ml-dsa.js';
+// ACCEL: Hardware-accelerated crypto
+import { sha3_256, mlDsa65Sign, mlDsa65Verify } from '../utils/accel.js';
 import { createLogger } from '../utils/logger.js';
 import EventEmitter from 'events';
 
@@ -537,7 +539,7 @@ export class DarshanAttestation {
    */
   signAsViewer(secretKey) {
     const payload = utf8ToBytes(this.getSignablePayload());
-    const signature = ml_dsa65.sign(payload, secretKey);
+    const signature = mlDsa65Sign(payload, secretKey);
     this.viewerSignature = bytesToHex(signature);
     return this;
   }
@@ -548,7 +550,7 @@ export class DarshanAttestation {
   signAsHost(secretKey) {
     // Include viewer signature in host signing
     const payload = utf8ToBytes(this.getSignablePayload() + (this.viewerSignature || ''));
-    const signature = ml_dsa65.sign(payload, secretKey);
+    const signature = mlDsa65Sign(payload, secretKey);
     this.hostSignature = bytesToHex(signature);
     return this;
   }
@@ -563,7 +565,7 @@ export class DarshanAttestation {
       const payload = utf8ToBytes(this.getSignablePayload());
       const signatureBytes = hexToBytes(this.viewerSignature);
       const publicKeyBytes = typeof publicKey === 'string' ? hexToBytes(publicKey) : publicKey;
-      return ml_dsa65.verify(signatureBytes, payload, publicKeyBytes);
+      return mlDsa65Verify(signatureBytes, payload, publicKeyBytes);
     } catch (err) {
       return false;
     }
@@ -579,7 +581,7 @@ export class DarshanAttestation {
       const payload = utf8ToBytes(this.getSignablePayload() + (this.viewerSignature || ''));
       const signatureBytes = hexToBytes(this.hostSignature);
       const publicKeyBytes = typeof publicKey === 'string' ? hexToBytes(publicKey) : publicKey;
-      return ml_dsa65.verify(signatureBytes, payload, publicKeyBytes);
+      return mlDsa65Verify(signatureBytes, payload, publicKeyBytes);
     } catch (err) {
       return false;
     }

@@ -13,9 +13,11 @@
  */
 
 import { EventEmitter } from 'events';
-import { sha3_256 } from '@noble/hashes/sha3.js';
+import { sha3_256 as _nobleSha3 } from '@noble/hashes/sha3.js';
 import { bytesToHex, randomBytes, hexToBytes, utf8ToBytes } from '@noble/hashes/utils.js';
 import { ml_dsa65 } from '@noble/post-quantum/ml-dsa.js';
+// ACCEL: Hardware-accelerated crypto
+import { sha3_256, mlDsa65Verify } from '../utils/accel.js';
 import { createLogger } from '../utils/logger.js';
 import { MESH_REVOCATION_MESSAGES } from './mesh-revocation.js';
 import { SILICON_PARITY_MESSAGES } from './silicon-parity.js';
@@ -411,7 +413,7 @@ export class KhataTrustIntegration extends EventEmitter {
             const signature = hexToBytes(message.signature);
             
             // ml_dsa65.verify(signature, message, publicKey)
-            const sigValid = ml_dsa65.verify(signature, payloadBytes, publicKey);
+            const sigValid = mlDsa65Verify(signature, payloadBytes, publicKey);
             if (!sigValid) {
               result.valid = false;
               result.issues.push('Invalid signature on silicon response');

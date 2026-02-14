@@ -39,9 +39,11 @@
  */
 
 import { randomBytes, createCipheriv, createDecipheriv, createHash } from 'crypto';
-import { sha3_256 } from '@noble/hashes/sha3.js';
+import { sha3_256 as _nobleSha3 } from '@noble/hashes/sha3.js';
 import { bytesToHex, hexToBytes, utf8ToBytes } from '@noble/hashes/utils.js';
 import { ml_dsa65 } from '@noble/post-quantum/ml-dsa.js';
+// ACCEL: Hardware-accelerated crypto
+import { sha3_256, mlDsa65Sign, mlDsa65Verify } from '../utils/accel.js';
 import { createLogger } from '../utils/logger.js';
 import EventEmitter from 'events';
 
@@ -521,7 +523,7 @@ export class GumbaProof {
     
     const payloadBytes = utf8ToBytes(payload);
     // API: sign(message, secretKey)
-    const signature = ml_dsa65.sign(payloadBytes, secretKey);
+    const signature = mlDsa65Sign(payloadBytes, secretKey);
     
     return {
       ...challenge,
@@ -556,7 +558,7 @@ export class GumbaProof {
         : publicKey;
       
       // API: verify(signature, message, publicKey)
-      const valid = ml_dsa65.verify(signatureBytes, payloadBytes, publicKeyBytes);
+      const valid = mlDsa65Verify(signatureBytes, payloadBytes, publicKeyBytes);
       
       return { valid, reason: valid ? 'OK' : 'INVALID_SIGNATURE' };
     } catch (err) {
@@ -591,7 +593,7 @@ export class GumbaProof {
     const payload = JSON.stringify(attestation);
     const payloadBytes = utf8ToBytes(payload);
     // API: sign(message, secretKey)
-    const signature = ml_dsa65.sign(payloadBytes, grantorSecretKey);
+    const signature = mlDsa65Sign(payloadBytes, grantorSecretKey);
     
     return {
       ...attestation,
@@ -632,7 +634,7 @@ export class GumbaProof {
         : grantorPublicKey;
       
       // API: verify(signature, message, publicKey)
-      const valid = ml_dsa65.verify(signatureBytes, payloadBytes, publicKeyBytes);
+      const valid = mlDsa65Verify(signatureBytes, payloadBytes, publicKeyBytes);
       
       return { valid, reason: valid ? 'OK' : 'INVALID_SIGNATURE' };
     } catch (err) {

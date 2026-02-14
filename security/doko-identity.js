@@ -9,9 +9,11 @@
  * @version 2.2.0
  */
 
-import { sha3_256 } from '@noble/hashes/sha3.js';
+import { sha3_256 as _nobleSha3 } from '@noble/hashes/sha3.js';
 import { bytesToHex, hexToBytes } from '@noble/hashes/utils.js';
 import { ml_dsa65 } from '@noble/post-quantum/ml-dsa.js';
+// ACCEL: Hardware-accelerated crypto
+import { sha3_256, mlDsa65Sign, mlDsa65Verify } from '../utils/accel.js';
 import { createLogger } from '../utils/logger.js';
 
 // ═══ TRIBHUJ — Balanced ternary for validation verdicts ═══
@@ -210,7 +212,7 @@ export class DOKOGenerator {
     
     // Self-sign (ml_dsa65.sign takes message first, then secretKey)
     const signableBytes = doko.getSignableBytes();
-    const signature = ml_dsa65.sign(signableBytes, keyPair.secretKey);
+    const signature = mlDsa65Sign(signableBytes, keyPair.secretKey);
     doko.signature = bytesToHex(signature);
     
     return {
@@ -248,7 +250,7 @@ export class DOKOGenerator {
     
     // Self-sign (ml_dsa65.sign takes message first, then secretKey)
     const signableBytes = doko.getSignableBytes();
-    const signature = ml_dsa65.sign(signableBytes, secretKeyBytes);
+    const signature = mlDsa65Sign(signableBytes, secretKeyBytes);
     doko.signature = bytesToHex(signature);
     
     return doko;
@@ -322,7 +324,7 @@ export class DOKOValidator {
       const signableBytes = doc.getSignableBytes();
       
       // ml_dsa65.verify takes (signature, message, publicKey)
-      const valid = ml_dsa65.verify(signature, signableBytes, publicKey);
+      const valid = mlDsa65Verify(signature, signableBytes, publicKey);
       
       return {
         valid,
@@ -458,7 +460,7 @@ export class DOKOEndorsement {
       ? hexToBytes(endorserSecretKey)
       : endorserSecretKey;
     
-    const signature = ml_dsa65.sign(endorsementBytes, secretKey);
+    const signature = mlDsa65Sign(endorsementBytes, secretKey);
     endorsement.signature = bytesToHex(signature);
     
     return endorsement;
@@ -487,7 +489,7 @@ export class DOKOEndorsement {
       const publicKey = hexToBytes(endorsement.endorserPublicKey);
       const sigBytes = hexToBytes(signature);
       
-      const valid = ml_dsa65.verify(sigBytes, endorsementBytes, publicKey);
+      const valid = mlDsa65Verify(sigBytes, endorsementBytes, publicKey);
       
       return {
         valid,
@@ -900,7 +902,7 @@ export class DOKOTransfer {
 
       // Use ML-DSA-65 verification (already imported at top of file)
       // IMPORTANT: ml_dsa65.verify(signature, message, publicKey) - signature FIRST!
-      const isValid = ml_dsa65.verify(signature, message, publicKey);
+      const isValid = mlDsa65Verify(signature, message, publicKey);
 
       return {
         valid: isValid,
@@ -1095,7 +1097,7 @@ export class DOKORevocation {
     const dataBytes = new TextEncoder().encode(JSON.stringify(revocationData));
     
     // Sign with ML-DSA (message first, then secretKey)
-    const signature = ml_dsa65.sign(dataBytes, privateKey);
+    const signature = mlDsa65Sign(dataBytes, privateKey);
     
     const certificate = {
       ...revocationData,
@@ -1167,7 +1169,7 @@ export class DOKORevocation {
     
     // Sign the emergency cert (message first, then secretKey)
     const dataBytes = new TextEncoder().encode(JSON.stringify(certData));
-    const signature = ml_dsa65.sign(dataBytes, privateKey);
+    const signature = mlDsa65Sign(dataBytes, privateKey);
     
     return {
       ...certData,
@@ -1202,7 +1204,7 @@ export class DOKORevocation {
       const pubKeyBytes = hexToBytes(publicKey);
       
       // Verify with ML-DSA (signature, message, publicKey)
-      const isValid = ml_dsa65.verify(signature, dataBytes, pubKeyBytes);
+      const isValid = mlDsa65Verify(signature, dataBytes, pubKeyBytes);
       
       if (!isValid) {
         return { valid: false, reason: 'INVALID_SIGNATURE' };
