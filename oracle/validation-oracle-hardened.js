@@ -37,9 +37,11 @@
  * @version 1.2.0-hardened
  */
 
-import { sha3_256, sha3_512 } from '@noble/hashes/sha3.js';
+import { sha3_256 as _nobleSha3, sha3_512 } from '@noble/hashes/sha3.js';
 import { bytesToHex, hexToBytes, utf8ToBytes } from '@noble/hashes/utils.js';
 import { ml_dsa65 } from '@noble/post-quantum/ml-dsa.js';
+// ACCEL: Hardware-accelerated crypto
+import { sha3_256, mlDsa65Verify } from '../utils/accel.js';
 import { readFileSync, readdirSync, statSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -926,7 +928,7 @@ export class ValidationOracle {
       const pubKeyBytes = hexToBytes(publicKey);
       
       // ML-DSA65 verify order: (signature, message, publicKey)
-      const valid = ml_dsa65.verify(sigBytes, messageBytes, pubKeyBytes);
+      const valid = mlDsa65Verify(sigBytes, messageBytes, pubKeyBytes);
       
       if (!valid) {
         return ValidationResult.failure('SIGNATURE_INVALID');

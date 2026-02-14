@@ -35,6 +35,9 @@ import DomainConsensusVerifier, {
   DomainVerificationProof,
   VerifierEligibilityChecker,
 } from '../../security/domain-consensus.js';
+import { hexToBytes, bytesToHex } from '@noble/hashes/utils.js';
+// ACCEL: Hardware-accelerated crypto
+import { sha3_256, mlDsa65Sign, mlDsa65Verify } from '../../utils/accel.js';
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // 1. DOKO TRADER IDENTITY
@@ -118,13 +121,11 @@ export class TraderIdentityManager {
     // Verify the user can sign with the secret key
     try {
       const testMessage = Buffer.from('verification-test');
-      const { ml_dsa65 } = require('@noble/post-quantum/ml-dsa.js');
-      const { hexToBytes } = require('@noble/hashes/utils.js');
       
       const secretKey = hexToBytes(secretKeyHex);
-      const signature = ml_dsa65.sign(secretKey, testMessage);
+      const signature = mlDsa65Sign(testMessage, secretKey);
       const publicKey = hexToBytes(doko.publicKey);
-      const valid = ml_dsa65.verify(publicKey, testMessage, signature);
+      const valid = mlDsa65Verify(signature, testMessage, publicKey);
       
       if (!valid) {
         return { success: false, error: 'SECRET_KEY_MISMATCH' };
@@ -518,9 +519,6 @@ export class TradeChat {
 
     try {
       // Sign the message with DOKO key
-      const { ml_dsa65 } = require('@noble/post-quantum/ml-dsa.js');
-      const { hexToBytes, bytesToHex } = require('@noble/hashes/utils.js');
-      const { sha3_256 } = require('@noble/hashes/sha3.js');
 
       const messageData = {
         tradeId,
@@ -532,7 +530,7 @@ export class TradeChat {
       const messageBytes = Buffer.from(JSON.stringify(messageData));
       const messageHash = bytesToHex(sha3_256(messageBytes));
       const secretKey = hexToBytes(secretKeyHex);
-      const signature = bytesToHex(ml_dsa65.sign(secretKey, messageBytes));
+      const signature = bytesToHex(mlDsa65Sign(messageBytes, secretKey));
 
       const signedMessage = {
         ...messageData,
@@ -668,9 +666,6 @@ export class MerchantVerification {
    * Generate the DNS TXT record value
    */
   _generateTxtRecord(doko) {
-    const { sha3_256 } = require('@noble/hashes/sha3.js');
-    const { bytesToHex } = require('@noble/hashes/utils.js');
-    
     const proof = bytesToHex(sha3_256(Buffer.from(doko.dokoId + doko.publicKey))).slice(0, 32);
     return `yakmesh-verify=${proof}`;
   }

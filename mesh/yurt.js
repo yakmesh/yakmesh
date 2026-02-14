@@ -42,9 +42,11 @@
  */
 
 import { randomBytes, createHash } from 'crypto';
-import { sha3_256 } from '@noble/hashes/sha3.js';
+import { sha3_256 as _nobleSha3 } from '@noble/hashes/sha3.js';
 import { bytesToHex, hexToBytes, utf8ToBytes } from '@noble/hashes/utils.js';
 import { ml_dsa65 } from '@noble/post-quantum/ml-dsa.js';
+// ACCEL: Hardware-accelerated crypto
+import { sha3_256, mlDsa65Sign, mlDsa65Verify } from '../utils/accel.js';
 import { createLogger } from '../utils/logger.js';
 import EventEmitter from 'events';
 
@@ -203,7 +205,7 @@ export class YurtEntry {
    */
   sign(secretKey) {
     const payload = utf8ToBytes(this.getSignablePayload());
-    const signature = ml_dsa65.sign(payload, secretKey);
+    const signature = mlDsa65Sign(payload, secretKey);
     this.signature = bytesToHex(signature);
     return this;
   }
@@ -221,7 +223,7 @@ export class YurtEntry {
         ? hexToBytes(publicKey) 
         : publicKey;
       
-      return ml_dsa65.verify(signatureBytes, payload, publicKeyBytes);
+      return mlDsa65Verify(signatureBytes, payload, publicKeyBytes);
     } catch (err) {
       log.warn('Signature verification failed', { error: err.message });
       return false;

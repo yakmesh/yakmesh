@@ -23,8 +23,10 @@
  */
 
 import { ml_dsa65 } from '@noble/post-quantum/ml-dsa.js';
-import { sha3_256 } from '@noble/hashes/sha3.js';
+import { sha3_256 as _nobleSha3 } from '@noble/hashes/sha3.js';
 import { bytesToHex, hexToBytes, utf8ToBytes } from '@noble/hashes/utils.js';
+// ACCEL: Hardware-accelerated crypto
+import { sha3_256, mlDsa65Verify } from '../utils/accel.js';
 import { EventEmitter } from 'events';
 import { generateNodeId, getCodebaseHash } from '../identity/node-key.js';
 import { deriveNetworkName } from '../oracle/network-identity.js';
@@ -394,7 +396,7 @@ export class NamcheGateway extends EventEmitter {
       const publicKey = hexToBytes(doko.publicKey);
       const signature = hexToBytes(doko.signature);
 
-      const valid = ml_dsa65.verify(signature, payloadBytes, publicKey);
+      const valid = mlDsa65Verify(signature, payloadBytes, publicKey);
       
       if (!valid) {
         return { valid: false, detail: 'ML-DSA-65 signature verification failed' };
@@ -582,7 +584,7 @@ export class NamcheGateway extends EventEmitter {
         const publicKey = hexToBytes(proof.verifierPublicKey);
         const signature = hexToBytes(proof.signature);
 
-        const proofValid = ml_dsa65.verify(signature, payloadBytes, publicKey);
+        const proofValid = mlDsa65Verify(signature, payloadBytes, publicKey);
 
         if (proofValid) {
           // TODO: Integrate with SAKSHI observational verification
@@ -632,7 +634,7 @@ export class NamcheGateway extends EventEmitter {
       const publicKey = hexToBytes(originalDoko.publicKey);
       const signature = hexToBytes(revocation.signature);
 
-      const valid = ml_dsa65.verify(signature, payloadBytes, publicKey);
+      const valid = mlDsa65Verify(signature, payloadBytes, publicKey);
 
       if (!valid) {
         return { success: false, reason: 'Invalid revocation signature' };

@@ -18,9 +18,11 @@
  */
 
 import { createCipheriv, randomBytes } from 'crypto';
-import { sha3_256 } from '@noble/hashes/sha3.js';
+import { sha3_256 as _nobleSha3 } from '@noble/hashes/sha3.js';
 import { bytesToHex, hexToBytes } from '@noble/hashes/utils.js';
 import { ml_dsa65 } from '@noble/post-quantum/ml-dsa.js';
+// ACCEL: Hardware-accelerated crypto
+import { sha3_256, mlDsa65Sign, mlDsa65Verify } from '../utils/accel.js';
 import { createLogger } from '../utils/logger.js';
 import os from 'os';
 
@@ -610,7 +612,7 @@ export class HardwareAttestation {
     
     // Sign the response
     const responseBytes = new TextEncoder().encode(JSON.stringify(responseData));
-    const signature = ml_dsa65.sign(responseBytes, privateKey);
+    const signature = mlDsa65Sign(responseBytes, privateKey);
     
     return {
       ...responseData,
@@ -639,7 +641,7 @@ export class HardwareAttestation {
     const signature = hexToBytes(response.signature);
     const pubKeyBytes = typeof publicKey === 'string' ? hexToBytes(publicKey) : publicKey;
     
-    if (!ml_dsa65.verify(signature, responseBytes, pubKeyBytes)) {
+    if (!mlDsa65Verify(signature, responseBytes, pubKeyBytes)) {
       return { valid: false, reason: 'INVALID_SIGNATURE' };
     }
     
