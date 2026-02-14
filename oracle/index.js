@@ -94,6 +94,62 @@ export {
   setupUnlockOnExit,
 } from './codebase-lock.js';
 
+// ═══════════════════════════════════════════════════════════════════════════════
+// TRIBHUJ - Balanced Ternary Mathematics
+// The foundational trit operations: {-1, 0, +1}
+// ═══════════════════════════════════════════════════════════════════════════════
+export {
+  POSITIVE, NEUTRAL, NEGATIVE,
+  TritState,
+  TritChars,
+  Trit,
+  TritArray,
+  hexToTrits,
+  hexCompare,
+  calculatePathBalance,
+} from './tribhuj.js';
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SST - Synergy Sequence Theory
+// The mathematical backbone: digital roots, family classification,
+// Fibonacci 24-cycle, trust geometry, hexagonal tessellation
+// ═══════════════════════════════════════════════════════════════════════════════
+export {
+  // Constants
+  SSTFamily,
+  FIBONACCI_CYCLE_24,
+  FAMILY_TO_TRIT,
+  SynergyAngles,
+  TRUST_PROPAGATION,
+  HEX_CELL_SIZES,
+  // Digital root & family
+  digitalRoot,
+  getFamily,
+  getFamilyOf,
+  toFamilyTrit,
+  bytesToFamilyTrits,
+  analyzeBytesFamilies,
+  // Fibonacci analysis
+  fibonacciRoot,
+  fibonacciFamily,
+  fibonacciFamilyTrit,
+  analyzeFibonacciCycle,
+  generateFibonacciSequence,
+  // Synergy matrix
+  generateSynergyMatrix,
+  rowToFamilyPattern,
+  matrixToTritPatterns,
+  // Trust geometry (30-60-90 triangle)
+  propagateTrust,
+  trustHalfLife,
+  decayTrust,
+  // Hex grid
+  HexCoord,
+  hexRing,
+  hexDisk,
+  hexDiskSize,
+} from './sst.js';
+
 /**
  * Create a fully configured oracle system for a Lantern node
  * 

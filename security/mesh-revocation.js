@@ -17,6 +17,10 @@ import { ml_dsa65 } from '@noble/post-quantum/ml-dsa.js';
 import { EventEmitter } from 'events';
 import { createLogger } from '../utils/logger.js';
 
+// ═══ TRIBHUJ — Balanced ternary for revocation status ═══
+// POSITIVE: retained (not revoked), NEUTRAL: forming (insufficient network), NEGATIVE: revoked
+import { POSITIVE, NEUTRAL, NEGATIVE } from '../oracle/tribhuj.js';
+
 const log = createLogger('security:mesh-revocation');
 
 /**
@@ -220,11 +224,16 @@ export class RevocationState {
 
   /**
    * Check if threshold is met
-   * This is THE mathematical determination
+   * This is THE mathematical determination.
+   * 
+   * Returns `revoked` boolean (backward compat) plus `status` trit:
+   *   POSITIVE (+1): retained — below threshold, DOKO is valid
+   *   NEUTRAL  ( 0): forming — insufficient network to determine
+   *   NEGATIVE (-1): revoked — threshold met, DOKO is revoked
    */
   isRevoked(activeNodeCount, config = DEFAULT_CONFIG) {
     if (activeNodeCount < config.minNodes) {
-      return { revoked: false, reason: 'INSUFFICIENT_NETWORK' };
+      return { revoked: false, status: NEUTRAL, reason: 'INSUFFICIENT_NETWORK' };
     }
 
     const threshold = Math.ceil(activeNodeCount * config.threshold);
@@ -233,6 +242,7 @@ export class RevocationState {
     if (count >= threshold) {
       return {
         revoked: true,
+        status: NEGATIVE,
         reason: this.primaryReason,
         attestationCount: count,
         threshold,
@@ -243,6 +253,7 @@ export class RevocationState {
 
     return {
       revoked: false,
+      status: POSITIVE,
       reason: 'BELOW_THRESHOLD',
       attestationCount: count,
       threshold,

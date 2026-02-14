@@ -59,6 +59,14 @@ import { EventEmitter } from 'events';
 import { sha3_256 } from '@noble/hashes/sha3.js';
 import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js';
 
+// ═══ TRIBHUJ — Balanced ternary for evidence verification states ═══
+// Evidence sources use trits: POSITIVE (verified), NEUTRAL (unchecked), NEGATIVE (failed)
+import { POSITIVE, NEUTRAL, NEGATIVE, TritState } from '../oracle/tribhuj.js';
+
+// ═══ SST — Synergy Sequence Theory for trust geometry ═══
+// Trust decay uses the 30-60-90 triangle geometry (√3 ratios)
+import { propagateTrust, decayTrust, TRUST_PROPAGATION, SynergyAngles } from '../oracle/sst.js';
+
 /**
  * KARMA Level Constants - Stages of spiritual trust
  */
@@ -153,11 +161,14 @@ class KarmaEvidence {
     this.createdAt = Date.now();
     this.lastUpdated = Date.now();
     
-    // Evidence sources
+    // Evidence sources — verified uses balanced ternary trits:
+    //   POSITIVE (+1) = verified/passed
+    //   NEUTRAL  ( 0) = unchecked (not yet attempted)
+    //   NEGATIVE (-1) = verification failed
     this.sources = {
       // DOKO verification via NAMCHE
       doko: {
-        verified: false,
+        verified: NEUTRAL,
         verifiedAt: null,
         gatesPassedCount: 0,
         dokoHash: null,
@@ -165,7 +176,7 @@ class KarmaEvidence {
       
       // Mesh quorum verification
       meshQuorum: {
-        verified: false,
+        verified: NEUTRAL,
         verifiedAt: null,
         quorumSize: 0,
         verifiers: [],
@@ -174,7 +185,7 @@ class KarmaEvidence {
       
       // SSL/TLS verification
       ssl: {
-        verified: false,
+        verified: NEUTRAL,
         verifiedAt: null,
         certType: null,         // 'ca-signed', 'self-signed', 'doko-bound'
         certFingerprint: null,
@@ -183,7 +194,7 @@ class KarmaEvidence {
       
       // Domain ownership
       domain: {
-        verified: false,
+        verified: NEUTRAL,
         verifiedAt: null,
         domain: null,
         proofCount: 0,
@@ -199,17 +210,28 @@ class KarmaEvidence {
     };
     
     // Computed trust level
-    this.trustLevel = TrustLevel.UNTRUSTED;
+    this.trustLevel = KarmaLevel.UNTRUSTED;
     this.trustScore = 0;        // 0-100 detailed score
     this.levelHistory = [];     // Track level changes
+  }
+
+  /**
+   * Convert boolean → trit for backward compatibility
+   * true → POSITIVE (+1), false → NEGATIVE (-1), null/undefined → NEUTRAL (0)
+   */
+  static boolToTrit(val) {
+    if (typeof val === 'number' && val >= -1 && val <= 1) return val; // already a trit
+    if (val === null || val === undefined) return NEUTRAL;
+    return val ? POSITIVE : NEGATIVE;
   }
 
   /**
    * Record DOKO verification
    */
   recordDokoVerification(result) {
+    const passed = result.passed ?? result.verified;
     this.sources.doko = {
-      verified: result.passed,
+      verified: KarmaEvidence.boolToTrit(passed),
       verifiedAt: Date.now(),
       gatesPassedCount: result.gatesChecked || 7,
       dokoHash: result.dokoHash || null,
@@ -222,7 +244,7 @@ class KarmaEvidence {
    */
   recordMeshQuorum(result) {
     this.sources.meshQuorum = {
-      verified: result.valid,
+      verified: KarmaEvidence.boolToTrit(result.valid),
       verifiedAt: Date.now(),
       quorumSize: result.validProofs || 0,
       verifiers: result.verifiers || [],
@@ -236,7 +258,7 @@ class KarmaEvidence {
    */
   recordSSLVerification(result) {
     this.sources.ssl = {
-      verified: result.verified,
+      verified: KarmaEvidence.boolToTrit(result.verified),
       verifiedAt: Date.now(),
       certType: result.certType || 'unknown',
       certFingerprint: result.fingerprint || null,
@@ -250,7 +272,7 @@ class KarmaEvidence {
    */
   recordDomainVerification(result) {
     this.sources.domain = {
-      verified: result.valid,
+      verified: KarmaEvidence.boolToTrit(result.valid),
       verifiedAt: Date.now(),
       domain: result.domain || null,
       proofCount: result.proofCount || 0,
@@ -328,7 +350,7 @@ class KarmaEvidence {
    * Restore from persistence
    */
   static deserialize(data) {
-    const evidence = new TrustEvidence(data.nodeId);
+    const evidence = new KarmaEvidence(data.nodeId);
     evidence.createdAt = data.createdAt;
     evidence.lastUpdated = data.lastUpdated;
     evidence.sources = data.sources;
@@ -479,114 +501,122 @@ export class KarmaTrustModel extends EventEmitter {
 
   /**
    * Calculate trust level based on evidence
+   * Uses TRIBHUJ balanced ternary for verification state checks
+   * and SST geometric decay (√3 ratios) for trust degradation.
    */
   calculateTrustLevel(evidence) {
     const sources = evidence.sources;
     const age = evidence.getAge();
     
     // ═════════════════════════════════════════════════════════════════════
-    // Check for UNTRUSTED conditions first
+    // Check for UNTRUSTED conditions first (NEGATIVE karma)
     // ═════════════════════════════════════════════════════════════════════
     
-    // If DOKO verification explicitly failed (not just missing)
-    if (sources.doko.verified === false && sources.doko.verifiedAt !== null) {
+    // If DOKO verification explicitly failed (NEGATIVE trit — not just NEUTRAL/unchecked)
+    if (sources.doko.verified === NEGATIVE) {
       return {
-        level: TrustLevel.UNTRUSTED,
+        level: KarmaLevel.UNTRUSTED,
         score: 0,
-        reason: 'DOKO verification failed',
-        requirements: { dokoVerification: 'FAILED' },
+        reason: 'DOKO verification failed (NEGATIVE karma)',
+        requirements: { dokoVerification: 'NEGATIVE' },
       };
     }
     
-    // Check for trust decay
+    // SST geometric trust decay (replaces flat 30-day threshold)
+    // Uses the 30-60-90 Synergy Triangle: MIDDLE angle = 7-day half-life
     if (this.config.trustDecayEnabled) {
-      const lastActivity = evidence.lastUpdated;
-      const decayThreshold = Date.now() - this.config.trustDecayPeriod;
+      const elapsedMs = Date.now() - evidence.lastUpdated;
+      const currentScore = evidence.trustScore || 0;
       
-      if (lastActivity < decayThreshold) {
-        return {
-          level: TrustLevel.UNTRUSTED,
-          score: 0,
-          reason: 'Trust decayed due to inactivity',
-          requirements: { activity: 'STALE' },
-        };
+      if (currentScore > 0 && elapsedMs > 0) {
+        const decayedScore = decayTrust(currentScore / 100, elapsedMs, SynergyAngles.MIDDLE);
+        
+        // Fully decayed: trust has gone below threshold
+        if (decayedScore * 100 < 1) {
+          return {
+            level: KarmaLevel.UNTRUSTED,
+            score: 0,
+            reason: 'Trust decayed (SST √3 geometric — 7-day half-life)',
+            requirements: { activity: 'DECAYED', decayedScore: Math.round(decayedScore * 100) },
+          };
+        }
       }
     }
     
     // ═════════════════════════════════════════════════════════════════════
-    // Check for PLATINUM level
+    // Check for ENLIGHTENED level (formerly PLATINUM)
     // ═════════════════════════════════════════════════════════════════════
     
-    const platinumRequirements = {
-      doko: sources.doko.verified,
-      meshQuorum: sources.meshQuorum.verified && 
+    const enlightenedRequirements = {
+      doko: sources.doko.verified === POSITIVE,
+      meshQuorum: sources.meshQuorum.verified === POSITIVE && 
                   sources.meshQuorum.quorumSize >= this.config.minQuorumForGold,
       meshDiversity: sources.meshQuorum.diversity?.sufficient || false,
-      ssl: !this.config.requireSSLForPlatinum || sources.ssl.verified,
+      ssl: !this.config.requireSSLForPlatinum || sources.ssl.verified === POSITIVE,
       age: age >= this.config.minAgeForPlatinum,
-      domain: !this.config.requireDomainForPlatinum || sources.domain.verified,
+      domain: !this.config.requireDomainForPlatinum || sources.domain.verified === POSITIVE,
       consistency: evidence.calculateBeaconConsistency(this.config.beaconCheckWindow) 
                    >= this.config.minBeaconConsistency,
     };
     
-    const platinumScore = Object.values(platinumRequirements).filter(Boolean).length;
-    const platinumTotal = Object.keys(platinumRequirements).length;
+    const enlightenedScore = Object.values(enlightenedRequirements).filter(Boolean).length;
+    const enlightenedTotal = Object.keys(enlightenedRequirements).length;
     
-    if (platinumScore === platinumTotal) {
+    if (enlightenedScore === enlightenedTotal) {
       return {
-        level: TrustLevel.PLATINUM,
-        score: 90 + (platinumScore / platinumTotal) * 10,
-        reason: 'Full verification: SSL + Mesh + Time + Domain',
-        requirements: platinumRequirements,
+        level: KarmaLevel.ENLIGHTENED,
+        score: 90 + (enlightenedScore / enlightenedTotal) * 10,
+        reason: 'Full verification: SSL + Mesh + Time + Domain (dharma embodied)',
+        requirements: enlightenedRequirements,
       };
     }
     
     // ═════════════════════════════════════════════════════════════════════
-    // Check for GOLD level
+    // Check for AWAKENED level (formerly GOLD)
     // ═════════════════════════════════════════════════════════════════════
     
-    const goldRequirements = {
-      doko: sources.doko.verified,
-      meshQuorum: sources.meshQuorum.verified && 
+    const awakenedRequirements = {
+      doko: sources.doko.verified === POSITIVE,
+      meshQuorum: sources.meshQuorum.verified === POSITIVE && 
                   sources.meshQuorum.quorumSize >= this.config.minQuorumForGold,
       meshDiversity: sources.meshQuorum.diversity?.sufficient || false,
     };
     
-    const goldScore = Object.values(goldRequirements).filter(Boolean).length;
-    const goldTotal = Object.keys(goldRequirements).length;
+    const awakenedScore = Object.values(awakenedRequirements).filter(Boolean).length;
+    const awakenedTotal = Object.keys(awakenedRequirements).length;
     
-    if (goldScore === goldTotal) {
-      // Calculate how close to platinum
-      const progressTowardsPlatinum = platinumScore / platinumTotal;
+    if (awakenedScore === awakenedTotal) {
+      // Calculate how close to enlightenment
+      const progressTowardsEnlightenment = enlightenedScore / enlightenedTotal;
       
       return {
-        level: TrustLevel.GOLD,
-        score: 50 + (progressTowardsPlatinum * 40),
-        reason: 'Mesh verified with diverse quorum',
-        requirements: goldRequirements,
-        platinumProgress: platinumRequirements,
+        level: KarmaLevel.AWAKENED,
+        score: 50 + (progressTowardsEnlightenment * 40),
+        reason: 'Mesh verified with diverse quorum (eyes opening)',
+        requirements: awakenedRequirements,
+        enlightenedProgress: enlightenedRequirements,
       };
     }
     
     // ═════════════════════════════════════════════════════════════════════
-    // Default to BRONZE level
+    // Default to SEEKING level (formerly BRONZE)
     // ═════════════════════════════════════════════════════════════════════
     
-    const bronzeScore = (
-      (sources.doko.verified ? 20 : 0) +
+    const seekingScore = (
+      (sources.doko.verified === POSITIVE ? 20 : 0) +
       (sources.beaconHistory.sightings > 0 ? 10 : 0) +
-      (goldScore / goldTotal) * 20
+      (awakenedScore / awakenedTotal) * 20
     );
     
     return {
-      level: TrustLevel.BRONZE,
-      score: bronzeScore,
-      reason: 'Self-asserted, awaiting mesh verification',
+      level: KarmaLevel.SEEKING,
+      score: seekingScore,
+      reason: 'Self-asserted, awaiting mesh verification (beginning the journey)',
       requirements: {
-        doko: sources.doko.verified,
+        doko: sources.doko.verified === POSITIVE,
         beaconSeen: sources.beaconHistory.sightings > 0,
       },
-      goldProgress: goldRequirements,
+      awakenedProgress: awakenedRequirements,
     };
   }
 
@@ -596,8 +626,8 @@ export class KarmaTrustModel extends EventEmitter {
   getTrustLevel(nodeId) {
     if (!this.evidence.has(nodeId)) {
       return {
-        level: TrustLevel.UNTRUSTED,
-        levelInfo: TrustLevelInfo[TrustLevel.UNTRUSTED],
+        level: KarmaLevel.UNTRUSTED,
+        levelInfo: KarmaLevelInfo[KarmaLevel.UNTRUSTED],
         score: 0,
         reason: 'Unknown node',
       };
@@ -727,7 +757,7 @@ export class KarmaTrustModel extends EventEmitter {
     this.evidence.clear();
     
     for (const evidenceData of data.evidence || []) {
-      const evidence = TrustEvidence.deserialize(evidenceData);
+      const evidence = KarmaEvidence.deserialize(evidenceData);
       this.evidence.set(evidence.nodeId, evidence);
     }
     
@@ -740,12 +770,12 @@ export class KarmaTrustModel extends EventEmitter {
    * Get statistics
    */
   getStats() {
-    // Recount nodes by level
+    // Recount nodes by level (KARMA naming)
     const byLevel = {
-      [TrustLevel.UNTRUSTED]: 0,
-      [TrustLevel.BRONZE]: 0,
-      [TrustLevel.GOLD]: 0,
-      [TrustLevel.PLATINUM]: 0,
+      [KarmaLevel.UNTRUSTED]: 0,
+      [KarmaLevel.SEEKING]: 0,
+      [KarmaLevel.AWAKENED]: 0,
+      [KarmaLevel.ENLIGHTENED]: 0,
     };
     
     for (const evidence of this.evidence.values()) {
@@ -769,10 +799,10 @@ export class KarmaTrustModel extends EventEmitter {
       promotions: 0,
       demotions: 0,
       nodesByLevel: {
-        [TrustLevel.UNTRUSTED]: 0,
-        [TrustLevel.BRONZE]: 0,
-        [TrustLevel.GOLD]: 0,
-        [TrustLevel.PLATINUM]: 0,
+        [KarmaLevel.UNTRUSTED]: 0,
+        [KarmaLevel.SEEKING]: 0,
+        [KarmaLevel.AWAKENED]: 0,
+        [KarmaLevel.ENLIGHTENED]: 0,
       },
     };
   }
@@ -787,23 +817,23 @@ export class TrustBasedAccessControl {
   constructor(trustModel) {
     this.trustModel = trustModel;
     
-    // Default access requirements
+    // Default access requirements (KARMA naming)
     this.accessRequirements = {
       // Content serving/requesting
-      'content:request': TrustLevel.BRONZE,
-      'content:serve': TrustLevel.BRONZE,
+      'content:request': KarmaLevel.SEEKING,
+      'content:serve': KarmaLevel.SEEKING,
       
       // Mesh participation
-      'mesh:relay': TrustLevel.GOLD,
-      'mesh:route': TrustLevel.GOLD,
+      'mesh:relay': KarmaLevel.AWAKENED,
+      'mesh:route': KarmaLevel.AWAKENED,
       
       // Verification participation
-      'verify:domain': TrustLevel.GOLD,
-      'verify:quorum': TrustLevel.GOLD,
+      'verify:domain': KarmaLevel.AWAKENED,
+      'verify:quorum': KarmaLevel.AWAKENED,
       
       // Admin functions
-      'admin:revoke': TrustLevel.PLATINUM,
-      'admin:announce': TrustLevel.GOLD,
+      'admin:revoke': KarmaLevel.ENLIGHTENED,
+      'admin:announce': KarmaLevel.AWAKENED,
     };
   }
 

@@ -31,6 +31,19 @@ import { sha3_256 } from '@noble/hashes/sha3.js';
 import { bytesToHex, hexToBytes, utf8ToBytes } from '@noble/hashes/utils.js';
 import { createLogger } from '../utils/logger.js';
 
+// ═══ TRIBHUJ — Balanced ternary for channel lifecycle ═══
+// POSITIVE: ESTABLISHED (secure channel active)
+// NEUTRAL:  NEGOTIATING (key exchange in progress)
+// NEGATIVE: CLOSED (session terminated or expired)
+import { POSITIVE, NEUTRAL, NEGATIVE } from '../oracle/tribhuj.js';
+
+/** ANNEX channel lifecycle states (TRIBHUJ trits) */
+export const ChannelState = Object.freeze({
+  CLOSED: NEGATIVE,       // -1: Session terminated or expired
+  NEGOTIATING: NEUTRAL,   //  0: Key exchange in progress
+  ESTABLISHED: POSITIVE,  // +1: Secure channel active
+});
+
 const log = createLogger('mesh:annex');
 
 const ANNEX_CONFIG = {
@@ -151,6 +164,7 @@ class AnnexSession {
     
     // State
     this.established = false;
+    this.channelState = ChannelState.NEGOTIATING;  // TRIBHUJ trit lifecycle
     this.createdAt = Date.now();
     this.lastActivity = Date.now();
     this.lastRekey = null;
@@ -186,6 +200,7 @@ class AnnexSession {
       this.encryptionKey = newKey;
     }
     this.established = true;
+    this.channelState = ChannelState.ESTABLISHED;
     this.lastRekey = Date.now();
     
     return bytesToHex(result.cipherText);
@@ -208,6 +223,7 @@ class AnnexSession {
     this.encryptionKey = this._deriveEncryptionKey();
     this.pendingEncryptionKey = null; // Clear any pending state
     this.established = true;
+    this.channelState = ChannelState.ESTABLISHED;
     this.lastRekey = Date.now();
     
     return true;
@@ -517,6 +533,7 @@ export class Annex {
     envelope.signature = this.identity.sign(envelope.getSigningPayload());
     
     await this._sendToMesh(remoteNodeId, envelope);
+    session.channelState = ChannelState.CLOSED;
     this.sessions.delete(remoteNodeId);
   }
   
@@ -530,6 +547,7 @@ export class Annex {
     return {
       sessionId: session.sessionId,
       established: session.established,
+      channelState: session.channelState,  // TRIBHUJ trit: ESTABLISHED/NEGOTIATING/CLOSED
       createdAt: session.createdAt,
       lastActivity: session.lastActivity,
       messageCount: session.messageCount,
@@ -548,6 +566,7 @@ export class Annex {
         nodeId,
         sessionId: session.sessionId,
         established: session.established,
+        channelState: session.channelState,  // TRIBHUJ trit
         createdAt: session.createdAt,
         lastActivity: session.lastActivity,
         messageCount: session.messageCount,
@@ -605,10 +624,13 @@ export class Annex {
           await this._handleRekey(envelope);
           break;
           
-        case ANNEX_CONFIG.messageTypes.CLOSE:
+        case ANNEX_CONFIG.messageTypes.CLOSE: {
+          const closedSession = this.sessions.get(envelope.senderId);
+          if (closedSession) closedSession.channelState = ChannelState.CLOSED;
           this.sessions.delete(envelope.senderId);
           log.info('Channel closed by peer', { peerId: envelope.senderId?.slice(0, 16) });
           break;
+        }
       }
     } catch (err) {
       log.error('Error handling ANNEX message', { error: err.message });

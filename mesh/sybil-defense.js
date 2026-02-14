@@ -1,10 +1,19 @@
 /**
  * Sybil Attack Protection Module
+ * 
+ * Uses TRIBHUJ balanced ternary for connection evaluation:
+ *   POSITIVE (+1): Accept — node is trusted or verified
+ *   NEUTRAL  ( 0): Challenge — node must prove itself (NAVR required)
+ *   NEGATIVE (-1): Reject — node is banned or subnet saturated
+ * 
  * @module mesh/sybil-defense.js
  */
 
 import { sha3_256 } from '@noble/hashes/sha3.js';
 import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js';
+
+// ═══ TRIBHUJ — Balanced ternary for connection decisions ═══
+import { POSITIVE, NEUTRAL, NEGATIVE } from '../oracle/tribhuj.js';
 
 export class NAVR {
   constructor(options = {}) {
@@ -125,16 +134,21 @@ export class SybilDefense {
     this.diversity = new SubnetDiversity(options.diversity || {});
   }
 
+  /**
+   * Evaluate a connection request.
+   * Returns `allowed` boolean (backward compat) plus `verdict` trit:
+   *   POSITIVE: accept, NEUTRAL: challenge required, NEGATIVE: reject
+   */
   evaluateConnection(ip, nodeId, NAVRSolution = null) {
     const divCheck = this.diversity.allowConnection(ip);
-    if (!divCheck.allowed) return { allowed: false, reason: divCheck.reason };
+    if (!divCheck.allowed) return { allowed: false, verdict: NEGATIVE, reason: divCheck.reason };
     let record = this.reputation.nodes.get(nodeId);
     if (!record) record = this.reputation.registerNode(nodeId, NAVRSolution);
     const trustLevel = this.reputation.getTrustLevel(nodeId);
-    if (trustLevel === 'banned') return { allowed: false, reason: 'Node is banned' };
-    if (trustLevel === 'unknown' && !NAVRSolution) return { allowed: false, reason: 'NAVR required', challenge: this.NAVR.createChallenge(nodeId) };
+    if (trustLevel === 'banned') return { allowed: false, verdict: NEGATIVE, reason: 'Node is banned' };
+    if (trustLevel === 'unknown' && !NAVRSolution) return { allowed: false, verdict: NEUTRAL, reason: 'NAVR required', challenge: this.NAVR.createChallenge(nodeId) };
     this.diversity.addConnection(ip, nodeId);
-    return { allowed: true, trustLevel, reputation: record.reputation };
+    return { allowed: true, verdict: POSITIVE, trustLevel, reputation: record.reputation };
   }
 
   reportMessage(nodeId, valid) {

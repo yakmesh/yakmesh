@@ -14,6 +14,10 @@ import { bytesToHex, hexToBytes } from '@noble/hashes/utils.js';
 import { ml_dsa65 } from '@noble/post-quantum/ml-dsa.js';
 import { createLogger } from '../utils/logger.js';
 
+// ═══ TRIBHUJ — Balanced ternary for validation verdicts ═══
+// POSITIVE: check passed, NEUTRAL: check skipped/not applicable, NEGATIVE: check failed
+import { POSITIVE, NEUTRAL, NEGATIVE } from '../oracle/tribhuj.js';
+
 const log = createLogger('security:doko');
 
 // Import iO obfuscation for DOKO IDs - never expose raw hashes
@@ -350,59 +354,74 @@ export class DOKOValidator {
 
   /**
    * Full validation of a DOKO document
+   * Returns both boolean `valid` (backward compat) and trit `verdict`
+   * (POSITIVE/NEUTRAL/NEGATIVE) for ternary-aware consumers.
    */
   static validate(doko, options = {}) {
     const doc = doko instanceof DOKODocument ? doko : DOKODocument.fromJSON(doko);
     const results = {
       valid: true,
+      verdict: POSITIVE,  // TRIBHUJ trit: POSITIVE=valid, NEUTRAL=skipped, NEGATIVE=failed
       checks: {},
     };
     
     // Check structure
     if (!doc.version || !doc.type || !doc.dokoId || !doc.publicKey) {
       results.valid = false;
-      results.checks.structure = { valid: false, reason: 'MISSING_REQUIRED_FIELDS' };
+      results.verdict = NEGATIVE;
+      results.checks.structure = { valid: false, verdict: NEGATIVE, reason: 'MISSING_REQUIRED_FIELDS' };
       return results;
     }
-    results.checks.structure = { valid: true, reason: 'STRUCTURE_VALID' };
+    results.checks.structure = { valid: true, verdict: POSITIVE, reason: 'STRUCTURE_VALID' };
     
     // Check version
     if (doc.version !== DOKO_VERSION) {
       results.valid = false;
-      results.checks.version = { valid: false, reason: 'VERSION_MISMATCH', expected: DOKO_VERSION };
+      results.verdict = NEGATIVE;
+      results.checks.version = { valid: false, verdict: NEGATIVE, reason: 'VERSION_MISMATCH', expected: DOKO_VERSION };
       return results;
     }
-    results.checks.version = { valid: true, reason: 'VERSION_VALID' };
+    results.checks.version = { valid: true, verdict: POSITIVE, reason: 'VERSION_VALID' };
     
     // Check type
     if (!Object.values(DOKO_TYPES).includes(doc.type)) {
       results.valid = false;
-      results.checks.type = { valid: false, reason: 'INVALID_TYPE' };
+      results.verdict = NEGATIVE;
+      results.checks.type = { valid: false, verdict: NEGATIVE, reason: 'INVALID_TYPE' };
       return results;
     }
-    results.checks.type = { valid: true, reason: 'TYPE_VALID' };
+    results.checks.type = { valid: true, verdict: POSITIVE, reason: 'TYPE_VALID' };
     
-    // Check expiration
+    // Check expiration — NEUTRAL if skipped by options
     if (!options.allowExpired && doc.isExpired()) {
       results.valid = false;
-      results.checks.expiration = { valid: false, reason: 'DOCUMENT_EXPIRED' };
+      results.verdict = NEGATIVE;
+      results.checks.expiration = { valid: false, verdict: NEGATIVE, reason: 'DOCUMENT_EXPIRED' };
       return results;
     }
-    results.checks.expiration = { valid: true, reason: 'NOT_EXPIRED' };
+    results.checks.expiration = { 
+      valid: true, 
+      verdict: options.allowExpired ? NEUTRAL : POSITIVE,  // NEUTRAL = check skipped
+      reason: options.allowExpired ? 'EXPIRY_CHECK_SKIPPED' : 'NOT_EXPIRED',
+    };
     
     // Verify DOKO ID
     const idCheck = DOKOValidator.verifyDokoId(doc);
+    idCheck.verdict = idCheck.valid ? POSITIVE : NEGATIVE;
     results.checks.dokoId = idCheck;
     if (!idCheck.valid) {
       results.valid = false;
+      results.verdict = NEGATIVE;
       return results;
     }
     
     // Verify signature
     const sigCheck = DOKOValidator.verifySignature(doc);
+    sigCheck.verdict = sigCheck.valid ? POSITIVE : NEGATIVE;
     results.checks.signature = sigCheck;
     if (!sigCheck.valid) {
       results.valid = false;
+      results.verdict = NEGATIVE;
       return results;
     }
     
