@@ -417,6 +417,9 @@ class BeaconMessage {
       networkName: data.networkName,
       timestamp: data.timestamp,
       ttl: data.ttl,
+      // Explicit reachable endpoints (must match what was signed)
+      wsEndpoint: data.wsEndpoint || null,
+      relayEndpoint: data.relayEndpoint || null,
       wsPort: data.capabilities?.wsPort,
       httpPort: data.capabilities?.httpPort,
       supportsAnnex: data.capabilities?.supportsAnnex,
