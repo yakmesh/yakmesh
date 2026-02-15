@@ -156,6 +156,30 @@ describe('createKommAPI', () => {
     const hasGumba = paths.some(p => p.includes('/gumba'));
     assert.ok(hasGumba, 'Should have GUMBA routes');
   });
+
+  // =========================================================================
+  // HIGH 7.1 Regression: requirePeerAuth wired into write routes
+  // =========================================================================
+
+  it('KOMM write routes have auth middleware (HIGH 7.1)', () => {
+    // All POST/DELETE routes should have at least 2 middleware layers
+    // (writeLimiter/requirePeerAuth + handler, or requirePeerAuth + handler)
+    const writeRoutes = router.stack
+      .filter(l => l.route)
+      .filter(l => {
+        const methods = l.route.methods;
+        return methods.post || methods.delete;
+      });
+
+    for (const layer of writeRoutes) {
+      const handlerCount = layer.route.stack.length;
+      // At minimum: requirePeerAuth + handler = 2; write routes have writeLimiter too = 3
+      assert.ok(
+        handlerCount >= 2,
+        `${layer.route.path} should have auth middleware (has ${handlerCount} handler(s))`
+      );
+    }
+  });
 });
 
 // =============================================================================
@@ -171,6 +195,7 @@ describe('createDarshanAPI', () => {
       gossip: createMockGossip(),
       identity: createMockIdentity(),
       writeLimiter: noopMiddleware,
+      requirePeerAuth: noopMiddleware,
     });
   });
 
@@ -193,6 +218,27 @@ describe('createDarshanAPI', () => {
   it('has content detail route', () => {
     const paths = router.stack.filter(l => l.route).map(l => l.route.path);
     assert.ok(paths.includes('/content/:contentId'), 'Should have /content/:contentId');
+  });
+
+  // =========================================================================
+  // HIGH 8.2 Regression: requirePeerAuth wired into DARSHAN write routes
+  // =========================================================================
+
+  it('DARSHAN write routes have auth middleware (HIGH 8.2)', () => {
+    const writeRoutes = router.stack
+      .filter(l => l.route)
+      .filter(l => {
+        const methods = l.route.methods;
+        return methods.post || methods.delete;
+      });
+
+    for (const layer of writeRoutes) {
+      const handlerCount = layer.route.stack.length;
+      assert.ok(
+        handlerCount >= 2,
+        `${layer.route.path} should have auth middleware (has ${handlerCount} handler(s))`
+      );
+    }
   });
 });
 
