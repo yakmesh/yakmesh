@@ -1,8 +1,7 @@
 {
   "apps": [{
-    "name": "yakmesh-node",
-    "script": "cli/index.js",
-    "args": "start",
+    "name": "yakmesh",
+    "script": "server/index.js",
     "cwd": "./",
     "watch": false,
     "autorestart": true,

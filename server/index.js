@@ -1145,6 +1145,10 @@ export class YakmeshNode {
     // Enable strict routing: /docs and /docs/ are different routes
     app.set('strict routing', true);
     
+    // Trust first proxy (Hostinger reverse proxy, Cloudflare, etc.)
+    // Required for express-rate-limit to use X-Forwarded-For correctly
+    app.set('trust proxy', 1);
+    
     app.use(express.json({ limit: '1mb' }));  // Limit payload size
     
     // =========================================
@@ -1158,6 +1162,7 @@ export class YakmeshNode {
       message: { error: 'Too many requests, please try again later' },
       standardHeaders: true,
       legacyHeaders: false,
+      validate: { xForwardedForHeader: false },
     });
     
     // Strict rate limit for write operations: 20 per minute
@@ -1167,6 +1172,7 @@ export class YakmeshNode {
       message: { error: 'Too many write requests, please slow down' },
       standardHeaders: true,
       legacyHeaders: false,
+      validate: { xForwardedForHeader: false },
     });
     
     // Apply general limiter to all routes
