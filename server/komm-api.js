@@ -120,7 +120,7 @@ export function createKommAPI({
   /**
    * POST /komm/katha/send — Send a message (broadcast via gossip)
    */
-  router.post('/katha/send', writeLimiter, (req, res) => {
+  router.post('/katha/send', writeLimiter, requirePeerAuth, (req, res) => {
     const { channelId, type, ...eventData } = req.body;
     
     if (!channelId) {
@@ -145,8 +145,10 @@ export function createKommAPI({
   /**
    * POST /komm/katha/typing — Typing indicator
    */
-  router.post('/katha/typing', (req, res) => {
-    const { channelId, userId, typing } = req.body;
+  router.post('/katha/typing', requirePeerAuth, (req, res) => {
+    const { channelId, userId: bodyUserId, typing } = req.body;
+    // Use authenticated peer identity when available; fall back to body for localhost
+    const userId = req.authenticatedPeer || bodyUserId;
     
     if (!channelId || !userId) {
       return res.status(400).json({ error: 'channelId and userId required' });
@@ -169,8 +171,10 @@ export function createKommAPI({
   /**
    * POST /komm/katha/reaction — Add/remove reaction
    */
-  router.post('/katha/reaction', writeLimiter, (req, res) => {
-    const { channelId, messageId, userId, emoji, remove } = req.body;
+  router.post('/katha/reaction', writeLimiter, requirePeerAuth, (req, res) => {
+    const { channelId, messageId, userId: bodyUserId, emoji, remove } = req.body;
+    // Use authenticated peer identity when available; fall back to body for localhost
+    const userId = req.authenticatedPeer || bodyUserId;
     
     if (!channelId || !messageId || !userId || !emoji) {
       return res.status(400).json({ error: 'channelId, messageId, userId, and emoji required' });
@@ -193,8 +197,10 @@ export function createKommAPI({
   /**
    * POST /komm/katha/read — Mark messages as read
    */
-  router.post('/katha/read', (req, res) => {
-    const { channelId, userId, lastReadMessageId, lastReadTimestamp } = req.body;
+  router.post('/katha/read', requirePeerAuth, (req, res) => {
+    const { channelId, userId: bodyUserId, lastReadMessageId, lastReadTimestamp } = req.body;
+    // Use authenticated peer identity when available; fall back to body for localhost
+    const userId = req.authenticatedPeer || bodyUserId;
     
     if (!channelId || !userId) {
       return res.status(400).json({ error: 'channelId and userId required' });
@@ -238,7 +244,7 @@ export function createKommAPI({
   /**
    * POST /komm/vani/call — Start a new call
    */
-  router.post('/vani/call', writeLimiter, (req, res) => {
+  router.post('/vani/call', writeLimiter, requirePeerAuth, (req, res) => {
     const { targetPeerIds, mediaType, bundleId, isGroupCall } = req.body;
     
     if (!targetPeerIds || !Array.isArray(targetPeerIds)) {
@@ -262,7 +268,7 @@ export function createKommAPI({
   /**
    * POST /komm/vani/signal — Forward WebRTC signal
    */
-  router.post('/vani/signal', (req, res) => {
+  router.post('/vani/signal', requirePeerAuth, (req, res) => {
     const { signal } = req.body;
     
     if (!signal) {
@@ -287,7 +293,7 @@ export function createKommAPI({
   /**
    * POST /komm/vani/call/:callId/end — End a call
    */
-  router.post('/vani/call/:callId/end', (req, res) => {
+  router.post('/vani/call/:callId/end', requirePeerAuth, (req, res) => {
     const { callId } = req.params;
     const { reason } = req.body;
     
@@ -343,7 +349,7 @@ export function createKommAPI({
   /**
    * POST /komm/yurt/publish — Publish a room to the directory
    */
-  router.post('/yurt/publish', writeLimiter, (req, res) => {
+  router.post('/yurt/publish', writeLimiter, requirePeerAuth, (req, res) => {
     const { bundleId, name, description, tags, visibility } = req.body;
     
     if (!bundleId) {
@@ -367,7 +373,7 @@ export function createKommAPI({
   /**
    * POST /komm/yurt/search — Search for rooms via gossip
    */
-  router.post('/yurt/search', (req, res) => {
+  router.post('/yurt/search', requirePeerAuth, (req, res) => {
     const { query, tags, limit } = req.body;
     
     try {
@@ -383,7 +389,7 @@ export function createKommAPI({
   /**
    * DELETE /komm/yurt/room/:bundleId — Unpublish a room
    */
-  router.delete('/yurt/room/:bundleId', writeLimiter, (req, res) => {
+  router.delete('/yurt/room/:bundleId', writeLimiter, requirePeerAuth, (req, res) => {
     const { bundleId } = req.params;
     
     try {
@@ -422,7 +428,7 @@ export function createKommAPI({
   /**
    * POST /komm/gumba/bundle — Create a new bundle (room)
    */
-  router.post('/gumba/bundle', writeLimiter, (req, res) => {
+  router.post('/gumba/bundle', writeLimiter, requirePeerAuth, (req, res) => {
     const { bundleId, name, description, maxMembers } = req.body;
     
     if (!bundleId) {
@@ -440,7 +446,7 @@ export function createKommAPI({
   /**
    * POST /komm/gumba/bundle/:bundleId/access — Request access to a bundle
    */
-  router.post('/gumba/bundle/:bundleId/access', writeLimiter, (req, res) => {
+  router.post('/gumba/bundle/:bundleId/access', writeLimiter, requirePeerAuth, (req, res) => {
     const { bundleId } = req.params;
     const { proof, visitorNodeId } = req.body;
     
@@ -462,7 +468,7 @@ export function createKommAPI({
   /**
    * POST /komm/gumba/bundle/:bundleId/member — Add a member
    */
-  router.post('/gumba/bundle/:bundleId/member', writeLimiter, (req, res) => {
+  router.post('/gumba/bundle/:bundleId/member', writeLimiter, requirePeerAuth, (req, res) => {
     const { bundleId } = req.params;
     const { dokoId, role } = req.body;
     
@@ -494,7 +500,7 @@ export function createKommAPI({
   /**
    * DELETE /komm/gumba/bundle/:bundleId/member/:dokoId — Remove a member
    */
-  router.delete('/gumba/bundle/:bundleId/member/:dokoId', writeLimiter, (req, res) => {
+  router.delete('/gumba/bundle/:bundleId/member/:dokoId', writeLimiter, requirePeerAuth, (req, res) => {
     const { bundleId, dokoId } = req.params;
     
     const bundle = gumbaHub.getBundle(bundleId);
@@ -520,7 +526,7 @@ export function createKommAPI({
   /**
    * POST /komm/gumba/bundle/:bundleId/message — Send message to bundle (ANNEX-encrypted)
    */
-  router.post('/gumba/bundle/:bundleId/message', writeLimiter, (req, res) => {
+  router.post('/gumba/bundle/:bundleId/message', writeLimiter, requirePeerAuth, (req, res) => {
     const { bundleId } = req.params;
     const { sessionId, content, contentType } = req.body;
     

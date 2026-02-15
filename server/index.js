@@ -1306,6 +1306,7 @@ export class YakmeshNode {
         gossip: this.gossip,
         identity: this.identity,
         writeLimiter,
+        requirePeerAuth,
       });
       app.use('/darshan', darshanRouter);
       log.info('📡 DARSHAN API mounted at /darshan');

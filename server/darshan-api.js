@@ -30,6 +30,7 @@ const log = createLogger('server:darshan');
  * @param {Object} params.gossip - GossipProtocol instance
  * @param {Object} params.identity - NodeIdentity instance
  * @param {Function} params.writeLimiter - Express rate limiter for writes
+ * @param {Function} params.requirePeerAuth - Peer auth middleware
  * @returns {Router} Express router mounted at /darshan
  */
 export function createDarshanAPI({
@@ -37,6 +38,7 @@ export function createDarshanAPI({
   gossip,
   identity,
   writeLimiter,
+  requirePeerAuth,
 }) {
   const router = Router();
 
@@ -100,7 +102,7 @@ export function createDarshanAPI({
   /**
    * POST /darshan/content — Register content for sharing
    */
-  router.post('/content', writeLimiter, (req, res) => {
+  router.post('/content', writeLimiter, requirePeerAuth, (req, res) => {
     const { path, name, description, contentType, mimeType, permissions, accessList } = req.body;
     
     if (!path) {
@@ -140,7 +142,7 @@ export function createDarshanAPI({
   /**
    * DELETE /darshan/content/:contentId — Unregister content
    */
-  router.delete('/content/:contentId', writeLimiter, (req, res) => {
+  router.delete('/content/:contentId', writeLimiter, requirePeerAuth, (req, res) => {
     const { contentId } = req.params;
     
     const content = darshanGateway.contents.get(contentId);
@@ -169,7 +171,7 @@ export function createDarshanAPI({
   /**
    * POST /darshan/stream — Request a stream
    */
-  router.post('/stream', writeLimiter, (req, res) => {
+  router.post('/stream', writeLimiter, requirePeerAuth, (req, res) => {
     const { contentId, quality, viewerNodeId } = req.body;
     
     if (!contentId) {
@@ -255,7 +257,7 @@ export function createDarshanAPI({
   /**
    * POST /darshan/attest — Submit a view attestation (proof of viewing)
    */
-  router.post('/attest', (req, res) => {
+  router.post('/attest', requirePeerAuth, (req, res) => {
     const { contentId, viewerNodeId, streamId, duration, bytesConsumed } = req.body;
     
     if (!contentId || !viewerNodeId) {
