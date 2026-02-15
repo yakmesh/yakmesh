@@ -2,10 +2,14 @@
  * YAKMESH™ Public Content API
  * HTTP endpoints for public content delivery
  * 
+ * Content integrity = SHA3-256 hash match.
+ * Content authorship = publisher ML-DSA-65 signature.
+ * No voting, no quorum, no consensus proofs.
+ * 
  * Public (no auth required):
  * - GET /content/:hash - Fetch content by hash
  * - GET /content/:hash/meta - Fetch metadata only
- * - GET /content/:hash/proof - Fetch consensus proof
+ * - GET /content/:hash/integrity - Fetch integrity info (hash + publisher sig)
  * - GET /content/list - List available content
  * 
  * Authenticated (rate limited):
@@ -38,15 +42,13 @@ export function createContentAPI(contentStore, options = {}) {
 
   /**
    * GET /content/:hash
-   * Fetch content by hash with optional proof
+   * Fetch content by hash
    * 
    * Query params:
-   * - proof=1 : Include consensus proof in response headers
    * - download=1 : Force download (Content-Disposition)
    */
   router.get('/:hash', readLimiter, (req, res) => {
     const { hash } = req.params;
-    const includeProof = req.query.proof === '1';
     const download = req.query.download === '1';
 
     // Get content with metadata
@@ -66,17 +68,19 @@ export function createContentAPI(contentStore, options = {}) {
     res.setHeader('X-Content-Hash', result.hash);
     res.setHeader('X-Content-Status', result.meta?.status || 'unknown');
     
-    // Cache headers (immutable content = cache forever)
+    // Cache headers (verified content = cache forever)
     if (result.verified) {
       res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      res.setHeader('X-Verified', 'true');
     } else {
       res.setHeader('Cache-Control', 'public, max-age=60');
+      res.setHeader('X-Verified', 'false');
     }
 
-    // Include proof in headers if requested
-    if (includeProof && result.proof) {
-      res.setHeader('X-Consensus-Proof', JSON.stringify(result.proof));
-      res.setHeader('X-Verified', result.verified ? 'true' : 'false');
+    // Publisher signature header
+    if (result.meta?.publisherSignature) {
+      res.setHeader('X-Publisher-Signature', result.meta.publisherSignature);
+      res.setHeader('X-Published-By', result.meta.publishedBy || 'unknown');
     }
 
     // Download disposition
@@ -104,10 +108,13 @@ export function createContentAPI(contentStore, options = {}) {
   });
 
   /**
-   * GET /content/:hash/proof
-   * Fetch consensus proof for light client verification
+   * GET /content/:hash/integrity
+   * Fetch integrity info for content verification
+   * Returns hash, publisher identity, publisher signature, and verification status.
+   * Any client can independently verify: hash(content) === hash AND
+   * verify(hash, publisherSignature, publisherPubKey) === true.
    */
-  router.get('/:hash/proof', readLimiter, (req, res) => {
+  router.get('/:hash/integrity', readLimiter, (req, res) => {
     const { hash } = req.params;
     const meta = contentStore.getMeta(hash);
     
@@ -115,19 +122,15 @@ export function createContentAPI(contentStore, options = {}) {
       return res.status(404).json({ error: 'Content not found', hash });
     }
 
-    if (!meta.consensusProof) {
-      return res.status(404).json({ 
-        error: 'No consensus proof yet',
-        hash,
-        status: meta.status,
-        hint: 'Content may still be pending consensus.',
-      });
-    }
-
     res.json({
       hash,
       verified: meta.status === ContentStatus.VERIFIED,
-      proof: meta.consensusProof.toJSON ? meta.consensusProof.toJSON() : meta.consensusProof,
+      status: meta.status,
+      publishedBy: meta.publishedBy,
+      publisherSignature: meta.publisherSignature || null,
+      contentType: meta.contentType,
+      size: meta.size,
+      createdAt: meta.createdAt,
     });
   });
 

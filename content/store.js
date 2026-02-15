@@ -1,12 +1,14 @@
 /**
  * YAKMESH™ Content Store
- * Content-addressed storage with consensus proofs
+ * Content-addressed storage with integrity verification
  * 
- * Provides public content delivery while maintaining mesh security:
- * - Content addressed by hash (trustless verification)
- * - Consensus proofs for light client verification
- * - Edge caching for instant public access
- * - Mesh sync for decentralized replication
+ * Content validity is determined by math, not votes:
+ * - Integrity: SHA3-256 hash of content matches claimed hash
+ * - Authorship: Publisher's ML-DSA-65 signature over the hash
+ * - Any node can independently verify both — one proof = proven
+ * 
+ * No voting. No quorum. No 51% attack surface.
+ * "The math checks out" is the only consensus needed.
  * 
  * @module content/store
  * @license MIT
@@ -41,12 +43,16 @@ export const ContentType = {
 
 /**
  * Content status in the network
+ * 
+ * Yakmesh does NOT use voting/quorum consensus for content.
+ * Content integrity = SHA3-256 hash match.
+ * Content authorship = publisher's ML-DSA-65 signature over the hash.
+ * Any node can independently verify both — one proof = proven.
  */
 export const ContentStatus = {
-  LOCAL: 'local',           // Only on this node
-  PENDING: 'pending',       // Awaiting consensus
-  VERIFIED: 'verified',     // Consensus reached
-  REJECTED: 'rejected',     // Failed consensus
+  LOCAL: 'local',           // Stored on this node, not yet announced
+  ANNOUNCED: 'announced',   // Published to mesh via gossip
+  VERIFIED: 'verified',     // Hash integrity + publisher signature confirmed
 };
 
 /**
@@ -89,7 +95,7 @@ class ContentMetadata {
     this.createdAt = options.createdAt || Date.now();
     this.publishedBy = options.publishedBy || null;
     this.status = options.status || ContentStatus.LOCAL;
-    this.consensusProof = options.consensusProof || null;
+    this.publisherSignature = options.publisherSignature || null;  // ML-DSA-65 sig over content hash
     this.tags = options.tags || [];
     this.name = options.name || null;  // Optional custom name (user-provided)
     this.ttl = options.ttl || 0;       // 0 = permanent
@@ -104,7 +110,7 @@ class ContentMetadata {
       createdAt: this.createdAt,
       publishedBy: this.publishedBy,
       status: this.status,
-      consensusProof: this.consensusProof,
+      publisherSignature: this.publisherSignature,
       tags: this.tags,
       name: this.name,
       ttl: this.ttl,
@@ -113,49 +119,6 @@ class ContentMetadata {
 
   static fromJSON(json) {
     return new ContentMetadata(json);
-  }
-}
-
-/**
- * Consensus proof for light client verification
- */
-class ConsensusProof {
-  constructor(options = {}) {
-    this.contentHash = options.contentHash;
-    this.timestamp = options.timestamp || Date.now();
-    this.validators = options.validators || [];  // Array of { nodeId, signature }
-    this.quorum = options.quorum || 0;           // Required signatures
-    this.networkId = options.networkId || null;
-  }
-
-  /**
-   * Check if proof has quorum
-   */
-  hasQuorum() {
-    return this.validators.length >= this.quorum;
-  }
-
-  /**
-   * Add validator signature
-   */
-  addValidator(nodeId, signature) {
-    if (!this.validators.find(v => v.nodeId === nodeId)) {
-      this.validators.push({ nodeId, signature, timestamp: Date.now() });
-    }
-  }
-
-  toJSON() {
-    return {
-      contentHash: this.contentHash,
-      timestamp: this.timestamp,
-      validators: this.validators,
-      quorum: this.quorum,
-      networkId: this.networkId,
-    };
-  }
-
-  static fromJSON(json) {
-    return new ConsensusProof(json);
   }
 }
 
@@ -169,7 +132,6 @@ export class ContentStore {
       dataDir: config.dataDir || './data/content',
       maxContentSize: config.maxContentSize || 10 * 1024 * 1024, // 10MB default
       cacheSize: config.cacheSize || 100,                        // LRU cache entries
-      quorumSize: config.quorumSize || 2,                        // Minimum validators
       ...config,
     };
 
@@ -367,7 +329,7 @@ export class ContentStore {
   }
 
   /**
-   * Get content with metadata and proof
+   * Get content with metadata and verification status
    */
   getWithProof(hash) {
     const content = this.get(hash);
@@ -379,7 +341,6 @@ export class ContentStore {
       content,
       hash,
       meta: meta?.toJSON() || null,
-      proof: meta?.consensusProof || null,
       verified: meta?.status === ContentStatus.VERIFIED,
     };
   }
@@ -456,11 +417,21 @@ export class ContentStore {
 
   /**
    * Publish content to mesh
+   * Signs the content hash with the publisher's ML-DSA-65 identity.
+   * Any receiving node can independently verify: hash(content) === hash AND
+   * verify(hash, publisherSignature, publisherPubKey) === true.
    */
   async publish(hash) {
     const meta = this.getMeta(hash);
     if (!meta) {
       throw new Error(`Content not found: ${hash}`);
+    }
+
+    // Sign the content hash with publisher's identity (authorship proof)
+    let publisherSignature = null;
+    if (this.identity) {
+      publisherSignature = this.identity.sign(hash);
+      meta.publisherSignature = publisherSignature;
     }
 
     // Create announcement message
@@ -471,16 +442,12 @@ export class ContentStore {
         contentType: meta.contentType,
         size: meta.size,
         publishedBy: meta.publishedBy,
+        publisherSignature,
         tags: meta.tags,
         name: meta.name,
       },
       timestamp: Date.now(),
     };
-
-    // Sign with node identity
-    if (this.identity) {
-      announcement.signature = this.identity.sign(JSON.stringify(announcement));
-    }
 
     // Gossip to mesh
     if (this.gossip) {
@@ -490,8 +457,8 @@ export class ContentStore {
       log.warn('No gossip protocol available for content announce');
     }
 
-    // Update status
-    meta.status = ContentStatus.PENDING;
+    // Update status to ANNOUNCED (published to mesh)
+    meta.status = ContentStatus.ANNOUNCED;
     writeFileSync(this._getMetaPath(hash), JSON.stringify(meta.toJSON(), null, 2));
 
     return { published: true, hash };
@@ -572,7 +539,6 @@ export class ContentStore {
               hash: data.hash,
               content: contentBase64,
               meta: result.meta,
-              proof: result.proof,
               timestamp: Date.now(),
             });
           }
@@ -580,88 +546,47 @@ export class ContentStore {
         break;
 
       case 'content_response':
-        // Received content from peer
+        // Received content from peer — verify integrity + authorship
         if (!this.has(data.hash)) {
           const content = Buffer.from(data.content, 'base64');
           const computedHash = computeContentHash(content);
           
-          // Verify hash
+          // Gate 1: Verify hash integrity
           if (computedHash !== data.hash) {
             console.warn(`⚠️ Content hash mismatch from ${origin.slice(0, 16)}...`);
             return;
-          }          // Store it
+          }
+
+          // Store it
           await this.store(content, {
             ...data.meta,
             publish: false,  // Don't re-gossip
           });
 
-          // Apply consensus proof if present
-          if (data.proof) {
-            const meta = this.getMeta(data.hash);
-            meta.consensusProof = ConsensusProof.fromJSON(data.proof);
-            meta.status = data.proof.hasQuorum?.() ? ContentStatus.VERIFIED : ContentStatus.PENDING;
-            writeFileSync(this._getMetaPath(data.hash), JSON.stringify(meta.toJSON(), null, 2));
+          // Gate 2: Verify publisher signature (authorship)
+          const meta = this.getMeta(data.hash);
+          const publisherSig = data.meta?.publisherSignature;
+          const publisherId = data.meta?.publishedBy;
+
+          if (publisherSig && publisherId && this.identity) {
+            const publisherPubKey = this._getPeerPublicKey(publisherId);
+            if (publisherPubKey && this.identity.verify(data.hash, publisherSig, publisherPubKey)) {
+              // Hash matches + publisher signature valid → VERIFIED
+              meta.status = ContentStatus.VERIFIED;
+              meta.publisherSignature = publisherSig;
+              log.info('Content verified (hash + publisher sig)', { hash: data.hash.slice(0, 16), publisher: publisherId.slice(0, 16) });
+            } else {
+              // Have content but can't confirm authorship — ANNOUNCED
+              meta.status = ContentStatus.ANNOUNCED;
+              log.debug('Content received but publisher sig unverifiable', { hash: data.hash.slice(0, 16) });
+            }
+          } else {
+            // No publisher sig available — store as ANNOUNCED
+            meta.status = ContentStatus.ANNOUNCED;
           }
 
-          log.info('Content received', { hash: data.hash.slice(0, 16) });
-        }
-        break;
-
-      case 'content_validate':
-        // Peer is requesting validation vote
-        if (this.has(data.hash) && this.identity && this.oracle) {
-          const content = this.get(data.hash);
-          const isValid = this.oracle.validateContent(content, data.contentType);
-          
-          if (isValid) {
-            // Sign validation
-            const vote = {
-              type: 'content_vote',
-              hash: data.hash,
-              nodeId: this.identity.identity.nodeId,
-              vote: 'valid',
-              signature: this.identity.sign(data.hash),
-              timestamp: Date.now(),
-            };
-            this.gossip.spreadRumor('content', vote);
-          }
-        }
-        break;
-
-      case 'content_vote':
-        // Received validation vote — verify ML-DSA-65 signature before trusting
-        const meta = this.getMeta(data.hash);
-        if (meta) {
-          // Verify the vote signature against the voter's public key
-          if (!data.signature || !data.nodeId) {
-            log.warn('Dropping unsigned content vote', { hash: data.hash?.slice(0, 16) });
-            break;
-          }
-          const voterPubKey = this._getPeerPublicKey(data.nodeId);
-          if (!voterPubKey) {
-            log.warn('Dropping content vote from unknown node (no public key)', { nodeId: data.nodeId?.slice(0, 16) });
-            break;
-          }
-          if (!this.identity.verify(data.hash, data.signature, voterPubKey)) {
-            log.warn('Dropping content vote with invalid signature', { nodeId: data.nodeId?.slice(0, 16), hash: data.hash?.slice(0, 16) });
-            break;
-          }
-
-          if (!meta.consensusProof) {
-            meta.consensusProof = new ConsensusProof({
-              contentHash: data.hash,
-              quorum: this.config.quorumSize,
-              networkId: this.mesh?.networkId,
-            });
-          }
-          meta.consensusProof.addValidator(data.nodeId, data.signature);
-          
-          if (meta.consensusProof.hasQuorum()) {
-            meta.status = ContentStatus.VERIFIED;
-            log.info('Content verified (quorum reached)', { hash: data.hash.slice(0, 16) });
-          }
-          
           writeFileSync(this._getMetaPath(data.hash), JSON.stringify(meta.toJSON(), null, 2));
+          log.info('Content received', { hash: data.hash.slice(0, 16), status: meta.status });
         }
         break;
     }
@@ -735,14 +660,14 @@ export class ContentStore {
   getStats() {
     let totalSize = 0;
     let verified = 0;
-    let pending = 0;
+    let announced = 0;
     let local = 0;
 
     for (const meta of this.metaCache.values()) {
       totalSize += meta.size;
       switch (meta.status) {
         case ContentStatus.VERIFIED: verified++; break;
-        case ContentStatus.PENDING: pending++; break;
+        case ContentStatus.ANNOUNCED: announced++; break;
         case ContentStatus.LOCAL: local++; break;
       }
     }
@@ -751,7 +676,7 @@ export class ContentStore {
       totalObjects: this.metaCache.size,
       totalSize,
       verified,
-      pending,
+      announced,
       local,
       cacheSize: this.contentCache.size,
       dataDir: this.config.dataDir,
@@ -759,5 +684,5 @@ export class ContentStore {
   }
 }
 
-export { ContentMetadata, ConsensusProof };
+export { ContentMetadata };
 export default ContentStore;

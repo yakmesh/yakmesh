@@ -1,5 +1,9 @@
 /**
- * Content Module Tests — ContentStore, ContentMetadata, ConsensusProof, computeContentHash
+ * Content Module Tests — ContentStore, ContentMetadata, computeContentHash
+ * 
+ * Content integrity = SHA3-256 hash match.
+ * Content authorship = publisher ML-DSA-65 signature.
+ * No voting. No quorum. No ConsensusProof.
  * 
  * @module content/tests/content.test
  */
@@ -14,7 +18,6 @@ import {
   ContentType,
   ContentStatus,
   ContentMetadata,
-  ConsensusProof,
   computeContentHash,
   deriveContentName,
 } from '../store.js';
@@ -117,60 +120,21 @@ describe('ContentType', () => {
 describe('ContentStatus', () => {
   it('has all status values', () => {
     assert.strictEqual(ContentStatus.LOCAL, 'local');
-    assert.strictEqual(ContentStatus.PENDING, 'pending');
+    assert.strictEqual(ContentStatus.ANNOUNCED, 'announced');
     assert.strictEqual(ContentStatus.VERIFIED, 'verified');
-    assert.strictEqual(ContentStatus.REJECTED, 'rejected');
+  });
+
+  it('does NOT have voting-era statuses', () => {
+    assert.strictEqual(ContentStatus.PENDING, undefined, 'PENDING was removed (voting artifact)');
+    assert.strictEqual(ContentStatus.REJECTED, undefined, 'REJECTED was removed (voting artifact)');
   });
 });
 
 // =============================================================================
-// ConsensusProof
+// No ConsensusProof tests — voting/quorum system was removed.
+// Content integrity = SHA3-256 hash match.
+// Content authorship = publisher ML-DSA-65 signature.
 // =============================================================================
-
-describe('ConsensusProof', () => {
-  it('constructs with defaults', () => {
-    const proof = new ConsensusProof({ contentHash: 'abc123' });
-    assert.strictEqual(proof.contentHash, 'abc123');
-    assert.strictEqual(proof.validators.length, 0);
-    assert.strictEqual(proof.quorum, 0);
-  });
-
-  it('hasQuorum returns false when no validators', () => {
-    const proof = new ConsensusProof({ contentHash: 'abc', quorum: 2 });
-    assert.strictEqual(proof.hasQuorum(), false);
-  });
-
-  it('addValidator adds unique validators', () => {
-    const proof = new ConsensusProof({ contentHash: 'abc', quorum: 2 });
-    proof.addValidator('node1', 'sig1');
-    proof.addValidator('node2', 'sig2');
-    assert.strictEqual(proof.validators.length, 2);
-  });
-
-  it('addValidator deduplicates by nodeId', () => {
-    const proof = new ConsensusProof({ contentHash: 'abc', quorum: 1 });
-    proof.addValidator('node1', 'sig1');
-    proof.addValidator('node1', 'sig1_again');
-    assert.strictEqual(proof.validators.length, 1);
-  });
-
-  it('hasQuorum returns true when quorum met', () => {
-    const proof = new ConsensusProof({ contentHash: 'abc', quorum: 2 });
-    proof.addValidator('node1', 'sig1');
-    proof.addValidator('node2', 'sig2');
-    assert.strictEqual(proof.hasQuorum(), true);
-  });
-
-  it('toJSON round-trips via fromJSON', () => {
-    const proof = new ConsensusProof({ contentHash: 'abc', quorum: 2, networkId: 'net1' });
-    proof.addValidator('n1', 's1');
-    const json = proof.toJSON();
-    const restored = ConsensusProof.fromJSON(json);
-    assert.strictEqual(restored.contentHash, 'abc');
-    assert.strictEqual(restored.quorum, 2);
-    assert.strictEqual(restored.validators.length, 1);
-  });
-});
 
 // =============================================================================
 // ContentStore — filesystem-backed content storage
@@ -180,7 +144,7 @@ describe('ContentStore', () => {
   let store;
 
   before(async () => {
-    store = new ContentStore({ dataDir: TEST_DATA_DIR, quorumSize: 2 });
+    store = new ContentStore({ dataDir: TEST_DATA_DIR });
     await store.init();
   });
 
@@ -314,25 +278,26 @@ describe('ContentStore', () => {
 });
 
 // =============================================================================
-// HIGH 9.2 — Content vote signature verification
+// Content Integrity Verification — hash + publisher signature
+// Replaces the old voting/quorum system. Math, not votes.
 // =============================================================================
 
-describe('ContentStore: Vote Signature Enforcement', () => {
+describe('ContentStore: Integrity Verification', () => {
   let store;
-  const voteDir = TEST_DATA_DIR + '_vote';
+  const integrityDir = TEST_DATA_DIR + '_integrity';
 
   before(async () => {
-    store = new ContentStore({ dataDir: voteDir, quorumSize: 2 });
+    store = new ContentStore({ dataDir: integrityDir });
     await store.init();
     // Wire up mock identity and mesh for signature verification
     store.identity = {
       identity: { nodeId: 'local-node', publicKey: 'mock-pubkey-local' },
-      sign(msg) { return 'mock-sig-local'; },
-      verify(msg, sig, pubKey) { return sig.startsWith('mock-sig-'); },
+      sign(msg) { return 'mock-sig-' + msg.slice(0, 8); },
+      verify(msg, sig, pubKey) { return sig === 'mock-sig-' + msg.slice(0, 8); },
     };
     store.mesh = {
       peers: new Map([
-        ['voter-a', { identity: { publicKey: 'mock-pubkey-voter-a' } }],
+        ['publisher-a', { identity: { publicKey: 'mock-pubkey-publisher-a' } }],
       ]),
       networkId: 'test-net',
     };
@@ -340,84 +305,174 @@ describe('ContentStore: Vote Signature Enforcement', () => {
   });
 
   after(() => {
-    rmSync(voteDir, { recursive: true, force: true });
+    rmSync(integrityDir, { recursive: true, force: true });
   });
 
-  it('rejects vote with no signature', async () => {
-    // Store content first
-    const result = await store.store('vote-test-content', { publish: false });
-    const hash = result.hash;
-
-    // Attempt a vote with no signature
-    await store._handleContentGossip({
-      type: 'content_vote',
-      hash,
-      nodeId: 'voter-a',
-      vote: 'valid',
-      // no signature
-    }, 'voter-a');
-
-    const meta = store.getMeta(hash);
-    assert.ok(!meta.consensusProof || meta.consensusProof.validators.length === 0,
-      'Vote without signature should NOT be accepted');
-  });
-
-  it('rejects vote from unknown node (no pubkey)', async () => {
-    const result = await store.store('vote-test-content-2', { publish: false });
-    const hash = result.hash;
+  it('content_response with valid hash + publisher sig → VERIFIED', async () => {
+    const content = 'integrity test content';
+    const hash = computeContentHash(content);
+    const contentBase64 = Buffer.from(content, 'utf8').toString('base64');
+    const publisherSig = 'mock-sig-' + hash.slice(0, 8);
 
     await store._handleContentGossip({
-      type: 'content_vote',
+      type: 'content_response',
       hash,
-      nodeId: 'totally-unknown-node',
-      vote: 'valid',
-      signature: 'mock-sig-unknown',
-    }, 'totally-unknown-node');
-
-    const meta = store.getMeta(hash);
-    assert.ok(!meta.consensusProof || meta.consensusProof.validators.length === 0,
-      'Vote from unknown node should NOT be accepted');
-  });
-
-  it('rejects vote with invalid signature', async () => {
-    const result = await store.store('vote-test-content-3', { publish: false });
-    const hash = result.hash;
-
-    // Override verify to reject this bad sig
-    const origVerify = store.identity.verify;
-    store.identity.verify = (msg, sig, pk) => sig !== 'forged-signature';
-
-    await store._handleContentGossip({
-      type: 'content_vote',
-      hash,
-      nodeId: 'voter-a',
-      vote: 'valid',
-      signature: 'forged-signature',
-    }, 'voter-a');
-
-    store.identity.verify = origVerify;
-
-    const meta = store.getMeta(hash);
-    assert.ok(!meta.consensusProof || meta.consensusProof.validators.length === 0,
-      'Vote with invalid signature should NOT be accepted');
-  });
-
-  it('accepts vote with valid signature from known peer', async () => {
-    const result = await store.store('vote-test-content-4', { publish: false });
-    const hash = result.hash;
-
-    await store._handleContentGossip({
-      type: 'content_vote',
-      hash,
-      nodeId: 'voter-a',
-      vote: 'valid',
-      signature: 'mock-sig-voter-a',
+      content: contentBase64,
+      meta: {
+        contentType: 'text/plain',
+        size: Buffer.byteLength(content),
+        publishedBy: 'publisher-a',
+        publisherSignature: publisherSig,
+      },
       timestamp: Date.now(),
-    }, 'voter-a');
+    }, 'publisher-a');
 
     const meta = store.getMeta(hash);
-    assert.ok(meta.consensusProof, 'ConsensusProof should exist');
-    assert.strictEqual(meta.consensusProof.validators.length, 1, 'Valid vote should be accepted');
-    assert.strictEqual(meta.consensusProof.validators[0].nodeId, 'voter-a');
+    assert.strictEqual(meta.status, ContentStatus.VERIFIED, 'Valid hash + sig should be VERIFIED');
+    assert.strictEqual(meta.publisherSignature, publisherSig);
+  });
+
+  it('content_response with bad hash → rejected (not stored)', async () => {
+    const content = 'legitimate content';
+    const hash = computeContentHash(content);
+    const tamperedContent = Buffer.from('tampered content', 'utf8').toString('base64');
+
+    await store._handleContentGossip({
+      type: 'content_response',
+      hash,
+      content: tamperedContent,  // Does NOT match hash
+      meta: {
+        contentType: 'text/plain',
+        size: 16,
+        publishedBy: 'publisher-a',
+        publisherSignature: 'mock-sig-' + hash.slice(0, 8),
+      },
+      timestamp: Date.now(),
+    }, 'publisher-a');
+
+    // Content should NOT be stored (hash mismatch)
+    assert.strictEqual(store.has(hash), false, 'Tampered content should not be stored');
+  });
+
+  it('content_response with no publisher sig → ANNOUNCED (not VERIFIED)', async () => {
+    const content = 'unsigned content test';
+    const hash = computeContentHash(content);
+    const contentBase64 = Buffer.from(content, 'utf8').toString('base64');
+
+    await store._handleContentGossip({
+      type: 'content_response',
+      hash,
+      content: contentBase64,
+      meta: {
+        contentType: 'text/plain',
+        size: Buffer.byteLength(content),
+        publishedBy: 'publisher-a',
+        // No publisherSignature
+      },
+      timestamp: Date.now(),
+    }, 'publisher-a');
+
+    const meta = store.getMeta(hash);
+    assert.strictEqual(meta.status, ContentStatus.ANNOUNCED,
+      'Content without publisher sig should be ANNOUNCED, not VERIFIED');
+  });
+
+  it('content_response with unknown publisher → ANNOUNCED (not VERIFIED)', async () => {
+    const content = 'unknown publisher content';
+    const hash = computeContentHash(content);
+    const contentBase64 = Buffer.from(content, 'utf8').toString('base64');
+
+    await store._handleContentGossip({
+      type: 'content_response',
+      hash,
+      content: contentBase64,
+      meta: {
+        contentType: 'text/plain',
+        size: Buffer.byteLength(content),
+        publishedBy: 'totally-unknown-publisher',
+        publisherSignature: 'mock-sig-' + hash.slice(0, 8),
+      },
+      timestamp: Date.now(),
+    }, 'some-relay');
+
+    const meta = store.getMeta(hash);
+    assert.strictEqual(meta.status, ContentStatus.ANNOUNCED,
+      'Content from unknown publisher should be ANNOUNCED (cannot verify sig)');
+  });
+
+  it('content_response with invalid publisher sig → ANNOUNCED (not VERIFIED)', async () => {
+    const content = 'forged sig content';
+    const hash = computeContentHash(content);
+    const contentBase64 = Buffer.from(content, 'utf8').toString('base64');
+
+    await store._handleContentGossip({
+      type: 'content_response',
+      hash,
+      content: contentBase64,
+      meta: {
+        contentType: 'text/plain',
+        size: Buffer.byteLength(content),
+        publishedBy: 'publisher-a',
+        publisherSignature: 'forged-signature-definitely-wrong',
+      },
+      timestamp: Date.now(),
+    }, 'publisher-a');
+
+    const meta = store.getMeta(hash);
+    assert.strictEqual(meta.status, ContentStatus.ANNOUNCED,
+      'Content with invalid publisher sig should be ANNOUNCED, not VERIFIED');
+  });
+
+  it('publish() sets status to ANNOUNCED and signs content hash', async () => {
+    const result = await store.store('publish test content', { publish: false });
+    const hash = result.hash;
+
+    await store.publish(hash);
+
+    const meta = store.getMeta(hash);
+    assert.strictEqual(meta.status, ContentStatus.ANNOUNCED, 'Published content should be ANNOUNCED');
+    assert.ok(meta.publisherSignature, 'Publisher signature should be set');
+    assert.ok(meta.publisherSignature.startsWith('mock-sig-'), 'Signature should be from identity.sign()');
+  });
+
+  it('getWithProof() returns verified flag without consensus proof', async () => {
+    const result = await store.store('getWithProof test', { publish: false });
+    const full = store.getWithProof(result.hash);
+    assert.ok(full, 'Should return result');
+    assert.ok(full.content, 'Should have content');
+    assert.ok(full.meta, 'Should have meta');
+    assert.strictEqual(full.verified, false, 'LOCAL content is not verified');
+    assert.strictEqual(full.proof, undefined, 'No consensus proof object should exist');
+  });
+
+  it('no content_vote or content_validate handlers exist', async () => {
+    // These gossip types were removed (voting system eliminated)
+    // Sending them should be a no-op — no crash, no state change
+    const result = await store.store('vote handler removed test', { publish: false });
+    const hash = result.hash;
+
+    // content_vote should be silently ignored (no case match)
+    await store._handleContentGossip({
+      type: 'content_vote',
+      hash,
+      nodeId: 'publisher-a',
+      vote: 'valid',
+      signature: 'mock-sig-whatever',
+    }, 'publisher-a');
+
+    const meta = store.getMeta(hash);
+    assert.strictEqual(meta.status, ContentStatus.LOCAL,
+      'content_vote should be silently ignored (voting system removed)');
+
+    // content_validate should also be silently ignored
+    await store._handleContentGossip({
+      type: 'content_validate',
+      hash,
+      contentType: 'text/plain',
+    }, 'publisher-a');
+
+    const meta2 = store.getMeta(hash);
+    assert.strictEqual(meta2.status, ContentStatus.LOCAL,
+      'content_validate should be silently ignored (voting system removed)');
   });
 });
