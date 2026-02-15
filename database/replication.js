@@ -44,6 +44,7 @@ export class ReplicationEngine {
     this.dbPath = dbPath;
     this.db = null;
     this.nodeId = mesh.identity.identity.nodeId;
+    this.identity = mesh.identity;  // For ML-DSA-65 signing/verification
     this.syncInterval = null;
   }
 
@@ -98,6 +99,13 @@ export class ReplicationEngine {
       // Index already exists
     }
 
+    // Add signature column for ML-DSA-65 authenticated replication
+    try {
+      this.db.run(`ALTER TABLE _replication_log ADD COLUMN signature TEXT`);
+    } catch (e) {
+      // Column already exists
+    }
+
     this._saveDb();
     log.info('Database initialized', { path: this.dbPath });
 
@@ -143,12 +151,20 @@ export class ReplicationEngine {
     if (!REPLICATED_TABLES.includes(tableName)) return;
 
     const vectorClock = this._generateVectorClock();
+    const dataJson = JSON.stringify(data);
+
+    // Sign the change payload (ML-DSA-65) for authenticated replication
+    const sigPayload = JSON.stringify({
+      tableName, rowId: String(rowId), operation, data: dataJson,
+      nodeId: this.nodeId, vectorClock,
+    });
+    const signature = this.identity.sign(sigPayload);
     
     this.db.run(
       `INSERT INTO _replication_log 
-       (table_name, row_id, operation, data, node_id, vector_clock, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [tableName, String(rowId), operation, JSON.stringify(data), this.nodeId, vectorClock, Date.now()]
+       (table_name, row_id, operation, data, node_id, vector_clock, created_at, signature)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [tableName, String(rowId), operation, dataJson, this.nodeId, vectorClock, Date.now(), signature]
     );
     
     this._saveDb();
@@ -200,7 +216,26 @@ export class ReplicationEngine {
    * Apply a replicated change from another node
    */
   applyChange(change) {
-    const { table_name, row_id, operation, data, node_id, vector_clock, created_at } = change;
+    const { table_name, row_id, operation, data, node_id, vector_clock, created_at, signature } = change;
+
+    // Verify ML-DSA-65 signature before trusting remote change
+    if (!signature) {
+      log.warn('Rejecting unsigned replication change', { nodeId: node_id?.slice(0, 12), table: table_name });
+      return false;
+    }
+    const peerPubKey = this._getPeerPublicKey(node_id);
+    if (!peerPubKey) {
+      log.warn('Rejecting replication change from unknown node (no public key)', { nodeId: node_id?.slice(0, 12) });
+      return false;
+    }
+    const sigPayload = JSON.stringify({
+      tableName: table_name, rowId: row_id, operation, data,
+      nodeId: node_id, vectorClock: vector_clock,
+    });
+    if (!this.identity.verify(sigPayload, signature, peerPubKey)) {
+      log.warn('Rejecting replication change with invalid signature', { nodeId: node_id?.slice(0, 12), table: table_name });
+      return false;
+    }
 
     // Check if we already have this change (parameterized)
     let alreadyExists = false;
@@ -281,6 +316,33 @@ export class ReplicationEngine {
   }
 
   // ===== Private Methods =====
+
+  /**
+   * Resolve a peer's public key from mesh state.
+   * Checks WS peers, relay keys, SHERPA registry, and self.
+   */
+  _getPeerPublicKey(nodeId) {
+    // Self
+    if (nodeId === this.nodeId) {
+      return this.identity.identity.publicKey;
+    }
+    // WS peer info
+    if (this.mesh?.peers) {
+      const peer = this.mesh.peers.get(nodeId);
+      if (peer?.identity?.publicKey) return peer.identity.publicKey;
+    }
+    // Relay peer keys (stored during signed registration)
+    if (this.mesh?._relayPeerKeys) {
+      const key = this.mesh._relayPeerKeys.get(nodeId);
+      if (key) return key;
+    }
+    // SHERPA registry
+    if (this.mesh?.sherpa?.registry) {
+      const regPeer = this.mesh.sherpa.registry.get(nodeId);
+      if (regPeer?.publicKey) return regPeer.publicKey;
+    }
+    return null;
+  }
 
   _generateVectorClock() {
     const timestamp = Date.now();

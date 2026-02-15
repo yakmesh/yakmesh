@@ -629,9 +629,24 @@ export class ContentStore {
         break;
 
       case 'content_vote':
-        // Received validation vote
+        // Received validation vote — verify ML-DSA-65 signature before trusting
         const meta = this.getMeta(data.hash);
         if (meta) {
+          // Verify the vote signature against the voter's public key
+          if (!data.signature || !data.nodeId) {
+            log.warn('Dropping unsigned content vote', { hash: data.hash?.slice(0, 16) });
+            break;
+          }
+          const voterPubKey = this._getPeerPublicKey(data.nodeId);
+          if (!voterPubKey) {
+            log.warn('Dropping content vote from unknown node (no public key)', { nodeId: data.nodeId?.slice(0, 16) });
+            break;
+          }
+          if (!this.identity.verify(data.hash, data.signature, voterPubKey)) {
+            log.warn('Dropping content vote with invalid signature', { nodeId: data.nodeId?.slice(0, 16), hash: data.hash?.slice(0, 16) });
+            break;
+          }
+
           if (!meta.consensusProof) {
             meta.consensusProof = new ConsensusProof({
               contentHash: data.hash,
@@ -650,6 +665,33 @@ export class ContentStore {
         }
         break;
     }
+  }
+
+  /**
+   * Resolve a peer's public key from mesh state.
+   * Checks WS peers, relay keys, SHERPA registry, and self.
+   */
+  _getPeerPublicKey(nodeId) {
+    // Self
+    if (this.identity && nodeId === this.identity.identity.nodeId) {
+      return this.identity.identity.publicKey;
+    }
+    // WS peer info
+    if (this.mesh?.peers) {
+      const peer = this.mesh.peers.get(nodeId);
+      if (peer?.identity?.publicKey) return peer.identity.publicKey;
+    }
+    // Relay peer keys (stored during signed registration)
+    if (this.mesh?._relayPeerKeys) {
+      const key = this.mesh._relayPeerKeys.get(nodeId);
+      if (key) return key;
+    }
+    // SHERPA registry
+    if (this.mesh?.sherpa?.registry) {
+      const regPeer = this.mesh.sherpa.registry.get(nodeId);
+      if (regPeer?.publicKey) return regPeer.publicKey;
+    }
+    return null;
   }
 
   /**
