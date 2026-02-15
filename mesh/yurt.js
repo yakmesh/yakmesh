@@ -720,6 +720,7 @@ export class YurtGossip extends EventEmitter {
     this.directory = directory;
     this.mesh = mesh;
     this.options = options;
+    this.keyResolver = options.keyResolver || null;
     
     // Track what we've sent to avoid duplicate gossip
     this.sentTo = new Map(); // peerId -> { entryId -> timestamp }
@@ -1034,13 +1035,24 @@ export class YurtGossip extends EventEmitter {
   }
   
   /**
-   * Get public key for a node
+   * Get public key for a node — unified resolution cascade
+   *
+   * Resolution order:
+   *   1. Custom publicKeyLookup callback (backwards compat)
+   *   2. KeyResolver (DOKO cache, peers, SHERPA, etc.)
    */
   _getPublicKey(nodeId) {
-    // TODO: Integrate with KHATA
+    // Legacy callback path
     if (this.options.publicKeyLookup) {
-      return this.options.publicKeyLookup(nodeId);
+      const key = this.options.publicKeyLookup(nodeId);
+      if (key) return key;
     }
+    
+    // KeyResolver: unified key resolution
+    if (this.keyResolver) {
+      return this.keyResolver.resolve(nodeId);
+    }
+    
     return null;
   }
   
@@ -1162,6 +1174,8 @@ export class YurtHub extends EventEmitter {
   
   /**
    * Join a room via yak:// link
+   *
+   * Flow: parse URI → resolve host via mesh → request GUMBA session → return access
    */
   async joinViaLink(uri) {
     const parsed = YurtLink.parse(uri);
@@ -1174,15 +1188,42 @@ export class YurtHub extends EventEmitter {
       bundleId: parsed.bundleId,
     });
     
-    // Connect to host and request access
-    // TODO: Integrate with actual mesh connection
-    return {
-      success: true,
-      parsed,
-      endpoint: parsed.endpoint,
-      bundleId: parsed.bundleId,
-      invite: parsed.invite,
-    };
+    // Look up the room in our directory first
+    const entry = this.directory.getByBundle(parsed.bundleId);
+    
+    // Request a GUMBA session on the target bundle
+    try {
+      const session = await this.gumbaHub.requestSession(
+        parsed.bundleId,
+        this.identity.identity.nodeId,
+        { invite: parsed.invite }
+      );
+      
+      if (session?.error) {
+        return {
+          success: false,
+          error: session.error,
+          parsed,
+        };
+      }
+      
+      return {
+        success: true,
+        parsed,
+        endpoint: entry?.hostEndpoint || parsed.endpoint,
+        bundleId: parsed.bundleId,
+        invite: parsed.invite,
+        sessionId: session?.sessionId || null,
+      };
+    } catch (err) {
+      log.warn('joinViaLink failed', { error: err.message, uri });
+      return {
+        success: false,
+        error: 'CONNECTION_FAILED',
+        details: err.message,
+        parsed,
+      };
+    }
   }
   
   /**
@@ -1238,10 +1279,21 @@ export class YurtHub extends EventEmitter {
   
   /**
    * Get our own endpoint
+   *
+   * Priority: explicit option → mesh advertised address → default
    */
   _getOwnEndpoint() {
-    // TODO: Discover actual endpoint
-    return this.options.endpoint || `localhost:${YURT_CONFIG.defaultPort}`;
+    if (this.options.endpoint) {
+      return this.options.endpoint;
+    }
+    
+    // Ask the mesh for our advertised address
+    if (this.mesh?.getAdvertisedAddress) {
+      const addr = this.mesh.getAdvertisedAddress();
+      if (addr) return addr;
+    }
+    
+    return `localhost:${YURT_CONFIG.defaultPort}`;
   }
   
   /**

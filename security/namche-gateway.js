@@ -31,6 +31,8 @@ import { EventEmitter } from 'events';
 import { generateNodeId, getCodebaseHash } from '../identity/node-key.js';
 import { deriveNetworkName } from '../oracle/network-identity.js';
 import { createLogger } from '../utils/logger.js';
+// SAKSHI: Observational verification & revocation agreement
+import { NodeWitness, checkMathematicalAgreement, checkRevocationAgreement } from './sakshi.js';
 
 const log = createLogger('security:namche');
 
@@ -189,6 +191,7 @@ export class NamcheGateway extends EventEmitter {
     this.dokoCache = new LRUCache(this.config.dokoCacheSize);
     this.revocationLog = new RevocationLog();
     this.verifiedDomains = new Map(); // domain -> doko that verified it
+    this.revocationReports = new Map(); // dokoHash -> Array of { witness, evidence }
     
     this.stats = {
       verificationsAttempted: 0,
@@ -563,6 +566,7 @@ export class NamcheGateway extends EventEmitter {
 
   /**
    * Verify domain proofs from multiple verifiers
+   * Uses SAKSHI observational verification — mathematical agreement, not voting
    */
   async verifyDomainProofs(domainClaim) {
     let validProofs = 0;
@@ -570,6 +574,9 @@ export class NamcheGateway extends EventEmitter {
     if (!domainClaim.proofs || !Array.isArray(domainClaim.proofs)) {
       return 0;
     }
+
+    // Collect SAKSHI observations from each proof verifier
+    const observations = [];
 
     for (const proof of domainClaim.proofs) {
       try {
@@ -586,16 +593,41 @@ export class NamcheGateway extends EventEmitter {
 
         const proofValid = mlDsa65Verify(signature, payloadBytes, publicKey);
 
+        // SAKSHI: Record each verifier's observation
+        const witness = new NodeWitness({
+          nodeId: proof.verifierNodeId || bytesToHex(publicKey.slice(0, 16)),
+        });
+        observations.push({
+          witness,
+          value: proofValid ? proof.beaconHash : 'INVALID_SIGNATURE',
+        });
+
         if (proofValid) {
-          // TODO: Integrate with SAKSHI observational verification
-          // SAKSHI philosophy: Binary verification (signature valid or not),
-          // NOT tier-weighted voting (SIRDAR counts more than PATHIK)
-          // For now, we accept any valid signature
           validProofs++;
         }
       } catch (error) {
         // Invalid proof format, skip
         continue;
+      }
+    }
+
+    // SAKSHI: Check mathematical agreement across all proof observations
+    if (observations.length > 0) {
+      const agreement = checkMathematicalAgreement(observations);
+      if (agreement.isAgreed) {
+        log.debug('SAKSHI: Domain proofs agree mathematically', {
+          domain: domainClaim.name,
+          proofCount: validProofs,
+          confidence: agreement.confidence,
+        });
+      } else if (agreement.isDisagreed) {
+        log.warn('SAKSHI: Domain proof disagreement — flagging for recomputation', {
+          domain: domainClaim.name,
+          reason: agreement.reason,
+          action: agreement.data?.action,
+        });
+        // Disagreement means proofs don't agree — return 0 to fail quorum
+        return 0;
       }
     }
 
@@ -612,16 +644,26 @@ export class NamcheGateway extends EventEmitter {
    * @param {Object} originalDoko - The DOKO being revoked (for verification)
    */
   async processRevocation(revocation, originalDoko) {
-    // Verify the revocation is signed by the DOKO owner
-    if (revocation.revokedBy !== originalDoko.nodeId) {
-      // Only owner can revoke (for now)
-      // TODO: Integrate SAKSHI checkRevocationAgreement() for mesh revocation
-      // SAKSHI uses mathematical agreement (do nodes agree on what happened?)
-      // NOT tier-weighted voting (SIRDAR's revocation counts 2x)
-      return { success: false, reason: 'Only DOKO owner can revoke' };
+    // Owner can always revoke directly (self-revocation)
+    if (revocation.revokedBy === originalDoko.nodeId) {
+      return this._processOwnerRevocation(revocation, originalDoko);
     }
 
-    // Verify signature
+    // Non-owner: treat as a revocation REPORT for SAKSHI consensus
+    // SAKSHI uses mathematical agreement (do nodes agree on what happened?)
+    // NOT tier-weighted voting (SIRDAR's revocation counts 2x)
+    return this.processRevocationReport({
+      reportedBy: revocation.revokedBy,
+      reason: revocation.reason,
+      timestamp: revocation.revokedAt,
+    }, revocation.dokoHash);
+  }
+
+  /**
+   * Process self-revocation from the DOKO owner
+   * @private
+   */
+  async _processOwnerRevocation(revocation, originalDoko) {
     const revocationPayload = canonicalize({
       dokoHash: revocation.dokoHash,
       reason: revocation.reason,
@@ -653,6 +695,87 @@ export class NamcheGateway extends EventEmitter {
     } catch (error) {
       return { success: false, reason: `Revocation processing error: ${error.message}` };
     }
+  }
+
+  /**
+   * Process a revocation report from the mesh (SAKSHI consensus)
+   * 
+   * Multiple nodes can report evidence of compromise/malice.
+   * Revocation happens when reports mathematically agree — not by weighted vote.
+   * 
+   * @param {Object} report - The revocation report
+   * @param {string} report.reportedBy - NodeId of the reporting node
+   * @param {string} report.reason - Reason for revocation
+   * @param {number} [report.timestamp] - When the issue was observed
+   * @param {string} targetDokoHash - Hash of the DOKO to potentially revoke
+   * @returns {Object} Result: { success, method?, reason?, state? }
+   */
+  processRevocationReport(report, targetDokoHash) {
+    if (!this.revocationReports.has(targetDokoHash)) {
+      this.revocationReports.set(targetDokoHash, []);
+    }
+
+    const reports = this.revocationReports.get(targetDokoHash);
+    const witness = new NodeWitness({ nodeId: report.reportedBy });
+
+    reports.push({
+      witness,
+      evidence: {
+        reason: report.reason,
+        targetId: targetDokoHash,
+        timestamp: report.timestamp || Date.now(),
+      },
+    });
+
+    // SAKSHI: Check mathematical agreement across all revocation reports
+    const minReports = this.config.minRevocationReports || 3;
+    const result = checkRevocationAgreement(reports, { minReports });
+
+    if (result.isAgreed) {
+      // Mesh agrees on revocation — execute it
+      const revocationRecord = {
+        dokoHash: targetDokoHash,
+        reason: result.data.evidence?.reason || report.reason,
+        revokedAt: result.data.timestamp || Date.now(),
+        revokedBy: 'MESH_CONSENSUS',
+        reportCount: result.data.reportCount,
+        method: 'SAKSHI_AGREEMENT',
+      };
+
+      this.revocationLog.add(targetDokoHash, revocationRecord);
+      this.dokoCache.delete(targetDokoHash);
+      this.revocationReports.delete(targetDokoHash);
+      this.stats.revocationsProcessed++;
+
+      log.info('SAKSHI: Mesh revocation consensus reached', {
+        dokoHash: targetDokoHash,
+        reportCount: result.data.reportCount,
+      });
+
+      this.emit('revoked', {
+        dokoHash: targetDokoHash,
+        revocation: revocationRecord,
+        method: 'SAKSHI_AGREEMENT',
+      });
+
+      return { success: true, method: 'SAKSHI_AGREEMENT' };
+    }
+
+    if (result.isDisagreed) {
+      log.debug('SAKSHI: Revocation reports disagree', {
+        dokoHash: targetDokoHash,
+        reason: result.reason,
+      });
+      return { success: false, reason: 'Reports disagree on evidence', details: result.reason };
+    }
+
+    // PENDING — need more reports
+    log.debug('SAKSHI: Revocation report recorded, awaiting consensus', {
+      dokoHash: targetDokoHash,
+      currentReports: reports.length,
+      minRequired: minReports,
+    });
+    return { success: false, reason: 'Pending — need more reports', state: 'PENDING' };
   }
 
   // ═══════════════════════════════════════════════════════════════════════════

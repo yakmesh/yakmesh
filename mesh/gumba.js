@@ -1238,8 +1238,11 @@ export class GumbaHub extends EventEmitter {
     // Access sessions
     this.sessions = new Map(); // sessionId -> { dokoId, bundleIds, expiresAt }
     
-    // Public key registry (for testing/local lookups before KHATA integration)
+    // Public key registry (for testing/local lookups before KeyResolver integration)
     this.publicKeys = new Map(); // dokoId -> publicKey
+    
+    // KeyResolver: unified key resolution (attached lazily)
+    this.keyResolver = options.keyResolver || null;
     
     // Stats
     this.stats = {
@@ -1477,11 +1480,15 @@ export class GumbaHub extends EventEmitter {
   }
   
   /**
-   * Get DOKO public key from mesh
-   * TODO: Integrate with KHATA protocol
+   * Get DOKO public key — unified resolution cascade
+   * 
+   * Resolution order:
+   *   1. Local publicKeys map (test/pre-cached)
+   *   2. Own identity
+   *   3. KeyResolver (DOKO cache, peers, SHERPA, etc.)
    */
   async _getDokoPublicKey(dokoId) {
-    // Check local registry first
+    // Check local registry first (backwards compat)
     if (this.publicKeys.has(dokoId)) {
       return this.publicKeys.get(dokoId);
     }
@@ -1491,8 +1498,13 @@ export class GumbaHub extends EventEmitter {
       return this.identity.identity.publicKey;
     }
     
-    // TODO: Query KHATA network
-    log.warn('DOKO public key lookup not implemented', { dokoId: dokoId.slice(0, 16) });
+    // KeyResolver: unified key resolution
+    if (this.keyResolver) {
+      const key = this.keyResolver.resolve(dokoId);
+      if (key) return key;
+    }
+    
+    log.warn('DOKO public key not found', { dokoId: dokoId.slice(0, 16) });
     return null;
   }
   
