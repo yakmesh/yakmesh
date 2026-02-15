@@ -1384,8 +1384,25 @@ export class GumbaHub extends EventEmitter {
     
     this.stats.messagesProcessed += result.count;
     
-    // TODO: Deliver via ANNEX for E2E encryption to visitor
-    // For now, return directly
+    // Deliver via ANNEX for E2E encryption to remote visitor
+    if (this.annex && session.visitorNodeId) {
+      try {
+        await this.annex.send(session.visitorNodeId, {
+          type: 'gumba:messages',
+          sessionId,
+          bundleId: session.bundleId,
+          ...result,
+        });
+        return { delivered: true, via: 'annex', count: result.count };
+      } catch (err) {
+        log.warn('ANNEX delivery failed, returning plaintext', {
+          visitor: session.visitorNodeId.slice(0, 16),
+          error: err.message,
+        });
+        // Fall through to direct return
+      }
+    }
+    
     return result;
   }
   
