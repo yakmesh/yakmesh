@@ -213,6 +213,16 @@ export class DarshanContent {
     if (this.path && this.path.length > DARSHAN_CONFIG.maxPathLength) {
       errors.push('path too long');
     }
+    // Defense-in-depth: reject path traversal at validation layer too.
+    // Note: absolute paths are allowed here because the HOST node legitimately
+    // uses them to register content from its own filesystem. The API boundary
+    // (darshan-api.js) rejects absolute paths from external requests.
+    if (this.path) {
+      const normalized = String(this.path).replace(/\\/g, '/');
+      if (normalized.includes('..')) {
+        errors.push('path traversal not allowed');
+      }
+    }
     if (this.size > DARSHAN_CONFIG.maxContentSize) {
       errors.push('content exceeds max size');
     }

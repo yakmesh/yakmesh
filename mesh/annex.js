@@ -601,12 +601,21 @@ export class Annex {
   
   async _handleAnnexMessage(envelope, origin) {
     try {
-      // Verify signature
-      const sigPayload = AnnexEnvelope.fromJSON(envelope).getSigningPayload();
+      // Verify ML-DSA-65 signature — MANDATORY for all ANNEX messages.
+      // "Changes pass through math alone" — no key, no entry.
       const peerPublicKey = this._getPeerPublicKey(envelope.senderId);
       
-      if (peerPublicKey && !this.identity.verify(sigPayload, envelope.signature, peerPublicKey)) {
-        log.warn('Invalid signature from peer', { peerId: envelope.senderId?.slice(0, 16) });
+      if (!peerPublicKey) {
+        log.warn('Rejected ANNEX message from unknown peer (no public key on file)', {
+          peerId: envelope.senderId?.slice(0, 16),
+          type: envelope.type,
+        });
+        return;
+      }
+      
+      const sigPayload = AnnexEnvelope.fromJSON(envelope).getSigningPayload();
+      if (!this.identity.verify(sigPayload, envelope.signature, peerPublicKey)) {
+        log.warn('Invalid ML-DSA-65 signature from peer', { peerId: envelope.senderId?.slice(0, 16) });
         return;
       }
       

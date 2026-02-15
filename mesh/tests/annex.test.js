@@ -218,9 +218,10 @@ describe('AnnexSession', () => {
       expect(session.established).toBe(false);
     });
 
-    test('initializes sequence counters to 0', () => {
+    test('initializes sequence counters', () => {
       expect(session.sendSequence).toBe(0);
-      expect(session.recvSequence).toBe(0);
+      // recvSequence starts at -1 so the first message (seq 0) passes replay check
+      expect(session.recvSequence).toBe(-1);
     });
 
     test('tracks creation time', () => {
@@ -808,5 +809,141 @@ describe('ANNEX End-to-End Integration', () => {
     const decryptedResponse = aliceSession.decrypt(response, response.sequence);
 
     expect(decryptedResponse).toBe('Hello Alice!');
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SECURITY: ANNEX Signature Verification (CRITICAL 5.1 regression test)
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe('ANNEX Signature Enforcement (CRITICAL 5.1)', () => {
+  let annex;
+  let mockIdentity;
+  let messageProcessed;
+
+  beforeEach(() => {
+    messageProcessed = false;
+    mockIdentity = {
+      identity: { nodeId: 'local-node' },
+      sign: vi.fn(() => 'mock-signature'),
+      verify: vi.fn(() => true),
+    };
+
+    const mockMesh = {
+      on: vi.fn(),
+      peers: new Map(),
+      _relayPeerKeys: new Map(),
+    };
+
+    annex = new Annex({ identity: mockIdentity, mesh: mockMesh });
+  });
+
+  test('rejects ANNEX message when sender pubkey is unknown', async () => {
+    // Forge an envelope from a completely unknown nodeId
+    const forgedEnvelope = {
+      id: 'forged-1',
+      type: ANNEX_CONFIG.messageTypes.KEY_EXCHANGE,
+      senderId: 'attacker-node-unknown',
+      recipientId: 'local-node',
+      sessionId: 'fake-session',
+      sequence: 0,
+      timestamp: Date.now(),
+      kemPublicKey: 'deadbeef',
+      signature: 'forged-sig',
+    };
+
+    // _handleAnnexMessage should return without processing
+    await annex._handleAnnexMessage(forgedEnvelope, null);
+
+    // identity.verify should NEVER have been called (no key to verify against)
+    expect(mockIdentity.verify).not.toHaveBeenCalled();
+    // No session should have been created
+    expect(annex.sessions.size).toBe(0);
+    expect(annex.stats.sessionsCreated).toBe(0);
+  });
+
+  test('rejects ANNEX message with invalid signature from known peer', async () => {
+    // Register a known peer
+    annex.mesh.peers.set('known-peer', {
+      identity: { publicKey: 'known-peer-pubkey-hex' },
+    });
+
+    // verify returns FALSE for this peer
+    mockIdentity.verify.mockReturnValue(false);
+
+    const envelope = {
+      id: 'bad-sig-1',
+      type: ANNEX_CONFIG.messageTypes.ENCRYPTED,
+      senderId: 'known-peer',
+      recipientId: 'local-node',
+      sessionId: 'some-session',
+      sequence: 5,
+      timestamp: Date.now(),
+      nonce: 'abc',
+      ciphertext: 'def',
+      authTag: 'ghi',
+      signature: 'invalid-signature',
+    };
+
+    await annex._handleAnnexMessage(envelope, null);
+
+    // verify WAS called with the known key
+    expect(mockIdentity.verify).toHaveBeenCalledTimes(1);
+    // But no session or decryption happened
+    expect(annex.sessions.size).toBe(0);
+  });
+
+  test('processes ANNEX message with valid signature from known peer', async () => {
+    // Register a known peer
+    annex.mesh.peers.set('known-peer', {
+      identity: { publicKey: 'known-peer-pubkey-hex' },
+    });
+
+    // verify returns TRUE
+    mockIdentity.verify.mockReturnValue(true);
+
+    const envelope = {
+      id: 'valid-1',
+      type: ANNEX_CONFIG.messageTypes.KEY_EXCHANGE,
+      senderId: 'known-peer',
+      recipientId: 'local-node',
+      sessionId: 'session-1',
+      sequence: 0,
+      timestamp: Date.now(),
+      kemPublicKey: bytesToHex(new Uint8Array(1184)), // ML-KEM-768 pub key size
+      signature: 'valid-sig',
+    };
+
+    // This will try to complete the key exchange (may throw because the
+    // KEM public key is zeroed), but the point is verify() was called and
+    // passed — the message was NOT rejected at the gate.
+    try {
+      await annex._handleAnnexMessage(envelope, null);
+    } catch { /* KEM processing may fail; that's OK */ }
+
+    // verify was called (gate opened)
+    expect(mockIdentity.verify).toHaveBeenCalledTimes(1);
+  });
+
+  test('unknown peer cannot forge KEY_EXCHANGE to create session', async () => {
+    // This is the core of CRITICAL 5.1: an attacker with a fabricated senderId
+    // should NEVER get past signature verification.
+    const envelope = {
+      id: 'forge-ke',
+      type: ANNEX_CONFIG.messageTypes.KEY_EXCHANGE,
+      senderId: 'nonexistent-attacker-id',
+      recipientId: 'local-node',
+      sessionId: 'forged-session',
+      sequence: 0,
+      timestamp: Date.now(),
+      kemPublicKey: 'aabbccdd',
+      signature: 'attacker-sig',
+    };
+
+    await annex._handleAnnexMessage(envelope, null);
+
+    // No session created, no handshake stored
+    expect(annex.sessions.size).toBe(0);
+    expect(annex.pendingHandshakes.size).toBe(0);
   });
 });

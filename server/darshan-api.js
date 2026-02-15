@@ -106,6 +106,13 @@ export function createDarshanAPI({
     if (!path) {
       return res.status(400).json({ error: 'path required' });
     }
+    
+    // Path traversal defense — reject .., absolute paths, and drive letters.
+    // DARSHAN content paths must be relative within the host's content root.
+    const normalizedPath = String(path).replace(/\\/g, '/');
+    if (normalizedPath.includes('..') || normalizedPath.startsWith('/') || /^[a-zA-Z]:/.test(path)) {
+      return res.status(400).json({ error: 'Invalid path: traversal or absolute paths not allowed' });
+    }
 
     darshanGateway.registerContent({
       path,

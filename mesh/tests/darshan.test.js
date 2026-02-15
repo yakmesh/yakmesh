@@ -146,6 +146,70 @@ describe('DarshanContent', () => {
     expect(result.errors).toContain('invalid contentType');
   });
   
+  // ===========================================================================
+  // PATH TRAVERSAL DEFENSE (CRITICAL 8.1 regression tests)
+  // ===========================================================================
+  
+  it('rejects path with .. traversal', () => {
+    const content = new DarshanContent({
+      hostNodeId: 'host',
+      path: '../../../etc/passwd',
+    });
+    const result = content.validate();
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain('path traversal not allowed');
+  });
+  
+  it('rejects path with embedded .. segments', () => {
+    const content = new DarshanContent({
+      hostNodeId: 'host',
+      path: 'videos/../../../etc/shadow',
+    });
+    const result = content.validate();
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain('path traversal not allowed');
+  });
+  
+  it('allows absolute Unix path in validate() (host uses them legitimately)', () => {
+    // validate() allows absolute paths — the host node shares from its own FS.
+    // The API boundary (darshan-api.js) blocks absolute paths from EXTERNAL requests.
+    const content = new DarshanContent({
+      hostNodeId: 'host',
+      path: '/videos/my-stream.mp4',
+    });
+    const result = content.validate();
+    expect(result.errors).not.toContain('path traversal not allowed');
+  });
+  
+  it('allows Windows drive letter in validate() (host uses them legitimately)', () => {
+    const content = new DarshanContent({
+      hostNodeId: 'host',
+      path: 'C:\\Videos\\stream.mp4',
+    });
+    const result = content.validate();
+    expect(result.errors).not.toContain('path traversal not allowed');
+  });
+  
+  it('rejects Windows backslash traversal', () => {
+    const content = new DarshanContent({
+      hostNodeId: 'host',
+      path: 'videos\\..\\..\\..\\etc\\passwd',
+    });
+    const result = content.validate();
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain('path traversal not allowed');
+  });
+  
+  it('accepts valid relative content path', () => {
+    const content = new DarshanContent({
+      hostNodeId: 'host',
+      path: 'videos/my-stream.mp4',
+    });
+    const result = content.validate();
+    // Should not contain path traversal error (may fail on contentType)
+    expect(result.errors).not.toContain('path traversal not allowed');
+  });
+  
   it('returns public metadata without path', () => {
     const content = new DarshanContent({
       hostNodeId: 'host-123',
