@@ -201,6 +201,16 @@ export class MantraProtocol {
       timestamp: Date.now(),
     };
 
+    // Sign the rumor (ML-DSA-65) — excludes TTL since it decrements during propagation
+    const sigPayload = JSON.stringify({
+      messageId: rumor.messageId,
+      topic: rumor.topic,
+      data: rumor.data,
+      origin: rumor.origin,
+      timestamp: rumor.timestamp,
+    });
+    rumor.signature = this.identity.sign(sigPayload);
+
     this.seenMessages.add(messageId);
     this._bufferRumor(rumor);
     this._propagateRumor(rumor);
@@ -362,6 +372,28 @@ export class MantraProtocol {
       this.mesh.sendTo(fromNodeId, {
         gossip: { type: GossipMessageType.SEEN, messageId }
       });
+      return;
+    }
+
+    // Verify origin's ML-DSA-65 signature before trusting the rumor
+    if (!rumor.signature) {
+      log.warn('Dropping unsigned rumor', { origin: rumor.origin?.slice(0, 16), messageId });
+      return;
+    }
+    const originPubKey = this._getPeerPublicKey(rumor.origin);
+    if (!originPubKey) {
+      log.warn('Dropping rumor from unknown origin (no public key)', { origin: rumor.origin?.slice(0, 16), messageId });
+      return;
+    }
+    const sigPayload = JSON.stringify({
+      messageId: rumor.messageId,
+      topic: rumor.topic,
+      data: rumor.data,
+      origin: rumor.origin,
+      timestamp: rumor.timestamp,
+    });
+    if (!this.identity.verify(sigPayload, rumor.signature, originPubKey)) {
+      log.warn('Dropping rumor with invalid signature', { origin: rumor.origin?.slice(0, 16), messageId });
       return;
     }
 
@@ -535,6 +567,33 @@ export class MantraProtocol {
       if (topic && r.topic !== topic) return false;
       return true;
     });
+  }
+
+  /**
+   * Resolve a peer's public key from mesh state.
+   * Checks WS peers, relay keys, SHERPA registry, and self.
+   */
+  _getPeerPublicKey(nodeId) {
+    // Self
+    if (nodeId === this.identity.identity.nodeId) {
+      return this.identity.identity.publicKey;
+    }
+    // WS peer info
+    if (this.mesh?.peers) {
+      const peer = this.mesh.peers.get(nodeId);
+      if (peer?.identity?.publicKey) return peer.identity.publicKey;
+    }
+    // Relay peer keys (stored during signed registration)
+    if (this.mesh?._relayPeerKeys) {
+      const key = this.mesh._relayPeerKeys.get(nodeId);
+      if (key) return key;
+    }
+    // SHERPA registry
+    if (this.mesh?.sherpa?.registry) {
+      const regPeer = this.mesh.sherpa.registry.get(nodeId);
+      if (regPeer?.publicKey) return regPeer.publicKey;
+    }
+    return null;
   }
 
   /**

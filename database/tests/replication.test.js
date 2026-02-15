@@ -24,8 +24,11 @@ function createMockMesh(nodeId = 'repl-node-' + Math.random().toString(36).slice
   const handlers = {};
   return {
     identity: {
-      identity: { nodeId },
+      identity: { nodeId, publicKey: 'mock-pubkey-' + nodeId },
+      sign(message) { return 'mock-sig-' + nodeId; },
+      verify(message, signature, publicKey) { return signature.startsWith('mock-sig-'); },
     },
+    peers: new Map(),
     on(event, handler) { handlers[event] = handler; },
     off(event) { delete handlers[event]; },
     emit(event, ...args) { handlers[event]?.(...args); },
@@ -142,27 +145,50 @@ describe('ReplicationEngine: applyChange', () => {
   });
 
   it('applies a new change and returns true', () => {
+    // Register the remote peer's public key so sig verification can find it
+    mesh.peers.set('remote-node-abc', {
+      identity: { publicKey: 'mock-pubkey-remote-node-abc' },
+    });
+
+    const changeData = JSON.stringify({ title: 'Remote listing' });
+    const vectorClock = 'remote-node-abc-1234-xyz';
+    // Build signing payload matching what recordChange produces
+    const sigPayload = JSON.stringify({
+      tableName: 'pq_listings', rowId: 'remote-row-1', operation: 'INSERT',
+      data: changeData, nodeId: 'remote-node-abc', vectorClock,
+    });
+
     const result = engine.applyChange({
       table_name: 'pq_listings',
       row_id: 'remote-row-1',
       operation: 'INSERT',
-      data: JSON.stringify({ title: 'Remote listing' }),
+      data: changeData,
       node_id: 'remote-node-abc',
-      vector_clock: 'remote-node-abc-1234-xyz',
+      vector_clock: vectorClock,
       created_at: Date.now(),
+      signature: 'mock-sig-remote-node-abc',
     });
     assert.strictEqual(result, true);
   });
 
   it('rejects duplicate change (same vector_clock)', () => {
+    // Ensure peer key exists
+    mesh.peers.set('remote-node-abc', {
+      identity: { publicKey: 'mock-pubkey-remote-node-abc' },
+    });
+
+    const changeData = JSON.stringify({ title: 'Dedup' });
+    const vectorClock = 'dedup-clock-12345';
+
     const change = {
       table_name: 'pq_listings',
       row_id: 'dedup-row',
       operation: 'INSERT',
-      data: JSON.stringify({ title: 'Dedup' }),
+      data: changeData,
       node_id: 'remote-node-abc',
-      vector_clock: 'dedup-clock-12345',
+      vector_clock: vectorClock,
       created_at: Date.now(),
+      signature: 'mock-sig-remote-node-abc',
     };
     engine.applyChange(change);
     const second = engine.applyChange(change);
@@ -221,5 +247,101 @@ describe('ReplicationEngine: Sync', () => {
     assert.strictEqual(engine.syncInterval, null, 'syncInterval should be null after stop');
     
     if (existsSync(dbPath)) rmSync(dbPath);
+  });
+});
+
+// =============================================================================
+// HIGH 11.2 — Replication signature enforcement
+// =============================================================================
+
+describe('ReplicationEngine: Signature Enforcement', () => {
+  let engine;
+  let mesh;
+  const dbPath = TEST_DB_PATH + '.sigtest';
+
+  before(async () => {
+    mesh = createMockMesh();
+    engine = new ReplicationEngine(mesh, dbPath);
+    await engine.init();
+  });
+
+  after(() => {
+    engine.stopSync();
+    if (existsSync(dbPath)) rmSync(dbPath);
+  });
+
+  it('recordChange produces a signed entry in the replication log', () => {
+    engine.recordChange('pq_listings', 'sig-row-1', 'INSERT', { title: 'Signed' });
+    const changes = engine.getChangesSince(0);
+    const lastChange = changes[changes.length - 1];
+    assert.ok(lastChange.signature, 'Replication change should have a signature');
+    assert.ok(lastChange.signature.startsWith('mock-sig-'), 'Signature should come from identity.sign()');
+  });
+
+  it('applyChange rejects unsigned changes', () => {
+    const result = engine.applyChange({
+      table_name: 'pq_listings',
+      row_id: 'unsigned-row',
+      operation: 'INSERT',
+      data: JSON.stringify({ title: 'No sig' }),
+      node_id: 'remote-node-xyz',
+      vector_clock: 'unsigned-vc-1',
+      created_at: Date.now(),
+      // no signature
+    });
+    assert.strictEqual(result, false, 'Unsigned change should be rejected');
+  });
+
+  it('applyChange rejects changes from unknown nodes', () => {
+    const result = engine.applyChange({
+      table_name: 'pq_listings',
+      row_id: 'unknown-node-row',
+      operation: 'INSERT',
+      data: JSON.stringify({ title: 'Unknown' }),
+      node_id: 'totally-unknown-node',
+      vector_clock: 'unknown-vc-1',
+      created_at: Date.now(),
+      signature: 'mock-sig-totally-unknown-node',
+    });
+    assert.strictEqual(result, false, 'Change from unknown node should be rejected');
+  });
+
+  it('applyChange rejects changes with invalid signatures', () => {
+    // Register peer first
+    mesh.peers.set('bad-sig-peer', { identity: { publicKey: 'mock-pubkey-bad-sig-peer' } });
+
+    // Override verify to reject 'forged-sig'
+    const origVerify = mesh.identity.verify;
+    mesh.identity.verify = (msg, sig, pk) => sig !== 'forged-sig';
+
+    const result = engine.applyChange({
+      table_name: 'pq_listings',
+      row_id: 'bad-sig-row',
+      operation: 'INSERT',
+      data: JSON.stringify({ title: 'Bad sig' }),
+      node_id: 'bad-sig-peer',
+      vector_clock: 'bad-sig-vc-1',
+      created_at: Date.now(),
+      signature: 'forged-sig',
+    });
+
+    mesh.identity.verify = origVerify;
+    assert.strictEqual(result, false, 'Change with invalid signature should be rejected');
+  });
+
+  it('applyChange accepts validly signed changes from known peers', () => {
+    mesh.peers.set('valid-peer', { identity: { publicKey: 'mock-pubkey-valid-peer' } });
+
+    const result = engine.applyChange({
+      table_name: 'pq_listings',
+      row_id: 'valid-sig-row',
+      operation: 'INSERT',
+      data: JSON.stringify({ title: 'Valid' }),
+      node_id: 'valid-peer',
+      vector_clock: 'valid-vc-1',
+      created_at: Date.now(),
+      signature: 'mock-sig-valid-peer',
+    });
+    assert.strictEqual(result, true, 'Validly signed change should be accepted');
   });
 });

@@ -312,3 +312,112 @@ describe('ContentStore', () => {
     rmSync(TEST_DATA_DIR + '_lru', { recursive: true, force: true });
   });
 });
+
+// =============================================================================
+// HIGH 9.2 — Content vote signature verification
+// =============================================================================
+
+describe('ContentStore: Vote Signature Enforcement', () => {
+  let store;
+  const voteDir = TEST_DATA_DIR + '_vote';
+
+  before(async () => {
+    store = new ContentStore({ dataDir: voteDir, quorumSize: 2 });
+    await store.init();
+    // Wire up mock identity and mesh for signature verification
+    store.identity = {
+      identity: { nodeId: 'local-node', publicKey: 'mock-pubkey-local' },
+      sign(msg) { return 'mock-sig-local'; },
+      verify(msg, sig, pubKey) { return sig.startsWith('mock-sig-'); },
+    };
+    store.mesh = {
+      peers: new Map([
+        ['voter-a', { identity: { publicKey: 'mock-pubkey-voter-a' } }],
+      ]),
+      networkId: 'test-net',
+    };
+    store.gossip = { spreadRumor() {} };
+  });
+
+  after(() => {
+    rmSync(voteDir, { recursive: true, force: true });
+  });
+
+  it('rejects vote with no signature', async () => {
+    // Store content first
+    const result = await store.store('vote-test-content', { publish: false });
+    const hash = result.hash;
+
+    // Attempt a vote with no signature
+    await store._handleContentGossip({
+      type: 'content_vote',
+      hash,
+      nodeId: 'voter-a',
+      vote: 'valid',
+      // no signature
+    }, 'voter-a');
+
+    const meta = store.getMeta(hash);
+    assert.ok(!meta.consensusProof || meta.consensusProof.validators.length === 0,
+      'Vote without signature should NOT be accepted');
+  });
+
+  it('rejects vote from unknown node (no pubkey)', async () => {
+    const result = await store.store('vote-test-content-2', { publish: false });
+    const hash = result.hash;
+
+    await store._handleContentGossip({
+      type: 'content_vote',
+      hash,
+      nodeId: 'totally-unknown-node',
+      vote: 'valid',
+      signature: 'mock-sig-unknown',
+    }, 'totally-unknown-node');
+
+    const meta = store.getMeta(hash);
+    assert.ok(!meta.consensusProof || meta.consensusProof.validators.length === 0,
+      'Vote from unknown node should NOT be accepted');
+  });
+
+  it('rejects vote with invalid signature', async () => {
+    const result = await store.store('vote-test-content-3', { publish: false });
+    const hash = result.hash;
+
+    // Override verify to reject this bad sig
+    const origVerify = store.identity.verify;
+    store.identity.verify = (msg, sig, pk) => sig !== 'forged-signature';
+
+    await store._handleContentGossip({
+      type: 'content_vote',
+      hash,
+      nodeId: 'voter-a',
+      vote: 'valid',
+      signature: 'forged-signature',
+    }, 'voter-a');
+
+    store.identity.verify = origVerify;
+
+    const meta = store.getMeta(hash);
+    assert.ok(!meta.consensusProof || meta.consensusProof.validators.length === 0,
+      'Vote with invalid signature should NOT be accepted');
+  });
+
+  it('accepts vote with valid signature from known peer', async () => {
+    const result = await store.store('vote-test-content-4', { publish: false });
+    const hash = result.hash;
+
+    await store._handleContentGossip({
+      type: 'content_vote',
+      hash,
+      nodeId: 'voter-a',
+      vote: 'valid',
+      signature: 'mock-sig-voter-a',
+      timestamp: Date.now(),
+    }, 'voter-a');
+
+    const meta = store.getMeta(hash);
+    assert.ok(meta.consensusProof, 'ConsensusProof should exist');
+    assert.strictEqual(meta.consensusProof.validators.length, 1, 'Valid vote should be accepted');
+    assert.strictEqual(meta.consensusProof.validators[0].nodeId, 'voter-a');
+  });
+});
