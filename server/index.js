@@ -387,7 +387,6 @@ export class YakmeshNode {
     // 5. Initialize content store for public delivery
     this.contentStore = new ContentStore({
       dataDir: this.config.database?.contentPath || './data/content',
-      quorumSize: 2,
     });
     await this.contentStore.init(this);
     

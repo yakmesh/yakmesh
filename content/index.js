@@ -1,6 +1,6 @@
 /**
  * YAKMESH™ Content Module
- * Content-addressed storage with public delivery
+ * Content-addressed storage with integrity verification
  * 
  * @module content
  * @license MIT
@@ -12,7 +12,6 @@ export {
   ContentType, 
   ContentStatus, 
   ContentMetadata,
-  ConsensusProof,
   computeContentHash,
   deriveContentName,
 } from './store.js';
