@@ -852,6 +852,81 @@ describe('GumbaHub', () => {
     assert.strictEqual(stats.bundlesCreated, 2);
     assert.strictEqual(stats.activeBundles, 2);
   });
+  
+  it('delivers messages via ANNEX when visitor has nodeId', async () => {
+    const sent = [];
+    const mockAnnex = {
+      send: async (nodeId, payload) => {
+        sent.push({ nodeId, payload });
+        return { sent: true };
+      },
+    };
+    
+    const annexHub = new GumbaHub(identity, mockAnnex, {});
+    annexHub.createBundle('annex-room');
+    
+    const bundle = annexHub.getBundle('annex-room');
+    bundle.memberTree.addMember(identity.dokoId, GUMBA_ROLE.MEMBER);
+    bundle.addMessage({ text: 'Secret' }, identity.dokoId);
+    
+    const challenge = annexHub.issueChallenge('annex-room', identity.dokoId);
+    const signed = GumbaProof.signChallenge(challenge, identity.secretKey);
+    const access = await annexHub.handleAccessRequest('annex-room', signed, 'remote-visitor-node');
+    
+    const result = await annexHub.getMessages(access.sessionId);
+    
+    assert.strictEqual(result.delivered, true);
+    assert.strictEqual(result.via, 'annex');
+    assert.strictEqual(result.count, 1);
+    assert.strictEqual(sent.length, 1);
+    assert.strictEqual(sent[0].nodeId, 'remote-visitor-node');
+    assert.strictEqual(sent[0].payload.type, 'gumba:messages');
+    assert.strictEqual(sent[0].payload.messages.length, 1);
+  });
+  
+  it('returns plaintext when no ANNEX is available', async () => {
+    // hub has null annex (set in beforeEach)
+    hub.createBundle('plain-room');
+    
+    const bundle = hub.getBundle('plain-room');
+    bundle.memberTree.addMember(identity.dokoId, GUMBA_ROLE.MEMBER);
+    bundle.addMessage({ text: 'Hello' }, identity.dokoId);
+    
+    const challenge = hub.issueChallenge('plain-room', identity.dokoId);
+    const signed = GumbaProof.signChallenge(challenge, identity.secretKey);
+    const access = await hub.handleAccessRequest('plain-room', signed, 'visitor');
+    
+    const result = await hub.getMessages(access.sessionId);
+    
+    // Should return messages directly (no ANNEX wrapping)
+    assert.ok(result.messages);
+    assert.strictEqual(result.messages.length, 1);
+    assert.strictEqual(result.messages[0].content.text, 'Hello');
+  });
+  
+  it('falls through to plaintext on ANNEX failure', async () => {
+    const mockAnnex = {
+      send: async () => { throw new Error('PEER_UNREACHABLE'); },
+    };
+    
+    const annexHub = new GumbaHub(identity, mockAnnex, {});
+    annexHub.createBundle('fallback-room');
+    
+    const bundle = annexHub.getBundle('fallback-room');
+    bundle.memberTree.addMember(identity.dokoId, GUMBA_ROLE.MEMBER);
+    bundle.addMessage({ text: 'Fallback' }, identity.dokoId);
+    
+    const challenge = annexHub.issueChallenge('fallback-room', identity.dokoId);
+    const signed = GumbaProof.signChallenge(challenge, identity.secretKey);
+    const access = await annexHub.handleAccessRequest('fallback-room', signed, 'remote-visitor');
+    
+    const result = await annexHub.getMessages(access.sessionId);
+    
+    // Should fall through to direct return
+    assert.ok(result.messages);
+    assert.strictEqual(result.messages.length, 1);
+    assert.strictEqual(result.messages[0].content.text, 'Fallback');
+  });
 });
 
 // ═══════════════════════════════════════════════════════════════════════════════
