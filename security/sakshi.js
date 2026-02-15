@@ -1440,7 +1440,7 @@ export function assessComputationTrust(computation, computedBy, options = {}) {
     }))
   );
 
-  if (verificationAgreement.agreed && verificationAgreement.value === 'VALID') {
+  if (verificationAgreement.agreed && verificationAgreement.data?.value === 'VALID') {
     return {
       trusted: true,
       basis: 'VERIFIED',
@@ -1449,7 +1449,7 @@ export function assessComputationTrust(computation, computedBy, options = {}) {
     };
   }
 
-  if (verificationAgreement.agreed && verificationAgreement.value === 'INVALID') {
+  if (verificationAgreement.agreed && verificationAgreement.data?.value === 'INVALID') {
     return {
       trusted: false,
       basis: 'VERIFICATION_FAILED',
@@ -1462,7 +1462,7 @@ export function assessComputationTrust(computation, computedBy, options = {}) {
   return {
     trusted: false,
     basis: 'VERIFIERS_DISAGREE',
-    action: verificationAgreement.action,
+    action: verificationAgreement.data?.action,
     suggestion: 'Need more verifiers or investigate disagreement',
   };
 }
