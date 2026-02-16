@@ -236,9 +236,10 @@ export class DharmaModerator extends EventEmitter {
     for (const [categoryKey, category] of Object.entries(PROHIBITED_CATEGORIES)) {
       if (!this.config.enabledCategories.includes(categoryKey)) continue;
       
-      // Add keyword patterns (word boundary wrapped)
+      // Add keyword patterns (word boundary wrapped, metacharacters escaped)
       for (const keyword of category.keywords) {
-        const pattern = new RegExp('\\b' + keyword.replace(/\s+/g, '\\s+') + '\\b', 'i');
+        const escaped = keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const pattern = new RegExp('\\b' + escaped.replace(/\s+/g, '\\s+') + '\\b', 'i');
         this.patternIndex.set(pattern, { category, match: 'keyword', original: keyword });
       }
       

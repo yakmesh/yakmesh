@@ -109,10 +109,19 @@ export function createDarshanAPI({
       return res.status(400).json({ error: 'path required' });
     }
     
-    // Path traversal defense — reject .., absolute paths, and drive letters.
+    // Path traversal defense — reject .., absolute paths, drive letters, and null bytes.
     // DARSHAN content paths must be relative within the host's content root.
-    const normalizedPath = String(path).replace(/\\/g, '/');
-    if (normalizedPath.includes('..') || normalizedPath.startsWith('/') || /^[a-zA-Z]:/.test(path)) {
+    // IMPORTANT: URL-decode BEFORE checking, to catch %2e%2e (%2e = .) bypass.
+    let normalizedPath;
+    try {
+      normalizedPath = decodeURIComponent(String(path)).replace(/\\/g, '/');
+    } catch {
+      return res.status(400).json({ error: 'Invalid path: malformed encoding' });
+    }
+    if (normalizedPath.includes('\0') ||            // Null byte injection
+        normalizedPath.includes('..') ||            // Traversal
+        normalizedPath.startsWith('/') ||           // Absolute path
+        /^[a-zA-Z]:/.test(normalizedPath)) {        // Windows drive letter
       return res.status(400).json({ error: 'Invalid path: traversal or absolute paths not allowed' });
     }
 

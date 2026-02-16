@@ -65,16 +65,23 @@ const log = createLogger('identity:node-key');
 import { ml_dsa65 } from '@noble/post-quantum/ml-dsa.js';
 import { sha3_256 as _nobleSha3 } from '@noble/hashes/sha3.js';
 import { bytesToHex, hexToBytes } from '@noble/hashes/utils.js';
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, chmodSync } from 'fs';
 import { join } from 'path';
 import { createCipheriv, createDecipheriv, scryptSync, randomBytes } from 'crypto';
-import { hostname } from 'os';
+import { hostname, platform } from 'os';
 
 // ACCEL: Hardware-accelerated crypto (native SHA3 via OpenSSL/SHA-NI, future liboqs)
 import { sha3_256, mlDsa65Sign, mlDsa65Verify } from '../utils/accel.js';
 
 // Import iO network identity for obfuscated node IDs
 import { deriveNetworkName, deriveNetworkId } from '../oracle/network-identity.js';
+
+// SLH-DSA (FIPS 205) backup signature — defense-in-depth against lattice breaks
+import {
+  generateBackupSignatureKeyPair,
+  signBackup as slhDsaSign,
+  verifyBackup as slhDsaVerify,
+} from '../security/crypto-config.js';
 
 // Cached codebase hash - set during first identity generation
 let cachedCodebaseHash = null;
@@ -209,6 +216,20 @@ export class NodeIdentity {
   }
 
   /**
+   * Set restrictive file permissions on key file (owner read/write only).
+   * On Windows this is a no-op (NTFS ACLs handle access differently).
+   */
+  _secureKeyFile() {
+    if (platform() !== 'win32') {
+      try {
+        chmodSync(this.keyPath, 0o600); // rw------- (owner only)
+      } catch (e) {
+        log.warn('Could not set restrictive permissions on key file', { error: e.message });
+      }
+    }
+  }
+
+  /**
    * Derive a machine-specific encryption key for secret key storage.
    * 
    * PASSPHRASE: Pre-iO node material (codebaseHash + SHA3-256(publicKey))
@@ -340,9 +361,45 @@ export class NodeIdentity {
           const toStore = { ...this.identity, secretKeyEnc: enc };
           delete toStore.secretKey;
           writeFileSync(this.keyPath, JSON.stringify(toStore, null, 2));
+          this._secureKeyFile();
         } else {
           log.warn('Skipping secret key encryption: codebase hash not yet available');
         }
+      }
+
+      // ─── SLH-DSA Backup Key Loading / Migration ───
+      // Decrypt SLH-DSA backup secret key if present
+      if (this.identity.backupSecretKeyEnc && !this.identity.backupSecretKey) {
+        if (storedCodebaseHash) {
+          try {
+            this.identity.backupSecretKey = this._decryptSecretKey(
+              this.identity.backupSecretKeyEnc, this.identity.publicKey, storedCodebaseHash
+            );
+          } catch (e) {
+            log.error('Failed to decrypt SLH-DSA backup key', { error: e.message });
+            // Non-fatal: node can still operate with ML-DSA only
+            log.warn('SLH-DSA backup signatures unavailable this session');
+          }
+        }
+      } else if (!this.identity.backupPublicKey && storedCodebaseHash) {
+        // Migration: existing identity has no SLH-DSA backup key — generate one
+        log.info('Migrating identity: generating SLH-DSA backup keypair');
+        const backupKeyPair = generateBackupSignatureKeyPair();
+        this.identity.backupPublicKey = bytesToHex(backupKeyPair.publicKey);
+        this.identity.backupSecretKey = bytesToHex(backupKeyPair.secretKey);
+        this.identity.backupAlgorithm = 'SLH-DSA-SHA2-192f';
+
+        // Re-save with encrypted backup key
+        const backupSecretKeyEnc = this._encryptSecretKey(
+          this.identity.backupSecretKey, this.identity.publicKey, storedCodebaseHash
+        );
+        const data = JSON.parse(readFileSync(this.keyPath, 'utf8'));
+        data.backupPublicKey = this.identity.backupPublicKey;
+        data.backupAlgorithm = 'SLH-DSA-SHA2-192f';
+        data.backupSecretKeyEnc = backupSecretKeyEnc;
+        writeFileSync(this.keyPath, JSON.stringify(data, null, 2));
+        this._secureKeyFile();
+        log.info('SLH-DSA backup keypair generated and stored');
       }
       
       // Check if identity needs regeneration (codebase changed)
@@ -359,6 +416,7 @@ export class NodeIdentity {
           nodeId: this.identity.nodeId,
           network: this.identity.networkName || this.networkName || 'unknown',
           algorithm: this.identity.algorithm,
+          backupAlgorithm: this.identity.backupAlgorithm || 'none',
           nistLevel: this.identity.nistLevel,
           verificationPhrase: this.verificationPhrase || undefined
         });
@@ -379,6 +437,13 @@ export class NodeIdentity {
     const publicKeyBytes = hexToBytes(keyPair.publicKey);
     const nodeId = generateNodeId(publicKeyBytes, codebaseHash);
 
+    // Generate SLH-DSA backup keypair (FIPS 205) — defense-in-depth
+    // If lattice assumptions (ML-DSA) ever break, hash-based SLH-DSA still holds
+    log.info('Generating SLH-DSA backup keypair (SLH-DSA-SHA2-192f)');
+    const backupKeyPair = generateBackupSignatureKeyPair();
+    const backupPublicKeyHex = bytesToHex(backupKeyPair.publicKey);
+    const backupSecretKeyHex = bytesToHex(backupKeyPair.secretKey);
+
     this.identity = {
       nodeId,
       networkName: this.networkName,
@@ -388,23 +453,30 @@ export class NodeIdentity {
       region,
       publicKey: keyPair.publicKey,
       secretKey: keyPair.secretKey,  // Kept in memory only
+      backupPublicKey: backupPublicKeyHex,    // SLH-DSA public key (shared with peers)
+      backupSecretKey: backupSecretKeyHex,    // SLH-DSA secret key (memory only)
       algorithm: keyPair.algorithm,
+      backupAlgorithm: 'SLH-DSA-SHA2-192f',
       nistLevel: keyPair.nistLevel,
       createdAt: Date.now(),
       capabilities: ['listings', 'chat', 'forum', 'qcoa'],
     };
 
-    // Encrypt secret key for at-rest storage
+    // Encrypt secret keys for at-rest storage
     // Passphrase = pre-iO material (codebaseHash + SHA3-256(publicKey))
     // This binds the encrypted file to both the codebase AND this specific keypair
     const secretKeyEnc = this._encryptSecretKey(keyPair.secretKey, keyPair.publicKey, codebaseHash);
-    const toStore = { ...this.identity, secretKeyEnc };
-    delete toStore.secretKey;  // Never write plaintext secret key to disk
+    const backupSecretKeyEnc = this._encryptSecretKey(backupSecretKeyHex, keyPair.publicKey, codebaseHash);
+    const toStore = { ...this.identity, secretKeyEnc, backupSecretKeyEnc };
+    delete toStore.secretKey;          // Never write plaintext ML-DSA secret key to disk
+    delete toStore.backupSecretKey;    // Never write plaintext SLH-DSA secret key to disk
     writeFileSync(this.keyPath, JSON.stringify(toStore, null, 2));
+    this._secureKeyFile();
     log.info('Generated new node identity', {
       nodeId,
       network: this.networkName,
       algorithm: 'ML-DSA-65 (FIPS 204, NIST Level 3)',
+      backupAlgorithm: 'SLH-DSA-SHA2-192f (FIPS 205)',
       publicKeySize: keyPair.publicKey.length / 2,
       verificationPhrase: this.verificationPhrase || undefined
     });
@@ -426,7 +498,9 @@ export class NodeIdentity {
       name: this.identity.name,
       region: this.identity.region,
       publicKey: this.identity.publicKey,
+      backupPublicKey: this.identity.backupPublicKey || null,  // SLH-DSA (FIPS 205)
       algorithm: this.identity.algorithm,
+      backupAlgorithm: this.identity.backupAlgorithm || null,
       nistLevel: this.identity.nistLevel,
       capabilities: this.identity.capabilities,
       createdAt: this.identity.createdAt,
@@ -479,6 +553,125 @@ export class NodeIdentity {
     const { _signature, _signer, _signedAt, ...obj } = signedObj;
     const payload = JSON.stringify(obj);
     return this.verify(payload, _signature, publicKey);
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // SLH-DSA Dual Signature — Defense-in-Depth for Critical Operations
+  // ═══════════════════════════════════════════════════════════════════════════
+  //
+  // Critical ops (content publish, identity registration, relay registration)
+  // produce BOTH an ML-DSA-65 signature (fast, lattice-based) AND an SLH-DSA
+  // signature (slower ~100-160ms, hash-based). An attacker must break BOTH
+  // lattice AND hash assumptions to forge a critical signature.
+  //
+  // Non-critical ops (regular messages, peer auth) continue using ML-DSA-65
+  // only for performance.
+  // ═══════════════════════════════════════════════════════════════════════════
+
+  /**
+   * Check if this node has SLH-DSA dual-sig capability
+   * @returns {boolean}
+   */
+  hasDualSignature() {
+    return !!(this.identity?.backupSecretKey && this.identity?.backupPublicKey);
+  }
+
+  /**
+   * Sign a critical message with BOTH ML-DSA-65 AND SLH-DSA (defense-in-depth)
+   * 
+   * Use for: content publish, identity registration, relay registration,
+   * revocation certificates — any operation worth the ~100-160ms cost.
+   * 
+   * @param {string} message - Message to sign (string)
+   * @returns {{ primary: string, backup: string }} Both signatures as hex strings
+   * @throws {Error} If backup key not available
+   */
+  signCritical(message) {
+    if (!this.identity) throw new Error('Identity not initialized');
+    if (!this.identity.backupSecretKey) {
+      throw new Error('SLH-DSA backup key not available — cannot create dual signature');
+    }
+
+    const messageBytes = typeof message === 'string'
+      ? new TextEncoder().encode(message)
+      : message;
+
+    // ML-DSA-65 primary signature (fast, ~1ms)
+    const primarySig = this.sign(message);
+
+    // SLH-DSA backup signature (slower, ~100-160ms, but hash-based security)
+    const backupSecretKey = hexToBytes(this.identity.backupSecretKey);
+    const backupSig = slhDsaSign(messageBytes, backupSecretKey);
+
+    return {
+      primary: primarySig,
+      backup: bytesToHex(backupSig),
+    };
+  }
+
+  /**
+   * Verify a dual signature from another node (BOTH must be valid)
+   * 
+   * @param {string} message - Original message
+   * @param {string} primarySigHex - ML-DSA-65 signature (hex)
+   * @param {string} backupSigHex - SLH-DSA signature (hex)
+   * @param {string} primaryPKHex - ML-DSA-65 public key (hex)
+   * @param {string} backupPKHex - SLH-DSA public key (hex)
+   * @returns {{ valid: boolean, primaryValid: boolean, backupValid: boolean }}
+   */
+  verifyCritical(message, primarySigHex, backupSigHex, primaryPKHex, backupPKHex) {
+    const messageBytes = typeof message === 'string'
+      ? new TextEncoder().encode(message)
+      : message;
+
+    // Verify ML-DSA-65 (primary)
+    const primaryValid = this.verify(message, primarySigHex, primaryPKHex);
+
+    // Verify SLH-DSA (backup)
+    let backupValid = false;
+    try {
+      const backupSig = hexToBytes(backupSigHex);
+      const backupPK = hexToBytes(backupPKHex);
+      backupValid = slhDsaVerify(backupSig, messageBytes, backupPK);
+    } catch (e) {
+      log.error('SLH-DSA backup verification failed', { error: e.message });
+    }
+
+    return {
+      valid: primaryValid && backupValid,
+      primaryValid,
+      backupValid,
+    };
+  }
+
+  /**
+   * Sign a JSON object with dual signature (for critical mesh protocol messages)
+   * @param {Object} obj - Object to sign
+   * @returns {Object} Object with _signature, _backupSignature, _signer, _signedAt
+   */
+  signCriticalObject(obj) {
+    const payload = JSON.stringify(obj);
+    const sigs = this.signCritical(payload);
+    return {
+      ...obj,
+      _signature: sigs.primary,
+      _backupSignature: sigs.backup,
+      _signer: this.identity.nodeId,
+      _signedAt: Date.now(),
+    };
+  }
+
+  /**
+   * Verify a dual-signed object from another node
+   * @param {Object} signedObj - Object with _signature and _backupSignature
+   * @param {string} primaryPK - ML-DSA-65 public key (hex)
+   * @param {string} backupPK - SLH-DSA public key (hex)
+   * @returns {{ valid: boolean, primaryValid: boolean, backupValid: boolean }}
+   */
+  verifyCriticalObject(signedObj, primaryPK, backupPK) {
+    const { _signature, _backupSignature, _signer, _signedAt, ...obj } = signedObj;
+    const payload = JSON.stringify(obj);
+    return this.verifyCritical(payload, _signature, _backupSignature, primaryPK, backupPK);
   }
 }
 

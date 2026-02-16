@@ -34,6 +34,7 @@ export function createContentAPI(contentStore, options = {}) {
     writeLimiter,
     readLimiter,
     validateString,
+    requirePeerAuth,
   } = options;
 
   // =========================================
@@ -202,7 +203,7 @@ export function createContentAPI(contentStore, options = {}) {
    * - name: optional name
    * - tags: comma-separated tags
    */
-  router.post('/publish', writeLimiter, async (req, res) => {
+  router.post('/publish', writeLimiter, requirePeerAuth, async (req, res) => {
     try {
       let content;
       let options = {};
@@ -300,7 +301,7 @@ export function createContentAPI(contentStore, options = {}) {
    * DELETE /content/:hash
    * Remove content (local only - cannot remove from mesh)
    */
-  router.delete('/:hash', writeLimiter, (req, res) => {
+  router.delete('/:hash', writeLimiter, requirePeerAuth, (req, res) => {
     const { hash } = req.params;
     
     if (!contentStore.has(hash)) {

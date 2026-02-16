@@ -379,6 +379,7 @@ describe('KHATA Trust Integration', () => {
       
       it('should route attestation announce', async () => {
         const handleSpy = vi.spyOn(integration, 'handleAttestationAnnounce').mockResolvedValue();
+        vi.spyOn(integration, '_verifyMessageSignature').mockReturnValue({ valid: true });
         
         const message = { type: KHATA_TRUST_MESSAGE.ATTESTATION_ANNOUNCE };
         const result = await integration.handleMessage(message, 'peer-1');
@@ -646,6 +647,7 @@ describe('KHATA Trust Integration', () => {
         const handleRequest = vi.spyOn(integration, 'handleGeoProofRequest').mockResolvedValue();
         const handleResponse = vi.spyOn(integration, 'handleGeoProofResponse').mockResolvedValue();
         const handleLandmark = vi.spyOn(integration, 'handleLandmarkAnnounce').mockResolvedValue();
+        vi.spyOn(integration, '_verifyMessageSignature').mockReturnValue({ valid: true });
         
         await integration.handleMessage({ type: KHATA_TRUST_MESSAGE.GEO_PROOF_ANNOUNCE }, 'peer-1');
         expect(handleAnnounce).toHaveBeenCalled();

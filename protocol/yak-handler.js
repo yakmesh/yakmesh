@@ -3,10 +3,13 @@
  * Y:// Protocol Handler Executable
  * This script is invoked by the OS when a y:// URL is clicked.
  * 
+ * SECURITY: Uses execFile (no shell) to prevent command injection.
+ * The URL is validated to only produce http://localhost:PORT/... URLs.
+ * 
  * Self-contained - no ES module imports for compatibility.
  */
 
-const { exec } = require('child_process');
+const { execFile } = require('child_process');
 const { platform } = require('os');
 
 const PORT = 3000;
@@ -78,25 +81,48 @@ if (!url || !url.match(/^(y|yak):\/\//i)) {
 // Convert to HTTP URL
 const httpUrl = yakToHttp(url, PORT);
 
-console.log(`🦬 Y Protocol: ${url}`);
-console.log(`   → ${httpUrl}`);
+// SECURITY: Validate the generated URL is actually a localhost HTTP URL.
+// This prevents any crafted yak:// URL from generating a malicious target.
+try {
+  const parsed = new (require('url').URL)(httpUrl);
+  if (!['http:', 'https:'].includes(parsed.protocol)) {
+    console.error('Security: Generated URL has invalid protocol:', parsed.protocol);
+    process.exit(1);
+  }
+  if (parsed.hostname !== 'localhost' && parsed.hostname !== '127.0.0.1') {
+    console.error('Security: Generated URL points to non-local host:', parsed.hostname);
+    process.exit(1);
+  }
+} catch (e) {
+  console.error('Security: Generated URL is malformed:', e.message);
+  process.exit(1);
+}
 
-// Open in default browser
+console.log(`Y Protocol: ${url}`);
+console.log(`   -> ${httpUrl}`);
+
+// Open in default browser using execFile (no shell) to prevent injection.
+// Each OS gets its opener binary called directly with the URL as an argument,
+// never concatenated into a shell string.
 const os = platform();
-let cmd;
+let opener;
+let args;
 
 switch (os) {
   case 'win32':
-    cmd = `start "" "${httpUrl}"`;
+    opener = 'cmd.exe';
+    args = ['/c', 'start', '', httpUrl];
     break;
   case 'darwin':
-    cmd = `open "${httpUrl}"`;
+    opener = '/usr/bin/open';
+    args = [httpUrl];
     break;
   default:
-    cmd = `xdg-open "${httpUrl}"`;
+    opener = '/usr/bin/xdg-open';
+    args = [httpUrl];
 }
 
-exec(cmd, (error) => {
+execFile(opener, args, (error) => {
   if (error) {
     console.error('Failed to open browser:', error.message);
     process.exit(1);
