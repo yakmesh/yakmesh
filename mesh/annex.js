@@ -219,6 +219,14 @@ class AnnexSession {
     
     const ciphertextBytes = hexToBytes(ciphertext);
     this.sharedSecret = mlKem768Decapsulate(ciphertextBytes, this.kemKeyPair.secretKey);
+
+    // Zero ephemeral KEM secret key — shared secret is extracted, secret key is
+    // no longer needed. Minimizes exposure window if memory is later compromised.
+    if (this.kemKeyPair.secretKey instanceof Uint8Array) {
+      this.kemKeyPair.secretKey.fill(0);
+    }
+    this.kemKeyPair = null; // Release reference entirely
+
     // Initiator receiving KEY_RESPONSE: switch immediately, zero old key.
     // The initiator is always "first mover" — its next message triggers
     // the responder to promote pendingEncryptionKey. Old key material

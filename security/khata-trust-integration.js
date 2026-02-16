@@ -139,6 +139,98 @@ export class KhataTrustIntegration extends EventEmitter {
     if (geoProofService) this.geoProofService = geoProofService;
   }
   
+  /**
+   * Verify ML-DSA-65 signature on an incoming trust message.
+   * 
+   * Messages that include a `signature` field must prove authorship via
+   * the signer's public key. The dokoId/nodeId in the message identifies
+   * who signed. Their publicKey is resolved from the mesh peer registry.
+   * 
+   * @param {Object} message - The incoming trust message
+   * @param {string} fromPeerId - The peer who forwarded this message
+   * @returns {{ valid: boolean, reason?: string }}
+   */
+  _verifyMessageSignature(message, fromPeerId) {
+    // Messages without signatures are rejected if they should have one
+    if (!message.signature) {
+      return { valid: false, reason: 'Missing signature' };
+    }
+    
+    // Identify the signer's public key. Trust messages carry dokoId or nodeId.
+    const signerId = message.dokoId || message.landmark?.nodeId || fromPeerId;
+    if (!signerId) {
+      return { valid: false, reason: 'Cannot identify message signer' };
+    }
+    
+    // Resolve public key from mesh peer registry (same pattern as requirePeerAuth)
+    let publicKey = null;
+    if (this._resolvePublicKey) {
+      publicKey = this._resolvePublicKey(signerId);
+    }
+    // Fallback: if this is the message dispatcher for another node's forwarded message,
+    // the fromPeerId may differ from the original signer. Try the signer directly.
+    if (!publicKey && signerId !== fromPeerId && this._resolvePublicKey) {
+      publicKey = this._resolvePublicKey(fromPeerId);
+    }
+    
+    if (!publicKey) {
+      return { valid: false, reason: `No public key for signer ${signerId.slice(0, 20)}` };
+    }
+    
+    // Reconstruct the signed payload based on message type
+    try {
+      let payload;
+      
+      // Each announcement type signs a specific subset of fields
+      switch (message.type) {
+        case KHATA_TRUST_MESSAGE.TIER_ANNOUNCE:
+          payload = JSON.stringify({
+            dokoId: message.dokoId,
+            tier: message.tier,
+            weight: message.weight,
+            timestamp: message.timestamp,
+          });
+          break;
+        case KHATA_TRUST_MESSAGE.GEO_PROOF_ANNOUNCE:
+          payload = JSON.stringify({
+            proof: message.proof,
+            dokoId: message.dokoId,
+            timestamp: message.timestamp,
+          });
+          break;
+        case KHATA_TRUST_MESSAGE.LANDMARK_ANNOUNCE:
+          payload = JSON.stringify({
+            landmark: message.landmark,
+            timestamp: message.timestamp,
+          });
+          break;
+        default:
+          // For other signed messages, sign the full payload minus signature/messageId/hops
+          const { signature: _s, messageId: _m, hops: _h, ...rest } = message;
+          payload = JSON.stringify(rest);
+      }
+      
+      const sigBytes = hexToBytes(message.signature);
+      const pubKeyBytes = hexToBytes(publicKey);
+      const msgBytes = utf8ToBytes(payload);
+      const valid = mlDsa65Verify(sigBytes, msgBytes, pubKeyBytes);
+      
+      return { valid };
+    } catch (e) {
+      return { valid: false, reason: `Verification error: ${e.message}` };
+    }
+  }
+  
+  /**
+   * Set public key resolver function.
+   * Called during construction or setNetworkLayer to allow signature verification
+   * against the mesh peer registry.
+   * @param {Function} resolver - (nodeId) => publicKeyHex | null
+   */
+  setPublicKeyResolver(resolver) {
+    this._resolvePublicKey = resolver;
+  }
+  
   // ═══════════════════════════════════════════════════════════════════════════
   // MESH REVOCATION GOSSIP
   // ═══════════════════════════════════════════════════════════════════════════
@@ -687,6 +779,17 @@ export class KhataTrustIntegration extends EventEmitter {
         log.warn('khata-trust', `Failed to store geo-proof: ${err.message}`);
       }
     }
+
+    // Cache deserialized proof in GeoProofService for /geo/verify lookups
+    if (this.geoProofService && message.proof) {
+      try {
+        const { GeographicProof } = await import('./geo-proof.js');
+        const peerProof = GeographicProof.deserialize(message.proof);
+        this.geoProofService.proofs.set(peerProof.nodeId || message.dokoId, peerProof);
+      } catch (err) {
+        log.warn('khata-trust', `Failed to cache peer geo-proof: ${err.message}`);
+      }
+    }
     
     // Propagate to other peers
     if (this.broadcastToPeers) {
@@ -831,6 +934,27 @@ export class KhataTrustIntegration extends EventEmitter {
    * Handle incoming trust message
    */
   async handleMessage(message, fromPeerId) {
+    // Messages that carry a signature MUST pass verification.
+    // Requests and challenges without signatures are allowed through.
+    const SIGNED_TYPES = new Set([
+      KHATA_TRUST_MESSAGE.TIER_ANNOUNCE,
+      KHATA_TRUST_MESSAGE.GEO_PROOF_ANNOUNCE,
+      KHATA_TRUST_MESSAGE.LANDMARK_ANNOUNCE,
+      KHATA_TRUST_MESSAGE.SILICON_IDENTITY,
+      KHATA_TRUST_MESSAGE.GRAPH_UPDATE,
+      KHATA_TRUST_MESSAGE.ATTESTATION_ANNOUNCE,
+      KHATA_TRUST_MESSAGE.REVOCATION_CERTIFICATE,
+    ]);
+    
+    if (SIGNED_TYPES.has(message.type)) {
+      const sigResult = this._verifyMessageSignature(message, fromPeerId);
+      if (!sigResult.valid) {
+        log.warn('khata-trust', 
+          `Rejected unsigned/forged trust message: ${message.type} from ${fromPeerId?.slice(0, 20)} — ${sigResult.reason}`);
+        return false;
+      }
+    }
+    
     switch (message.type) {
       // Mesh Revocation
       case KHATA_TRUST_MESSAGE.ATTESTATION_ANNOUNCE:

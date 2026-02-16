@@ -947,7 +947,7 @@ export class YakmeshNode {
   _initKommWebSocket() {
     if (!this.http || !this.kathaHub) return;
     
-    this.kommWss = new WebSocketServer({ noServer: true });
+    this.kommWss = new WebSocketServer({ noServer: true, maxPayload: 1048576 }); // 1MB max message size
     
     // Handle upgrade requests for /komm/ws path
     this.http.on('upgrade', (request, socket, head) => {
@@ -1137,6 +1137,34 @@ export class YakmeshNode {
     }
   }
 
+  /**
+   * Resolve a peer's ML-DSA-65 public key from mesh registries.
+   * Mirrors the annex._getPeerPublicKey() pattern:
+   *   1. WS peers (direct connections)
+   *   2. Relay peer keys (signed relay registration)
+   *   3. SHERPA registry (discovered peers)
+   * 
+   * Returns hex public key string or null if unknown peer.
+   */
+  _resolvePeerPublicKey(nodeId) {
+    // 1. Direct WS peer (most trusted — active connection with verified HELLO)
+    if (this.mesh?.peers) {
+      const peer = this.mesh.peers.get(nodeId);
+      if (peer?.identity?.publicKey) return peer.identity.publicKey;
+    }
+    // 2. Relay registration keys (signed during relay handshake)
+    if (this.mesh?._relayPeerKeys) {
+      const key = this.mesh._relayPeerKeys.get(nodeId);
+      if (key) return key;
+    }
+    // 3. SHERPA discovery registry (populated during beacon exchange)
+    if (this.mesh?.sherpa?.registry) {
+      const regPeer = this.mesh.sherpa.registry.get(nodeId);
+      if (regPeer?.publicKey) return regPeer.publicKey;
+    }
+    return null;
+  }
+
   async _startHttpServer() {
     const app = express();
     this.app = app;  // Store for PeerQuanta endpoints
@@ -1144,9 +1172,11 @@ export class YakmeshNode {
     // Enable strict routing: /docs and /docs/ are different routes
     app.set('strict routing', true);
     
-    // Trust first proxy (Hostinger reverse proxy, Cloudflare, etc.)
-    // Required for express-rate-limit to use X-Forwarded-For correctly
-    app.set('trust proxy', 1);
+    // SECURITY: Do NOT set 'trust proxy'. This is a P2P mesh node, not
+    // behind a reverse proxy. Setting trust proxy lets remote attackers
+    // forge req.ip via X-Forwarded-For headers. Rate limiting uses
+    // validate: { xForwardedForHeader: false } to avoid this class of attack.
+    // If deployed behind a known proxy, configure trustedProxies explicitly.
     
     app.use(express.json({ limit: '1mb' }));  // Limit payload size
     
@@ -1201,15 +1231,19 @@ export class YakmeshNode {
     // =========================================
     // SECURITY: Peer authentication middleware
     // =========================================
-    // Validates that write requests from peers include a valid node signature
+    // Validates that write requests from peers include a valid ML-DSA-65 signature.
+    // Uses real socket address — NOT req.ip — to prevent X-Forwarded-For spoofing.
+    // Public key resolved from mesh peer registry, not from nodeId string.
     const requirePeerAuth = (req, res, next) => {
       const nodeId = req.headers['x-node-id'];
       const sig = req.headers['x-node-signature'];
       const ts = req.headers['x-node-timestamp'];
       
-      // Skip auth if request is from localhost (dashboard/local tools)
-      const remoteIP = req.ip || req.connection?.remoteAddress;
-      if (remoteIP === '127.0.0.1' || remoteIP === '::1' || remoteIP === '::ffff:127.0.0.1') {
+      // Use the RAW socket address, immune to X-Forwarded-For spoofing.
+      // req.ip respects 'trust proxy' and can be forged — never use it for auth.
+      const rawIP = req.socket?.remoteAddress || req.connection?.remoteAddress;
+      const isLocal = rawIP === '127.0.0.1' || rawIP === '::1' || rawIP === '::ffff:127.0.0.1';
+      if (isLocal) {
         return next();
       }
       
@@ -1227,15 +1261,23 @@ export class YakmeshNode {
         return res.status(401).json({ error: 'Request timestamp too old or invalid' });
       }
       
-      // Verify signature over (nodeId + timestamp + body hash)
+      // Resolve the ACTUAL public key for this nodeId from mesh peer registry.
+      // The annex._getPeerPublicKey pattern: peers → _relayPeerKeys → sherpa.registry
+      const peerPublicKey = this._resolvePeerPublicKey(nodeId);
+      if (!peerPublicKey) {
+        return res.status(403).json({ error: 'Unknown peer — no public key on record' });
+      }
+      
+      // Verify ML-DSA-65 signature over (nodeId + timestamp + body hash)
       try {
         const bodyStr = JSON.stringify(req.body || {});
         const payload = `${nodeId}:${ts}:${bodyStr}`;
-        const verified = this.identity.verify(payload, sig, nodeId);
+        const verified = this.identity.verify(payload, sig, peerPublicKey);
         if (!verified) {
           return res.status(403).json({ error: 'Invalid peer signature' });
         }
         req.authenticatedPeer = nodeId;
+        req.authenticatedPeerKey = peerPublicKey;
         next();
       } catch (e) {
         return res.status(403).json({ error: 'Signature verification failed' });
@@ -1271,6 +1313,7 @@ export class YakmeshNode {
       writeLimiter,
       readLimiter: generalLimiter,
       validateString,
+      requirePeerAuth,
     });
     app.use('/content', contentAPI);
     
@@ -1480,23 +1523,38 @@ export class YakmeshNode {
           return res.status(400).json({ error: 'nodeId and networkName required for register' });
         }
 
+        // Timestamp is REQUIRED for replay protection — reject if missing or stale
+        if (!timestamp || typeof timestamp !== 'number') {
+          return res.status(400).json({ error: 'timestamp required for registration (replay protection)' });
+        }
+        if (Math.abs(Date.now() - timestamp) > 300000) {
+          return res.status(403).json({ error: 'Registration timestamp too old (replay protection)' });
+        }
+
         // Verify ML-DSA-65 registration signature — no unsigned registrations
         if (!signature || !publicKey) {
           return res.status(403).json({ error: 'Signed registration required (signature + publicKey)' });
         }
+        
+        // SECURITY: For FIRST registration, we must trust the supplied publicKey
+        // since the peer is unknown. On subsequent registrations, verify against
+        // the STORED key to prevent identity takeover.
+        const knownKey = this._resolvePeerPublicKey(nodeId);
+        const verifyKey = knownKey || publicKey;  // Trust first contact, verify thereafter
+        
         try {
           const sigData = JSON.stringify({ action: 'register', nodeId, networkName, timestamp });
-          const valid = this.identity.verify(sigData, signature, publicKey);
+          const valid = this.identity.verify(sigData, signature, verifyKey);
           if (!valid) {
             return res.status(403).json({ error: 'Invalid registration signature' });
           }
         } catch {
           return res.status(403).json({ error: 'Registration signature verification failed' });
         }
-
-        // Reject stale registrations (> 5 minutes old)
-        if (timestamp && Math.abs(Date.now() - timestamp) > 300000) {
-          return res.status(403).json({ error: 'Registration timestamp too old (replay protection)' });
+        
+        // If we had a stored key and the supplied key differs, reject (identity conflict)
+        if (knownKey && publicKey !== knownKey) {
+          return res.status(403).json({ error: 'Public key mismatch — identity conflict' });
         }
 
         if (this.sherpa) {
@@ -1536,13 +1594,20 @@ export class YakmeshNode {
         return res.status(400).json({ error: 'senderNodeId required' });
       }
 
-      // Require ML-DSA-65 batch signature — no unsigned relay batches accepted
-      if (!signature || !publicKey) {
-        return res.status(403).json({ error: 'Signed relay batch required (signature + publicKey)' });
+      // Require ML-DSA-65 batch signature — verified against KNOWN peer key
+      if (!signature) {
+        return res.status(403).json({ error: 'Signed relay batch required' });
+      }
+      
+      // SECURITY: Look up the sender's STORED public key from our registry.
+      // Never verify against an attacker-supplied publicKey in the body.
+      const knownBatchKey = this._resolvePeerPublicKey(senderNodeId);
+      if (!knownBatchKey) {
+        return res.status(403).json({ error: 'Unknown relay peer — register first' });
       }
       try {
         const sigData = JSON.stringify({ messages, senderNodeId });
-        const valid = this.identity.verify(sigData, signature, publicKey);
+        const valid = this.identity.verify(sigData, signature, knownBatchKey);
         if (!valid) {
           return res.status(403).json({ error: 'Invalid batch signature' });
         }
@@ -1595,7 +1660,8 @@ export class YakmeshNode {
     });
 
     // Register as an HTTP-relay peer (for nodes that can't do WS)
-    app.post('/mesh/relay/register', writeLimiter, (req, res) => {
+    // SECURITY: Requires peer auth — prevents phantom peer registration
+    app.post('/mesh/relay/register', writeLimiter, requirePeerAuth, (req, res) => {
       const { nodeId, relayEndpoint, publicKey, capabilities } = req.body;
 
       if (!nodeId || !relayEndpoint) {
@@ -1708,7 +1774,15 @@ export class YakmeshNode {
 
     // SSE endpoint: real-time push of rumors (replaces polling for MeshBridge)
     // GET /rumors/subscribe?topic=<optional> — Server-Sent Events stream
+    // SECURITY: Restricted to localhost (mesh topology leaks if exposed)
     app.get('/rumors/subscribe', (req, res) => {
+      // Only allow connections from localhost — SSE is for local MeshBridge, not remote clients
+      const remoteAddr = req.socket?.remoteAddress || '';
+      const isLocal = remoteAddr === '127.0.0.1' || remoteAddr === '::1' || remoteAddr === '::ffff:127.0.0.1';
+      if (!isLocal) {
+        return res.status(403).json({ error: 'SSE subscribe restricted to localhost' });
+      }
+
       const topicFilter = req.query.topic || null;
 
       res.writeHead(200, {
@@ -1719,10 +1793,10 @@ export class YakmeshNode {
       });
       res.write('retry: 5000\n\n');  // Auto-reconnect after 5s
 
-      // Listener that forwards matching rumors
-      const onRumor = (topic, data, origin) => {
+      // Listener that forwards matching rumors (origin stripped to prevent topology leak)
+      const onRumor = (topic, data, _origin) => {
         if (topicFilter && topic !== topicFilter) return;
-        const event = JSON.stringify({ topic, data, origin, timestamp: Date.now() });
+        const event = JSON.stringify({ topic, data, timestamp: Date.now() });
         res.write(`data: ${event}\n\n`);
       };
 
@@ -1799,8 +1873,8 @@ export class YakmeshNode {
     });
 
     // Verify a peer's handshake
-    // SECURITY: Input validation
-    app.post('/network/verify', (req, res) => {
+    // SECURITY: Input validation + peer auth
+    app.post('/network/verify', writeLimiter, requirePeerAuth, (req, res) => {
       if (!this.genesisNetwork) {
         return res.status(503).json({ error: 'Genesis network not initialized' });
       }
@@ -1850,8 +1924,8 @@ export class YakmeshNode {
     });
 
     // Initiate code-proof challenge for a peer
-    // SECURITY: Rate limited + input validation
-    app.post('/oracle/challenge', writeLimiter, (req, res) => {
+    // SECURITY: Rate limited + peer auth + input validation
+    app.post('/oracle/challenge', writeLimiter, requirePeerAuth, (req, res) => {
       const { peerId } = req.body;
       
       if (!validateString(peerId, 128)) {
@@ -1887,8 +1961,8 @@ export class YakmeshNode {
     });
 
     // Submit oracle-validated content
-    // SECURITY: Rate limited + input validation + hash obfuscation
-    app.post('/oracle/submit', writeLimiter, async (req, res) => {
+    // SECURITY: Rate limited + peer auth + input validation + hash obfuscation
+    app.post('/oracle/submit', writeLimiter, requirePeerAuth, async (req, res) => {
       const { type, content } = req.body;
       
       if (!validateString(type, 64)) {
@@ -1954,7 +2028,8 @@ export class YakmeshNode {
     });
 
     // Resolve conflicts manually (admin endpoint)
-    app.post('/oracle/resolve', (req, res) => {
+    // SECURITY: Peer auth required — admin action
+    app.post('/oracle/resolve', writeLimiter, requirePeerAuth, (req, res) => {
       if (!this.consensus) {
         return res.status(503).json({ error: 'Consensus engine not initialized' });
       }
@@ -2173,7 +2248,8 @@ export class YakmeshNode {
     });
     
     // Verify a specific gate
-    app.post('/security/namche/verify/:gate', (req, res) => {
+    // SECURITY: Peer auth — only known peers can trigger gate verification
+    app.post('/security/namche/verify/:gate', writeLimiter, requirePeerAuth, (req, res) => {
       const gateNum = parseInt(req.params.gate);
       if (gateNum < 1 || gateNum > 7) {
         return res.status(400).json({ error: 'Gate must be 1-7' });
@@ -2249,7 +2325,8 @@ export class YakmeshNode {
     });
     
     // Verify an identity
-    app.post('/security/doko/verify', (req, res) => {
+    // SECURITY: Peer auth — only known peers can request identity verification
+    app.post('/security/doko/verify', writeLimiter, requirePeerAuth, (req, res) => {
       if (!this.dokoRegistry) {
         return res.status(503).json({ error: 'DOKO registry not initialized' });
       }
@@ -2348,7 +2425,8 @@ export class YakmeshNode {
     });
     
     // Add a landmark
-    app.post('/geo/landmarks', writeLimiter, (req, res) => {
+    // SECURITY: Peer auth — prevent phantom landmark injection
+    app.post('/geo/landmarks', writeLimiter, requirePeerAuth, (req, res) => {
       const { name, lat, lon, nodeId, endpoint } = req.body;
       
       if (typeof lat !== 'number' || typeof lon !== 'number') {
@@ -2410,7 +2488,8 @@ export class YakmeshNode {
     });
     
     // Generate geographic proof
-    app.post('/geo/prove', writeLimiter, async (req, res) => {
+    // SECURITY: Peer auth required for proof generation
+    app.post('/geo/prove', writeLimiter, requirePeerAuth, async (req, res) => {
       const { force } = req.body || {};
       
       // Initialize geo proof service lazily if needed
@@ -2480,12 +2559,13 @@ export class YakmeshNode {
       }
     });
     
-    // Verify another node's geographic claims
+    // Verify another node's geographic claims using PRAMAAN physics
+    // Accepts either a nodeId (lookup cached proof) or a full proof payload
     app.post('/geo/verify', writeLimiter, async (req, res) => {
-      const { nodeId } = req.body;
+      const { nodeId, proof: proofData } = req.body;
       
-      if (!nodeId) {
-        return res.status(400).json({ error: 'nodeId is required' });
+      if (!nodeId && !proofData) {
+        return res.status(400).json({ error: 'nodeId or proof required' });
       }
       
       if (!this.geoProofService) {
@@ -2496,21 +2576,101 @@ export class YakmeshNode {
       }
       
       try {
-        // In real implementation, this would:
-        // 1. Request the node's geo proof via gossip
-        // 2. Verify each exclusion zone by checking our own RTT to the same landmarks
-        // 3. Confirm the claimed distances are physically possible
-        
-        // For now, return a placeholder response
-        // The real verification happens in khata-trust-integration.js via gossip
-        
+        // Deserialize the peer's proof
+        let peerProof;
+        if (proofData) {
+          // Direct proof submission — deserialize and verify
+          peerProof = GeographicProof.deserialize(proofData);
+        } else {
+          // Look up cached proof from gossip
+          peerProof = this.geoProofService.proofs.get(nodeId);
+          if (!peerProof) {
+            return res.json({
+              verified: false,
+              nodeId,
+              reason: 'No geo-proof available for this node. Request via gossip first.',
+              confidence: 0,
+            });
+          }
+        }
+
+        // ── PRAMAAN Verification: Physics-based consistency checks ──
+        const verificationResults = [];
+        let sharedLandmarks = 0;
+        let physicsViolations = 0;
+        const ourMeasurements = this.geoProofService.measurementCache;
+
+        for (const zone of peerProof.exclusionZones) {
+          const result = {
+            landmarkId: zone.landmarkId,
+            landmarkName: zone.landmarkName,
+            claimedRttMs: zone.rttMs,
+            claimedMinDistanceKm: zone.minDistanceKm,
+            valid: true,
+            checks: [],
+          };
+
+          // Check 1: RTT must be positive and physically plausible
+          if (zone.rttMs == null || zone.rttMs <= 0) {
+            result.valid = false;
+            result.checks.push('FAIL: RTT must be positive');
+            physicsViolations++;
+          } else {
+            result.checks.push('PASS: RTT positive');
+          }
+
+          // Check 2: Claimed distance must equal calculateMinDistance(rtt) within precision
+          if (zone.rttMs > 0) {
+            const expectedMinDist = calculateMinDistance(zone.rttMs, 'fiber');
+            const tolerance = zone.precisionKm || 50; // precision from time source
+            if (Math.abs(zone.minDistanceKm - expectedMinDist) > tolerance) {
+              result.valid = false;
+              result.checks.push(
+                `FAIL: Distance ${zone.minDistanceKm.toFixed(1)}km inconsistent with RTT ${zone.rttMs.toFixed(1)}ms (expected ~${expectedMinDist.toFixed(1)}km)`
+              );
+              physicsViolations++;
+            } else {
+              result.checks.push('PASS: Distance consistent with RTT (speed-of-light)');
+            }
+          }
+
+          // Check 3: Cross-reference with OUR measurements to the same landmark
+          const ourMeasurement = ourMeasurements.get(zone.landmarkId);
+          if (ourMeasurement) {
+            sharedLandmarks++;
+            const ourRtt = ourMeasurement.getMinRTT();
+            if (ourRtt !== null) {
+              // Triangle inequality: |peerRTT - ourRTT| should be <= sum
+              // (both should be positive, and wildly different RTTs to the same
+              //  landmark are suspicious but not impossible — different continents)
+              result.checks.push(
+                `INFO: Our RTT to ${zone.landmarkName}: ${ourRtt.toFixed(1)}ms vs peer ${zone.rttMs?.toFixed(1)}ms`
+              );
+              result.ourRttMs = ourRtt;
+            }
+          }
+
+          verificationResults.push(result);
+        }
+
+        // Compute overall confidence
+        const totalZones = peerProof.exclusionZones.length;
+        const validZones = verificationResults.filter(r => r.valid).length;
+        const confidence = totalZones > 0 ? validZones / totalZones : 0;
+        const verified = physicsViolations === 0 && totalZones >= GEO_PROOF_CONFIG.minLandmarks;
+
         res.json({
-          verified: true,
-          nodeId,
-          validZones: 0,
-          totalZones: 0,
-          confidence: 0,
-          message: 'Verification requires active gossip network. Use KHATA integration for real-time verification.',
+          verified,
+          nodeId: peerProof.nodeId || nodeId,
+          dokoId: peerProof.dokoId,
+          validZones,
+          totalZones,
+          sharedLandmarks,
+          physicsViolations,
+          confidence,
+          timeSource: peerProof.timeSource,
+          proofTimestamp: peerProof.timestamp,
+          zones: verificationResults,
         });
       } catch (error) {
         res.status(500).json({ verified: false, reason: error.message });

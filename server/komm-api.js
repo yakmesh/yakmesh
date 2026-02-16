@@ -121,13 +121,23 @@ export function createKommAPI({
    * POST /komm/katha/send — Send a message (broadcast via gossip)
    */
   router.post('/katha/send', writeLimiter, requirePeerAuth, (req, res) => {
-    const { channelId, type, ...eventData } = req.body;
+    const { channelId, type, content, messageId, userId, emoji, parentId, threadId } = req.body;
     
     if (!channelId) {
       return res.status(400).json({ error: 'channelId required' });
     }
 
-    const event = { channelId, type: type || 'katha:text', ...eventData };
+    // Explicit allowlist — never spread raw req.body (proto pollution defense)
+    const event = {
+      channelId,
+      type: type || 'katha:text',
+      ...(content !== undefined && { content }),
+      ...(messageId !== undefined && { messageId }),
+      ...(userId !== undefined && { userId }),
+      ...(emoji !== undefined && { emoji }),
+      ...(parentId !== undefined && { parentId }),
+      ...(threadId !== undefined && { threadId }),
+    };
     
     // Process locally
     const result = kathaHub.handleEvent(event);
@@ -617,9 +627,18 @@ export function wireKommGossip(mesh, kathaHub, vaniHub, yurtHub, gumbaHub) {
     if (topic === 'yurt:relay') {
       // Deliver to local KATHA channel if we host this bundle
       if (gumbaHub.getBundle(data.bundleId)) {
+        // Explicit allowlist — never spread remote peer data directly (proto pollution defense)
+        const evt = data.event || {};
         kathaHub.handleEvent({
           channelId: data.bundleId,
-          ...data.event,
+          type: evt.type,
+          content: evt.content,
+          messageId: evt.messageId,
+          userId: evt.userId,
+          emoji: evt.emoji,
+          parentId: evt.parentId,
+          threadId: evt.threadId,
+          timestamp: evt.timestamp,
         });
       }
     }

@@ -37,6 +37,9 @@ import { createLogger } from '../utils/logger.js';
 // PQ-encrypted point-to-point communication between mesh peers
 import { Annex } from './annex.js';
 
+// MessageValidator + SafeJsonParser — size limits, depth checks, proto pollution guard
+import MessageValidator, { SafeJsonParser } from './message-validator.js';
+
 // TRIBHUJ Key Ratchet — trinary rotating keypairs with gateway attestation
 import { TribhujRatchet, GatewayAttestation } from '../identity/tribhuj-ratchet.js';
 
@@ -110,6 +113,11 @@ export class MandalaNetwork {
     // Rate limiter for connection/message flood protection
     this.rateLimiter = new ConnectionRateLimiter(config.rateLimiter || {});
     
+    // Message validation — size limits, depth limits, proto pollution guard
+    // This was implemented but never wired in. Now it gates ALL incoming WS messages.
+    this.messageValidator = new MessageValidator();
+    this.safeJsonParser = new SafeJsonParser();
+    
     this._setupDefaultHandlers();
   }
 
@@ -168,7 +176,7 @@ export class MandalaNetwork {
    */
   _tryBindPort(port) {
     return new Promise((resolve, reject) => {
-      const server = new WebSocketServer({ port });
+      const server = new WebSocketServer({ port, maxPayload: 1048576 }); // 1MB max message size
 
       server.on('listening', () => {
         this.server = server;
@@ -237,8 +245,9 @@ export class MandalaNetwork {
   }
 
   /**
-   * Send encrypted message to specific peer via ANNEX
-   * Falls back to plaintext sendTo() if no ANNEX session
+   * Send encrypted message to specific peer via ANNEX.
+   * HARD FAIL: If no ANNEX session exists, the message is NOT sent.
+   * Caller must handle the error and initiate ANNEX negotiation.
    */
   async sendEncrypted(nodeId, payload) {
     if (this.annex) {
@@ -247,9 +256,10 @@ export class MandalaNetwork {
         return await this.annex.send(nodeId, payload);
       }
     }
-    // Fallback to signed plaintext
-    log.warn('No ANNEX session, sending unencrypted', { nodeId: nodeId.slice(0, 20) });
-    return this.sendTo(nodeId, payload);
+    // HARD FAIL: No plaintext fallback. Encryption is mandatory.
+    const err = new Error(`No active ANNEX session for ${nodeId.slice(0, 20)} — refusing plaintext send`);
+    log.error(err.message);
+    throw err;
   }
 
   /**
@@ -601,7 +611,30 @@ export class MandalaNetwork {
 
   _handleMessage(ws, data, req) {
     try {
-      const msg = JSON.parse(data.toString());
+      const rawStr = data.toString();
+      
+      // STAGE 1: Raw size validation — reject before parsing
+      const rawCheck = this.messageValidator.validateRaw(rawStr);
+      if (!rawCheck.valid) {
+        log.warn('Rejected oversized WS message', { reason: rawCheck.reason, size: rawStr.length });
+        return;
+      }
+      
+      // STAGE 2: Safe JSON parse — proto pollution guard + size check
+      const parseResult = this.safeJsonParser.parse(rawStr);
+      if (!parseResult.success) {
+        log.warn('Rejected malformed WS message', { error: parseResult.error });
+        return;
+      }
+      const msg = parseResult.data;
+      
+      // STAGE 3: Structure validation — depth, array length, required fields
+      const msgType = msg.type || 'gossip';
+      const structCheck = this.messageValidator.validateStructure(msg, msgType);
+      if (!structCheck.valid) {
+        log.warn('Rejected invalid WS message structure', { reason: structCheck.reason, type: msgType });
+        return;
+      }
       
       // Find nodeId for this connection
       let senderNodeId = null;
@@ -682,6 +715,17 @@ export class MandalaNetwork {
         // Signed message from unknown peer — might be HELLO/WELCOME flow
         // Allow through since the handshake handler validates identity
         log.debug('Signed message from unregistered peer, passing through', { type: msg.type });
+      } else if (!msg._gwAttest && !msg._tribhujSig && !msg._signature) {
+        // UNSIGNED message — only allow handshake types (HELLO/WELCOME)
+        // All other message types from known peers MUST be signed
+        const HANDSHAKE_TYPES = new Set([MessageTypes.HELLO, MessageTypes.WELCOME]);
+        if (!HANDSHAKE_TYPES.has(msg.type)) {
+          log.warn('Rejected unsigned message from peer', {
+            type: msg.type,
+            sender: senderNodeId?.slice(0, 20) || 'unknown',
+          });
+          return; // Drop unsigned non-handshake message
+        }
       }
 
       // Dispatch to handlers
@@ -731,10 +775,11 @@ export class MandalaNetwork {
           if (session?.established && !session.isExpired()) {
             // Send via ANNEX (async, fire-and-forget for broadcast)
             this.annex.send(nodeId, message).catch(err => {
-              log.warn('ANNEX send failed, falling back to plaintext', { 
+              // HARD FAIL: No plaintext fallback. Encryption is mandatory per Yakmesh ethos.
+              // Peer must re-negotiate ANNEX session. Dropping message is safer than leaking it.
+              log.error('ANNEX send failed — message dropped (no plaintext fallback)', { 
                 nodeId: nodeId.slice(0, 20), error: err.message 
               });
-              ws.send(JSON.stringify(message));
             });
             return;
           }
@@ -743,7 +788,9 @@ export class MandalaNetwork {
       }
     }
     
-    // Fallback: plaintext (only during handshake before ANNEX is established)
+    // Plaintext only for ANNEX handshake messages (type 'annex') and initial
+    // HELLO/WELCOME before ANNEX is established. Once ANNEX exists for a
+    // peer, ALL traffic MUST go through it.
     ws.send(JSON.stringify(message));
   }
 

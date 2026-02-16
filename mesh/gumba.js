@@ -1395,11 +1395,13 @@ export class GumbaHub extends EventEmitter {
         });
         return { delivered: true, via: 'annex', count: result.count };
       } catch (err) {
-        log.warn('ANNEX delivery failed, returning plaintext', {
+        // HARD FAIL: No plaintext fallback. GUMBA content is encrypted for a reason.
+        // Returning decrypted content in plaintext defeats the entire security model.
+        log.error('ANNEX delivery failed — refusing plaintext return', {
           visitor: session.visitorNodeId.slice(0, 16),
           error: err.message,
         });
-        // Fall through to direct return
+        return { error: 'ENCRYPTION_REQUIRED', message: 'ANNEX session required for content delivery' };
       }
     }
     

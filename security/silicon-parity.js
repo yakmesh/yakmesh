@@ -213,13 +213,14 @@ export async function getPlatformUUID() {
  * Get Windows machine GUID
  */
 async function getWindowsUUID() {
-  const { exec } = await import('child_process');
+  const { execFile } = await import('child_process');
   const { promisify } = await import('util');
-  const execAsync = promisify(exec);
+  const execFileAsync = promisify(execFile);
   
   try {
-    const { stdout } = await execAsync(
-      'reg query "HKLM\\SOFTWARE\\Microsoft\\Cryptography" /v MachineGuid',
+    const { stdout } = await execFileAsync(
+      'reg',
+      ['query', 'HKLM\\SOFTWARE\\Microsoft\\Cryptography', '/v', 'MachineGuid'],
       { timeout: 5000 }
     );
     const match = stdout.match(/MachineGuid\s+REG_SZ\s+(\S+)/);
@@ -227,8 +228,9 @@ async function getWindowsUUID() {
   } catch (err) {
     // Try WMI as fallback
     try {
-      const { stdout } = await execAsync(
-        'wmic csproduct get uuid',
+      const { stdout } = await execFileAsync(
+        'wmic',
+        ['csproduct', 'get', 'uuid'],
         { timeout: 5000 }
       );
       const lines = stdout.trim().split('\n');
@@ -273,12 +275,13 @@ async function getLinuxUUID() {
  * Get macOS IOPlatformUUID
  */
 async function getMacOSUUID() {
-  const { exec } = await import('child_process');
+  const { execFile } = await import('child_process');
   const { promisify } = await import('util');
-  const execAsync = promisify(exec);
+  const execFileAsync = promisify(execFile);
   
-  const { stdout } = await execAsync(
-    'ioreg -rd1 -c IOPlatformExpertDevice | grep IOPlatformUUID',
+  const { stdout } = await execFileAsync(
+    '/usr/sbin/ioreg',
+    ['-rd1', '-c', 'IOPlatformExpertDevice'],
     { timeout: 5000 }
   );
   

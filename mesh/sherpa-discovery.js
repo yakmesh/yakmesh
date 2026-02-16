@@ -838,7 +838,54 @@ class SherpaDiscovery extends EventEmitter {
    * v2.5.0: Also measures RTT for geographic proof
    */
   async _fetchBeacon(endpoint) {
-    const url = new URL(SHERPA_CONFIG.beaconPath, endpoint).toString();
+    // ── SSRF Protection: Validate endpoint URL before fetching ──
+    // Peer-supplied endpoints could target internal services, cloud metadata,
+    // or private networks. Block anything that isn't public HTTP(S).
+    let parsedUrl;
+    try {
+      parsedUrl = new URL(SHERPA_CONFIG.beaconPath, endpoint);
+    } catch {
+      throw new Error(`Invalid beacon endpoint URL: ${endpoint}`);
+    }
+
+    // Only allow HTTP and HTTPS schemes
+    if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+      throw new Error(`Blocked beacon fetch: disallowed scheme ${parsedUrl.protocol}`);
+    }
+
+    // Block private/reserved IP ranges and cloud metadata endpoints
+    const hostname = parsedUrl.hostname.toLowerCase();
+    const BLOCKED_HOSTS = [
+      'localhost', '127.0.0.1', '::1', '[::1]', '0.0.0.0',
+      '169.254.169.254',       // AWS/GCP/Azure metadata
+      'metadata.google.internal',
+      'metadata.google',
+    ];
+    if (BLOCKED_HOSTS.includes(hostname)) {
+      throw new Error(`Blocked beacon fetch: reserved host ${hostname}`);
+    }
+
+    // Block private IP ranges: 10.x, 172.16-31.x, 192.168.x, fc00::/7, fe80::/10
+    const ipv4Match = hostname.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+    if (ipv4Match) {
+      const [, a, b] = ipv4Match.map(Number);
+      if (a === 10 ||                           // 10.0.0.0/8
+          (a === 172 && b >= 16 && b <= 31) ||  // 172.16.0.0/12
+          (a === 192 && b === 168) ||            // 192.168.0.0/16
+          a === 127 ||                           // 127.0.0.0/8
+          a === 0 ||                             // 0.0.0.0/8
+          (a === 169 && b === 254)) {            // 169.254.0.0/16 (link-local)
+        throw new Error(`Blocked beacon fetch: private IP ${hostname}`);
+      }
+    }
+
+    // Block IPv6 private: starts with fc, fd, or fe80
+    const bareV6 = hostname.replace(/^\[|\]$/g, '');
+    if (bareV6.startsWith('fc') || bareV6.startsWith('fd') || bareV6.startsWith('fe80')) {
+      throw new Error(`Blocked beacon fetch: private IPv6 ${hostname}`);
+    }
+
+    const url = parsedUrl.toString();
     
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), SHERPA_CONFIG.crawlTimeout);

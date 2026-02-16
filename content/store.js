@@ -96,6 +96,7 @@ class ContentMetadata {
     this.publishedBy = options.publishedBy || null;
     this.status = options.status || ContentStatus.LOCAL;
     this.publisherSignature = options.publisherSignature || null;  // ML-DSA-65 sig over content hash
+    this.publisherBackupSignature = options.publisherBackupSignature || null;  // SLH-DSA sig (dual-sig defense-in-depth)
     this.tags = options.tags || [];
     this.name = options.name || null;  // Optional custom name (user-provided)
     this.ttl = options.ttl || 0;       // 0 = permanent
@@ -111,6 +112,7 @@ class ContentMetadata {
       publishedBy: this.publishedBy,
       status: this.status,
       publisherSignature: this.publisherSignature,
+      publisherBackupSignature: this.publisherBackupSignature,
       tags: this.tags,
       name: this.name,
       ttl: this.ttl,
@@ -428,10 +430,22 @@ export class ContentStore {
     }
 
     // Sign the content hash with publisher's identity (authorship proof)
+    // Uses dual signature (ML-DSA-65 + SLH-DSA) when available for defense-in-depth
     let publisherSignature = null;
+    let publisherBackupSignature = null;
     if (this.identity) {
-      publisherSignature = this.identity.sign(hash);
-      meta.publisherSignature = publisherSignature;
+      if (this.identity.hasDualSignature?.()) {
+        // Critical op: use both ML-DSA-65 AND SLH-DSA (defense-in-depth)
+        const sigs = this.identity.signCritical(hash);
+        publisherSignature = sigs.primary;
+        publisherBackupSignature = sigs.backup;
+        meta.publisherSignature = publisherSignature;
+        meta.publisherBackupSignature = publisherBackupSignature;
+      } else {
+        // Fallback: ML-DSA-65 only (no SLH-DSA backup key available)
+        publisherSignature = this.identity.sign(hash);
+        meta.publisherSignature = publisherSignature;
+      }
     }
 
     // Create announcement message
@@ -443,6 +457,7 @@ export class ContentStore {
         size: meta.size,
         publishedBy: meta.publishedBy,
         publisherSignature,
+        publisherBackupSignature,
         tags: meta.tags,
         name: meta.name,
       },
@@ -557,21 +572,68 @@ export class ContentStore {
             return;
           }
 
-          // Store it
+          // Store it — use explicit allowlist, never spread remote meta directly (proto pollution defense)
+          const remoteMeta = data.meta || {};
           await this.store(content, {
-            ...data.meta,
+            contentType: remoteMeta.contentType,
+            size: remoteMeta.size,
+            publishedBy: remoteMeta.publishedBy,
+            publisherSignature: remoteMeta.publisherSignature,
+            publisherBackupSignature: remoteMeta.publisherBackupSignature,
+            tags: remoteMeta.tags,
+            name: remoteMeta.name,
             publish: false,  // Don't re-gossip
           });
 
           // Gate 2: Verify publisher signature (authorship)
           const meta = this.getMeta(data.hash);
           const publisherSig = data.meta?.publisherSignature;
+          const publisherBackupSig = data.meta?.publisherBackupSignature;
           const publisherId = data.meta?.publishedBy;
 
           if (publisherSig && publisherId && this.identity) {
             const publisherPubKey = this._getPeerPublicKey(publisherId);
-            if (publisherPubKey && this.identity.verify(data.hash, publisherSig, publisherPubKey)) {
-              // Hash matches + publisher signature valid → VERIFIED
+            if (!publisherPubKey) {
+              // Can't look up publisher's key — store as ANNOUNCED
+              meta.status = ContentStatus.ANNOUNCED;
+              log.debug('Content received but publisher key unknown', { hash: data.hash.slice(0, 16) });
+            } else if (publisherBackupSig) {
+              // Dual-sig present: verify BOTH ML-DSA-65 + SLH-DSA (defense-in-depth)
+              const backupPubKey = this._getPeerBackupPublicKey(publisherId);
+              if (backupPubKey) {
+                const result = this.identity.verifyCritical(
+                  data.hash, publisherSig, publisherBackupSig, publisherPubKey, backupPubKey
+                );
+                if (result.valid) {
+                  meta.status = ContentStatus.VERIFIED;
+                  meta.publisherSignature = publisherSig;
+                  meta.publisherBackupSignature = publisherBackupSig;
+                  log.info('Content verified (dual-sig: ML-DSA + SLH-DSA)', {
+                    hash: data.hash.slice(0, 16), publisher: publisherId.slice(0, 16),
+                  });
+                } else {
+                  // At least one sig failed — reject as potentially tampered
+                  meta.status = ContentStatus.ANNOUNCED;
+                  log.warn('Content dual-sig verification FAILED', {
+                    hash: data.hash.slice(0, 16),
+                    primaryValid: result.primaryValid,
+                    backupValid: result.backupValid,
+                  });
+                }
+              } else {
+                // No backup key for publisher — fall back to primary-only verification
+                if (this.identity.verify(data.hash, publisherSig, publisherPubKey)) {
+                  meta.status = ContentStatus.VERIFIED;
+                  meta.publisherSignature = publisherSig;
+                  log.info('Content verified (ML-DSA only, no backup key for publisher)', {
+                    hash: data.hash.slice(0, 16), publisher: publisherId.slice(0, 16),
+                  });
+                } else {
+                  meta.status = ContentStatus.ANNOUNCED;
+                }
+              }
+            } else if (this.identity.verify(data.hash, publisherSig, publisherPubKey)) {
+              // Single sig only — verify ML-DSA-65
               meta.status = ContentStatus.VERIFIED;
               meta.publisherSignature = publisherSig;
               log.info('Content verified (hash + publisher sig)', { hash: data.hash.slice(0, 16), publisher: publisherId.slice(0, 16) });
@@ -615,6 +677,28 @@ export class ContentStore {
     if (this.mesh?.sherpa?.registry) {
       const regPeer = this.mesh.sherpa.registry.get(nodeId);
       if (regPeer?.publicKey) return regPeer.publicKey;
+    }
+    return null;
+  }
+
+  /**
+   * Resolve a peer's SLH-DSA backup public key from mesh state.
+   * Same lookup chain as _getPeerPublicKey but for the backupPublicKey field.
+   */
+  _getPeerBackupPublicKey(nodeId) {
+    // Self
+    if (this.identity && nodeId === this.identity.identity.nodeId) {
+      return this.identity.identity.backupPublicKey || null;
+    }
+    // WS peer info
+    if (this.mesh?.peers) {
+      const peer = this.mesh.peers.get(nodeId);
+      if (peer?.identity?.backupPublicKey) return peer.identity.backupPublicKey;
+    }
+    // SHERPA registry
+    if (this.mesh?.sherpa?.registry) {
+      const regPeer = this.mesh.sherpa.registry.get(nodeId);
+      if (regPeer?.backupPublicKey) return regPeer.backupPublicKey;
     }
     return null;
   }
