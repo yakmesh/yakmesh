@@ -3,7 +3,7 @@
  * @module security/tests/velocity-monitor.test
  */
 
-import { describe, it, beforeEach } from 'node:test';
+import { describe, it, beforeEach } from 'vitest';
 import assert from 'node:assert';
 import {
   BehaviorVelocityMonitor,

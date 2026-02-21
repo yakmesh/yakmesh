@@ -31,8 +31,11 @@ import { sha3_256 as _nobleSha3 } from '@noble/hashes/sha3.js';
 import { bytesToHex, hexToBytes, utf8ToBytes } from '@noble/hashes/utils.js';
 import { createLogger } from '../utils/logger.js';
 
-// ACCEL: Hardware-accelerated crypto (native SHA3, future native KEM)
-import { sha3_256, mlKem768Encapsulate, mlKem768Decapsulate } from '../utils/accel.js';
+// ACCEL: Hardware-accelerated crypto (native SHA3, native KEM via liboqs/AVX-512)
+import { sha3_256, mlKem768Keygen, mlKem768Encapsulate, mlKem768Decapsulate } from '../utils/accel.js';
+
+// STEADYWATCH: Quantum-hardware-validated entropy seeds (Hurwitz quaternion, IBM Quantum)
+import { getHybridSeed, seedStore as steadywatchStore } from '../security/steadywatch.js';
 
 // ═══ TRIBHUJ — Balanced ternary for channel lifecycle ═══
 // POSITIVE: ESTABLISHED (secure channel active)
@@ -174,11 +177,23 @@ class AnnexSession {
   }
   
   /**
-   * Generate ephemeral KEM key pair for this session
+   * Generate ephemeral KEM key pair for this session.
+   * 
+   * ACCEL: Routes through mlKem768Keygen() for native liboqs AVX-512 NTT
+   * acceleration when available (previously called noble directly — bypassed ACCEL).
+   * 
+   * STEADYWATCH: If quantum satellite seeds are loaded, uses hybrid entropy:
+   *   hybridSeed = SHA3(satelliteSeed || EXPAND) ⊕ randomBytes(64)
+   * Two-source extractor: even if one source is compromised, keys are safe.
    */
-  generateKeyPair() {
-    const seed = randomBytes(64);
-    this.kemKeyPair = ml_kem768.keygen(seed);
+  async generateKeyPair() {
+    // STEADYWATCH hybrid seed (quantum + CSPRNG) or pure CSPRNG fallback
+    const seed = steadywatchStore.initialized
+      ? getHybridSeed()
+      : randomBytes(64);
+
+    // Route through ACCEL for native liboqs/AVX-512 acceleration
+    this.kemKeyPair = await mlKem768Keygen(seed);
     return bytesToHex(this.kemKeyPair.publicKey);
   }
   
@@ -406,6 +421,13 @@ export class Annex {
       replaysBlocked: 0,
     };
     
+    // Deferred message queue — buffer ANNEX messages from peers whose
+    // public key hasn't arrived yet (HELLO/WELCOME still in flight).
+    // Max 10 senders, 1 message per sender, 3s timeout.
+    this._deferredMessages = new Map();  // senderId -> { envelope, origin, timer }
+    this._maxDeferredSenders = 10;
+    this._deferTimeoutMs = 3000;
+    
     // Register mesh handler for ANNEX messages
     if (this.mesh) {
       this._registerMeshHandlers();
@@ -429,8 +451,8 @@ export class Annex {
       initiator: true,
     });
     
-    // Generate our key pair
-    const ourPublicKey = session.generateKeyPair();
+    // Generate our key pair (ACCEL: native liboqs/AVX-512, STEADYWATCH: quantum seed)
+    const ourPublicKey = await session.generateKeyPair();
     
     // Store pending handshake
     this.pendingHandshakes.set(remoteNodeId, session);
@@ -546,6 +568,16 @@ export class Annex {
     await this._sendToMesh(remoteNodeId, envelope);
     session.channelState = ChannelState.CLOSED;
     this.sessions.delete(remoteNodeId);
+    
+    // Clean up any deferred messages from this peer
+    const deferred = this._deferredMessages?.get(remoteNodeId);
+    if (deferred) {
+      clearTimeout(deferred.timer);
+      if (deferred.onRegistered) {
+        this.mesh.off('peer-registered', deferred.onRegistered);
+      }
+      this._deferredMessages.delete(remoteNodeId);
+    }
   }
   
   /**
@@ -614,10 +646,10 @@ export class Annex {
       const peerPublicKey = this._getPeerPublicKey(envelope.senderId);
       
       if (!peerPublicKey) {
-        log.warn('Rejected ANNEX message from unknown peer (no public key on file)', {
-          peerId: envelope.senderId?.slice(0, 16),
-          type: envelope.type,
-        });
+        // Peer's public key isn't registered yet — their HELLO/WELCOME
+        // may still be in flight. Defer the message and replay it once
+        // the mesh emits 'peer-registered' for this sender.
+        this._deferMessage(envelope, origin);
         return;
       }
       
@@ -669,7 +701,8 @@ export class Annex {
     });
     
     // Generate our key pair and encapsulate with peer's public key
-    session.generateKeyPair();
+    // ACCEL: native liboqs/AVX-512, STEADYWATCH: quantum seed
+    await session.generateKeyPair();
     const kemCiphertext = session.encapsulate(envelope.kemPublicKey);
     
     // Store session
@@ -789,7 +822,7 @@ export class Annex {
     // a message from the initiator encrypted with the new key (implicit ack
     // in decrypt()). This avoids storing the old key — only the future key
     // is held as pendingEncryptionKey, preserving PFS.
-    session.generateKeyPair();
+    await session.generateKeyPair();
     const kemCiphertext = session.encapsulate(envelope.kemPublicKey, { defer: true });
     session.messageCount = 0;
     
@@ -809,8 +842,8 @@ export class Annex {
   async _rekey(session) {
     log.debug('Initiating re-key with peer', { peerId: session.remoteNodeId?.slice(0, 16) });
     
-    // Generate new ephemeral keys
-    const newPublicKey = session.generateKeyPair();
+    // Generate new ephemeral keys (ACCEL + STEADYWATCH)
+    const newPublicKey = await session.generateKeyPair();
     session.messageCount = 0;
     
     const envelope = new AnnexEnvelope({
@@ -833,6 +866,83 @@ export class Annex {
     this.mesh.sendTo(remoteNodeId, {
       type: 'annex',
       annex: envelope.toJSON(),
+    });
+  }
+  
+  /**
+   * Buffer an ANNEX message whose sender key hasn't arrived yet.
+   * Replays automatically when 'peer-registered' fires, or discards
+   * after _deferTimeoutMs (preventing memory leaks from spoofed senderIds).
+   */
+  _deferMessage(envelope, origin) {
+    const senderId = envelope.senderId;
+    
+    // Already deferring a message from this sender — discard the older one
+    if (this._deferredMessages.has(senderId)) {
+      const existing = this._deferredMessages.get(senderId);
+      clearTimeout(existing.timer);
+      if (existing.onRegistered) {
+        this.mesh.off('peer-registered', existing.onRegistered);
+      }
+      this._deferredMessages.delete(senderId);
+    }
+    
+    // Cap total deferred senders to prevent memory abuse
+    if (this._deferredMessages.size >= this._maxDeferredSenders) {
+      log.debug('Deferred ANNEX queue full, dropping message from unknown peer', {
+        peerId: senderId?.slice(0, 16),
+        type: envelope.type,
+      });
+      return;
+    }
+    
+    log.debug('Deferring ANNEX message until peer key arrives', {
+      peerId: senderId?.slice(0, 16),
+      type: envelope.type,
+    });
+    
+    // Event listener: replay when peer registers
+    const onRegistered = (registeredNodeId) => {
+      if (registeredNodeId === senderId) {
+        this._replayDeferred(senderId);
+      }
+    };
+    
+    // Safety timeout: if key never arrives, discard silently
+    const timer = setTimeout(() => {
+      if (this._deferredMessages.has(senderId)) {
+        this.mesh.off('peer-registered', onRegistered);
+        this._deferredMessages.delete(senderId);
+        log.debug('Deferred ANNEX message expired (peer key never arrived)', {
+          peerId: senderId?.slice(0, 16),
+          type: envelope.type,
+        });
+      }
+    }, this._deferTimeoutMs);
+    
+    this._deferredMessages.set(senderId, { envelope, origin, timer, onRegistered });
+    this.mesh.on('peer-registered', onRegistered);
+  }
+  
+  /**
+   * Replay a deferred ANNEX message now that the sender's key is available.
+   */
+  _replayDeferred(senderId) {
+    const deferred = this._deferredMessages.get(senderId);
+    if (!deferred) return;
+    
+    clearTimeout(deferred.timer);
+    this.mesh.off('peer-registered', deferred.onRegistered);
+    this._deferredMessages.delete(senderId);
+    
+    log.debug('Replaying deferred ANNEX message (peer key arrived)', {
+      peerId: senderId?.slice(0, 16),
+      type: deferred.envelope.type,
+    });
+    
+    // Re-enter the handler — this time _getPeerPublicKey should succeed
+    this._handleAnnexMessage(deferred.envelope, deferred.origin).catch(err => {
+      log.warn('Deferred ANNEX replay failed', { peerId: senderId?.slice(0, 16), error: err.message });
     });
   }
   

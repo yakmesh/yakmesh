@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Yakmesh - Quantum-Inspired Distributed Network</title>
+    <meta name="description" content="Post-quantum secure mesh networking with self-verifying oracle. Build decentralized applications with ML-DSA-65 signatures.">
+    <link rel="icon" type="image/png" href="assets/yakmesh-logo2.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        Yakmesh: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                            950: '#082f49'
+                        },
+                        mountain: {
+                            100: '#f1f5f9',
+                            200: '#e2e8f0',
+                            700: '#334155',
+                            800: '#1e293b',
+                            900: '#0f172a'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        code, pre { font-family: 'JetBrains Mono', monospace; }
+        .gradient-hero { background: linear-gradient(135deg, #0c4a6e 0%, #082f49 50%, #0f172a 100%); }
+        .gradient-text { background: linear-gradient(90deg, #0ea5e9, #38bdf8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .glow { box-shadow: 0 0 40px rgba(14, 165, 233, 0.3); }
+        .feature-card:hover { transform: translateY(-4px); box-shadow: 0 20px 40px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body class="bg-mountain-900 text-white">
+    <!-- Navigation -->
+    <nav class="fixed w-full z-50 bg-mountain-900/80 backdrop-blur-md border-b border-mountain-700/50">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <img src="assets/yakmesh-logo2.png" alt="Yakmesh" class="h-12 w-12">
+                <span class="text-xl font-semibold">Yakmesh</span>
+            </div>
+            <div class="hidden md:flex items-center gap-8">
+                <a href="#features" class="text-mountain-200 hover:text-white transition">Features</a>
+                <a href="#quickstart" class="text-mountain-200 hover:text-white transition">Quick Start</a>
+                <a href="docs/" class="text-mountain-200 hover:text-white transition">Docs</a>
+                <a href="https://github.com/peerquanta/yakmesh" class="text-mountain-200 hover:text-white transition">GitHub</a>
+                <a href="#early-access" class="bg-Yakmesh-600 hover:bg-Yakmesh-500 px-4 py-2 rounded-lg transition">npm install</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="gradient-hero min-h-screen flex items-center pt-20">
+        <div class="max-w-7xl mx-auto px-6 py-20 grid lg:grid-cols-2 gap-12 items-center">
+            <div>
+                <div class="inline-flex items-center gap-2 bg-Yakmesh-900/50 border border-Yakmesh-700 rounded-full px-4 py-1 mb-6">
+                    <span class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
+                    <span class="text-sm text-Yakmesh-100">v1.0.0 Now Available</span>
+                </div>
+                <h1 class="text-5xl lg:text-6xl font-bold mb-6 leading-tight">
+                    <span class="gradient-text">Quantum-Inspired</span><br>
+                    Distributed Mesh Network
+                </h1>
+                <p class="text-xl text-mountain-200 mb-8 leading-relaxed">
+                    Post-quantum secure P2P networking with self-verifying oracle. 
+                    Build decentralized applications that verify themselves.
+                </p>
+                <div class="flex flex-wrap gap-4">
+                    <a href="#quickstart" class="bg-Yakmesh-500 hover:bg-Yakmesh-400 px-8 py-3 rounded-lg font-medium transition flex items-center gap-2">
+                        Get Started
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                    </a>
+                    <a href="docs/" class="border border-mountain-600 hover:border-mountain-500 px-8 py-3 rounded-lg font-medium transition">
+                        Documentation
+                    </a>
+                </div>
+                <div class="flex items-center gap-6 mt-10 text-sm text-mountain-300">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+                        MIT Licensed
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <svg class="w-5 h-5 text-Yakmesh-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+                        Post-Quantum
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <svg class="w-5 h-5 text-purple-400" fill="currentColor" viewBox="0 0 20 20"><path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z"></path></svg>
+                        Self-Verifying
+                    </div>
+                </div>
+            </div>
+            <div class="hidden lg:block">
+                <div class="relative">
+                    <div class="absolute inset-0 bg-Yakmesh-500/20 rounded-2xl blur-3xl"></div>
+                    <div class="relative bg-mountain-800/80 border border-mountain-700 rounded-2xl p-6 glow">
+                        <div class="flex items-center gap-2 mb-4">
+                            <span class="w-3 h-3 bg-red-500 rounded-full"></span>
+                            <span class="w-3 h-3 bg-yellow-500 rounded-full"></span>
+                            <span class="w-3 h-3 bg-green-500 rounded-full"></span>
+                            <span class="ml-4 text-sm text-mountain-400">terminal</span>
+                        </div>
+                        <pre class="text-sm text-mountain-100 overflow-x-auto"><code><span class="text-Yakmesh-400">$</span> Request Early Access
+
+<span class="text-Yakmesh-400">$</span> npx Yakmesh init
+<span class="text-green-400">✓</span> Generated ML-DSA-65 keypair
+<span class="text-green-400">✓</span> Network identity: Alpine-Falcon-7x
+
+<span class="text-Yakmesh-400">$</span> npx Yakmesh start
+<span class="text-purple-400">🔮</span> Oracle ready - Phase: 847392
+<span class="text-Yakmesh-400">🌐</span> Mesh listening on :3000
+<span class="text-green-400">✓</span> Connected to 3 peers</code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-24 bg-mountain-800">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl font-bold mb-4">Built for the Future</h2>
+                <p class="text-xl text-mountain-300 max-w-2xl mx-auto">
+                    Yakmesh combines post-quantum cryptography with a self-verifying oracle 
+                    for truly decentralized applications.
+                </p>
+            </div>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div class="feature-card bg-mountain-900/50 border border-mountain-700 rounded-xl p-6 transition duration-300">
+                    <div class="w-12 h-12 bg-Yakmesh-900 rounded-lg flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-Yakmesh-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Post-Quantum Security</h3>
+                    <p class="text-mountain-300">ML-DSA-65 signatures (NIST FIPS 204) protect against both classical and quantum attacks.</p>
+                </div>
+                <!-- Feature 2 -->
+                <div class="feature-card bg-mountain-900/50 border border-mountain-700 rounded-xl p-6 transition duration-300">
+                    <div class="w-12 h-12 bg-purple-900 rounded-lg flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Self-Verifying Oracle</h3>
+                    <p class="text-mountain-300">Deterministic validation without external trust. The code IS the authority.</p>
+                </div>
+                <!-- Feature 3 -->
+                <div class="feature-card bg-mountain-900/50 border border-mountain-700 rounded-xl p-6 transition duration-300">
+                    <div class="w-12 h-12 bg-green-900 rounded-lg flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">P2P Mesh Network</h3>
+                    <p class="text-mountain-300">WebSocket-based gossip protocol with automatic peer discovery and message propagation.</p>
+                </div>
+                <!-- Feature 4 -->
+                <div class="feature-card bg-mountain-900/50 border border-mountain-700 rounded-xl p-6 transition duration-300">
+                    <div class="w-12 h-12 bg-orange-900 rounded-lg flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Precision Timing</h3>
+                    <p class="text-mountain-300">Support for atomic clocks, GPS, PTP (Meinberg PTP270PEX), and NTP with automatic detection.</p>
+                </div>
+                <!-- Feature 5 -->
+                <div class="feature-card bg-mountain-900/50 border border-mountain-700 rounded-xl p-6 transition duration-300">
+                    <div class="w-12 h-12 bg-pink-900 rounded-lg flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"></path></svg>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Plugin Architecture</h3>
+                    <p class="text-mountain-300">BaseAdapter pattern for integrating any database, API, or platform. Build your own adapters.</p>
+                </div>
+                <!-- Feature 6 -->
+                <div class="feature-card bg-mountain-900/50 border border-mountain-700 rounded-xl p-6 transition duration-300">
+                    <div class="w-12 h-12 bg-cyan-900 rounded-lg flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Phase Modulation</h3>
+                    <p class="text-mountain-300">Time-based fingerprints provide anti-replay protection and temporal verification.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Quick Start Section -->
+    <section id="quickstart" class="py-24 bg-mountain-900">
+        <div class="max-w-4xl mx-auto px-6">
+            <div class="text-center mb-12">
+                <h2 class="text-4xl font-bold mb-4">Quick Start</h2>
+                <p class="text-xl text-mountain-300">Get up and running in under 5 minutes</p>
+            </div>
+            <div class="space-y-6">
+                <!-- Step 1 -->
+                <div class="bg-mountain-800 border border-mountain-700 rounded-xl p-6">
+                    <div class="flex items-center gap-4 mb-4">
+                        <span class="w-8 h-8 bg-Yakmesh-600 rounded-full flex items-center justify-center font-bold">1</span>
+                        <h3 class="text-lg font-semibold">Install the package</h3>
+                    </div>
+                    <pre class="bg-mountain-900 rounded-lg p-4 overflow-x-auto"><code class="text-Yakmesh-300">Request Early Access</code></pre>
+                </div>
+                <!-- Step 2 -->
+                <div class="bg-mountain-800 border border-mountain-700 rounded-xl p-6">
+                    <div class="flex items-center gap-4 mb-4">
+                        <span class="w-8 h-8 bg-Yakmesh-600 rounded-full flex items-center justify-center font-bold">2</span>
+                        <h3 class="text-lg font-semibold">Create configuration</h3>
+                    </div>
+                    <pre class="bg-mountain-900 rounded-lg p-4 overflow-x-auto text-sm"><code class="text-mountain-100"><span class="text-purple-400">// Yakmesh.config.js</span>
+<span class="text-cyan-400">export default</span> {
+  <span class="text-green-400">port</span>: <span class="text-orange-400">3000</span>,
+  <span class="text-green-400">peers</span>: [<span class="text-yellow-300">'ws://node2.example.com:3000'</span>],
+  <span class="text-green-400">oracle</span>: {
+    <span class="text-green-400">timeSource</span>: <span class="text-yellow-300">'auto'</span>,  <span class="text-purple-400">// Detects best available</span>
+    <span class="text-green-400">phaseWindow</span>: <span class="text-orange-400">30000</span>    <span class="text-purple-400">// 30 second phases</span>
+  }
+};</code></pre>
+                </div>
+                <!-- Step 3 -->
+                <div class="bg-mountain-800 border border-mountain-700 rounded-xl p-6">
+                    <div class="flex items-center gap-4 mb-4">
+                        <span class="w-8 h-8 bg-Yakmesh-600 rounded-full flex items-center justify-center font-bold">3</span>
+                        <h3 class="text-lg font-semibold">Start the node</h3>
+                    </div>
+                    <pre class="bg-mountain-900 rounded-lg p-4 overflow-x-auto"><code class="text-Yakmesh-300">npx Yakmesh start</code></pre>
+                    <p class="text-mountain-400 mt-4 text-sm">Your node is now running and will automatically connect to peers!</p>
+                </div>
+            </div>
+            <div class="text-center mt-10">
+                <a href="docs/getting-started.html" class="inline-flex items-center gap-2 text-Yakmesh-400 hover:text-Yakmesh-300 transition">
+                    Read the full documentation
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Architecture Section -->
+    <section class="py-24 bg-mountain-800">
+        <div class="max-w-6xl mx-auto px-6">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl font-bold mb-4">Architecture</h2>
+                <p class="text-xl text-mountain-300">Modular design for maximum flexibility</p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="text-center">
+                    <div class="w-20 h-20 mx-auto bg-gradient-to-br from-Yakmesh-600 to-Yakmesh-800 rounded-2xl flex items-center justify-center mb-4">
+                        <span class="text-3xl">🔮</span>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Oracle Layer</h3>
+                    <p class="text-mountain-300 text-sm">Time sources, phase epochs, network identity generation</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-20 h-20 mx-auto bg-gradient-to-br from-purple-600 to-purple-800 rounded-2xl flex items-center justify-center mb-4">
+                        <span class="text-3xl">🌐</span>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Mesh Layer</h3>
+                    <p class="text-mountain-300 text-sm">WebSocket P2P, gossip protocol, peer management</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-20 h-20 mx-auto bg-gradient-to-br from-green-600 to-green-800 rounded-2xl flex items-center justify-center mb-4">
+                        <span class="text-3xl">🔌</span>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Adapter Layer</h3>
+                    <p class="text-mountain-300 text-sm">BaseAdapter interface, platform integrations</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+        <!-- Early Access Section -->
+    <section id="early-access" class="py-24 bg-mountain-900">
+        <div class="max-w-2xl mx-auto px-6 text-center">
+            <h2 class="text-4xl font-bold mb-4">Request Early Access</h2>
+            <p class="text-xl text-mountain-300 mb-8">
+                Yakmesh is currently in private beta. Join the waitlist for early access.
+            </p>
+            <form action="mailto:inquiry@peerquanta.com" method="POST" enctype="text/plain" class="space-y-4">
+                <input type="email" name="email" placeholder="your@email.com" required
+                    class="w-full px-4 py-3 bg-mountain-800 border border-mountain-700 rounded-lg focus:border-Yakmesh-500 focus:outline-none">
+                <input type="text" name="company" placeholder="Company (optional)"
+                    class="w-full px-4 py-3 bg-mountain-800 border border-mountain-700 rounded-lg focus:border-Yakmesh-500 focus:outline-none">
+                <select name="interest" class="w-full px-4 py-3 bg-mountain-800 border border-mountain-700 rounded-lg focus:border-Yakmesh-500 focus:outline-none">
+                    <option value="">What interests you most?</option>
+                    <option value="mesh">P2P Mesh Networking</option>
+                    <option value="oracle">Self-Verifying Oracle</option>
+                    <option value="timing">Precision Timing</option>
+                    <option value="security">Post-Quantum Security</option>
+                    <option value="all">Everything!</option>
+                </select>
+                <button type="submit" class="w-full bg-Yakmesh-500 hover:bg-Yakmesh-400 px-8 py-3 rounded-lg font-medium transition">
+                    Request Access
+                </button>
+            </form>
+            <p class="text-mountain-500 text-sm mt-4">We'll never spam you. Unsubscribe anytime.</p>
+        </div>
+    </section>
+<!-- CTA Section -->
+    <section class="py-24 gradient-hero">
+        <div class="max-w-4xl mx-auto px-6 text-center">
+            <h2 class="text-4xl font-bold mb-4">Ready to Build?</h2>
+            <p class="text-xl text-mountain-200 mb-8">
+                Start building decentralized applications with post-quantum security today.
+            </p>
+            <div class="flex flex-wrap justify-center gap-4">
+                <a href="docs/getting-started.html" class="bg-white text-mountain-900 px-8 py-3 rounded-lg font-medium hover:bg-mountain-100 transition">
+                    Get Started
+                </a>
+                <a href="https://github.com/peerquanta/yakmesh" class="border border-white/30 hover:border-white/60 px-8 py-3 rounded-lg font-medium transition">
+                    View on GitHub
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-mountain-900 border-t border-mountain-800 py-12">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="grid md:grid-cols-4 gap-8">
+                <div>
+                    <div class="flex items-center gap-3 mb-4">
+                        <img src="assets/yakmesh-logo2.png" alt="Yakmesh" class="h-16 w-16">
+                        <span class="text-lg font-semibold">Yakmesh</span>
+                    </div>
+                    <p class="text-mountain-400 text-sm">Quantum-inspired distributed mesh network with self-verifying oracle.</p>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-4">Resources</h4>
+                    <ul class="space-y-2 text-mountain-400 text-sm">
+                        <li><a href="docs/" class="hover:text-white transition">Documentation</a></li>
+                        <li><a href="docs/api.html" class="hover:text-white transition">API Reference</a></li>
+                        <li><a href="docs/adapters.html" class="hover:text-white transition">Adapters Guide</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-4">Community</h4>
+                    <ul class="space-y-2 text-mountain-400 text-sm">
+                        <li><a href="https://github.com/peerquanta/yakmesh" class="hover:text-white transition">GitHub</a></li>
+                        <li><a href="#early-access" class="hover:text-white transition">npm</a></li>
+                        <li><a href="https://peerquanta.com" class="hover:text-white transition">PeerQuanta</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-4">Legal</h4>
+                    <ul class="space-y-2 text-mountain-400 text-sm">
+                        <li><a href="#" class="hover:text-white transition">MIT License</a></li>
+                        <li><a href="#" class="hover:text-white transition">Pro License</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-mountain-800 mt-8 pt-8 text-center text-mountain-500 text-sm">
+                <p>&copy; 2026 Yakmesh. Built with ❤️ by <a href="https://peerquanta.com" class="text-Yakmesh-400 hover:text-Yakmesh-300">PeerQuanta</a></p>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

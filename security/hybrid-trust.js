@@ -75,6 +75,11 @@ export const KarmaLevel = {
   SEEKING: 1,       // Basic - Self-asserted only (on the path)
   AWAKENED: 2,      // Standard - Mesh verified (eyes opening)
   ENLIGHTENED: 3,   // Highest - Full verification (full realization)
+
+  // Backward compatibility aliases
+  BRONZE: 1,        // → SEEKING
+  GOLD: 2,          // → AWAKENED
+  PLATINUM: 3,      // → ENLIGHTENED
 };
 
 // Backward compatibility alias
@@ -371,6 +376,8 @@ export class KarmaTrustModel extends EventEmitter {
   constructor(config = {}) {
     super();
     this.config = { ...DEFAULT_CONFIG, ...config };
+    this._inferenceEngine = config.inferenceEngine || null;
+    this._modelName = 'karma-trust';
     
     // Karma evidence per node (spiritual ledger)
     this.evidence = new Map();  // nodeId -> KarmaEvidence
@@ -617,6 +624,107 @@ export class KarmaTrustModel extends EventEmitter {
         beaconSeen: sources.beaconHistory.sightings > 0,
       },
       awakenedProgress: awakenedRequirements,
+    };
+  }
+
+  /**
+   * NPU-accelerated trust level prediction.
+   * Feeds evidence features into the karma-trust ONNX model for softmax
+   * probability distribution over [UNTRUSTED, SEEKING, AWAKENED, ENLIGHTENED].
+   * 
+   * Falls back to CPU rule-based `calculateTrustLevel()` if ONNX is unavailable.
+   * 
+   * The NPU prediction is a "second opinion" — the authoritative trust level
+   * is always the rule-based `calculateTrustLevel()` method.
+   * 
+   * @param {Object} evidence - KarmaEvidence instance
+   * @returns {Promise<Object>} Trust prediction with probabilities per level
+   */
+  async predictTrustLevel(evidence) {
+    const sources = evidence.sources;
+    const age = evidence.getAge();
+
+    // Map trit value to normalized float: -1→0, 0→0.5, 1→1
+    const tritNorm = (t) => (t + 1) / 2;
+
+    // Determine SSL type numeric value
+    let sslType = 0;
+    if (sources.ssl.verified === POSITIVE) {
+      sslType = sources.ssl.certBound ? 0.67 : (sources.ssl.selfSigned ? 0.33 : 1.0);
+    }
+
+    // Determine strike count (if evidence tracks it)
+    const strikes = Math.min(3, evidence.strikes || 0);
+
+    // Days since last evidence update
+    const daysSinceUpdate = Math.min(90, (Date.now() - evidence.lastUpdated) / 86400000);
+
+    // Build 14-feature input vector (must match training data order)
+    const features = new Float32Array([
+      tritNorm(sources.doko.verified),
+      sources.doko.hash ? 1.0 : 0.0,
+      tritNorm(sources.meshQuorum.verified),
+      Math.min(1.0, (sources.meshQuorum.quorumSize || 0) / 10),
+      sources.meshQuorum.diversity?.sufficient ? 1.0 : 0.0,
+      tritNorm(sources.ssl.verified),
+      sslType,
+      tritNorm(sources.domain.verified),
+      Math.min(1.0, age / (365 * 86400000)),  // age in days normalized
+      Math.min(1.0, evidence.uptime || 0.5),
+      Math.min(1.0, (evidence.trustScore || 0) / 100),
+      evidence.calculateBeaconConsistency?.(this.config.beaconCheckWindow) || 0,
+      strikes / 3,
+      daysSinceUpdate / 90,
+    ]);
+
+    // NPU path: use ONNX model if available
+    const engine = this._inferenceEngine;
+    if (engine && engine.hasModel(this._modelName)) {
+      try {
+        const result = await engine.infer(this._modelName, {
+          trust_evidence: features,
+        });
+        if (result && result.karma_level) {
+          const probs = result.karma_level;
+          const levels = ['UNTRUSTED', 'SEEKING', 'AWAKENED', 'ENLIGHTENED'];
+          const predicted = levels[probs.indexOf(Math.max(...probs))];
+
+          return {
+            source: 'NPU',
+            predicted,
+            probabilities: {
+              UNTRUSTED: probs[0],
+              SEEKING: probs[1],
+              AWAKENED: probs[2],
+              ENLIGHTENED: probs[3],
+            },
+            features,
+          };
+        }
+      } catch (err) {
+        // Fall through to CPU
+      }
+    }
+
+    // CPU fallback: use rule-based assessment
+    const ruleResult = this.calculateTrustLevel(evidence);
+    const levelNames = ['UNTRUSTED', 'SEEKING', 'AWAKENED', 'ENLIGHTENED'];
+    const predicted = levelNames[ruleResult.level] || 'UNTRUSTED';
+
+    // Build approximate probability distribution from rule-based score
+    const probs = [0.05, 0.05, 0.05, 0.05];
+    probs[ruleResult.level] = 0.85;
+
+    return {
+      source: 'CPU',
+      predicted,
+      probabilities: {
+        UNTRUSTED: probs[0],
+        SEEKING: probs[1],
+        AWAKENED: probs[2],
+        ENLIGHTENED: probs[3],
+      },
+      features,
     };
   }
 

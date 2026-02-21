@@ -4,7 +4,7 @@
  * @module mesh/tests/trisula-tree.test
  */
 
-import { describe, it, beforeEach } from 'node:test';
+import { describe, it, beforeEach } from 'vitest';
 import assert from 'node:assert/strict';
 import { TrisulaTST, TrisulaPeerRouter } from '../trisula-tree.js';
 import { Trit, NEGATIVE, NEUTRAL, POSITIVE } from '../../oracle/tribhuj.js';

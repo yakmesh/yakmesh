@@ -28,9 +28,11 @@
     </a>
     <a href="/dashboard" class="sidebar-dashboard-link"><span>📊</span> <span>Dashboard</span></a>
     <ul class="sidebar-nav">
+      <li class="sidebar-section"><span>📘 Guides</span></li>
       <li><a href="index.html"><span>🏠</span> <span>Overview</span></a></li>
       <li><a href="getting-started.html"><span>🚀</span> <span>Getting Started</span></a></li>
       <li><a href="tutorials.html"><span>📖</span> <span>Tutorials</span></a></li>
+      <li class="sidebar-section"><span>🐃 Protocol Stack</span></li>
       <li><a href="yak-protocol.html"><span class="yak-icon"></span> <span>YAK://</span></a></li>
       <li><a href="annex.html"><span>🌉</span> <span>ANNEX</span></a></li>
       <li><a href="nakpak.html"><span>🎒</span> <span>NAKPAK</span></a></li>
@@ -54,10 +56,19 @@
       <li><a href="sakshi.html"><span>👁️</span> <span>SAKSHI</span></a></li>
       <li><a href="geo-proof.html"><span>🌍</span> <span>PRAMAAN</span></a></li>
       <li><a href="trust-security.html"><span>🔒</span> <span>SURAKSHA</span></a></li>
+      <li><a href="tivra.html"><span>⚡</span> <span>TIVRA</span></a></li>
+      <li><a href="prahari.html"><span>🛰️</span> <span>PRAHARI</span></a></li>
+      <li><a href="dharma.html"><span>⚖️</span> <span>DHARMA</span></a></li>
+      <li><a href="seva.html"><span>🙏</span> <span>SEVA</span></a></li>
       <li><a href="docs-bundle.html"><span>📚</span> <span>GRANTH</span></a></li>
       <li><a href="api.html"><span>📡</span> <span>API</span></a></li>
       <li><a href="adapters.html"><span>🔌</span> <span>Adapters</span></a></li>
+      <li class="sidebar-section"><span>🚀 Applications</span></li>
+      <li><a href="yakapp.html"><span>💬</span> <span>YakApp</span></a></li>
+      <li><a href="c2c.html"><span>🚀</span> <span>C2C</span></a></li>
       <li><a href="studio.html"><span>🎨</span> <span>Studio</span></a></li>
+      <li><a href="thangka.html"><span>🎨</span> <span>THANGKA</span></a></li>
+      <li class="sidebar-section"><span>📋 Reference</span></li>
       <li><a href="quick-reference.html"><span>📋</span> <span>Quick Ref</span></a></li>
     </ul>
   </nav>
@@ -385,6 +396,52 @@ karma.computeTrustLevel(nodeId);</code></pre>
         </div>
       </div>
 
+      <!-- NPU Trust Prediction -->
+      <h2>🧠 NPU Trust Level Prediction</h2>
+      <p class="text-mountain-300 mb-4">
+        <code>predictTrustLevel()</code> feeds a 14-feature evidence vector into the
+        <code>karma-trust</code> ONNX model, returning softmax probabilities over
+        [UNTRUSTED, SEEKING, AWAKENED, ENLIGHTENED]. The NPU prediction is a
+        "second opinion" — the authoritative trust level is always the rule-based
+        <code>calculateTrustLevel()</code>.
+      </p>
+
+      <h3 class="text-lg font-semibold mb-3">14-Feature Input Vector</h3>
+      <div class="overflow-x-auto mb-6">
+        <table class="w-full bg-mountain-800 rounded-lg">
+          <thead><tr class="border-b border-mountain-700">
+            <th class="text-left p-3 text-mountain-300">#</th>
+            <th class="text-left p-3 text-mountain-300">Feature</th>
+            <th class="text-left p-3 text-mountain-300">Source</th>
+          </tr></thead>
+          <tbody>
+            <tr class="border-b border-mountain-700"><td class="p-3">0</td><td class="p-3">DOKO verified</td><td class="p-3 text-mountain-400">Trit → float (−1→0, 0→0.5, 1→1)</td></tr>
+            <tr class="border-b border-mountain-700"><td class="p-3">1</td><td class="p-3">DOKO hash present</td><td class="p-3 text-mountain-400">Boolean</td></tr>
+            <tr class="border-b border-mountain-700"><td class="p-3">2</td><td class="p-3">Mesh quorum verified</td><td class="p-3 text-mountain-400">Trit → float</td></tr>
+            <tr class="border-b border-mountain-700"><td class="p-3">3</td><td class="p-3">Quorum size / 10</td><td class="p-3 text-mountain-400">Normalized</td></tr>
+            <tr class="border-b border-mountain-700"><td class="p-3">4</td><td class="p-3">Diversity sufficient</td><td class="p-3 text-mountain-400">Boolean</td></tr>
+            <tr class="border-b border-mountain-700"><td class="p-3">5</td><td class="p-3">SSL verified</td><td class="p-3 text-mountain-400">Trit → float</td></tr>
+            <tr class="border-b border-mountain-700"><td class="p-3">6</td><td class="p-3">SSL type</td><td class="p-3 text-mountain-400">0 / 0.33 self-signed / 0.67 cert-bound / 1.0 CA</td></tr>
+            <tr class="border-b border-mountain-700"><td class="p-3">7</td><td class="p-3">Domain verified</td><td class="p-3 text-mountain-400">Trit → float</td></tr>
+            <tr class="border-b border-mountain-700"><td class="p-3">8</td><td class="p-3">Age (days / 365)</td><td class="p-3 text-mountain-400">Normalized</td></tr>
+            <tr class="border-b border-mountain-700"><td class="p-3">9</td><td class="p-3">Uptime</td><td class="p-3 text-mountain-400">0–1</td></tr>
+            <tr class="border-b border-mountain-700"><td class="p-3">10</td><td class="p-3">Trust score / 100</td><td class="p-3 text-mountain-400">Normalized</td></tr>
+            <tr class="border-b border-mountain-700"><td class="p-3">11</td><td class="p-3">Beacon consistency</td><td class="p-3 text-mountain-400">0–1</td></tr>
+            <tr class="border-b border-mountain-700"><td class="p-3">12</td><td class="p-3">Strikes / 3</td><td class="p-3 text-mountain-400">Normalized</td></tr>
+            <tr><td class="p-3">13</td><td class="p-3">Days since update / 90</td><td class="p-3 text-mountain-400">Normalized</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="theme-callout border rounded-xl p-6 mb-8">
+        <p class="font-semibold mb-1">NPU vs CPU</p>
+        <p class="text-mountain-400 text-sm">
+          The NPU path returns a full softmax probability distribution across all four levels.
+          The CPU fallback uses the rule-based engine and approximates probabilities (0.85 for
+          the predicted level, 0.05 for each other). Both receive identical 14-feature vectors.
+        </p>
+      </div>
+
       <h2>📖 Backward Compatibility</h2>
       <p>
         For existing codebases using the original naming, legacy exports are maintained:
@@ -402,29 +459,54 @@ import { HybridTrustModel, TrustLevel, TrustEvidence } from 'yakmesh/security/hy
 // GOLD → AWAKENED
 // PLATINUM → ENLIGHTENED</code></pre>
 
-      <!-- Journey Navigation -->
-      <div class="border-t border-mountain-700 mt-12 pt-8">
+      <!-- Version History -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+          <span>📅</span> Version History
+        </h2>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+          <table class="w-full">
+            <thead><tr class="border-b border-mountain-700">
+              <th class="text-left p-3 text-mountain-300">Version</th>
+              <th class="text-left p-3 text-mountain-300">Changes</th>
+            </tr></thead>
+            <tbody>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3"><span class="theme-badge px-2 py-1 rounded">v3.0.0</span></td>
+                <td class="p-3 text-mountain-400">NPU-accelerated <code>predictTrustLevel()</code> with 14-feature karma-trust
+                    ONNX model (softmax over 4 levels). CPU rule-based fallback preserved as authoritative.</td>
+              </tr>
+              <tr>
+                <td class="p-3"><span class="theme-badge px-2 py-1 rounded">v2.5.0</span></td>
+                <td class="p-3 text-mountain-400">Initial KARMA trust model. Trit-based evidence, 4 levels, backward compat aliases.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+            <!-- Journey Navigation -->
+                                                            <div class="border-t border-mountain-700 mt-12 pt-8">
         <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
         <div class="flex flex-col sm:flex-row gap-4">
           <a href="mani.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">
             <div class="text-xs text-mountain-400 mb-1">← Previous</div>
             <div class="flex items-center gap-2">
               <span class="text-xl">⏱️</span>
-              <span class="font-semibold group-hover:text-theme-accent">MANI Protocol</span>
+              <span class="font-semibold group-hover:text-theme-accent">MANI</span>
             </div>
             <p class="text-mountain-400 text-sm mt-1">Time synchronization</p>
           </a>
-          <a href="mandala.html" class="flex-1 block bg-mountain-800 border border-theme-primary rounded-xl p-4 hover:border-theme-accent transition group">
+          <a href="tattva.html" class="flex-1 block bg-mountain-800 border border-theme-primary rounded-xl p-4 hover:border-theme-accent transition group">
             <div class="text-xs text-mountain-400 mb-1">Next →</div>
             <div class="flex items-center gap-2">
-              <span class="text-xl">🌐</span>
-              <span class="font-semibold group-hover:text-theme-accent">MANDALA Protocol</span>
+              <span class="text-xl">🔯</span>
+              <span class="font-semibold group-hover:text-theme-accent">TATTVA</span>
             </div>
-            <p class="text-mountain-400 text-sm mt-1">Network topology</p>
+            <p class="text-mountain-400 text-sm mt-1">Core principles</p>
           </a>
         </div>
       </div>
-    </div>
   </main>
 
   <footer class="docs-footer">
@@ -438,6 +520,7 @@ import { HybridTrustModel, TrustLevel, TrustEvidence } from 'yakmesh/security/hy
   
 </body>
 </html>
+
 
 
 

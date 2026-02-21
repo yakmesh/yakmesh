@@ -6,6 +6,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { POSITIVE, NEUTRAL } from '../../oracle/tribhuj.js';
 import {
   STRIKE_LEVELS,
   STRIKE_CONSEQUENCES,
@@ -61,7 +62,7 @@ describe('Strike System', () => {
       expect(strike.nodeId).toBe('doko:bad-actor');
       expect(strike.reason).toBe('Propagated invalid blocks');
       expect(strike.timestamp).toBeGreaterThan(0);
-      expect(strike.verified).toBe(false);
+      expect(strike.verified).toBe(NEUTRAL);
     });
 
     it('should verify a strike', () => {
@@ -73,7 +74,7 @@ describe('Strike System', () => {
 
       strike.verify(['node-1', 'node-2', 'node-3']);
 
-      expect(strike.verified).toBe(true);
+      expect(strike.verified).toBe(POSITIVE);
       expect(strike.verifiedBy).toEqual(['node-1', 'node-2', 'node-3']);
       expect(strike.verifiedAt).toBeGreaterThan(0);
     });
@@ -94,7 +95,7 @@ describe('Strike System', () => {
       expect(restored.hardwareFingerprint).toBe(strike.hardwareFingerprint);
       expect(restored.nodeId).toBe(strike.nodeId);
       expect(restored.reason).toBe(strike.reason);
-      expect(restored.verified).toBe(true);
+      expect(restored.verified).toBe(POSITIVE);
     });
   });
 

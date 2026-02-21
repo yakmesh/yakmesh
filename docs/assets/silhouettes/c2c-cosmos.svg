@@ -1,0 +1,87 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMax slice">
+  <defs>
+    <linearGradient id="c2cGrad" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#1a0f08" stop-opacity="1"/>
+      <stop offset="40%" stop-color="#2d1a0a" stop-opacity="0.7"/>
+      <stop offset="100%" stop-color="#3d250e" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="starGlow" cx="50%" cy="25%" r="50%">
+      <stop offset="0%" stop-color="#fb923c" stop-opacity="0.15"/>
+      <stop offset="60%" stop-color="#ea580c" stop-opacity="0.05"/>
+      <stop offset="100%" stop-color="#1a0f08" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Base gradient -->
+  <rect width="1920" height="1080" fill="url(#c2cGrad)"/>
+
+  <!-- Star field glow -->
+  <rect width="1920" height="1080" fill="url(#starGlow)"/>
+
+  <!-- Mountains silhouette (launch site) -->
+  <path d="M0 880 L200 620 L380 750 L580 500 L800 680 L1000 420 L1200 600 L1400 480 L1600 650 L1800 540 L1920 680 L1920 1080 L0 1080 Z" fill="#0d0806" opacity="0.9"/>
+
+  <!-- Stars scattered -->
+  <circle cx="120" cy="80" r="1.5" fill="#fb923c" opacity="0.4"/>
+  <circle cx="340" cy="150" r="1" fill="#fdba74" opacity="0.3"/>
+  <circle cx="520" cy="50" r="2" fill="#fb923c" opacity="0.35"/>
+  <circle cx="680" cy="130" r="1" fill="#fdba74" opacity="0.25"/>
+  <circle cx="850" cy="60" r="1.5" fill="#fb923c" opacity="0.3"/>
+  <circle cx="1050" cy="100" r="1" fill="#fdba74" opacity="0.35"/>
+  <circle cx="1280" cy="70" r="2" fill="#fb923c" opacity="0.4"/>
+  <circle cx="1450" cy="140" r="1" fill="#fdba74" opacity="0.25"/>
+  <circle cx="1650" cy="80" r="1.5" fill="#fb923c" opacity="0.3"/>
+  <circle cx="1820" cy="120" r="1" fill="#fdba74" opacity="0.35"/>
+  <circle cx="250" cy="200" r="1" fill="#fdba74" opacity="0.2"/>
+  <circle cx="950" cy="180" r="1.5" fill="#fb923c" opacity="0.25"/>
+  <circle cx="1550" cy="200" r="1" fill="#fdba74" opacity="0.2"/>
+
+  <!-- Planet (large, right side) -->
+  <g transform="translate(1400, 280)">
+    <circle cx="0" cy="0" r="140" fill="#1a0f08" stroke="#fb923c" stroke-width="1.5" opacity="0.4"/>
+    <!-- Ring around planet -->
+    <ellipse cx="0" cy="0" rx="200" ry="40" fill="none" stroke="#fb923c" stroke-width="2" opacity="0.2" transform="rotate(-20)"/>
+    <!-- Surface details -->
+    <circle cx="-40" cy="-30" r="25" fill="#2d1a0a" opacity="0.5"/>
+    <circle cx="30" cy="50" r="18" fill="#2d1a0a" opacity="0.4"/>
+    <circle cx="50" cy="-60" r="12" fill="#2d1a0a" opacity="0.3"/>
+  </g>
+
+  <!-- Rocket/ship silhouette (center, launching) -->
+  <g transform="translate(920, 350)">
+    <!-- Rocket body -->
+    <path d="M0 -80 Q-5 -90 0 -110 Q5 -90 0 -80 Z" fill="#fb923c" opacity="0.3"/>
+    <rect x="-15" y="-80" width="30" height="90" rx="8" fill="#1a0f08" stroke="#fb923c" stroke-width="1.5" opacity="0.35"/>
+    <!-- Nose cone -->
+    <path d="M-15 -80 Q0 -120 15 -80 Z" fill="#1a0f08" stroke="#fb923c" stroke-width="1.5" opacity="0.35"/>
+    <!-- Fins -->
+    <path d="M-15 0 L-35 30 L-15 -5 Z" fill="#1a0f08" stroke="#ea580c" stroke-width="1" opacity="0.3"/>
+    <path d="M15 0 L35 30 L15 -5 Z" fill="#1a0f08" stroke="#ea580c" stroke-width="1" opacity="0.3"/>
+    <!-- Exhaust flame -->
+    <path d="M-10 10 Q0 50 10 10" fill="#fb923c" opacity="0.15"/>
+    <path d="M-6 10 Q0 70 6 10" fill="#fb923c" opacity="0.1"/>
+    <!-- Exhaust trail -->
+    <line x1="0" y1="40" x2="0" y2="200" stroke="#fb923c" stroke-width="3" opacity="0.06"/>
+    <line x1="-4" y1="50" x2="-8" y2="180" stroke="#ea580c" stroke-width="2" opacity="0.04"/>
+    <line x1="4" y1="50" x2="8" y2="180" stroke="#ea580c" stroke-width="2" opacity="0.04"/>
+  </g>
+
+  <!-- Small satellite (left) -->
+  <g transform="translate(450, 320)">
+    <!-- Body -->
+    <rect x="-8" y="-8" width="16" height="16" rx="2" fill="#1a0f08" stroke="#fb923c" stroke-width="1" opacity="0.3"/>
+    <!-- Solar panels -->
+    <rect x="-40" y="-4" width="28" height="8" fill="none" stroke="#fb923c" stroke-width="1" opacity="0.2"/>
+    <rect x="12" y="-4" width="28" height="8" fill="none" stroke="#fb923c" stroke-width="1" opacity="0.2"/>
+    <!-- Signal wave -->
+    <path d="M-50 0 Q-60 -15 -70 0" fill="none" stroke="#fb923c" stroke-width="1" opacity="0.1"/>
+  </g>
+
+  <!-- Mesh connection lines (yakmesh network in space) -->
+  <line x1="450" y1="320" x2="920" y2="350" stroke="#fb923c" stroke-width="1" opacity="0.06" stroke-dasharray="6,6"/>
+  <line x1="920" y1="350" x2="1400" y2="280" stroke="#fb923c" stroke-width="1" opacity="0.06" stroke-dasharray="6,6"/>
+  <line x1="450" y1="320" x2="1400" y2="280" stroke="#fb923c" stroke-width="1" opacity="0.04" stroke-dasharray="4,8"/>
+
+  <!-- Subtle orbital path -->
+  <ellipse cx="960" cy="500" rx="600" ry="250" fill="none" stroke="#fb923c" stroke-width="0.5" opacity="0.05" transform="rotate(-5, 960, 500)"/>
+</svg>

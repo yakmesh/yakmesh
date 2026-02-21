@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="tutorials">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="../favicon.ico" sizes="32x32">
+    <link rel="icon" href="../icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+    <title>Share Files with Friends - YAKMESH Tutorials</title>
+    <meta name="description" content="Learn how to share files and folders with friends using YAKMESH peer-to-peer network. No cloud uploads required - share directly from your device.">
+    
+    <link rel="stylesheet" href="../tailwind.min.css">
+    <link rel="stylesheet" href="../prism-tomorrow.min.css">
+    <link rel="stylesheet" href="../docs.css">
+    <style>
+        .theme-accent { color: #10b981; }
+        .theme-badge { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+        .tutorial-card { background: rgba(30, 41, 59, 0.5); border: 1px solid #334155; border-radius: 0.75rem; padding: 1.5rem; margin-bottom: 1.5rem; }
+        .tutorial-card:hover { border-color: #10b981; }
+        .step-number { display: inline-flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; background: #10b981; color: white; border-radius: 50%; font-weight: bold; margin-right: 0.75rem; }
+        .warning-box { background: rgba(251, 191, 36, 0.1); border: 1px solid #fbbf24; border-radius: 0.5rem; padding: 1rem; margin: 1rem 0; }
+        .tip-box { background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; border-radius: 0.5rem; padding: 1rem; margin: 1rem 0; }
+        .info-box { background: rgba(59, 130, 246, 0.1); border: 1px solid #3b82f6; border-radius: 0.5rem; padding: 1rem; margin: 1rem 0; }
+    </style>
+</head>
+<body class="bg-mountain-900 text-white min-h-screen">
+    
+  <nav class="docs-sidebar" id="sidebar">
+    <a href="../index.html" class="sidebar-logo">
+      <span class="logo-icon">🏔️</span>
+      <span class="logo-text">Yakmesh</span>
+    </a>
+    <a href="/dashboard" class="sidebar-dashboard-link"><span>📊</span> <span>Dashboard</span></a>
+    <ul class="sidebar-nav">
+      <li><a href="../index.html"><span>🏠</span> <span>Overview</span></a></li>
+      <li><a href="../getting-started.html"><span>🚀</span> <span>Getting Started</span></a></li>
+      <li><a href="../tutorials.html"><span>📖</span> <span>Tutorials</span></a></li>
+      <li><a href="../yak-protocol.html"><span class="yak-icon"></span> <span>YAK://</span></a></li>
+      <li><a href="../annex.html"><span>🌉</span> <span>ANNEX</span></a></li>
+      <li><a href="../nakpak.html"><span>🎒</span> <span>NAKPAK</span></a></li>
+      <li><a href="../namche.html"><span>🚪</span> <span>NAMCHE</span></a></li>
+      <li><a href="../doko.html"><span>🧺</span> <span>DOKO</span></a></li>
+      <li><a href="../sherpa.html"><span>🧗</span> <span>SHERPA</span></a></li>
+      <li><a href="../mandala.html"><span>🌐</span> <span>MANDALA</span></a></li>
+      <li><a href="../mantra.html"><span>🕉️</span> <span>MANTRA</span></a></li>
+      <li><a href="../gumba.html"><span>🛕</span> <span>GUMBA</span></a></li>
+      <li><a href="../yurt.html"><span>🏕️</span> <span>YURT</span></a></li>
+      <li><a href="../katha.html"><span>💬</span> <span>KATHA</span></a></li>
+      <li><a href="../vani.html"><span>🎙️</span> <span>VANI</span></a></li>
+      <li><a href="../darshan.html"><span>👁️</span> <span>DARSHAN</span></a></li>
+      <li><a href="../stupa.html"><span>🛕</span> <span>STUPA</span></a></li>
+      <li><a href="../lama.html"><span>🔮</span> <span>LAMA</span></a></li>
+      <li><a href="../mani.html"><span>⏱️</span> <span>MANI</span></a></li>
+      <li><a href="../karma.html"><span>☯️</span> <span>KARMA</span></a></li>
+      <li><a href="../tattva.html"><span>🔯</span> <span>TATTVA</span></a></li>
+      <li><a href="../tribhuj.html"><span>🔺</span> <span>TRIBHUJ</span></a></li>
+      <li><a href="../ypc27.html"><span>🔐</span> <span>YPC-27</span></a></li>
+      <li><a href="../sakshi.html"><span>👁️</span> <span>SAKSHI</span></a></li>
+      <li><a href="../geo-proof.html"><span>🌍</span> <span>PRAMAAN</span></a></li>
+      <li><a href="../trust-security.html"><span>🔒</span> <span>SURAKSHA</span></a></li>
+      <li><a href="../docs-bundle.html"><span>📚</span> <span>GRANTH</span></a></li>
+      <li><a href="../api.html"><span>📡</span> <span>API</span></a></li>
+      <li><a href="../adapters.html"><span>🔌</span> <span>Adapters</span></a></li>
+      <li><a href="../studio.html"><span>🎨</span> <span>Studio</span></a></li>
+      <li><a href="../quick-reference.html"><span>📋</span> <span>Quick Ref</span></a></li>
+    </ul>
+  </nav>
+
+  <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">☰</button>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="docs-main" id="mainContent">
+    <div class="docs-content">
+      <div class="mb-6">
+        <a href="../tutorials.html" class="theme-accent hover:underline">← Back to Tutorials</a>
+      </div>
+      
+      <!-- Header -->
+      <header class="mb-8">
+        <div class="flex items-center gap-3 mb-4">
+          <span class="text-4xl">📤</span>
+          <div>
+            <h1 class="text-3xl font-bold">Share Files with Friends</h1>
+            <p class="text-gray-400">Learn to share files directly from your device - no cloud uploads required</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-4 text-sm text-gray-400">
+          <span class="theme-badge px-3 py-1 rounded-full">Beginner</span>
+          <span>⏱️ 5 min read</span>
+          <span>📁 DOKO Protocol</span>
+        </div>
+      </header>
+
+      <!-- Introduction -->
+      <div class="tutorial-card">
+        <h2 class="text-xl font-semibold mb-4 theme-accent">What You'll Learn</h2>
+        <p class="text-gray-300 mb-4">
+          In this tutorial, you'll learn how to share files and folders with friends using YAKMESH's DOKO (Distributed Object Keeper and Organizer) system. 
+          Unlike traditional file sharing services, YAKMESH doesn't upload your files to any cloud server. Instead, your files stay on your device and are 
+          shared directly with your friends through an encrypted peer-to-peer connection.
+        </p>
+        <ul class="list-disc list-inside text-gray-300 space-y-2">
+          <li>Share a folder from your computer</li>
+          <li>Generate a shareable link</li>
+          <li>Send the link to a friend</li>
+          <li>Understand how DOKO links work</li>
+        </ul>
+      </div>
+
+      <!-- Prerequisites -->
+      <div class="tutorial-card">
+        <h2 class="text-xl font-semibold mb-4">📋 Before You Start</h2>
+        <p class="text-gray-300 mb-4">Make sure you have:</p>
+        <ul class="list-disc list-inside text-gray-300 space-y-2">
+          <li>YAKMESH installed and running on your computer</li>
+          <li>Your node online and connected to the mesh (check your dashboard)</li>
+          <li>A folder or file you want to share</li>
+        </ul>
+        <div class="tip-box mt-4">
+          <p class="text-sm"><strong>💡 Tip:</strong> If you haven't set up YAKMESH yet, check out the <a href="../getting-started.html" class="theme-accent hover:underline">Getting Started guide</a> first.</p>
+        </div>
+      </div>
+
+      <!-- Step 1 -->
+      <div class="tutorial-card">
+        <h2 class="text-xl font-semibold mb-4">
+          <span class="step-number">1</span>
+          Choose What to Share
+        </h2>
+        <p class="text-gray-300 mb-4">
+          First, decide which folder or file you want to share. For this tutorial, let's say you have a folder called 
+          <code class="bg-gray-800 px-2 py-1 rounded">vacation-photos</code> in your Documents folder that you want to share with a friend.
+        </p>
+        <p class="text-gray-300 mb-4">
+          Open your terminal or command prompt and navigate to the location of your files:
+        </p>
+        <pre><code class="language-bash"># On Windows
+cd C:\Users\YourName\Documents
+
+# On macOS/Linux
+cd ~/Documents</code></pre>
+        <p class="text-gray-300 mt-4">
+          Verify your folder is there:
+        </p>
+        <pre><code class="language-bash"># List contents
+ls -la vacation-photos/</code></pre>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="tutorial-card">
+        <h2 class="text-xl font-semibold mb-4">
+          <span class="step-number">2</span>
+          Share the Folder with YAKMESH
+        </h2>
+        <p class="text-gray-300 mb-4">
+          Now, use the <code class="bg-gray-800 px-2 py-1 rounded">yakmesh share</code> command to create a shareable link for your folder:
+        </p>
+        <pre><code class="language-bash"># Share the entire folder
+yakmesh share vacation-photos/</code></pre>
+        <p class="text-gray-300 mt-4">
+          You'll see output like this:
+        </p>
+        <pre><code class="language-bash">📤 Sharing: vacation-photos/
+   Files: 47 items (234.5 MB total)
+   
+✅ Share created successfully!
+
+🔗 Share Link:
+   yak://qubit-lattice-prism/vacation-photos
+
+📋 Or use the compact iO code:
+   qubit-lattice-prism
+
+⏰ Share expires: Never (persistent)
+🔒 Encryption: End-to-end encrypted</code></pre>
+        
+        <div class="info-box mt-4">
+          <p class="text-sm"><strong>ℹ️ What happened?</strong> YAKMESH indexed your files, created a cryptographic content fingerprint, 
+          and generated a human-readable <strong>iO name</strong> (like "qubit-lattice-prism") that's easy to share verbally. 
+          Your files stay on your device - nothing is uploaded anywhere.</p>
+        </div>
+        
+        <div class="tip-box mt-4">
+          <p class="text-sm"><strong>💡 Why iO names?</strong> Instead of ugly hashes like "QmX7k2n...", YAKMESH uses a 256-word 
+          quantum-themed wordlist to create memorable 3-word codes. Each word encodes 8 bits of the content fingerprint, 
+          giving you 24 bits of uniqueness - enough for millions of distinct shares.</p>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="tutorial-card">
+        <h2 class="text-xl font-semibold mb-4">
+          <span class="step-number">3</span>
+          Customize Your Share (Optional)
+        </h2>
+        <p class="text-gray-300 mb-4">
+          The basic share command works great, but you can customize it with additional options:
+        </p>
+        
+        <h3 class="font-semibold mt-6 mb-3 text-gray-200">Set an Expiration Time</h3>
+        <pre><code class="language-bash"># Share expires in 7 days
+yakmesh share vacation-photos/ --expires 7d
+
+# Share expires in 24 hours
+yakmesh share vacation-photos/ --expires 24h</code></pre>
+
+        <h3 class="font-semibold mt-6 mb-3 text-gray-200">Limit Number of Downloads</h3>
+        <pre><code class="language-bash"># Only allow 3 downloads
+yakmesh share vacation-photos/ --max-downloads 3</code></pre>
+
+        <h3 class="font-semibold mt-6 mb-3 text-gray-200">Password Protect the Share</h3>
+        <pre><code class="language-bash"># Require a password to access
+yakmesh share vacation-photos/ --password "secretcode123"</code></pre>
+
+        <h3 class="font-semibold mt-6 mb-3 text-gray-200">Combine Options</h3>
+        <pre><code class="language-bash"># Expires in 2 days, max 5 downloads, password protected
+yakmesh share vacation-photos/ --expires 2d --max-downloads 5 --password "familytrip"</code></pre>
+      </div>
+
+      <!-- Step 4 -->
+      <div class="tutorial-card">
+        <h2 class="text-xl font-semibold mb-4">
+          <span class="step-number">4</span>
+          Send the Link to Your Friend
+        </h2>
+        <p class="text-gray-300 mb-4">
+          Copy the share link and send it to your friend using any messaging app, email, or however you prefer. 
+          There are two formats you can use:
+        </p>
+        
+        <h3 class="font-semibold mt-4 mb-3 text-gray-200">Full yak:// Link</h3>
+        <pre><code class="language-bash">yak://qubit-lattice-prism/vacation-photos</code></pre>
+        <p class="text-gray-300 mt-2">
+          This link can be clicked if your friend has YAKMESH installed - it opens the download automatically.
+          The human-readable words ("qubit-lattice-prism") uniquely identify your content.
+        </p>
+
+        <h3 class="font-semibold mt-6 mb-3 text-gray-200">iO Code (for verbal sharing)</h3>
+        <pre><code class="language-bash">qubit-lattice-prism</code></pre>
+        <p class="text-gray-300 mt-2">
+          Just tell your friend these three words! They can fetch it with:
+        </p>
+        <pre><code class="language-bash">yakmesh fetch qubit-lattice-prism</code></pre>
+        <p class="text-gray-300 mt-2">
+          No typing long hashes - just memorable quantum words.
+        </p>
+
+        <div class="warning-box mt-4">
+          <p class="text-sm"><strong>⚠️ Important:</strong> Your computer must be online and running YAKMESH for your friend to download the files. 
+          If you shut down your computer, the share will be temporarily unavailable until you come back online.</p>
+        </div>
+      </div>
+
+      <!-- Step 5 -->
+      <div class="tutorial-card">
+        <h2 class="text-xl font-semibold mb-4">
+          <span class="step-number">5</span>
+          Your Friend Downloads the Files
+        </h2>
+        <p class="text-gray-300 mb-4">
+          When your friend receives the link, they can download the files using these methods:
+        </p>
+
+        <h3 class="font-semibold mt-4 mb-3 text-gray-200">Method A: Click the Link</h3>
+        <p class="text-gray-300 mb-2">
+          If they have YAKMESH installed, clicking the <code class="bg-gray-800 px-2 py-1 rounded">yakmesh://</code> link 
+          will open the download interface automatically.
+        </p>
+
+        <h3 class="font-semibold mt-6 mb-3 text-gray-200">Method B: Use the Command Line</h3>
+        <pre><code class="language-bash"># Using the iO code (easy to share verbally!)
+yakmesh fetch qubit-lattice-prism
+
+# Using the full yak:// link
+yakmesh fetch "yak://qubit-lattice-prism/vacation-photos"
+
+# Download to a specific folder
+yakmesh fetch qubit-lattice-prism --output ~/Downloads/vacation-pics/</code></pre>
+
+        <h3 class="font-semibold mt-6 mb-3 text-gray-200">Method C: Use the Dashboard</h3>
+        <p class="text-gray-300">
+          Open the YAKMESH dashboard, click "Receive Files", and paste the share link or code.
+        </p>
+      </div>
+
+      <!-- Managing Shares -->
+      <div class="tutorial-card">
+        <h2 class="text-xl font-semibold mb-4">
+          <span class="step-number">6</span>
+          Manage Your Active Shares
+        </h2>
+        <p class="text-gray-300 mb-4">
+          You can view and manage all your active shares using the <code class="bg-gray-800 px-2 py-1 rounded">yakmesh doko</code> commands:
+        </p>
+
+        <h3 class="font-semibold mt-4 mb-3 text-gray-200">List All Active Shares</h3>
+        <pre><code class="language-bash">yakmesh share list</code></pre>
+        <p class="text-gray-300 mt-2">Output example:</p>
+        <pre><code class="language-bash">📋 Your Active Shares:
+
+iO Name              Description        Size      Downloads  Expires
+─────────────────────────────────────────────────────────────────────────
+qubit-lattice-prism  vacation-photos    234.5 MB  2/∞        Never
+photon-cipher-node   work-documents     12.3 MB   0/5        2d 14h
+fermion-hash-crystal birthday-video     1.2 GB    1/1        Expired
+
+Total: 3 shares (1.45 GB)</code></pre>
+
+        <h3 class="font-semibold mt-6 mb-3 text-gray-200">Get Details About a Specific Share</h3>
+        <pre><code class="language-bash">yakmesh share info qubit-lattice-prism</code></pre>
+
+        <h3 class="font-semibold mt-6 mb-3 text-gray-200">Stop Sharing</h3>
+        <pre><code class="language-bash"># Stop a specific share
+yakmesh share remove qubit-lattice-prism
+
+# Stop all shares
+yakmesh share clear --all</code></pre>
+
+        <h3 class="font-semibold mt-6 mb-3 text-gray-200">Extend Expiration</h3>
+        <pre><code class="language-bash"># Add 7 more days to an expiring share
+yakmesh share extend photon-cipher-node --add 7d</code></pre>
+      </div>
+
+      <!-- How It Works -->
+      <div class="tutorial-card">
+        <h2 class="text-xl font-semibold mb-4">🔍 How DOKO Links Work</h2>
+        <p class="text-gray-300 mb-4">
+          Understanding what happens behind the scenes helps you use YAKMESH more effectively:
+        </p>
+
+        <ol class="list-decimal list-inside text-gray-300 space-y-4">
+          <li>
+            <strong class="text-white">Content Fingerprinting:</strong> When you share a folder, YAKMESH creates a unique cryptographic 
+            fingerprint of your content. This is then converted to a human-readable <strong>iO name</strong> 
+            (like "qubit-lattice-prism") that you can easily share verbally.
+          </li>
+          <li>
+            <strong class="text-white">Mesh Registration:</strong> Your node announces to the mesh network that it has this content 
+            available. Other nodes record this information but don't download the actual files.
+          </li>
+          <li>
+            <strong class="text-white">Direct Connection:</strong> When your friend requests the files, their node finds yours on the 
+            mesh and establishes a direct encrypted connection. No middleman servers are involved.
+          </li>
+          <li>
+            <strong class="text-white">Chunk Transfer:</strong> Files are sent in small encrypted chunks. If the connection is interrupted, 
+            the download can resume where it left off.
+          </li>
+          <li>
+            <strong class="text-white">Verification:</strong> Your friend's node verifies that the received content matches the 
+            fingerprint in the iO name, ensuring nothing was corrupted or tampered with during transfer.
+          </li>
+        </ol>
+
+        <div class="tip-box mt-6">
+          <p class="text-sm"><strong>💡 Privacy Note:</strong> Only the content hash is visible on the mesh network. 
+          File names, folder structure, and actual content are encrypted and only accessible to someone with the share link.</p>
+        </div>
+      </div>
+
+      <!-- Troubleshooting -->
+      <div class="tutorial-card">
+        <h2 class="text-xl font-semibold mb-4">🔧 Troubleshooting</h2>
+        
+        <h3 class="font-semibold mt-4 mb-2 text-gray-200">"Share not found" error</h3>
+        <p class="text-gray-300 mb-4">
+          This usually means your node is offline. Check that YAKMESH is running with 
+          <code class="bg-gray-800 px-2 py-1 rounded">yakmesh status</code>.
+        </p>
+
+        <h3 class="font-semibold mt-4 mb-2 text-gray-200">Slow download speeds</h3>
+        <p class="text-gray-300 mb-4">
+          This depends on your internet upload speed. For large files, consider using 
+          <code class="bg-gray-800 px-2 py-1 rounded">--replicate</code> to cache copies on other nodes.
+        </p>
+
+        <h3 class="font-semibold mt-4 mb-2 text-gray-200">Friend can't connect</h3>
+        <p class="text-gray-300 mb-4">
+          Check that both of you are connected to the mesh network. Run 
+          <code class="bg-gray-800 px-2 py-1 rounded">yakmesh peers</code> to see your connections.
+        </p>
+
+        <h3 class="font-semibold mt-4 mb-2 text-gray-200">Share expired accidentally</h3>
+        <p class="text-gray-300 mb-4">
+          You can recreate it with the same command. The content hash will be identical since the files haven't changed.
+        </p>
+      </div>
+
+      <!-- Summary -->
+      <div class="tutorial-card">
+        <h2 class="text-xl font-semibold mb-4 theme-accent">🎉 Summary</h2>
+        <p class="text-gray-300 mb-4">
+          Congratulations! You've learned how to share files with friends using YAKMESH. Here's a quick recap:
+        </p>
+        <ul class="list-disc list-inside text-gray-300 space-y-2">
+          <li><code class="bg-gray-800 px-2 py-1 rounded">yakmesh share [path]</code> - Create a share link</li>
+          <li><code class="bg-gray-800 px-2 py-1 rounded">yakmesh doko list</code> - View your active shares</li>
+          <li><code class="bg-gray-800 px-2 py-1 rounded">yakmesh fetch [link]</code> - Download shared content</li>
+          <li>Files stay on your device - no cloud uploads!</li>
+          <li>All transfers are end-to-end encrypted</li>
+        </ul>
+      </div>
+
+      <!-- Navigation Footer -->
+      <div class="border-t border-mountain-700 mt-12 pt-8">
+        <div class="flex flex-col sm:flex-row gap-4">
+          <a href="mesh-network.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-emerald-500 transition group">
+            <div class="text-xs text-mountain-400 mb-1">← Previous</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">🕸️</span>
+              <span class="font-semibold group-hover:text-emerald-400">Join the Mesh Network</span>
+            </div>
+          </a>
+          <a href="dashboard.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-emerald-500 transition group">
+            <div class="text-xs text-mountain-400 mb-1">Next →</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">📊</span>
+              <span class="font-semibold group-hover:text-emerald-400">Understanding the Dashboard</span>
+            </div>
+          </a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="../prism.min.js"></script>
+  <script src="../prism-javascript.min.js"></script>
+  <script src="../prism-bash.min.js"></script>
+  <script src="../docs.js"></script>
+</body>
+</html>

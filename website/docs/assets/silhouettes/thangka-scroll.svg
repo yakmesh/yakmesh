@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" opacity="0.04">
+  <!-- Thangka - Visual Storytelling / Scroll painting with chat modes -->
+  <!-- Scroll frame -->
+  <rect x="120" y="30" width="160" height="340" rx="8" fill="none" stroke="#a78bfa" stroke-width="2"/>
+  <ellipse cx="200" cy="30" rx="80" ry="12" fill="none" stroke="#a78bfa" stroke-width="2"/>
+  <ellipse cx="200" cy="370" rx="80" ry="12" fill="none" stroke="#a78bfa" stroke-width="2"/>
+  <!-- Scroll rollers -->
+  <line x1="110" y1="30" x2="110" y2="30" stroke="#a78bfa" stroke-width="6" stroke-linecap="round"/>
+  <line x1="290" y1="30" x2="290" y2="30" stroke="#a78bfa" stroke-width="6" stroke-linecap="round"/>
+  <!-- Inner painting area -->
+  <rect x="140" y="60" width="120" height="280" rx="4" fill="none" stroke="#a78bfa" stroke-width="1" opacity="0.5"/>
+  <!-- Chat bubbles inside scroll -->
+  <rect x="155" y="80" width="70" height="25" rx="12" fill="none" stroke="#a78bfa" stroke-width="1.5"/>
+  <rect x="175" y="115" width="70" height="25" rx="12" fill="none" stroke="#a78bfa" stroke-width="1.5"/>
+  <rect x="155" y="150" width="55" height="25" rx="12" fill="none" stroke="#a78bfa" stroke-width="1.5"/>
+  <!-- Manga panels -->
+  <rect x="150" y="190" width="45" height="35" fill="none" stroke="#a78bfa" stroke-width="1.5"/>
+  <rect x="200" y="190" width="50" height="35" fill="none" stroke="#a78bfa" stroke-width="1.5"/>
+  <rect x="150" y="230" width="100" height="30" fill="none" stroke="#a78bfa" stroke-width="1.5"/>
+  <!-- Terminal lines -->
+  <line x1="155" y1="275" x2="195" y2="275" stroke="#a78bfa" stroke-width="1.5"/>
+  <line x1="155" y1="285" x2="235" y2="285" stroke="#a78bfa" stroke-width="1.5"/>
+  <line x1="155" y1="295" x2="215" y2="295" stroke="#a78bfa" stroke-width="1.5"/>
+  <line x1="155" y1="305" x2="180" y2="305" stroke="#a78bfa" stroke-width="1.5"/>
+  <!-- Decorative lotus at bottom -->
+  <ellipse cx="200" cy="335" rx="20" ry="8" fill="none" stroke="#a78bfa" stroke-width="1"/>
+  <path d="M190 330 Q200 318 210 330" fill="none" stroke="#a78bfa" stroke-width="1"/>
+  <path d="M185 332 Q200 315 215 332" fill="none" stroke="#a78bfa" stroke-width="1"/>
+  <!-- Side decorations - prayer flags -->
+  <line x1="60" y1="80" x2="110" y2="60" stroke="#a78bfa" stroke-width="1" opacity="0.5"/>
+  <rect x="60" y="65" width="15" height="20" fill="none" stroke="#a78bfa" stroke-width="1" opacity="0.5"/>
+  <rect x="78" y="60" width="15" height="20" fill="none" stroke="#a78bfa" stroke-width="1" opacity="0.5"/>
+  <rect x="96" y="55" width="15" height="20" fill="none" stroke="#a78bfa" stroke-width="1" opacity="0.5"/>
+  <line x1="290" y1="60" x2="340" y2="80" stroke="#a78bfa" stroke-width="1" opacity="0.5"/>
+  <rect x="295" y="55" width="15" height="20" fill="none" stroke="#a78bfa" stroke-width="1" opacity="0.5"/>
+  <rect x="313" y="60" width="15" height="20" fill="none" stroke="#a78bfa" stroke-width="1" opacity="0.5"/>
+  <rect x="330" y="65" width="15" height="20" fill="none" stroke="#a78bfa" stroke-width="1" opacity="0.5"/>
+  <!-- Mountain peaks at base -->
+  <path d="M40 395 L80 350 L120 395" fill="none" stroke="#a78bfa" stroke-width="1.5" opacity="0.3"/>
+  <path d="M280 395 L320 350 L360 395" fill="none" stroke="#a78bfa" stroke-width="1.5" opacity="0.3"/>
+</svg>

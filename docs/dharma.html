@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dharma">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="favicon.ico" sizes="32x32">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <title>DHARMA | YAKMESH Documentation</title>
+    <meta name="description" content="Content moderation framework — actions not identities, host sovereignty.">
+    <link rel="stylesheet" href="tailwind.min.css">
+    <link rel="stylesheet" href="prism-tomorrow.min.css">
+    <link rel="stylesheet" href="docs.css">
+    <style>
+        .theme-accent { color: #fbbf24; }
+        .theme-accent-hover:hover { color: #fcd34d; }
+        .theme-badge { background: rgba(251, 191, 36, 0.2); color: #fbbf24; }
+        .theme-border { border-color: #d97706; }
+        .theme-callout { background: rgba(251, 191, 36, 0.1); border-color: #b45309; }
+        .active-link { background: rgba(251, 191, 36, 0.2) !important; color: #fbbf24 !important; }
+    </style>
+</head>
+<body class="bg-mountain-900 text-white min-h-screen">
+
+  <nav class="docs-sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-logo"><span class="logo-icon">🏔️</span><span class="logo-text">Yakmesh</span></a>
+    <a href="/dashboard" class="sidebar-dashboard-link"><span>📊</span> <span>Dashboard</span></a>
+    <ul class="sidebar-nav">
+      <li class="sidebar-section"><span>📘 Guides</span></li>
+      <li><a href="index.html"><span>🏠</span> <span>Overview</span></a></li>
+      <li><a href="getting-started.html"><span>🚀</span> <span>Getting Started</span></a></li>
+      <li><a href="tutorials.html"><span>📖</span> <span>Tutorials</span></a></li>
+      <li class="sidebar-section"><span>🐃 Protocol Stack</span></li>
+      <li><a href="yak-protocol.html"><span class="yak-icon"></span> <span>YAK://</span></a></li>
+      <li><a href="annex.html"><span>🌉</span> <span>ANNEX</span></a></li>
+      <li><a href="nakpak.html"><span>🎒</span> <span>NAKPAK</span></a></li>
+      <li><a href="namche.html"><span>🚪</span> <span>NAMCHE</span></a></li>
+      <li><a href="doko.html"><span>🧺</span> <span>DOKO</span></a></li>
+      <li><a href="sherpa.html"><span>🧗</span> <span>SHERPA</span></a></li>
+      <li><a href="mandala.html"><span>🌐</span> <span>MANDALA</span></a></li>
+      <li><a href="mantra.html"><span>🕉️</span> <span>MANTRA</span></a></li>
+      <li><a href="gumba.html"><span>🛕</span> <span>GUMBA</span></a></li>
+      <li><a href="yurt.html"><span>🏕️</span> <span>YURT</span></a></li>
+      <li><a href="katha.html"><span>💬</span> <span>KATHA</span></a></li>
+      <li><a href="vani.html"><span>🎙️</span> <span>VANI</span></a></li>
+      <li><a href="darshan.html"><span>👁️</span> <span>DARSHAN</span></a></li>
+      <li><a href="stupa.html"><span>🛕</span> <span>STUPA</span></a></li>
+      <li><a href="lama.html"><span>🔮</span> <span>LAMA</span></a></li>
+      <li><a href="mani.html"><span>⏱️</span> <span>MANI</span></a></li>
+      <li><a href="karma.html"><span>☯️</span> <span>KARMA</span></a></li>
+      <li><a href="tattva.html"><span>🔯</span> <span>TATTVA</span></a></li>
+      <li><a href="tribhuj.html"><span>🔺</span> <span>TRIBHUJ</span></a></li>
+      <li><a href="ypc27.html"><span>🔐</span> <span>YPC-27</span></a></li>
+      <li><a href="sakshi.html"><span>👁️</span> <span>SAKSHI</span></a></li>
+      <li><a href="geo-proof.html"><span>🌍</span> <span>PRAMAAN</span></a></li>
+      <li><a href="trust-security.html"><span>🔒</span> <span>SURAKSHA</span></a></li>
+      <li><a href="tivra.html"><span>⚡</span> <span>TIVRA</span></a></li>
+      <li><a href="prahari.html"><span>🛰️</span> <span>PRAHARI</span></a></li>
+      <li><a href="dharma.html" class="active"><span>⚖️</span> <span>DHARMA</span></a></li>
+      <li><a href="seva.html"><span>🙏</span> <span>SEVA</span></a></li>
+      <li><a href="docs-bundle.html"><span>📚</span> <span>GRANTH</span></a></li>
+      <li><a href="api.html"><span>📡</span> <span>API</span></a></li>
+      <li><a href="adapters.html"><span>🔌</span> <span>Adapters</span></a></li>
+      <li class="sidebar-section"><span>🚀 Applications</span></li>
+      <li><a href="yakapp.html"><span>💬</span> <span>YakApp</span></a></li>
+      <li><a href="c2c.html"><span>🚀</span> <span>C2C</span></a></li>
+      <li><a href="studio.html"><span>🎨</span> <span>Studio</span></a></li>
+      <li><a href="thangka.html"><span>🎨</span> <span>THANGKA</span></a></li>
+      <li class="sidebar-section"><span>📋 Reference</span></li>
+      <li><a href="quick-reference.html"><span>📋</span> <span>Quick Ref</span></a></li>
+    </ul>
+  </nav>
+
+  <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+    </svg>
+  </button>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="docs-main" id="mainContent">
+    <div class="docs-content">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="text-4xl">⚖️</span>
+        <div>
+          <h1 class="text-4xl font-bold">DHARMA <span class="text-xl text-mountain-400">धर्म</span></h1>
+          <p class="theme-accent">Distributed Harmonized Authority for Responsible Mesh Administration</p>
+        </div>
+      </div>
+      <p class="text-xl text-mountain-300 mb-4">Content moderation framework — judges actions, not identities. Host sovereignty with universal minimums.</p>
+      <span class="inline-block text-xs theme-badge px-2 py-1 rounded mb-8">v3.0.0</span>
+
+      <div class="feature-box">
+        <h3>The Law That Sustains All Things</h3>
+        <p><em>Dharma</em> is the cosmic principle of righteous conduct — not imposed from above but arising from the nature of things. In Hindu and Buddhist philosophy, dharma is not a rule book but a living standard: it asks “does this action create harmony or harm?” DHARMA applies this principle to mesh content: it evaluates <em>what is said</em>, never <em>who says it</em>. Nine universal categories define the boundaries of harm. Beyond that, expression is free. The host may add, but never subtract.</p>
+      </div>
+
+      <!-- Philosophy -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4">Philosophy</h2>
+        <p class="text-mountain-300 mb-4">
+          धर्म (dharma) = righteous conduct. DHARMA provides content moderation that:
+        </p>
+        <div class="grid md:grid-cols-2 gap-4 mb-6">
+          <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+            <h3 class="text-lg font-semibold mb-2 theme-accent">Judges Actions, Not Identities</h3>
+            <p class="text-mountain-400 text-sm">Content is evaluated on what it says, not who said it.
+              No demographic profiling, no political bias, no identity-based filtering.</p>
+          </div>
+          <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+            <h3 class="text-lg font-semibold mb-2 theme-accent">Host Sovereignty</h3>
+            <p class="text-mountain-400 text-sm">Node operators may extend DHARMA with custom patterns
+              for their community. The 9 universal categories are the baseline — hosts add, never subtract.</p>
+          </div>
+        </div>
+        <div class="theme-callout border rounded-xl p-6 mb-8">
+          <h3 class="text-lg font-semibold mb-2">Not Censorship</h3>
+          <p class="text-mountain-300">
+            DHARMA blocks <em>actionable harm</em> — instructions for violence, exploitation of minors,
+            doxxing coordinates. It does <strong>not</strong> filter opinions, beliefs, political speech,
+            or controversial ideas. Yakmesh is built for free expression; DHARMA exists to keep the
+            network safe for that expression.
+          </p>
+        </div>
+      </section>
+
+      <!-- Prohibited Categories -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4">9 Universal Categories</h2>
+        <p class="text-mountain-300 mb-4">
+          These categories cannot be disabled by any node operator — they represent the minimum standard
+          for participation in the yakmesh network:
+        </p>
+        <div class="overflow-x-auto mb-6">
+          <table class="w-full bg-mountain-800 rounded-lg">
+            <thead>
+              <tr class="border-b border-mountain-700">
+                <th class="text-left p-3 text-mountain-300">Category</th>
+                <th class="text-left p-3 text-mountain-300">Severity</th>
+                <th class="text-left p-3 text-mountain-300">Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3 font-semibold">CHILD_EXPLOITATION</td>
+                <td class="p-3"><span class="bg-red-500/20 text-red-400 px-2 py-1 rounded text-xs">CRITICAL</span></td>
+                <td class="p-3 text-mountain-400">BLOCK</td>
+              </tr>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3 font-semibold">HUMAN_TRAFFICKING</td>
+                <td class="p-3"><span class="bg-red-500/20 text-red-400 px-2 py-1 rounded text-xs">CRITICAL</span></td>
+                <td class="p-3 text-mountain-400">BLOCK</td>
+              </tr>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3 font-semibold">HUMAN_SACRIFICE</td>
+                <td class="p-3"><span class="bg-red-500/20 text-red-400 px-2 py-1 rounded text-xs">CRITICAL</span></td>
+                <td class="p-3 text-mountain-400">BLOCK</td>
+              </tr>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3 font-semibold">TERRORISM_PROMOTION</td>
+                <td class="p-3"><span class="bg-orange-500/20 text-orange-400 px-2 py-1 rounded text-xs">HIGH</span></td>
+                <td class="p-3 text-mountain-400">BLOCK</td>
+              </tr>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3 font-semibold">VIOLENCE_INCITEMENT</td>
+                <td class="p-3"><span class="bg-orange-500/20 text-orange-400 px-2 py-1 rounded text-xs">HIGH</span></td>
+                <td class="p-3 text-mountain-400">BLOCK</td>
+              </tr>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3 font-semibold">WEAPONS_INSTRUCTIONS</td>
+                <td class="p-3"><span class="bg-orange-500/20 text-orange-400 px-2 py-1 rounded text-xs">HIGH</span></td>
+                <td class="p-3 text-mountain-400">FLAG</td>
+              </tr>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3 font-semibold">SELF_HARM_PROMOTION</td>
+                <td class="p-3"><span class="bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded text-xs">MEDIUM</span></td>
+                <td class="p-3 text-mountain-400">FLAG</td>
+              </tr>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3 font-semibold">DOXXING</td>
+                <td class="p-3"><span class="bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded text-xs">MEDIUM</span></td>
+                <td class="p-3 text-mountain-400">FLAG</td>
+              </tr>
+              <tr>
+                <td class="p-3 font-semibold">FINANCIAL_FRAUD</td>
+                <td class="p-3"><span class="bg-yellow-500/20 text-yellow-400 px-2 py-1 rounded text-xs">MEDIUM</span></td>
+                <td class="p-3 text-mountain-400">WARN</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- DharmaModerator -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4">DharmaModerator</h2>
+        <p class="text-mountain-300 mb-4">
+          The <code class="theme-accent">DharmaModerator</code> class extends EventEmitter and provides the core
+          content checking pipeline:
+        </p>
+        <pre class="language-javascript rounded-lg mb-6"><code>import { DharmaModerator } from 'yakmesh/security/dharma-moderation';
+
+const moderator = new DharmaModerator({
+  // Optional: host-specific custom patterns
+  customPatterns: [
+    { id: 'spam-links', severity: 'low', keywords: ['buy now', 'click here'] }
+  ],
+  maxChecksPerMinute: 1000,
+});
+
+// Check content
+const result = await moderator.checkContent(
+  'Some user message here...',
+  { roomId: 'general', userId: 'abc123' }
+);
+
+// Result:
+// {
+//   action: 'ALLOW',        // BLOCK | FLAG | WARN | LOG | ALLOW
+//   violations: [],          // matched categories (if any)
+//   severity: null,          // 'critical' | 'high' | 'medium' | 'low' | null
+//   normalized: '...',       // content after obfuscation stripping
+// }</code></pre>
+      </section>
+
+      <!-- Obfuscation Stripping -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4">Anti-Obfuscation</h2>
+        <p class="text-mountain-300 mb-4">
+          Before pattern matching, DHARMA normalizes content to defeat common obfuscation techniques:
+        </p>
+        <div class="overflow-x-auto mb-6">
+          <table class="w-full bg-mountain-800 rounded-lg">
+            <thead>
+              <tr class="border-b border-mountain-700">
+                <th class="text-left p-3 text-mountain-300">Obfuscation</th>
+                <th class="text-left p-3 text-mountain-300">Normalized</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3"><code>0</code> (zero)</td>
+                <td class="p-3 text-mountain-400">→ <code>o</code></td>
+              </tr>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3"><code>@</code></td>
+                <td class="p-3 text-mountain-400">→ <code>a</code></td>
+              </tr>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3"><code>$</code></td>
+                <td class="p-3 text-mountain-400">→ <code>s</code></td>
+              </tr>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3"><code>1</code> (one)</td>
+                <td class="p-3 text-mountain-400">→ <code>i</code> or <code>l</code></td>
+              </tr>
+              <tr>
+                <td class="p-3">Whitespace / special chars between letters</td>
+                <td class="p-3 text-mountain-400">→ collapsed</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Action Levels -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4">Action Levels</h2>
+        <div class="space-y-3 mb-6">
+          <div class="bg-mountain-800 rounded-lg p-4 flex items-center gap-4">
+            <span class="bg-red-500/20 text-red-400 px-3 py-1 rounded font-mono">BLOCK</span>
+            <div class="text-mountain-400 text-sm">Message is silently dropped. Sender receives generic error. Used for CRITICAL and HIGH severity.</div>
+          </div>
+          <div class="bg-mountain-800 rounded-lg p-4 flex items-center gap-4">
+            <span class="bg-orange-500/20 text-orange-400 px-3 py-1 rounded font-mono">FLAG</span>
+            <div class="text-mountain-400 text-sm">Message is delivered but flagged for host review. Used for HIGH and MEDIUM severity.</div>
+          </div>
+          <div class="bg-mountain-800 rounded-lg p-4 flex items-center gap-4">
+            <span class="bg-yellow-500/20 text-yellow-400 px-3 py-1 rounded font-mono">WARN</span>
+            <div class="text-mountain-400 text-sm">Sender receives a warning. Message still delivered. Used for MEDIUM severity.</div>
+          </div>
+          <div class="bg-mountain-800 rounded-lg p-4 flex items-center gap-4">
+            <span class="theme-badge px-3 py-1 rounded font-mono">LOG</span>
+            <div class="text-mountain-400 text-sm">Event logged for telemetry only. No user-visible action. Used for LOW severity.</div>
+          </div>
+          <div class="bg-mountain-800 rounded-lg p-4 flex items-center gap-4">
+            <span class="bg-green-500/20 text-green-400 px-3 py-1 rounded font-mono">ALLOW</span>
+            <div class="text-mountain-400 text-sm">Content passes all checks. Normal delivery.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Host Sovereignty -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4">Host Sovereignty</h2>
+        <p class="text-mountain-300 mb-4">
+          Node operators can extend DHARMA with custom patterns for their community. Custom patterns
+          are added via the <code class="theme-accent">customPatterns</code> config array:
+        </p>
+        <pre class="language-javascript rounded-lg mb-6"><code>const moderator = new DharmaModerator({
+  customPatterns: [
+    {
+      id: 'no-crypto-shilling',
+      severity: 'low',
+      description: 'Block cryptocurrency pump-and-dump messages',
+      keywords: ['100x guaranteed', 'moon shot', 'buy before midnight'],
+      action: 'WARN',
+    },
+    {
+      id: 'nsfw-filter',
+      severity: 'medium',
+      description: 'NSFW content filter for family-friendly server',
+      regex: [/explicit_pattern/i],
+      action: 'FLAG',
+    },
+  ],
+});
+
+// Custom patterns are checked AFTER the 9 universal categories.
+// Hosts can add rules but cannot disable universal protections.</code></pre>
+      </section>
+
+      <!-- Events -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4">Events</h2>
+        <p class="text-mountain-300 mb-4">
+          <code class="theme-accent">DharmaModerator</code> extends EventEmitter and fires events on violations:
+        </p>
+        <pre class="language-javascript rounded-lg mb-6"><code>moderator.on('violation', (result) => {
+  console.log(`${result.action}: ${result.violations[0].category}`);
+  // 'BLOCK: CHILD_EXPLOITATION'
+});
+
+moderator.on('block', (result) => {
+  // Only fires for BLOCK actions
+  reportToAdminDashboard(result);
+});</code></pre>
+      </section>
+
+      <!-- Version History -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2"><span>📅</span> Version History</h2>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+          <table class="w-full">
+            <thead><tr class="border-b border-mountain-700">
+              <th class="text-left p-3 text-mountain-300">Version</th>
+              <th class="text-left p-3 text-mountain-300">Changes</th>
+            </tr></thead>
+            <tbody>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3"><span class="theme-badge px-2 py-1 rounded">v3.0.0</span></td>
+                <td class="p-3 text-mountain-400">Full DHARMA module: 9 prohibited categories, DharmaModerator class, anti-obfuscation normalization, host sovereignty, event system.</td>
+              </tr>
+              <tr>
+                <td class="p-3"><span class="theme-badge px-2 py-1 rounded">v2.9.0</span></td>
+                <td class="p-3 text-mountain-400">Initial content check pipeline design.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+            <!-- Journey Navigation -->
+                                                <div class="border-t border-mountain-700 mt-12 pt-8">
+        <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
+        <div class="flex flex-col sm:flex-row gap-4">
+          <a href="prahari.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">
+            <div class="text-xs text-mountain-400 mb-1">← Previous</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">🛰️</span>
+              <span class="font-semibold group-hover:text-theme-accent">PRAHARI</span>
+            </div>
+            <p class="text-mountain-400 text-sm mt-1">Quantum satellite entropy</p>
+          </a>
+          <a href="seva.html" class="flex-1 block bg-mountain-800 border border-theme-primary rounded-xl p-4 hover:border-theme-accent transition group">
+            <div class="text-xs text-mountain-400 mb-1">Next →</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">🙏</span>
+              <span class="font-semibold group-hover:text-theme-accent">SEVA</span>
+            </div>
+            <p class="text-mountain-400 text-sm mt-1">NPU compute sharing</p>
+          </a>
+        </div>
+      </div>
+  </main>
+
+  <footer class="docs-footer"><p>© 2026 YAKMESH™</p></footer>
+  <script src="prism.min.js"></script>
+  <script src="prism-javascript.min.js"></script>
+  <script src="docs.js"></script>
+</body>
+</html>

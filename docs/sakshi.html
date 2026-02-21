@@ -48,9 +48,11 @@
     </a>
     <a href="/dashboard" class="sidebar-dashboard-link"><span>📊</span> <span>Dashboard</span></a>
     <ul class="sidebar-nav">
+      <li class="sidebar-section"><span>📘 Guides</span></li>
       <li><a href="index.html"><span>🏠</span> <span>Overview</span></a></li>
       <li><a href="getting-started.html"><span>🚀</span> <span>Getting Started</span></a></li>
       <li><a href="tutorials.html"><span>📖</span> <span>Tutorials</span></a></li>
+      <li class="sidebar-section"><span>🐃 Protocol Stack</span></li>
       <li><a href="yak-protocol.html"><span class="yak-icon"></span> <span>YAK://</span></a></li>
       <li><a href="annex.html"><span>🌉</span> <span>ANNEX</span></a></li>
       <li><a href="nakpak.html"><span>🎒</span> <span>NAKPAK</span></a></li>
@@ -74,10 +76,19 @@
       <li><a href="sakshi.html" class="active"><span>👁️</span> <span>SAKSHI</span></a></li>
       <li><a href="geo-proof.html"><span>🌍</span> <span>PRAMAAN</span></a></li>
       <li><a href="trust-security.html"><span>🔒</span> <span>SURAKSHA</span></a></li>
+      <li><a href="tivra.html"><span>⚡</span> <span>TIVRA</span></a></li>
+      <li><a href="prahari.html"><span>🛰️</span> <span>PRAHARI</span></a></li>
+      <li><a href="dharma.html"><span>⚖️</span> <span>DHARMA</span></a></li>
+      <li><a href="seva.html"><span>🙏</span> <span>SEVA</span></a></li>
       <li><a href="docs-bundle.html"><span>📚</span> <span>GRANTH</span></a></li>
       <li><a href="api.html"><span>📡</span> <span>API</span></a></li>
       <li><a href="adapters.html"><span>🔌</span> <span>Adapters</span></a></li>
+      <li class="sidebar-section"><span>🚀 Applications</span></li>
+      <li><a href="yakapp.html"><span>💬</span> <span>YakApp</span></a></li>
+      <li><a href="c2c.html"><span>🚀</span> <span>C2C</span></a></li>
       <li><a href="studio.html"><span>🎨</span> <span>Studio</span></a></li>
+      <li><a href="thangka.html"><span>🎨</span> <span>THANGKA</span></a></li>
+      <li class="sidebar-section"><span>📋 Reference</span></li>
       <li><a href="quick-reference.html"><span>📋</span> <span>Quick Ref</span></a></li>
     </ul>
   </nav>
@@ -636,6 +647,109 @@ const networkInsights = getPatternInsights();
         </div>
       </section>
 
+      <!-- VEGATI Velocity Monitor -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+          <span>⚡</span> VEGATI — Behavior Velocity Monitor
+        </h2>
+        <p class="text-mountain-300 mb-4">
+          <strong>VEGATI</strong> (वेगति — "velocity, momentum") detects sudden behavioral changes that may indicate
+          compromised keys, reputation farming, or insider threat activation. Each node builds a behavioral fingerprint
+          using exponential moving averages; deviations trigger sigma-based alerts.
+        </p>
+        <h3 class="text-lg font-semibold mb-3">Behavior Dimensions</h3>
+        <div class="overflow-x-auto mb-6">
+          <table class="cause-table">
+            <thead><tr><th>Dimension</th><th>What It Measures</th></tr></thead>
+            <tbody>
+              <tr><td><code>message_rate</code></td><td>Messages per minute</td></tr>
+              <tr><td><code>gossip_ratio</code></td><td>Gossip vs direct messages</td></tr>
+              <tr><td><code>error_rate</code></td><td>Invalid messages / signatures</td></tr>
+              <tr><td><code>attestation_rate</code></td><td>Revocation attestations filed</td></tr>
+              <tr><td><code>connection_churn</code></td><td>Connect / disconnect frequency</td></tr>
+              <tr><td><code>response_latency</code></td><td>Average response time</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h3 class="text-lg font-semibold mb-3">Alert Levels (σ thresholds)</h3>
+        <div class="grid sm:grid-cols-4 gap-3 mb-6">
+          <div class="rounded-lg p-3 text-center" style="background:rgba(34,197,94,0.15);">
+            <div class="font-bold text-green-400">NORMAL</div>
+            <div class="text-sm text-mountain-400">&lt; 2σ</div>
+          </div>
+          <div class="rounded-lg p-3 text-center" style="background:rgba(234,179,8,0.15);">
+            <div class="font-bold text-yellow-400">ELEVATED</div>
+            <div class="text-sm text-mountain-400">≥ 2σ</div>
+          </div>
+          <div class="rounded-lg p-3 text-center" style="background:rgba(249,115,22,0.15);">
+            <div class="font-bold text-orange-400">WARNING</div>
+            <div class="text-sm text-mountain-400">≥ 3σ</div>
+          </div>
+          <div class="rounded-lg p-3 text-center" style="background:rgba(239,68,68,0.15);">
+            <div class="font-bold text-red-400">CRITICAL</div>
+            <div class="text-sm text-mountain-400">≥ 4σ</div>
+          </div>
+        </div>
+        <p class="text-mountain-400 text-sm">
+          Baseline requires ≥ 50 observations. EMA smoothing factor defaults to 0.1. Alert cooldown: 60 s.
+          Profile TTL: 7 days.
+        </p>
+      </section>
+
+      <!-- NPU Anomaly Assessment -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+          <span>🧠</span> NPU Anomaly Assessment
+        </h2>
+        <p class="text-mountain-300 mb-4">
+          <code>assessNode()</code> feeds a 12-feature input vector into the <code>sakshi-anomaly</code> ONNX model
+          for multi-class attack detection. Falls back to CPU heuristic (z-score aggregation) when ONNX Runtime
+          is unavailable.
+        </p>
+        <h3 class="text-lg font-semibold mb-3">12-Feature Input Vector</h3>
+        <div class="overflow-x-auto mb-6">
+          <table class="cause-table">
+            <thead><tr><th>#</th><th>Feature</th><th>Source</th></tr></thead>
+            <tbody>
+              <tr><td>0–5</td><td>6 behavior dimensions</td><td>VEGATI profile</td></tr>
+              <tr><td>6</td><td>uptimePercent</td><td>Context (0–1)</td></tr>
+              <tr><td>7</td><td>networkAgeDays / 365</td><td>Context</td></tr>
+              <tr><td>8</td><td>karmaScore</td><td>KARMA trust model</td></tr>
+              <tr><td>9</td><td>hasAesni</td><td>Hardware attestation</td></tr>
+              <tr><td>10</td><td>timeSourceQuality</td><td>MANI (0=sys, 0.5=NTP, 1=PTP)</td></tr>
+              <tr><td>11</td><td>observationCount / 1000</td><td>Profile depth</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h3 class="text-lg font-semibold mb-3">Output Scores</h3>
+        <div class="grid sm:grid-cols-2 gap-3 mb-6">
+          <div class="bg-mountain-800 rounded-lg p-4">
+            <code class="theme-accent font-semibold">anomalyScore</code>
+            <p class="text-mountain-400 text-sm mt-1">General anomaly probability (NPU + CPU fallback)</p>
+          </div>
+          <div class="bg-mountain-800 rounded-lg p-4">
+            <code class="theme-accent font-semibold">sybilScore</code>
+            <p class="text-mountain-400 text-sm mt-1">Sybil attack probability (NPU only)</p>
+          </div>
+          <div class="bg-mountain-800 rounded-lg p-4">
+            <code class="theme-accent font-semibold">eclipseScore</code>
+            <p class="text-mountain-400 text-sm mt-1">Eclipse attack probability (NPU only)</p>
+          </div>
+          <div class="bg-mountain-800 rounded-lg p-4">
+            <code class="theme-accent font-semibold">floodScore</code>
+            <p class="text-mountain-400 text-sm mt-1">Flood attack probability (NPU only)</p>
+          </div>
+        </div>
+        <div class="theme-callout border rounded-xl p-6 mb-4">
+          <p class="font-semibold mb-1">NPU vs CPU</p>
+          <p class="text-mountain-400 text-sm">
+            The NPU path returns per-attack-type scores (sybil, eclipse, flood). The CPU fallback can only
+            compute a general anomalyScore — the individual attack scores are zero. Both paths receive
+            identical feature vectors.
+          </p>
+        </div>
+      </section>
+
       <!-- Version History -->
       <section class="mb-12">
         <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
@@ -651,6 +765,12 @@ const networkInsights = getPatternInsights();
             </thead>
             <tbody>
               <tr>
+                <td><span class="theme-badge px-2 py-1 rounded">v3.0.0</span></td>
+                <td>VEGATI behavior velocity monitor with 6 dimensions, σ-based alerts.
+                    NPU anomaly assessment via <code>assessNode()</code> with 12-feature ONNX model
+                    (sakshi-anomaly) and CPU heuristic fallback.</td>
+              </tr>
+              <tr>
                 <td><span class="theme-badge px-2 py-1 rounded">v2.8.2</span></td>
                 <td>Added SETU bridge functions for trust-tier integration</td>
               </tr>
@@ -664,7 +784,7 @@ const networkInsights = getPatternInsights();
       </section>
 
             <!-- Journey Navigation -->
-            <div class="border-t border-mountain-700 mt-12 pt-8">
+                                                            <div class="border-t border-mountain-700 mt-12 pt-8">
         <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
         <div class="flex flex-col sm:flex-row gap-4">
           <a href="ypc27.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">

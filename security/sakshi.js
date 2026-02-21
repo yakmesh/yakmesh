@@ -1515,6 +1515,8 @@ export const BEHAVIOR_DIMENSION = Object.freeze({
 export class BehaviorVelocityMonitor {
   constructor(options = {}) {
     this.profiles = new Map();  // nodeId -> BehaviorProfile
+    this._inferenceEngine = options.inferenceEngine || null;
+    this._modelName = 'sakshi-anomaly';
     
     // Configuration
     this.config = {
@@ -1772,6 +1774,103 @@ export class BehaviorVelocityMonitor {
       profilesWithBaseline,
       activeAlerts,
       alertsByLevel,
+    };
+  }
+
+  /**
+   * NPU-accelerated anomaly assessment for a node.
+   * Feeds all behavioral dimensions + contextual features into the
+   * sakshi-anomaly ONNX model for multi-class attack detection.
+   * 
+   * Falls back to CPU heuristic (z-score based) if ONNX Runtime is unavailable.
+   * 
+   * @param {string} nodeId - Node to assess
+   * @param {Object} context - Additional context features
+   * @param {number} [context.uptimePercent=0.5] - Node uptime (0-1)
+   * @param {number} [context.networkAgeDays=0] - Days on network
+   * @param {number} [context.karmaScore=0.5] - Current KARMA score (0-1)
+   * @param {boolean} [context.hasAesni=false] - Hardware AES-NI attestation
+   * @param {number} [context.timeSourceQuality=0] - Time source quality (0=system, 0.5=ntp, 1=ptp)
+   * @param {number} [context.observationCount=0] - Total observations recorded
+   * @returns {Promise<Object>} Anomaly assessment with scores per threat type
+   */
+  async assessNode(nodeId, context = {}) {
+    const profile = this.profiles.get(nodeId);
+
+    // Default feature values (zero-filled if no profile)
+    const getDimValue = (dim) => {
+      if (!profile) return 0;
+      const stats = profile.dimensions.get(dim);
+      return stats ? stats.lastValue : 0;
+    };
+
+    // Build 12-feature input vector (must match training data order)
+    const features = new Float32Array([
+      getDimValue(BEHAVIOR_DIMENSION.MESSAGE_RATE),
+      getDimValue(BEHAVIOR_DIMENSION.GOSSIP_RATIO),
+      getDimValue(BEHAVIOR_DIMENSION.ERROR_RATE),
+      getDimValue(BEHAVIOR_DIMENSION.ATTESTATION_RATE),
+      getDimValue(BEHAVIOR_DIMENSION.CONNECTION_CHURN),
+      getDimValue(BEHAVIOR_DIMENSION.RESPONSE_LATENCY),
+      Math.min(1.0, context.uptimePercent ?? 0.5),
+      Math.min(1.0, (context.networkAgeDays ?? 0) / 365),
+      Math.min(1.0, context.karmaScore ?? 0.5),
+      context.hasAesni ? 1.0 : 0.0,
+      Math.min(1.0, context.timeSourceQuality ?? 0),
+      Math.min(1.0, (context.observationCount ?? 0) / 1000),
+    ]);
+
+    // NPU path: use ONNX model if available
+    const engine = this._inferenceEngine;
+    if (engine && engine.hasModel(this._modelName)) {
+      try {
+        const result = await engine.infer(this._modelName, {
+          behavior_features: features,
+        });
+        if (result && result.anomaly_scores) {
+          const scores = result.anomaly_scores;
+          return {
+            source: 'NPU',
+            nodeId,
+            anomalyScore: scores[0],
+            sybilScore: scores[1],
+            eclipseScore: scores[2],
+            floodScore: scores[3],
+            features,
+          };
+        }
+      } catch (err) {
+        log.warn('vegati', `NPU assessment failed for ${nodeId}: ${err.message}`);
+      }
+    }
+
+    // CPU fallback: aggregate z-scores across dimensions
+    let maxZScore = 0;
+    let anomalySum = 0;
+    let dimCount = 0;
+
+    if (profile) {
+      for (const [, stats] of profile.dimensions) {
+        if (stats.count >= this.config.minObservationsForBaseline) {
+          const stdDev = Math.sqrt(stats.emVar);
+          const zScore = stdDev > 0 ? Math.abs(stats.lastValue - stats.ema) / stdDev : 0;
+          maxZScore = Math.max(maxZScore, zScore);
+          anomalySum += Math.min(1.0, zScore / this.config.thresholds.critical);
+          dimCount++;
+        }
+      }
+    }
+
+    const anomalyScore = dimCount > 0 ? anomalySum / dimCount : 0;
+    return {
+      source: 'CPU',
+      nodeId,
+      anomalyScore,
+      sybilScore: 0,   // CPU fallback cannot distinguish attack types
+      eclipseScore: 0,
+      floodScore: 0,
+      maxZScore,
+      features,
     };
   }
 

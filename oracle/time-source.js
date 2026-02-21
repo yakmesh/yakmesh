@@ -43,6 +43,7 @@ import { existsSync, readFileSync } from 'fs';
 import { platform } from 'os';
 import { EventEmitter } from 'events';
 import { createLogger } from '../utils/logger.js';
+import { MA902Monitor, getMA902Monitor } from './ma902-snmp.js';
 
 const log = createLogger('mani:time-source');
 
@@ -174,6 +175,9 @@ export class ManiTimeDetector extends EventEmitter {
       refreshInterval: options.refreshInterval || 60000,
       // Verbose logging
       verbose: options.verbose || false,
+      // MA-902 SNMP monitoring configuration
+      ma902: options.ma902 || null,
+      // Example: { host: '192.168.1.30', pollInterval: 10000 }
     };
     
     this.platform = platform();
@@ -182,12 +186,54 @@ export class ManiTimeDetector extends EventEmitter {
     this.trustLevel = ManiTrustLevel.UNSYNC;
     this.lastCheck = null;
     this.refreshTimer = null;
+    
+    // MA-902 SNMP monitor instance
+    this.ma902Monitor = null;
   }
   
   /**
    * Start continuous monitoring of time sources
    */
-  start() {
+  async start() {
+    // Start MA-902 SNMP monitor if configured
+    if (this.options.ma902) {
+      try {
+        this.ma902Monitor = new MA902Monitor({
+          verbose: this.options.verbose,
+          ...this.options.ma902,
+        });
+        
+        // Forward MA-902 events
+        this.ma902Monitor.on('telemetry', (data) => {
+          this.emit('ma902:telemetry', data);
+        });
+        this.ma902Monitor.on('lockLost', (data) => {
+          log.warn('MA-902 satellite lock lost — GPS trust degraded');
+          this.emit('ma902:lockLost', data);
+          // Re-detect to update trust level
+          this.detect();
+        });
+        this.ma902Monitor.on('lockAcquired', (data) => {
+          log.info('MA-902 satellite lock acquired — GPS trust restored');
+          this.emit('ma902:lockAcquired', data);
+          this.detect();
+        });
+        this.ma902Monitor.on('alarm', (data) => {
+          this.emit('ma902:alarm', data);
+          this.detect();
+        });
+        this.ma902Monitor.on('trustChanged', (data) => {
+          this.emit('ma902:trustChanged', data);
+          this.detect();
+        });
+        
+        await this.ma902Monitor.start();
+      } catch (err) {
+        log.warn('MA-902 SNMP monitor failed to start', { error: err.message });
+        this.ma902Monitor = null;
+      }
+    }
+    
     this.detect();
     
     if (this.options.refreshInterval > 0) {
@@ -206,6 +252,10 @@ export class ManiTimeDetector extends EventEmitter {
     if (this.refreshTimer) {
       clearInterval(this.refreshTimer);
       this.refreshTimer = null;
+    }
+    if (this.ma902Monitor) {
+      this.ma902Monitor.stop();
+      this.ma902Monitor = null;
     }
   }
   
@@ -231,8 +281,31 @@ export class ManiTimeDetector extends EventEmitter {
         this.detectedSources.set('atomic', atomicResult);
       }
       
-      // Check for GPS/PPS
+      // Check for GPS/PPS (enriched with MA-902 SNMP telemetry)
       const gpsResult = this.detectGPS();
+      
+      // Enrich GPS result with MA-902 SNMP data if available
+      if (this.ma902Monitor && this.ma902Monitor.isAvailable()) {
+        const telemetry = this.ma902Monitor.getTelemetry();
+        if (telemetry) {
+          gpsResult.detected = true;
+          gpsResult.device = gpsResult.device || 'MA-902/S-C1';
+          gpsResult.synchronized = telemetry.synchronized;
+          gpsResult.satellites = telemetry.satellites.used;
+          gpsResult.ma902 = {
+            host: telemetry.host,
+            locked: telemetry.locked,
+            satellites: telemetry.satellites,
+            gpsTime: telemetry.gpsTimeISO,
+            clockDelta: telemetry.clockDeltaSeconds,
+            alarm: telemetry.alarm,
+            quality: telemetry.qualityIndicator,
+            trust: telemetry.maniTrust,
+            constellations: telemetry.satellites.constellations,
+          };
+        }
+      }
+      
       if (gpsResult.detected) {
         results.sources.gps = gpsResult;
         this.detectedSources.set('gps', gpsResult);
@@ -245,8 +318,14 @@ export class ManiTimeDetector extends EventEmitter {
         this.detectedSources.set('ptp', ptpResult);
       }
       
-      // Check NTP status
+      // Check NTP status — if MA-902 is the NTP source, note that
       const ntpResult = this.detectNTP();
+      if (ntpResult.server && this.ma902Monitor?.isAvailable()) {
+        const ma902Host = this.ma902Monitor.options.host;
+        if (ntpResult.server === ma902Host || ntpResult.server.includes(ma902Host)) {
+          ntpResult.ma902Backed = true;
+        }
+      }
       results.sources.ntp = ntpResult;
       this.detectedSources.set('ntp', ntpResult);
       
@@ -263,6 +342,11 @@ export class ManiTimeDetector extends EventEmitter {
       } else if (ntpResult.synchronized) {
         results.primarySource = 'ntp';
         results.trustLevel = TimeTrustLevel.NTP;
+      }
+      
+      // MA-902 data enrichment for results
+      if (this.ma902Monitor) {
+        results.ma902 = this.ma902Monitor.getStatus();
       }
       
       results.phaseTolerance = PhaseTolerance[results.trustLevel];
@@ -501,45 +585,7 @@ export class ManiTimeDetector extends EventEmitter {
     }
       // 4. Check for Meinberg PTP hardware (PTP270PEX, etc.)
       try {
-        const meinbergCheck = execSilent('lspci 2>/dev/null | grep -i meinberg', { encoding: 'utf8', timeout: 5000 });
-        if (meinbergCheck.trim()) {
-          result.detected = true;
-          result.device = 'Meinberg PTP';
-          result.type = meinbergCheck.includes('270') ? 'PTP270PEX' : 'Meinberg PTP Card';
-          try {
-            const mbgStatus = execSilent('mbgstatus 2>/dev/null | head -20', { encoding: 'utf8', timeout: 5000 });
-            if (mbgStatus.includes('SYNC') || mbgStatus.includes('synchronized')) {
-              result.synchronized = true;
-            }
-            const offsetMatch = mbgStatus.match(/offset[:\s]+(-?\d+)/i);
-            if (offsetMatch) {
-              result.offset = parseInt(offsetMatch[1]);
-            }
-          } catch (e) { /* mbgstatus not available */ }
-        }
-      } catch (e) { /* Meinberg not found */ }
-      // 4. Check for Meinberg PTP hardware (PTP270PEX, etc.)
-      try {
-        const meinbergCheck = execSilent('lspci 2>/dev/null | grep -i meinberg', { encoding: 'utf8', timeout: 5000 });
-        if (meinbergCheck.trim()) {
-          result.detected = true;
-          result.device = 'Meinberg PTP';
-          result.type = meinbergCheck.includes('270') ? 'PTP270PEX' : 'Meinberg PTP Card';
-          try {
-            const mbgStatus = execSilent('mbgstatus 2>/dev/null | head -20', { encoding: 'utf8', timeout: 5000 });
-            if (mbgStatus.includes('SYNC') || mbgStatus.includes('synchronized')) {
-              result.synchronized = true;
-            }
-            const offsetMatch = mbgStatus.match(/offset[:\s]+(-?\d+)/i);
-            if (offsetMatch) {
-              result.offset = parseInt(offsetMatch[1]);
-            }
-          } catch (e) { /* mbgstatus not available */ }
-        }
-      } catch (e) { /* Meinberg not found */ }
-      // 4. Check for Meinberg PTP hardware (PTP270PEX, etc.)
-      try {
-        // Check for Meinberg driver/software
+        // Check for Meinberg driver/software via lspci
         const meinbergCheck = execSilent('lspci 2>/dev/null | grep -i meinberg', { encoding: 'utf8', timeout: 5000 });
         if (meinbergCheck.trim()) {
           result.detected = true;
@@ -565,13 +611,27 @@ export class ManiTimeDetector extends EventEmitter {
         // Meinberg not found via lspci
       }
       
-      // 5. Windows: Check for Meinberg driver
+      // 5. Windows: Check for Meinberg driver + MbgAdjTm service
       if (this.platform === 'win32') {
         try {
           const driverCheck = execSilent('driverquery /v 2>nul | findstr /i meinberg', { encoding: 'utf8', timeout: 5000 });
           if (driverCheck.trim()) {
             result.detected = true;
-            result.type = 'Meinberg (Windows)';
+            result.type = 'Meinberg PTP270PEX (Windows)';
+            
+            // Check if MbgAdjTm service is running (disciplines system clock from PTP card)
+            const svcCheck = execSilent('sc query MbgAdjTm 2>nul', { encoding: 'utf8', timeout: 3000 });
+            if (svcCheck && /RUNNING/i.test(svcCheck)) {
+              result.serviceRunning = true;
+              
+              // Cross-reference with MA-902 SNMP: if MA-902 is GPS-locked and serving PTP,
+              // and MbgAdjTm is running, the PTP card is receiving disciplined time
+              if (this.ma902Monitor?.isAvailable() && this.ma902Monitor.isLocked()) {
+                result.synchronized = true;
+                result.source = 'ma902-ptp';
+                result.device = 'PTP270PEX ← MA-902/S-C1';
+              }
+            }
           }
         } catch (e) {
           // Meinberg driver not found
@@ -712,11 +772,21 @@ export class ManiTimeDetector extends EventEmitter {
     }
     
     if (results.sources.gps?.detected) {
-      log.info('GPS detected', {
+      const gpsLog = {
         device: results.sources.gps.device || 'detected',
         hasPPS: results.sources.gps.hasPPS,
         synchronized: results.sources.gps.synchronized,
-      });
+      };
+      // Enrich log with MA-902 SNMP data if available
+      if (results.sources.gps.ma902) {
+        const ma = results.sources.gps.ma902;
+        gpsLog.ma902 = true;
+        gpsLog.satellites = `${ma.satellites.used}/${ma.satellites.tracking}/${ma.satellites.visible}`;
+        gpsLog.constellations = ma.constellations.join('+');
+        gpsLog.locked = ma.locked;
+        gpsLog.trust = ma.trust.level;
+      }
+      log.info('GPS detected', gpsLog);
     }
     
     if (results.sources.ptp?.detected) {
@@ -776,7 +846,7 @@ export class ManiTimeDetector extends EventEmitter {
    * Get status object for API responses
    */
   getStatus() {
-    return {
+    const status = {
       trustLevel: this.trustLevel,
       phaseTolerance: this.getPhaseTolerance(),
       stratum: this.getStratum(),
@@ -789,6 +859,21 @@ export class ManiTimeDetector extends EventEmitter {
         tightPhaseWindow: this.trustLevel !== TimeTrustLevel.UNSYNC,
       },
     };
+    
+    // Include MA-902 SNMP status if monitor is active
+    if (this.ma902Monitor) {
+      status.ma902 = this.ma902Monitor.getStatus();
+    }
+    
+    return status;
+  }
+  
+  /**
+   * Get the MA-902 monitor instance (if configured)
+   * @returns {MA902Monitor|null}
+   */
+  getMA902Monitor() {
+    return this.ma902Monitor;
   }
 }
 
@@ -883,6 +968,9 @@ export {
 // Backward compatibility exports (original naming)
 export { ManiTimeDetector as TimeSourceDetector };
 
+// Re-export MA-902 monitor for direct access
+export { MA902Monitor, getMA902Monitor } from './ma902-snmp.js';
+
 export default {
   ManiTimeDetector,
   ManiTrustLevel,
@@ -891,6 +979,8 @@ export default {
   createPhaseConfig,
   getManiTimeDetector,
   detectTimeSources,
+  MA902Monitor,
+  getMA902Monitor,
   // Backward compatibility
   TimeSourceDetector: ManiTimeDetector,
   TimeTrustLevel: ManiTrustLevel,

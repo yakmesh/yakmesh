@@ -1,0 +1,76 @@
+# YAKMESH Security Headers
+# https://yakmesh.dev
+
+# Enable HSTS (HTTP Strict Transport Security)
+<IfModule mod_headers.c>
+    # Prevent clickjacking
+    Header always set X-Frame-Options "DENY"
+    
+    # Prevent MIME type sniffing
+    Header always set X-Content-Type-Options "nosniff"
+    
+    # XSS Protection (legacy browsers)
+    Header always set X-XSS-Protection "1; mode=block"
+    
+    # Referrer Policy
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    
+    # Permissions Policy (disable unnecessary features)
+    Header always set Permissions-Policy "geolocation=(), microphone=(), camera=(), payment=()"
+    
+    # Content Security Policy
+    Header always set Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' https:; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
+    
+    # HSTS - Force HTTPS for 1 year
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains; preload"
+</IfModule>
+
+# Prevent directory listing
+Options -Indexes
+
+# Protect sensitive files (except .well-known)
+<FilesMatch "^\.(?!well-known)">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Allow .well-known directory for SHERPA discovery and other protocols
+<Directory ".well-known">
+    Options -Indexes
+    Order allow,deny
+    Allow from all
+</Directory>
+
+# Serve SHERPA beacon with correct content type
+<FilesMatch "^beacon$">
+    <IfModule mod_headers.c>
+        Header set Content-Type "application/json"
+        Header set Cache-Control "public, max-age=300"
+        Header set X-Sherpa-Version "1.0"
+        Header set Access-Control-Allow-Origin "*"
+    </IfModule>
+</FilesMatch>
+
+# Block access to backup files
+<FilesMatch "\.(bak|config|sql|fla|psd|ini|log|sh|inc|swp|dist|old|save)$">
+    Order allow,deny
+    Deny from all
+</FilesMatch>
+
+# Prevent script execution in uploads (if any)
+<Directory "uploads">
+    <FilesMatch "\.(php|php3|php4|php5|phtml|pl|py|jsp|asp|htm|html|shtml|sh|cgi)$">
+        Order allow,deny
+        Deny from all
+    </FilesMatch>
+</Directory>
+
+# Force HTTPS redirect
+RewriteEngine On
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Prevent hotlinking (optional - uncomment if desired)
+# RewriteCond %{HTTP_REFERER} !^$
+# RewriteCond %{HTTP_REFERER} !^https?://(www\.)?yakmesh\.dev [NC]
+# RewriteRule \.(jpg|jpeg|png|gif|svg|webp)$ - [F]

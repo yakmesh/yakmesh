@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMax slice">
+  <defs>
+    <linearGradient id="tivraGlow" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#06b6d4" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#101a16" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="boltCenter" cx="50%" cy="40%" r="50%">
+      <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.4"/>
+      <stop offset="50%" stop-color="#06b6d4" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#101a16" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="boltStroke" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#67e8f9" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#0891b2" stop-opacity="0.3"/>
+    </linearGradient>
+  </defs>
+  <!-- MOUNTAIN BACKDROP -->
+  <polygon points="0,620 280,300 560,580 0,1080" fill="#1a2a22" opacity="0.35"/>
+  <polygon points="200,700 500,380 800,650 200,1080" fill="#1a2a22" opacity="0.25"/>
+  <polygon points="1450,650 1700,280 1920,550 1920,1080 1400,1080" fill="#1a2a22" opacity="0.35"/>
+  <polygon points="1100,720 1400,350 1700,620 1100,1080" fill="#1a2a22" opacity="0.25"/>
+  <!-- Central acceleration glow -->
+  <ellipse cx="960" cy="400" rx="500" ry="350" fill="url(#tivraGlow)"/>
+  <!-- LIGHTNING BOLT - tivra strikes -->
+  <polygon points="920,120 880,380 940,370 870,620 1040,340 970,355 1020,120" fill="url(#boltCenter)" stroke="url(#boltStroke)" stroke-width="2" opacity="0.6"/>
+  <!-- Secondary bolts -->
+  <polygon points="720,200 700,360 730,355 695,480 790,340 765,345 780,200" fill="#0891b2" opacity="0.2"/>
+  <polygon points="1180,180 1160,350 1190,345 1155,490 1250,330 1225,335 1240,180" fill="#0891b2" opacity="0.2"/>
+  <!-- Circuit traces from bolt base -->
+  <line x1="870" y1="620" x2="500" y2="700" stroke="#22d3ee" stroke-width="1" opacity="0.25"/>
+  <line x1="870" y1="620" x2="300" y2="750" stroke="#22d3ee" stroke-width="1" opacity="0.15"/>
+  <line x1="870" y1="620" x2="1400" y2="690" stroke="#22d3ee" stroke-width="1" opacity="0.25"/>
+  <line x1="870" y1="620" x2="1600" y2="740" stroke="#22d3ee" stroke-width="1" opacity="0.15"/>
+  <!-- Hardware nodes -->
+  <circle cx="500" cy="700" r="8" fill="#22d3ee" opacity="0.3"/>
+  <text x="500" y="730" fill="#22d3ee" opacity="0.25" font-size="11" font-family="monospace" text-anchor="middle">GPU</text>
+  <circle cx="300" cy="750" r="8" fill="#22d3ee" opacity="0.3"/>
+  <text x="300" y="780" fill="#22d3ee" opacity="0.25" font-size="11" font-family="monospace" text-anchor="middle">NPU</text>
+  <circle cx="1400" cy="690" r="8" fill="#22d3ee" opacity="0.3"/>
+  <text x="1400" y="720" fill="#22d3ee" opacity="0.25" font-size="11" font-family="monospace" text-anchor="middle">SHA-NI</text>
+  <circle cx="1600" cy="740" r="8" fill="#22d3ee" opacity="0.3"/>
+  <text x="1600" y="770" fill="#22d3ee" opacity="0.25" font-size="11" font-family="monospace" text-anchor="middle">AVX</text>
+  <!-- Speed lines -->
+  <line x1="750" y1="350" x2="650" y2="350" stroke="#67e8f9" stroke-width="1" opacity="0.2"/>
+  <line x1="780" y1="400" x2="620" y2="400" stroke="#67e8f9" stroke-width="1" opacity="0.15"/>
+  <line x1="1150" y1="360" x2="1280" y2="360" stroke="#67e8f9" stroke-width="1" opacity="0.2"/>
+  <line x1="1120" y1="410" x2="1300" y2="410" stroke="#67e8f9" stroke-width="1" opacity="0.15"/>
+  <!-- Central hub -->
+  <circle cx="960" cy="500" r="30" fill="#083344" opacity="0.6" stroke="#22d3ee" stroke-width="1.5" stroke-opacity="0.4"/>
+  <text x="960" y="505" fill="#22d3ee" opacity="0.5" font-size="14" font-family="serif" text-anchor="middle">⚡</text>
+  <!-- GROUND -->
+  <polygon points="0,920 350,890 700,930 960,900 1200,940 1500,895 1920,920 1920,1080 0,1080" fill="#101a16" opacity="0.75"/>
+</svg>

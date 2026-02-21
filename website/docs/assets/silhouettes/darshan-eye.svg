@@ -1,0 +1,92 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMax slice">
+  <defs>
+    <radialGradient id="darshanGlow" cx="50%" cy="40%" r="50%">
+      <stop offset="0%" stop-color="#06b6d4" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#101a16" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="streamGlow" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#06b6d4" stop-opacity="0"/>
+      <stop offset="50%" stop-color="#22d3ee" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="#06b6d4" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- MOUNTAIN BACKDROP -->
+  <polygon points="0,550 220,250 450,500 0,1080" fill="#1a2a22" opacity="0.35"/>
+  <polygon points="1520,600 1750,280 1920,550 1920,1080 1520,1080" fill="#1a2a22" opacity="0.35"/>
+  <polygon points="1300,700 1500,400 1700,650 1700,1080 1300,1080" fill="#1a2a22" opacity="0.3"/>
+  
+  <!-- Viewing glow -->
+  <ellipse cx="960" cy="450" rx="400" ry="250" fill="url(#darshanGlow)"/>
+  
+  <!-- CENTRAL ALL-SEEING EYE (DARSHAN - Divine Vision) -->
+  <!-- Outer eye shape -->
+  <ellipse cx="960" cy="400" rx="250" ry="120" fill="#1a2a22" opacity="0.9"/>
+  <ellipse cx="960" cy="400" rx="250" ry="120" stroke="#06b6d4" stroke-width="3" fill="none" opacity="0.5"/>
+  <!-- Iris -->
+  <circle cx="960" cy="400" r="80" fill="#0e2429" opacity="0.95"/>
+  <circle cx="960" cy="400" r="80" stroke="#22d3ee" stroke-width="3" fill="none" opacity="0.6"/>
+  <!-- Pupil -->
+  <circle cx="960" cy="400" r="40" fill="#06b6d4" opacity="0.4"/>
+  <!-- Highlight -->
+  <circle cx="940" cy="380" r="12" fill="#67e8f9" opacity="0.5"/>
+  
+  <!-- Eye rays (vision lines) -->
+  <line x1="710" y1="400" x2="600" y2="400" stroke="#22d3ee" stroke-width="2" opacity="0.3"/>
+  <line x1="720" y1="330" x2="620" y2="280" stroke="#22d3ee" stroke-width="2" opacity="0.25"/>
+  <line x1="720" y1="470" x2="620" y2="520" stroke="#22d3ee" stroke-width="2" opacity="0.25"/>
+  <line x1="1210" y1="400" x2="1320" y2="400" stroke="#22d3ee" stroke-width="2" opacity="0.3"/>
+  <line x1="1200" y1="330" x2="1300" y2="280" stroke="#22d3ee" stroke-width="2" opacity="0.25"/>
+  <line x1="1200" y1="470" x2="1300" y2="520" stroke="#22d3ee" stroke-width="2" opacity="0.25"/>
+  
+  <!-- CONTENT HOST (left side - source) -->
+  <rect x="150" y="550" width="300" height="200" fill="#1a2a22" opacity="0.85" rx="10"/>
+  <rect x="150" y="550" width="300" height="200" stroke="#06b6d4" stroke-width="2" fill="none" opacity="0.4" rx="10"/>
+  <!-- Play button -->
+  <polygon points="280,630 280,690 340,660" fill="#22d3ee" opacity="0.4"/>
+  <!-- Progress bar -->
+  <rect x="180" y="720" width="240" height="8" fill="#0e2429" opacity="0.6" rx="4"/>
+  <rect x="180" y="720" width="100" height="8" fill="#06b6d4" opacity="0.5" rx="4"/>
+  <text x="300" y="580" fill="#67e8f9" opacity="0.5" font-size="14" font-family="monospace" text-anchor="middle">HOST CONTENT</text>
+  
+  <!-- Stream flow (host to eye) -->
+  <rect x="480" y="630" width="200" height="60" fill="url(#streamGlow)" opacity="0.4"/>
+  <path d="M450,660 L700,660" stroke="#22d3ee" stroke-width="2" opacity="0.4" stroke-dasharray="10,5"/>
+  <polygon points="700,650 730,660 700,670" fill="#22d3ee" opacity="0.4"/>
+  
+  <!-- VIEWERS (right side - can see, cannot copy) -->
+  <!-- Viewer 1 -->
+  <rect x="1400" y="500" width="200" height="130" fill="#1a2a22" opacity="0.75" rx="8"/>
+  <rect x="1400" y="500" width="200" height="130" stroke="#06b6d4" stroke-width="1.5" fill="none" opacity="0.35" rx="8"/>
+  <text x="1500" y="530" fill="#22d3ee" opacity="0.4" font-size="11" font-family="monospace" text-anchor="middle">VIEWER-A</text>
+  <!-- Eye icon (viewing) -->
+  <ellipse cx="1500" cy="570" rx="30" ry="15" stroke="#67e8f9" stroke-width="1" fill="none" opacity="0.4"/>
+  <circle cx="1500" cy="570" r="8" fill="#06b6d4" opacity="0.4"/>
+  <!-- No copy icon -->
+  <circle cx="1560" cy="600" r="15" stroke="#ef4444" stroke-width="1.5" fill="none" opacity="0.3"/>
+  <line x1="1550" y1="590" x2="1570" y2="610" stroke="#ef4444" stroke-width="1.5" opacity="0.3"/>
+  
+  <!-- Viewer 2 -->
+  <rect x="1450" y="680" width="180" height="110" fill="#1a2a22" opacity="0.65" rx="8"/>
+  <rect x="1450" y="680" width="180" height="110" stroke="#22d3ee" stroke-width="1" fill="none" opacity="0.25" rx="8"/>
+  <text x="1540" y="710" fill="#06b6d4" opacity="0.3" font-size="10" font-family="monospace" text-anchor="middle">VIEWER-B</text>
+  <ellipse cx="1540" cy="745" rx="25" ry="12" stroke="#67e8f9" stroke-width="1" fill="none" opacity="0.3"/>
+  <circle cx="1540" cy="745" r="6" fill="#22d3ee" opacity="0.3"/>
+  
+  <!-- Stream to viewers -->
+  <path d="M1200,400 Q1300,450 1400,530" stroke="#22d3ee" stroke-width="1.5" fill="none" opacity="0.25" stroke-dasharray="8,4"/>
+  <path d="M1200,420 Q1350,550 1450,700" stroke="#06b6d4" stroke-width="1" fill="none" opacity="0.2" stroke-dasharray="8,4"/>
+  
+  <!-- VIEW-NOT-COPY badge -->
+  <rect x="800" y="580" width="320" height="40" fill="#0e2429" opacity="0.7" rx="20"/>
+  <rect x="800" y="580" width="320" height="40" stroke="#06b6d4" stroke-width="2" fill="none" opacity="0.4" rx="20"/>
+  <text x="960" y="607" fill="#67e8f9" opacity="0.6" font-size="16" font-family="monospace" text-anchor="middle">VIEW ✓  COPY ✗</text>
+  
+  <!-- Host sovereignty indicator -->
+  <text x="300" y="800" fill="#22d3ee" opacity="0.35" font-size="11" font-family="monospace" text-anchor="middle">hostSovereignty: true</text>
+  <text x="300" y="820" fill="#06b6d4" opacity="0.3" font-size="10" font-family="monospace" text-anchor="middle">exclusions: Map()</text>
+  
+  <!-- Stats overlay -->
+  <text x="1500" y="850" fill="#06b6d4" opacity="0.25" font-size="10" font-family="monospace" text-anchor="middle">viewers: 2</text>
+  <text x="1500" y="870" fill="#22d3ee" opacity="0.2" font-size="10" font-family="monospace" text-anchor="middle">bandwidth: adaptive</text>
+</svg>

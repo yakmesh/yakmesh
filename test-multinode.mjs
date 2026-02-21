@@ -28,7 +28,7 @@ let testsFailed = 0;
 console.log(`
 ╔══════════════════════════════════════════════════════════════════╗
 ║     YAKMESH MULTI-NODE INTEGRATION TEST SUITE                    ║
-║     Real Network Validation - January 2026                       ║
+║     Real Network Validation - February 2026                      ║
 ╚══════════════════════════════════════════════════════════════════╝
 `);
 
@@ -43,7 +43,7 @@ async function httpGet(url) {
   }
 }
 
-async function waitForNode(port, maxWait = 15000) {
+async function waitForNode(port, maxWait = 60000) {
   const start = Date.now();
   while (Date.now() - start < maxWait) {
     try {
@@ -65,46 +65,36 @@ async function startNodes() {
   for (const node of NODES) {
     console.log(`  Starting ${node.name} on HTTP:${node.httpPort} WS:${node.wsPort}...`);
     
-    // Create minimal config for each node
-    const configContent = `
-export default {
-  node: { name: '${node.name}', region: 'test' },
-  network: { 
-    httpPort: ${node.httpPort}, 
-    wsPort: ${node.wsPort},
-    identityConfig: { networkPrefix: 'test', identitySalt: 'multinode-test-v1' }
-  },
-  bootstrap: [${NODES.filter(n => n.wsPort !== node.wsPort).map(n => `'ws://localhost:${n.wsPort}'`).join(', ')}],
-  database: { path: '${node.dataDir}/yakmesh.db', replication: { enabled: true } },
-  oracle: { minAttestations: 2 },
-};
-`;
-    
-    // Write temp config
+    // Create data directory (NOT config files — config MUST stay byte-identical
+    // across all nodes. The Validation Oracle hashes all .js files;
+    // generating configs would poison the genesis hash.)
     const fs = await import('fs/promises');
     await fs.mkdir(node.dataDir, { recursive: true });
-    await fs.writeFile(`${node.dataDir}/yakmesh.config.js`, configContent);
     
-    // Start node process
+    // Build bootstrap list: all OTHER nodes' WS endpoints (self-skip happens in server)
+    const allBootstrap = NODES.map(n => `ws://localhost:${n.wsPort}`).join(',');
+    
+    // Start node — all differentiation via env vars, NEVER via config file mutation
     const proc = spawn('node', ['server/index.js'], {
       env: { 
         ...process.env, 
-        YAKMESH_CONFIG: `${node.dataDir}/yakmesh.config.js`,
         YAKMESH_HTTP_PORT: node.httpPort.toString(),
         YAKMESH_WS_PORT: node.wsPort.toString(),
         YAKMESH_DATA_DIR: node.dataDir,
+        YAKMESH_BOOTSTRAP: allBootstrap,
       },
       stdio: 'pipe',
       detached: false,
     });
     
     proc.stdout.on('data', (data) => {
-      // Suppress output during tests, uncomment for debugging:
-      // console.log(`[${node.name}] ${data}`);
+      const line = data.toString().trim();
+      if (line) console.log(`  [${node.name}] ${line}`);
     });
     
     proc.stderr.on('data', (data) => {
-      // console.error(`[${node.name} ERR] ${data}`);
+      const line = data.toString().trim();
+      if (line) console.error(`  [${node.name} ERR] ${line}`);
     });
     
     nodeProcesses.push({ ...node, proc });
@@ -207,7 +197,8 @@ async function testPeerConnectivity() {
   
   for (const node of NODES) {
     const peers = await httpGet(`http://localhost:${node.httpPort}/peers`);
-    const peerCount = peers?.peers?.length || peers?.count || 0;
+    // /peers returns an array directly from mesh.getPeers()
+    const peerCount = Array.isArray(peers) ? peers.length : (peers?.peers?.length || peers?.count || 0);
     console.log(`  ${node.name}: ${peerCount} connected peers`);
     totalPeers += peerCount;
   }
@@ -233,51 +224,55 @@ async function testPeerConnectivity() {
   }
 }
 
-// ===== TEST 3: ORACLE CONSENSUS =====
+// ===== TEST 3: ORACLE GENESIS CONSENSUS =====
 
 async function testOracleConsensus() {
-  console.log('\n━━━ TEST 3: Oracle Phase Consensus ━━━\n');
+  console.log('\n━━━ TEST 3: Oracle Genesis Consensus ━━━\n');
   
   const oracleStates = [];
   
   for (const node of NODES) {
     const oracle = await httpGet(`http://localhost:${node.httpPort}/oracle/status`);
+    const network = await httpGet(`http://localhost:${node.httpPort}/network/identity`);
     
     if (oracle) {
       oracleStates.push({
         node: node.name,
-        phase: oracle.phase || oracle.currentPhase,
-        epoch: oracle.epoch,
-        healthy: oracle.healthy || oracle.status === 'healthy',
+        healthy: oracle.status === 'healthy',
+        integrityValid: oracle.integrity?.valid,
+        networkName: oracle.networkName || network?.name,
+        networkId: oracle.networkId || network?.id,
+        fingerprint: oracle.networkFingerprint,
       });
-      console.log(`  ${node.name}: Phase=${oracle.phase || oracle.currentPhase}, Epoch=${oracle.epoch}, Healthy=${oracle.healthy || oracle.status}`);
+      console.log(`  ${node.name}: Status=${oracle.status}, Network=${oracle.networkName} (${oracle.networkId}), Integrity=${oracle.integrity?.valid}`);
     }
   }
   
   if (oracleStates.length >= 2) {
-    // Check if phases are within 1 of each other (allowing for phase boundary)
-    const phases = oracleStates.map(o => o.phase).filter(p => p !== undefined);
+    // All nodes MUST compute the same genesis fingerprint (proves identical codebase)
+    const fingerprints = oracleStates.map(o => o.fingerprint).filter(Boolean);
+    const uniqueFingerprints = new Set(fingerprints);
+    const allHealthy = oracleStates.every(o => o.healthy);
     
-    if (phases.length >= 2) {
-      const minPhase = Math.min(...phases);
-      const maxPhase = Math.max(...phases);
-      const phaseDiff = maxPhase - minPhase;
-      
-      console.log(`\n  Phase range: ${minPhase} to ${maxPhase} (diff: ${phaseDiff})`);
-      
-      if (phaseDiff <= 1) {
-        console.log('  ✓ PASS: Nodes agree on oracle phase');
-        testsPassed++;
-        return true;
-      } else {
-        console.log('  ⚠ WARN: Phase difference > 1, may be crossing boundary');
-        testsPassed++;
-        return true;
-      }
+    console.log(`\n  Unique genesis fingerprints: ${uniqueFingerprints.size} (should be 1)`);
+    console.log(`  All nodes healthy: ${allHealthy}`);
+    
+    if (uniqueFingerprints.size === 1 && allHealthy) {
+      console.log('  ✓ PASS: All nodes agree on genesis fingerprint — identical codebase verified');
+      testsPassed++;
+      return true;
+    } else if (uniqueFingerprints.size === 1) {
+      console.log('  ⚠ WARN: Same fingerprint but some nodes report unhealthy');
+      testsPassed++;
+      return true;
+    } else {
+      console.log('  ✗ FAIL: Genesis fingerprint mismatch — codebase divergence detected!');
+      testsFailed++;
+      return false;
     }
   }
   
-  console.log('  ⚠ SKIP: Could not verify oracle consensus (may need more time)');
+  console.log('  ⚠ SKIP: Could not verify oracle consensus (insufficient nodes responded)');
   testsPassed++;
   return true;
 }

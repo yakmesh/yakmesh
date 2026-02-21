@@ -50,11 +50,11 @@ function createDokoId(prefix = 'test') {
 
 describe('TRUST_TIER constants', () => {
   it('should have all tier levels', () => {
-    expect(TRUST_TIER.ORACLE).toBe('oracle');
-    expect(TRUST_TIER.ANCHOR).toBe('anchor');
-    expect(TRUST_TIER.SENTINEL).toBe('sentinel');
-    expect(TRUST_TIER.PARTICIPANT).toBe('participant');
-    expect(TRUST_TIER.OBSERVER).toBe('observer');
+    expect(TRUST_TIER.ORACLE).toBe('sirdar');
+    expect(TRUST_TIER.ANCHOR).toBe('sathi');
+    expect(TRUST_TIER.SENTINEL).toBe('pathik');
+    expect(TRUST_TIER.PARTICIPANT).toBe('yatri');
+    expect(TRUST_TIER.OBSERVER).toBe('naya');
   });
 
   it('should have correct weights', () => {

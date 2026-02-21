@@ -214,6 +214,56 @@ html[data-theme="index"]::after {
   background-image: url('assets/silhouettes/darshan-eye.svg');
 }
 
+/* TIVRA - Lightning bolt, swift hardware acceleration */
+[data-theme="tivra"] body::after {
+  background-image: url('assets/silhouettes/tivra-lightning.svg');
+}
+
+/* PRAHARI - Sentinel at the pass, quantum entropy watchman */
+[data-theme="prahari"] body::after {
+  background-image: url('assets/silhouettes/prahari-sentinel.svg');
+}
+
+/* DHARMA - Balance scales, righteous content moderation */
+[data-theme="dharma"] body::after {
+  background-image: url('assets/silhouettes/dharma-scales.svg');
+}
+
+/* SEVA - Offering hands, selfless compute sharing */
+[data-theme="seva"] body::after {
+  background-image: url('assets/silhouettes/seva-hands.svg');
+}
+
+/* YakApp - P2P chat messenger with yak mascot and chat bubbles */
+[data-theme="yakapp"] body::after {
+  background-image: url('assets/silhouettes/yakapp-chat.svg');
+}
+
+/* C2C - Core to Cosmos, space strategy with rocket and planet */
+[data-theme="c2c"] body::after {
+  background-image: url('assets/silhouettes/c2c-cosmos.svg');
+}
+
+/* Studio - Creative modes with film reels and manga panels */
+[data-theme="studio"] body::after {
+  background-image: url('assets/silhouettes/studio.svg');
+}
+
+/* THANGKA - Visual storytelling scroll with chat modes */
+[data-theme="thangka"] body::after {
+  background-image: url('assets/silhouettes/thangka-scroll.svg');
+}
+
+/* Tutorials - Open book with numbered learning steps */
+[data-theme="tutorials"] body::after {
+  background-image: url('assets/silhouettes/tutorials-book.svg');
+}
+
+/* Quick Reference - Clipboard with checklist */
+[data-theme="reference"] body::after {
+  background-image: url('assets/silhouettes/reference-clipboard.svg');
+}
+
 code, pre {
   font-family: 'JetBrains Mono', monospace;
 }
@@ -475,6 +525,42 @@ pre[class*="language-"] {
   background-image: url('assets/silhouettes/docs-bundle.svg');
 }
 
+/* TIVRA - Cyan lightning, swift hardware acceleration */
+[data-theme="tivra"] {
+  --theme-primary: #06b6d4;
+  --theme-secondary: #0891b2;
+  --theme-accent: #22d3ee;
+  --theme-bg: #083344;
+  --theme-glow: rgba(34, 211, 238, 0.15);
+}
+
+/* PRAHARI - Purple sentinel, quantum entropy watchman */
+[data-theme="prahari"] {
+  --theme-primary: #7c3aed;
+  --theme-secondary: #6d28d9;
+  --theme-accent: #a78bfa;
+  --theme-bg: #1e1b4b;
+  --theme-glow: rgba(167, 139, 250, 0.15);
+}
+
+/* DHARMA - Amber scales, righteous content moderation */
+[data-theme="dharma"] {
+  --theme-primary: #d97706;
+  --theme-secondary: #b45309;
+  --theme-accent: #fbbf24;
+  --theme-bg: #451a03;
+  --theme-glow: rgba(251, 191, 36, 0.15);
+}
+
+/* SEVA - Emerald hands, selfless compute sharing */
+[data-theme="seva"] {
+  --theme-primary: #059669;
+  --theme-secondary: #047857;
+  --theme-accent: #34d399;
+  --theme-bg: #022c22;
+  --theme-glow: rgba(52, 211, 153, 0.15);
+}
+
 /* Documentation Index - Yakmesh green */
 [data-theme="index"] {
   --theme-primary: #10b981;
@@ -482,6 +568,60 @@ pre[class*="language-"] {
   --theme-accent: #34d399;
   --theme-bg: #022c22;
   --theme-glow: rgba(16, 185, 129, 0.1);
+}
+
+/* YakApp - Cyan/teal, P2P chat messenger */
+[data-theme="yakapp"] {
+  --theme-primary: #0891b2;
+  --theme-secondary: #0e7490;
+  --theme-accent: #22d3ee;
+  --theme-bg: #0c1a22;
+  --theme-glow: rgba(34, 211, 238, 0.1);
+}
+
+/* C2C - Warm orange, space strategy game */
+[data-theme="c2c"] {
+  --theme-primary: #ea580c;
+  --theme-secondary: #c2410c;
+  --theme-accent: #fb923c;
+  --theme-bg: #1a0f08;
+  --theme-glow: rgba(251, 146, 60, 0.1);
+}
+
+/* Studio - Pink/magenta, creative modes */
+[data-theme="studio"] {
+  --theme-primary: #db2777;
+  --theme-secondary: #be185d;
+  --theme-accent: #f472b6;
+  --theme-bg: #1a1028;
+  --theme-glow: rgba(244, 114, 182, 0.1);
+}
+
+/* THANGKA - Purple/violet, visual storytelling scroll */
+[data-theme="thangka"] {
+  --theme-primary: #8b5cf6;
+  --theme-secondary: #7c3aed;
+  --theme-accent: #a78bfa;
+  --theme-bg: #1e1b4b;
+  --theme-glow: rgba(167, 139, 250, 0.15);
+}
+
+/* Tutorials - Green, learning & guidance */
+[data-theme="tutorials"] {
+  --theme-primary: #10b981;
+  --theme-secondary: #059669;
+  --theme-accent: #34d399;
+  --theme-bg: #022c22;
+  --theme-glow: rgba(16, 185, 129, 0.1);
+}
+
+/* Quick Reference - Amber, checklist & lookup */
+[data-theme="reference"] {
+  --theme-primary: #f59e0b;
+  --theme-secondary: #d97706;
+  --theme-accent: #fbbf24;
+  --theme-bg: #451a03;
+  --theme-glow: rgba(245, 158, 11, 0.1);
 }
 
 /* ============================================
@@ -584,6 +724,44 @@ pre[class*="language-"] {
 
 .sidebar-nav li {
   list-style: none;
+}
+
+.sidebar-nav li.sidebar-section {
+  padding: 0.75rem 0.75rem 0.25rem;
+  font-size: 0.6875rem;
+  text-transform: uppercase;
+  color: var(--mountain-500);
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  border-top: 1px solid var(--mountain-700);
+  margin-top: 0.5rem;
+  pointer-events: none;
+  user-select: none;
+}
+
+.sidebar-nav li.sidebar-section:first-child {
+  border-top: none;
+  margin-top: 0;
+  padding-top: 0;
+}
+
+.sidebar-nav li.sidebar-section span {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.docs-sidebar.icon-only .sidebar-nav li.sidebar-section {
+  padding: 0.5rem 0;
+  text-align: center;
+  font-size: 0;
+}
+
+.docs-sidebar.icon-only .sidebar-nav li.sidebar-section span {
+  font-size: 0;
+  justify-content: center;
+  border-top: 1px solid var(--mountain-700);
+  padding-top: 0.5rem;
 }
 
 .sidebar-nav a {

@@ -2,7 +2,7 @@
  * KATHA Tests - Chat features test suite
  */
 
-import { describe, it, beforeEach, afterEach } from 'node:test';
+import { describe, it, beforeEach, afterEach } from 'vitest';
 import assert from 'node:assert/strict';
 import {
   KATHA_CONFIG,

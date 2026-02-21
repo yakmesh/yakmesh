@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="tutorials">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="../favicon.ico" sizes="32x32">
+    <link rel="icon" href="../icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+    <title>Understanding the Dashboard - YAKMESH Tutorials</title>
+    <meta name="description" content="Learn what each metric and indicator means on the YAKMESH dashboard. Understand node status, peer connections, time sync, and content storage in plain English.">
+    
+    <link rel="stylesheet" href="../tailwind.min.css">
+    <link rel="stylesheet" href="../prism-tomorrow.min.css">
+    <link rel="stylesheet" href="../docs.css">
+    <style>
+        .theme-accent { color: #10b981; }
+        .theme-badge { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+        .tutorial-card { background: rgba(30, 41, 59, 0.5); border: 1px solid #334155; border-radius: 0.75rem; padding: 1.5rem; margin-bottom: 1.5rem; }
+        .tutorial-card:hover { border-color: #10b981; }
+        .step-number { display: inline-flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; background: #10b981; color: white; border-radius: 50%; font-weight: bold; margin-right: 0.75rem; }
+        .warning-box { background: rgba(251, 191, 36, 0.1); border: 1px solid #fbbf24; border-radius: 0.5rem; padding: 1rem; margin: 1rem 0; }
+        .tip-box { background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; border-radius: 0.5rem; padding: 1rem; margin: 1rem 0; }
+        .info-box { background: rgba(59, 130, 246, 0.1); border: 1px solid #3b82f6; border-radius: 0.5rem; padding: 1rem; margin: 1rem 0; }
+        .status-green { color: #22c55e; }
+        .status-yellow { color: #eab308; }
+        .status-red { color: #ef4444; }
+        .metric-box { background: rgba(15, 23, 42, 0.6); border-radius: 0.5rem; padding: 1rem; margin: 0.5rem 0; }
+        .indicator { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; }
+        .indicator-green { background: #22c55e; box-shadow: 0 0 8px #22c55e; }
+        .indicator-yellow { background: #eab308; box-shadow: 0 0 8px #eab308; }
+        .indicator-red { background: #ef4444; box-shadow: 0 0 8px #ef4444; }
+    </style>
+</head>
+<body class="bg-mountain-900 text-white min-h-screen">
+    
+  <nav class="docs-sidebar" id="sidebar">
+    <a href="../index.html" class="sidebar-logo">
+      <span class="logo-icon">🏔️</span>
+      <span class="logo-text">Yakmesh</span>
+    </a>
+    <a href="/dashboard" class="sidebar-dashboard-link"><span>📊</span> <span>Dashboard</span></a>
+    <ul class="sidebar-nav">
+      <li><a href="../index.html"><span>🏠</span> <span>Overview</span></a></li>
+      <li><a href="../getting-started.html"><span>🚀</span> <span>Getting Started</span></a></li>
+      <li><a href="../tutorials.html"><span>📖</span> <span>Tutorials</span></a></li>
+      <li><a href="../yak-protocol.html"><span class="yak-icon"></span> <span>YAK://</span></a></li>
+      <li><a href="../annex.html"><span>🌉</span> <span>ANNEX</span></a></li>
+      <li><a href="../nakpak.html"><span>🎒</span> <span>NAKPAK</span></a></li>
+      <li><a href="../namche.html"><span>🚪</span> <span>NAMCHE</span></a></li>
+      <li><a href="../doko.html"><span>🧺</span> <span>DOKO</span></a></li>
+      <li><a href="../sherpa.html"><span>🧗</span> <span>SHERPA</span></a></li>
+      <li><a href="../mandala.html"><span>🌐</span> <span>MANDALA</span></a></li>
+      <li><a href="../mantra.html"><span>🕉️</span> <span>MANTRA</span></a></li>
+      <li><a href="../gumba.html"><span>🛕</span> <span>GUMBA</span></a></li>
+      <li><a href="../yurt.html"><span>🏕️</span> <span>YURT</span></a></li>
+      <li><a href="../katha.html"><span>💬</span> <span>KATHA</span></a></li>
+      <li><a href="../vani.html"><span>🎙️</span> <span>VANI</span></a></li>
+      <li><a href="../darshan.html"><span>👁️</span> <span>DARSHAN</span></a></li>
+      <li><a href="../stupa.html"><span>🛕</span> <span>STUPA</span></a></li>
+      <li><a href="../lama.html"><span>🔮</span> <span>LAMA</span></a></li>
+      <li><a href="../mani.html"><span>⏱️</span> <span>MANI</span></a></li>
+      <li><a href="../karma.html"><span>☯️</span> <span>KARMA</span></a></li>
+      <li><a href="../tattva.html"><span>🔯</span> <span>TATTVA</span></a></li>
+      <li><a href="../tribhuj.html"><span>🔺</span> <span>TRIBHUJ</span></a></li>
+      <li><a href="../ypc27.html"><span>🔐</span> <span>YPC-27</span></a></li>
+      <li><a href="../sakshi.html"><span>👁️</span> <span>SAKSHI</span></a></li>
+      <li><a href="../geo-proof.html"><span>🌍</span> <span>PRAMAAN</span></a></li>
+      <li><a href="../trust-security.html"><span>🔒</span> <span>SURAKSHA</span></a></li>
+      <li><a href="../docs-bundle.html"><span>📚</span> <span>GRANTH</span></a></li>
+      <li><a href="../api.html"><span>📡</span> <span>API</span></a></li>
+      <li><a href="../adapters.html"><span>🔌</span> <span>Adapters</span></a></li>
+      <li><a href="../studio.html"><span>🎨</span> <span>Studio</span></a></li>
+      <li><a href="../quick-reference.html"><span>📋</span> <span>Quick Ref</span></a></li>
+    </ul>
+  </nav>
+
+  <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">☰</button>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="docs-main" id="mainContent">
+    <div class="docs-content">
+      <div class="mb-6">
+        <a href="../tutorials.html" class="theme-accent hover:underline">← Back to Tutorials</a>
+      </div>
+      
+      <!-- Header -->
+      <header class="mb-8">
+        <div class="flex items-center gap-3 mb-4">
+          <span class="text-4xl">📊</span>
+          <div>
+            <h1 class="text-3xl font-bold">Understanding the Dashboard</h1>
+            <p class="text-gray-400">Learn what each metric means and how to interpret health indicators</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-4 text-sm text-gray-400">
+          <span class="theme-badge px-3 py-1 rounded-full">Beginner</span>
+          <span>⏱️ 8 min read</span>
+          <span>📊 Node Monitoring</span>
+        </div>
+      </header>
+
+      <!-- Introduction -->
+      <div class="tutorial-card">
+        <h2 class="text-xl font-semibold mb-4 theme-accent">What You'll Learn</h2>
+        <p class="text-gray-300 mb-4">
+          The YAKMESH dashboard is your window into how your node is performing on the mesh network. 
+          This tutorial explains every section of the dashboard in plain English, so you'll know exactly 
+          what's happening with your node at a glance.
+        </p>
+        <ul class="list-disc list-inside text-gray-300 space-y-2">
+          <li>Understand the Node Status section</li>
+          <li>Read Peer Connection metrics</li>
+          <li>Interpret Time Sync information</li>
+          <li>Monitor Content Storage usage</li>
+          <li>Recognize health indicators (green/yellow/red)</li>
+        </ul>
+      </div>
+
+      <!-- Accessing the Dashboard -->
+      <div class="tutorial-card">
+        <h2 class="text-xl font-semibold mb-4">🖥️ Accessing the Dashboard</h2>
+        <p class="text-gray-300 mb-4">There are two ways to open your dashboard:</p>
+        
+        <h3 class="font-semibold mt-4 mb-3 text-gray-200">Method 1: Web Browser</h3>
+        <p class="text-gray-300 mb-2">Open your browser and go to:</p>
+        <pre><code class="language-bash">http://localhost:8080</code></pre>
+        <p class="text-gray-300 mt-2 text-sm">(The port may differ if you configured a custom port)</p>
+
+        <h3 class="font-semibold mt-6 mb-3 text-gray-200">Method 2: Command Line</h3>
+        <pre><code class="language-bash"># Open dashboard in default browser
+yakmesh dashboard
+
+# Or get a text-based summary
+yakmesh status --detailed</code></pre>
+      </div>
+
+      <!-- Section 1: Node Status -->
+      <div class="tutorial-card">
+        <h2 class="text-xl font-semibold mb-4">
+          <span class="step-number">1</span>
+          Node Status Section
+        </h2>
+        <p class="text-gray-300 mb-4">
+          This is the most important section - it tells you if your node is working properly. 
+          You'll typically see it at the top of your dashboard.
+        </p>
+
+        <h3 class="font-semibold mt-6 mb-3 text-gray-200">Node ID</h3>
+        <div class="metric-box">
+          <code class="text-sm text-gray-400">Node ID: doko-node-qubit-lattice-pq-a7x9</code>
+        </div>
+        <p class="text-gray-300 mt-2">
+          <strong>What it means:</strong> This is your unique DOKO identity on the mesh network - a human-readable
+          identifier derived from your cryptographic keys. The format is <code>doko-<type>-<iO-name>-<short-id></code>.
+          It never changes unless you create a new identity.
+        </p>
+
+        <h3 class="font-semibold mt-6 mb-3 text-gray-200">Online Status</h3>
+        <div class="metric-box">
+          <span class="indicator indicator-green"></span>
+          <span class="status-green font-semibold">Online</span>
+          <span class="text-gray-400 ml-4">Uptime: 3d 14h 22m</span>
+        </div>
+        <p class="text-gray-300 mt-2 mb-4">
+          <strong>What it means:</strong> Shows whether your node is connected to the mesh network and how long 
+          it's been running. The uptime resets when you restart YAKMESH.
+        </p>
+
+        <div class="space-y-3">
+          <div class="flex items-center">
+            <span class="indicator indicator-green"></span>
+            <span><strong class="status-green">Online</strong> - Your node is connected and working normally</span>
+          </div>
+          <div class="flex items-center">
+            <span class="indicator indicator-yellow"></span>
+            <span><strong class="status-yellow">Connecting</strong> - Your node is starting up or reconnecting</span>
+          </div>
+          <div class="flex items-center">
+            <span class="indicator indicator-red"></span>
+            <span><strong class="status-red">Offline</strong> - Your node can't reach the network (check your internet)</span>
+          </div>
+        </div>
+
+        <h3 class="font-semibold mt-6 mb-3 text-gray-200">Version</h3>
+        <div class="metric-box">
+          <code class="text-sm text-gray-400">Version: 0.9.4 (latest: 0.9.4) ✓</code>
+        </div>
+        <p class="text-gray-300 mt-2">
+          <strong>What it means:</strong> The YAKMESH software version running on your node. 
+          A checkmark means you're up to date. If there's a newer version available, you'll see an update notification.
+        </p>
+      </div>
+
+      <!-- Section 2: Peer Connections -->
+      <div class="tutorial-card">
+        <h2 class="text-xl font-semibold mb-4">
+          <span class="step-number">2</span>
+          Peer Connections Section
+        </h2>
+        <p class="text-gray-300 mb-4">
+          This section shows how well your node is connected to other nodes in the mesh network. 
+          More connections generally means better performance and reliability.
+        </p>
+
+        <h3 class="font-semibold mt-6 mb-3 text-gray-200">Connected Peers</h3>
+        <div class="metric-box">
+          <div class="flex justify-between items-center">
+            <span>Connected Peers</span>
+            <span class="text-2xl font-bold status-green">47</span>
+          </div>
+          <div class="w-full bg-gray-700 rounded-full h-2 mt-2">
+            <div class="bg-green-500 h-2 rounded-full" style="width: 78%"></div>
+          </div>
+          <div class="text-sm text-gray-400 mt-1">Target: 60 peers</div>
+        </div>
+        <p class="text-gray-300 mt-3 mb-4">
+          <strong>What it means:</strong> The number of other YAKMESH nodes your computer is directly connected to. 
+          Your node automatically maintains connections - you don't need to manage this manually.
+        </p>
+
+        <div class="space-y-2 text-sm">
+          <p><span class="status-green">● 40+ peers:</span> Excellent connectivity - your node is well-integrated</p>
+          <p><span class="status-yellow">● 10-39 peers:</span> Adequate - works fine but could be better</p>
+          <p><span class="status-red">● Less than 10:</span> Low connectivity - may experience slower transfers</p>
+        </div>
+
+        <h3 class="font-semibold mt-6 mb-3 text-gray-200">Peer Types Breakdown</h3>
+        <div class="metric-box">
+          <div class="grid grid-cols-3 gap-4 text-center">
+            <div>
+              <div class="text-lg font-bold">23</div>
+              <div class="text-xs text-gray-400">Direct</div>
+            </div>
+            <div>
+              <div class="text-lg font-bold">18</div>
+              <div class="text-xs text-gray-400">Relayed</div>
+            </div>
+            <div>
+              <div class="text-lg font-bold">6</div>
+              <div class="text-xs text-gray-400">Bootstrap</div>
+            </div>
+          </div>
+        </div>
+        <p class="text-gray-300 mt-3">
+          <strong>What these mean:</strong>
+        </p>
+        <ul class="list-disc list-inside text-gray-300 space-y-2 mt-2">
+          <li><strong>Direct:</strong> Peers you can connect to without intermediaries - fastest connections</li>
+          <li><strong>Relayed:</strong> Peers reached through other nodes (when firewalls block direct connections)</li>
+          <li><strong>Bootstrap:</strong> Well-known nodes that help you find other peers when starting up</li>
+        </ul>
+
+        <h3 class="font-semibold mt-6 mb-3 text-gray-200">Bandwidth Usage</h3>
+        <div class="metric-box">
+          <div class="flex justify-between">
+            <div>
+              <span class="text-green-400">↓</span> Download
+              <div class="text-lg font-bold">1.2 MB/s</div>
+            </div>
+            <div class="text-right">
+              <span class="text-blue-400">↑</span> Upload
+              <div class="text-lg font-bold">856 KB/s</div>
+            </div>
+          </div>
+          <div class="text-xs text-gray-400 mt-2">Total today: ↓ 2.4 GB / ↑ 1.1 GB</div>
+        </div>
+        <p class="text-gray-300 mt-3">
+          <strong>What it means:</strong> Current network speed being used by YAKMESH. Includes file transfers, 
+          mesh protocol messages, and synchronization traffic.
+        </p>
+
+        <div class="tip-box mt-4">
+          <p class="text-sm"><strong>💡 Tip:</strong> If bandwidth is too high, you can set limits in your config: 
+          <code class="bg-gray-800 px-2 py-1 rounded">yakmesh config set bandwidth.max_up 5mb</code></p>
+        </div>
+      </div>
+
+      <!-- Section 3: Time Sync (MANI) -->
+      <div class="tutorial-card">
+        <h2 class="text-xl font-semibold mb-4">
+          <span class="step-number">3</span>
+          Time Sync (MANI) Section
+        </h2>
+        <p class="text-gray-300 mb-4">
+          MANI is YAKMESH's time synchronization system. Accurate time is critical for security and 
+          ensuring all nodes agree on when events happened.
+        </p>
+
+        <h3 class="font-semibold mt-6 mb-3 text-gray-200">Sync Status</h3>
+        <div class="metric-box">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center">
+              <span class="indicator indicator-green"></span>
+              <span class="font-semibold status-green">Synchronized</span>
+            </div>
+            <span class="text-gray-400">Drift: +2ms</span>
+          </div>
+        </div>
+        <p class="text-gray-300 mt-3 mb-4">
+          <strong>What it means:</strong> Whether your node's clock is in sync with the mesh network's consensus time. 
+          The "drift" value shows how much your clock differs from network time.
+        </p>
+
+        <div class="space-y-2 text-sm">
+          <p><span class="status-green">● Drift under 50ms:</span> Excellent - your clock is accurate</p>
+          <p><span class="status-yellow">● Drift 50-500ms:</span> Acceptable - still works but consider syncing your system clock</p>
+          <p><span class="status-red">● Drift over 500ms:</span> Problem - some operations may fail; sync your system clock</p>
+        </div>
+
+        <h3 class="font-semibold mt-6 mb-3 text-gray-200">Time Sources</h3>
+        <div class="metric-box">
+          <div class="text-sm text-gray-300 space-y-1">
+            <div class="flex justify-between"><span>📡 Mesh Consensus</span><span class="status-green">Active (47 peers)</span></div>
+            <div class="flex justify-between"><span>🌐 NTP Fallback</span><span class="text-gray-400">Standby</span></div>
+            <div class="flex justify-between"><span>⏰ Local Clock</span><span class="text-gray-400">Reference</span></div>
+          </div>
+        </div>
+        <p class="text-gray-300 mt-3">
+          <strong>What it means:</strong> YAKMESH uses multiple sources to determine accurate time. The mesh consensus 
+          is the primary method - your node asks many peers what time they think it is and calculates the truth.
+        </p>
+
+        <div class="info-box mt-4">
+          <p class="text-sm"><strong>ℹ️ Why time matters:</strong> Accurate time prevents replay attacks (someone 
+          resending old messages), ensures correct ordering of events, and is required for cryptographic 
+          operations. If time sync fails, some features may be temporarily disabled for security.</p>
+        </div>
+      </div>
+
+      <!-- Section 4: Content Storage (DOKO) -->
+      <div class="tutorial-card">
+        <h2 class="text-xl font-semibold mb-4">
+          <span class="step-number">4</span>
+          Content Storage (DOKO) Section
+        </h2>
+        <p class="text-gray-300 mb-4">
+          This section shows what content you're storing and sharing through the DOKO system.
+        </p>
+
+        <h3 class="font-semibold mt-6 mb-3 text-gray-200">Storage Overview</h3>
+        <div class="metric-box">
+          <div class="flex justify-between items-center mb-2">
+            <span>Used Space</span>
+            <span class="font-bold">4.7 GB / 50 GB</span>
+          </div>
+          <div class="w-full bg-gray-700 rounded-full h-3">
+            <div class="bg-emerald-500 h-3 rounded-full" style="width: 9.4%"></div>
+          </div>
+          <div class="text-xs text-gray-400 mt-1">9.4% of allocated storage</div>
+        </div>
+        <p class="text-gray-300 mt-3">
+          <strong>What it means:</strong> How much disk space YAKMESH is using for stored content. 
+          This includes files you're sharing and any content you've chosen to help host for the network.
+        </p>
+
+        <h3 class="font-semibold mt-6 mb-3 text-gray-200">Content Breakdown</h3>
+        <div class="metric-box">
+          <div class="space-y-2 text-sm">
+            <div class="flex justify-between">
+              <span>📤 Your Shares</span>
+              <span>3.2 GB (12 items)</span>
+            </div>
+            <div class="flex justify-between">
+              <span>📥 Received Content</span>
+              <span>1.1 GB (8 items)</span>
+            </div>
+            <div class="flex justify-between">
+              <span>🌐 Hosted for Network</span>
+              <span>0.4 GB (156 chunks)</span>
+            </div>
+            <div class="flex justify-between text-gray-400">
+              <span>📦 Cache</span>
+              <span>0.1 GB</span>
+            </div>
+          </div>
+        </div>
+        <p class="text-gray-300 mt-3">
+          <strong>What these mean:</strong>
+        </p>
+        <ul class="list-disc list-inside text-gray-300 space-y-2 mt-2">
+          <li><strong>Your Shares:</strong> Files and folders you're actively sharing with others</li>
+          <li><strong>Received Content:</strong> Files you've downloaded from other nodes</li>
+          <li><strong>Hosted for Network:</strong> Content chunks you're storing to help the mesh (optional)</li>
+          <li><strong>Cache:</strong> Temporary data that speeds up repeated accesses</li>
+        </ul>
+
+        <h3 class="font-semibold mt-6 mb-3 text-gray-200">Active Shares</h3>
+        <div class="metric-box">
+          <div class="text-sm space-y-2">
+            <div class="flex justify-between items-center">
+              <span>vacation-photos</span>
+              <span class="text-xs text-gray-400">234 MB • 2 downloads</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span>project-files</span>
+              <span class="text-xs text-gray-400">1.8 GB • 0 downloads</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-yellow-400">work-docs (expires 2d)</span>
+              <span class="text-xs text-gray-400">45 MB • 3/5 downloads</span>
+            </div>
+          </div>
+        </div>
+        <p class="text-gray-300 mt-3">
+          <strong>What it means:</strong> A quick list of your active file shares. Yellow items are expiring soon.
+        </p>
+      </div>
+
+      <!-- Section 5: Additional Metrics -->
+      <div class="tutorial-card">
+        <h2 class="text-xl font-semibold mb-4">
+          <span class="step-number">5</span>
+          Additional Metrics
+        </h2>
+        <p class="text-gray-300 mb-4">
+          Your dashboard may show additional information depending on what features you're using.
+        </p>
+
+        <h3 class="font-semibold mt-6 mb-3 text-gray-200">KARMA Score</h3>
+        <div class="metric-box">
+          <div class="flex items-center justify-between">
+            <span>Your Karma Score</span>
+            <span class="text-2xl font-bold theme-accent">847</span>
+          </div>
+          <div class="text-xs text-gray-400 mt-1">Top 15% of network</div>
+        </div>
+        <p class="text-gray-300 mt-3">
+          <strong>What it means:</strong> Your reputation on the mesh network. Higher karma means you're a reliable 
+          participant - you keep your node online, help host content, and complete transfers successfully. Some features 
+          may require a minimum karma score.
+        </p>
+
+        <h3 class="font-semibold mt-6 mb-3 text-gray-200">NAMCHE Gateway Status</h3>
+        <div class="metric-box">
+          <div class="flex items-center">
+            <span class="indicator indicator-green"></span>
+            <span>NAT Traversal: <strong class="status-green">Full Cone</strong></span>
+          </div>
+          <div class="text-xs text-gray-400 mt-1">Direct connections available</div>
+        </div>
+        <p class="text-gray-300 mt-3">
+          <strong>What it means:</strong> NAMCHE helps your node be reachable even behind routers and firewalls. 
+          "Full Cone" is ideal - it means others can connect to you directly. "Symmetric NAT" is harder but still works.
+        </p>
+
+        <h3 class="font-semibold mt-6 mb-3 text-gray-200">SHERPA Services</h3>
+        <div class="metric-box">
+          <div class="text-sm space-y-1">
+            <div class="flex justify-between">
+              <span>Discovery Service</span>
+              <span class="status-green">Running</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Relay Service</span>
+              <span class="text-gray-400">Disabled</span>
+            </div>
+            <div class="flex justify-between">
+              <span>Bootstrap Service</span>
+              <span class="text-gray-400">Disabled</span>
+            </div>
+          </div>
+        </div>
+        <p class="text-gray-300 mt-3">
+          <strong>What it means:</strong> SHERPA services you might be running to help other nodes. Discovery helps 
+          others find peers, Relay assists nodes behind difficult NATs, and Bootstrap helps new nodes join.
+        </p>
+      </div>
+
+      <!-- Health Indicators -->
+      <div class="tutorial-card">
+        <h2 class="text-xl font-semibold mb-4">🚦 Understanding Health Indicators</h2>
+        <p class="text-gray-300 mb-4">
+          Throughout the dashboard, you'll see colored indicators. Here's what each color means:
+        </p>
+
+        <div class="space-y-4">
+          <div class="metric-box">
+            <div class="flex items-center mb-2">
+              <span class="indicator indicator-green"></span>
+              <span class="font-semibold status-green">Green - Healthy</span>
+            </div>
+            <p class="text-sm text-gray-300">
+              Everything is working as expected. No action needed.
+            </p>
+          </div>
+
+          <div class="metric-box">
+            <div class="flex items-center mb-2">
+              <span class="indicator indicator-yellow"></span>
+              <span class="font-semibold status-yellow">Yellow - Warning</span>
+            </div>
+            <p class="text-sm text-gray-300">
+              Something needs attention but isn't critical. Your node still works, but performance might be affected. 
+              Common causes: low peer count, time drift, storage almost full.
+            </p>
+          </div>
+
+          <div class="metric-box">
+            <div class="flex items-center mb-2">
+              <span class="indicator indicator-red"></span>
+              <span class="font-semibold status-red">Red - Critical</span>
+            </div>
+            <p class="text-sm text-gray-300">
+              A serious issue needs immediate attention. Some features may not work. 
+              Common causes: offline, severe time desync, disk full, authentication errors.
+            </p>
+          </div>
+        </div>
+
+        <div class="tip-box mt-4">
+          <p class="text-sm"><strong>💡 Tip:</strong> Click on any yellow or red indicator to see suggested fixes. 
+          Most issues resolve automatically or have simple solutions.</p>
+        </div>
+      </div>
+
+      <!-- Command Line Alternative -->
+      <div class="tutorial-card">
+        <h2 class="text-xl font-semibold mb-4">⌨️ Command Line Dashboard</h2>
+        <p class="text-gray-300 mb-4">
+          If you prefer the terminal, you can get all this information via commands:
+        </p>
+
+        <pre><code class="language-bash"># Quick status overview
+yakmesh status
+
+# Detailed status with all sections
+yakmesh status --detailed
+
+# Just peer information
+yakmesh peers
+
+# Just storage information
+yakmesh doko status
+
+# Time sync status
+yakmesh mani status
+
+# Watch live updates (refreshes every 2 seconds)
+yakmesh status --watch</code></pre>
+
+        <p class="text-gray-300 mt-4">
+          Example output from <code class="bg-gray-800 px-2 py-1 rounded">yakmesh status</code>:
+        </p>
+        <pre><code class="language-bash">🏔️ YAKMESH Node Status
+═══════════════════════════════════════
+
+Node ID:    doko-node-qubit-lattice-pq-a7x9
+Status:     🟢 Online (uptime: 3d 14h 22m)
+Version:    0.9.4 ✓
+
+Peers:      47 connected (23 direct, 18 relayed)
+Bandwidth:  ↓ 1.2 MB/s  ↑ 856 KB/s
+Time Sync:  🟢 Synchronized (drift: +2ms)
+Storage:    4.7 GB / 50 GB (9.4%)
+Karma:      847 (top 15%)</code></pre>
+      </div>
+
+      <!-- Summary -->
+      <div class="tutorial-card">
+        <h2 class="text-xl font-semibold mb-4 theme-accent">🎉 Summary</h2>
+        <p class="text-gray-300 mb-4">
+          You now understand all the major sections of the YAKMESH dashboard:
+        </p>
+        <ul class="list-disc list-inside text-gray-300 space-y-2">
+          <li><strong>Node Status:</strong> Is your node running and up to date?</li>
+          <li><strong>Peer Connections:</strong> How well are you connected to the mesh?</li>
+          <li><strong>Time Sync:</strong> Is your clock accurate for secure operations?</li>
+          <li><strong>Content Storage:</strong> What are you sharing and storing?</li>
+          <li><strong>Health Indicators:</strong> Green = good, Yellow = check it, Red = fix it</li>
+        </ul>
+        <p class="text-gray-300 mt-4">
+          Check your dashboard occasionally to ensure your node is healthy. Most of the time, everything runs 
+          automatically - but knowing how to read these metrics helps you troubleshoot if something goes wrong.
+        </p>
+      </div>
+
+      <!-- Navigation Footer -->
+      <div class="border-t border-mountain-700 mt-12 pt-8">
+        <div class="flex flex-col sm:flex-row gap-4">
+          <a href="share-files.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-emerald-500 transition group">
+            <div class="text-xs text-mountain-400 mb-1">← Previous</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">📤</span>
+              <span class="font-semibold group-hover:text-emerald-400">Share Files with Friends</span>
+            </div>
+          </a>
+          <a href="backup-recovery.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-emerald-500 transition group">
+            <div class="text-xs text-mountain-400 mb-1">Next →</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">💾</span>
+              <span class="font-semibold group-hover:text-emerald-400">Backup & Recovery</span>
+            </div>
+          </a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="../prism.min.js"></script>
+  <script src="../prism-javascript.min.js"></script>
+  <script src="../prism-bash.min.js"></script>
+  <script src="../docs.js"></script>
+</body>
+</html>

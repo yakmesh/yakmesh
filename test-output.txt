@@ -1,0 +1,1891 @@
+Γ£ô BYOND Adapter tests loaded
+Γû╢ BYOND Topic Protocol
+  Γû╢ buildTopicPacket
+    Γ£ö should build valid packet for simple topic (0.4672ms)
+    Γ£ö should build valid packet for topic with parameters (0.0917ms)
+    Γ£ö should handle unicode characters (0.0771ms)
+    Γ£ö should calculate size correctly (0.0854ms)
+  Γ£ö buildTopicPacket (1.1295ms)
+  Γû╢ parseTopicResponse
+    Γ£ö should parse null response (0.1641ms)
+    Γ£ö should parse float response (0.1049ms)
+    Γ£ö should parse string response (0.1089ms)
+    Γ£ö should handle invalid header (0.0754ms)
+    Γ£ö should handle short buffer (0.0856ms)
+  Γ£ö parseTopicResponse (0.751ms)
+Γ£ö BYOND Topic Protocol (2.1717ms)
+Γû╢ BYONDServer
+  Γ£ö should create server with defaults (0.2219ms)
+  Γ£ö should serialize to JSON (0.4401ms)
+  Γ£ö should deserialize from JSON (0.0924ms)
+  Γ£ö should update from status response (0.0863ms)
+  Γ£ö should mark offline with error (0.0645ms)
+Γ£ö BYONDServer (1.0057ms)
+Γû╢ BYONDTopicClient
+  Γ£ö should create client with defaults (0.0775ms)
+  Γ£ö should create client with custom options (0.0462ms)
+  Γ£ö should emit topic-sent event on successful connection attempt (0.0644ms)
+Γ£ö BYONDTopicClient (0.2427ms)
+Γû╢ createTopicConnection
+  Γ£ö should create connection object with all methods (0.0896ms)
+Γ£ö createTopicConnection (0.1221ms)
+Γû╢ BYOND Rumor Topics
+  Γ£ö should have all required topic constants (0.0653ms)
+  Γ£ö should have consistent topic prefix (0.0675ms)
+Γ£ö BYOND Rumor Topics (0.1762ms)
+Γû╢ SERVER_STATUS
+  Γ£ö should have all status values (0.0523ms)
+Γ£ö SERVER_STATUS (0.0788ms)
+Γû╢ BYONDAdapter Integration
+  Γ£ö should construct with minimal mock node (0.13ms)
+Γ£ö BYONDAdapter Integration (0.1659ms)
+Γ£ô HTTP Bridge tests loaded
+  Γ£ô BYOND HTTP Bridge listening on http://127.0.0.1:8080
+  Γ£ô BYOND HTTP Bridge stopped
+  Γ£ô BYOND HTTP Bridge listening on http://127.0.0.1:8080
+Γû╢ BYONDHttpBridge
+  Γû╢ Construction
+    Γ£ö should create bridge with defaults (0.4611ms)
+    Γ£ö should create bridge with custom options (0.0926ms)
+  Γ£ö Construction (0.9421ms)
+  Γû╢ Server Lifecycle
+    Γ£ö should start and stop (12.3795ms)
+  Γ£ö Server Lifecycle (12.4652ms)
+Γ£ö BYONDHttpBridge (13.6697ms)
+Γû╢ HTTP Bridge Request Handling
+  Γ£ö should respond to GET /status (14.3437ms)
+  Γ£ö should respond to GET /servers (3.7183ms)
+  Γ£ö should register a server via POST /register (3.3078ms)
+  Γ£ö should reject registration with missing fields (1.6257ms)
+  Γ£ö should filter servers by gameId (2.4225ms)
+  Γ£ö should send Topic via POST /topic/:serverId (2.2194ms)
+  Γ£ö should save world via POST /world/save (3.0069ms)
+  Γ£ö should load world via GET /world/load/:cid (1.398ms)
+  Γ£ö should return 404 for unknown endpoints (0.9356ms)
+  Γ£ô BYOND HTTP Bridge stopped
+  Γ£ö should handle CORS preflight (0.7123ms)
+Γ£ö HTTP Bridge Request Handling (36.914ms)
+  Γ£ô BYOND HTTP Bridge listening on http://127.0.0.1:8085
+  Γ£ô BYOND HTTP Bridge stopped
+Γû╢ HTTP Bridge API Key Authentication
+  Γ£ö should reject requests without API key when configured (115.1357ms)
+Γ£ö HTTP Bridge API Key Authentication (115.239ms)
+
+Γî¿∩╕Å  CLI Module Tests
+
+============================================================
+Γû╢ CLI version
+  Γ£ö defines a VERSION constant (0.3832ms)
+  Γ£ö version matches semver pattern (0.1268ms)
+Γ£ö CLI version (1.0302ms)
+Γû╢ CLI commands
+  Γ£ö registers init command (0.1426ms)
+  Γ£ö registers start command (0.0726ms)
+  Γ£ö registers status command (0.0546ms)
+  Γ£ö registers peers command (0.048ms)
+  Γ£ö registers info command (0.5356ms)
+  Γ£ö registers join command (0.0792ms)
+  Γ£ö registers open command (0.0701ms)
+  Γ£ö registers protocol command group (0.1118ms)
+  Γ£ö registers protocol subcommands (0.0736ms)
+  Γ£ö registers bookmark subcommands (0.0968ms)
+Γ£ö CLI commands (1.5495ms)
+Γû╢ CLI options
+  Γ£ö init has --name option (0.0924ms)
+  Γ£ö init has --port option (0.0648ms)
+  Γ£ö init has --region option (0.0351ms)
+  Γ£ö init has --ws-port option (0.049ms)
+  Γ£ö init has --bootstrap option (0.0375ms)
+  Γ£ö start has --config option (0.0301ms)
+  Γ£ö start has --daemon option (0.0281ms)
+Γ£ö CLI options (0.4383ms)
+Γû╢ CLI architecture
+  Γ£ö uses Commander (0.0577ms)
+  Γ£ö uses chalk for output (0.0289ms)
+  Γ£ö calls program.parse() (0.0463ms)
+  Γ£ö sets program version (0.0425ms)
+  Γ£ö defines showBanner function (0.0256ms)
+  Γ£ö handles SIGINT for graceful shutdown (0.0457ms)
+  Γ£ö handles SIGTERM for graceful shutdown (0.0382ms)
+Γ£ö CLI architecture (0.3638ms)
+Γû╢ CLI defaults
+  Γ£ö uses port 3000 as default (0.05ms)
+  Γ£ö uses 9001 as default WebSocket port (0.0297ms)
+  Γ£ö node name defaults to My Yakmesh Node (0.025ms)
+  Γ£ö region defaults to local (0.0595ms)
+Γ£ö CLI defaults (0.2402ms)
+
+≡ƒôª Content Module Tests
+
+============================================================
+[2026-02-15T03:48:35.497Z] [INFO] [content:store] Content store initialized {"dataDir":"C:\\Users\\ABL\\Desktop\\Yakmesh\\yakmesh-node\\data\\_test_content_1771127315486","objectCount":0}
+[2026-02-15T03:48:35.500Z] [INFO] [content:store] Content stored {"hash":"90c9817a524affc7","ioName":"falcon-grating-diamond","size":13}
+[2026-02-15T03:48:35.501Z] [INFO] [content:store] Content stored {"hash":"49eed8a136cf26e2","ioName":"torus-cycle-csidh","size":18}
+[2026-02-15T03:48:35.504Z] [INFO] [content:store] Content stored {"hash":"fae3db15eaf930b8","ioName":"fermion-axion-bloch","size":11}
+[2026-02-15T03:48:35.506Z] [INFO] [content:store] Content stored {"hash":"3a432a1bd8a8a3ad","ioName":"isogeny-carbide-boson","size":15}
+[2026-02-15T03:48:35.507Z] [INFO] [content:store] Content stored {"hash":"6e3dcce150933428","ioName":"hash-majorana-contact","size":9}
+[2026-02-15T03:48:35.509Z] [INFO] [content:store] Content stored {"hash":"5061859255740c78","ioName":"casimir-finite-instanton","size":10}
+[2026-02-15T03:48:35.510Z] [INFO] [content:store] Content stored {"hash":"2a3cc9a6e84dc041","ioName":"modular-embed-indium","size":9}
+[2026-02-15T03:48:35.512Z] [INFO] [content:store] Content stored {"hash":"44c5670dab2b7b4a","ioName":"contact-ecdsa-falcon","size":14}
+[2026-02-15T03:48:35.513Z] [INFO] [content:store] Content stored {"hash":"734a6ee56c924a0c","ioName":"vertex-stable-nitrogen","size":16}
+[2026-02-15T03:48:35.514Z] [INFO] [content:store] Content store initialized {"dataDir":"C:\\Users\\ABL\\Desktop\\Yakmesh\\yakmesh-node\\data\\_test_content_1771127315486_tiny","objectCount":0}
+[2026-02-15T03:48:35.516Z] [INFO] [content:store] Content store initialized {"dataDir":"C:\\Users\\ABL\\Desktop\\Yakmesh\\yakmesh-node\\data\\_test_content_1771127315486_lru","objectCount":0}
+[2026-02-15T03:48:35.517Z] [INFO] [content:store] Content stored {"hash":"cc8e2dd8d348e344","ioName":"trap-superconductor-infinity","size":5}
+[2026-02-15T03:48:35.517Z] [INFO] [content:store] Content stored {"hash":"6cd1f101fc26ff9d","ioName":"oxide-insulator-vacancy","size":5}
+[2026-02-15T03:48:35.518Z] [INFO] [content:store] Content stored {"hash":"a5834ea6a3584023","ioName":"telluride-pseudo-finite","size":5}
+Γû╢ computeContentHash
+  Γ£ö hashes a string (1.1173ms)
+  Γ£ö produces deterministic output (0.4593ms)
+  Γ£ö produces different hashes for different input (0.4064ms)
+  Γ£ö hashes a Buffer (0.2353ms)
+  Γ£ö hashes a Uint8Array (0.1053ms)
+  Γ£ö hashes an object (JSON-serialized) (0.1025ms)
+  Γ£ö object hash is deterministic for same shape (0.1444ms)
+Γ£ö computeContentHash (3.1936ms)
+Γû╢ deriveContentName
+  Γ£ö returns a human-readable string (0.6268ms)
+  Γ£ö is deterministic (0.3912ms)
+  Γ£ö uses hyphenated words (0.3118ms)
+Γ£ö deriveContentName (1.4617ms)
+Γû╢ ContentType
+  Γ£ö has expected MIME types (0.1006ms)
+Γ£ö ContentType (0.1429ms)
+Γû╢ ContentStatus
+  Γ£ö has all status values (0.0756ms)
+Γ£ö ContentStatus (0.1225ms)
+Γû╢ ConsensusProof
+  Γ£ö constructs with defaults (0.4755ms)
+  Γ£ö hasQuorum returns false when no validators (0.0628ms)
+  Γ£ö addValidator adds unique validators (0.0716ms)
+  Γ£ö addValidator deduplicates by nodeId (0.042ms)
+  Γ£ö hasQuorum returns true when quorum met (0.0385ms)
+  Γ£ö toJSON round-trips via fromJSON (0.0624ms)
+Γ£ö ConsensusProof (0.838ms)
+Γû╢ ContentStore
+  Γ£ö creates data directories on init (0.3601ms)
+  Γ£ö stores string content and returns hash + ioName (1.6342ms)
+  Γ£ö stores return "exists" for duplicate content (1.1205ms)
+  Γ£ö retrieves stored content via get() (3.5051ms)
+  Γ£ö has() returns true for existing content (1.2892ms)
+  Γ£ö has() returns false for missing content (0.1411ms)
+  Γ£ö getMeta() returns metadata (1.498ms)
+  Γ£ö getWithProof() returns content + meta (1.059ms)
+  Γ£ö delete() removes content from disk and cache (1.4962ms)
+  Γ£ö list() returns stored items (0.1406ms)
+  Γ£ö list() filters by tag (1.253ms)
+  Γ£ö list() filters by status (0.1073ms)
+  Γ£ö getStats() returns summary (0.0953ms)
+  Γ£ö resolves iO name via get() (0.9243ms)
+  Γ£ö enforces maxContentSize (1.6972ms)
+  Γ£ö detects content type: JSON (0.0888ms)
+  Γ£ö detects content type: HTML (0.0541ms)
+  Γ£ö LRU cache evicts oldest entry (4.697ms)
+Γ£ö ContentStore (26.7899ms)
+
+≡ƒÆ╛ Database Replication Engine Tests
+
+============================================================
+[2026-02-15T03:48:35.633Z] [INFO] [database:replication] Database initialized {"path":"C:\\Users\\ABL\\Desktop\\Yakmesh\\yakmesh-node\\data\\_test_repl_1771127315604.db"}
+[2026-02-15T03:48:35.638Z] [INFO] [database:replication] Database initialized {"path":"C:\\Users\\ABL\\Desktop\\Yakmesh\\yakmesh-node\\data\\_test_repl_1771127315604.db.changes"}
+[2026-02-15T03:48:35.647Z] [INFO] [database:replication] Database initialized {"path":"C:\\Users\\ABL\\Desktop\\Yakmesh\\yakmesh-node\\data\\_test_repl_1771127315604.db.apply"}
+[2026-02-15T03:48:35.651Z] [INFO] [database:replication] Database initialized {"path":"C:\\Users\\ABL\\Desktop\\Yakmesh\\yakmesh-node\\data\\_test_repl_1771127315604.db.stats"}
+[2026-02-15T03:48:35.654Z] [INFO] [database:replication] Database initialized {"path":"C:\\Users\\ABL\\Desktop\\Yakmesh\\yakmesh-node\\data\\_test_repl_1771127315604.db.sync"}
+[2026-02-15T03:48:35.655Z] [INFO] [database:replication] Auto-sync started {"intervalSeconds":60}
+Γû╢ ReplicationEngine: Init
+  Γ£ö creates the database file (0.5709ms)
+  Γ£ö creates _replication_log table (0.7131ms)
+  Γ£ö creates _replication_state table (0.4332ms)
+  Γ£ö sets nodeId from mesh identity (0.093ms)
+Γ£ö ReplicationEngine: Init (28.0097ms)
+Γû╢ ReplicationEngine: Changes
+  Γ£ö recordChange inserts into log for replicated table (3.3295ms)
+  Γ£ö recordChange ignores non-replicated tables (0.679ms)
+  Γ£ö getChangesSince filters by timestamp (1.696ms)
+Γ£ö ReplicationEngine: Changes (8.3014ms)
+Γû╢ ReplicationEngine: applyChange
+  Γ£ö applies a new change and returns true (1.2662ms)
+  Γ£ö rejects duplicate change (same vector_clock) (1.0502ms)
+Γ£ö ReplicationEngine: applyChange (5.3392ms)
+Γû╢ ReplicationEngine: Stats
+  Γ£ö returns replication log size (0.5068ms)
+  Γ£ö returns replicated tables list (0.1489ms)
+Γ£ö ReplicationEngine: Stats (3.1043ms)
+Γû╢ ReplicationEngine: Sync
+  Γ£ö startSync and stopSync manage interval (1.8649ms)
+Γ£ö ReplicationEngine: Sync (1.937ms)
+Γ£ô BYOND Adapter tests loaded
+Γû╢ BYOND Topic Protocol
+  Γû╢ buildTopicPacket
+    Γ£ö should build valid packet for simple topic (0.4417ms)
+    Γ£ö should build valid packet for topic with parameters (0.0861ms)
+    Γ£ö should handle unicode characters (0.0864ms)
+    Γ£ö should calculate size correctly (0.0824ms)
+  Γ£ö buildTopicPacket (1.0963ms)
+  Γû╢ parseTopicResponse
+    Γ£ö should parse null response (0.1562ms)
+    Γ£ö should parse float response (0.1005ms)
+    Γ£ö should parse string response (0.0933ms)
+    Γ£ö should handle invalid header (0.1063ms)
+    Γ£ö should handle short buffer (0.1137ms)
+  Γ£ö parseTopicResponse (0.737ms)
+Γ£ö BYOND Topic Protocol (2.1ms)
+Γû╢ BYONDServer
+  Γ£ö should create server with defaults (0.2221ms)
+  Γ£ö should serialize to JSON (0.5423ms)
+  Γ£ö should deserialize from JSON (0.0915ms)
+  Γ£ö should update from status response (0.0856ms)
+  Γ£ö should mark offline with error (0.0586ms)
+Γ£ö BYONDServer (1.0929ms)
+Γû╢ BYONDTopicClient
+  Γ£ö should create client with defaults (0.0743ms)
+  Γ£ö should create client with custom options (0.0427ms)
+  Γ£ö should emit topic-sent event on successful connection attempt (0.0632ms)
+Γ£ö BYONDTopicClient (0.2333ms)
+Γû╢ createTopicConnection
+  Γ£ö should create connection object with all methods (0.095ms)
+Γ£ö createTopicConnection (0.1275ms)
+Γû╢ BYOND Rumor Topics
+  Γ£ö should have all required topic constants (0.0629ms)
+  Γ£ö should have consistent topic prefix (0.054ms)
+Γ£ö BYOND Rumor Topics (0.1568ms)
+Γû╢ SERVER_STATUS
+  Γ£ö should have all status values (0.0667ms)
+Γ£ö SERVER_STATUS (0.0941ms)
+Γû╢ BYONDAdapter Integration
+  Γ£ö should construct with minimal mock node (0.1236ms)
+Γ£ö BYONDAdapter Integration (0.159ms)
+Γ£ô HTTP Bridge tests loaded
+  Γ£ô BYOND HTTP Bridge listening on http://127.0.0.1:8080
+  Γ£ô BYOND HTTP Bridge stopped
+  Γ£ô BYOND HTTP Bridge listening on http://127.0.0.1:8080
+Γû╢ BYONDHttpBridge
+  Γû╢ Construction
+    Γ£ö should create bridge with defaults (0.4478ms)
+    Γ£ö should create bridge with custom options (0.0888ms)
+  Γ£ö Construction (0.92ms)
+  Γû╢ Server Lifecycle
+    Γ£ö should start and stop (11.5564ms)
+  Γ£ö Server Lifecycle (11.6451ms)
+Γ£ö BYONDHttpBridge (12.8297ms)
+Γû╢ HTTP Bridge Request Handling
+  Γ£ö should respond to GET /status (14.8732ms)
+  Γ£ö should respond to GET /servers (2.839ms)
+  Γ£ö should register a server via POST /register (3.3506ms)
+  Γ£ö should reject registration with missing fields (1.6238ms)
+  Γ£ö should filter servers by gameId (2.232ms)
+  Γ£ö should send Topic via POST /topic/:serverId (2.4716ms)
+  Γ£ö should save world via POST /world/save (3.7269ms)
+  Γ£ö should load world via GET /world/load/:cid (1.0186ms)
+  Γ£ö should return 404 for unknown endpoints (0.8155ms)
+  Γ£ô BYOND HTTP Bridge stopped
+  Γ£ö should handle CORS preflight (1.0264ms)
+Γ£ö HTTP Bridge Request Handling (36.4353ms)
+  Γ£ô BYOND HTTP Bridge listening on http://127.0.0.1:8085
+  Γ£ô BYOND HTTP Bridge stopped
+Γû╢ HTTP Bridge API Key Authentication
+  Γ£ö should reject requests without API key when configured (114.6292ms)
+Γ£ö HTTP Bridge API Key Authentication (114.76ms)
+Γû╢ KeyResolver
+  Γû╢ Self resolution
+    Γ£ö resolves own nodeId (0.4692ms)
+    Γ£ö resolves own dokoId (0.0783ms)
+    Γ£ö returns null for unknown id with no sources (0.0682ms)
+    Γ£ö returns null for null/undefined (0.0624ms)
+  Γ£ö Self resolution (1.1206ms)
+  Γû╢ Registry
+    Γ£ö registers and resolves a key (0.1328ms)
+    Γ£ö register overwrites existing entry (0.0731ms)
+    Γ£ö evicts oldest when at capacity (0.0849ms)
+    Γ£ö ignores null/undefined registration (0.0711ms)
+  Γ£ö Registry (0.5628ms)
+  Γû╢ NamcheGateway resolution
+    Γ£ö resolves from DOKO cache via lookupByNodeId (0.1819ms)
+    Γ£ö resolves from DOKO cache via lookupByHash (0.1313ms)
+    Γ£ö caches DOKO result in registry for fast future lookup (0.0845ms)
+  Γ£ö NamcheGateway resolution (0.4868ms)
+  Γû╢ Network peer resolution
+    Γ£ö resolves from peer map (0.0926ms)
+    Γ£ö resolves from relay peer keys (0.0541ms)
+  Γ£ö Network peer resolution (0.2022ms)
+  Γû╢ SHERPA resolution
+    Γ£ö resolves from SHERPA registry (0.0679ms)
+  Γ£ö SHERPA resolution (0.0992ms)
+  Γû╢ Resolution cascade
+    Γ£ö self takes priority over registry (0.0653ms)
+    Γ£ö registry takes priority over DOKO (0.0525ms)
+  Γ£ö Resolution cascade (0.1587ms)
+  Γû╢ resolveWithMeta
+    Γ£ö returns source metadata for self (0.0823ms)
+    Γ£ö returns source metadata for registered key (0.0402ms)
+    Γ£ö returns null for unknown (0.0439ms)
+  Γ£ö resolveWithMeta (0.2172ms)
+  Γû╢ has()
+    Γ£ö returns true for known keys (0.075ms)
+    Γ£ö returns false for unknown keys (0.0442ms)
+  Γ£ö has() (0.1696ms)
+  Γû╢ Statistics
+    Γ£ö tracks resolution sources (0.0838ms)
+    Γ£ö reports attachment status (0.0548ms)
+  Γ£ö Statistics (0.1796ms)
+Γ£ö KeyResolver (3.654ms)
+Γ£ö deploy-packages\build\yakmesh-basic\mesh\tests\annex.test.js (95.7079ms)
+Γ£ö deploy-packages\build\yakmesh-basic\mesh\tests\darshan.test.js (98.2814ms)
+GUMBA tests loaded
+[2026-02-15T03:48:36.496Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"test-bundle","owner":"doko-owner-b368b"}
+[2026-02-15T03:48:36.499Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"test-bundle","owner":"doko-owner-231be"}
+[2026-02-15T03:48:36.501Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"test-bundle","owner":"doko-owner-9a049"}
+[2026-02-15T03:48:36.505Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"test-bundle","owner":"doko-owner-9c697"}
+[2026-02-15T03:48:36.507Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"test-bundle","owner":"doko-owner-d4e6d"}
+[2026-02-15T03:48:36.509Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"test-bundle","owner":"doko-owner-2b8f9"}
+[2026-02-15T03:48:36.512Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"test-bundle","owner":"doko-owner-c3201"}
+[2026-02-15T03:48:36.517Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"test-bundle","owner":"doko-owner-5917d"}
+[2026-02-15T03:48:36.522Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"test-bundle","owner":"doko-owner-3be63"}
+[2026-02-15T03:48:36.525Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"test-bundle","owner":"doko-owner-1cdc6"}
+[2026-02-15T03:48:36.527Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"test-bundle","owner":"doko-owner-23140"}
+[2026-02-15T03:48:36.529Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"test-bundle","owner":"doko-owner-23140"}
+[2026-02-15T03:48:36.531Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"test-bundle","owner":"doko-owner-d544d"}
+[2026-02-15T03:48:36.533Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"test-bundle","owner":"doko-owner-b78c1"}
+[2026-02-15T03:48:36.537Z] [INFO] [mesh:gumba] GumbaHub initialized
+[2026-02-15T03:48:36.537Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"my-bundle","owner":"doko-node-2c28f4"}
+[2026-02-15T03:48:36.537Z] [INFO] [mesh:gumba] Bundle created {"bundleId":"my-bundle","name":"My Bundle"}
+[2026-02-15T03:48:36.539Z] [INFO] [mesh:gumba] GumbaHub initialized
+[2026-02-15T03:48:36.539Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"my-bundle","owner":"doko-node-e141b8"}
+[2026-02-15T03:48:36.539Z] [INFO] [mesh:gumba] Bundle created {"bundleId":"my-bundle"}
+[2026-02-15T03:48:36.541Z] [INFO] [mesh:gumba] GumbaHub initialized
+[2026-02-15T03:48:36.541Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"bundle-1","owner":"doko-node-c24832"}
+[2026-02-15T03:48:36.541Z] [INFO] [mesh:gumba] Bundle created {"bundleId":"bundle-1","name":"Bundle 1"}
+[2026-02-15T03:48:36.541Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"bundle-2","owner":"doko-node-c24832"}
+[2026-02-15T03:48:36.541Z] [INFO] [mesh:gumba] Bundle created {"bundleId":"bundle-2","name":"Bundle 2"}
+[2026-02-15T03:48:36.542Z] [INFO] [mesh:gumba] GumbaHub initialized
+[2026-02-15T03:48:36.542Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"my-bundle","owner":"doko-node-d4352a"}
+[2026-02-15T03:48:36.543Z] [INFO] [mesh:gumba] Bundle created {"bundleId":"my-bundle"}
+[2026-02-15T03:48:36.544Z] [INFO] [mesh:gumba] GumbaHub initialized
+[2026-02-15T03:48:36.546Z] [INFO] [mesh:gumba] GumbaHub initialized
+[2026-02-15T03:48:36.546Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"my-bundle","owner":"doko-node-575640"}
+[2026-02-15T03:48:36.546Z] [INFO] [mesh:gumba] Bundle created {"bundleId":"my-bundle"}
+[2026-02-15T03:48:36.555Z] [INFO] [mesh:gumba] Access granted {"bundleId":"my-bundle","dokoId":"doko-node-575640","role":"member"}
+[2026-02-15T03:48:36.557Z] [INFO] [mesh:gumba] GumbaHub initialized
+[2026-02-15T03:48:36.557Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"my-bundle","owner":"doko-node-33f6fd"}
+[2026-02-15T03:48:36.557Z] [INFO] [mesh:gumba] Bundle created {"bundleId":"my-bundle"}
+[2026-02-15T03:48:36.568Z] [INFO] [mesh:gumba] Access granted {"bundleId":"my-bundle","dokoId":"doko-node-33f6fd","role":"member"}
+[2026-02-15T03:48:36.570Z] [INFO] [mesh:gumba] GumbaHub initialized
+[2026-02-15T03:48:36.570Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"my-bundle","owner":"doko-node-e04df7"}
+[2026-02-15T03:48:36.570Z] [INFO] [mesh:gumba] Bundle created {"bundleId":"my-bundle"}
+[2026-02-15T03:48:36.577Z] [INFO] [mesh:gumba] Access granted {"bundleId":"my-bundle","dokoId":"doko-node-e04df7","role":"member"}
+[2026-02-15T03:48:36.579Z] [INFO] [mesh:gumba] GumbaHub initialized
+[2026-02-15T03:48:36.579Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"my-bundle","owner":"doko-node-a300ae"}
+[2026-02-15T03:48:36.579Z] [INFO] [mesh:gumba] Bundle created {"bundleId":"my-bundle"}
+[2026-02-15T03:48:36.589Z] [INFO] [mesh:gumba] Access granted {"bundleId":"my-bundle","dokoId":"doko-node-a300ae","role":"member"}
+[2026-02-15T03:48:36.590Z] [INFO] [mesh:gumba] GumbaHub initialized
+[2026-02-15T03:48:36.591Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"my-bundle","owner":"doko-node-b6c090"}
+[2026-02-15T03:48:36.591Z] [INFO] [mesh:gumba] Bundle created {"bundleId":"my-bundle"}
+[2026-02-15T03:48:36.591Z] [INFO] [mesh:gumba] Bundle deleted {"bundleId":"my-bundle"}
+[2026-02-15T03:48:36.592Z] [INFO] [mesh:gumba] GumbaHub initialized
+[2026-02-15T03:48:36.592Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"bundle-1","owner":"doko-node-ca574d"}
+[2026-02-15T03:48:36.592Z] [INFO] [mesh:gumba] Bundle created {"bundleId":"bundle-1"}
+[2026-02-15T03:48:36.592Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"bundle-2","owner":"doko-node-ca574d"}
+[2026-02-15T03:48:36.592Z] [INFO] [mesh:gumba] Bundle created {"bundleId":"bundle-2"}
+[2026-02-15T03:48:36.594Z] [INFO] [mesh:gumba] GumbaHub initialized
+[2026-02-15T03:48:36.594Z] [INFO] [mesh:gumba] GumbaHub initialized
+[2026-02-15T03:48:36.594Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"annex-room","owner":"doko-node-f9350e"}
+[2026-02-15T03:48:36.594Z] [INFO] [mesh:gumba] Bundle created {"bundleId":"annex-room"}
+[2026-02-15T03:48:36.599Z] [INFO] [mesh:gumba] Access granted {"bundleId":"annex-room","dokoId":"doko-node-f9350e","role":"member"}
+[2026-02-15T03:48:36.601Z] [INFO] [mesh:gumba] GumbaHub initialized
+[2026-02-15T03:48:36.601Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"plain-room","owner":"doko-node-3cced6"}
+[2026-02-15T03:48:36.601Z] [INFO] [mesh:gumba] Bundle created {"bundleId":"plain-room"}
+[2026-02-15T03:48:36.610Z] [INFO] [mesh:gumba] Access granted {"bundleId":"plain-room","dokoId":"doko-node-3cced6","role":"member"}
+[2026-02-15T03:48:36.612Z] [INFO] [mesh:gumba] GumbaHub initialized
+[2026-02-15T03:48:36.613Z] [INFO] [mesh:gumba] GumbaHub initialized
+[2026-02-15T03:48:36.613Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"fallback-room","owner":"doko-node-50e636"}
+[2026-02-15T03:48:36.613Z] [INFO] [mesh:gumba] Bundle created {"bundleId":"fallback-room"}
+[2026-02-15T03:48:36.621Z] [INFO] [mesh:gumba] Access granted {"bundleId":"fallback-room","dokoId":"doko-node-50e636","role":"member"}
+[2026-02-15T03:48:36.621Z] [WARN] [mesh:gumba] ANNEX delivery failed, returning plaintext {"visitor":"remote-visitor","error":"PEER_UNREACHABLE"}
+[2026-02-15T03:48:36.626Z] [INFO] [mesh:gumba] GumbaHub initialized
+[2026-02-15T03:48:36.626Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"chat-room","owner":"doko-node-owner-"}
+[2026-02-15T03:48:36.626Z] [INFO] [mesh:gumba] Bundle created {"bundleId":"chat-room","name":"Chat Room"}
+[2026-02-15T03:48:36.635Z] [INFO] [mesh:gumba] Access granted {"bundleId":"chat-room","dokoId":"doko-visitor-003","role":"member"}
+[2026-02-15T03:48:36.641Z] [INFO] [mesh:gumba] GumbaHub initialized
+[2026-02-15T03:48:36.641Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"private-room","owner":"doko-node-owner-"}
+[2026-02-15T03:48:36.641Z] [INFO] [mesh:gumba] Bundle created {"bundleId":"private-room"}
+[2026-02-15T03:48:36.654Z] [INFO] [mesh:gumba] GumbaHub initialized
+[2026-02-15T03:48:36.654Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"private-room","owner":"doko-node-owner-"}
+[2026-02-15T03:48:36.654Z] [INFO] [mesh:gumba] Bundle created {"bundleId":"private-room"}
+[2026-02-15T03:48:36.662Z] [INFO] [mesh:gumba] Access granted {"bundleId":"private-room","dokoId":"doko-alice-f24d7","role":"member"}
+Γû╢ GumbaKey
+  Γ£ö derives deterministic key from owner secret (1.1523ms)
+  Γ£ö derives different keys for different bundles (0.196ms)
+  Γ£ö derives different keys for different owners (0.1828ms)
+  Γ£ö seals and unseals content correctly (0.6788ms)
+  Γ£ö tracks message count for rotation (0.2111ms)
+  Γ£ö destroys key material securely (0.1623ms)
+  Γ£ö fails to unseal with wrong key (0.3302ms)
+Γ£ö GumbaKey (3.5812ms)
+Γû╢ GumbaMemberTree
+  Γ£ö adds and checks members (0.4146ms)
+  Γ£ö removes members (0.1546ms)
+  Γ£ö tracks member roles (0.1329ms)
+  Γ£ö checks role hierarchy correctly (0.1132ms)
+  Γ£ö builds Merkle root (2.7723ms)
+  Γ£ö generates and verifies Merkle proofs (0.589ms)
+  Γ£ö returns null proof for non-members (0.0827ms)
+  Γ£ö exports and imports correctly (0.2814ms)
+Γ£ö GumbaMemberTree (4.7827ms)
+Γû╢ GumbaProof
+  Γû╢ Challenge-Response
+    Γ£ö creates valid challenges (6.0817ms)
+    Γ£ö signs challenges with DOKO key (9.3311ms)
+    Γ£ö verifies valid signed challenges (7.8863ms)
+    Γ£ö rejects challenges signed with wrong key (9.4815ms)
+    Γ£ö rejects expired challenges (4.6128ms)
+  Γ£ö Challenge-Response (37.5894ms)
+  Γû╢ Attestation
+    Γ£ö creates attestations (19.5904ms)
+    Γ£ö verifies valid attestations (14.8026ms)
+    Γ£ö rejects attestations from non-members (8.5058ms)
+    Γ£ö rejects expired attestations (6.8291ms)
+  Γ£ö Attestation (49.916ms)
+  Γû╢ Merkle Proof
+    Γ£ö creates Merkle proofs (1.8906ms)
+    Γ£ö verifies valid Merkle proofs (1.8142ms)
+    Γ£ö rejects proofs with wrong root (1.8669ms)
+    Γ£ö returns null for non-members (1.7959ms)
+  Γ£ö Merkle Proof (7.4631ms)
+Γ£ö GumbaProof (95.0731ms)
+Γû╢ GumbaGate
+  Γ£ö issues challenges (1.8995ms)
+  Γ£ö verifies challenge-response access (7.591ms)
+  Γ£ö denies access for non-members (8.3881ms)
+  Γ£ö prevents challenge replay (10.0407ms)
+  Γ£ö caches successful proofs (9.0404ms)
+  Γ£ö revokes cached access (13.984ms)
+  Γ£ö tracks statistics (6.8356ms)
+Γ£ö GumbaGate (57.988ms)
+Γû╢ GumbaBundle
+  Γ£ö initializes with owner as member (2.6502ms)
+  Γ£ö adds messages (1.8576ms)
+  Γ£ö prevents unauthorized message posting (3.5361ms)
+  Γ£ö retrieves messages for authorized users (2.37ms)
+  Γ£ö denies message retrieval without access (1.8533ms)
+  Γ£ö adds members with proper authorization (3.2814ms)
+  Γ£ö prevents unauthorized member addition (4.7362ms)
+  Γ£ö prevents granting higher role than own (5.1163ms)
+  Γ£ö removes members with proper authorization (3.5079ms)
+  Γ£ö prevents removing owner (1.7715ms)
+  Γ£ö exports and imports bundles (3.5337ms)
+  Γ£ö provides bundle info (1.7816ms)
+  Γ£ö emits events on message and member changes (3.9409ms)
+Γ£ö GumbaBundle (40.2207ms)
+Γû╢ GumbaHub
+  Γ£ö creates bundles (2.0686ms)
+  Γ£ö prevents duplicate bundle IDs (1.8267ms)
+  Γ£ö lists bundles (1.8782ms)
+  Γ£ö issues challenges (1.8285ms)
+  Γ£ö returns error for unknown bundle challenges (1.6634ms)
+  Γ£ö handles access requests (11.2551ms)
+  Γ£ö gets messages for active sessions (12.0645ms)
+  Γ£ö posts messages for active sessions (9.09ms)
+  Γ£ö cleans up expired sessions (11.8419ms)
+  Γ£ö deletes bundles (1.9532ms)
+  Γ£ö tracks statistics (1.7469ms)
+  Γ£ö delivers messages via ANNEX when visitor has nodeId (6.5949ms)
+  Γ£ö returns plaintext when no ANNEX is available (10.9745ms)
+  Γ£ö falls through to plaintext on ANNEX failure (11.1804ms)
+Γ£ö GumbaHub (86.458ms)
+Γû╢ GUMBA Integration
+  Γ£ö complete access flow: challenge ΓåÆ verify ΓåÆ read (13.6561ms)
+  Γ£ö attestation-based access flow (14.364ms)
+  Γ£ö access revocation flow (21.8078ms)
+Γ£ö GUMBA Integration (50.0055ms)
+Γû╢ KathaMessage
+  Γ£ö should create a message with required fields (0.6142ms)
+  Γ£ö should generate unique IDs (0.4628ms)
+  Γ£ö should validate required fields (0.1228ms)
+  Γ£ö should validate content length (0.1091ms)
+  Γ£ö should serialize and deserialize (0.1865ms)
+  Γ£ö should support reply threading (0.1077ms)
+Γ£ö KathaMessage (2.2253ms)
+Γû╢ KathaReaction
+  Γ£ö should add reaction to message (0.1926ms)
+  Γ£ö should prevent duplicate reactions (0.1041ms)
+  Γ£ö should remove reactions (0.1255ms)
+  Γ£ö should check user reaction (0.1632ms)
+  Γ£ö should limit reaction emojis per message (0.1349ms)
+  Γ£ö should serialize reactions with message (0.0994ms)
+  Γ£ö should create reaction events (0.1ms)
+Γ£ö KathaReaction (1.1036ms)
+Γû╢ KathaTyping
+  Γ£ö should create typing start event (0.088ms)
+  Γ£ö should create typing stop event (0.0536ms)
+  Γ£ö should detect expired typing (0.0798ms)
+  Γ£ö should not be expired when fresh (0.048ms)
+Γ£ö KathaTyping (0.3361ms)
+Γû╢ KathaReadReceipt
+  Γ£ö should create read receipt (0.0827ms)
+  Γ£ö should add messages to batch (0.0542ms)
+  Γ£ö should not duplicate message IDs (0.0377ms)
+  Γ£ö should respect batch limit (0.083ms)
+Γ£ö KathaReadReceipt (0.3162ms)
+Γû╢ KathaMedia
+  Γ£ö should create media from buffer (0.6833ms)
+  Γ£ö should convert back to buffer (0.6642ms)
+  Γ£ö should verify data integrity (0.3572ms)
+  Γ£ö should validate size limit (0.1155ms)
+  Γ£ö should support captions (0.1317ms)
+  Γ£ö should serialize and deserialize (0.2027ms)
+Γ£ö KathaMedia (2.2707ms)
+Γû╢ KathaEdit
+  Γ£ö should create edit event (0.1312ms)
+  Γ£ö should validate content length (0.0728ms)
+Γ£ö KathaEdit (0.2491ms)
+Γû╢ KathaDelete
+  Γ£ö should create delete event (0.103ms)
+Γ£ö KathaDelete (0.1568ms)
+Γû╢ KathaChannel
+  Γ£ö should create channel with ID (0.6322ms)
+  Γ£ö should add and retrieve messages (0.1132ms)
+  Γ£ö should track threading (0.1463ms)
+  Γ£ö should apply reactions (0.1645ms)
+  Γ£ö should track typing indicators (0.1599ms)
+  Γ£ö should apply read receipts (0.1694ms)
+  Γ£ö should edit messages (0.1174ms)
+  Γ£ö should only allow sender to edit (0.1005ms)
+  Γ£ö should delete messages (0.1634ms)
+  Γ£ö should mark parent as deleted if it has replies (0.0924ms)
+  Γ£ö should get messages with filters (0.1542ms)
+  Γ£ö should provide stats (0.1133ms)
+Γ£ö KathaChannel (2.3076ms)
+Γû╢ KathaHub
+  Γ£ö should create and manage channels (0.2482ms)
+  Γ£ö should handle text message events (0.1666ms)
+  Γ£ö should handle reaction events (0.1147ms)
+  Γ£ö should handle typing events (0.0992ms)
+  Γ£ö should emit events to handlers (0.1179ms)
+  Γ£ö should remove event handlers (0.1437ms)
+  Γ£ö should remove channels (0.0926ms)
+  Γ£ö should provide global stats (0.1882ms)
+  Γ£ö should cleanup all channels (0.0939ms)
+Γ£ö KathaHub (1.396ms)
+
+≡ƒöù KHATA/SHERPA Ternary Link Quality
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+≡ƒôí Symmetric Good Link:
+   Outbound: 1 (10/0)
+   Inbound:  1 (10/0)
+   Overall:  GOOD
+
+≡ƒôí Asymmetric Link (outbound good, inbound bad):
+   Outbound: 1 (GOOD)
+   Inbound:  -1 (BAD)
+   Overall:  BAD ΓåÉ Ternary AND = BAD
+   Symmetric: false
+
+≡ƒôí Mixed/Uncertain Link:
+   Outbound: 0 (NEUTRAL - mixed)
+   Inbound:  0 (NEUTRAL - mixed)
+   Overall:  NEUTRAL
+
+ΓÜû∩╕Å Path Balance:
+   Good link balance: {"balance":2,"isBalanced":false,"quality":-1}
+   Asym link balance: {"balance":0,"isBalanced":true,"quality":1}
+
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+Γ£à KHATA/SHERPA ternary link quality tests complete!
+
+Γû╢ KHATA/SHERPA Ternary Link Quality
+  Γû╢ LinkQuality Construction
+    Γ£ö starts with NEUTRAL quality (no data) (0.3656ms)
+  Γ£ö LinkQuality Construction (0.7148ms)
+  Γû╢ Outbound Quality
+    Γ£ö POSITIVE when >70% success (0.1263ms)
+    Γ£ö NEGATIVE when <30% success (0.0933ms)
+    Γ£ö NEUTRAL when mixed (30-70%) (0.0837ms)
+  Γ£ö Outbound Quality (0.5002ms)
+  Γû╢ Inbound Quality
+    Γ£ö POSITIVE when >70% success (0.1114ms)
+    Γ£ö NEGATIVE when mostly failures (0.0934ms)
+  Γ£ö Inbound Quality (0.2867ms)
+  Γû╢ Bidirectional Quality
+    Γ£ö POSITIVE when both directions good (0.2853ms)
+    Γ£ö NEGATIVE when both directions bad (0.1643ms)
+    Γ£ö NEGATIVE when asymmetric (good out, bad in) (0.1363ms)
+    Γ£ö NEUTRAL when outbound mixed (0.1604ms)
+  Γ£ö Bidirectional Quality (0.8734ms)
+  Γû╢ Symmetry Detection
+    Γ£ö isSymmetric when both directions same (0.1031ms)
+    Γ£ö isAsymmetric when directions differ (0.5195ms)
+  Γ£ö Symmetry Detection (0.6704ms)
+  Γû╢ Path Balance
+    Γ£ö reports balance for symmetric good link (0.0799ms)
+    Γ£ö balanced when opposite qualities (sum = 0) (0.0628ms)
+  Γ£ö Path Balance (0.1849ms)
+  Γû╢ Reset and Decay
+    Γ£ö reset clears all counters (0.0635ms)
+    Γ£ö decay reduces counters (0.0672ms)
+  Γ£ö Reset and Decay (0.1687ms)
+  Γû╢ Serialization
+    Γ£ö toJSON includes all metrics (0.1047ms)
+  Γ£ö Serialization (0.1339ms)
+Γ£ö KHATA/SHERPA Ternary Link Quality (3.9612ms)
+Γ£ö deploy-packages\build\yakmesh-basic\mesh\tests\nakpak-e2e.test.js (100.2585ms)
+Γ£ö deploy-packages\build\yakmesh-basic\mesh\tests\nakpak-routing.test.js (100.2114ms)
+Γ£ö deploy-packages\build\yakmesh-basic\mesh\tests\sherpa-discovery.test.js (104.2789ms)
+Γ£ö deploy-packages\build\yakmesh-basic\mesh\tests\sherpa-geo.test.js (104.3353ms)
+
+≡ƒö▒ TRISULA - Ternary Search Tree for YAKMESH
+
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+≡ƒôì Inserting node IDs:
+   a1b2c3d4e5f6 ΓåÆ Peer 1
+   a1b2c3d4aaaa ΓåÆ Peer 2
+   a1b2ffff0000 ΓåÆ Peer 3
+   deadbeef1234 ΓåÆ Peer 4
+   cafebabe5678 ΓåÆ Peer 5
+
+≡ƒôè Tree stats: {"size":5,"nodeCount":48,"maxDepth":14,"avgDepth":7}
+
+≡ƒöì Prefix search for "a1b2":
+   a1b2c3d4aaaa ΓåÆ Peer 2
+   a1b2c3d4e5f6 ΓåÆ Peer 1
+   a1b2ffff0000 ΓåÆ Peer 3
+
+≡ƒÄ» Finding nearest to "a1b2c3d5":
+   a1b2c3d4e5f6 (comparison: 1)
+
+ΓöÇ
+ΓöÇ
+ΓöÇ
+ΓöÇ
+ΓöÇ
+ΓöÇ
+ΓöÇ
+ΓöÇ
+ΓöÇ
+ΓöÇ
+ΓöÇ
+ΓöÇ
+ΓöÇ
+ΓöÇ
+ΓöÇ
+ΓöÇ
+ΓöÇ
+ΓöÇ
+ΓöÇ
+ΓöÇ
+ΓöÇ
+ΓöÇ
+ΓöÇ
+ΓöÇ
+ΓöÇ
+ΓöÇ
+ΓöÇ
+ΓöÇ
+ΓöÇ
+ΓöÇ
+ΓöÇ
+ΓöÇ
+ΓöÇ
+ΓöÇ
+ΓöÇ
+ΓöÇ
+ΓöÇ
+ΓöÇ
+ΓöÇ
+ΓöÇ
+ΓöÇ
+ΓöÇ
+ΓöÇ
+ΓöÇ
+ΓöÇ
+ΓöÇ
+ΓöÇ
+ΓöÇ
+ΓöÇ
+ΓöÇ
+
+≡ƒîÉ TrisulaPeerRouter Demo:
+   Peer count: 3
+   Best route to 'aaaa...': wss://node-a:8080
+   Closest 2 peers to ab000000...:
+      aaaaaaaa... - wss://node-a:8080
+      bbbbbbbb... - wss://node-b:8080
+
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+
+Γ£à All TRISULA tests complete!
+
+Γû╢ TRISULA - Ternary Search Tree
+  Γû╢ TrisulaTST Basic Operations
+    Γ£ö should start empty (0.5856ms)
+    Γ£ö should insert and search keys (0.1443ms)
+    Γ£ö should return null for missing keys (0.1231ms)
+    Γ£ö should update existing keys (0.1154ms)
+    Γ£ö should check key existence with has() (0.2048ms)
+    Γ£ö should delete keys (0.1546ms)
+    Γ£ö should return false when deleting non-existent key (0.0855ms)
+    Γ£ö should throw on empty key (0.2676ms)
+    Γ£ö should support chained inserts (0.1063ms)
+  Γ£ö TrisulaTST Basic Operations (2.3963ms)
+  Γû╢ TrisulaTST Prefix Operations
+    Γ£ö should find all keys with prefix (0.5164ms)
+    Γ£ö should find keys with short prefix (0.0729ms)
+    Γ£ö should return empty for non-matching prefix (0.0701ms)
+    Γ£ö should return all keys for empty prefix (0.0665ms)
+    Γ£ö should find longest prefix of string (0.1022ms)
+    Γ£ö should find shorter longest prefix (0.0661ms)
+    Γ£ö should return null for no matching prefix (0.0558ms)
+  Γ£ö TrisulaTST Prefix Operations (1.0844ms)
+  Γû╢ TrisulaTST Nearest Neighbor
+    Γ£ö should return exact match with NEUTRAL comparison (0.1207ms)
+    Γ£ö should find nearest when key not found (0.1126ms)
+    Γ£ö should indicate comparison direction (0.0886ms)
+    Γ£ö should return null for empty tree (0.0943ms)
+  Γ£ö TrisulaTST Nearest Neighbor (0.4856ms)
+  Γû╢ TrisulaTST Iteration
+    Γ£ö should return sorted keys (0.1013ms)
+    Γ£ö should return all values (0.0842ms)
+    Γ£ö should return sorted entries (0.0931ms)
+    Γ£ö should be iterable (0.1246ms)
+  Γ£ö TrisulaTST Iteration (0.4877ms)
+  Γû╢ TrisulaTST Utility
+    Γ£ö should clear the tree (0.0676ms)
+    Γ£ö should report stats (0.069ms)
+  Γ£ö TrisulaTST Utility (0.1837ms)
+  Γû╢ TrisulaPeerRouter
+    Γ£ö should add and get peers (0.1373ms)
+    Γ£ö should remove peers (0.1381ms)
+    Γ£ö should find by prefix (0.1267ms)
+    Γ£ö should find closest peers using XOR distance (0.1402ms)
+    Γ£ö should get all peers (0.1678ms)
+    Γ£ö should report stats (0.0996ms)
+  Γ£ö TrisulaPeerRouter (0.9128ms)
+  Γû╢ TrisulaTST with Hex Node IDs
+    Γ£ö should handle 64-char hex node IDs efficiently (0.4238ms)
+  Γ£ö TrisulaTST with Hex Node IDs (0.4576ms)
+Γ£ö TRISULA - Ternary Search Tree (7.057ms)
+Γ£ö deploy-packages\build\yakmesh-basic\mesh\tests\vani.test.js (86.2851ms)
+YURT Protocol Tests
+ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
+[2026-02-15T03:49:07.570Z] [INFO] [mesh:yurt] Room announced {"name":"Test Room","bundleId":"bundle-7055bde9b7d280d2"}
+[2026-02-15T03:49:07.571Z] [INFO] [mesh:yurt] YURT gossip stopped
+[2026-02-15T03:49:07.576Z] [INFO] [mesh:yurt] Room announced {"name":"Test Room","bundleId":"bundle-00f6c4c404abae84"}
+[2026-02-15T03:49:07.578Z] [INFO] [mesh:yurt] YURT gossip stopped
+[2026-02-15T03:49:07.587Z] [INFO] [mesh:yurt] Room announced {"name":"Test Room","bundleId":"bundle-4c96f98ff278fb72"}
+[2026-02-15T03:49:07.588Z] [INFO] [mesh:yurt] YURT gossip stopped
+[2026-02-15T03:49:07.593Z] [INFO] [mesh:yurt] Room announced {"name":"Test Room","bundleId":"bundle-9a37681637eac610"}
+[2026-02-15T03:49:07.593Z] [INFO] [mesh:yurt] Room withdrawn {"bundleId":"bundle-9a37681637eac610"}
+[2026-02-15T03:49:07.593Z] [INFO] [mesh:yurt] YURT gossip stopped
+[2026-02-15T03:49:07.595Z] [INFO] [mesh:yurt] YURT gossip stopped
+[2026-02-15T03:49:07.597Z] [INFO] [mesh:yurt] YURT gossip stopped
+[2026-02-15T03:49:07.599Z] [INFO] [mesh:yurt] YURT gossip stopped
+Γû╢ YurtEntry
+  Γû╢ constructor
+    Γ£ö creates entry with required fields (1.0909ms)
+    Γ£ö sets default values (0.4698ms)
+    Γ£ö computes deterministic entry ID (0.4511ms)
+  Γ£ö constructor (2.4582ms)
+  Γû╢ validation
+    Γ£ö validates required fields (0.2803ms)
+    Γ£ö validates name length (0.1855ms)
+    Γ£ö validates description length (0.16ms)
+    Γ£ö validates tag count (0.1724ms)
+    Γ£ö validates tag length (0.2248ms)
+    Γ£ö validates visibility (0.7627ms)
+    Γ£ö passes valid entry (0.2463ms)
+  Γ£ö validation (2.3659ms)
+  Γû╢ signing and verification
+    Γ£ö signs entry with secret key (19.2635ms)
+    Γ£ö verifies valid signature (9.9386ms)
+    Γ£ö rejects invalid signature (wrong key) (14.2376ms)
+    Γ£ö rejects tampered entry (10.9133ms)
+    Γ£ö returns false for unsigned entry (2.502ms)
+  Γ£ö signing and verification (57.1013ms)
+  Γû╢ expiration
+    Γ£ö detects expired entry (0.1461ms)
+    Γ£ö returns false for fresh entry (0.087ms)
+  Γ£ö expiration (0.3135ms)
+  Γû╢ URI generation
+    Γ£ö generates yak:// URI (0.1626ms)
+    Γ£ö generates invite URI with attestation (0.1641ms)
+  Γ£ö URI generation (0.3893ms)
+  Γû╢ serialization
+    Γ£ö exports to JSON (0.1612ms)
+    Γ£ö imports from JSON (0.1146ms)
+    Γ£ö preserves signature through serialization (7.0169ms)
+  Γ£ö serialization (7.3781ms)
+Γ£ö YurtEntry (70.4954ms)
+Γû╢ YurtLink
+  Γû╢ parse
+    Γ£ö parses basic yak:// URI (0.3455ms)
+    Γ£ö parses URI with explicit port (0.1032ms)
+    Γ£ö parses URI with invite parameter (0.4668ms)
+    Γ£ö handles invalid URI gracefully (0.0841ms)
+    Γ£ö constructs endpoint from host:port (0.0679ms)
+  Γ£ö parse (1.1692ms)
+  Γû╢ create
+    Γ£ö creates basic URI (0.0839ms)
+    Γ£ö creates URI with custom port (0.0415ms)
+    Γ£ö creates invite URI (0.1034ms)
+  Γ£ö create (0.2841ms)
+  Γû╢ isValid
+    Γ£ö returns true for valid URI (0.0923ms)
+    Γ£ö returns false for non-yak scheme (0.0388ms)
+    Γ£ö returns false for invalid input (0.0426ms)
+  Γ£ö isValid (0.2525ms)
+  Γû╢ toHttpsGateway
+    Γ£ö converts to HTTPS gateway URL (0.1359ms)
+    Γ£ö uses custom gateway URL (0.0698ms)
+    Γ£ö returns null for invalid URI (0.058ms)
+  Γ£ö toHttpsGateway (0.3245ms)
+Γ£ö YurtLink (2.1571ms)
+Γû╢ YurtDirectory
+  Γû╢ add
+    Γ£ö adds valid entry (0.3706ms)
+    Γ£ö rejects invalid entry (0.0914ms)
+    Γ£ö updates existing entry (0.1566ms)
+    Γ£ö verifies signature when required (11.796ms)
+    Γ£ö accepts valid signature (10.8144ms)
+  Γ£ö add (23.3562ms)
+  Γû╢ remove
+    Γ£ö removes existing entry (0.2476ms)
+    Γ£ö returns false for non-existent entry (0.0647ms)
+  Γ£ö remove (0.3628ms)
+  Γû╢ get and getByBundle
+    Γ£ö retrieves entry by ID (0.1242ms)
+    Γ£ö retrieves entry by bundle ID (0.1689ms)
+    Γ£ö returns null for missing entry (0.0639ms)
+  Γ£ö get and getByBundle (0.4106ms)
+  Γû╢ search
+    Γ£ö searches by text query (0.5019ms)
+    Γ£ö searches in description (0.2401ms)
+    Γ£ö searches by tags (0.2237ms)
+    Γ£ö filters by visibility (0.1797ms)
+    Γ£ö applies limit (0.1698ms)
+    Γ£ö returns all matching entries (0.1478ms)
+  Γ£ö search (1.5815ms)
+  Γû╢ listPublic
+    Γ£ö returns only public entries (0.1667ms)
+  Γ£ö listPublic (0.2003ms)
+  Γû╢ own listings
+    Γ£ö tracks own listings (0.1304ms)
+  Γ£ö own listings (0.1645ms)
+  Γû╢ cleanup
+    Γ£ö removes expired entries (0.2243ms)
+    Γ£ö preserves own listings even if expired (0.113ms)
+  Γ£ö cleanup (0.3847ms)
+  Γû╢ indexes
+    Γ£ö indexes by host (0.1599ms)
+    Γ£ö indexes by tag (0.1476ms)
+  Γ£ö indexes (0.3495ms)
+  Γû╢ persistence
+    Γ£ö exports and imports (0.2046ms)
+  Γ£ö persistence (0.232ms)
+  Γû╢ stats
+    Γ£ö tracks statistics (0.1202ms)
+  Γ£ö stats (0.149ms)
+Γ£ö YurtDirectory (27.4158ms)
+Γû╢ YurtGossip
+  Γû╢ announce
+    Γ£ö announces room to network (12.4554ms)
+    Γ£ö signs entry with node identity (7.1816ms)
+    Γ£ö broadcasts to peers (9.7644ms)
+  Γ£ö announce (29.516ms)
+  Γû╢ withdraw
+    Γ£ö withdraws own listing (5.8788ms)
+    Γ£ö rejects withdrawing others listings (1.8198ms)
+  Γ£ö withdraw (7.7711ms)
+  Γû╢ query
+    Γ£ö broadcasts query to network (1.8107ms)
+  Γ£ö query (1.844ms)
+  Γû╢ stats
+    Γ£ö tracks gossip statistics (1.7386ms)
+  Γ£ö stats (1.7692ms)
+Γ£ö YurtGossip (41.0419ms)
+Γû╢ Integration Scenarios
+  Γû╢ QRL Official Room Flow
+    Γ£ö creates and discovers QRL room (14.1424ms)
+    Γ£ö discovers room via gossip (14.0857ms)
+  Γ£ö QRL Official Room Flow (28.4276ms)
+  Γû╢ Invite Flow
+    Γ£ö creates and parses invite links (0.3109ms)
+  Γ£ö Invite Flow (0.352ms)
+  Γû╢ Browser Fallback
+    Γ£ö provides HTTPS gateway fallback (0.0773ms)
+  Γ£ö Browser Fallback (0.107ms)
+Γ£ö Integration Scenarios (28.9627ms)
+
+≡ƒù│∩╕Å LAMA Ternary Consensus Retrofit
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+≡ƒôè Votes Cast:
+   node-1: Γ£ô ACCEPT (weight: 10)
+   node-2: Γ£ô ACCEPT (weight: 5)
+   node-3: Γ£ù REJECT (weight: 3) - SIGNATURE_EXPIRED
+   node-4: Γùî ABSTAIN (weight: 1) - AWAITING_VALIDATION
+   node-5: Γ£ô ACCEPT (weight: 2)
+[DEPRECATED] computeTernaryConsensus should not be used for validation
+
+≡ƒôê Consensus Result:
+   Decision: ACCEPT
+   Confidence: 66.7%
+   Accept/Reject/Abstain: 3/1/1
+   Weighted Accept/Reject: 17/3
+
+ΓÜû∩╕Å Close Vote Scenario:
+[DEPRECATED] computeTernaryConsensus should not be used for validation
+   With 20% threshold: UNDECIDED (margin too close)
+
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+Γ£à LAMA ternary consensus tests complete!
+
+[DEPRECATED] computeTernaryConsensus should not be used for validation
+[DEPRECATED] computeTernaryConsensus should not be used for validation
+[DEPRECATED] computeTernaryConsensus should not be used for validation
+[DEPRECATED] computeTernaryConsensus should not be used for validation
+[DEPRECATED] computeTernaryConsensus should not be used for validation
+[DEPRECATED] computeTernaryConsensus should not be used for validation
+[DEPRECATED] computeTernaryConsensus should not be used for validation
+[DEPRECATED] computeTernaryConsensus should not be used for validation
+Γû╢ LAMA Ternary Consensus
+  Γû╢ ConsensusVote
+    Γ£ö accept() creates positive vote (0.4322ms)
+    Γ£ö reject() creates negative vote with reason (0.0861ms)
+    Γ£ö abstain() creates neutral vote (0.067ms)
+    Γ£ö has default weight of 1 (0.0684ms)
+    Γ£ö accepts custom weight (0.1249ms)
+    Γ£ö records timestamp (0.1152ms)
+    Γ£ö is immutable (0.1753ms)
+    Γ£ö toJSON includes all fields (0.1188ms)
+  Γ£ö ConsensusVote (1.7139ms)
+  Γû╢ computeTernaryConsensus
+    Γ£ö unanimous accept returns ACCEPT (0.2011ms)
+    Γ£ö unanimous reject returns REJECT (0.1383ms)
+    Γ£ö strong majority accept wins (0.2158ms)
+    Γ£ö close vote returns NEUTRAL (undecided) (0.1871ms)
+    Γ£ö abstain votes are neutral in weighted calculation (0.1933ms)
+    Γ£ö provides correct summary stats (0.2107ms)
+    Γ£ö handles empty votes array (0.1021ms)
+    Γ£ö single vote determines result (0.0877ms)
+  Γ£ö computeTernaryConsensus (1.5877ms)
+Γ£ö LAMA Ternary Consensus (3.5829ms)
+≡ƒöÉ Security level set to NIST Level 3
+≡ƒöÉ Security level set to NIST Level 5
+≡ƒöÉ Security level set to NIST Level 3
+≡ƒöÉ Security level set to NIST Level 3
+≡ƒöÉ Security level set to NIST Level 3
+≡ƒöÉ Security level set to NIST Level 5
+≡ƒöÉ Security level set to NIST Level 3
+≡ƒöÉ Security level set to NIST Level 5
+≡ƒöÉ Security level set to NIST Level 3
+≡ƒöÉ Security level set to NIST Level 3
+≡ƒöÉ Security level set to NIST Level 5
+≡ƒöÉ Security level set to NIST Level 3
+≡ƒöÉ Security level set to NIST Level 3
+≡ƒöÉ Security level set to NIST Level 3
+≡ƒöÉ Security level set to NIST Level 5
+≡ƒöÉ Security level set to NIST Level 3
+≡ƒöÉ Security level set to NIST Level 3
+≡ƒöÉ Security level set to NIST Level 5
+≡ƒöÉ Security level set to NIST Level 3
+≡ƒöÉ Security level set to NIST Level 3
+≡ƒöÉ Security level set to NIST Level 3
+ML-DSA-65: 10 sign+verify in 105.83ms (10.58ms each)
+≡ƒöÉ Security level set to NIST Level 3
+ML-KEM-768: 10 encaps+decaps in 14.23ms (1.42ms each)
+≡ƒöÉ Security level set to NIST Level 3
+≡ƒöÉ Security level set to NIST Level 5
+Level 5 overhead: 19.1% slower than Level 3
+≡ƒöÉ Security level set to NIST Level 3
+Γû╢ Post-Quantum Cryptography Test Suite
+  Γû╢ Security Level Configuration
+    Γ£ö default security level is LEVEL_3 (0.7047ms)
+    Γ£ö can switch to LEVEL_5 (paranoid mode) (0.1485ms)
+    Γ£ö rejects invalid security levels (0.3026ms)
+    Γ£ö getCryptoSummary returns correct info (0.217ms)
+  Γ£ö Security Level Configuration (1.8387ms)
+  Γû╢ ML-DSA-65 (Dilithium3) Signatures
+    Γ£ö generates valid key pair (0.1668ms)
+    Γ£ö signs and verifies message (8.6773ms)
+    Γ£ö rejects tampered message (16.2274ms)
+    Γ£ö rejects tampered signature (12.171ms)
+    Γ£ö different keys produce different signatures (15.4847ms)
+    Γ£ö signature is deterministic for same message and key (29.7594ms)
+  Γ£ö ML-DSA-65 (Dilithium3) Signatures (90.1915ms)
+  Γû╢ ML-DSA-87 (Dilithium5) Signatures - Level 5
+    Γ£ö generates larger keys for Level 5 (0.1887ms)
+    Γ£ö produces larger signatures for Level 5 (15.1578ms)
+    Γ£ö Level 5 signature incompatible with Level 3 verification (6.8554ms)
+  Γ£ö ML-DSA-87 (Dilithium5) Signatures - Level 5 (25.7341ms)
+  Γû╢ ML-KEM-768 (Kyber768) Key Encapsulation
+    Γ£ö generates valid KEM key pair (0.38ms)
+    Γ£ö encapsulation produces ciphertext and shared secret (2.1901ms)
+    Γ£ö decapsulation recovers same shared secret (2.3991ms)
+    Γ£ö different public keys produce different shared secrets (2.8394ms)
+    Γ£ö wrong secret key fails to decapsulate correctly (3.899ms)
+    Γ£ö each encapsulation produces unique ciphertext (1.6251ms)
+  Γ£ö ML-KEM-768 (Kyber768) Key Encapsulation (15.4183ms)
+  Γû╢ ML-KEM-1024 (Kyber1024) Key Encapsulation - Level 5
+    Γ£ö generates larger keys for Level 5 (0.0772ms)
+    Γ£ö produces larger ciphertext for Level 5 (0.9915ms)
+    Γ£ö shared secret still 32 bytes at Level 5 (1.0371ms)
+  Γ£ö ML-KEM-1024 (Kyber1024) Key Encapsulation - Level 5 (3.2536ms)
+  Γû╢ SHA3-256 Hash Function
+    Γ£ö produces 256-bit (32 byte) output (0.1096ms)
+    Γ£ö is deterministic (0.0921ms)
+    Γ£ö different inputs produce different hashes (0.082ms)
+    Γ£ö small change produces completely different hash (avalanche) (0.1229ms)
+    Γ£ö empty input has known hash (0.0875ms)
+  Γ£ö SHA3-256 Hash Function (0.6888ms)
+  Γû╢ Node Identity Module
+    Γ£ö generateKeyPair produces valid ML-DSA-65 keys (2.2305ms)
+    Γ£ö signMessage and verifySignature work correctly (22.0848ms)
+    Γ£ö verifySignature rejects tampered message (25.8906ms)
+    Γ£ö verifySignature rejects wrong public key (13.1682ms)
+  Γ£ö Node Identity Module (63.5144ms)
+  Γû╢ Integration Tests
+    Γ£ö full handshake simulation: sign + KEM + encrypt (13.9564ms)
+    Γ£ö security level upgrade preserves functionality (32.6516ms)
+  Γ£ö Integration Tests (46.7046ms)
+  Γû╢ SLH-DSA-SHA2-192f Backup Signatures (Level 3)
+    Γ£ö generates valid SLH-DSA key pair (0.2685ms)
+    Γ£ö getBackupSignatureName returns correct algorithm (0.0979ms)
+    Γ£ö signs and verifies message with SLH-DSA (197.8404ms)
+    Γ£ö rejects tampered message (190.2281ms)
+    Γ£ö rejects tampered signature (190.0476ms)
+    Γ£ö crypto profile includes backup signature info (0.1278ms)
+  Γ£ö SLH-DSA-SHA2-192f Backup Signatures (Level 3) (593.4255ms)
+  Γû╢ SLH-DSA-SHA2-256f Backup Signatures (Level 5)
+    Γ£ö generates valid Level 5 SLH-DSA key pair (0.151ms)
+    Γ£ö getBackupSignatureName returns Level 5 algorithm (0.049ms)
+    Γ£ö signs and verifies message at Level 5 (376.96ms)
+  Γ£ö SLH-DSA-SHA2-256f Backup Signatures (Level 5) (395.6999ms)
+  Γû╢ Dual Signatures (ML-DSA + SLH-DSA)
+    Γ£ö generates both primary and backup keypairs (0.2407ms)
+    Γ£ö creates dual signature with both algorithms (186.9171ms)
+    Γ£ö verifies dual signature (both must be valid) (212.2907ms)
+    Γ£ö verifies combined dual signature (201.9254ms)
+    Γ£ö fails if primary signature is invalid (197.2368ms)
+    Γ£ö fails if backup signature is invalid (209.9959ms)
+    Γ£ö getCryptoSummary includes SLH-DSA info (0.1841ms)
+  Γ£ö Dual Signatures (ML-DSA + SLH-DSA) (1017.7473ms)
+  Γû╢ Performance Benchmarks
+    Γ£ö ML-DSA-65 sign/verify performance (108.6294ms)
+    Γ£ö ML-KEM-768 encaps/decaps performance (15.1478ms)
+    Γ£ö Level 5 vs Level 3 overhead (118.8339ms)
+  Γ£ö Performance Benchmarks (242.7418ms)
+Γ£ö Post-Quantum Cryptography Test Suite (2497.7055ms)
+
+≡ƒûû "Modulate the shield frequency, Mr. La Forge!" - Captain Picard
+
+  ΓÜí Current epoch: 81996
+  ΓÅ░ Epoch 81996: 2026-02-15T00:00:00.000Z - 2026-02-15T06:00:00.000Z
+  ΓÅ│ Time until rotation: 2h 10m 49s
+  Γ£à Valid epochs: 81996, 81997
+  ΓÜí Phase modulation creates unique salts per epoch
+  ≡ƒöÆ Phase fingerprint: cb3c902244dbf232801ba02a8a4061c9
+  ≡ƒöÆ Fingerprints rotate with phase epochs (anti-replay protection)
+  Γ£ô Fingerprint verified: CURRENT_PHASE
+  ≡ƒûû Phase ID: Phase-10249╬╡
+  ≡ƒûû Greek letters: Phase-0╬▒, Phase-0╬▓, Phase-0╬│, Phase-0╬┤, Phase-0╬╡, Phase-0╬╢, Phase-0╬╖, Phase-0╬╕
+  ≡ƒô¿ Challenge created, epoch 81996, binding 7215cbb7707f31a5
+
+  ≡ƒôè Phase Status:
+     Current Epoch: 81996
+     In Grace Period: false
+     Valid Epochs: [81996, 81997]
+     Next rotation in 2h 10m
+
+  ≡ƒôè Fingerprint Rotation Demo:
+     Phase-10249╬│: 2403b0ceb69c2d8ceff378955136837a
+     Phase-10249╬┤: 20d3f52d418d02b24a946aee71bd5274
+     Phase-10249╬╡: 837a5970b1de25169d54a88d628f4187 ΓåÉ current
+     Phase-10249╬╢: a2d9cd88a35ed13239364d27d934b615
+     Phase-10249╬╖: 18bde4ae55726629eed3a978344cfec1
+  ≡ƒ¢í∩╕Å Replay attack with expired phase would be rejected
+  ΓÅ░ Epoch duration: 6 hours
+  ≡ƒöº Grace period: 15 minutes
+  ≡ƒæü∩╕Å Lookahead phases: 1
+Γû╢ Phase Epoch System
+  Γû╢ getCurrentEpoch()
+    Γ£ö should return current epoch number (0.4523ms)
+    Γ£ö should return same epoch within same period (0.1537ms)
+    Γ£ö should accept optional timestamp (0.1039ms)
+  Γ£ö getCurrentEpoch() (1.2179ms)
+  Γû╢ getEpochStartTime() / getEpochEndTime()
+    Γ£ö should return valid time boundaries (0.7835ms)
+  Γ£ö getEpochStartTime() / getEpochEndTime() (0.871ms)
+  Γû╢ getTimeUntilRotation()
+    Γ£ö should return time info (0.2229ms)
+  Γ£ö getTimeUntilRotation() (0.3228ms)
+  Γû╢ getValidEpochs()
+    Γ£ö should return array of valid epochs (0.2329ms)
+    Γ£ö should include current epoch (0.0984ms)
+  Γ£ö getValidEpochs() (0.4536ms)
+  Γû╢ modulateSalt()
+    Γ£ö should generate consistent salt for same epoch (0.505ms)
+    Γ£ö should generate different salts for different epochs (0.1331ms)
+  Γ£ö modulateSalt() (0.7035ms)
+  Γû╢ derivePhaseFingerprint()
+    Γ£ö should derive fingerprint from hash and epoch (1.8541ms)
+    Γ£ö should produce same fingerprint for same hash and epoch (0.3982ms)
+    Γ£ö should produce different fingerprint for different epochs (0.4153ms)
+    Γ£ö should produce different fingerprint for different hashes (0.2858ms)
+  Γ£ö derivePhaseFingerprint() (3.0389ms)
+  Γû╢ verifyPhaseFingerprint()
+    Γ£ö should verify correct current fingerprint (0.3602ms)
+    Γ£ö should reject incorrect fingerprint (0.3084ms)
+  Γ£ö verifyPhaseFingerprint() (0.7249ms)
+  Γû╢ formatPhaseId()
+    Γ£ö should format phase ID with Greek letter (0.1677ms)
+    Γ£ö should cycle through Greek letters (0.1447ms)
+  Γ£ö formatPhaseId() (0.37ms)
+  Γû╢ createPhasedChallenge() / verifyPhasedChallenge()
+    Γ£ö should create phased challenge (0.1934ms)
+    Γ£ö should verify valid challenge (0.108ms)
+    Γ£ö should reject expired challenge (0.0753ms)
+  Γ£ö createPhasedChallenge() / verifyPhasedChallenge() (0.4493ms)
+  Γû╢ getPhaseStatus()
+    Γ£ö should return comprehensive status (0.1993ms)
+  Γ£ö getPhaseStatus() (0.2453ms)
+  Γû╢ Anti-Replay Protection
+    Γ£ö should demonstrate fingerprint rotation (0.6959ms)
+    Γ£ö should prevent replay attacks with expired epochs (0.6135ms)
+  Γ£ö Anti-Replay Protection (1.3691ms)
+  Γû╢ Constants
+    Γ£ö should have sensible epoch duration (0.0986ms)
+    Γ£ö should have reasonable grace period (0.0715ms)
+    Γ£ö should have lookahead phases (0.0631ms)
+  Γ£ö Constants (0.3138ms)
+Γ£ö Phase Epoch System (10.6797ms)
+Γ£¿ SST - Synergy Sequence Theory Integration for YAKMESH
+
+============================================================
+
+≡ƒôè SST Family Groups (Wesley Long):
+   Family A: 1, 4, 7 ΓåÆ NEGATIVE (Physical Descending)
+   Family B: 2, 5, 8 ΓåÆ POSITIVE (Physical Ascending)
+   Family C: 3, 6, 9 ΓåÆ NEUTRAL (Governing Singularity)
+
+≡ƒöó Digital Root Examples:
+   digitalRoot(27) = 9 ΓåÆ Family C
+   digitalRoot(123) = 6 ΓåÆ Family C
+   digitalRoot(999) = 9 ΓåÆ Family C
+
+≡ƒôê Fibonacci 24-Cycle:
+   1, 1, 2, 3, 5, 8, 4, 3, 7, 1, 8, 9
+   8, 8, 7, 6, 4, 1, 5, 6, 2, 8, 1, 9
+
+≡ƒö║ SST-YAKMESH Key Constants:
+   YPC-27 degree: 27 ΓåÆ root 9 ΓåÆ Family C
+   Fib cycle: 24 ΓåÆ root 6 ΓåÆ Family C
+   LCM(27,24): 216 ΓåÆ root 9 ΓåÆ Family C
+
+============================================================
+
+
+Γ£à SST Tests Complete
+
+Γû╢ SST Digital Root
+  Γ£ö calculates digital roots correctly (0.5301ms)
+  Γ£ö handles zero as 9 (SST convention) (0.0875ms)
+  Γ£ö handles negative numbers (0.0658ms)
+  Γ£ö handles BigInt (0.0708ms)
+Γ£ö SST Digital Root (1.3716ms)
+Γû╢ SST Family Classification
+  Γ£ö classifies Family A (1,4,7) correctly (0.1134ms)
+  Γ£ö classifies Family B (2,5,8) correctly (0.0656ms)
+  Γ£ö classifies Family C (3,6,9) correctly (0.0841ms)
+  Γ£ö maps numbers to families via digital root (0.1312ms)
+Γ£ö SST Family Classification (0.5605ms)
+Γû╢ SST to Trit Mapping
+  Γ£ö maps Family A to NEGATIVE (0.1704ms)
+  Γ£ö maps Family B to POSITIVE (0.1234ms)
+  Γ£ö maps Family C to NEUTRAL (0.0782ms)
+Γ£ö SST to Trit Mapping (0.4751ms)
+Γû╢ Fibonacci 24-Cycle
+  Γ£ö has exactly 24 elements (0.0577ms)
+  Γ£ö starts correctly (0.0346ms)
+  Γ£ö has 9 at positions 11 and 23 (singularity markers) (0.0533ms)
+  Γ£ö correctly references cycle positions (0.0452ms)
+  Γ£ö correctly maps to families (0.0369ms)
+Γ£ö Fibonacci 24-Cycle (0.2941ms)
+Γû╢ Synergy Matrix
+  Γ£ö generates 9 rows (0.1131ms)
+  Γ£ö starts each row with its seed (0.0589ms)
+  Γ£ö generates standard Fibonacci on row 1 (0.4493ms)
+  Γ£ö all values are 1-9 (0.25ms)
+Γ£ö Synergy Matrix (0.9442ms)
+Γû╢ Trust Propagation
+  Γ£ö returns full trust for direct connection (0.1157ms)
+  Γ£ö uses ΓêÜ3 ratio for one hop (0.0561ms)
+  Γ£ö uses 1/3 ratio for two hops (0.0434ms)
+  Γ£ö decays geometrically beyond 3 hops (0.0462ms)
+  Γ£ö scales with base trust (0.0396ms)
+Γ£ö Trust Propagation (0.3917ms)
+Γû╢ Hexagonal Geometry
+  Γû╢ HexCoord
+    Γ£ö creates coordinates (0.0734ms)
+    Γ£ö calculates neighbors (0.0497ms)
+    Γ£ö calculates distance (0.0516ms)
+    Γ£ö rounds fractional coordinates (0.0614ms)
+  Γ£ö HexCoord (0.3125ms)
+  Γû╢ hexRing
+    Γ£ö returns center for radius 0 (0.1178ms)
+    Γ£ö returns 6 cells for radius 1 (0.0522ms)
+    Γ£ö returns 12 cells for radius 2 (0.0601ms)
+    Γ£ö returns 6*r cells for any radius r (0.0602ms)
+  Γ£ö hexRing (0.3547ms)
+  Γû╢ hexDisk
+    Γ£ö returns 1 cell for radius 0 (0.0662ms)
+    Γ£ö returns 7 cells for radius 1 (0.038ms)
+    Γ£ö matches hexDiskSize formula (0.0941ms)
+  Γ£ö hexDisk (0.2471ms)
+  Γû╢ hexDiskSize
+    Γ£ö uses correct formula: 3*r*(r+1) + 1 (0.0941ms)
+  Γ£ö hexDiskSize (0.133ms)
+Γ£ö Hexagonal Geometry (1.1637ms)
+Γû╢ SST-YAKMESH Integration Points
+  Γ£ö YPC-27: 27 has digital root 9 (Governing) (0.0938ms)
+  Γ£ö Fibonacci cycle length 24 has root 6 (Governing) (0.0421ms)
+  Γ£ö LCM(27,24) = 216 has root 9 (Governing) (0.0341ms)
+  Γ£ö All key YAKMESH constants fall in Family C (Governing) (0.052ms)
+Γ£ö SST-YAKMESH Integration Points (0.3004ms)
+
+≡ƒòÉ Running Time Source Detection...
+
+[2026-02-15T03:49:10.523Z] [INFO] [mani:time-source] Time Source Detection Results {"platform":"win32","trustLevel":"NTP","phaseTolerance":5000,"primarySource":"ntp"}
+[2026-02-15T03:49:10.524Z] [INFO] [mani:time-source] NTP detected {"method":"w32tm","server":"Local CMOS Clock","stratum":0,"synchronized":true}
+
+≡ƒôï Detection Summary:
+   Trust Level: NTP
+   Phase Tolerance: ┬▒5000ms
+   Ready for: Standard validation (NTP)
+  Γ£à All trust levels defined
+  Γ£à Phase tolerances configured correctly
+     Atomic: ┬▒100ms
+     GPS: ┬▒500ms
+     NTP: ┬▒5000ms
+  Γ£à Stratum levels correct
+  Γ£à Detector created with defaults
+  Γ£à Custom options accepted
+  Γ£à Detection completed
+     Platform: win32
+     Trust Level: ntp
+     Primary: ntp
+  Γ£à Detection event emitted
+  Γ£à Trust level: ntp
+  Γ£à Phase tolerance: ┬▒5000ms
+  Γ£à Stratum: 2
+  Γ£à Has atomic time: false
+  Γ£à Has high precision: false
+  Γ£à Status object generated
+     {"atomicTime":false,"highPrecisionTime":false,"tightPhaseWindow":true}
+  Γ£à Phase config created
+     Epoch duration: 6 hours
+     Grace period: 15 minutes
+     Tolerance: ┬▒5000ms
+  Γ£à Atomic has tighter windows than NTP
+     Atomic: 1h epoch, ┬▒100ms
+     NTP: 6h epoch, ┬▒5000ms
+  Γ£à Singleton pattern works
+  Γ£à Quick detection completed
+     Trust: ntp
+
+  ≡ƒôè Trust Level Hierarchy:
+  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ
+  ≡ƒö¼ Level 0: ATOMIC   | ┬▒  100ms | Stratum 0
+  ≡ƒ¢░∩╕Å Level 1: GPS      | ┬▒  500ms | Stratum 1
+  ≡ƒôí Level 2: PTP      | ┬▒  500ms | Stratum 1
+  ≡ƒîÉ Level 3: NTP      | ┬▒ 5000ms | Stratum 2
+  ΓÜá∩╕Å Level 4: UNSYNC   | ┬▒30000ms | Stratum 16
+  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ  ΓöÇ
+  Γ£à Trust levels correctly ordered
+
+  ≡ƒö¼ Atomic Clock Node Scenario:
+     Can be time oracle: true
+     Phase window: ┬▒100ms
+     ΓåÆ This node can validate time-critical operations
+
+  ≡ƒîÉ Standard NTP Node Scenario:
+     Can be time oracle: false
+     Phase window: ┬▒5000ms
+     ΓåÆ This node can participate but not lead time consensus
+
+  ΓÜá∩╕Å Unsynchronized Node Scenario:
+     Can participate: false
+     Phase window: ┬▒30000ms
+     ΓåÆ This node operates in degraded mode
+Γû╢ Time Source Detection Module
+  Γû╢ TimeTrustLevel Constants
+    Γ£ö should define all trust levels (0.4046ms)
+  Γ£ö TimeTrustLevel Constants (0.7877ms)
+  Γû╢ PhaseTolerance Constants
+    Γ£ö should have correct tolerance values (0.1812ms)
+  Γ£ö PhaseTolerance Constants (0.258ms)
+  Γû╢ StratumLevel Constants
+    Γ£ö should have correct stratum values (0.0957ms)
+  Γ£ö StratumLevel Constants (0.1635ms)
+  Γû╢ TimeSourceDetector Class
+    Γ£ö should create detector with default options (0.2131ms)
+    Γ£ö should accept custom options (0.1116ms)
+    Γ£ö should detect time sources (32.04ms)
+    Γ£ö should emit detected event (32.1976ms)
+    Γ£ö should provide trust level getter (32.3324ms)
+    Γ£ö should provide phase tolerance getter (30.1431ms)
+    Γ£ö should provide stratum getter (31.2715ms)
+    Γ£ö should report capabilities (31.1373ms)
+    Γ£ö should provide status for API (31.5955ms)
+  Γ£ö TimeSourceDetector Class (221.4282ms)
+  Γû╢ createPhaseConfig()
+    Γ£ö should create phase config from detector (31.3579ms)
+    Γ£ö should have tighter windows for atomic time (0.1351ms)
+  Γ£ö createPhaseConfig() (31.5794ms)
+  Γû╢ getTimeSourceDetector()
+    Γ£ö should return singleton instance (0.1012ms)
+  Γ£ö getTimeSourceDetector() (0.1439ms)
+  Γû╢ detectTimeSources()
+    Γ£ö should perform quick detection (32.3652ms)
+  Γ£ö detectTimeSources() (32.4286ms)
+  Γû╢ Trust Level Hierarchy
+    Γ£ö should demonstrate trust level ordering (0.2511ms)
+  Γ£ö Trust Level Hierarchy (0.2996ms)
+  Γû╢ Integration Scenarios
+    Γ£ö should handle atomic clock node scenario (0.1345ms)
+    Γ£ö should handle standard NTP node scenario (0.0954ms)
+    Γ£ö should handle degraded mode scenario (0.0828ms)
+  Γ£ö Integration Scenarios (0.3996ms)
+Γ£ö Time Source Detection Module (287.9932ms)
+≡ƒö║ TRIBHUJ - Balanced Ternary Mathematics for YAKMESH
+
+============================================================
+
+≡ƒôÉ Trit Values:
+   NEGATIVE: -1 (-1/-1/-1)
+   NEUTRAL:  0 (0/0/0)
+   POSITIVE: 1 (1/1/1)
+
+≡ƒº« Trit Arithmetic:
+   1 + T = 0
+   1 ├ù T = T
+   -1 = T
+   -T = 1 (self-inverting!)
+
+≡ƒöÇ Ternary Logic (Kleene 3-valued):
+   TRUE AND UNKNOWN = UNKNOWN
+   TRUE OR UNKNOWN = TRUE
+   NOT UNKNOWN = UNKNOWN
+
+≡ƒù│∩╕Å Consensus Operation:
+   ACCEPT Γèò ACCEPT = ACCEPT
+   ACCEPT Γèò REJECT = ABSTAIN (disagreement!)
+   REJECT Γèò REJECT = REJECT
+
+≡ƒôè TritArray (multi-trit values):
+   42 in balanced ternary: 1TTT0 (verify: 42)
+   -13 in balanced ternary: TTT (verify: -13)
+
+≡ƒöù Path Balance (link quality):
+   Path [+1,+1,-1,-1]: balance=0, balanced=true
+   Path [+1,+1,+1]: balance=3, balanced=false
+
+ΓÜá∩╕Å  weightedConsensus REMOVED - validation is deterministic, not democratic
+   See security/sakshi.js for proper consensus via checkMathematicalAgreement()
+
+============================================================
+Γ£à Running test suite...
+
+
+Γ£à TRIBHUJ module ready for YAKMESH integration
+≡ƒö║ "The triangle stands stable on three points"
+
+Γû╢ TRIBHUJ - Balanced Ternary Mathematics
+  Γû╢ Constants
+    Γ£ö should define correct trit values (0.3529ms)
+    Γ£ö should define semantic aliases (0.1053ms)
+  Γ£ö Constants (0.8488ms)
+  Γû╢ Trit Class
+    Γû╢ Construction
+      Γ£ö should create from number (0.1237ms)
+      Γ£ö should clamp out-of-range values (0.0665ms)
+      Γ£ö should parse string characters (0.1471ms)
+      Γ£ö should copy from another Trit (0.0821ms)
+    Γ£ö Construction (0.5832ms)
+    Γû╢ Properties
+      Γ£ö should report isNegative correctly (0.2464ms)
+      Γ£ö should report isNeutral correctly (0.1265ms)
+      Γ£ö should report isPositive correctly (0.0853ms)
+    Γ£ö Properties (0.5926ms)
+    Γû╢ Arithmetic
+      Γ£ö should negate correctly (self-inverting) (0.1322ms)
+      Γ£ö should add without carry (0.0554ms)
+      Γ£ö should add with positive carry (1 + 1 = T in next place + carry) (0.0432ms)
+      Γ£ö should add with negative carry (-1 + -1) (0.0375ms)
+      Γ£ö should multiply correctly (0.0375ms)
+    Γ£ö Arithmetic (0.3825ms)
+    Γû╢ Logic Operations
+      Γ£ö should AND correctly (minimum) (0.0732ms)
+      Γ£ö should OR correctly (maximum) (0.0391ms)
+      Γ£ö should compute consensus correctly (0.038ms)
+    Γ£ö Logic Operations (0.1972ms)
+    Γû╢ Comparison
+      Γ£ö should compare correctly (0.0966ms)
+      Γ£ö should check equality (0.0635ms)
+    Γ£ö Comparison (0.1984ms)
+    Γû╢ Conversion
+      Γ£ö should convert to character (0.052ms)
+      Γ£ö should convert to semantic name (0.039ms)
+    Γ£ö Conversion (0.1279ms)
+  Γ£ö Trit Class (2.7896ms)
+  Γû╢ TritArray Class
+    Γû╢ Construction
+      Γ£ö should create from decimal (0.0983ms)
+      Γ£ö should create from string (0.0976ms)
+      Γ£ö should pad to fixed length (0.0754ms)
+    Γ£ö Construction (0.3211ms)
+    Γû╢ Arithmetic
+      Γ£ö should negate correctly (0.1018ms)
+      Γ£ö should add correctly (0.1466ms)
+      Γ£ö should handle negative addition (0.0542ms)
+    Γ£ö Arithmetic (0.382ms)
+    Γû╢ Aggregate Operations
+      Γ£ö should sum trits (0.0783ms)
+      Γ£ö should detect balanced arrays (0.05ms)
+      Γ£ö should count trits (0.0767ms)
+      Γ£ö should find majority (0.1062ms)
+    Γ£ö Aggregate Operations (0.3759ms)
+  Γ£ö TritArray Class (1.172ms)
+  Γû╢ Utility Functions
+    Γû╢ hexCompare
+      Γ£ö should compare hex strings (0.0607ms)
+    Γ£ö hexCompare (0.0912ms)
+    Γû╢ calculatePathBalance
+      Γ£ö should calculate balanced path (0.0725ms)
+      Γ£ö should detect asymmetric path (0.091ms)
+    Γ£ö calculatePathBalance (0.2004ms)
+  Γ£ö Utility Functions (0.3407ms)
+Γ£ö TRIBHUJ - Balanced Ternary Mathematics (5.4349ms)
+
+≡ƒö║ TATTVA Ternary Retrofit - ValidationResult
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+≡ƒôè Three States:
+   Γ£ô SUCCESS: state=1, isValid=true
+   Γ£ù FAILURE: state=-1, isInvalid=true
+   Γùî PENDING: state=0, isPending=true
+
+≡ƒº« Ternary Logic Operations:
+   VALID Γêº PENDING = 0 (ValidationResult(PENDING: AWAITING_CONSENSUS))
+   VALID Γê¿ PENDING = 1 (VALID if any valid)
+   VALID Γèò INVALID = 0 (disagreement ΓåÆ PENDING)
+
+≡ƒöÖ Backwards Compatibility:
+   valid.valid = true (deprecated but works)
+   invalid.valid = false (false for INVALID)
+
+≡ƒôª JSON Serialization:
+   {"state":0,"valid":false,"isValid":false,"isInvalid":false,"isPending":true,"rea...
+
+ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+
+Γ£à TATTVA ternary retrofit tests complete!
+
+Γû╢ TATTVA Ternary ValidationResult
+  Γû╢ Static Constructors
+    Γ£ö success() creates VALID state (0.4156ms)
+    Γ£ö failure() creates INVALID state (0.0842ms)
+    Γ£ö pending() creates PENDING state (0.0881ms)
+    Γ£ö pending() has default reason (0.078ms)
+  Γ£ö Static Constructors (1.1011ms)
+  Γû╢ Backwards Compatibility
+    Γ£ö valid getter returns true for success (0.1086ms)
+    Γ£ö valid getter returns false for failure (0.0678ms)
+    Γ£ö valid getter returns false for pending (0.076ms)
+    Γ£ö accepts boolean in constructor (true ΓåÆ VALID) (0.0762ms)
+    Γ£ö accepts boolean in constructor (false ΓåÆ INVALID) (0.0851ms)
+  Γ£ö Backwards Compatibility (0.5729ms)
+  Γû╢ Ternary Logic
+    Γ£ö AND: VALID Γêº VALID = VALID (0.2573ms)
+    Γ£ö AND: VALID Γêº INVALID = INVALID (0.0645ms)
+    Γ£ö AND: VALID Γêº PENDING = PENDING (0.0693ms)
+    Γ£ö AND: PENDING Γêº PENDING = PENDING (0.0603ms)
+    Γ£ö OR: VALID Γê¿ INVALID = VALID (0.0526ms)
+    Γ£ö OR: INVALID Γê¿ INVALID = INVALID (0.0501ms)
+    Γ£ö OR: PENDING Γê¿ PENDING = PENDING (0.1005ms)
+    Γ£ö OR: INVALID Γê¿ PENDING = PENDING (0.0564ms)
+    Γ£ö CONSENSUS: same states agree (0.0476ms)
+    Γ£ö CONSENSUS: different states ΓåÆ PENDING (0.0455ms)
+  Γ£ö Ternary Logic (0.9858ms)
+  Γû╢ Serialization
+    Γ£ö toJSON includes ternary state info (0.0648ms)
+    Γ£ö toString shows state name (0.0859ms)
+  Γ£ö Serialization (0.2005ms)
+  Γû╢ Immutability
+    Γ£ö instance is frozen (0.1451ms)
+  Γ£ö Immutability (0.1819ms)
+Γ£ö TATTVA Ternary ValidationResult (3.4041ms)
+Γ£ö deploy-packages\build\yakmesh-basic\oracle\tests\ypc27.test.js (82.1406ms)
+
+ΓòöΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòù
+Γòæ     YAK:// PROTOCOL INTEGRATION TEST SUITE v2.2.0        Γòæ
+ΓòÜΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓò¥
+
+Cannot bookmark "dashboard" - it's a builtin route
+≡ƒô¼ Subscribed to bookmarks from node-abc123...
+≡ƒô¡ Unsubscribed from node-abc123...
+Cannot subscribe to your own node
+≡ƒô¼ Subscribed to bookmarks from node-xyz789...
+≡ƒô¡ Unsubscribed from node-xyz789...
+≡ƒô¼ Subscribed to bookmarks from node-1...
+≡ƒô¼ Subscribed to bookmarks from node-2...
+≡ƒô¡ Unsubscribed from node-1...
+≡ƒô¡ Unsubscribed from node-2...
+Cannot bookmark "docs" - it's a builtin route
+≡ƒô¼ Subscribed to bookmarks from node-test...
+≡ƒô¡ Unsubscribed from node-test...
+Γû╢ BookmarkManager
+  Γû╢ Basic Operations
+    Γ£ö should add a bookmark (2.0437ms)
+    Γ£ö should normalize bookmark names to lowercase (1.2667ms)
+    Γ£ö should get bookmark target (0.7928ms)
+    Γ£ö should remove a bookmark (0.6903ms)
+    Γ£ö should list all bookmarks (1.1132ms)
+    Γ£ö should reject builtins as bookmark names (0.2763ms)
+  Γ£ö Basic Operations (6.6941ms)
+  Γû╢ Path Normalization
+    Γ£ö should normalize paths without leading slash (0.6501ms)
+    Γ£ö should preserve paths with leading slash (0.6337ms)
+    Γ£ö should handle site/ prefix correctly (0.704ms)
+    Γ£ö should handle content/ prefix correctly (0.7087ms)
+  Γ£ö Path Normalization (2.8415ms)
+Γ£ö BookmarkManager (9.8391ms)
+Γû╢ YAK:// URL Parsing
+  Γû╢ Builtin Routes
+    Γ£ö should resolve yak://dashboard to builtin (0.3012ms)
+    Γ£ö should resolve yak://metrics to builtin (0.0863ms)
+    Γ£ö should resolve yak://site to builtin (0.0536ms)
+    Γ£ö should handle subpaths in builtins (0.1312ms)
+  Γ£ö Builtin Routes (0.6554ms)
+  Γû╢ Content Hash Resolution
+    Γ£ö should resolve SHA3-256 content hashes (0.2526ms)
+    Γ£ö should handle content subpaths (0.086ms)
+    Γ£ö should reject invalid hashes (0.0804ms)
+    Γ£ö should reject short hashes (0.1101ms)
+  Γ£ö Content Hash Resolution (0.5998ms)
+  Γû╢ iO Name Resolution
+    Γ£ö should resolve valid 3-word iO names (0.1207ms)
+    Γ£ö should handle iO name subpaths (0.0748ms)
+    Γ£ö should reject invalid iO names (wrong word count) (0.0493ms)
+    Γ£ö should reject invalid iO names (not in wordlist) (0.0774ms)
+    Γ£ö should be case-insensitive for iO names (0.0755ms)
+  Γ£ö iO Name Resolution (0.4778ms)
+  Γû╢ HTTP to YAK Conversion
+    Γ£ö should convert HTTP site URLs to yak:// (0.1511ms)
+    Γ£ö should convert HTTP dashboard URL to yak:// (0.0602ms)
+    Γ£ö should handle URLs with query strings (0.0482ms)
+  Γ£ö HTTP to YAK Conversion (0.3202ms)
+  Γû╢ YAK to HTTP Conversion
+    Γ£ö should convert yak://site to HTTP (0.0997ms)
+    Γ£ö should convert yak://dashboard to HTTP (0.0451ms)
+  Γ£ö YAK to HTTP Conversion (0.1816ms)
+  Γû╢ Empty and Edge Cases
+    Γ£ö should handle empty yak:// URL (0.0521ms)
+    Γ£ö should handle y:// shorthand (0.0452ms)
+    Γ£ö should handle case insensitive routes (0.0445ms)
+  Γ£ö Empty and Edge Cases (0.1886ms)
+Γ£ö YAK:// URL Parsing (2.6268ms)
+Γû╢ RemoteBookmarkSync
+  Γû╢ Initialization
+    Γ£ö should initialize with empty subscriptions (0.5519ms)
+    Γ£ö should have correct message type (0.286ms)
+    Γ£ö should link to local bookmark manager (0.2326ms)
+  Γ£ö Initialization (1.1273ms)
+  Γû╢ Subscriptions
+    Γ£ö should subscribe to a node (1.8638ms)
+    Γ£ö should not subscribe to self (0.3075ms)
+    Γ£ö should unsubscribe from a node (0.7342ms)
+    Γ£ö should return false when unsubscribing from non-subscribed node (0.2524ms)
+    Γ£ö should list subscriptions (1.6755ms)
+  Γ£ö Subscriptions (4.9412ms)
+  Γû╢ Remote Bookmark Lookup
+    Γ£ö should return null for non-existent remote bookmark (0.3197ms)
+    Γ£ö should list remote bookmarks (empty initially) (0.3296ms)
+  Γ£ö Remote Bookmark Lookup (0.6977ms)
+  Γû╢ Publishing
+    Γ£ö should track published lists locally (0.9167ms)
+  Γ£ö Publishing (0.9509ms)
+  Γû╢ Status
+    Γ£ö should report status correctly (0.7394ms)
+  Γ£ö Status (0.7724ms)
+Γ£ö RemoteBookmarkSync (8.608ms)
+Γû╢ getRemoteBookmarkSync
+  Γ£ö should be a function (0.0523ms)
+  Γ£ö should return RemoteBookmarkSync instance (0.1409ms)
+Γ£ö getRemoteBookmarkSync (0.2383ms)
+Γû╢ DOKO Classes Integration
+  Γû╢ DOKOCertBinding
+    Γ£ö should export computeFingerprint static method (0.052ms)
+    Γ£ö should export createBinding static method (0.0299ms)
+    Γ£ö should export verifyBinding static method (0.0247ms)
+    Γ£ö should export addBinding static method (0.027ms)
+  Γ£ö DOKOCertBinding (0.1826ms)
+  Γû╢ DOKOTransfer
+    Γ£ö should export createRequest static method (0.049ms)
+    Γ£ö should export authorize static method (0.0249ms)
+    Γ£ö should export complete static method (0.0237ms)
+    Γ£ö should export reject static method (0.0248ms)
+    Γ£ö should export cancel static method (0.0222ms)
+    Γ£ö should export STATES constant (0.0261ms)
+    Γ£ö should export TYPES constant (0.0264ms)
+  Γ£ö DOKOTransfer (0.2656ms)
+Γ£ö DOKO Classes Integration (0.4917ms)
+Γû╢ Protocol Configuration
+  Γ£ö should export correct protocol config (0.0446ms)
+  Γ£ö should define builtin routes (0.0253ms)
+  Γ£ö should have all expected builtin routes (0.0411ms)
+  Γ£ö should have YakProtocolHandler class (0.0275ms)
+  Γ£ö should have getBookmarkManager function (0.0275ms)
+Γ£ö Protocol Configuration (0.2201ms)
+Γ£ö deploy-packages\build\yakmesh-basic\security\tests\doko-identity.test.js (102.5267ms)
+Γ£ö deploy-packages\build\yakmesh-basic\security\tests\domain-consensus.test.js (83.0721ms)
+Γ£ö deploy-packages\build\yakmesh-basic\security\tests\geo-proof.test.js (102.0622ms)
+Γ£ö deploy-packages\build\yakmesh-basic\security\tests\hardware-attestation-extended.test.js (98.5718ms)
+Γ£ö deploy-packages\build\yakmesh-basic\security\tests\hybrid-trust.test.js (83.4888ms)
+Γ£ö deploy-packages\build\yakmesh-basic\security\tests\khata-protocol.test.js (90.1503ms)
+Γ£ö deploy-packages\build\yakmesh-basic\security\tests\khata-trust-integration.test.js (102.839ms)
+Γ£ö deploy-packages\build\yakmesh-basic\security\tests\mesh-auth.test.js (89.8277ms)
+Γ£ö deploy-packages\build\yakmesh-basic\security\tests\mesh-revocation.test.js (99.8396ms)
+Γû╢ SAKSHI Capability Levels
+  Γ£ö defines all expected capability levels (0.365ms)
+  Γ£ö has info for all capability levels (0.1631ms)
+  Γ£ö capability levels are descriptive, not hierarchical permissions (0.0844ms)
+Γ£ö SAKSHI Capability Levels (1.2108ms)
+Γû╢ Time Precision Coefficients
+  Γ£ö atomic has highest precision (lowest value) (0.0968ms)
+  Γ£ö precision decreases with time source quality (0.0826ms)
+  Γ£ö precision values represent milliseconds (0.0776ms)
+Γ£ö Time Precision Coefficients (0.3761ms)
+Γû╢ Reliability Coefficient
+  Γ£ö maps uptime to 0.1-1.0 range (0.0994ms)
+  Γ£ö never returns zero (all nodes can participate) (0.1355ms)
+  Γ£ö caps at 1.0 (0.1146ms)
+Γ£ö Reliability Coefficient (1.0226ms)
+Γû╢ Age Confidence
+  Γ£ö starts low for new nodes (0.1379ms)
+  Γ£ö grows logarithmically (0.0736ms)
+  Γ£ö maxes out at 180 days (0.0613ms)
+Γ£ö Age Confidence (0.3381ms)
+Γû╢ NodeWitness
+  Γû╢ Capability Assessment
+    Γ£ö assesses ATOMIC_VETERAN for long-running atomic nodes (0.1838ms)
+    Γ£ö assesses PRECISION_NODE for reliable GPS nodes (0.0708ms)
+    Γ£ö assesses NEW_NODE for fresh joins (0.0625ms)
+    Γ£ö capability is purely descriptive (0.0794ms)
+  Γ£ö Capability Assessment (0.4673ms)
+  Γû╢ Derived Metrics
+    Γ£ö calculates time precision from source (0.0777ms)
+    Γ£ö calculates reliability coefficient from uptime (0.076ms)
+    Γ£ö calculates age confidence from network age (0.0756ms)
+    Γ£ö combines quality score from reliability and age (0.0702ms)
+  Γ£ö Derived Metrics (0.3699ms)
+  Γû╢ Capability Checks
+    Γ£ö reports high precision time capability (0.0766ms)
+    Γ£ö reports hardware attestation status (0.0551ms)
+  Γ£ö Capability Checks (0.1768ms)
+  Γû╢ Immutability
+    Γ£ö is frozen after creation (0.2922ms)
+  Γ£ö Immutability (0.3745ms)
+Γ£ö NodeWitness (1.5052ms)
+Γû╢ Time Attestation Fusion
+  Γ£ö returns single attestation directly (0.1706ms)
+  Γ£ö weights by precision (physics, not politics) (0.0929ms)
+  Γ£ö multiple imprecise measurements improve precision (0.0733ms)
+  Γ£ö detects agreement/disagreement (0.0798ms)
+Γ£ö Time Attestation Fusion (0.5039ms)
+Γû╢ Mathematical Agreement
+  Γ£ö returns agreed when all match (0.2623ms)
+  Γ£ö detects disagreement without voting (0.094ms)
+  Γ£ö does not use weights or tiers to resolve disagreement (0.0835ms)
+  Γ£ö supports custom equality functions (0.1074ms)
+Γ£ö Mathematical Agreement (0.639ms)
+Γû╢ Ranking by Reliability
+  Γ£ö sorts by reliability coefficient (0.1294ms)
+  Γ£ö includes all nodes by default (no gatekeeping) (0.0576ms)
+  Γ£ö can filter by minimum reliability for optimization (0.0456ms)
+  Γ£ö can prefer precision time sources (0.0521ms)
+Γ£ö Ranking by Reliability (0.3632ms)
+Γû╢ Buddy System Verification
+  Γ£ö creates verification requests without tier requirements (0.0788ms)
+  Γ£ö verification succeeds when math matches (0.0655ms)
+  Γ£ö verification fails with recompute action when math differs (0.0555ms)
+Γ£ö Buddy System Verification (0.2504ms)
+Γû╢ SAKSHI Philosophy
+  Γ£ö NodeWitness has no permission-checking methods (0.0577ms)
+  Γ£ö no weight property for voting (0.043ms)
+  Γ£ö disagreement leads to recomputation, not majority rule (0.0752ms)
+Γ£ö SAKSHI Philosophy (0.219ms)
+Γû╢ VIVAAD Disagreement Analysis
+  Γû╢ DISAGREEMENT_CAUSE constants
+    Γ£ö defines hardware-related causes (0.0666ms)
+    Γ£ö defines timing-related causes (0.0322ms)
+    Γ£ö defines network-related causes (0.029ms)
+    Γ£ö defines byzantine causes (rare) (0.035ms)
+  Γ£ö DISAGREEMENT_CAUSE constants (0.2093ms)
+  Γû╢ REMEDIATION actions
+    Γ£ö defines gentle remediations (honor system) (0.0519ms)
+    Γ£ö defines observational updates (no punishment) (0.0285ms)
+    Γ£ö defines isolation only for repeated issues (0.0237ms)
+  Γ£ö REMEDIATION actions (0.14ms)
+  Γû╢ analyzeDisagreement
+    Γ£ö detects compute timeout (slow hardware) (0.2089ms)
+    Γ£ö detects floating point variance as effectively agreeing (0.0654ms)
+    Γ£ö detects crypto hardware mismatch (0.0637ms)
+    Γ£ö detects clock drift between nodes (0.0595ms)
+    Γ£ö detects incomplete data (type mismatch) (0.0532ms)
+    Γ£ö marks unexplained disagreements as needing observation (not punishment) (0.7772ms)
+    Γ£ö defaults to retry when cause is unclear (0.0693ms)
+  Γ£ö analyzeDisagreement (1.3865ms)
+  Γû╢ createRemediationPlan
+    Γ£ö creates retry plan for benign disagreements (0.1471ms)
+    Γ£ö creates observation plan for suspicious behavior (0.0664ms)
+    Γ£ö mesh observation is passive, not punitive (0.0475ms)
+  Γ£ö createRemediationPlan (0.3094ms)
+  Γû╢ trackDisagreementPattern
+    Γ£ö tracks disagreement history for a node (0.1244ms)
+    Γ£ö identifies patterns of benign hardware issues (0.0946ms)
+    Γ£ö flags nodes with many unexplained disagreements (0.0791ms)
+    Γ£ö keeps assessment NORMAL if mostly benign with some suspicious (0.0862ms)
+  Γ£ö trackDisagreementPattern (0.471ms)
+Γ£ö VIVAAD Disagreement Analysis (2.6021ms)
+Γû╢ VIVAAD Philosophy
+  Γ£ö assumes good faith ΓÇö benign causes trigger positive assessment (0.0742ms)
+  Γ£ö remediation never includes permanent ban (0.0397ms)
+  Γ£ö most disagreements attributed to hardware/timing (~85%) (0.045ms)
+  Γ£ö buddy system is remediation, not gatekeeping (0.0603ms)
+Γ£ö VIVAAD Philosophy (0.274ms)
+Γû╢ SETU Trust-Tier Bridge
+  Γû╢ witnessFromTrustProfile
+    Γ£ö converts TrustProfile to NodeWitness (0.0832ms)
+    Γ£ö handles missing hardware attestation (0.042ms)
+  Γ£ö witnessFromTrustProfile (0.1558ms)
+  Γû╢ trustProfileFromWitness
+    Γ£ö converts NodeWitness back to TrustProfile-compatible object (0.0792ms)
+  Γ£ö trustProfileFromWitness (0.1084ms)
+  Γû╢ checkRevocationAgreement
+    Γ£ö requires minimum reports (0.1407ms)
+    Γ£ö requires evidence agreement (not weighted voting) (0.0971ms)
+    Γ£ö revokes when all reports agree (0.1362ms)
+    Γ£ö can require precision node witness (0.087ms)
+  Γ£ö checkRevocationAgreement (0.6293ms)
+  Γû╢ aggregateAttestations
+    Γ£ö checks for mathematical agreement, not weighted voting (0.2342ms)
+    Γ£ö returns disagreement info when attestations conflict (0.084ms)
+    Γ£ö provides contributors ranked by reliability (informational only) (0.095ms)
+  Γ£ö aggregateAttestations (0.4604ms)
+  Γû╢ assessComputationTrust
+    Γ£ö trusts reproducible computations regardless of who computed (0.1283ms)
+    Γ£ö trusts computations with proofs (0.0482ms)
+    Γ£ö requires proof when verification is required (0.0396ms)
+    Γ£ö checks verifier agreement when verifications provided (0.065ms)
+    Γ£ö fails if verifiers disagree (0.0582ms)
+  Γ£ö assessComputationTrust (0.3987ms)
+Γ£ö SETU Trust-Tier Bridge (1.8302ms)
+Γû╢ SETU Philosophy
+  Γ£ö no weighted voting in revocation checks (0.0912ms)
+  Γ£ö attestation count is actual count, not weighted (0.0691ms)
+  Γ£ö trust is based on math verifiability, not node tier (0.0472ms)
+Γ£ö SETU Philosophy (0.2455ms)
+Γ£ö deploy-packages\build\yakmesh-basic\security\tests\silicon-parity.test.js (89.2672ms)
+Γ£ö deploy-packages\build\yakmesh-basic\security\tests\strike-system.test.js (112.062ms)
+Γ£ö deploy-packages\build\yakmesh-basic\security\tests\sybil-graph.test.js (91.0586ms)
+Γ£ö deploy-packages\build\yakmesh-basic\security\tests\tls-binding.test.js (109.2269ms)
+Γ£ö deploy-packages\build\yakmesh-basic\security\tests\trust-tier.test.js (104.3699ms)
+[2026-02-15T03:49:12.677Z] [INFO] [security:sakshi] vegati Behavior velocity monitor initialized
+[2026-02-15T03:49:12.678Z] [INFO] [security:sakshi] vegati Behavior velocity monitor initialized
+[2026-02-15T03:49:12.679Z] [INFO] [security:sakshi] vegati Behavior velocity monitor initialized
+[2026-02-15T03:49:12.679Z] [WARN] [security:sakshi] vegati Velocity alert: elevated
+[2026-02-15T03:49:12.679Z] [INFO] [security:sakshi] vegati Behavior velocity monitor initialized
+[2026-02-15T03:49:12.679Z] [INFO] [security:sakshi] vegati Behavior velocity monitor initialized
+[2026-02-15T03:49:12.680Z] [INFO] [security:sakshi] vegati Behavior velocity monitor initialized
+[2026-02-15T03:49:12.680Z] [INFO] [security:sakshi] vegati Behavior velocity monitor initialized
+[2026-02-15T03:49:12.680Z] [WARN] [security:sakshi] vegati Velocity alert: elevated
+[2026-02-15T03:49:12.680Z] [INFO] [security:sakshi] vegati Behavior velocity monitor initialized
+[2026-02-15T03:49:12.680Z] [INFO] [security:sakshi] vegati Behavior velocity monitor initialized
+[2026-02-15T03:49:12.681Z] [INFO] [security:sakshi] vegati Cleaned up 1 stale profiles
+[2026-02-15T03:49:12.682Z] [INFO] [security:mesh-revocation] zimmedari Attestation accountability initialized
+[2026-02-15T03:49:12.682Z] [INFO] [security:mesh-revocation] zimmedari Attestation accountability initialized
+[2026-02-15T03:49:12.682Z] [INFO] [security:mesh-revocation] zimmedari Attestation accountability initialized
+[2026-02-15T03:49:12.682Z] [WARN] [security:mesh-revocation] zimmedari False positive attestation recorded
+[2026-02-15T03:49:12.682Z] [INFO] [security:mesh-revocation] zimmedari Attestation accountability initialized
+[2026-02-15T03:49:12.683Z] [WARN] [security:mesh-revocation] zimmedari False positive attestation recorded
+[2026-02-15T03:49:12.683Z] [INFO] [security:mesh-revocation] zimmedari Attestation accountability initialized
+[2026-02-15T03:49:12.683Z] [INFO] [security:mesh-revocation] zimmedari Attestation accountability initialized
+[2026-02-15T03:49:12.683Z] [INFO] [security:mesh-revocation] zimmedari Dispute filed against attestation
+[2026-02-15T03:49:12.683Z] [INFO] [security:mesh-revocation] zimmedari Attestation accountability initialized
+Γû╢ VEGATI - Behavior Velocity Monitor
+  Γû╢ Baseline Building
+    Γ£ö requires minimum observations before detecting anomalies (1.5997ms)
+    Γ£ö tracks progress toward baseline (0.2235ms)
+  Γ£ö Baseline Building (2.214ms)
+  Γû╢ Velocity Detection
+    Γ£ö detects sudden behavioral change after baseline established (0.3752ms)
+    Γ£ö returns NORMAL for values within expected variance (0.1779ms)
+  Γ£ö Velocity Detection (0.6512ms)
+  Γû╢ Profile Management
+    Γ£ö creates and retrieves node profiles (0.2171ms)
+    Γ£ö tracks multiple dimensions independently (0.1755ms)
+  Γ£ö Profile Management (0.477ms)
+  Γû╢ Alert Callbacks
+    Γ£ö triggers callbacks on velocity alerts (0.2272ms)
+  Γ£ö Alert Callbacks (0.2956ms)
+  Γû╢ Statistics
+    Γ£ö provides aggregate stats (0.2168ms)
+  Γ£ö Statistics (0.2607ms)
+  Γû╢ Cleanup
+    Γ£ö removes stale profiles on cleanup (0.1974ms)
+  Γ£ö Cleanup (0.2335ms)
+Γ£ö VEGATI - Behavior Velocity Monitor (4.56ms)
+Γû╢ Trust-Proportional Rate Limiter
+  Γû╢ Trust Level Management
+    Γ£ö sets and gets trust levels (0.2359ms)
+    Γ£ö returns UNKNOWN for unset nodes (0.1054ms)
+  Γ£ö Trust Level Management (0.4056ms)
+  Γû╢ Trust-Proportional Limits
+    Γ£ö allows more messages for trusted nodes (0.2495ms)
+  Γ£ö Trust-Proportional Limits (0.3078ms)
+  Γû╢ Trust-Proportional Penalties
+    Γ£ö includes trust distribution in stats (0.1362ms)
+  Γ£ö Trust-Proportional Penalties (0.1738ms)
+Γ£ö Trust-Proportional Rate Limiter (0.9732ms)
+Γû╢ ZIMMEDARI - Attestation Accountability
+  Γû╢ Recording Attestations
+    Γ£ö records attestation filings (0.2601ms)
+  Γ£ö Recording Attestations (0.2879ms)
+  Γû╢ Accuracy Tracking
+    Γ£ö marks attestations as validated (0.1964ms)
+    Γ£ö marks attestations as false positives (0.1949ms)
+    Γ£ö calculates accuracy ratio (0.1766ms)
+    Γ£ö requires minimum attestations before calculating accuracy (0.0939ms)
+  Γ£ö Accuracy Tracking (0.736ms)
+  Γû╢ Disputes
+    Γ£ö handles dispute filing (0.2131ms)
+  Γ£ö Disputes (0.2425ms)
+  Γû╢ Statistics
+    Γ£ö provides aggregate stats (0.1356ms)
+  Γ£ö Statistics (0.1665ms)
+Γ£ö ZIMMEDARI - Attestation Accountability (1.517ms)
+Γû╢ STUPA Revocation Broadcasts
+  Γû╢ Revocation Priority Level
+    Γ£ö has REVOCATION as highest priority (0.0552ms)
+    Γ£ö has extended TTL for revocations (0.0565ms)
+    Γ£ö has maximum rate limit bypass for revocations (0.0327ms)
+  Γ£ö Revocation Priority Level (0.1887ms)
+  Γû╢ Revocation Broadcast Types
+    Γ£ö exports all revocation broadcast types (0.0343ms)
+  Γ£ö Revocation Broadcast Types (0.0713ms)
+  Γû╢ StupaBroadcast Revocation Methods
+    Γ£ö has sendRevocation method (0.629ms)
+    Γ£ö has broadcastAttestation method (0.0609ms)
+    Γ£ö has broadcastThresholdMet method (0.0472ms)
+    Γ£ö has broadcastKeyCompromise method (0.0444ms)
+  Γ£ö StupaBroadcast Revocation Methods (0.8399ms)
+Γ£ö STUPA Revocation Broadcasts (1.16ms)

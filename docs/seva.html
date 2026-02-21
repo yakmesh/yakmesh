@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="seva">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="favicon.ico" sizes="32x32">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <title>SEVA | YAKMESH Documentation</title>
+    <meta name="description" content="Distributed NPU compute sharing across the yakmesh mesh network.">
+    <link rel="stylesheet" href="tailwind.min.css">
+    <link rel="stylesheet" href="prism-tomorrow.min.css">
+    <link rel="stylesheet" href="docs.css">
+    <style>
+        .theme-accent { color: #34d399; }
+        .theme-accent-hover:hover { color: #6ee7b7; }
+        .theme-badge { background: rgba(52, 211, 153, 0.2); color: #34d399; }
+        .theme-border { border-color: #059669; }
+        .theme-callout { background: rgba(52, 211, 153, 0.1); border-color: #047857; }
+        .active-link { background: rgba(52, 211, 153, 0.2) !important; color: #34d399 !important; }
+    </style>
+</head>
+<body class="bg-mountain-900 text-white min-h-screen">
+
+  <nav class="docs-sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-logo"><span class="logo-icon">🏔️</span><span class="logo-text">Yakmesh</span></a>
+    <a href="/dashboard" class="sidebar-dashboard-link"><span>📊</span> <span>Dashboard</span></a>
+    <ul class="sidebar-nav">
+      <li class="sidebar-section"><span>📘 Guides</span></li>
+      <li><a href="index.html"><span>🏠</span> <span>Overview</span></a></li>
+      <li><a href="getting-started.html"><span>🚀</span> <span>Getting Started</span></a></li>
+      <li><a href="tutorials.html"><span>📖</span> <span>Tutorials</span></a></li>
+      <li class="sidebar-section"><span>🐃 Protocol Stack</span></li>
+      <li><a href="yak-protocol.html"><span class="yak-icon"></span> <span>YAK://</span></a></li>
+      <li><a href="annex.html"><span>🌉</span> <span>ANNEX</span></a></li>
+      <li><a href="nakpak.html"><span>🎒</span> <span>NAKPAK</span></a></li>
+      <li><a href="namche.html"><span>🚪</span> <span>NAMCHE</span></a></li>
+      <li><a href="doko.html"><span>🧺</span> <span>DOKO</span></a></li>
+      <li><a href="sherpa.html"><span>🧗</span> <span>SHERPA</span></a></li>
+      <li><a href="mandala.html"><span>🌐</span> <span>MANDALA</span></a></li>
+      <li><a href="mantra.html"><span>🕉️</span> <span>MANTRA</span></a></li>
+      <li><a href="gumba.html"><span>🛕</span> <span>GUMBA</span></a></li>
+      <li><a href="yurt.html"><span>🏕️</span> <span>YURT</span></a></li>
+      <li><a href="katha.html"><span>💬</span> <span>KATHA</span></a></li>
+      <li><a href="vani.html"><span>🎙️</span> <span>VANI</span></a></li>
+      <li><a href="darshan.html"><span>👁️</span> <span>DARSHAN</span></a></li>
+      <li><a href="stupa.html"><span>🛕</span> <span>STUPA</span></a></li>
+      <li><a href="lama.html"><span>🔮</span> <span>LAMA</span></a></li>
+      <li><a href="mani.html"><span>⏱️</span> <span>MANI</span></a></li>
+      <li><a href="karma.html"><span>☯️</span> <span>KARMA</span></a></li>
+      <li><a href="tattva.html"><span>🔯</span> <span>TATTVA</span></a></li>
+      <li><a href="tribhuj.html"><span>🔺</span> <span>TRIBHUJ</span></a></li>
+      <li><a href="ypc27.html"><span>🔐</span> <span>YPC-27</span></a></li>
+      <li><a href="sakshi.html"><span>👁️</span> <span>SAKSHI</span></a></li>
+      <li><a href="geo-proof.html"><span>🌍</span> <span>PRAMAAN</span></a></li>
+      <li><a href="trust-security.html"><span>🔒</span> <span>SURAKSHA</span></a></li>
+      <li><a href="tivra.html"><span>⚡</span> <span>TIVRA</span></a></li>
+      <li><a href="prahari.html"><span>🛰️</span> <span>PRAHARI</span></a></li>
+      <li><a href="dharma.html"><span>⚖️</span> <span>DHARMA</span></a></li>
+      <li><a href="seva.html" class="active"><span>🙏</span> <span>SEVA</span></a></li>
+      <li><a href="docs-bundle.html"><span>📚</span> <span>GRANTH</span></a></li>
+      <li><a href="api.html"><span>📡</span> <span>API</span></a></li>
+      <li><a href="adapters.html"><span>🔌</span> <span>Adapters</span></a></li>
+      <li class="sidebar-section"><span>🚀 Applications</span></li>
+      <li><a href="yakapp.html"><span>💬</span> <span>YakApp</span></a></li>
+      <li><a href="c2c.html"><span>🚀</span> <span>C2C</span></a></li>
+      <li><a href="studio.html"><span>🎨</span> <span>Studio</span></a></li>
+      <li><a href="thangka.html"><span>🎨</span> <span>THANGKA</span></a></li>
+      <li class="sidebar-section"><span>📋 Reference</span></li>
+      <li><a href="quick-reference.html"><span>📋</span> <span>Quick Ref</span></a></li>
+    </ul>
+  </nav>
+
+  <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+    </svg>
+  </button>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="docs-main" id="mainContent">
+    <div class="docs-content">
+      <div class="flex items-center gap-3 mb-4">
+        <span class="text-4xl">🙏</span>
+        <div>
+          <h1 class="text-4xl font-bold">SEVA <span class="text-xl text-mountain-400">सेवा</span></h1>
+          <p class="theme-accent">Shared Execution via Voluntary Acceleration</p>
+        </div>
+      </div>
+      <p class="text-xl text-mountain-300 mb-4">Distributed NPU/GPU compute sharing across the mesh — selfless service for AI inference.</p>
+      <span class="inline-block text-xs theme-badge px-2 py-1 rounded mb-8">v3.0.0</span>
+
+      <div class="feature-box">
+        <h3>The Gift That Returns Tenfold</h3>
+        <p>In the Himalayas, <em>seva</em> is selfless service — freely given, expecting nothing. A sherpa carries a stranger’s load. A village shares its harvest. In yakmesh, SEVA is the same principle applied to silicon: nodes with NPU or GPU capacity freely process inference requests for peers who lack acceleration. No payment, no debt — just capability shared across the mesh. The reputation system ensures good seva is remembered, and abusers are naturally excluded.</p>
+      </div>
+
+      <!-- Overview -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4">Overview</h2>
+        <p class="text-mountain-300 mb-4">
+          सेवा (seva) = selfless service. SEVA enables yakmesh nodes to share their NPU/GPU compute
+          capacity with peers who lack hardware acceleration. A node with an AMD XDNA NPU or NVIDIA
+          GPU can process inference requests on behalf of CPU-only peers.
+        </p>
+        <p class="text-mountain-300 mb-4">
+          The protocol is opt-in, rate-limited, reputation-gated, and limited to pre-defined model
+          slots — <strong>no arbitrary code execution</strong>. Parameters are validated to contain
+          only numeric values.
+        </p>
+        <div class="theme-callout border rounded-xl p-6 mb-8">
+          <h3 class="text-lg font-semibold mb-2">Security by Design</h3>
+          <p class="text-mountain-300">
+            SEVA accepts <em>numbers only</em> as parameters and routes them to
+            <em>fixed model slots</em>. There is no eval, no script injection, no dynamic
+            code path. The worst a malicious request can do is waste a few milliseconds of
+            inference time — which is rate-limited and reputation-gated.
+          </p>
+        </div>
+      </section>
+
+      <!-- Protocol Flow -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4">Protocol Flow</h2>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700 mb-6">
+          <ol class="list-decimal list-inside space-y-3 text-mountain-300">
+            <li><strong>Opt-in</strong> — Node enables SEVA and broadcasts its capability advertisement
+              (available slots, NPU/GPU type, current load).</li>
+            <li><strong>Broadcast</strong> — Capabilities are re-broadcast every 60 seconds with a 180-second TTL.</li>
+            <li><strong>Request</strong> — A peer needing compute calls <code class="theme-accent">requestWork(slot, params)</code>.
+              SEVA finds the best available provider and sends a directed <code class="theme-accent">seva:request</code>.</li>
+            <li><strong>Execute</strong> — The provider validates the request (numbers-only, valid slot),
+              runs inference, and returns the result via <code class="theme-accent">seva:response</code>.</li>
+            <li><strong>Verify</strong> — With 5% probability, the requester re-runs the inference locally
+              and compares results (<code class="theme-accent">seva:verify</code>).</li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- Message Types -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4">Message Types</h2>
+        <div class="overflow-x-auto mb-6">
+          <table class="w-full bg-mountain-800 rounded-lg">
+            <thead>
+              <tr class="border-b border-mountain-700">
+                <th class="text-left p-3 text-mountain-300">Type</th>
+                <th class="text-left p-3 text-mountain-300">Direction</th>
+                <th class="text-left p-3 text-mountain-300">Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3"><code class="theme-accent">seva:capability</code></td>
+                <td class="p-3 text-mountain-400">Broadcast</td>
+                <td class="p-3 text-mountain-400">Available slots, hardware type, current load</td>
+              </tr>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3"><code class="theme-accent">seva:request</code></td>
+                <td class="p-3 text-mountain-400">Peer → Provider</td>
+                <td class="p-3 text-mountain-400">Model slot + numeric parameters</td>
+              </tr>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3"><code class="theme-accent">seva:response</code></td>
+                <td class="p-3 text-mountain-400">Provider → Peer</td>
+                <td class="p-3 text-mountain-400">Inference result</td>
+              </tr>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3"><code class="theme-accent">seva:verify</code></td>
+                <td class="p-3 text-mountain-400">Peer → Provider</td>
+                <td class="p-3 text-mountain-400">Spot-check verification request (5% probability)</td>
+              </tr>
+              <tr>
+                <td class="p-3"><code class="theme-accent">seva:verify:ack</code></td>
+                <td class="p-3 text-mountain-400">Provider → Peer</td>
+                <td class="p-3 text-mountain-400">Verification acknowledgment</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Model Slots -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4">Model Slots</h2>
+        <p class="text-mountain-300 mb-4">
+          SEVA only accepts requests for pre-defined model slots. Currently 5 slots are registered,
+          all used by <a href="c2c.html" class="theme-accent theme-accent-hover">C2C (Core to Cosmos)</a>:
+        </p>
+        <div class="overflow-x-auto mb-6">
+          <table class="w-full bg-mountain-800 rounded-lg">
+            <thead>
+              <tr class="border-b border-mountain-700">
+                <th class="text-left p-3 text-mountain-300">Slot</th>
+                <th class="text-left p-3 text-mountain-300">Purpose</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3"><code class="theme-accent">planet-variation</code></td>
+                <td class="p-3 text-mountain-400">Generate planet variations from metadata (8-float parameter vector)</td>
+              </tr>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3"><code class="theme-accent">planet-heightmap</code></td>
+                <td class="p-3 text-mountain-400">Generate terrain heightmaps for procedural planets</td>
+              </tr>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3"><code class="theme-accent">planet-superres</code></td>
+                <td class="p-3 text-mountain-400">Super-resolution upscaling of planet textures</td>
+              </tr>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3"><code class="theme-accent">faction-brain</code></td>
+                <td class="p-3 text-mountain-400">AI faction decision-making (scoring, actions, diplomacy)</td>
+              </tr>
+              <tr>
+                <td class="p-3"><code class="theme-accent">combat-predict</code></td>
+                <td class="p-3 text-mountain-400">Combat outcome prediction for battle resolution</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Peer Selection -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4">Peer Selection</h2>
+        <p class="text-mountain-300 mb-4">
+          When requesting work, SEVA scores available providers using a priority system:
+        </p>
+        <div class="space-y-3 mb-6">
+          <div class="bg-mountain-800 rounded-lg p-4 flex items-center gap-4">
+            <span class="theme-badge px-3 py-1 rounded font-mono">+100</span>
+            <div class="text-mountain-400 text-sm">NPU available (fastest for small models)</div>
+          </div>
+          <div class="bg-mountain-800 rounded-lg p-4 flex items-center gap-4">
+            <span class="theme-badge px-3 py-1 rounded font-mono">+50</span>
+            <div class="text-mountain-400 text-sm">Low current load (fewer concurrent jobs)</div>
+          </div>
+          <div class="bg-mountain-800 rounded-lg p-4 flex items-center gap-4">
+            <span class="theme-badge px-3 py-1 rounded font-mono">+10</span>
+            <div class="text-mountain-400 text-sm">Fresh capability advertisement (recently seen)</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Configuration -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4">Configuration</h2>
+        <div class="overflow-x-auto mb-6">
+          <table class="w-full bg-mountain-800 rounded-lg">
+            <thead>
+              <tr class="border-b border-mountain-700">
+                <th class="text-left p-3 text-mountain-300">Setting</th>
+                <th class="text-left p-3 text-mountain-300">Default</th>
+                <th class="text-left p-3 text-mountain-300">Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3"><code class="theme-accent">maxConcurrent</code></td>
+                <td class="p-3 text-mountain-400">10</td>
+                <td class="p-3 text-mountain-400">Max simultaneous jobs per peer</td>
+              </tr>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3"><code class="theme-accent">rateLimit</code></td>
+                <td class="p-3 text-mountain-400">30/min/peer</td>
+                <td class="p-3 text-mountain-400">Request rate limit per peer</td>
+              </tr>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3"><code class="theme-accent">timeout</code></td>
+                <td class="p-3 text-mountain-400">5000 ms</td>
+                <td class="p-3 text-mountain-400">Max time before request times out</td>
+              </tr>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3"><code class="theme-accent">verifyProbability</code></td>
+                <td class="p-3 text-mountain-400">0.05 (5%)</td>
+                <td class="p-3 text-mountain-400">Spot-check probability</td>
+              </tr>
+              <tr>
+                <td class="p-3"><code class="theme-accent">capabilityTTL</code></td>
+                <td class="p-3 text-mountain-400">180s</td>
+                <td class="p-3 text-mountain-400">Capability advertisement expiry</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Version History -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2"><span>📅</span> Version History</h2>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+          <table class="w-full">
+            <thead><tr class="border-b border-mountain-700">
+              <th class="text-left p-3 text-mountain-300">Version</th>
+              <th class="text-left p-3 text-mountain-300">Changes</th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <td class="p-3"><span class="theme-badge px-2 py-1 rounded">v3.0.0</span></td>
+                <td class="p-3 text-mountain-400">Full SEVA module: SevaMeshHandler, 5-slot registry, capability broadcast, peer selection, rate limiting, 5% spot-check verification, C2C integration.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+            <!-- Journey Navigation -->
+                                                <div class="border-t border-mountain-700 mt-12 pt-8">
+        <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
+        <div class="flex flex-col sm:flex-row gap-4">
+          <a href="dharma.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">
+            <div class="text-xs text-mountain-400 mb-1">← Previous</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">⚖️</span>
+              <span class="font-semibold group-hover:text-theme-accent">DHARMA</span>
+            </div>
+            <p class="text-mountain-400 text-sm mt-1">Content moderation</p>
+          </a>
+          <a href="docs-bundle.html" class="flex-1 block bg-mountain-800 border border-theme-primary rounded-xl p-4 hover:border-theme-accent transition group">
+            <div class="text-xs text-mountain-400 mb-1">Next →</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">📚</span>
+              <span class="font-semibold group-hover:text-theme-accent">GRANTH</span>
+            </div>
+            <p class="text-mountain-400 text-sm mt-1">Documentation bundle</p>
+          </a>
+        </div>
+      </div>
+  </main>
+
+  <footer class="docs-footer"><p>© 2026 YAKMESH™</p></footer>
+  <script src="prism.min.js"></script>
+  <script src="prism-javascript.min.js"></script>
+  <script src="docs.js"></script>
+</body>
+</html>

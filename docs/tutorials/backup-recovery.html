@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="tutorials">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="../favicon.ico" sizes="32x32">
+    <link rel="icon" href="../icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+    <title>Backup & Recovery - YAKMESH Tutorials</title>
+    <meta name="description" content="Learn how to backup your YAKMESH node identity and data, and restore everything on a new machine. Protect your karma score and cryptographic keys.">
+    
+    <link rel="stylesheet" href="../tailwind.min.css">
+    <link rel="stylesheet" href="../prism-tomorrow.min.css">
+    <link rel="stylesheet" href="../docs.css">
+    <style>
+        .theme-accent { color: #10b981; }
+        .theme-badge { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+        .tutorial-card { background: rgba(30, 41, 59, 0.5); border: 1px solid #334155; border-radius: 0.75rem; padding: 1.5rem; margin-bottom: 1.5rem; }
+        .tutorial-card:hover { border-color: #10b981; }
+        .step-number { display: inline-flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; background: #10b981; color: white; border-radius: 50%; font-weight: bold; margin-right: 0.75rem; }
+        .warning-box { background: rgba(251, 191, 36, 0.1); border: 1px solid #fbbf24; border-radius: 0.5rem; padding: 1rem; margin: 1rem 0; }
+        .danger-box { background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; border-radius: 0.5rem; padding: 1rem; margin: 1rem 0; }
+        .tip-box { background: rgba(16, 185, 129, 0.1); border: 1px solid #10b981; border-radius: 0.5rem; padding: 1rem; margin: 1rem 0; }
+        .info-box { background: rgba(59, 130, 246, 0.1); border: 1px solid #3b82f6; border-radius: 0.5rem; padding: 1rem; margin: 1rem 0; }
+        .file-list { background: rgba(15, 23, 42, 0.6); border-radius: 0.5rem; padding: 1rem; font-family: monospace; }
+        .file-important { color: #f59e0b; }
+        .file-optional { color: #6b7280; }
+    </style>
+</head>
+<body class="bg-mountain-900 text-white min-h-screen">
+    
+  <nav class="docs-sidebar" id="sidebar">
+    <a href="../index.html" class="sidebar-logo">
+      <span class="logo-icon">🏔️</span>
+      <span class="logo-text">Yakmesh</span>
+    </a>
+    <a href="/dashboard" class="sidebar-dashboard-link"><span>📊</span> <span>Dashboard</span></a>
+    <ul class="sidebar-nav">
+      <li><a href="../index.html"><span>🏠</span> <span>Overview</span></a></li>
+      <li><a href="../getting-started.html"><span>🚀</span> <span>Getting Started</span></a></li>
+      <li><a href="../tutorials.html"><span>📖</span> <span>Tutorials</span></a></li>
+      <li><a href="../yak-protocol.html"><span class="yak-icon"></span> <span>YAK://</span></a></li>
+      <li><a href="../annex.html"><span>🌉</span> <span>ANNEX</span></a></li>
+      <li><a href="../nakpak.html"><span>🎒</span> <span>NAKPAK</span></a></li>
+      <li><a href="../namche.html"><span>🚪</span> <span>NAMCHE</span></a></li>
+      <li><a href="../doko.html"><span>🧺</span> <span>DOKO</span></a></li>
+      <li><a href="../sherpa.html"><span>🧗</span> <span>SHERPA</span></a></li>
+      <li><a href="../mandala.html"><span>🌐</span> <span>MANDALA</span></a></li>
+      <li><a href="../mantra.html"><span>🕉️</span> <span>MANTRA</span></a></li>
+      <li><a href="../gumba.html"><span>🛕</span> <span>GUMBA</span></a></li>
+      <li><a href="../yurt.html"><span>🏕️</span> <span>YURT</span></a></li>
+      <li><a href="../katha.html"><span>💬</span> <span>KATHA</span></a></li>
+      <li><a href="../vani.html"><span>🎙️</span> <span>VANI</span></a></li>
+      <li><a href="../darshan.html"><span>👁️</span> <span>DARSHAN</span></a></li>
+      <li><a href="../stupa.html"><span>🛕</span> <span>STUPA</span></a></li>
+      <li><a href="../lama.html"><span>🔮</span> <span>LAMA</span></a></li>
+      <li><a href="../mani.html"><span>⏱️</span> <span>MANI</span></a></li>
+      <li><a href="../karma.html"><span>☯️</span> <span>KARMA</span></a></li>
+      <li><a href="../tattva.html"><span>🔯</span> <span>TATTVA</span></a></li>
+      <li><a href="../tribhuj.html"><span>🔺</span> <span>TRIBHUJ</span></a></li>
+      <li><a href="../ypc27.html"><span>🔐</span> <span>YPC-27</span></a></li>
+      <li><a href="../sakshi.html"><span>👁️</span> <span>SAKSHI</span></a></li>
+      <li><a href="../geo-proof.html"><span>🌍</span> <span>PRAMAAN</span></a></li>
+      <li><a href="../trust-security.html"><span>🔒</span> <span>SURAKSHA</span></a></li>
+      <li><a href="../docs-bundle.html"><span>📚</span> <span>GRANTH</span></a></li>
+      <li><a href="../api.html"><span>📡</span> <span>API</span></a></li>
+      <li><a href="../adapters.html"><span>🔌</span> <span>Adapters</span></a></li>
+      <li><a href="../studio.html"><span>🎨</span> <span>Studio</span></a></li>
+      <li><a href="../quick-reference.html"><span>📋</span> <span>Quick Ref</span></a></li>
+    </ul>
+  </nav>
+
+  <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">☰</button>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="docs-main" id="mainContent">
+    <div class="docs-content">
+      <div class="mb-6">
+        <a href="../tutorials.html" class="theme-accent hover:underline">← Back to Tutorials</a>
+      </div>
+      
+      <!-- Header -->
+      <header class="mb-8">
+        <div class="flex items-center gap-3 mb-4">
+          <span class="text-4xl">💾</span>
+          <div>
+            <h1 class="text-3xl font-bold">Backup & Recovery</h1>
+            <p class="text-gray-400">Protect your node identity and data - restore on any machine</p>
+          </div>
+        </div>
+        <div class="flex items-center gap-4 text-sm text-gray-400">
+          <span class="theme-badge px-3 py-1 rounded-full">Essential</span>
+          <span>⏱️ 10 min read</span>
+          <span>🔐 Security</span>
+        </div>
+      </header>
+
+      <!-- Introduction -->
+      <div class="tutorial-card">
+        <h2 class="text-xl font-semibold mb-4 theme-accent">Why Backup Matters</h2>
+        <p class="text-gray-300 mb-4">
+          Your YAKMESH node has a unique identity - a set of cryptographic keys that prove you are you 
+          on the mesh network. If you lose these keys, you lose:
+        </p>
+        <ul class="list-disc list-inside text-gray-300 space-y-2">
+          <li><strong>Your Node ID</strong> - You'll get a new random identity</li>
+          <li><strong>Your Karma Score</strong> - All your accumulated reputation</li>
+          <li><strong>Your Connections</strong> - Trusted peer relationships</li>
+          <li><strong>Your Content Access</strong> - Encrypted content you've received</li>
+        </ul>
+        <p class="text-gray-300 mt-4">
+          This tutorial shows you how to backup everything important and restore it on a new machine. 
+          It takes about 10 minutes and could save you from starting over from scratch.
+        </p>
+      </div>
+
+      <!-- What to Backup -->
+      <div class="tutorial-card">
+        <h2 class="text-xl font-semibold mb-4">📋 What to Backup</h2>
+        <p class="text-gray-300 mb-4">
+          There are two main things you need to backup: your <strong>identity</strong> (keys) and your <strong>data</strong> (stored content).
+        </p>
+
+        <h3 class="font-semibold mt-6 mb-3 text-gray-200">Critical Files (Must Backup)</h3>
+        <div class="file-list">
+          <div class="space-y-2">
+            <div><span class="file-important">📁 keys/</span> <span class="text-gray-400">← Your cryptographic identity</span></div>
+            <div class="ml-4"><span class="file-important">🔑 node.key</span> <span class="text-gray-400">← Private key (NEVER share this)</span></div>
+            <div class="ml-4"><span class="file-important">🔑 node.pub</span> <span class="text-gray-400">← Public key</span></div>
+            <div class="ml-4"><span class="file-important">🔑 signing.key</span> <span class="text-gray-400">← Message signing key</span></div>
+            <div class="ml-4"><span class="file-important">📄 identity.json</span> <span class="text-gray-400">← Your Node ID and metadata</span></div>
+          </div>
+        </div>
+
+        <h3 class="font-semibold mt-6 mb-3 text-gray-200">Important Files (Recommended)</h3>
+        <div class="file-list">
+          <div class="space-y-2">
+            <div><span class="text-white">📁 data/</span> <span class="text-gray-400">← Your stored content</span></div>
+            <div class="ml-4"><span class="text-gray-300">📁 shares/</span> <span class="text-gray-400">← Files you're sharing</span></div>
+            <div class="ml-4"><span class="text-gray-300">📁 received/</span> <span class="text-gray-400">← Downloaded content</span></div>
+            <div class="ml-4"><span class="text-gray-300">📁 blocks/</span> <span class="text-gray-400">← Content chunks</span></div>
+          </div>
+        </div>
+
+        <h3 class="font-semibold mt-6 mb-3 text-gray-200">Optional Files</h3>
+        <div class="file-list">
+          <div class="space-y-2">
+            <div><span class="file-optional">📄 config.yaml</span> <span class="text-gray-400">← Custom settings (can be recreated)</span></div>
+            <div><span class="file-optional">📁 cache/</span> <span class="text-gray-400">← Temporary files (auto-regenerated)</span></div>
+            <div><span class="file-optional">📁 logs/</span> <span class="text-gray-400">← Log files (usually not needed)</span></div>
+          </div>
+        </div>
+
+        <div class="danger-box mt-4">
+          <p class="text-sm"><strong>🚨 Security Warning:</strong> Your <code class="bg-gray-800 px-2 py-1 rounded">keys/</code> folder 
+          contains your private keys. Treat backups of this folder like passwords - encrypt them and store them securely. 
+          Anyone with your keys can impersonate your node.</p>
+        </div>
+      </div>
+
+      <!-- Finding Your Data -->
+      <div class="tutorial-card">
+        <h2 class="text-xl font-semibold mb-4">
+          <span class="step-number">1</span>
+          Find Your YAKMESH Data Folder
+        </h2>
+        <p class="text-gray-300 mb-4">
+          First, you need to locate where YAKMESH stores its data. The location depends on your operating system:
+        </p>
+
+        <h3 class="font-semibold mt-4 mb-3 text-gray-200">Windows</h3>
+        <pre><code class="language-bash"># Default location
+%APPDATA%\yakmesh\
+
+# Full path example
+C:\Users\YourName\AppData\Roaming\yakmesh\</code></pre>
+
+        <h3 class="font-semibold mt-6 mb-3 text-gray-200">macOS</h3>
+        <pre><code class="language-bash"># Default location
+~/Library/Application Support/yakmesh/
+
+# Or check with
+ls -la ~/Library/Application\ Support/yakmesh/</code></pre>
+
+        <h3 class="font-semibold mt-6 mb-3 text-gray-200">Linux</h3>
+        <pre><code class="language-bash"># Default location
+~/.config/yakmesh/
+
+# Or following XDG spec
+$XDG_CONFIG_HOME/yakmesh/</code></pre>
+
+        <h3 class="font-semibold mt-6 mb-3 text-gray-200">Using the CLI</h3>
+        <pre><code class="language-bash"># Let YAKMESH tell you where it stores data
+yakmesh config get data_dir
+
+# Output example:
+# data_dir: /home/user/.config/yakmesh/</code></pre>
+
+        <div class="tip-box mt-4">
+          <p class="text-sm"><strong>💡 Tip:</strong> If you used a custom installation path, check your 
+          <code class="bg-gray-800 px-2 py-1 rounded">config.yaml</code> file or run 
+          <code class="bg-gray-800 px-2 py-1 rounded">yakmesh config get</code> to see all paths.</p>
+        </div>
+      </div>
+
+      <!-- Export Identity -->
+      <div class="tutorial-card">
+        <h2 class="text-xl font-semibold mb-4">
+          <span class="step-number">2</span>
+          Export Your Node Identity
+        </h2>
+        <p class="text-gray-300 mb-4">
+          YAKMESH provides a convenient command to export your identity in a portable, encrypted format:
+        </p>
+
+        <h3 class="font-semibold mt-4 mb-3 text-gray-200">Quick Export (Encrypted)</h3>
+        <pre><code class="language-bash"># Export to an encrypted file
+yakmesh identity export --output my-backup.yak
+
+# You'll be prompted for a password:
+# 🔐 Enter backup password: ********
+# 🔐 Confirm password: ********
+# ✅ Identity exported to: my-backup.yak</code></pre>
+        <p class="text-gray-300 mt-3">
+          This creates a single encrypted file containing your keys and identity. Remember the password - 
+          you'll need it to restore!
+        </p>
+
+        <h3 class="font-semibold mt-6 mb-3 text-gray-200">Export with Custom Options</h3>
+        <pre><code class="language-bash"># Include additional metadata
+yakmesh identity export --output backup.yak --include-config
+
+# Use stronger encryption (slower but more secure)
+yakmesh identity export --output backup.yak --encryption-strength high
+
+# Export without password (not recommended)
+yakmesh identity export --output backup.yak --no-encrypt</code></pre>
+
+        <div class="warning-box mt-4">
+          <p class="text-sm"><strong>⚠️ Important:</strong> Store your backup password somewhere safe! 
+          If you forget it, the backup file is useless - encrypted data cannot be recovered without the password.</p>
+        </div>
+
+        <h3 class="font-semibold mt-6 mb-3 text-gray-200">View Export Contents (Without Secrets)</h3>
+        <pre><code class="language-bash"># See what's in an export file
+yakmesh identity inspect my-backup.yak
+
+# Output:
+# 📦 Backup Contents:
+#    Node ID:     doko-node-qubit-lattice-pq-a7x9
+#    Created:     2025-01-15 14:32:00
+#    Includes:    keys, identity, peers
+#    Encrypted:   Yes (AES-256-GCM)
+#    Size:        2.4 KB</code></pre>
+      </div>
+
+      <!-- Backup Data Folder -->
+      <div class="tutorial-card">
+        <h2 class="text-xl font-semibold mb-4">
+          <span class="step-number">3</span>
+          Backup Your Data Folder
+        </h2>
+        <p class="text-gray-300 mb-4">
+          If you want to backup your stored content (shared files, received files), you'll need to copy 
+          the entire data folder. This can be large depending on how much content you have.
+        </p>
+
+        <h3 class="font-semibold mt-4 mb-3 text-gray-200">Using YAKMESH Export (Recommended)</h3>
+        <pre><code class="language-bash"># Export everything including content
+yakmesh backup create --output full-backup.tar.gz
+
+# This creates a compressed archive with:
+# - Your identity (encrypted)
+# - Your configuration
+# - Your shared content
+# - Your received content</code></pre>
+
+        <h3 class="font-semibold mt-6 mb-3 text-gray-200">Manual Backup (Alternative)</h3>
+        
+        <p class="text-gray-300 mb-2"><strong>Windows (PowerShell):</strong></p>
+        <pre><code class="language-bash"># Stop YAKMESH first
+yakmesh stop
+
+# Copy the entire folder
+Copy-Item -Recurse "$env:APPDATA\yakmesh" "D:\Backups\yakmesh-backup"
+
+# Or create a zip file
+Compress-Archive -Path "$env:APPDATA\yakmesh" -DestinationPath "D:\Backups\yakmesh-backup.zip"</code></pre>
+
+        <p class="text-gray-300 mt-4 mb-2"><strong>macOS / Linux:</strong></p>
+        <pre><code class="language-bash"># Stop YAKMESH first
+yakmesh stop
+
+# Create a tarball
+tar -czvf ~/yakmesh-backup.tar.gz ~/.config/yakmesh/
+
+# Or for macOS
+tar -czvf ~/yakmesh-backup.tar.gz ~/Library/Application\ Support/yakmesh/</code></pre>
+
+        <div class="tip-box mt-4">
+          <p class="text-sm"><strong>💡 Tip:</strong> Always stop YAKMESH before backing up manually to avoid 
+          copying files that are being written to. The <code class="bg-gray-800 px-2 py-1 rounded">yakmesh backup create</code> 
+          command handles this automatically.</p>
+        </div>
+      </div>
+
+      <!-- Selective Backup -->
+      <div class="tutorial-card">
+        <h2 class="text-xl font-semibold mb-4">
+          <span class="step-number">4</span>
+          Selective Backup (Keys Only)
+        </h2>
+        <p class="text-gray-300 mb-4">
+          If you only care about preserving your identity (Node ID and karma), you can backup just the 
+          keys folder. This creates a much smaller backup.
+        </p>
+
+        <pre><code class="language-bash"># Export just identity (smallest backup)
+yakmesh identity export --output identity-only.yak
+
+# File size: ~2-5 KB
+# Contains: keys, node ID, basic config</code></pre>
+
+        <p class="text-gray-300 mt-4 mb-4">
+          Compare this to a full backup:
+        </p>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="bg-gray-800/50 rounded-lg p-4">
+            <h4 class="font-semibold text-green-400 mb-2">Identity Only (~5 KB)</h4>
+            <ul class="text-sm text-gray-300 space-y-1">
+              <li>✅ Your Node ID</li>
+              <li>✅ Your Karma Score</li>
+              <li>✅ Encryption keys</li>
+              <li>❌ Shared files</li>
+              <li>❌ Downloaded content</li>
+            </ul>
+          </div>
+          <div class="bg-gray-800/50 rounded-lg p-4">
+            <h4 class="font-semibold text-blue-400 mb-2">Full Backup (varies)</h4>
+            <ul class="text-sm text-gray-300 space-y-1">
+              <li>✅ Your Node ID</li>
+              <li>✅ Your Karma Score</li>
+              <li>✅ Encryption keys</li>
+              <li>✅ Shared files</li>
+              <li>✅ Downloaded content</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="info-box mt-4">
+          <p class="text-sm"><strong>ℹ️ Recommendation:</strong> At minimum, always keep an identity backup. 
+          Do full backups periodically if you have important content stored locally.</p>
+        </div>
+      </div>
+
+      <!-- Restore on New Machine -->
+      <div class="tutorial-card">
+        <h2 class="text-xl font-semibold mb-4">
+          <span class="step-number">5</span>
+          Restore from Backup
+        </h2>
+        <p class="text-gray-300 mb-4">
+          Now let's restore your backup on a new machine. First, install YAKMESH on the new computer, 
+          then restore your identity before starting the node.
+        </p>
+
+        <h3 class="font-semibold mt-4 mb-3 text-gray-200">Step A: Install YAKMESH</h3>
+        <pre><code class="language-bash"># Install YAKMESH (don't start it yet!)
+# Use your preferred installation method from the Getting Started guide
+
+# Verify installation
+yakmesh --version</code></pre>
+
+        <h3 class="font-semibold mt-6 mb-3 text-gray-200">Step B: Restore Identity</h3>
+        <pre><code class="language-bash"># Restore from encrypted export
+yakmesh identity import my-backup.yak
+
+# Enter your backup password when prompted:
+# 🔐 Enter backup password: ********
+# 
+# ✅ Identity restored successfully!
+#    Node ID: doko-node-qubit-lattice-pq-a7x9
+#    Keys:    3 files restored
+#    Config:  Default settings applied</code></pre>
+
+        <h3 class="font-semibold mt-6 mb-3 text-gray-200">Step C: Restore Full Backup (Optional)</h3>
+        <pre><code class="language-bash"># If you have a full backup with content
+yakmesh backup restore full-backup.tar.gz
+
+# This restores:
+# - Identity and keys
+# - Configuration
+# - Shared content
+# - Downloaded files</code></pre>
+
+        <h3 class="font-semibold mt-6 mb-3 text-gray-200">Step D: Start Your Node</h3>
+        <pre><code class="language-bash"># Start YAKMESH with your restored identity
+yakmesh start
+
+# Verify it's using your old Node ID
+yakmesh status
+
+# 🏔️ YAKMESH Node Status
+# Node ID: doko-node-qubit-lattice-pq-a7x9 ← Same as before!
+# Status:  🟢 Online</code></pre>
+
+        <div class="tip-box mt-4">
+          <p class="text-sm"><strong>💡 Tip:</strong> After restoring, your node will reconnect to old peers 
+          automatically. Your karma score syncs from the mesh network within a few minutes.</p>
+        </div>
+      </div>
+
+      <!-- Manual Restore -->
+      <div class="tutorial-card">
+        <h2 class="text-xl font-semibold mb-4">
+          <span class="step-number">6</span>
+          Manual Restore (If Needed)
+        </h2>
+        <p class="text-gray-300 mb-4">
+          If you have a manual backup (copied folder or tarball), here's how to restore it:
+        </p>
+
+        <h3 class="font-semibold mt-4 mb-3 text-gray-200">Windows</h3>
+        <pre><code class="language-bash"># Make sure YAKMESH is not running
+yakmesh stop
+
+# If the folder exists, back it up first
+Move-Item "$env:APPDATA\yakmesh" "$env:APPDATA\yakmesh-old"
+
+# Extract or copy your backup
+Expand-Archive "D:\Backups\yakmesh-backup.zip" -DestinationPath "$env:APPDATA"
+
+# Or if you copied a folder
+Copy-Item -Recurse "D:\Backups\yakmesh-backup" "$env:APPDATA\yakmesh"</code></pre>
+
+        <h3 class="font-semibold mt-6 mb-3 text-gray-200">macOS / Linux</h3>
+        <pre><code class="language-bash"># Make sure YAKMESH is not running
+yakmesh stop
+
+# Back up existing data (if any)
+mv ~/.config/yakmesh ~/.config/yakmesh-old
+
+# Extract tarball
+tar -xzvf ~/yakmesh-backup.tar.gz -C ~/
+
+# Start YAKMESH
+yakmesh start</code></pre>
+
+        <h3 class="font-semibold mt-6 mb-3 text-gray-200">Restore Keys Only (Minimal)</h3>
+        <pre><code class="language-bash"># If you only have the keys folder backed up
+mkdir -p ~/.config/yakmesh
+cp -r /path/to/backup/keys ~/.config/yakmesh/
+
+# Let YAKMESH recreate other files
+yakmesh start</code></pre>
+      </div>
+
+      <!-- Important Files Detail -->
+      <div class="tutorial-card">
+        <h2 class="text-xl font-semibold mb-4">📁 Important Files Explained</h2>
+        <p class="text-gray-300 mb-4">
+          Here's a deeper look at what each important file does:
+        </p>
+
+        <div class="space-y-4">
+          <div class="bg-gray-800/50 rounded-lg p-4">
+            <h4 class="font-semibold text-amber-400 mb-2">🔑 keys/node.key</h4>
+            <p class="text-sm text-gray-300">
+              Your private key. This is the most important file - it proves your identity on the network. 
+              It's used to sign messages and decrypt content sent to you. <strong>NEVER share this file.</strong>
+            </p>
+          </div>
+
+          <div class="bg-gray-800/50 rounded-lg p-4">
+            <h4 class="font-semibold text-amber-400 mb-2">🔑 keys/signing.key</h4>
+            <p class="text-sm text-gray-300">
+              Used for cryptographic signatures on messages you send. This is derived from your main key 
+              but kept separate for security reasons.
+            </p>
+          </div>
+
+          <div class="bg-gray-800/50 rounded-lg p-4">
+            <h4 class="font-semibold text-amber-400 mb-2">📄 keys/identity.json</h4>
+            <p class="text-sm text-gray-300">
+              Contains your public Node ID, creation date, and protocol version. This information is 
+              public - it's what other nodes see when they connect to you.
+            </p>
+          </div>
+
+          <div class="bg-gray-800/50 rounded-lg p-4">
+            <h4 class="font-semibold text-gray-200 mb-2">📁 data/shares/</h4>
+            <p class="text-sm text-gray-300">
+              Index of files you're currently sharing. The actual files stay in their original locations; 
+              this folder contains metadata and content hashes.
+            </p>
+          </div>
+
+          <div class="bg-gray-800/50 rounded-lg p-4">
+            <h4 class="font-semibold text-gray-200 mb-2">📁 data/blocks/</h4>
+            <p class="text-sm text-gray-300">
+              Content-addressed storage chunks. Files are split into blocks and stored here by their hash. 
+              Can be regenerated from shares/received if lost.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Best Practices -->
+      <div class="tutorial-card">
+        <h2 class="text-xl font-semibold mb-4">✅ Backup Best Practices</h2>
+        
+        <div class="space-y-4">
+          <div class="flex items-start gap-3">
+            <span class="text-green-400 text-xl">1.</span>
+            <div>
+              <h4 class="font-semibold text-gray-200">Use Strong Backup Passwords</h4>
+              <p class="text-sm text-gray-400">Use a unique, strong password for your identity export. 
+              Consider using a password manager.</p>
+            </div>
+          </div>
+
+          <div class="flex items-start gap-3">
+            <span class="text-green-400 text-xl">2.</span>
+            <div>
+              <h4 class="font-semibold text-gray-200">Store Backups in Multiple Locations</h4>
+              <p class="text-sm text-gray-400">Keep copies on an external drive, cloud storage (encrypted), 
+              and/or a USB drive in a safe place.</p>
+            </div>
+          </div>
+
+          <div class="flex items-start gap-3">
+            <span class="text-green-400 text-xl">3.</span>
+            <div>
+              <h4 class="font-semibold text-gray-200">Backup Regularly</h4>
+              <p class="text-sm text-gray-400">Identity backups only need to be done once (keys don't change), 
+              but data backups should be done regularly if you're storing important content.</p>
+            </div>
+          </div>
+
+          <div class="flex items-start gap-3">
+            <span class="text-green-400 text-xl">4.</span>
+            <div>
+              <h4 class="font-semibold text-gray-200">Test Your Backups</h4>
+              <p class="text-sm text-gray-400">Periodically verify your backups work by using 
+              <code class="bg-gray-800 px-2 py-1 rounded">yakmesh identity inspect</code> to check 
+              the backup file is readable.</p>
+            </div>
+          </div>
+
+          <div class="flex items-start gap-3">
+            <span class="text-green-400 text-xl">5.</span>
+            <div>
+              <h4 class="font-semibold text-gray-200">Never Share Key Files</h4>
+              <p class="text-sm text-gray-400">Your private keys should never be shared, emailed, or 
+              uploaded unencrypted. The encrypted export file is safe to store anywhere.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Troubleshooting -->
+      <div class="tutorial-card">
+        <h2 class="text-xl font-semibold mb-4">🔧 Troubleshooting</h2>
+        
+        <h3 class="font-semibold mt-4 mb-2 text-gray-200">"Wrong password" error</h3>
+        <p class="text-gray-300 mb-4">
+          Make sure you're using the exact password from when you created the backup. Passwords are 
+          case-sensitive. If you've forgotten it, the backup cannot be recovered.
+        </p>
+
+        <h3 class="font-semibold mt-4 mb-2 text-gray-200">"Corrupted backup file" error</h3>
+        <p class="text-gray-300 mb-4">
+          The backup file may have been damaged during transfer. Check if you have another copy. 
+          For manual backups, try extracting individual files instead of the whole archive.
+        </p>
+
+        <h3 class="font-semibold mt-4 mb-2 text-gray-200">Node ID changed after restore</h3>
+        <p class="text-gray-300 mb-4">
+          This means the restore didn't work correctly. Stop YAKMESH, delete the new identity, 
+          and try the restore again. Make sure you're restoring before first starting the node.
+        </p>
+
+        <h3 class="font-semibold mt-4 mb-2 text-gray-200">Karma score is zero after restore</h3>
+        <p class="text-gray-300 mb-4">
+          Your karma score is synchronized from the network, not stored in your backup. Give it 
+          a few minutes after starting your node - it will sync automatically from peer attestations.
+        </p>
+
+        <h3 class="font-semibold mt-4 mb-2 text-gray-200">"Permission denied" on Linux/macOS</h3>
+        <pre><code class="language-bash"># Fix permissions on restored files
+chmod 700 ~/.config/yakmesh/keys/
+chmod 600 ~/.config/yakmesh/keys/*</code></pre>
+      </div>
+
+      <!-- Quick Reference -->
+      <div class="tutorial-card">
+        <h2 class="text-xl font-semibold mb-4 theme-accent">📋 Quick Reference</h2>
+        
+        <h3 class="font-semibold mt-4 mb-3 text-gray-200">Essential Commands</h3>
+        <pre><code class="language-bash"># Export identity (encrypted)
+yakmesh identity export --output backup.yak
+
+# Import identity from backup
+yakmesh identity import backup.yak
+
+# Create full backup
+yakmesh backup create --output full-backup.tar.gz
+
+# Restore full backup
+yakmesh backup restore full-backup.tar.gz
+
+# Check backup file contents
+yakmesh identity inspect backup.yak
+
+# Find your data directory
+yakmesh config get data_dir</code></pre>
+
+        <h3 class="font-semibold mt-6 mb-3 text-gray-200">Files to Backup</h3>
+        <ul class="list-disc list-inside text-gray-300 space-y-1">
+          <li><strong>Critical:</strong> <code class="bg-gray-800 px-2 py-1 rounded">keys/</code> folder</li>
+          <li><strong>Recommended:</strong> <code class="bg-gray-800 px-2 py-1 rounded">data/</code> folder</li>
+          <li><strong>Optional:</strong> <code class="bg-gray-800 px-2 py-1 rounded">config.yaml</code></li>
+        </ul>
+      </div>
+
+      <!-- Navigation Footer -->
+      <div class="border-t border-mountain-700 mt-12 pt-8">
+        <div class="flex flex-col sm:flex-row gap-4">
+          <a href="dashboard.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-emerald-500 transition group">
+            <div class="text-xs text-mountain-400 mb-1">← Previous</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">📊</span>
+              <span class="font-semibold group-hover:text-emerald-400">Understanding the Dashboard</span>
+            </div>
+          </a>
+          <a href="trust-karma.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-emerald-500 transition group">
+            <div class="text-xs text-mountain-400 mb-1">Next →</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">☯️</span>
+              <span class="font-semibold group-hover:text-emerald-400">Trust & Reputation</span>
+            </div>
+          </a>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="../prism.min.js"></script>
+  <script src="../prism-javascript.min.js"></script>
+  <script src="../prism-bash.min.js"></script>
+  <script src="../docs.js"></script>
+</body>
+</html>
