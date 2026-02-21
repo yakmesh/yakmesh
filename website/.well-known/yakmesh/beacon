@@ -1,0 +1,25 @@
+{
+  "version": "1.0",
+  "nodeId": "yakmesh-website-seed",
+  "networkName": "yakmesh-mainnet",
+  "timestamp": 1737200000000,
+  "ttl": 86400,
+  "capabilities": {
+    "wsPort": null,
+    "httpPort": 443,
+    "supportsAnnex": false,
+    "supportsNakpak": false,
+    "supportsGossip": false,
+    "isSeedOnly": true
+  },
+  "peers": [],
+  "meta": {
+    "description": "YAKMESH Official Website - Static Seed",
+    "website": "https://yakmesh.dev",
+    "github": "https://github.com/yakmesh/yakmesh",
+    "discord": "https://discord.gg/8mSPfbJB8N"
+  },
+  "publicKey": null,
+  "signature": null,
+  "_comment": "This is a static seed beacon. For dynamic peer discovery, deploy a yakmesh node."
+}

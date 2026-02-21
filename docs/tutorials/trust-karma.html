@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="tutorials">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="../favicon.ico" sizes="32x32">
+    <link rel="icon" href="../icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+    <title>Trust & Reputation - YAKMESH Tutorials</title>
+    <meta name="description" content="Learn how KARMA trust system works in YAKMESH. Understand reputation tiers, how to earn trust, and how bad actors are detected.">
+    
+    <link rel="stylesheet" href="../tailwind.min.css">
+    <link rel="stylesheet" href="../prism-tomorrow.min.css">
+    <link rel="stylesheet" href="../docs.css">
+    <style>
+        .theme-accent { color: #10b981; }
+        .theme-accent-hover:hover { color: #34d399; }
+        .theme-badge { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+        .theme-border { border-color: #10b981; }
+        .theme-callout { background: rgba(16, 185, 129, 0.1); border-color: #059669; }
+        .active-link { background: rgba(16, 185, 129, 0.2) !important; color: #34d399 !important; }
+        .tutorial-card { background: rgba(30, 41, 59, 0.5); border: 1px solid #334155; border-radius: 0.75rem; padding: 1.5rem; margin-bottom: 1.5rem; }
+        .step-number { display: inline-flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; background: #10b981; color: white; border-radius: 50%; font-weight: bold; margin-right: 0.75rem; flex-shrink: 0; }
+        .tier-card { background: rgba(30, 41, 59, 0.6); border: 1px solid #334155; border-radius: 0.5rem; padding: 1rem; margin-bottom: 0.75rem; }
+        .tier-card.new { border-left: 4px solid #6b7280; }
+        .tier-card.established { border-left: 4px solid #3b82f6; }
+        .tier-card.trusted { border-left: 4px solid #10b981; }
+        .tier-card.elder { border-left: 4px solid #f59e0b; }
+        .analogy-box { background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 0.5rem; padding: 1rem; margin: 1rem 0; }
+        .analogy-box::before { content: '💡 '; }
+        .warning-box { background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 0.5rem; padding: 1rem; margin: 1rem 0; }
+        .warning-box::before { content: '⚠️ '; }
+    </style>
+</head>
+<body class="bg-mountain-900 text-white min-h-screen">
+    
+  <nav class="docs-sidebar" id="sidebar">
+    <a href="../index.html" class="sidebar-logo">
+      <span class="logo-icon">🏔️</span>
+      <span class="logo-text">Yakmesh</span>
+    </a>
+    <a href="/dashboard" class="sidebar-dashboard-link"><span>📊</span> <span>Dashboard</span></a>
+    <ul class="sidebar-nav">
+      <li><a href="../index.html"><span>🏠</span> <span>Overview</span></a></li>
+      <li><a href="../getting-started.html"><span>🚀</span> <span>Getting Started</span></a></li>
+      <li><a href="../tutorials.html"><span>📖</span> <span>Tutorials</span></a></li>
+      <li><a href="../yak-protocol.html"><span class="yak-icon"></span> <span>YAK://</span></a></li>
+      <li><a href="../annex.html"><span>🌉</span> <span>ANNEX</span></a></li>
+      <li><a href="../nakpak.html"><span>🎒</span> <span>NAKPAK</span></a></li>
+      <li><a href="../namche.html"><span>🚪</span> <span>NAMCHE</span></a></li>
+      <li><a href="../doko.html"><span>🧺</span> <span>DOKO</span></a></li>
+      <li><a href="../sherpa.html"><span>🧗</span> <span>SHERPA</span></a></li>
+      <li><a href="../mandala.html"><span>🌐</span> <span>MANDALA</span></a></li>
+      <li><a href="../mantra.html"><span>🕉️</span> <span>MANTRA</span></a></li>
+      <li><a href="../gumba.html"><span>🛕</span> <span>GUMBA</span></a></li>
+      <li><a href="../yurt.html"><span>🏕️</span> <span>YURT</span></a></li>
+      <li><a href="../katha.html"><span>💬</span> <span>KATHA</span></a></li>
+      <li><a href="../vani.html"><span>🎙️</span> <span>VANI</span></a></li>
+      <li><a href="../darshan.html"><span>👁️</span> <span>DARSHAN</span></a></li>
+      <li><a href="../stupa.html"><span>🛕</span> <span>STUPA</span></a></li>
+      <li><a href="../lama.html"><span>🔮</span> <span>LAMA</span></a></li>
+      <li><a href="../mani.html"><span>⏱️</span> <span>MANI</span></a></li>
+      <li><a href="../karma.html"><span>☯️</span> <span>KARMA</span></a></li>
+      <li><a href="../tattva.html"><span>🔯</span> <span>TATTVA</span></a></li>
+      <li><a href="../tribhuj.html"><span>🔺</span> <span>TRIBHUJ</span></a></li>
+      <li><a href="../ypc27.html"><span>🔐</span> <span>YPC-27</span></a></li>
+      <li><a href="../sakshi.html"><span>👁️</span> <span>SAKSHI</span></a></li>
+      <li><a href="../geo-proof.html"><span>🌍</span> <span>PRAMAAN</span></a></li>
+      <li><a href="../trust-security.html"><span>🔒</span> <span>SURAKSHA</span></a></li>
+      <li><a href="../docs-bundle.html"><span>📚</span> <span>GRANTH</span></a></li>
+      <li><a href="../api.html"><span>📡</span> <span>API</span></a></li>
+      <li><a href="../adapters.html"><span>🔌</span> <span>Adapters</span></a></li>
+      <li><a href="../studio.html"><span>🎨</span> <span>Studio</span></a></li>
+      <li><a href="../quick-reference.html"><span>📋</span> <span>Quick Ref</span></a></li>
+    </ul>
+  </nav>
+
+  <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+    </svg>
+  </button>
+
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="docs-main" id="mainContent">
+    <div class="docs-content">
+      
+      <!-- Breadcrumb -->
+      <nav class="text-sm text-mountain-400 mb-6">
+        <a href="../tutorials.html" class="hover:text-white transition">Tutorials</a>
+        <span class="mx-2">/</span>
+        <span class="text-white">Trust & Reputation</span>
+      </nav>
+
+      <!-- Page Header -->
+      <div class="mb-8">
+        <div class="flex items-center gap-3 mb-2">
+          <span class="text-4xl">☯️</span>
+          <h1 class="text-4xl font-bold">Trust & Reputation</h1>
+          <span class="theme-badge text-xs px-2 py-1 rounded-full">8 min read</span>
+        </div>
+        <p class="theme-accent text-lg">How KARMA works, explained simply</p>
+        <p class="text-mountain-300 mt-2">
+          Learn how nodes build trust in YAKMESH—no math required. Understand reputation tiers
+          and why trust matters for a healthy network.
+        </p>
+      </div>
+
+      <!-- Section 1: What is Reputation? -->
+      <div class="tutorial-card">
+        <h2 class="text-2xl font-bold mb-4 flex items-center">
+          <span class="step-number">1</span>
+          What Is Reputation?
+        </h2>
+        <p class="text-mountain-300 mb-4">
+          Think of reputation like your credit score, but for network trust. Instead of measuring 
+          how well you pay bills, it measures how reliably your node behaves on the network.
+        </p>
+        
+        <div class="analogy-box">
+          <strong>Real-world analogy:</strong> Imagine moving to a new neighborhood. At first, 
+          nobody knows you. Over time, as you help neighbors, keep your lawn tidy, and show 
+          up to community events, people start trusting you more. That's exactly how KARMA works.
+        </div>
+
+        <p class="text-mountain-300 mt-4">
+          Your node's reputation is <strong>earned, not given</strong>. New nodes start with 
+          minimal trust, and over time—by being reliable, responding correctly, and not 
+          misbehaving—they climb the trust ladder.
+        </p>
+      </div>
+
+      <!-- Section 2: How Do You Earn It? -->
+      <div class="tutorial-card">
+        <h2 class="text-2xl font-bold mb-4 flex items-center">
+          <span class="step-number">2</span>
+          How Do You Earn Reputation?
+        </h2>
+        <p class="text-mountain-300 mb-4">
+          KARMA tracks multiple signals to calculate your trustworthiness:
+        </p>
+        
+        <ul class="space-y-3 text-mountain-300">
+          <li class="flex items-start gap-3">
+            <span class="text-green-400">✓</span>
+            <div>
+              <strong class="text-white">Time online</strong> — The longer your node has been 
+              running consistently, the more trust you build. Patience pays off.
+            </div>
+          </li>
+          <li class="flex items-start gap-3">
+            <span class="text-green-400">✓</span>
+            <div>
+              <strong class="text-white">Correct responses</strong> — When other nodes ask 
+              for data, do you deliver valid content? Accuracy builds trust.
+            </div>
+          </li>
+          <li class="flex items-start gap-3">
+            <span class="text-green-400">✓</span>
+            <div>
+              <strong class="text-white">Good timing</strong> — Does your node keep good time? 
+              Nodes with accurate clocks (especially hardware clocks like GPS) score higher.
+            </div>
+          </li>
+          <li class="flex items-start gap-3">
+            <span class="text-green-400">✓</span>
+            <div>
+              <strong class="text-white">Peer endorsements</strong> — When trusted nodes vouch 
+              for you, that matters. It's like a job reference.
+            </div>
+          </li>
+          <li class="flex items-start gap-3">
+            <span class="text-green-400">✓</span>
+            <div>
+              <strong class="text-white">Hardware verification</strong> — Modern CPUs have 
+              security features. Using them proves you're running real software, not a fake.
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Section 3: Trust Tiers -->
+      <div class="tutorial-card">
+        <h2 class="text-2xl font-bold mb-4 flex items-center">
+          <span class="step-number">3</span>
+          Trust Tiers: The Ladder of Trust
+        </h2>
+        <p class="text-mountain-300 mb-4">
+          Every node falls into one of these tiers. Think of them as levels in a video game—
+          you start at Level 0 and work your way up.
+        </p>
+        
+        <div class="tier-card new">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="font-bold text-lg">🌱 NAYA (New Node)</h3>
+            <span class="text-xs bg-gray-600 px-2 py-1 rounded">Level 0</span>
+          </div>
+          <p class="text-mountain-400 text-sm mb-2">
+            <em>"The newcomer"</em> — Just joined the network.
+          </p>
+          <ul class="text-sm text-mountain-300 space-y-1">
+            <li>• Can browse and request content</li>
+            <li>• Limited ability to serve content to others</li>
+            <li>• Other nodes watch your behavior carefully</li>
+          </ul>
+        </div>
+
+        <div class="tier-card established">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="font-bold text-lg">🥈 YATRI (Established)</h3>
+            <span class="text-xs bg-blue-600 px-2 py-1 rounded">Level 1</span>
+          </div>
+          <p class="text-mountain-400 text-sm mb-2">
+            <em>"The traveler"</em> — Been around for a few days, behaving well.
+          </p>
+          <ul class="text-sm text-mountain-300 space-y-1">
+            <li>• 1+ day of consistent uptime</li>
+            <li>• Hardware security features verified</li>
+            <li>• Can serve content to other nodes</li>
+          </ul>
+        </div>
+
+        <div class="tier-card trusted">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="font-bold text-lg">💎 SATHI (Trusted)</h3>
+            <span class="text-xs bg-emerald-600 px-2 py-1 rounded">Level 3</span>
+          </div>
+          <p class="text-mountain-400 text-sm mb-2">
+            <em>"The companion"</em> — A reliable member of the network.
+          </p>
+          <ul class="text-sm text-mountain-300 space-y-1">
+            <li>• 14+ days of consistent uptime</li>
+            <li>• GPS or high-quality time source</li>
+            <li>• Endorsed by higher-tier nodes</li>
+            <li>• Priority access to network resources</li>
+          </ul>
+        </div>
+
+        <div class="tier-card elder">
+          <div class="flex items-center justify-between mb-2">
+            <h3 class="font-bold text-lg">🏔️ SIRDAR (Elder)</h3>
+            <span class="text-xs bg-amber-600 px-2 py-1 rounded">Level 4</span>
+          </div>
+          <p class="text-mountain-400 text-sm mb-2">
+            <em>"The expedition leader"</em> — The most trusted nodes on the network.
+          </p>
+          <ul class="text-sm text-mountain-300 space-y-1">
+            <li>• 30+ days of consistent uptime</li>
+            <li>• Atomic or GPS time source</li>
+            <li>• Full hardware attestation</li>
+            <li>• Can endorse other nodes</li>
+            <li>• Helps make network-wide decisions</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Section 4: Why Trust Matters -->
+      <div class="tutorial-card">
+        <h2 class="text-2xl font-bold mb-4 flex items-center">
+          <span class="step-number">4</span>
+          Why Trust Matters for Content Delivery
+        </h2>
+        <p class="text-mountain-300 mb-4">
+          Trust isn't just about feeling good—it has real practical effects:
+        </p>
+        
+        <ul class="space-y-3 text-mountain-300">
+          <li class="flex items-start gap-3">
+            <span class="text-2xl">🚀</span>
+            <div>
+              <strong class="text-white">Faster routing</strong> — High-trust nodes get priority 
+              when routing content. Your files arrive faster.
+            </div>
+          </li>
+          <li class="flex items-start gap-3">
+            <span class="text-2xl">🛡️</span>
+            <div>
+              <strong class="text-white">Better security</strong> — You receive content from 
+              trusted sources, reducing the risk of corrupted or malicious data.
+            </div>
+          </li>
+          <li class="flex items-start gap-3">
+            <span class="text-2xl">🌐</span>
+            <div>
+              <strong class="text-white">Network stability</strong> — Trusted nodes form the 
+              backbone of the mesh. They're the reliable infrastructure everyone depends on.
+            </div>
+          </li>
+          <li class="flex items-start gap-3">
+            <span class="text-2xl">⚖️</span>
+            <div>
+              <strong class="text-white">Fair resource allocation</strong> — Limited resources 
+              (like bandwidth) go to nodes that have proven they're good citizens.
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Section 5: Bad Actors -->
+      <div class="tutorial-card">
+        <h2 class="text-2xl font-bold mb-4 flex items-center">
+          <span class="step-number">5</span>
+          How Bad Actors Are Detected and Isolated
+        </h2>
+        <p class="text-mountain-300 mb-4">
+          Not everyone plays nice. Here's how YAKMESH protects itself:
+        </p>
+
+        <h3 class="text-lg font-semibold mb-3 text-white">What gets you in trouble:</h3>
+        <ul class="space-y-2 text-mountain-300 mb-6">
+          <li class="flex items-start gap-3">
+            <span class="text-red-400">✗</span>
+            <span><strong>Serving bad data</strong> — Content that doesn't match its hash</span>
+          </li>
+          <li class="flex items-start gap-3">
+            <span class="text-red-400">✗</span>
+            <span><strong>Going offline often</strong> — Unreliable availability</span>
+          </li>
+          <li class="flex items-start gap-3">
+            <span class="text-red-400">✗</span>
+            <span><strong>Bad timing</strong> — Clock way off from the network</span>
+          </li>
+          <li class="flex items-start gap-3">
+            <span class="text-red-400">✗</span>
+            <span><strong>Spam behavior</strong> — Sending too many requests or fake messages</span>
+          </li>
+          <li class="flex items-start gap-3">
+            <span class="text-red-400">✗</span>
+            <span><strong>Eclipse attacks</strong> — Trying to isolate nodes from the network</span>
+          </li>
+        </ul>
+
+        <h3 class="text-lg font-semibold mb-3 text-white">What happens to bad actors:</h3>
+        <ol class="space-y-2 text-mountain-300">
+          <li><strong>1. Warning</strong> — First offense might just reduce your score slightly</li>
+          <li><strong>2. Demotion</strong> — Keep misbehaving and you drop to a lower tier</li>
+          <li><strong>3. Isolation</strong> — Serious offenders get disconnected from trusted nodes</li>
+          <li><strong>4. Blacklist</strong> — The worst actors are blocked entirely</li>
+        </ol>
+
+        <div class="warning-box mt-4">
+          <strong>Important:</strong> Reputation is hard to earn and easy to lose. A single 
+          serious offense can undo weeks of good behavior. Play nice!
+        </div>
+      </div>
+
+      <!-- Section 6: Check Your Status -->
+      <div class="tutorial-card">
+        <h2 class="text-2xl font-bold mb-4 flex items-center">
+          <span class="step-number">6</span>
+          Check Your Reputation
+        </h2>
+        <p class="text-mountain-300 mb-4">
+          Want to see where you stand? Use these commands:
+        </p>
+        
+        <pre class="language-bash mb-4"><code># See your current karma tier and score
+npx yakmesh karma status
+
+# View detailed karma breakdown
+npx yakmesh karma details
+
+# See what your peers think of you
+npx yakmesh karma endorsements</code></pre>
+
+        <p class="text-mountain-300 mt-4">
+          You can also check your Dashboard at <code class="bg-mountain-800 px-2 py-1 rounded">http://localhost:9526</code> 
+          to see your trust score in real-time.
+        </p>
+      </div>
+
+      <!-- Summary -->
+      <div class="bg-mountain-800/50 rounded-xl p-6 border border-mountain-700 mb-8">
+        <h2 class="text-xl font-bold mb-4">📌 Key Takeaways</h2>
+        <ul class="space-y-2 text-mountain-300">
+          <li>✓ Reputation is earned through consistent good behavior over time</li>
+          <li>✓ Trust tiers range from NAYA (new) to SIRDAR (elder)</li>
+          <li>✓ Higher trust = faster routing, better security, more privileges</li>
+          <li>✓ Bad actors are automatically detected and isolated</li>
+          <li>✓ Keep your node online, accurate, and honest to build trust</li>
+        </ul>
+      </div>
+
+      <!-- Navigation Footer -->
+      <div class="border-t border-mountain-700 mt-12 pt-8">
+        <div class="flex flex-col sm:flex-row gap-4">
+          <a href="backup-recovery.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-emerald-500 transition group">
+            <div class="text-xs text-mountain-400 mb-1">← Previous</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">💾</span>
+              <span class="font-semibold group-hover:text-emerald-400">Backup & Recovery</span>
+            </div>
+          </a>
+          <a href="privacy.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-emerald-500 transition group">
+            <div class="text-xs text-mountain-400 mb-1">Next →</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">🔏</span>
+              <span class="font-semibold group-hover:text-emerald-400">Privacy Guide</span>
+            </div>
+          </a>
+        </div>
+      </div>
+
+      <!-- Version Badge -->
+      <div class="mt-8 pt-6 border-t border-mountain-700">
+        <span class="inline-block text-xs theme-badge px-2 py-1 rounded">v2.8.2</span>
+        <span class="text-mountain-500 text-sm ml-2">Last updated: February 2026</span>
+      </div>
+
+    </div>
+  </main>
+
+  <script src="../prism.min.js"></script>
+  <script src="../prism-javascript.min.js"></script>
+  <script src="../prism-bash.min.js"></script>
+  <script src="../docs.js"></script>
+</body>
+</html>

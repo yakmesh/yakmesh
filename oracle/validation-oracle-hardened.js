@@ -490,6 +490,8 @@ export class ValidationOracle {
         if (entry.isDirectory()) {
           // Skip excluded directories
           if (EXCLUDE_DIRS.includes(entry.name)) continue;
+          // Skip all data-* directories (test data, runtime state)
+          if (entry.name.startsWith('data-') || entry.name.startsWith('data_')) continue;
           // Recurse into subdirectory
           this.#walkDirectory(fullPath, results, baseDir);
         } else if (entry.isFile()) {

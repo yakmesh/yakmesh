@@ -10,6 +10,7 @@
     "./cli": "./cli/index.js",
     "./oracle": "./oracle/index.js",
     "./oracle/time-source": "./oracle/time-source.js",
+    "./oracle/ma902-snmp": "./oracle/ma902-snmp.js",
     "./oracle/phase-epoch": "./oracle/phase-epoch.js",
     "./oracle/consensus": "./oracle/consensus-engine.js",
     "./oracle/validation": "./oracle/validation-oracle-hardened.js",
@@ -86,8 +87,12 @@
     "express": "^4.18.2",
     "express-rate-limit": "^8.2.1",
     "node-forge": "^1.3.3",
+    "onnxruntime-node": "^1.24.2",
     "sql.js": "^1.10.0",
     "ws": "^8.16.0"
+  },
+  "optionalDependencies": {
+    "net-snmp": "^3.26.1"
   },
   "devDependencies": {
     "nodemon": "^3.0.0",

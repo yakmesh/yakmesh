@@ -4,7 +4,7 @@
  * Testing the Guarded Universal Message Bundle Access system
  */
 
-import { describe, it, beforeEach, afterEach } from 'node:test';
+import { describe, it, beforeEach, afterEach } from 'vitest';
 import assert from 'node:assert';
 import { randomBytes } from 'crypto';
 import { ml_dsa65 } from '@noble/post-quantum/ml-dsa.js';
@@ -904,7 +904,7 @@ describe('GumbaHub', () => {
     assert.strictEqual(result.messages[0].content.text, 'Hello');
   });
   
-  it('falls through to plaintext on ANNEX failure', async () => {
+  it('refuses plaintext fallback on ANNEX failure (encryption required)', async () => {
     const mockAnnex = {
       send: async () => { throw new Error('PEER_UNREACHABLE'); },
     };
@@ -922,10 +922,9 @@ describe('GumbaHub', () => {
     
     const result = await annexHub.getMessages(access.sessionId);
     
-    // Should fall through to direct return
-    assert.ok(result.messages);
-    assert.strictEqual(result.messages.length, 1);
-    assert.strictEqual(result.messages[0].content.text, 'Fallback');
+    // HARD FAIL: no plaintext fallback — GUMBA content is encrypted for a reason
+    assert.strictEqual(result.error, 'ENCRYPTION_REQUIRED');
+    assert.ok(!result.messages); // No plaintext leakage
   });
 });
 

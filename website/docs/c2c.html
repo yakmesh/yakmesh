@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="c2c">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="favicon.ico" sizes="32x32">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <title>C2C Integration | YAKMESH Documentation</title>
+    <meta name="description" content="Core to Cosmos — space strategy game integration with yakmesh networking and NPU acceleration.">
+    <link rel="stylesheet" href="tailwind.min.css">
+    <link rel="stylesheet" href="prism-tomorrow.min.css">
+    <link rel="stylesheet" href="docs.css">
+    <style>
+        .theme-accent { color: #fb923c; }
+        .theme-accent-hover:hover { color: #fdba74; }
+        .theme-badge { background: rgba(251, 146, 60, 0.2); color: #fb923c; }
+        .theme-border { border-color: #ea580c; }
+        .theme-callout { background: rgba(251, 146, 60, 0.1); border-color: #c2410c; }
+        .active-link { background: rgba(251, 146, 60, 0.2) !important; color: #fb923c !important; }
+    </style>
+</head>
+<body class="bg-mountain-900 text-white min-h-screen">
+
+  <nav class="docs-sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-logo"><span class="logo-icon">🏔️</span><span class="logo-text">Yakmesh</span></a>
+    <a href="/dashboard" class="sidebar-dashboard-link"><span>📊</span> <span>Dashboard</span></a>
+    <ul class="sidebar-nav">
+      <li class="sidebar-section"><span>📘 Guides</span></li>
+      <li><a href="index.html"><span>🏠</span> <span>Overview</span></a></li>
+      <li><a href="getting-started.html"><span>🚀</span> <span>Getting Started</span></a></li>
+      <li><a href="tutorials.html"><span>📖</span> <span>Tutorials</span></a></li>
+      <li class="sidebar-section"><span>🐃 Protocol Stack</span></li>
+      <li><a href="yak-protocol.html"><span class="yak-icon"></span> <span>YAK://</span></a></li>
+      <li><a href="annex.html"><span>🌉</span> <span>ANNEX</span></a></li>
+      <li><a href="nakpak.html"><span>🎒</span> <span>NAKPAK</span></a></li>
+      <li><a href="namche.html"><span>🚪</span> <span>NAMCHE</span></a></li>
+      <li><a href="doko.html"><span>🧺</span> <span>DOKO</span></a></li>
+      <li><a href="sherpa.html"><span>🧗</span> <span>SHERPA</span></a></li>
+      <li><a href="mandala.html"><span>🌐</span> <span>MANDALA</span></a></li>
+      <li><a href="mantra.html"><span>🕉️</span> <span>MANTRA</span></a></li>
+      <li><a href="gumba.html"><span>🛕</span> <span>GUMBA</span></a></li>
+      <li><a href="yurt.html"><span>🏕️</span> <span>YURT</span></a></li>
+      <li><a href="katha.html"><span>💬</span> <span>KATHA</span></a></li>
+      <li><a href="vani.html"><span>🎙️</span> <span>VANI</span></a></li>
+      <li><a href="darshan.html"><span>👁️</span> <span>DARSHAN</span></a></li>
+      <li><a href="stupa.html"><span>🛕</span> <span>STUPA</span></a></li>
+      <li><a href="lama.html"><span>🔮</span> <span>LAMA</span></a></li>
+      <li><a href="mani.html"><span>⏱️</span> <span>MANI</span></a></li>
+      <li><a href="karma.html"><span>☯️</span> <span>KARMA</span></a></li>
+      <li><a href="tattva.html"><span>🔯</span> <span>TATTVA</span></a></li>
+      <li><a href="tribhuj.html"><span>🔺</span> <span>TRIBHUJ</span></a></li>
+      <li><a href="ypc27.html"><span>🔐</span> <span>YPC-27</span></a></li>
+      <li><a href="sakshi.html"><span>👁️</span> <span>SAKSHI</span></a></li>
+      <li><a href="geo-proof.html"><span>🌍</span> <span>PRAMAAN</span></a></li>
+      <li><a href="trust-security.html"><span>🔒</span> <span>SURAKSHA</span></a></li>
+      <li><a href="tivra.html"><span>⚡</span> <span>TIVRA</span></a></li>
+      <li><a href="prahari.html"><span>🛰️</span> <span>PRAHARI</span></a></li>
+      <li><a href="dharma.html"><span>⚖️</span> <span>DHARMA</span></a></li>
+      <li><a href="seva.html"><span>🙏</span> <span>SEVA</span></a></li>
+      <li><a href="docs-bundle.html"><span>📚</span> <span>GRANTH</span></a></li>
+      <li><a href="api.html"><span>📡</span> <span>API</span></a></li>
+      <li><a href="adapters.html"><span>🔌</span> <span>Adapters</span></a></li>
+      <li class="sidebar-section"><span>🚀 Applications</span></li>
+      <li><a href="yakapp.html"><span>💬</span> <span>YakApp</span></a></li>
+      <li><a href="c2c.html" class="active"><span>🚀</span> <span>C2C</span></a></li>
+      <li><a href="studio.html"><span>🎨</span> <span>Studio</span></a></li>
+      <li><a href="thangka.html"><span>🎨</span> <span>THANGKA</span></a></li>
+      <li class="sidebar-section"><span>📋 Reference</span></li>
+      <li><a href="quick-reference.html"><span>📋</span> <span>Quick Ref</span></a></li>
+    </ul>
+  </nav>
+
+  <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+    </svg>
+  </button>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="docs-main" id="mainContent">
+    <div class="docs-content">
+      <h1 class="text-4xl font-bold mb-4">🚀 C2C — Core to Cosmos</h1>
+      <p class="text-xl text-mountain-300 mb-8">Space strategy game shipping with yakmesh — the first application built on the full protocol stack.</p>
+
+      <!-- What is C2C -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4">What is C2C?</h2>
+        <p class="text-mountain-300 mb-4">
+          <strong>Core to Cosmos</strong> (C2C) is a space strategy game with procedural planet generation,
+          AI-driven factions, and NPU-accelerated gameplay. It ships alongside yakmesh as a showcase
+          application demonstrating real-world use of the protocol stack.
+        </p>
+        <div class="grid md:grid-cols-2 gap-4 mb-6">
+          <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+            <h3 class="text-lg font-semibold mb-2">Tech Stack</h3>
+            <ul class="text-mountain-400 text-sm space-y-1">
+              <li>React + Vite frontend</li>
+              <li>Node.js / Express backend</li>
+              <li>SQLite database</li>
+              <li>391 art assets</li>
+              <li>85/85 tests passing</li>
+            </ul>
+          </div>
+          <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+            <h3 class="text-lg font-semibold mb-2">NPU Models</h3>
+            <ul class="text-mountain-400 text-sm space-y-1">
+              <li>8 AI models via DirectML</li>
+              <li>Planet generation &amp; super-resolution</li>
+              <li>Faction AI decision-making</li>
+              <li>Combat prediction</li>
+              <li>Adaptive threat scaling</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- Yakmesh Integration Points -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4">Yakmesh Integration</h2>
+        <p class="text-mountain-300 mb-4">
+          C2C uses several yakmesh subsystems for networking, encryption, time synchronization,
+          and distributed compute:
+        </p>
+        <div class="overflow-x-auto mb-6">
+          <table class="w-full bg-mountain-800 rounded-lg">
+            <thead>
+              <tr class="border-b border-mountain-700">
+                <th class="text-left p-3 text-mountain-300">Yakmesh System</th>
+                <th class="text-left p-3 text-mountain-300">C2C Usage</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3"><a href="annex.html" class="theme-accent theme-accent-hover">ANNEX</a></td>
+                <td class="p-3 text-mountain-400">ML-KEM-768 encrypted WebSocket connections between game server and clients</td>
+              </tr>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3"><a href="seva.html" class="theme-accent theme-accent-hover">SEVA</a></td>
+                <td class="p-3 text-mountain-400">5 NPU model slots (planet-variation, planet-heightmap, planet-superres, faction-brain, combat-predict) shared across the mesh</td>
+              </tr>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3"><a href="tivra.html" class="theme-accent theme-accent-hover">TIVRA</a></td>
+                <td class="p-3 text-mountain-400">Hardware detection and ONNX model loading for local NPU inference</td>
+              </tr>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3"><a href="mani.html" class="theme-accent theme-accent-hover">MANI</a></td>
+                <td class="p-3 text-mountain-400">Authoritative game clock — every tick, mutation, and NPU inference uses MANI time</td>
+              </tr>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3"><a href="katha.html" class="theme-accent theme-accent-hover">KATHA</a></td>
+                <td class="p-3 text-mountain-400">In-game chat integrated via KOMM WebSocket</td>
+              </tr>
+              <tr>
+                <td class="p-3"><a href="studio.html" class="theme-accent theme-accent-hover">Studio</a></td>
+                <td class="p-3 text-mountain-400">Story mode for game chronicles and faction narratives</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- SEVA Model Slots -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4">SEVA Model Slots</h2>
+        <p class="text-mountain-300 mb-4">
+          C2C registers 5 model slots with the <a href="seva.html" class="theme-accent theme-accent-hover">SEVA</a>
+          compute sharing protocol. When a player's machine lacks an NPU, SEVA transparently routes
+          inference to a peer node that has one:
+        </p>
+        <div class="space-y-3 mb-6">
+          <div class="bg-mountain-800 rounded-lg p-4">
+            <code class="theme-accent font-semibold">planet-variation</code>
+            <p class="text-mountain-400 text-sm mt-1">Generates planet variations from metadata. Input: 8-float parameter vector. Runs on NPU for real-time planet customization.</p>
+          </div>
+          <div class="bg-mountain-800 rounded-lg p-4">
+            <code class="theme-accent font-semibold">planet-heightmap</code>
+            <p class="text-mountain-400 text-sm mt-1">Procedural terrain heightmaps for planet surfaces. Creates unique geography per planet seed.</p>
+          </div>
+          <div class="bg-mountain-800 rounded-lg p-4">
+            <code class="theme-accent font-semibold">planet-superres</code>
+            <p class="text-mountain-400 text-sm mt-1">Super-resolution upscaling of planet textures. Low-res textures upscaled on NPU for visual quality.</p>
+          </div>
+          <div class="bg-mountain-800 rounded-lg p-4">
+            <code class="theme-accent font-semibold">faction-brain</code>
+            <p class="text-mountain-400 text-sm mt-1">AI faction decision-making. Scores actions, picks strategies, generates faction narratives, handles diplomacy.</p>
+          </div>
+          <div class="bg-mountain-800 rounded-lg p-4">
+            <code class="theme-accent font-semibold">combat-predict</code>
+            <p class="text-mountain-400 text-sm mt-1">Combat outcome prediction for battle resolution. Predicts winner probability given force composition.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Architecture -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4">Fallback Chain</h2>
+        <p class="text-mountain-300 mb-4">
+          C2C's client-side NPU integration uses a transparent fallback chain. The player never
+          knows which path was used — the experience is identical:
+        </p>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700 mb-6">
+          <ol class="list-decimal list-inside space-y-3 text-mountain-300">
+            <li><strong>HTTP API</strong> — Direct ONNX inference on game server's NPU/GPU</li>
+            <li><strong>WebSocket seva:work</strong> — If HTTP fails, route via WebSocket to server's NPU pool</li>
+            <li><strong>Mesh offload</strong> — If local server has no NPU, SEVA finds a mesh peer with one</li>
+            <li><strong>CPU fallback</strong> — Software computation, always available, always correct</li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- Version History -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2"><span>📅</span> Version History</h2>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+          <table class="w-full">
+            <thead><tr class="border-b border-mountain-700">
+              <th class="text-left p-3 text-mountain-300">Version</th>
+              <th class="text-left p-3 text-mountain-300">Changes</th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <td class="p-3"><span class="theme-badge px-2 py-1 rounded">v3.0.0</span></td>
+                <td class="p-3 text-mountain-400">C2C ships with yakmesh. Full SEVA integration, 8 AI models, MANI time protocol, ANNEX encryption, 391 art assets, 85/85 tests.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+            <!-- Journey Navigation -->
+                                                <div class="border-t border-mountain-700 mt-12 pt-8">
+        <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
+        <div class="flex flex-col sm:flex-row gap-4">
+          <a href="yakapp.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">
+            <div class="text-xs text-mountain-400 mb-1">← Previous</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">💬</span>
+              <span class="font-semibold group-hover:text-theme-accent">YakApp</span>
+            </div>
+            <p class="text-mountain-400 text-sm mt-1">P2P messenger</p>
+          </a>
+          <a href="studio.html" class="flex-1 block bg-mountain-800 border border-theme-primary rounded-xl p-4 hover:border-theme-accent transition group">
+            <div class="text-xs text-mountain-400 mb-1">Next →</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">🎨</span>
+              <span class="font-semibold group-hover:text-theme-accent">Studio</span>
+            </div>
+            <p class="text-mountain-400 text-sm mt-1">YakApp Studio creative suite</p>
+          </a>
+        </div>
+      </div>
+  </main>
+
+  <footer class="docs-footer"><p>© 2026 YAKMESH™</p></footer>
+  <script src="prism.min.js"></script>
+  <script src="prism-javascript.min.js"></script>
+  <script src="docs.js"></script>
+</body>
+</html>

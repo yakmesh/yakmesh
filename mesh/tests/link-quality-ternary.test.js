@@ -9,7 +9,7 @@
  * @module mesh/tests/link-quality-ternary.test
  */
 
-import { describe, it, beforeEach } from 'node:test';
+import { describe, it, beforeEach } from 'vitest';
 import assert from 'node:assert/strict';
 import { LinkQuality } from '../sherpa-discovery.js';
 import { POSITIVE, NEUTRAL, NEGATIVE } from '../../oracle/tribhuj.js';

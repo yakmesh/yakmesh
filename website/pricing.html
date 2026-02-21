@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pricing - YAKMESH</title>
+    <meta name="description" content="YAKMESH pricing plans. Free tier for personal use, affordable options for businesses.">
+    
+    <!-- Open Graph / Social -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://yakmesh.dev/pricing.html">
+    <meta property="og:title" content="YAKMESH Pricing - Simple, Transparent">
+    <meta property="og:description" content="Full-featured & MIT Licensed. Pay only for support services.">
+    <meta property="og:image" content="https://yakmesh.dev/assets/yakmesh-logo.webp">
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@yakmesh_dev">
+    <meta name="twitter:title" content="YAKMESH Pricing">
+    <meta name="twitter:description" content="Full-featured & MIT Licensed. Pay only for support services.">
+    
+    <!-- Favicons -->
+    <link rel="icon" href="favicon.ico" sizes="32x32">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="canonical" href="https://yakmesh.dev/pricing.html">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="tailwind.min.css">
+    <style>
+        /* ========== HIMALAYAN MIDWAY CAMP THEME ========== */
+        
+        /* Base body styles - match main site */
+        body {
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        /* Focus states for accessibility */
+        a:focus-visible, button:focus-visible {
+            outline: 2px solid #10b981;
+            outline-offset: 2px;
+        }
+        
+        /* Skip link */
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: #10b981;
+            color: white;
+            padding: 8px 16px;
+            z-index: 100;
+            transition: top 0.3s;
+        }
+        .skip-link:focus { top: 0; }
+        
+        /* MIDWAY CAMP - Mountain vantage point with prayer flags */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: -2;
+            background: 
+                /* Soft mountain mist */
+                radial-gradient(ellipse 80% 60% at 50% 90%, transparent 0%, rgba(16, 26, 22, 0.6) 40%, rgba(16, 26, 22, 0.95) 100%),
+                /* Golden hour glow from distance */
+                radial-gradient(ellipse 40% 50% at 30% 40%, rgba(251, 191, 36, 0.06) 0%, transparent 60%),
+                radial-gradient(ellipse 35% 45% at 70% 35%, rgba(245, 158, 11, 0.05) 0%, transparent 55%),
+                /* Base gradient */
+                linear-gradient(180deg, #0f1614 0%, #101a16 25%, #1a2a24 100%);
+        }
+        
+        /* Midway camp silhouette with prayer flags and distant peaks */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: -1;
+            pointer-events: none;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1920 1080' preserveAspectRatio='xMidYMax slice'%3E%3Cdefs%3E%3ClinearGradient id='mist' x1='0%25' y1='100%25' x2='0%25' y2='0%25'%3E%3Cstop offset='0%25' stop-color='%23101a16' stop-opacity='1'/%3E%3Cstop offset='50%25' stop-color='%23101a16' stop-opacity='0.7'/%3E%3Cstop offset='100%25' stop-color='%23101a16' stop-opacity='0'/%3E%3C/linearGradient%3E%3C/defs%3E%3C!-- Very distant peaks (faded, summit goal) --%3E%3Cpolygon points='800,300 960,80 1120,300' fill='%231a2a24' opacity='0.25'/%3E%3Cpolygon points='850,300 960,120 1070,300' fill='%23ffffff' opacity='0.08'/%3E%3C!-- Far peaks (visible from vantage) --%3E%3Cpolygon points='0,550 180,280 350,450 500,200 680,380 850,160 1000,350 1100,220 1250,380 1400,180 1550,350 1750,250 1920,400 1920,1080 0,1080' fill='%231a2a24' opacity='0.35'/%3E%3C!-- Snow caps --%3E%3Cpolygon points='500,200 470,250 530,250' fill='%23ffffff' opacity='0.12'/%3E%3Cpolygon points='850,160 810,220 890,220' fill='%23ffffff' opacity='0.15'/%3E%3Cpolygon points='1100,220 1060,280 1140,280' fill='%23ffffff' opacity='0.1'/%3E%3Cpolygon points='1400,180 1355,245 1445,245' fill='%23ffffff' opacity='0.14'/%3E%3C!-- Mid-distance ridge --%3E%3Cpolygon points='0,650 200,450 400,580 600,400 800,520 1000,380 1200,500 1400,420 1600,550 1800,480 1920,600 1920,1080 0,1080' fill='%231f332d' opacity='0.5'/%3E%3C!-- PRAYER FLAGS - strung across midway camp --%3E%3C!-- Flag line 1 (left to center) --%3E%3Cpath d='M50,520 Q300,480 550,510 Q800,530 1000,500' stroke='%233d6a5a' stroke-width='2' fill='none' opacity='0.4'/%3E%3C!-- Flags on line 1 --%3E%3Crect x='120' y='520' width='18' height='28' fill='%2322c55e' opacity='0.25' transform='rotate(-5 129 534)'/%3E%3Crect x='180' y='505' width='18' height='28' fill='%23fbbf24' opacity='0.3' transform='rotate(3 189 519)'/%3E%3Crect x='250' y='495' width='18' height='28' fill='%23ef4444' opacity='0.25' transform='rotate(-4 259 509)'/%3E%3Crect x='330' y='490' width='18' height='28' fill='%233b82f6' opacity='0.28' transform='rotate(2 339 504)'/%3E%3Crect x='410' y='498' width='18' height='28' fill='%23ffffff' opacity='0.2' transform='rotate(-3 419 512)'/%3E%3Crect x='490' y='508' width='18' height='28' fill='%2322c55e' opacity='0.25' transform='rotate(4 499 522)'/%3E%3Crect x='570' y='512' width='18' height='28' fill='%23fbbf24' opacity='0.28' transform='rotate(-2 579 526)'/%3E%3Crect x='660' y='520' width='18' height='28' fill='%23ef4444' opacity='0.22' transform='rotate(3 669 534)'/%3E%3Crect x='750' y='525' width='18' height='28' fill='%233b82f6' opacity='0.25' transform='rotate(-4 759 539)'/%3E%3Crect x='850' y='518' width='18' height='28' fill='%23ffffff' opacity='0.18' transform='rotate(2 859 532)'/%3E%3Crect x='940' y='505' width='18' height='28' fill='%2322c55e' opacity='0.22' transform='rotate(-3 949 519)'/%3E%3C!-- Flag line 2 (center to right) --%3E%3Cpath d='M920,500 Q1150,520 1400,490 Q1650,470 1880,510' stroke='%233d6a5a' stroke-width='2' fill='none' opacity='0.35'/%3E%3C!-- Flags on line 2 --%3E%3Crect x='1020' y='510' width='18' height='28' fill='%23fbbf24' opacity='0.25' transform='rotate(3 1029 524)'/%3E%3Crect x='1110' y='515' width='18' height='28' fill='%23ef4444' opacity='0.22' transform='rotate(-2 1119 529)'/%3E%3Crect x='1200' y='508' width='18' height='28' fill='%233b82f6' opacity='0.28' transform='rotate(4 1209 522)'/%3E%3Crect x='1300' y='498' width='18' height='28' fill='%23ffffff' opacity='0.2' transform='rotate(-3 1309 512)'/%3E%3Crect x='1400' y='490' width='18' height='28' fill='%2322c55e' opacity='0.25' transform='rotate(2 1409 504)'/%3E%3Crect x='1500' y='485' width='18' height='28' fill='%23fbbf24' opacity='0.28' transform='rotate(-4 1509 499)'/%3E%3Crect x='1600' y='478' width='18' height='28' fill='%23ef4444' opacity='0.2' transform='rotate(3 1609 492)'/%3E%3Crect x='1700' y='488' width='18' height='28' fill='%233b82f6' opacity='0.25' transform='rotate(-2 1709 502)'/%3E%3Crect x='1800' y='500' width='18' height='28' fill='%23ffffff' opacity='0.18' transform='rotate(4 1809 514)'/%3E%3C!-- Camp plateau (where we stand) --%3E%3Cpolygon points='0,780 150,720 350,750 550,700 750,740 950,680 1150,730 1350,690 1550,750 1750,710 1920,770 1920,1080 0,1080' fill='%23253d35' opacity='0.65'/%3E%3C!-- Small stupa/chorten at camp --%3E%3Crect x='180' y='740' width='30' height='45' fill='%231f332d' opacity='0.6'/%3E%3Cellipse cx='195' cy='730' rx='20' ry='12' fill='%231f332d' opacity='0.55'/%3E%3Cpath d='M195,695 L195,718' stroke='%23fbbf24' stroke-width='2' opacity='0.35'/%3E%3C!-- Mani stone pile --%3E%3Cellipse cx='1750' cy='730' rx='40' ry='15' fill='%231f332d' opacity='0.5'/%3E%3Cellipse cx='1745' cy='720' rx='25' ry='10' fill='%231a2a22' opacity='0.6'/%3E%3Cellipse cx='1760' cy='712' rx='15' ry='7' fill='%231a2a22' opacity='0.55'/%3E%3C!-- Ground with rocks --%3E%3Cpolygon points='0,850 150,820 300,870 450,830 600,880 750,840 900,890 1050,850 1200,900 1350,860 1500,910 1650,870 1800,920 1920,880 1920,1080 0,1080' fill='%23101a16' opacity='0.75'/%3E%3C!-- Mist at bottom --%3E%3Crect x='0' y='750' width='1920' height='330' fill='url(%23mist)'/%3E%3C/svg%3E") no-repeat bottom center;
+            background-size: cover;
+            filter: blur(0.5px);
+        }
+        
+        /* Pricing card hover effects */
+        .pricing-card {
+            transition: all 0.3s ease;
+        }
+        .pricing-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 40px rgba(16, 185, 129, 0.1);
+        }
+        
+        /* Navigation styling - matches main site */
+        .nav-mountain {
+            position: relative;
+            background: linear-gradient(180deg, rgba(16, 26, 22, 0.98) 0%, rgba(16, 26, 22, 0.95) 100%);
+            border-bottom: 1px solid rgba(16, 185, 129, 0.2);
+        }
+        .nav-mountain::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent 0%, rgba(16, 185, 129, 0.5) 50%, transparent 100%);
+        }
+    </style>
+</head>
+<body class="bg-mountain-900 text-white">
+    <!-- Skip Link for Accessibility -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    
+    <!-- Navigation - matches main site structure -->
+    <nav class="sticky top-0 w-full z-50 nav-mountain backdrop-blur-md" aria-label="Main navigation">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="./" class="flex items-center gap-3">
+                <img src="assets/yakmesh-logo.webp" alt="Yakmesh" class="h-12 w-12" width="48" height="53">
+                <span class="text-xl font-semibold">YAKMESH™</span>
+            </a>
+            <!-- Mobile menu button -->
+            <button id="mobile-menu-btn" class="md:hidden p-2 text-mountain-200 hover:text-white transition" aria-label="Toggle menu" aria-expanded="false">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path id="menu-icon" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                </svg>
+            </button>
+            <!-- Desktop menu -->
+            <div class="hidden md:flex items-center gap-6">
+                <a href="./" class="text-mountain-200 hover:text-white transition">Home</a>
+                <a href="philosophy.html" class="text-mountain-200 hover:text-white transition">Philosophy</a>
+                <a href="pricing.html" class="text-white font-medium transition" aria-current="page">Pricing</a>
+                <a href="docs/" class="text-mountain-200 hover:text-white transition">Docs</a>
+                <a href="https://github.com/yakmesh/yakmesh" class="text-mountain-200 hover:text-white transition">GitHub</a>
+                <a href="mailto:inquiry@peerquanta.com" class="bg-Yakmesh-600 hover:bg-Yakmesh-500 px-4 py-2 rounded-lg transition">Contact</a>
+            </div>
+        </div>
+        <!-- Mobile menu -->
+        <div id="mobile-menu" class="hidden md:hidden bg-mountain-900/95 border-t border-mountain-700">
+            <div class="px-6 py-4 space-y-3">
+                <a href="./" class="block py-2 text-mountain-200 hover:text-white transition">Home</a>
+                <a href="philosophy.html" class="block py-2 text-mountain-200 hover:text-white transition">Philosophy</a>
+                <a href="pricing.html" class="block py-2 text-white font-medium transition" aria-current="page">Pricing</a>
+                <a href="docs/" class="block py-2 text-mountain-200 hover:text-white transition">Docs</a>
+                <a href="https://github.com/yakmesh/yakmesh" class="block py-2 text-mountain-200 hover:text-white transition">GitHub</a>
+                <a href="mailto:inquiry@peerquanta.com" class="block bg-Yakmesh-600 hover:bg-Yakmesh-500 px-4 py-3 rounded-lg text-center transition mt-4">Contact</a>
+            </div>
+        </div>
+    </nav>
+
+    <main id="main-content">
+    <section class="py-24" aria-labelledby="pricing-title">
+        <div class="max-w-6xl mx-auto px-6">
+            <div class="text-center mb-16">
+                <h1 id="pricing-title" class="text-5xl font-bold mb-4">Simple, Transparent Pricing</h1>
+                <p class="text-xl text-mountain-300">Full-featured & MIT Licensed. Pay only for support services.</p>
+            </div>
+
+            <!-- Full Feature Banner -->
+            <div class="bg-gradient-to-r from-green-900/40 to-mountain-800 border border-green-600/50 rounded-xl p-6 mb-12 max-w-4xl mx-auto">
+                <div class="flex flex-col sm:flex-row items-center gap-4">
+                    <!-- Yak icon -->
+                    <img src="assets/yakmesh128.webp" alt="" class="w-12 h-12 flex-shrink-0" width="48" height="48" aria-hidden="true">
+                    <div>
+                        <h3 class="text-xl font-semibold text-green-400">Every Feature. Every User. No Paywalls.</h3>
+                        <p class="text-mountain-300 mt-1">YAKMESH includes <strong class="text-white">all modules</strong> in every installation — post-quantum crypto, mesh networking, geographic proofs, trust systems, and more. The entire stack is MIT licensed.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                <!-- Free Tier -->
+                <div class="pricing-card bg-gradient-to-b from-green-900/30 to-mountain-800 border-2 border-green-500 rounded-2xl p-8 relative">
+                    <div class="absolute -top-3 left-1/2 -translate-x-1/2 bg-green-500 px-3 py-1 rounded-full text-sm font-medium">Full Featured</div>
+                    <h3 class="text-xl font-semibold mb-2">Community</h3>
+                    <div class="text-4xl font-bold mb-4">Free</div>
+                    <p class="text-mountain-400 mb-6">Complete package, MIT Licensed</p>
+                    <ul class="space-y-3 mb-8 text-mountain-300">
+                        <li class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                            Unlimited nodes
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                            Post-quantum encryption (ML-DSA-65)
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                            All core modules (NAMCHE, DOKO, SHERPA, NAKPAK, ANNEX)
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                            Trust Tiers & Hardware Attestation
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                            ECHO, PULSE, BEACON systems
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                            Geographic Proof (speed-of-light)
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                            YAK:// Protocol & Bookmarks
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                            Strike System & Sybil Detection
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                            Community support (Discord/Telegram)
+                        </li>
+                    </ul>
+                    <a href="https://github.com/yakmesh/yakmesh" class="block text-center bg-green-500 hover:bg-green-400 py-3 rounded-lg font-medium transition">Get Started Free</a>
+                </div>
+
+                <!-- Pro Tier -->
+                <div class="pricing-card bg-mountain-800 border border-mountain-700 rounded-2xl p-8">
+                    <h3 class="text-xl font-semibold mb-2">Pro Support</h3>
+                    <div class="text-4xl font-bold mb-4">$99<span class="text-lg text-mountain-400">/mo</span></div>
+                    <p class="text-mountain-400 mb-6">Priority support for production</p>
+                    <ul class="space-y-3 mb-8 text-mountain-300">
+                        <li class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                            All Community features (same code!)
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                            Priority email support (24hr response)
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                            Architecture review sessions
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                            Integration assistance
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                            Private Discord channel
+                        </li>
+                    </ul>
+                    <a href="mailto:inquiry@peerquanta.com" class="block text-center border border-mountain-600 hover:border-mountain-500 py-3 rounded-lg transition">Get Pro Support</a>
+                </div>
+
+                <!-- Enterprise -->
+                <div class="pricing-card bg-mountain-800 border border-mountain-700 rounded-2xl p-8">
+                    <h3 class="text-xl font-semibold mb-2">Enterprise</h3>
+                    <div class="text-4xl font-bold mb-4">Custom</div>
+                    <p class="text-mountain-400 mb-6">For large-scale deployments</p>
+                    <ul class="space-y-3 mb-8 text-mountain-300">
+                        <li class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                            All Community features (same code!)
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                            Custom adapter development
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                            Dedicated support engineer
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                            SLA guarantee
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path></svg>
+                            On-premise deployment help
+                        </li>
+                    </ul>
+                    <a href="mailto:inquiry@peerquanta.com" class="block text-center border border-mountain-600 hover:border-mountain-500 py-3 rounded-lg transition">Contact Sales</a>
+                </div>
+            </div>
+
+            <!-- Clarification -->
+            <div class="text-center mt-12 text-mountain-400 max-w-2xl mx-auto">
+                <p><strong class="text-white">No feature gates. No paywalls.</strong> The same <code class="bg-mountain-800 px-2 py-1 rounded">npm install yakmesh</code> gives everyone access to all modules. Paid tiers are for professional support services only.</p>
+            </div>
+        </div>
+    </section>
+    </main>
+
+    <footer class="bg-mountain-900 border-t border-mountain-800 py-8" role="contentinfo">
+        <div class="max-w-7xl mx-auto px-6 text-center text-mountain-500 text-sm">
+            <p>© 2026 YAKMESH™ Project. Sturdy & Secure.</p>
+            <p class="text-mountain-600 text-xs mt-2">YAKMESH™ is a trademark of PeerQuanta, application pending (Serial No. 99594620).</p>
+            <div class="flex flex-wrap justify-center gap-4 sm:gap-6 mt-4 text-mountain-400">
+                <a href="docs/" class="hover:text-white transition">Documentation</a>
+                <a href="docs/trademark-policy.html" class="hover:text-white transition">Trademark Policy</a>
+                <a href="docs/terms.html" class="hover:text-white transition">Terms</a>
+                <a href="docs/privacy.html" class="hover:text-white transition">Privacy</a>
+            </div>
+            <p class="mt-2">Built with ❤️ by <a href="https://peerquanta.com" class="text-Yakmesh-400 hover:text-Yakmesh-300">PeerQuanta</a></p>
+        </div>
+    </footer>
+
+    <!-- Mobile Menu Toggle -->
+    <script>
+        const menuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const menuIcon = document.getElementById('menu-icon');
+        
+        menuBtn.addEventListener('click', () => {
+            const isOpen = !mobileMenu.classList.contains('hidden');
+            mobileMenu.classList.toggle('hidden');
+            menuBtn.setAttribute('aria-expanded', !isOpen);
+            menuIcon.setAttribute('d', isOpen 
+                ? 'M4 6h16M4 12h16M4 18h16' 
+                : 'M6 18L18 6M6 6l12 12');
+        });
+        
+        mobileMenu.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', () => {
+                mobileMenu.classList.add('hidden');
+                menuBtn.setAttribute('aria-expanded', 'false');
+                menuIcon.setAttribute('d', 'M4 6h16M4 12h16M4 18h16');
+            });
+        });
+    </script>
+
+
+
+
+

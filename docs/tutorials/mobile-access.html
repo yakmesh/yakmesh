@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="tutorials">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="../favicon.ico" sizes="32x32">
+    <link rel="icon" href="../icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="../apple-touch-icon.png">
+    <title>Mobile Access - YAKMESH Tutorials</title>
+    <meta name="description" content="Access and manage your YAKMESH node from your phone. Remote access, PWA installation, and security tips.">
+    
+    <link rel="stylesheet" href="../tailwind.min.css">
+    <link rel="stylesheet" href="../prism-tomorrow.min.css">
+    <link rel="stylesheet" href="../docs.css">
+    <style>
+        .theme-accent { color: #10b981; }
+        .theme-accent-hover:hover { color: #34d399; }
+        .theme-badge { background: rgba(16, 185, 129, 0.2); color: #34d399; }
+        .theme-border { border-color: #10b981; }
+        .theme-callout { background: rgba(16, 185, 129, 0.1); border-color: #059669; }
+        .active-link { background: rgba(16, 185, 129, 0.2) !important; color: #34d399 !important; }
+        .tutorial-card { background: rgba(30, 41, 59, 0.5); border: 1px solid #334155; border-radius: 0.75rem; padding: 1.5rem; margin-bottom: 1.5rem; }
+        .step-number { display: inline-flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; background: #10b981; color: white; border-radius: 50%; font-weight: bold; margin-right: 0.75rem; flex-shrink: 0; }
+        .step-header { display: flex; align-items: center; margin-bottom: 1rem; }
+    </style>
+</head>
+<body class="bg-mountain-900 text-white min-h-screen">
+    
+  <nav class="docs-sidebar" id="sidebar">
+    <a href="../index.html" class="sidebar-logo">
+      <span class="logo-icon">🏔️</span>
+      <span class="logo-text">Yakmesh</span>
+    </a>
+    <a href="/dashboard" class="sidebar-dashboard-link"><span>📊</span> <span>Dashboard</span></a>
+    <ul class="sidebar-nav">
+      <li><a href="../index.html"><span>🏠</span> <span>Overview</span></a></li>
+      <li><a href="../getting-started.html"><span>🚀</span> <span>Getting Started</span></a></li>
+      <li><a href="../tutorials.html"><span>📖</span> <span>Tutorials</span></a></li>
+      <li><a href="../yak-protocol.html"><span class="yak-icon"></span> <span>YAK://</span></a></li>
+      <li><a href="../annex.html"><span>🌉</span> <span>ANNEX</span></a></li>
+      <li><a href="../nakpak.html"><span>🎒</span> <span>NAKPAK</span></a></li>
+      <li><a href="../namche.html"><span>🚪</span> <span>NAMCHE</span></a></li>
+      <li><a href="../doko.html"><span>🧺</span> <span>DOKO</span></a></li>
+      <li><a href="../sherpa.html"><span>🧗</span> <span>SHERPA</span></a></li>
+      <li><a href="../mandala.html"><span>🌐</span> <span>MANDALA</span></a></li>
+      <li><a href="../mantra.html"><span>🕉️</span> <span>MANTRA</span></a></li>
+      <li><a href="../gumba.html"><span>🛕</span> <span>GUMBA</span></a></li>
+      <li><a href="../yurt.html"><span>🏕️</span> <span>YURT</span></a></li>
+      <li><a href="../katha.html"><span>💬</span> <span>KATHA</span></a></li>
+      <li><a href="../vani.html"><span>🎙️</span> <span>VANI</span></a></li>
+      <li><a href="../darshan.html"><span>👁️</span> <span>DARSHAN</span></a></li>
+      <li><a href="../stupa.html"><span>🛕</span> <span>STUPA</span></a></li>
+      <li><a href="../lama.html"><span>🔮</span> <span>LAMA</span></a></li>
+      <li><a href="../mani.html"><span>⏱️</span> <span>MANI</span></a></li>
+      <li><a href="../karma.html"><span>☯️</span> <span>KARMA</span></a></li>
+      <li><a href="../tattva.html"><span>🔯</span> <span>TATTVA</span></a></li>
+      <li><a href="../tribhuj.html"><span>🔺</span> <span>TRIBHUJ</span></a></li>
+      <li><a href="../ypc27.html"><span>🔐</span> <span>YPC-27</span></a></li>
+      <li><a href="../sakshi.html"><span>👁️</span> <span>SAKSHI</span></a></li>
+      <li><a href="../geo-proof.html"><span>🌍</span> <span>PRAMAAN</span></a></li>
+      <li><a href="../trust-security.html"><span>🔒</span> <span>SURAKSHA</span></a></li>
+      <li><a href="../docs-bundle.html"><span>📚</span> <span>GRANTH</span></a></li>
+      <li><a href="../api.html"><span>📡</span> <span>API</span></a></li>
+      <li><a href="../adapters.html"><span>🔌</span> <span>Adapters</span></a></li>
+      <li><a href="../studio.html"><span>🎨</span> <span>Studio</span></a></li>
+      <li><a href="../quick-reference.html"><span>📋</span> <span>Quick Ref</span></a></li>
+    </ul>
+  </nav>
+
+  <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+    </svg>
+  </button>
+
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="docs-main" id="mainContent">
+    <div class="docs-content">
+      
+      <!-- Breadcrumb -->
+      <nav class="mb-6">
+        <a href="../tutorials.html" class="text-mountain-400 hover:text-white transition">← Back to Tutorials</a>
+      </nav>
+
+      <!-- Page Header -->
+      <div class="mb-8">
+        <div class="flex items-center gap-3 mb-2">
+          <span class="text-4xl">📱</span>
+          <h1 class="text-4xl font-bold">Mobile Access</h1>
+          <span class="theme-badge text-xs px-2 py-1 rounded-full">10 min</span>
+        </div>
+        <p class="theme-accent text-lg">View and manage your node from your phone</p>
+        <p class="text-mountain-300 mt-2">
+          Access your YAKMESH dashboard from anywhere, install it as an app, and stay connected on the go.
+        </p>
+      </div>
+
+      <!-- What You'll Learn -->
+      <div class="tutorial-card">
+        <h2 class="text-xl font-bold mb-4">📋 What You'll Learn</h2>
+        <ul class="space-y-2 text-mountain-300">
+          <li>• Access your dashboard on the same network</li>
+          <li>• Set up remote access with Tailscale or ZeroTier</li>
+          <li>• Install the PWA on your phone's home screen</li>
+          <li>• Understand what you can manage remotely</li>
+          <li>• Security best practices for mobile access</li>
+        </ul>
+      </div>
+
+      <!-- Local Network Access -->
+      <div class="tutorial-card">
+        <div class="step-header">
+          <span class="step-number">1</span>
+          <h2 class="text-xl font-bold">Access on Your Home Network</h2>
+        </div>
+        <p class="text-mountain-300 mb-4">
+          When your phone is on the same WiFi network as your YAKMESH node, you can access it directly.
+        </p>
+
+        <h3 class="font-semibold text-lg mb-3">Find Your Node's Address</h3>
+        <pre class="language-bash mb-4"><code># On your YAKMESH node, find the local IP:
+hostname -I
+# Example output: 192.168.1.100
+
+# Or check the dashboard startup message:
+# Dashboard: http://192.168.1.100:3000/dashboard</code></pre>
+
+        <h3 class="font-semibold text-lg mb-3">Open in Mobile Browser</h3>
+        <ol class="list-decimal list-inside space-y-2 text-mountain-300 mb-4">
+          <li>Connect your phone to the same WiFi network</li>
+          <li>Open your mobile browser (Safari, Chrome, Firefox)</li>
+          <li>Enter: <code class="bg-mountain-800 px-2 py-1 rounded">http://192.168.1.100:3000/dashboard</code></li>
+          <li>Bookmark the page for quick access</li>
+        </ol>
+
+        <div class="theme-callout rounded-lg p-4 border">
+          <p class="font-semibold theme-accent mb-1">💡 Use mDNS for Easier Access</p>
+          <p class="text-sm text-mountain-300">
+            If your node has a hostname, try: <code class="bg-mountain-800 px-1 rounded">http://yakmesh-node.local:3000</code><br>
+            This works on most home networks without remembering the IP address.
+          </p>
+        </div>
+      </div>
+
+      <!-- Remote Access with Tailscale -->
+      <div class="tutorial-card">
+        <div class="step-header">
+          <span class="step-number">2</span>
+          <h2 class="text-xl font-bold">Remote Access with Tailscale</h2>
+        </div>
+        <p class="text-mountain-300 mb-4">
+          <a href="https://tailscale.com" class="theme-accent theme-accent-hover" target="_blank">Tailscale</a> 
+          creates a secure private network that works from anywhere. Free for personal use.
+        </p>
+
+        <h3 class="font-semibold text-lg mb-3">Install on Your YAKMESH Node</h3>
+        <pre class="language-bash mb-4"><code># Install Tailscale (Linux/Raspberry Pi)
+curl -fsSL https://tailscale.com/install.sh | sh
+
+# Start and authenticate
+sudo tailscale up
+
+# Follow the link to authenticate in your browser
+# Note your Tailscale IP (usually 100.x.x.x)</code></pre>
+
+        <h3 class="font-semibold text-lg mb-3">Install on Your Phone</h3>
+        <ol class="list-decimal list-inside space-y-2 text-mountain-300 mb-4">
+          <li>Download Tailscale from App Store (iOS) or Play Store (Android)</li>
+          <li>Sign in with the same account you used on your node</li>
+          <li>Enable the VPN when prompted</li>
+          <li>Your phone is now on the same virtual network as your node!</li>
+        </ol>
+
+        <h3 class="font-semibold text-lg mb-3">Access Your Dashboard Remotely</h3>
+        <pre class="language-bash mb-4"><code># Find your node's Tailscale IP
+tailscale ip -4
+# Example: 100.64.0.1
+
+# Access from your phone (even on cellular):
+http://100.64.0.1:3000/dashboard</code></pre>
+
+        <div class="bg-mountain-800 rounded-lg p-4">
+          <p class="font-semibold text-white mb-2">✨ Tailscale Benefits</p>
+          <ul class="text-sm text-mountain-300 space-y-1">
+            <li>• <strong>No port forwarding needed</strong> - works behind any NAT/firewall</li>
+            <li>• <strong>End-to-end encrypted</strong> - WireGuard-based security</li>
+            <li>• <strong>Always connected</strong> - access from anywhere in the world</li>
+            <li>• <strong>Free tier</strong> - up to 100 devices for personal use</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Alternative: ZeroTier -->
+      <div class="tutorial-card">
+        <div class="step-header">
+          <span class="step-number">3</span>
+          <h2 class="text-xl font-bold">Alternative: ZeroTier</h2>
+        </div>
+        <p class="text-mountain-300 mb-4">
+          <a href="https://zerotier.com" class="theme-accent theme-accent-hover" target="_blank">ZeroTier</a> 
+          is another excellent option for creating a virtual private network.
+        </p>
+
+        <h3 class="font-semibold text-lg mb-3">Setup Overview</h3>
+        <pre class="language-bash mb-4"><code># Install ZeroTier on your node
+curl -s https://install.zerotier.com | sudo bash
+
+# Join a network (create one at my.zerotier.com first)
+sudo zerotier-cli join &lt;network-id&gt;
+
+# Check your ZeroTier IP
+sudo zerotier-cli listnetworks</code></pre>
+
+        <ol class="list-decimal list-inside space-y-2 text-mountain-300">
+          <li>Create a free account at <a href="https://my.zerotier.com" class="theme-accent theme-accent-hover" target="_blank">my.zerotier.com</a></li>
+          <li>Create a new network and note the Network ID</li>
+          <li>Install ZeroTier on your node and phone</li>
+          <li>Join the same network on both devices</li>
+          <li>Authorize both devices in the ZeroTier dashboard</li>
+          <li>Access your node using its ZeroTier IP</li>
+        </ol>
+      </div>
+
+      <!-- Install as PWA -->
+      <div class="tutorial-card">
+        <div class="step-header">
+          <span class="step-number">4</span>
+          <h2 class="text-xl font-bold">Install as a Phone App (PWA)</h2>
+        </div>
+        <p class="text-mountain-300 mb-4">
+          The YAKMESH dashboard is a Progressive Web App (PWA). Install it on your home screen for an app-like experience.
+        </p>
+
+        <h3 class="font-semibold text-lg mb-3">iOS (Safari)</h3>
+        <ol class="list-decimal list-inside space-y-2 text-mountain-300 mb-4">
+          <li>Open the dashboard URL in Safari</li>
+          <li>Tap the Share button (square with arrow)</li>
+          <li>Scroll down and tap <strong>"Add to Home Screen"</strong></li>
+          <li>Edit the name if desired, then tap <strong>"Add"</strong></li>
+          <li>The YAKMESH icon now appears on your home screen!</li>
+        </ol>
+
+        <h3 class="font-semibold text-lg mb-3">Android (Chrome)</h3>
+        <ol class="list-decimal list-inside space-y-2 text-mountain-300 mb-4">
+          <li>Open the dashboard URL in Chrome</li>
+          <li>Tap the three-dot menu (⋮)</li>
+          <li>Tap <strong>"Add to Home screen"</strong> or <strong>"Install app"</strong></li>
+          <li>Confirm the installation</li>
+          <li>Find YAKMESH in your app drawer!</li>
+        </ol>
+
+        <div class="theme-callout rounded-lg p-4 border">
+          <p class="font-semibold theme-accent mb-1">📲 PWA Features</p>
+          <ul class="text-sm text-mountain-300 space-y-1">
+            <li>• <strong>Full-screen mode</strong> - no browser UI clutter</li>
+            <li>• <strong>Offline support</strong> - cached pages work without connection</li>
+            <li>• <strong>Push notifications</strong> - get alerts about your node (if enabled)</li>
+            <li>• <strong>Fast launch</strong> - opens directly without typing URLs</li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- What You Can Do Remotely -->
+      <div class="tutorial-card">
+        <div class="step-header">
+          <span class="step-number">5</span>
+          <h2 class="text-xl font-bold">What You Can Do Remotely</h2>
+        </div>
+        
+        <h3 class="font-semibold text-lg mb-3">Full Access</h3>
+        <ul class="space-y-2 text-mountain-300 mb-4">
+          <li>✅ <strong>View Dashboard</strong> - See node status, peers, network health</li>
+          <li>✅ <strong>Monitor Metrics</strong> - Uptime, bandwidth, storage usage</li>
+          <li>✅ <strong>Browse Files</strong> - View shared content via YAK:// links</li>
+          <li>✅ <strong>Check Peers</strong> - See connected peers and their status</li>
+          <li>✅ <strong>View Logs</strong> - Debug issues remotely</li>
+        </ul>
+
+        <h3 class="font-semibold text-lg mb-3">Management Actions</h3>
+        <ul class="space-y-2 text-mountain-300 mb-4">
+          <li>✅ <strong>Connect/Disconnect Peers</strong> - Manage peer connections</li>
+          <li>✅ <strong>Share Content</strong> - Generate YAK:// links</li>
+          <li>✅ <strong>Update Settings</strong> - Change configuration (with API)</li>
+          <li>⚠️ <strong>Upload Files</strong> - Limited by mobile connection speed</li>
+          <li>❌ <strong>Restart Node</strong> - Requires SSH access (see below)</li>
+        </ul>
+
+        <h3 class="font-semibold text-lg mb-3">SSH for Advanced Control</h3>
+        <p class="text-mountain-300 mb-3">
+          For full admin access, use an SSH app on your phone:
+        </p>
+        <ul class="space-y-1 text-mountain-300">
+          <li>• <strong>iOS:</strong> Termius, Prompt, Blink Shell</li>
+          <li>• <strong>Android:</strong> Termux, JuiceSSH, ConnectBot</li>
+        </ul>
+        <pre class="language-bash mt-3"><code># Connect via Tailscale IP
+ssh pi@100.64.0.1
+
+# Restart YAKMESH
+sudo systemctl restart yakmesh</code></pre>
+      </div>
+
+      <!-- Security Considerations -->
+      <div class="tutorial-card">
+        <div class="step-header">
+          <span class="step-number">6</span>
+          <h2 class="text-xl font-bold">Security Considerations</h2>
+        </div>
+        <p class="text-mountain-300 mb-4">
+          Accessing your node remotely adds convenience but requires security awareness.
+        </p>
+
+        <h3 class="font-semibold text-lg mb-3">Best Practices</h3>
+        <div class="space-y-4">
+          <div class="bg-mountain-800 rounded-lg p-4">
+            <p class="font-semibold text-emerald-400 mb-1">✅ DO: Use VPN-based solutions</p>
+            <p class="text-sm text-mountain-300">
+              Tailscale and ZeroTier encrypt all traffic and don't expose ports to the internet.
+            </p>
+          </div>
+          
+          <div class="bg-mountain-800 rounded-lg p-4">
+            <p class="font-semibold text-emerald-400 mb-1">✅ DO: Enable authentication</p>
+            <p class="text-sm text-mountain-300">
+              Configure dashboard authentication in <code class="bg-mountain-900 px-1 rounded">yakmesh.config.js</code>:
+            </p>
+            <pre class="language-javascript text-sm mt-2"><code>auth: {
+  enabled: true,
+  username: 'admin',
+  password: 'your-secure-password',
+}</code></pre>
+          </div>
+
+          <div class="bg-mountain-800 rounded-lg p-4">
+            <p class="font-semibold text-emerald-400 mb-1">✅ DO: Use HTTPS when possible</p>
+            <p class="text-sm text-mountain-300">
+              If accessing over the internet, set up SSL (see <a href="domain-setup.html" class="theme-accent theme-accent-hover">Domain Setup</a> tutorial).
+            </p>
+          </div>
+
+          <div class="bg-mountain-800 rounded-lg p-4">
+            <p class="font-semibold text-red-400 mb-1">❌ DON'T: Expose ports directly to internet</p>
+            <p class="text-sm text-mountain-300">
+              Avoid port forwarding 3000 or 9001 without authentication and SSL. Use Tailscale instead.
+            </p>
+          </div>
+
+          <div class="bg-mountain-800 rounded-lg p-4">
+            <p class="font-semibold text-red-400 mb-1">❌ DON'T: Use public WiFi without VPN</p>
+            <p class="text-sm text-mountain-300">
+              Always use Tailscale/ZeroTier when on untrusted networks. They encrypt your traffic.
+            </p>
+          </div>
+
+          <div class="bg-mountain-800 rounded-lg p-4">
+            <p class="font-semibold text-red-400 mb-1">❌ DON'T: Save passwords in browser on shared devices</p>
+            <p class="text-sm text-mountain-300">
+              Use a password manager instead, and enable biometric lock on your phone.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Reference -->
+      <div class="tutorial-card">
+        <h2 class="text-xl font-bold mb-4">📋 Quick Reference</h2>
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-mountain-700">
+                <th class="text-left py-2 px-3">Access Method</th>
+                <th class="text-left py-2 px-3">Best For</th>
+                <th class="text-left py-2 px-3">Setup Difficulty</th>
+              </tr>
+            </thead>
+            <tbody class="text-mountain-300">
+              <tr class="border-b border-mountain-800">
+                <td class="py-2 px-3 font-semibold">Local WiFi</td>
+                <td class="py-2 px-3">Home use, no internet needed</td>
+                <td class="py-2 px-3 text-emerald-400">Easy</td>
+              </tr>
+              <tr class="border-b border-mountain-800">
+                <td class="py-2 px-3 font-semibold">Tailscale</td>
+                <td class="py-2 px-3">Remote access without port forwarding</td>
+                <td class="py-2 px-3 text-emerald-400">Easy</td>
+              </tr>
+              <tr class="border-b border-mountain-800">
+                <td class="py-2 px-3 font-semibold">ZeroTier</td>
+                <td class="py-2 px-3">Self-hosted network option</td>
+                <td class="py-2 px-3 text-yellow-400">Medium</td>
+              </tr>
+              <tr class="border-b border-mountain-800">
+                <td class="py-2 px-3 font-semibold">Domain + HTTPS</td>
+                <td class="py-2 px-3">Public access, sharing links</td>
+                <td class="py-2 px-3 text-orange-400">Advanced</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Success -->
+      <div class="bg-emerald-900/30 border border-emerald-600 rounded-xl p-6 mb-8">
+        <h2 class="text-xl font-bold mb-2 text-emerald-400">🎉 Stay Connected!</h2>
+        <p class="text-mountain-300">
+          You can now access your YAKMESH node from your phone, whether you're on the couch 
+          or halfway around the world. Install the PWA for the best experience, and use 
+          Tailscale for secure remote access without the complexity of port forwarding.
+        </p>
+      </div>
+
+      <!-- Navigation Footer -->
+      <div class="border-t border-mountain-700 mt-12 pt-8">
+        <div class="flex flex-col sm:flex-row gap-4">
+          <a href="raspberry-pi.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-emerald-500 transition group">
+            <div class="text-xs text-mountain-400 mb-1">← Previous</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">🍓</span>
+              <span class="font-semibold group-hover:text-emerald-400">Running on Raspberry Pi</span>
+            </div>
+          </a>
+          <a href="troubleshooting.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-emerald-500 transition group">
+            <div class="text-xs text-mountain-400 mb-1">Next →</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">🩺</span>
+              <span class="font-semibold group-hover:text-emerald-400">Troubleshooting FAQ</span>
+            </div>
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </main>
+
+  <footer class="docs-footer">
+    <p>© 2026 YAKMESH™</p>
+  </footer>
+
+  <script src="../prism.min.js"></script>
+  <script src="../prism-bash.min.js"></script>
+  <script src="../prism-javascript.min.js"></script>
+  <script src="../docs.js"></script>
+</body>
+</html>

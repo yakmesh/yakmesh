@@ -1,0 +1,43 @@
+{
+  "generated": "2026-02-20 02:53:20",
+  "random_seed": 144,
+  "models": {
+    "entropy-sentinel": {
+      "inputs": 32,
+      "hidden": [
+        48,
+        32,
+        16
+      ],
+      "outputs": 1,
+      "activation": "sigmoid",
+      "samples": 8000,
+      "size": 15388
+    },
+    "sakshi-anomaly": {
+      "inputs": 12,
+      "hidden": [
+        24,
+        16
+      ],
+      "outputs": 4,
+      "activation": "sigmoid",
+      "samples": 7200,
+      "size": 3634
+    },
+    "karma-trust": {
+      "inputs": 14,
+      "hidden": [
+        24,
+        16
+      ],
+      "outputs": 4,
+      "activation": "softmax",
+      "samples": 9000,
+      "size": 3807
+    }
+  },
+  "total_size": 22829,
+  "total_samples": 24200,
+  "training_time_seconds": 17.6
+}

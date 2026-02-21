@@ -231,16 +231,16 @@ describe('AnnexSession', () => {
   });
 
   describe('Key Generation (ML-KEM-768)', () => {
-    test('generates ephemeral key pair', () => {
-      const publicKey = session.generateKeyPair();
+    test('generates ephemeral key pair', async () => {
+      const publicKey = await session.generateKeyPair();
 
       expect(publicKey).toBeDefined();
       expect(typeof publicKey).toBe('string');
       expect(session.kemKeyPair).toBeDefined();
     });
 
-    test('public key is valid hex string', () => {
-      const publicKey = session.generateKeyPair();
+    test('public key is valid hex string', async () => {
+      const publicKey = await session.generateKeyPair();
 
       // ML-KEM-768 public key is 1184 bytes = 2368 hex chars
       expect(publicKey).toMatch(/^[0-9a-f]+$/i);

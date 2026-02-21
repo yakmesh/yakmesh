@@ -80,9 +80,12 @@ export class MandalaNetwork {
     this.identity = identity;
     this.config = {
       wsPort: config.wsPort || 9001,
-      maxPeers: config.maxPeers || 10,
       pingInterval: config.pingInterval || 30000,
       portRetries: config.portRetries || 10,  // Try up to 10 sequential ports
+      // Max peers allowed in HELLO/WELCOME handshake simultaneously.
+      // Total connected peers is UNBOUNDED — the mesh scales freely.
+      // This only gates the handshake window to prevent Sybil flood attacks.
+      maxConcurrentHandshakes: config.maxConcurrentHandshakes || 50,
       ...config,
     };
     
@@ -112,6 +115,27 @@ export class MandalaNetwork {
     
     // Rate limiter for connection/message flood protection
     this.rateLimiter = new ConnectionRateLimiter(config.rateLimiter || {});
+    
+    // Concurrent handshake tracking — limits how many peers can be in the
+    // HELLO/WELCOME negotiation window at the same time. Legitimate nodes
+    // trickle in; a burst of 200 simultaneous connections is a Sybil tell.
+    // Total peer count is UNBOUNDED (mesh scales freely).
+    this._pendingHandshakeCount = 0;
+    this._pendingHandshakeWs = new Set();  // Track WSs in handshake state
+    
+    // Connection burst detector — sliding window for GPS-timestamped alerts.
+    // A sudden spike from baseline to hundreds of connections per minute
+    // shows up as a "bright spot" with microsecond-precise timing evidence.
+    this._burstWindow = [];           // [{ ts, ip }] — last 60s of connections
+    this._burstWindowMs = 60000;      // 60-second sliding window
+    this._burstThreshold = 30;        // connections/minute that trigger alert
+    this._burstAlerted = false;       // debounce: one alert per burst episode
+    this._burstStats = {
+      totalBurstsDetected: 0,
+      lastBurstAt: null,
+      lastBurstRate: 0,
+      peakRate: 0,
+    };
     
     // Message validation — size limits, depth limits, proto pollution guard
     // This was implemented but never wired in. Now it gates ALL incoming WS messages.
@@ -204,6 +228,7 @@ export class MandalaNetwork {
   async connect(endpoint) {
     return new Promise((resolve, reject) => {
       log.debug('Connecting to peer', { endpoint });
+      let settled = false;
       
       const ws = new WebSocket(endpoint);
       
@@ -229,13 +254,19 @@ export class MandalaNetwork {
       });
 
       ws.on('error', (err) => {
-        console.error(`Connection to ${endpoint} failed:`, err.message);
-        reject(err);
+        if (!settled) {
+          settled = true;
+          log.debug(`Connection to ${endpoint} failed: ${err.message}`);
+          reject(err);
+        }
+        // If already settled (e.g. caller timed out), just silently close
+        try { ws.close(); } catch {}
       });
 
       // Resolve when we get WELCOME back
       const welcomeHandler = (msg) => {
-        if (msg.type === MessageTypes.WELCOME) {
+        if (msg.type === MessageTypes.WELCOME && !settled) {
+          settled = true;
           log.info('Connected to peer', { nodeId: msg.identity.nodeId });
           resolve(msg.identity);
         }
@@ -452,12 +483,19 @@ export class MandalaNetwork {
         }
       }
       
-      // Store peer
+      // Store peer — no cap on total peers (mesh scales freely)
       this.peers.set(nodeId, {
         ws,
         identity: msg.identity,
         lastSeen: Date.now(),
       });
+      
+      // Release handshake slot — peer is now fully registered.
+      // The slot was reserved in _handleIncomingConnection.
+      if (this._pendingHandshakeWs.has(ws)) {
+        this._pendingHandshakeCount = Math.max(0, this._pendingHandshakeCount - 1);
+        this._pendingHandshakeWs.delete(ws);
+      }
       
       // Send WELCOME back with our network info
       this._send(ws, {
@@ -470,18 +508,28 @@ export class MandalaNetwork {
         peers: this.getPeers().filter(p => p.nodeId !== nodeId),
       });
       
-      log.info('Peer connected', { name: msg.identity.name, nodeId: nodeId.slice(0, 20) });
+      log.info('Peer connected', { name: msg.identity.name, nodeId: nodeId.slice(0, 20), totalPeers: this.peers.size });
+      
+      // Signal that this peer's public key is now available — any deferred
+      // ANNEX messages waiting for this key will be replayed.
+      this.emit('peer-registered', nodeId);
       
       // Deterministic initiator: lower nodeId always initiates ANNEX
       // Prevents duplicate sessions when both sides try to openChannel simultaneously
+      // Guard: skip if the WELCOME handler already initiated (both fire when
+      // two nodes simultaneously connect to each other as bootstrap peers)
       const ourNodeId = this.identity.identity.nodeId;
       if (this.annex && ourNodeId < nodeId) {
-        log.debug('ANNEX: we initiate (lower nodeId)', { us: ourNodeId.slice(0, 12), them: nodeId.slice(0, 12) });
-        this.annex.openChannel(nodeId).then(() => {
-          log.info('ANNEX channel established with peer', { nodeId: nodeId.slice(0, 20) });
-        }).catch(err => {
-          log.warn('ANNEX negotiation failed', { nodeId: nodeId.slice(0, 20), error: err.message });
-        });
+        const existingSession = this.annex.sessions.get(nodeId);
+        const pendingHandshake = this.annex.pendingHandshakes.get(nodeId);
+        if (!existingSession && !pendingHandshake) {
+          log.debug('ANNEX: we initiate (lower nodeId)', { us: ourNodeId.slice(0, 12), them: nodeId.slice(0, 12) });
+          this.annex.openChannel(nodeId).then(() => {
+            log.info('ANNEX channel established with peer', { nodeId: nodeId.slice(0, 20) });
+          }).catch(err => {
+            log.warn('ANNEX negotiation failed', { nodeId: nodeId.slice(0, 20), error: err.message });
+          });
+        }
       } else if (this.annex) {
         log.debug('ANNEX: waiting for peer to initiate (they have lower nodeId)', { us: ourNodeId.slice(0, 12), them: nodeId.slice(0, 12) });
       }
@@ -531,16 +579,25 @@ export class MandalaNetwork {
         delete ws._pendingWelcome;
       }
       
+      // Signal that this peer's public key is now available
+      this.emit('peer-registered', nodeId);
+      
       // Deterministic initiator: connector side also checks
       // Lower nodeId always initiates ANNEX — mirrors the HELLO handler logic
+      // Guard: skip if the HELLO handler already initiated (openChannel returns
+      // the existing session when one is pending, but we avoid the extra call entirely)
       const ourNodeId = this.identity.identity.nodeId;
       if (this.annex && ourNodeId < nodeId) {
-        log.debug('ANNEX: we initiate on WELCOME (lower nodeId)', { us: ourNodeId.slice(0, 12), them: nodeId.slice(0, 12) });
-        this.annex.openChannel(nodeId).then(() => {
-          log.info('ANNEX channel established with peer', { nodeId: nodeId.slice(0, 20) });
-        }).catch(err => {
-          log.warn('ANNEX negotiation failed', { nodeId: nodeId.slice(0, 20), error: err.message });
-        });
+        const existingSession = this.annex.sessions.get(nodeId);
+        const pendingHandshake = this.annex.pendingHandshakes.get(nodeId);
+        if (!existingSession && !pendingHandshake) {
+          log.debug('ANNEX: we initiate on WELCOME (lower nodeId)', { us: ourNodeId.slice(0, 12), them: nodeId.slice(0, 12) });
+          this.annex.openChannel(nodeId).then(() => {
+            log.info('ANNEX channel established with peer', { nodeId: nodeId.slice(0, 20) });
+          }).catch(err => {
+            log.warn('ANNEX negotiation failed', { nodeId: nodeId.slice(0, 20), error: err.message });
+          });
+        }
       }
     });
 
@@ -588,7 +645,7 @@ export class MandalaNetwork {
     const clientIp = req.socket.remoteAddress || 'unknown';
     log.debug('Incoming connection', { clientIp });
     
-    // SECURITY: Rate limit check for connection flood protection
+    // SECURITY: Rate limit check for connection flood protection (per-IP)
     const connectionCheck = this.rateLimiter.checkConnection(clientIp);
     if (!connectionCheck.allowed) {
       console.warn(`⚠️ Connection rejected (rate limit): ${clientIp} - ${connectionCheck.reason}`);
@@ -596,11 +653,38 @@ export class MandalaNetwork {
       return;
     }
     
+    // SECURITY: Concurrent handshake gate — limits how many peers can be
+    // negotiating HELLO/WELCOME simultaneously. Total peers is unbounded;
+    // only the handshake window is capped. A burst of connections from
+    // many IPs at once is a Sybil tell.
+    if (this._pendingHandshakeCount >= this.config.maxConcurrentHandshakes) {
+      log.warn('Connection rejected (handshake slots full)', {
+        clientIp,
+        pending: this._pendingHandshakeCount,
+        max: this.config.maxConcurrentHandshakes,
+      });
+      ws.close(1013, 'Try again later — handshake slots full');
+      return;
+    }
+    
+    // Track this connection as pending handshake
+    this._pendingHandshakeCount++;
+    this._pendingHandshakeWs.add(ws);
+    
+    // SECURITY: Burst detection — track connection rate in sliding window.
+    // GPS-timestamped evidence for Sybil forensics.
+    this._recordConnectionBurst(clientIp);
+    
     ws.on('message', (data) => {
       this._handleMessage(ws, data, req);
     });
 
     ws.on('close', () => {
+      // Release handshake slot if peer disconnects before completing HELLO
+      if (this._pendingHandshakeWs.has(ws)) {
+        this._pendingHandshakeCount = Math.max(0, this._pendingHandshakeCount - 1);
+        this._pendingHandshakeWs.delete(ws);
+      }
       this._handleDisconnect(ws);
     });
 
@@ -754,6 +838,8 @@ export class MandalaNetwork {
           this.annex.closeChannel(nodeId).catch(() => {});
         }
         this.peers.delete(nodeId);
+        // Signal so deferred ANNEX messages for this peer are cleaned up
+        this.emit('peer-disconnected', nodeId);
         break;
       }
     }
@@ -815,6 +901,101 @@ export class MandalaNetwork {
         this.seenMessages = new Set(entries.slice(entries.length - keepCount));
       }
     }, this.config.pingInterval);
+  }
+
+  /**
+   * Record a connection in the burst detection sliding window.
+   * When connections/minute exceeds _burstThreshold, emits a GPS-timestamped
+   * alert — the "bright spot on the map" that makes Sybil floods visible.
+   * @param {string} ip - Client IP address
+   */
+  _recordConnectionBurst(ip) {
+    const now = Date.now();
+    
+    // Add to sliding window
+    this._burstWindow.push({ ts: now, ip });
+    
+    // Evict entries older than window
+    const cutoff = now - this._burstWindowMs;
+    while (this._burstWindow.length > 0 && this._burstWindow[0].ts < cutoff) {
+      this._burstWindow.shift();
+    }
+    
+    const rate = this._burstWindow.length;  // connections in last 60s
+    
+    // Track peak
+    if (rate > this._burstStats.peakRate) {
+      this._burstStats.peakRate = rate;
+    }
+    
+    if (rate >= this._burstThreshold && !this._burstAlerted) {
+      // Count unique IPs in burst
+      const uniqueIps = new Set(this._burstWindow.map(e => e.ip)).size;
+      
+      this._burstAlerted = true;
+      this._burstStats.totalBurstsDetected++;
+      this._burstStats.lastBurstAt = new Date().toISOString();
+      this._burstStats.lastBurstRate = rate;
+      
+      console.warn(`🛰️ BURST DETECTED: ${rate} connections/min (threshold: ${this._burstThreshold}) from ${uniqueIps} unique IPs`);
+      log.warn('Connection burst detected — possible Sybil flood', {
+        connectionsPerMinute: rate,
+        threshold: this._burstThreshold,
+        uniqueIps,
+        pendingHandshakes: this._pendingHandshakeCount,
+        totalPeers: this.peers.size,
+        // GPS-precision timestamp for forensic evidence
+        gpsTimestamp: new Date().toISOString(),
+        // IP frequency distribution (top 5 offenders)
+        topIps: this._getTopBurstIps(5),
+      });
+      
+      // Emit event for external consumers (health endpoint, SAKSHI anomaly detection)
+      this.emit('connection-burst', {
+        rate,
+        uniqueIps,
+        topIps: this._getTopBurstIps(5),
+        timestamp: new Date().toISOString(),
+      });
+      
+      // Reset alert after 30s (allow re-triggering if burst continues)
+      setTimeout(() => { this._burstAlerted = false; }, 30000);
+    }
+  }
+
+  /**
+   * Get the top N most frequent IPs in the current burst window.
+   * @param {number} n - Number of top IPs to return
+   * @returns {Array<{ip: string, count: number}>}
+   */
+  _getTopBurstIps(n = 5) {
+    const counts = new Map();
+    for (const entry of this._burstWindow) {
+      counts.set(entry.ip, (counts.get(entry.ip) || 0) + 1);
+    }
+    return [...counts.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, n)
+      .map(([ip, count]) => ({ ip, count }));
+  }
+
+  /**
+   * Security stats for /health endpoint exposure.
+   * Provides visibility into handshake pressure and burst detection.
+   */
+  getSecurityStats() {
+    return {
+      pendingHandshakes: this._pendingHandshakeCount,
+      maxConcurrentHandshakes: this.config.maxConcurrentHandshakes,
+      totalConnectedPeers: this.peers.size,
+      burstDetection: {
+        currentRate: this._burstWindow.length,
+        threshold: this._burstThreshold,
+        windowMs: this._burstWindowMs,
+        inBurst: this._burstAlerted,
+        stats: { ...this._burstStats },
+      },
+    };
   }
 }
 

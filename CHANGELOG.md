@@ -2,6 +2,298 @@
 
 All notable changes to YAKMESH will be documented in this file.
 
+## [3.0.0] - 2026-02-20
+
+### 🏔️ The Mega Release — Every Module Wired, Every Path Hardened
+
+*Theme: "The mesh stands on math. Every protocol alive, every path encrypted, every proof verifiable."*
+
+This is the culmination release. Every protocol module that existed as standalone code is now wired into
+a running server. Every security gap identified by audit has been closed. Voting consensus is gone —
+replaced by mathematical proof. The ternary backbone runs through every subsystem. Hardware acceleration
+routes crypto to the fastest silicon available. And STEADYWATCH delivers real 256-bit quantum entropy
+from IBM ibm_marrakesh quantum hardware.
+
+---
+
+#### ⚡ ACCEL — Adaptive Compute & Crypto Engine Layer (`utils/accel.js`, 962 lines)
+
+**New module.** Heterogeneous hardware acceleration that routes cryptographic operations to the
+fastest available silicon:
+
+- **CPU-SIMD**: AES-NI, VAES, AVX-512, GFNI detection via timing attestation
+- **GPU**: WebGPU compute shader dispatch for batch operations
+- **NPU**: ONNX Runtime integration (DirectML, CoreML, CUDA, TensorRT providers)
+- Capability probing on startup — no false claims, no assumptions
+- `accel.route(operation)` returns optimal backend for each crypto/ML task
+- `_probeOnnxRuntime()` — locates and loads `onnxruntime-node` for ML inference
+- Wired into **all 12 subsystem files**: security, oracle, mesh, adapters
+
+#### 🧠 ONNX Machine Learning Pipeline
+
+**3 security models** trained and shipping with every node:
+
+| Model | Input → Output | Purpose |
+|-------|----------------|---------|
+| `entropy-sentinel.onnx` | 32 → 1 | STEADYWATCH entropy quality scoring |
+| `sakshi-anomaly.onnx` | 12 → 4 | SAKSHI behavioral anomaly detection |
+| `karma-trust.onnx` | 14 → 4 | KARMA trust level prediction |
+
+- **Training pipeline**: `train_models.py` — numpy + ONNX pattern (no PyTorch/TF dependency)
+- **Runtime**: `onnxruntime-node` with DirectML (NPU/GPU) and CPU fallback
+- **Model manifest**: `models/manifest.json` — versioned, hash-verified
+- Total: 22,829 bytes, 24,200 training samples
+- NPU inference paths wired into SAKSHI `assessNode()` and KARMA `predictTrustLevel()`
+
+#### 🛡️ STEADYWATCH Ternary-144 Integration (`security/steadywatch.js`, 1,129 lines)
+
+**Quantum-hardware-validated entropy** from IBM ibm_marrakesh (156-qubit Heron r2):
+
+- **SST satellite families**: 48/48/48 (A/B/C) from Hurwitz quaternion coordinates
+- **6-trit balanced ternary** satellite addresses (729 addressable slots)
+- **Fibonacci 24-cycle** family-aware seed selection (`selectByFibonacciCycle`)
+- **Ternary seed quality**: `_checkBiasTernary()` returns `Trit` verdict (+1/0/-1)
+- **EntropySentinel** NPU-accelerated quality monitor — `score()` returns numeric + ternary verdict
+- **Batch consensus**: `batchQualityConsensus(seeds)` — TritArray aggregate quality
+- Seed lookup by trit address: `getSeedByTritAddress(tritAddr)`
+- **Result**: Real 256-bit quantum entropy for ANNEX ML-KEM-768 keygen
+
+*Every Yakmesh node provisioned with a quantum-hardware-derived entropy seed,
+validated by actual measurement on physical qubits.*
+
+$$\text{Satellites} = 24 \times (p + 1), \quad p=5 \Rightarrow 144 \text{ unique seeds}$$
+
+#### 🔌 Full Protocol Wiring — Zero Orphaned Modules
+
+Every previously-standalone protocol module is now initialized, routed, and serving:
+
+- **KOMM stack** (`server/komm-api.js`, 662 lines) — full HTTP+WS API:
+  - KATHA rich chat (reactions, typing, threads, read receipts)
+  - VANI voice/video signaling (WebRTC via mesh)
+  - YURT room discovery and management
+  - GUMBA cryptographic access control (proof-based, E2E over ANNEX)
+  - WebSocket at `/komm/ws` — JSON protocol `{ type, data, ts }`
+- **DARSHAN** (`server/darshan-api.js`, 343 lines) — content streaming API
+  - View-not-copy delivery with attestation
+- **NAKPAK** — onion routing initialized with ML-KEM circuits
+- **SAKSHI** → **KARMA** pipeline — velocity alerts drive trust accumulation:
+  - CRITICAL alerts → negative karma
+  - WARNING alerts → neutral beacon sighting
+  - Mesh peer connections → positive karma accumulation
+
+#### 🔗 SHERPA HTTP Relay Bridge
+
+**Firewall traversal** for nodes behind NAT/CGNAT:
+
+- `_initRelay()` — HTTP relay bridge alongside WebSocket
+- SHERPA auto-connect with explicit beacon endpoints
+- PHP bridge compatibility (`/mesh/relay` base endpoint)
+- Gossip wired through relay transport
+- **PQ-signed relay**: ML-DSA-65 signatures on all relay operations
+- Relay client expiry and health visibility
+- Caddy WSS template for TLS-terminated WebSocket
+
+#### 🔐 ANNEX Hardening
+
+- Single Annex instance per peer pair + deterministic initiator selection
+- Infinite recursion fix in `_send()` (self-encrypting loop eliminated)
+- Key derivation fixed with proper replay nonce management
+- **PFS-safe rekey** — forward-looking pending key (no gap during ratchet)
+- ANNEX relay bridge with `sendTo()` fallback for relay-only peers
+- E2E delivery wired into GUMBA `getMessages()` — **zero TODOs remaining**
+
+#### 🔺 TRIBHUJ Deep Integration
+
+- **TRIBHUJ key ratchet** (`identity/tribhuj-ratchet.js`, 506 lines) — Fibonacci-style ternary key rotation
+- Gateway attestation with TRIBHUJ proofs
+- SSE (Server-Sent Events) for real-time state push
+- Tighter drift tolerance in time synchronization
+- Ternary + SST backbone wired across: KARMA, DOKO, revocation, strike, sybil, ANNEX
+
+#### ⚖️ A+C Hybrid Integrity — Voting Consensus Removed
+
+**Content validity determined by math, not votes:**
+
+- **A** (Authenticity): Publisher ML-DSA-65 signature over content hash
+- **C** (Correctness): SHA3-256 hash integrity verification
+- Any node independently verifies both — one proof = proven
+
+**Removed:**
+- `ConsensusProof` class (validators, quorum, `hasQuorum`, `addValidator`)
+- `content_vote` and `content_validate` gossip handlers
+- `quorumSize` config, PENDING/REJECTED `ContentStatus` values
+- `/:hash/proof` API endpoint, `X-Consensus-Proof` header
+
+**Added:**
+- `ContentStatus`: LOCAL → ANNOUNCED → VERIFIED (no PENDING/REJECTED)
+- `publish()` signs content hash with ML-DSA-65, status → ANNOUNCED
+- `content_response` verifies hash + publisher signature → VERIFIED
+- `/:hash/integrity` API endpoint (hash + publisher sig + status)
+- `X-Publisher-Signature`, `X-Published-By`, `X-Verified` response headers
+- 8 new integrity verification tests replace 11 voting tests
+
+*Ethos: Voting consensus is inherently flawed (51% attacks).
+The math checks out — that's the only consensus needed.*
+
+#### 🔒 Deep Security Audit — 30 Findings Fixed
+
+**Two rounds of comprehensive security hardening:**
+
+1. **2 CRITICALs** — fixed: missing auth bypass, unsigned replication
+2. **6 HIGHs** — fixed: unsigned gossip rumors, unverified content votes,
+   unsigned replication changes, unauthenticated KOMM/DARSHAN APIs (`requirePeerAuth` wired)
+3. **27 findings** from deep review — all resolved
+4. **140 new security-focused tests** added
+5. Ethos audit: no external dependencies introduced, no centralization
+6. ML-DSA-65 signatures verified on **all** incoming mesh messages
+7. Comprehensive hardening: SQL injection, auth, encryption across all paths
+
+#### 📊 Complete Statistics
+
+| Metric | Value |
+|--------|-------|
+| Vitest tests | 1,323 passing |
+| Oracle tests | 212 passing |
+| **Total tests** | **1,535 (0 failures)** |
+| New security tests | 140 |
+| Test files | 29 vitest + oracle suites |
+| Source files (protected) | 179+ |
+| ONNX models | 3 (22,829 bytes) |
+| Server module | 3,202 lines |
+| SAKSHI module | 1,966 lines |
+| STEADYWATCH module | 1,129 lines |
+| ACCEL module | 962 lines |
+
+---
+
+## [2.9.0] - 2026-02-10
+
+### 📡 Communication Stack Complete + DHARMA Content Moderation
+
+*Theme: "The full voice of the mesh — from chat to streaming, moderated by behavior, not identity."*
+
+This release completes the 3.0 communication stack (Layers 9–13), adds behavior-based content moderation,
+and introduces the adapter framework for extensible chat.
+
+#### 🗣️ Communication Protocol Stack (Layers 9–13)
+
+Five new protocol layers, all documented and tested:
+
+| Layer | Protocol | Purpose | Module |
+|-------|----------|---------|--------|
+| 9 | GUMBA | Cryptographic access control (proof-based) | `mesh/gumba.js` |
+| 10 | YURT | Decentralized room discovery | `mesh/yurt.js` |
+| 11 | KATHA | Rich chat (reactions, typing, threads) | `mesh/katha.js` |
+| 12 | VANI | Voice/video calls (WebRTC via mesh) | `mesh/vani.js` |
+| 13 | DARSHAN | View-not-copy content streaming | `mesh/darshan.js` |
+
+#### 🛡️ DHARMA — Behavior-Based Content Moderation (`security/dharma-moderation.js`, 517 lines)
+
+**धर्म (Sanskrit: "righteous conduct")** — Content moderation that blocks actions, not identities:
+
+- ✅ Violence incitement — blocked
+- ✅ Terrorism promotion — blocked
+- ✅ Exploitation — blocked
+- ❌ NO religious discrimination
+- ❌ NO identity-based filtering
+
+Same rules for everyone. That's the law.
+
+#### 🔌 Adapter Framework
+
+Extensible chat plugin system with security built-in:
+
+- **`ContentAdapter`** — serve content over the P2P mesh
+- **`ChatModAdapter`** — add `/slash` commands to KATHA
+- Capability declaration required for all adapters
+- Response signing for verification
+- Rate limiting by default
+- **MLV Bible Adapter** — example implementation included
+
+#### 🛡️ Active Defense Systems
+
+- **VEGATI** velocity detection — behavioral velocity monitoring across dimensions
+- **ZIMMEDARI** attestation accountability — revocation with lineage tracking
+- Trust-proportional rate limits — higher trust = higher throughput
+- STUPA revocation broadcasts — mesh-wide revocation propagation
+
+#### 🔬 Security Audit
+
+16 modules analyzed against three principles: SECURITY (crypto, zero-trust), OPPORTUNITY (no gatekeeping), ETHOS (no external dependencies).
+
+**Result: 96.7% compliant** — 14 fully compliant, 2 acceptable by design, 0 violations.
+
+#### 📚 Documentation
+
+- GUMBA, YURT, KATHA, VANI, DARSHAN — all documented with full HTML pages
+- Protocol stack table dynamically generated from `nav-order.json`
+- Silhouette illustrations for all communication protocols
+- 87 doc files synced with sidebar navigation
+- Adapters guide with ContentAdapter and ChatModAdapter examples
+- Security + Opportunity + Ethos audit report published
+- v2.9.0 release announcements for X, Discord, Telegram
+
+#### 📊 Packaging
+
+- 212 tests passing (0 regressions)
+- 105 documentation files (2.59 MB bundle)
+- 179 protected source files
+
+---
+
+## [2.8.3] - 2026-02-19
+
+### 📡 MA-902 SNMP Integration — Hardware GPS Telemetry for MANI
+
+*Theme: "The celestial stones speak through silicon."*
+
+#### 🛰️ New Module: `oracle/ma902-snmp.js` (662 lines)
+
+- **MA902Monitor** class — SNMP v2c monitor for MA-902/S-C1 GPS Gigabit Time Server
+- Queries enterprise OID `1.3.6.1.4.1.26381` (Chongqing Miaoan Technology)
+- 12 proprietary OIDs mapped: GPS time, sub-seconds, lock status, reference source,
+  constellation bitmask, satellites (visible/used/tracking), alarm, quality, offset
+- Lazy-loads `net-snmp` — nodes without MA-902 hardware are unaffected
+- Configurable poll interval (default 10s), auto-reconnect on connection loss
+- Event-driven: `telemetry`, `lockLost`, `lockAcquired`, `alarm`, `trustChanged`,
+  `satelliteDegradation`, `connectionLost`, `connectionRestored`
+- **Trust assessment engine** translates satellite telemetry → MANI trust levels:
+  - Excellent (≥8 sats, confidence 1.0), Good (≥5, 0.625+), Marginal (≥3, 0.375+)
+  - Clock delta sanity check (GPS leap second aware, rejects >120s drift)
+  - Alarm and lock status validation
+
+#### 🔗 ManiTimeDetector Integration
+
+- `ManiTimeDetector` now accepts `ma902: { host, pollInterval }` config option
+- GPS detection enriched with live SNMP data: satellite counts, constellation info,
+  lock status, timing quality — all from hardware, not just NTP inference
+- NTP source cross-referenced: detects when w32tm/chrony source IP matches MA-902
+- `getStatus()` includes full MA-902 monitor status in API responses
+- MA-902 events forwarded through detector: `ma902:telemetry`, `ma902:lockLost`, etc.
+- Trust level auto-re-evaluates on MA-902 state changes (lock loss triggers re-detect)
+- **Result: Trust level upgraded from NTP → GPS** when MA-902 is reachable
+
+#### 📊 Verified Live Results
+
+```
+Trust Level: GPS (was NTP)
+Phase Tolerance: ±500ms (was ±5000ms — 10x tighter)
+Primary Source: gps (MA-902/S-C1)
+Satellites: 6 used / 8 tracking / 10 visible
+Constellations: GPS + BeiDou
+Lock: YES | Alarm: NONE | Clock Delta: 0s
+MA-902 Backed NTP: YES (w32tm source = 192.168.1.30)
+High Precision Time: TRUE
+```
+
+#### 📦 Packaging
+
+- `net-snmp` added as **optionalDependency** (not required for non-MA-902 nodes)
+- Export path: `yakmesh/oracle/ma902-snmp`
+- 212/212 tests passing (0 regressions)
+
+---
+
 ## [2.8.2] - 2026-02-05
 
 ### 📦 Documentation Release: TRIBHUJ Ternary Systems

@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="thangka">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="favicon.ico" sizes="32x32">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <title>THANGKA - Visual Storytelling Modes | YAKMESH Documentation</title>
+    <meta name="description" content="THANGKA: Transform chat into visual art. Manga panels, story narration, retro terminal, and floating bubble aesthetics for YakApp.">
+    
+    <link rel="stylesheet" href="tailwind.min.css">
+    <link rel="stylesheet" href="prism-tomorrow.min.css">
+    <link rel="stylesheet" href="docs.css">
+    <style>
+        .theme-accent { color: #a78bfa; }
+        .theme-accent-hover:hover { color: #c4b5fd; }
+        .theme-badge { background: rgba(167, 139, 250, 0.2); color: #a78bfa; }
+        .theme-border { border-color: #8b5cf6; }
+        .theme-callout { background: rgba(167, 139, 250, 0.1); border-color: #7c3aed; }
+        .active-link { background: rgba(167, 139, 250, 0.2) !important; color: #a78bfa !important; }
+        .mode-card { background: rgba(30, 41, 59, 0.5); border: 1px solid #334155; border-radius: 0.75rem; padding: 1.5rem; transition: all 0.2s; }
+        .mode-card:hover { border-color: #8b5cf6; transform: translateY(-2px); }
+        .tier-free { background: #16a34a; color: white; }
+        .tier-premium { background: linear-gradient(135deg, #8b5cf6, #d946ef); color: white; }
+        .tier-badge { display: inline-block; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-size: 0.75rem; font-weight: 600; }
+        .pricing-table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
+        .pricing-table th, .pricing-table td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid #334155; }
+        .pricing-table th { background: rgba(30, 41, 59, 0.7); color: #a78bfa; }
+        .pricing-table tr:hover { background: rgba(167, 139, 250, 0.05); }
+        .qrl-badge { background: linear-gradient(135deg, #16a34a, #059669); color: white; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-size: 0.75rem; font-weight: 600; }
+    </style>
+</head>
+<body class="bg-mountain-900 text-white min-h-screen">
+    
+  <nav class="docs-sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-logo">
+      <span class="logo-icon">🏔️</span>
+      <span class="logo-text">Yakmesh</span>
+    </a>
+    <a href="/dashboard" class="sidebar-dashboard-link"><span>📊</span> <span>Dashboard</span></a>
+    <ul class="sidebar-nav">
+      <li class="sidebar-section"><span>📘 Guides</span></li>
+      <li><a href="index.html"><span>🏠</span> <span>Overview</span></a></li>
+      <li><a href="getting-started.html"><span>🚀</span> <span>Getting Started</span></a></li>
+      <li><a href="tutorials.html"><span>📖</span> <span>Tutorials</span></a></li>
+      <li class="sidebar-section"><span>🐃 Protocol Stack</span></li>
+      <li><a href="yak-protocol.html"><span class="yak-icon"></span> <span>YAK://</span></a></li>
+      <li><a href="annex.html"><span>🌉</span> <span>ANNEX</span></a></li>
+      <li><a href="nakpak.html"><span>🎒</span> <span>NAKPAK</span></a></li>
+      <li><a href="namche.html"><span>🚪</span> <span>NAMCHE</span></a></li>
+      <li><a href="doko.html"><span>🧺</span> <span>DOKO</span></a></li>
+      <li><a href="sherpa.html"><span>🧗</span> <span>SHERPA</span></a></li>
+      <li><a href="mandala.html"><span>🌐</span> <span>MANDALA</span></a></li>
+      <li><a href="mantra.html"><span>🕉️</span> <span>MANTRA</span></a></li>
+      <li><a href="gumba.html"><span>🛕</span> <span>GUMBA</span></a></li>
+      <li><a href="yurt.html"><span>🏕️</span> <span>YURT</span></a></li>
+      <li><a href="katha.html"><span>💬</span> <span>KATHA</span></a></li>
+      <li><a href="vani.html"><span>🎙️</span> <span>VANI</span></a></li>
+      <li><a href="darshan.html"><span>👁️</span> <span>DARSHAN</span></a></li>
+      <li><a href="stupa.html"><span>🛕</span> <span>STUPA</span></a></li>
+      <li><a href="lama.html"><span>🔮</span> <span>LAMA</span></a></li>
+      <li><a href="mani.html"><span>⏱️</span> <span>MANI</span></a></li>
+      <li><a href="karma.html"><span>☯️</span> <span>KARMA</span></a></li>
+      <li><a href="tattva.html"><span>🔯</span> <span>TATTVA</span></a></li>
+      <li><a href="tribhuj.html"><span>🔺</span> <span>TRIBHUJ</span></a></li>
+      <li><a href="ypc27.html"><span>🔐</span> <span>YPC-27</span></a></li>
+      <li><a href="sakshi.html"><span>👁️</span> <span>SAKSHI</span></a></li>
+      <li><a href="geo-proof.html"><span>🌍</span> <span>PRAMAAN</span></a></li>
+      <li><a href="trust-security.html"><span>🔒</span> <span>SURAKSHA</span></a></li>
+      <li><a href="tivra.html"><span>⚡</span> <span>TIVRA</span></a></li>
+      <li><a href="prahari.html"><span>🛰️</span> <span>PRAHARI</span></a></li>
+      <li><a href="dharma.html"><span>⚖️</span> <span>DHARMA</span></a></li>
+      <li><a href="seva.html"><span>🙏</span> <span>SEVA</span></a></li>
+      <li><a href="docs-bundle.html"><span>📚</span> <span>GRANTH</span></a></li>
+      <li><a href="api.html"><span>📡</span> <span>API</span></a></li>
+      <li><a href="adapters.html"><span>🔌</span> <span>Adapters</span></a></li>
+      <li class="sidebar-section"><span>🚀 Applications</span></li>
+      <li><a href="yakapp.html"><span>💬</span> <span>YakApp</span></a></li>
+      <li><a href="c2c.html"><span>🚀</span> <span>C2C</span></a></li>
+      <li><a href="studio.html"><span>🎨</span> <span>Studio</span></a></li>
+      <li><a href="thangka.html" class="active"><span>🎨</span> <span>THANGKA</span></a></li>
+      <li class="sidebar-section"><span>📋 Reference</span></li>
+      <li><a href="quick-reference.html"><span>📋</span> <span>Quick Ref</span></a></li>
+    </ul>
+  </nav>
+
+  <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+    </svg>
+  </button>
+
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="docs-main" id="mainContent">
+    <div class="docs-content max-w-4xl">
+      <header class="mb-12">
+        <div class="flex items-center gap-4 mb-4">
+          <span class="text-5xl">�</span>
+          <div>
+            <h1 class="text-4xl font-bold theme-accent">THANGKA</h1>
+            <p class="text-mountain-400">Visual Storytelling Modes</p>
+          </div>
+        </div>
+        <p class="text-xl text-mountain-300 mb-6">
+          Transform your chat into visual art — like Tibetan scroll paintings that tell stories through imagery.
+          Manga panels, novel prose, retro terminals, and floating bubbles.
+        </p>
+        <div class="flex gap-3">
+          <span class="tier-badge tier-free">3 Free Modes</span>
+          <span class="tier-badge tier-premium">2 Premium Modes</span>
+          <span class="qrl-badge">Pay with QRL</span>
+        </div>
+      </header>
+
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-6 flex items-center gap-2">
+          <span>💬</span> Chat Display Modes
+        </h2>
+        
+        <div class="grid md:grid-cols-2 gap-6">
+          <div class="mode-card">
+            <div style="font-size:2.5rem;margin-bottom:0.75rem">💬</div>
+            <h3 class="text-lg font-semibold mb-2">Standard</h3>
+            <p class="text-mountain-400 text-sm mb-3">Traditional chat interface with messages stacked vertically.</p>
+            <span class="tier-badge tier-free">Free</span>
+          </div>
+          
+          <div class="mode-card">
+            <div style="font-size:2.5rem;margin-bottom:0.75rem">🫧</div>
+            <h3 class="text-lg font-semibold mb-2">Bubble</h3>
+            <p class="text-mountain-400 text-sm mb-3">PSO:BB-inspired floating speech bubbles.</p>
+            <span class="tier-badge tier-free">Free</span>
+          </div>
+          
+          <div class="mode-card">
+            <div style="font-size:2.5rem;margin-bottom:0.75rem">💻</div>
+            <h3 class="text-lg font-semibold mb-2">Terminal</h3>
+            <p class="text-mountain-400 text-sm mb-3">Retro CRT terminal aesthetic with monospace fonts.</p>
+            <span class="tier-badge tier-free">Free</span>
+          </div>
+          
+          <div class="mode-card" style="border-color: #8b5cf6;">
+            <div style="font-size:2.5rem;margin-bottom:0.75rem">📖</div>
+            <h3 class="text-lg font-semibold mb-2">Manga</h3>
+            <p class="text-mountain-400 text-sm mb-3">Comic panel layout with speech bubbles and SFX overlays.</p>
+            <span class="tier-badge tier-premium">Premium</span>
+          </div>
+          
+          <div class="mode-card" style="border-color: #8b5cf6;">
+            <div style="font-size:2.5rem;margin-bottom:0.75rem">📚</div>
+            <h3 class="text-lg font-semibold mb-2">Story</h3>
+            <p class="text-mountain-400 text-sm mb-3">Novel narrative format for immersive roleplay.</p>
+            <span class="tier-badge tier-premium">Premium</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-6 flex items-center gap-2">
+          <span>🚀</span> Quick Start
+        </h2>
+        
+        <div class="theme-callout border-l-4 p-6 rounded-lg mb-6">
+          <h4 class="font-semibold mb-2">YakApp Integration</h4>
+          <p class="text-sm text-mountain-400">
+            Studio is already integrated into YakApp! Open the user menu and click 
+            <strong class="theme-accent">"Chat Mode"</strong> to switch between modes.
+          </p>
+        </div>
+      </section>
+
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-6 flex items-center gap-2">
+          <span>💳</span> Pricing
+        </h2>
+        
+        <table class="pricing-table">
+          <thead>
+            <tr>
+              <th>Tier</th>
+              <th>Monthly</th>
+              <th>Lifetime</th>
+              <th>QRL</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Creator</strong></td>
+              <td>$5</td>
+              <td>—</td>
+              <td>50 QRL</td>
+            </tr>
+            <tr>
+              <td><strong>Studio</strong></td>
+              <td>$15</td>
+              <td>—</td>
+              <td>150 QRL</td>
+            </tr>
+            <tr>
+              <td><strong>Lifetime</strong></td>
+              <td>—</td>
+              <td>$99</td>
+              <td>1000 QRL</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section class="border-t border-mountain-700 pt-8">
+        <p class="text-sm text-mountain-500">
+          <strong>License:</strong> YakApp Studio is proprietary software. Free tier modes may be used without a license.
+          Premium modes require a valid license.
+          <br><br>
+          Copyright 2026 PeerQuanta / YAKMESH Contributors.
+        </p>
+      </section>
+
+            <!-- Journey Navigation -->
+            <div class="border-t border-mountain-700 mt-12 pt-8">
+        <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
+        <div class="flex flex-col sm:flex-row gap-4">
+          <a href="studio.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">
+            <div class="text-xs text-mountain-400 mb-1">← Previous</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">🎨</span>
+              <span class="font-semibold group-hover:text-theme-accent">Studio</span>
+            </div>
+            <p class="text-mountain-400 text-sm mt-1">YakApp Studio creative suite</p>
+          </a>
+          <a href="quick-reference.html" class="flex-1 block bg-mountain-800 border border-theme-primary rounded-xl p-4 hover:border-theme-accent transition group">
+            <div class="text-xs text-mountain-400 mb-1">Next →</div>
+            <div class="flex items-center gap-2">
+              <span class="text-xl">📋</span>
+              <span class="font-semibold group-hover:text-theme-accent">Quick Ref</span>
+            </div>
+            <p class="text-mountain-400 text-sm mt-1">Cheat sheet</p>
+          </a>
+        </div>
+      </div>
+  </main>
+
+  <footer class="docs-footer"><p>© 2026 YAKMESH™</p></footer>
+
+  <script src="prism.min.js"></script>
+  <script src="prism-javascript.min.js"></script>
+  <script src="docs.js"></script>
+</body>
+</html>

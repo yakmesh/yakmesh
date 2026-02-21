@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMax slice">
+  <defs>
+    <linearGradient id="prahariGlow" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#7c3aed" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#101a16" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="sentinelAura" cx="50%" cy="40%" r="45%">
+      <stop offset="0%" stop-color="#a78bfa" stop-opacity="0.3"/>
+      <stop offset="60%" stop-color="#7c3aed" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#101a16" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="seedGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#c4b5fd" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#7c3aed" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <!-- MOUNTAIN BACKDROP - pass between peaks -->
+  <polygon points="0,500 350,200 650,480 0,1080" fill="#1a2a22" opacity="0.4"/>
+  <polygon points="1300,500 1600,180 1920,460 1920,1080 1250,1080" fill="#1a2a22" opacity="0.4"/>
+  <!-- The pass between mountains -->
+  <polygon points="650,480 960,600 1300,500 1300,1080 650,1080" fill="#1a2a22" opacity="0.15"/>
+  <!-- Sentinel glow -->
+  <ellipse cx="960" cy="420" rx="400" ry="320" fill="url(#prahariGlow)"/>
+  <!-- SENTINEL FIGURE - standing at the pass -->
+  <!-- Body -->
+  <rect x="945" y="420" width="30" height="120" rx="5" fill="#6d28d9" opacity="0.4"/>
+  <!-- Head -->
+  <circle cx="960" cy="400" r="22" fill="#1e1b4b" opacity="0.6" stroke="#a78bfa" stroke-width="1.5" stroke-opacity="0.4"/>
+  <!-- Cloak/shoulders -->
+  <polygon points="930,440 960,425 990,440 1000,520 920,520" fill="#6d28d9" opacity="0.3"/>
+  <!-- Spyglass extending right -->
+  <line x1="990" y1="450" x2="1080" y2="430" stroke="#a78bfa" stroke-width="3" opacity="0.3"/>
+  <circle cx="1085" cy="428" r="10" fill="none" stroke="#c4b5fd" stroke-width="1.5" opacity="0.35"/>
+  <!-- Staff in left hand -->
+  <line x1="935" y1="440" x2="920" y2="600" stroke="#a78bfa" stroke-width="2" opacity="0.3"/>
+  <!-- SATELLITE SEEDS orbiting -->
+  <circle cx="960" cy="280" r="180" fill="none" stroke="#7c3aed" stroke-width="1" opacity="0.2" stroke-dasharray="8 12"/>
+  <circle cx="960" cy="280" r="120" fill="none" stroke="#7c3aed" stroke-width="1" opacity="0.15" stroke-dasharray="4 8"/>
+  <!-- Seed points on orbits -->
+  <circle cx="1140" cy="280" r="4" fill="url(#seedGlow)"/>
+  <circle cx="780" cy="280" r="4" fill="url(#seedGlow)"/>
+  <circle cx="1060" cy="170" r="3" fill="url(#seedGlow)"/>
+  <circle cx="860" cy="170" r="3" fill="url(#seedGlow)"/>
+  <circle cx="1060" cy="390" r="3" fill="url(#seedGlow)"/>
+  <circle cx="860" cy="390" r="3" fill="url(#seedGlow)"/>
+  <circle cx="1080" cy="230" r="3" fill="url(#seedGlow)"/>
+  <circle cx="840" cy="330" r="3" fill="url(#seedGlow)"/>
+  <circle cx="1000" cy="160" r="2.5" fill="url(#seedGlow)"/>
+  <circle cx="920" cy="400" r="2.5" fill="url(#seedGlow)"/>
+  <!-- 144 label -->
+  <text x="960" y="285" fill="#a78bfa" opacity="0.3" font-size="18" font-family="monospace" text-anchor="middle">144</text>
+  <!-- Quaternion symbols -->
+  <text x="800" y="700" fill="#c4b5fd" opacity="0.15" font-size="24" font-family="serif">H(ℤ)</text>
+  <text x="1100" y="710" fill="#c4b5fd" opacity="0.15" font-size="24" font-family="serif">𝔽₃</text>
+  <!-- GROUND -->
+  <polygon points="0,920 350,890 700,930 960,900 1200,940 1500,895 1920,920 1920,1080 0,1080" fill="#101a16" opacity="0.75"/>
+</svg>

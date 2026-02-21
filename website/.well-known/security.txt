@@ -1,0 +1,19 @@
+# YAKMESH Security Contact
+# https://securitytxt.org/
+
+Contact: mailto:security@peerquanta.com
+Expires: 2027-01-14T00:00:00.000Z
+Preferred-Languages: en
+Canonical: https://yakmesh.dev/.well-known/security.txt
+
+# Policy
+Policy: https://yakmesh.dev/docs/security-policy.html
+
+# Acknowledgments
+Acknowledgments: https://yakmesh.dev/docs/security-acknowledgments.html
+
+# Encryption (optional - add if you have a PGP key)
+# Encryption: https://yakmesh.dev/.well-known/pgp-key.txt
+
+# Hiring
+Hiring: https://peerquanta.com/careers

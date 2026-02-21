@@ -1,0 +1,831 @@
+<![CDATA[<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YAKMESH - Yielding Atomic Kernel Modular Encryption Secured Hub</title>
+    <meta name="description" content="YAKMESH: High-resiliency decentralized networking layer with post-quantum cryptography. Sturdy & Secure - Est. 2026">
+    
+    <!-- Open Graph / Social -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://yakmesh.dev/">
+    <meta property="og:title" content="YAKMESH - Post-Quantum Decentralized Networking">
+    <meta property="og:description" content="A hack-proof, self-healing network that syncs data without any central server — future-proofed against quantum computers.">
+    <meta property="og:image" content="https://yakmesh.dev/assets/yakmesh-logo.webp">
+    <meta property="og:site_name" content="YAKMESH">
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@yakmesh_dev">
+    <meta name="twitter:title" content="YAKMESH - Post-Quantum Decentralized Networking">
+    <meta name="twitter:description" content="A hack-proof, self-healing network future-proofed against quantum computers.">
+    <meta name="twitter:image" content="https://yakmesh.dev/assets/yakmesh-logo.webp">
+    
+    <!-- Additional SEO -->
+    <meta name="keywords" content="post-quantum cryptography, decentralized network, mesh network, p2p, encryption, quantum-resistant, SHERPA, LAMA">
+    <meta name="author" content="PeerQuanta">
+    <link rel="canonical" href="https://yakmesh.dev/">
+    
+    <!-- Favicons -->
+    <link rel="icon" href="favicon.ico" sizes="32x32">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="tailwind.min.css">
+    <style>
+        /* ========== HIMALAYAN MOUNTAIN THEME ========== */
+        
+        /* Full-page mountain background */
+        body {
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: -2;
+            background: 
+                /* Fog/mist overlay */
+                radial-gradient(ellipse 80% 50% at 50% 100%, transparent 0%, rgba(16, 26, 22, 0.7) 50%, rgba(16, 26, 22, 0.95) 100%),
+                /* Central light path (moonlight on snow) */
+                radial-gradient(ellipse 30% 80% at 50% 30%, rgba(16, 185, 129, 0.08) 0%, transparent 60%),
+                /* Base gradient */
+                linear-gradient(180deg, #0a100d 0%, #101a16 30%, #1a2a24 100%);
+        }
+        
+        /* Distant mountain range (back layer - misty/faded) */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: -1;
+            pointer-events: none;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1920 1080' preserveAspectRatio='xMidYMax slice'%3E%3Cdefs%3E%3ClinearGradient id='mist' x1='0%25' y1='100%25' x2='0%25' y2='0%25'%3E%3Cstop offset='0%25' stop-color='%23101a16' stop-opacity='1'/%3E%3Cstop offset='40%25' stop-color='%23101a16' stop-opacity='0.8'/%3E%3Cstop offset='100%25' stop-color='%23101a16' stop-opacity='0'/%3E%3C/linearGradient%3E%3C/defs%3E%3C!-- Far distant peaks (very faded) --%3E%3Cpolygon points='0,600 200,280 350,400 500,180 700,350 900,120 1100,300 1300,100 1500,280 1700,150 1920,320 1920,1080 0,1080' fill='%231a2a24' opacity='0.4'/%3E%3C!-- Mid-distance peaks --%3E%3Cpolygon points='0,700 150,380 280,500 450,250 600,420 800,200 1000,380 1150,180 1350,350 1550,220 1750,380 1920,280 1920,1080 0,1080' fill='%231f332d' opacity='0.6'/%3E%3C!-- Closer peaks with more definition --%3E%3Cpolygon points='0,800 100,520 250,650 400,380 550,550 750,300 950,500 1100,320 1300,480 1450,350 1650,520 1800,400 1920,550 1920,1080 0,1080' fill='%23253d35' opacity='0.7'/%3E%3C!-- Foreground ridge with central valley/path --%3E%3Cpath d='M0,900 L200,700 L400,800 L600,650 L800,750 L960,600 L1020,620 L960,600 L1120,750 L1320,650 L1520,800 L1720,700 L1920,850 L1920,1080 L0,1080 Z' fill='%232e4c43' opacity='0.8'/%3E%3C!-- Snow caps on peaks --%3E%3Cpolygon points='500,180 480,210 520,210' fill='%23ffffff' opacity='0.15'/%3E%3Cpolygon points='900,120 870,160 930,160' fill='%23ffffff' opacity='0.2'/%3E%3Cpolygon points='1300,100 1260,150 1340,150' fill='%23ffffff' opacity='0.2'/%3E%3Cpolygon points='800,200 770,250 830,250' fill='%23ffffff' opacity='0.12'/%3E%3Cpolygon points='1150,180 1115,230 1185,230' fill='%23ffffff' opacity='0.15'/%3E%3C!-- Central illuminated path up the mountain --%3E%3Cpath d='M960,1080 Q940,900 960,750 Q980,600 960,500' stroke='url(%23pathGlow)' stroke-width='80' fill='none' opacity='0.15'/%3E%3ClinearGradient id='pathGlow' x1='0%25' y1='100%25' x2='0%25' y2='0%25'%3E%3Cstop offset='0%25' stop-color='%2310b981' stop-opacity='0.3'/%3E%3Cstop offset='100%25' stop-color='%2310b981' stop-opacity='0'/%3E%3C/linearGradient%3E%3C!-- Mist layer at bottom --%3E%3Crect x='0' y='700' width='1920' height='380' fill='url(%23mist)'/%3E%3C/svg%3E") no-repeat bottom center;
+            background-size: cover;
+            filter: blur(1px);
+        }
+        
+        .gradient-hero {
+            background: transparent;
+        }
+        .gradient-text {
+            background: linear-gradient(135deg, #10b981 0%, #34d399 40%, #fbbf24 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .glow {
+            box-shadow: 0 0 60px rgba(16, 185, 129, 0.15);
+        }
+        .feature-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 40px rgba(16, 185, 129, 0.1);
+        }
+        .philosophy-card {
+            transition: all 0.3s ease;
+        }
+        .philosophy-card:hover {
+            transform: scale(1.02);
+            border-color: #10b981;
+        }
+        
+        /* Enhanced parable section with peaks */
+        .himalaya-peaks {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 300px;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1920 300' preserveAspectRatio='none'%3E%3Cpolygon points='0,300 150,120 300,200 480,50 660,150 840,20 1020,100 1200,30 1380,120 1560,60 1740,140 1920,80 1920,300' fill='%231f332d' opacity='0.6'/%3E%3Cpolygon points='0,300 200,180 400,240 600,120 800,200 1000,100 1200,180 1400,110 1600,190 1800,130 1920,200 1920,300' fill='%23101a16'/%3E%3C/svg%3E") no-repeat bottom;
+            background-size: cover;
+            pointer-events: none;
+        }
+        
+        .parable-quote {
+            position: relative;
+            font-style: italic;
+            border-left: 4px solid #10b981;
+            padding-left: 1.5rem;
+        }
+        .parable-quote::before {
+            content: '"';
+            position: absolute;
+            left: -0.5rem;
+            top: -1rem;
+            font-size: 4rem;
+            color: #10b981;
+            opacity: 0.3;
+        }
+        
+        /* Focus states for accessibility */
+        a:focus-visible, button:focus-visible {
+            outline: 2px solid #10b981;
+            outline-offset: 2px;
+        }
+        
+        /* Spicy top banner */
+        .top-banner {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 60;
+            background: linear-gradient(90deg, #064e3b 0%, #047857 25%, #059669 50%, #047857 75%, #064e3b 100%);
+            background-size: 200% 100%;
+            animation: shimmer 8s ease-in-out infinite;
+        }
+        @keyframes shimmer {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+        
+        /* Glass-morphism cards */
+        .glass-card {
+            background: rgba(31, 51, 45, 0.7);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(16, 185, 129, 0.15);
+        }
+        
+        /* Enhanced feature cards with glass effect */
+        .feature-card {
+            background: rgba(16, 26, 22, 0.8) !important;
+            backdrop-filter: blur(4px);
+        }
+        
+        /* Enhanced nav with mountain accent */
+        .nav-mountain {
+            position: relative;
+            background: linear-gradient(180deg, rgba(16, 26, 22, 0.98) 0%, rgba(16, 26, 22, 0.95) 100%);
+            border-bottom: 1px solid rgba(16, 185, 129, 0.2);
+        }
+        .nav-mountain::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent 0%, rgba(16, 185, 129, 0.5) 50%, transparent 100%);
+        }
+        
+        /* Skip link for accessibility */
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: #10b981;
+            color: white;
+            padding: 8px 16px;
+            z-index: 100;
+            transition: top 0.3s;
+        }
+        .skip-link:focus {
+            top: 0;
+        }
+    </style>
+    
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+        "@context": "https://schema.org",
+        "@type": "SoftwareApplication",
+        "name": "YAKMESH",
+        "applicationCategory": "NetworkApplication",
+        "operatingSystem": "Cross-platform",
+        "description": "High-resiliency decentralized networking layer with post-quantum cryptography",
+        "url": "https://yakmesh.dev",
+        "author": {
+            "@type": "Organization",
+            "name": "PeerQuanta",
+            "url": "https://peerquanta.com"
+        },
+        "license": "https://opensource.org/licenses/MIT",
+        "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "USD"
+        }
+    }
+    </script>
+</head>
+<body class="bg-mountain-900 text-white">
+    <!-- Skip Link for Accessibility -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    
+    <!-- Announcement Banner -->
+    <div class="top-banner text-center py-2 text-sm font-medium" role="banner">
+        <span class="text-white/90">🔺 <strong>v2.8.2 — The Ternary Revolution!</strong> TRIBHUJ balanced ternary + SAKSHI witness system</span>
+        <a href="docs/tribhuj.html" class="ml-2 text-yellow-300 hover:text-yellow-200 underline">Learn More →</a>
+    </div>
+    
+    <!-- Navigation -->
+    <nav class="fixed w-full z-50 nav-mountain backdrop-blur-md" style="top: 32px;" aria-label="Main navigation">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="/" class="flex items-center gap-3">
+                <img src="assets/yakmesh-logo.webp" alt="YAKMESH" class="h-10 w-10" width="40" height="44">
+                <span class="text-xl font-bold">YAKMESH™</span>
+            </a>
+            <!-- Mobile menu button -->
+            <button id="mobile-menu-btn" class="md:hidden p-2 text-mountain-200 hover:text-white transition" aria-label="Toggle menu" aria-expanded="false">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path id="menu-icon" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                </svg>
+            </button>
+            <!-- Desktop menu -->
+            <div class="hidden md:flex items-center gap-8">
+                <a href="#features" class="text-mountain-200 hover:text-white transition">Features</a>
+                <a href="philosophy.html" class="text-mountain-200 hover:text-white transition">Philosophy</a>
+                <a href="pricing.html" class="text-mountain-200 hover:text-white transition">Pricing</a>
+                <a href="docs/" class="text-mountain-200 hover:text-white transition">Docs</a>
+                <a href="https://github.com/yakmesh/yakmesh" class="text-mountain-200 hover:text-white transition">GitHub</a>
+                <a href="#install" class="bg-Yakmesh-600 hover:bg-Yakmesh-500 px-4 py-2 rounded-lg transition">npm install</a>
+            </div>
+        </div>
+        <!-- Mobile menu -->
+        <div id="mobile-menu" class="hidden md:hidden bg-mountain-900/95 backdrop-blur-md border-t border-mountain-700">
+            <div class="px-6 py-4 space-y-3">
+                <a href="#features" class="block py-2 text-mountain-200 hover:text-white transition">Features</a>
+                <a href="philosophy.html" class="block py-2 text-mountain-200 hover:text-white transition">Philosophy</a>
+                <a href="pricing.html" class="block py-2 text-mountain-200 hover:text-white transition">Pricing</a>
+                <a href="docs/" class="block py-2 text-mountain-200 hover:text-white transition">Docs</a>
+                <a href="https://github.com/yakmesh/yakmesh" class="block py-2 text-mountain-200 hover:text-white transition">GitHub</a>
+                <a href="#install" class="block bg-Yakmesh-600 hover:bg-Yakmesh-500 px-4 py-3 rounded-lg text-center transition mt-4">npm install</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <main id="main-content">
+    <section class="gradient-hero min-h-screen flex items-center" style="padding-top: 120px;" aria-labelledby="hero-title">
+        <div class="max-w-7xl mx-auto px-6 py-20 grid lg:grid-cols-2 gap-12 items-center">
+            <div>
+                <div class="inline-flex items-center gap-2 bg-Yakmesh-900/70 border border-Yakmesh-600/50 rounded-full px-4 py-1 mb-6 backdrop-blur-sm">
+                    <span class="w-2 h-2 bg-green-400 rounded-full animate-pulse" aria-hidden="true"></span>
+                    <span class="text-sm text-Yakmesh-100">v2.8.2 — TRIBHUJ Ternary + SAKSHI Witness + YPC-27 Quantum Checksums</span>
+                </div>
+                <h1 id="hero-title" class="text-4xl lg:text-5xl font-bold mb-4 leading-tight">
+                    <span aria-hidden="true">🏔️</span> <span class="gradient-text">YAKMESH™</span>
+                </h1>
+                <p class="text-xl lg:text-2xl text-mountain-100 font-medium mb-2">Sturdy & Secure</p>
+                <p class="text-lg text-Yakmesh-400 font-mono mb-6">Yielding Atomic Kernel Modular Encryption Secured Hub</p>
+                <p class="text-xl text-mountain-200 mb-8 leading-relaxed">
+                    A hack-proof, self-healing network that lets computers sync data without any central server — and it's future-proofed against quantum computers.<br><br><span class="text-mountain-300 text-base">Built with quantum-resistant cryptography at its core and anchored by PCIe atomic timing synchronization.</span>
+                </p>
+                <div class="flex flex-wrap gap-4">
+                    <a href="#quickstart" class="bg-Yakmesh-500 hover:bg-Yakmesh-400 px-8 py-3 rounded-lg font-medium transition flex items-center gap-2">
+                        Get Started
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                    </a>
+                    <a href="docs/" class="border border-mountain-600 hover:border-mountain-500 px-8 py-3 rounded-lg font-medium transition">
+                        Documentation
+                    </a>
+                </div>
+                <div class="flex flex-wrap items-center gap-4 sm:gap-6 mt-10 text-sm text-mountain-300">
+                    <div class="flex items-center gap-2">
+                        <svg class="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+                        MIT Licensed
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <svg class="w-5 h-5 text-Yakmesh-400" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path></svg>
+                        Post-Quantum
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <svg class="w-5 h-5 text-purple-400" fill="currentColor" viewBox="0 0 20 20"><path d="M10.394 2.08a1 1 0 00-.788 0l-7 3a1 1 0 000 1.84L5.25 8.051a.999.999 0 01.356-.257l4-1.714a1 1 0 11.788 1.838L7.667 9.088l1.94.831a1 1 0 00.787 0l7-3a1 1 0 000-1.838l-7-3zM3.31 9.397L5 10.12v4.102a8.969 8.969 0 00-1.05-.174 1 1 0 01-.89-.89 11.115 11.115 0 01.25-3.762zM9.3 16.573A9.026 9.026 0 007 14.935v-3.957l1.818.78a3 3 0 002.364 0l5.508-2.361a11.026 11.026 0 01.25 3.762 1 1 0 01-.89.89 8.968 8.968 0 00-5.35 2.524 1 1 0 01-1.4 0zM6 18a1 1 0 001-1v-2.065a8.935 8.935 0 00-2-.712V17a1 1 0 001 1z"></path></svg>
+                        Self-Verifying
+                    </div>
+                </div>
+            </div>
+            <div class="hidden lg:block">
+                <div class="relative">
+                    <div class="absolute inset-0 bg-Yakmesh-500/20 rounded-2xl blur-3xl"></div>
+                    <div class="relative bg-mountain-800/80 border border-mountain-700 rounded-2xl p-6 glow">
+                        <div class="flex items-center gap-2 mb-4">
+                            <span class="w-3 h-3 bg-red-500 rounded-full"></span>
+                            <span class="w-3 h-3 bg-yellow-500 rounded-full"></span>
+                            <span class="w-3 h-3 bg-green-500 rounded-full"></span>
+                            <span class="ml-4 text-sm text-mountain-400">terminal</span>
+                        </div>
+                        <pre class="text-sm text-mountain-100 overflow-x-auto"><code><span class="text-Yakmesh-400">$</span> npm install yakmesh
+<span class="text-Yakmesh-400">$</span> npx yakmesh init
+<span class="text-cyan-400">
+  Yakmesh Network v2.8.2
+  Post-Quantum Secure • Decentralized • Federated
+</span>
+<span class="text-green-400">✓</span> Created data directory
+<span class="text-green-400">✓</span> Created yakmesh.config.js
+
+<span class="text-Yakmesh-400">$</span> npx yakmesh start
+<span class="text-yellow-400">Starting Yakmesh Node...</span>
+<span class="text-green-400">✓</span> Codebase locked: 65 files protected
+<span class="text-green-400">✓</span> Oracle System initialized
+<span class="text-green-400">✓</span> Annex channel initialized
+<span class="text-green-400">✓</span> SHERPA discovery started
+<span class="text-green-400">✓</span> Yakmesh Node is running!
+<span class="text-gray-400">   Network:</span> factor-primitive-bose
+<span class="text-gray-400">   Peers:</span> 3 discovered via SHERPA</code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Three Pillars Section -->
+    <section class="py-24 bg-mountain-800/80 backdrop-blur-sm">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl font-bold mb-4">Why YAKMESH?</h2>
+                <p class="text-xl text-mountain-300 max-w-3xl mx-auto">
+                    In an era where traditional ECDSA is increasingly vulnerable and network jitter can desynchronize global state, YAKMESH offers a three-pillar solution.
+                </p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8">
+                <!-- Pillar 1 -->
+                <div class="bg-mountain-900/50 border border-mountain-700 rounded-xl p-8 text-center">
+                    <div class="text-5xl mb-4">🌿</div>
+                    <h3 class="text-2xl font-bold mb-4 text-green-400">Yielding Resilience</h3>
+                    <p class="text-mountain-300">
+                        A self-healing mesh topology that adapts to node failure and adversarial interference without central authority.
+                    </p>
+                </div>
+                <!-- Pillar 2 -->
+                <div class="bg-mountain-900/50 border border-mountain-700 rounded-xl p-8 text-center">
+                    <div class="text-5xl mb-4">⚛️</div>
+                    <h3 class="text-2xl font-bold mb-4 text-cyan-400">Atomic Precision</h3>
+                    <p class="text-mountain-300">
+                        Integrated support for PCIe atomic clock hardware, enabling nanosecond-level hardware timestamping for low-latency synchronization.
+                    </p>
+                </div>
+                <!-- Pillar 3 -->
+                <div class="bg-mountain-900/50 border border-mountain-700 rounded-xl p-8 text-center">
+                    <div class="text-5xl mb-4">🔐</div>
+                    <h3 class="text-2xl font-bold mb-4 text-purple-400">Quantum Hardened</h3>
+                    <p class="text-mountain-300">
+                        Fully compatible with Project Zond and the QRL ecosystem, utilizing stateless lattice-based signatures (ML-DSA) from Genesis.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- The Sherpa Parable Section -->
+    <section id="parable" class="py-24 bg-mountain-900 relative overflow-hidden">
+        <div class="himalaya-peaks"></div>
+        <div class="max-w-5xl mx-auto px-6 relative z-10">
+            <div class="text-center mb-12">
+                <span class="text-6xl mb-4 block">🏔️</span>
+                <h2 class="text-4xl font-bold mb-4">The Parable of the Sherpa Guide</h2>
+                <p class="text-xl text-mountain-300">Why we build the way we build</p>
+            </div>
+            <div class="bg-mountain-800/80 backdrop-blur border border-mountain-600 rounded-2xl p-8 md:p-12">
+                <div class="parable-quote text-lg text-mountain-200 leading-relaxed space-y-6">
+                    <p>
+                        In the high passes of the Himalayas, climbers do not question whether the Sherpa knows the mountain. 
+                        The Sherpa does not claim authority by certificate or credential. <strong class="text-white">The Sherpa proves knowledge 
+                        by walking the path.</strong>
+                    </p>
+                    <p>
+                        When the storm comes and the trail vanishes, the Sherpa does not consult a distant committee. 
+                        The Sherpa reads the snow, the wind, the angle of the ice. <strong class="text-Yakmesh-400">The mountain itself 
+                        is the arbiter.</strong>
+                    </p>
+                    <p>
+                        So it is with YAKMESH. We do not ask you to trust a certificate authority in a distant land. 
+                        We do not ask you to believe our servers are honest. <strong class="text-cyan-400">We ask only that you verify 
+                        the mathematics.</strong>
+                    </p>
+                    <p class="text-xl text-white font-medium">
+                        The code IS the Sherpa. The math IS the mountain. The proof IS the path.
+                    </p>
+                </div>
+                <div class="mt-8 pt-8 border-t border-mountain-600">
+                    <div class="grid grid-cols-2 md:grid-cols-5 gap-6 text-center">
+                        <div>
+                            <div class="text-2xl mb-2">🧭</div>
+                            <div class="text-green-400 font-semibold">NAMCHE</div>
+                            <div class="text-sm text-mountain-400">The Gateway</div>
+                        </div>
+                        <div>
+                            <div class="text-2xl mb-2">📜</div>
+                            <div class="text-indigo-400 font-semibold">DOKO</div>
+                            <div class="text-sm text-mountain-400">The Identity</div>
+                        </div>
+                        <div>
+                            <div class="text-2xl mb-2">🏔️</div>
+                            <div class="text-cyan-400 font-semibold">SHERPA</div>
+                            <div class="text-sm text-mountain-400">The Guide</div>
+                        </div>
+                        <div>
+                            <div class="text-2xl mb-2">🎒</div>
+                            <div class="text-yellow-400 font-semibold">NAKPAK</div>
+                            <div class="text-sm text-mountain-400">The Porter</div>
+                        </div>
+                        <div class="col-span-2 md:col-span-1">
+                            <div class="text-2xl mb-2">🔐</div>
+                            <div class="text-purple-400 font-semibold">ANNEX</div>
+                            <div class="text-sm text-mountain-400">The Channel</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Philosophy Section -->
+    <section id="philosophy" class="py-24 bg-transparent">
+        <div class="max-w-5xl mx-auto px-6">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl font-bold mb-4">The Y.A.K.M.E.S.H. Philosophy</h2>
+                <p class="text-xl text-mountain-300">Every letter represents a core principle</p>
+            </div>
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="philosophy-card bg-mountain-800 border border-mountain-700 rounded-xl p-6 text-center">
+                    <div class="text-4xl font-bold text-Yakmesh-400 mb-2">Y</div>
+                    <h4 class="text-lg font-semibold mb-2">Yielding</h4>
+                    <p class="text-sm text-mountain-400">Not brittle; flexible enough to absorb network shocks</p>
+                </div>
+                <div class="philosophy-card bg-mountain-800 border border-mountain-700 rounded-xl p-6 text-center">
+                    <div class="text-4xl font-bold text-cyan-400 mb-2">A</div>
+                    <h4 class="text-lg font-semibold mb-2">Atomic</h4>
+                    <p class="text-sm text-mountain-400">Grounded in the absolute truth of physical time</p>
+                </div>
+                <div class="philosophy-card bg-mountain-800 border border-mountain-700 rounded-xl p-6 text-center">
+                    <div class="text-4xl font-bold text-purple-400 mb-2">K</div>
+                    <h4 class="text-lg font-semibold mb-2">Kernel</h4>
+                    <p class="text-sm text-mountain-400">The essential, innermost part of the secure stack</p>
+                </div>
+                <div class="philosophy-card bg-mountain-800 border border-mountain-700 rounded-xl p-6 text-center">
+                    <div class="text-4xl font-bold text-orange-400 mb-2">M</div>
+                    <h4 class="text-lg font-semibold mb-2">Modular</h4>
+                    <p class="text-sm text-mountain-400">Swap out encryption primitives or transport layers as tech evolves</p>
+                </div>
+                <div class="philosophy-card bg-mountain-800 border border-mountain-700 rounded-xl p-6 text-center">
+                    <div class="text-4xl font-bold text-pink-400 mb-2">E</div>
+                    <h4 class="text-lg font-semibold mb-2">Encryption</h4>
+                    <p class="text-sm text-mountain-400">Privacy and integrity by default</p>
+                </div>
+                <div class="philosophy-card bg-mountain-800 border border-mountain-700 rounded-xl p-6 text-center">
+                    <div class="text-4xl font-bold text-red-400 mb-2">S</div>
+                    <h4 class="text-lg font-semibold mb-2">Secured</h4>
+                    <p class="text-sm text-mountain-400">Hardened against both classical and quantum vectors</p>
+                </div>
+                <div class="philosophy-card bg-mountain-800 border border-mountain-700 rounded-xl p-6 text-center col-span-1 md:col-span-2 lg:col-span-2">
+                    <div class="text-4xl font-bold text-yellow-400 mb-2">H</div>
+                    <h4 class="text-lg font-semibold mb-2">Hub</h4>
+                    <p class="text-sm text-mountain-400">A nexus for decentralized data and peer-to-peer logic</p>
+                </div>
+            </div>
+            <div class="text-center mt-8">
+                <a href="philosophy.html" class="text-Yakmesh-400 hover:text-Yakmesh-300 transition inline-flex items-center gap-2">
+                    Explore the full philosophy →
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-24 bg-mountain-800/70 backdrop-blur-sm">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl font-bold mb-4">Built for the Future</h2>
+                <p class="text-xl text-mountain-300 max-w-2xl mx-auto">
+                    YAKMESH combines post-quantum cryptography with a self-verifying oracle for truly decentralized applications.
+                </p>
+            </div>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Feature 1 -->
+                <div class="feature-card bg-mountain-900/50 border border-mountain-700 rounded-xl p-6 transition duration-300">
+                    <div class="w-12 h-12 bg-Yakmesh-900 rounded-lg flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-Yakmesh-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Post-Quantum Security</h3>
+                    <p class="text-mountain-300">ML-DSA-65 signatures (NIST FIPS 204) protect against both classical and quantum attacks.</p>
+                </div>
+                <!-- Feature 2 -->
+                <div class="feature-card bg-mountain-900/50 border border-mountain-700 rounded-xl p-6 transition duration-300">
+                    <div class="w-12 h-12 bg-purple-900 rounded-lg flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Self-Verifying Oracle</h3>
+                    <p class="text-mountain-300">Deterministic validation without external trust. The code IS the authority.</p>
+                </div>
+                <!-- Feature 3 -->
+                <div class="feature-card bg-mountain-900/50 border border-mountain-700 rounded-xl p-6 transition duration-300">
+                    <div class="w-12 h-12 bg-green-900 rounded-lg flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">P2P Mesh Network</h3>
+                    <p class="text-mountain-300">WebSocket-based gossip protocol with automatic peer discovery and message propagation.</p>
+                </div>
+                <!-- Feature: Annex P2P -->
+                <div class="feature-card bg-mountain-900/50 border border-mountain-700 rounded-xl p-6 transition duration-300">
+                    <div class="w-12 h-12 bg-blue-900 rounded-lg flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"></path></svg>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">ANNEX Encrypted P2P</h3>
+                    <p class="text-mountain-300">Autonomous Network Negotiated eXchange — ML-KEM768 channels with perfect forward secrecy.</p>
+                </div>
+                <!-- Feature: SHERPA Discovery -->
+                <div class="feature-card bg-mountain-900/50 border border-cyan-700 rounded-xl p-6 transition duration-300">
+                    <div class="w-12 h-12 bg-cyan-900 rounded-lg flex items-center justify-center mb-4">
+                        <span class="text-2xl">🏔️</span>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">SHERPA Discovery</h3>
+                    <p class="text-mountain-300">Decentralized peer discovery with RTT geo-proofing. Protocol v1.1 measures round-trip time for physics-based verification.</p>
+                    <span class="inline-block mt-2 text-xs bg-cyan-900 text-cyan-300 px-2 py-1 rounded">Enhanced in v2.5</span>
+                </div>
+                <!-- Feature: NAKPAK Onion Routing -->
+                <div class="feature-card bg-mountain-900/50 border border-yellow-700 rounded-xl p-6 transition duration-300">
+                    <div class="w-12 h-12 bg-yellow-900 rounded-lg flex items-center justify-center mb-4">
+                        <span class="text-2xl">🎒</span>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">NAKPAK Onion Routing</h3>
+                    <p class="text-mountain-300">Post-quantum anonymous routing. Messages traverse multiple relays with layered encryption.</p>
+                    <span class="inline-block mt-2 text-xs bg-yellow-900 text-yellow-300 px-2 py-1 rounded">Core Module</span>
+                </div>
+                <!-- Feature: Geographic Exclusion -->
+                <div class="feature-card bg-mountain-900/50 border border-red-700 rounded-xl p-6 transition duration-300">
+                    <div class="w-12 h-12 bg-red-900 rounded-lg flex items-center justify-center mb-4">
+                        <span class="text-2xl">🌍</span>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Geographic Exclusion</h3>
+                    <p class="text-mountain-300">Physics don't lie — speed-of-light RTT measurements prove minimum node distances. Sybil defense meets physics.</p>
+                    <span class="inline-block mt-2 text-xs bg-red-900 text-red-300 px-2 py-1 rounded">New in v2.5</span>
+                </div>
+                <!-- Feature 4 -->
+                <div class="feature-card bg-mountain-900/50 border border-mountain-700 rounded-xl p-6 transition duration-300">
+                    <div class="w-12 h-12 bg-orange-900 rounded-lg flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Precision Timing</h3>
+                    <p class="text-mountain-300">Support for atomic clocks, GPS, PTP (Meinberg PTP270PEX), and NTP with automatic detection.</p>
+                </div>
+                <!-- Feature 5 -->
+                <div class="feature-card bg-mountain-900/50 border border-mountain-700 rounded-xl p-6 transition duration-300">
+                    <div class="w-12 h-12 bg-pink-900 rounded-lg flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-pink-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z"></path></svg>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Plugin Architecture</h3>
+                    <p class="text-mountain-300">BaseAdapter pattern for integrating any database, API, or platform. Build your own adapters.</p>
+                </div>
+                <!-- Feature: NAMCHE Gateway -->
+                <div class="feature-card bg-mountain-900/50 border border-green-700 rounded-xl p-6 transition duration-300">
+                    <div class="w-12 h-12 bg-green-900 rounded-lg flex items-center justify-center mb-4">
+                        <span class="text-2xl">🧭</span>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">NAMCHE Gateway</h3>
+                    <p class="text-mountain-300">7-gate mathematical verification. No human CA — pure cryptographic proof of identity.</p>
+                    <span class="inline-block mt-2 text-xs bg-green-900 text-green-300 px-2 py-1 rounded">New in v2.0</span>
+                </div>
+                <!-- Feature: DOKO Identity -->
+                <div class="feature-card bg-mountain-900/50 border border-indigo-700 rounded-xl p-6 transition duration-300">
+                    <div class="w-12 h-12 bg-indigo-900 rounded-lg flex items-center justify-center mb-4">
+                        <span class="text-2xl">📜</span>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">DOKO Identity</h3>
+                    <p class="text-mountain-300">Distributed Ownership & Key Object — self-sovereign identity with mesh-verified domain claims.</p>
+                    <span class="inline-block mt-2 text-xs bg-indigo-900 text-indigo-300 px-2 py-1 rounded">New in v2.0</span>
+                </div>
+                <!-- Feature 6 -->
+                <div class="feature-card bg-mountain-900/50 border border-mountain-700 rounded-xl p-6 transition duration-300">
+                    <div class="w-12 h-12 bg-cyan-900 rounded-lg flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Phase Modulation</h3>
+                    <p class="text-mountain-300">Time-based fingerprints provide anti-replay protection and temporal verification.</p>
+                </div>
+                <!-- Feature: Comprehensive Testing -->
+                <div class="feature-card bg-mountain-900/50 border border-emerald-700 rounded-xl p-6 transition duration-300">
+                    <div class="w-12 h-12 bg-emerald-900 rounded-lg flex items-center justify-center mb-4">
+                        <span class="text-2xl">✅</span>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">732 Tests</h3>
+                    <p class="text-mountain-300">Comprehensive mesh and security test coverage ensuring production reliability across all modules.</p>
+                    <span class="inline-block mt-2 text-xs bg-emerald-900 text-emerald-300 px-2 py-1 rounded">Updated in v2.5</span>
+                </div>
+                <!-- Feature: Structured Logging -->
+                <div class="feature-card bg-mountain-900/50 border border-rose-700 rounded-xl p-6 transition duration-300">
+                    <div class="w-12 h-12 bg-rose-900 rounded-lg flex items-center justify-center mb-4">
+                        <span class="text-2xl">📋</span>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Structured Logging</h3>
+                    <p class="text-mountain-300">Namespace-based logging with configurable levels for debugging and production monitoring.</p>
+                    <span class="inline-block mt-2 text-xs bg-rose-900 text-rose-300 px-2 py-1 rounded">New in v2.3</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Quick Start Section -->
+    <section id="quickstart" class="py-24 bg-transparent">
+        <div class="max-w-4xl mx-auto px-6">
+            <div class="text-center mb-12">
+                <h2 class="text-4xl font-bold mb-4">Quick Start</h2>
+                <p class="text-xl text-mountain-300">Get up and running in under 5 minutes</p>
+            </div>
+            <div class="space-y-6">
+                <!-- Step 1 -->
+                <div class="bg-mountain-800 border border-mountain-700 rounded-xl p-6">
+                    <div class="flex items-center gap-4 mb-4">
+                        <span class="w-8 h-8 bg-Yakmesh-600 rounded-full flex items-center justify-center font-bold">1</span>
+                        <h3 class="text-lg font-semibold">Install the package</h3>
+                    </div>
+                    <pre class="bg-mountain-900 rounded-lg p-4 overflow-x-auto"><code class="text-Yakmesh-300">npm install yakmesh</code></pre>
+                </div>
+                <!-- Step 2 -->
+                <div class="bg-mountain-800 border border-mountain-700 rounded-xl p-6">
+                    <div class="flex items-center gap-4 mb-4">
+                        <span class="w-8 h-8 bg-Yakmesh-600 rounded-full flex items-center justify-center font-bold">2</span>
+                        <h3 class="text-lg font-semibold">Create configuration</h3>
+                    </div>
+                    <pre class="bg-mountain-900 rounded-lg p-4 overflow-x-auto text-sm"><code class="text-mountain-100"><span class="text-purple-400">// yakmesh.config.js</span>
+<span class="text-cyan-400">export default</span> {
+  <span class="text-green-400">port</span>: <span class="text-orange-400">3000</span>,
+  <span class="text-green-400">peers</span>: [<span class="text-yellow-300">'ws://node2.example.com:3000'</span>],
+  <span class="text-green-400">oracle</span>: {
+    <span class="text-green-400">timeSource</span>: <span class="text-yellow-300">'auto'</span>,  <span class="text-purple-400">// Detects best available</span>
+    <span class="text-green-400">phaseWindow</span>: <span class="text-orange-400">30000</span>   <span class="text-purple-400">// 30 second phases</span>
+  }
+};</code></pre>
+                </div>
+                <!-- Step 3 -->
+                <div class="bg-mountain-800 border border-mountain-700 rounded-xl p-6">
+                    <div class="flex items-center gap-4 mb-4">
+                        <span class="w-8 h-8 bg-Yakmesh-600 rounded-full flex items-center justify-center font-bold">3</span>
+                        <h3 class="text-lg font-semibold">Start the node</h3>
+                    </div>
+                    <pre class="bg-mountain-900 rounded-lg p-4 overflow-x-auto"><code class="text-Yakmesh-300">npx yakmesh start</code></pre>
+                    <p class="text-mountain-400 mt-4 text-sm">Your node is now running and will automatically connect to peers!</p>
+                </div>
+            </div>
+            <div class="text-center mt-10">
+                <a href="docs/getting-started.html" class="inline-flex items-center gap-2 text-Yakmesh-400 hover:text-Yakmesh-300 transition">
+                    Read the full documentation
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Architecture Section -->
+    <section class="py-24 bg-mountain-800/60 backdrop-blur-sm">
+        <div class="max-w-6xl mx-auto px-6">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl font-bold mb-4">Architecture</h2>
+                <p class="text-xl text-mountain-300">Modular design for maximum flexibility</p>
+            </div>
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="text-center">
+                    <div class="w-20 h-20 mx-auto bg-gradient-to-br from-Yakmesh-600 to-Yakmesh-800 rounded-2xl flex items-center justify-center mb-4">
+                        <span class="text-3xl">🔮</span>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Oracle Layer</h3>
+                    <p class="text-mountain-300 text-sm">Time sources, phase epochs, network identity generation</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-20 h-20 mx-auto bg-gradient-to-br from-purple-600 to-purple-800 rounded-2xl flex items-center justify-center mb-4">
+                        <span class="text-3xl">🌐</span>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Mesh Layer</h3>
+                    <p class="text-mountain-300 text-sm">WebSocket P2P, gossip protocol, peer management</p>
+                </div>
+                <div class="text-center">
+                    <div class="w-20 h-20 mx-auto bg-gradient-to-br from-green-600 to-green-800 rounded-2xl flex items-center justify-center mb-4">
+                        <span class="text-3xl">🔌</span>
+                    </div>
+                    <h3 class="text-xl font-semibold mb-2">Adapter Layer</h3>
+                    <p class="text-mountain-300 text-sm">BaseAdapter interface, platform integrations</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Early Access Section -->
+    <section id="install" class="py-24 bg-transparent">
+        <div class="max-w-2xl mx-auto px-6 text-center">
+            <h2 class="text-4xl font-bold mb-4">Get Started Today</h2>
+            <p class="text-xl text-mountain-300 mb-8">
+                YAKMESH is now available on npm. Install and start building.
+            </p>
+            <div class="bg-mountain-800 border border-mountain-700 rounded-xl p-6 mb-8">
+                <pre class="text-xl text-Yakmesh-300"><code>npm install yakmesh</code></pre>
+            </div>
+            <div class="flex flex-wrap justify-center gap-4">
+                <a href="docs/getting-started.html" class="bg-Yakmesh-500 hover:bg-Yakmesh-400 px-8 py-3 rounded-lg font-medium transition">
+                    Read the Docs
+                </a>
+                <a href="https://www.npmjs.com/package/yakmesh" class="border border-mountain-600 hover:border-mountain-500 px-8 py-3 rounded-lg font-medium transition">
+                    View on npm
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-24 gradient-hero">
+        <div class="max-w-4xl mx-auto px-6 text-center">
+            <h2 class="text-4xl font-bold mb-4">Ready to Build?</h2>
+            <p class="text-xl text-mountain-200 mb-8">
+                Start building decentralized applications with post-quantum security today.
+            </p>
+            <div class="flex flex-wrap justify-center gap-4">
+                <a href="docs/getting-started.html" class="bg-white text-mountain-900 px-8 py-3 rounded-lg font-medium hover:bg-mountain-100 transition">
+                    Get Started
+                </a>
+                <a href="https://github.com/yakmesh/yakmesh" class="border border-white/30 hover:border-white/60 px-8 py-3 rounded-lg font-medium transition">
+                    View on GitHub
+                </a>
+            </div>
+        </div>
+    </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-mountain-900 border-t border-mountain-800 py-12" role="contentinfo">
+        <div class="max-w-7xl mx-auto px-6">
+            <div class="grid md:grid-cols-4 gap-8">
+                <div>
+                    <div class="flex items-center gap-3 mb-4">
+                        <img src="assets/yakmesh-logo.webp" alt="YAKMESH" class="h-16 w-16" width="64" height="70">
+                        <div>
+                            <span class="text-lg font-semibold block">YAKMESH™</span>
+                            <span class="text-sm text-mountain-400">Sturdy & Secure</span>
+                        </div>
+                    </div>
+                    <p class="text-mountain-400 text-sm">Yielding Atomic Kernel Modular Encryption Secured Hub</p>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-4">Resources</h4>
+                    <ul class="space-y-2 text-mountain-400 text-sm">
+                        <li><a href="docs/" class="hover:text-white transition">Documentation</a></li>
+                        <li><a href="docs/api.html" class="hover:text-white transition">API Reference</a></li>
+                        <li><a href="docs/adapters.html" class="hover:text-white transition">Adapters Guide</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-4">Community</h4>
+                    <ul class="space-y-2 text-mountain-400 text-sm">
+                        <li><a href="https://github.com/yakmesh/yakmesh" class="hover:text-white transition">GitHub</a></li>
+                        <li><a href="https://discord.gg/8mSPfbJB8N" class="hover:text-white transition">Discord</a></li>
+                        <li><a href="https://t.me/yakmesh" class="hover:text-white transition">Telegram</a></li>
+                        <li><a href="https://x.com/yakmesh_dev" class="hover:text-white transition">Twitter / X</a></li>
+                        <li><a href="https://patreon.com/yakmesh" class="hover:text-white transition">❤️ Patreon</a></li>
+                        <li><a href="https://www.npmjs.com/package/yakmesh" class="hover:text-white transition">npm</a></li>
+                        <li><a href="https://peerquanta.com" class="hover:text-white transition">PeerQuanta</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold mb-4">Legal</h4>
+                    <ul class="space-y-2 text-mountain-400 text-sm">
+                        <li><a href="https://opensource.org/licenses/MIT" class="hover:text-white transition">MIT License</a></li>
+                        <li><a href="pricing.html" class="hover:text-white transition">Pro License</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-mountain-800 mt-8 pt-8 text-center text-mountain-500 text-sm">
+                <p>© 2026 YAKMESH™ Project. Sturdy & Secure.</p><p class="text-mountain-600 text-xs mt-2">YAKMESH™ is a trademark of PeerQuanta, application pending (Serial No. 99594620).</p><div class="flex justify-center gap-6 mt-4 text-mountain-400"><a href="docs/" class="hover:text-white transition">Documentation</a><a href="docs/trademark-policy.html" class="hover:text-white transition">Trademark Policy</a><a href="docs/terms.html" class="hover:text-white transition">Terms of Service</a><a href="docs/privacy.html" class="hover:text-white transition">Privacy Policy</a></div><p class="mt-2">Built with ❤️ by <a href="https://peerquanta.com" class="text-Yakmesh-400 hover:text-Yakmesh-300">PeerQuanta</a></p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Mobile Menu Toggle -->
+    <script>
+        const menuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const menuIcon = document.getElementById('menu-icon');
+        
+        menuBtn.addEventListener('click', () => {
+            const isOpen = !mobileMenu.classList.contains('hidden');
+            mobileMenu.classList.toggle('hidden');
+            menuBtn.setAttribute('aria-expanded', !isOpen);
+            // Toggle icon between hamburger and X
+            menuIcon.setAttribute('d', isOpen 
+                ? 'M4 6h16M4 12h16M4 18h16' 
+                : 'M6 18L18 6M6 6l12 12');
+        });
+        
+        // Close menu when clicking a link
+        mobileMenu.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', () => {
+                mobileMenu.classList.add('hidden');
+                menuBtn.setAttribute('aria-expanded', 'false');
+                menuIcon.setAttribute('d', 'M4 6h16M4 12h16M4 18h16');
+            });
+        });
+    </script>
+
+    <!-- YakAI Chat Widget -->
+    <script src="/yakai/widget.js" data-api="/yakai"></script>
+</body>
+</html>
+
+
+

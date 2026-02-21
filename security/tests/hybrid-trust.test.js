@@ -7,6 +7,7 @@
  */
 
 import { describe, test, expect, beforeEach, vi, afterEach } from 'vitest';
+import { POSITIVE } from '../../oracle/tribhuj.js';
 import HybridTrustModel, { 
   TrustLevel, 
   TrustLevelInfo, 
@@ -29,7 +30,7 @@ describe('TrustEvidence', () => {
     test('records DOKO verification', () => {
       evidence.recordDokoVerification({ passed: true, gatesChecked: 7 });
       
-      expect(evidence.sources.doko.verified).toBe(true);
+      expect(evidence.sources.doko.verified).toBe(POSITIVE);
       expect(evidence.sources.doko.gatesPassedCount).toBe(7);
       expect(evidence.sources.doko.verifiedAt).toBeDefined();
     });
@@ -42,7 +43,7 @@ describe('TrustEvidence', () => {
         diversity: { sufficient: true },
       });
       
-      expect(evidence.sources.meshQuorum.verified).toBe(true);
+      expect(evidence.sources.meshQuorum.verified).toBe(POSITIVE);
       expect(evidence.sources.meshQuorum.quorumSize).toBe(5);
       expect(evidence.sources.meshQuorum.diversity.sufficient).toBe(true);
     });
@@ -54,7 +55,7 @@ describe('TrustEvidence', () => {
         fingerprint: 'sha256:abc123',
       });
       
-      expect(evidence.sources.ssl.verified).toBe(true);
+      expect(evidence.sources.ssl.verified).toBe(POSITIVE);
       expect(evidence.sources.ssl.certType).toBe('doko-bound');
     });
 
@@ -65,7 +66,7 @@ describe('TrustEvidence', () => {
         proofCount: 5,
       });
       
-      expect(evidence.sources.domain.verified).toBe(true);
+      expect(evidence.sources.domain.verified).toBe(POSITIVE);
       expect(evidence.sources.domain.domain).toBe('example.com');
     });
 
@@ -129,7 +130,7 @@ describe('TrustEvidence', () => {
       const restored = TrustEvidence.deserialize(serialized);
       
       expect(restored.nodeId).toBe('node-test-123');
-      expect(restored.sources.doko.verified).toBe(true);
+      expect(restored.sources.doko.verified).toBe(POSITIVE);
       expect(restored.trustLevel).toBe(TrustLevel.GOLD);
       expect(restored.trustScore).toBe(75);
     });
@@ -281,9 +282,10 @@ describe('HybridTrustModel', () => {
       
       expect(model.getTrustLevel(nodeId).level).toBe(TrustLevel.GOLD);
       
-      // Simulate old lastUpdated
+      // Simulate old lastUpdated — SST geometric decay uses 7-day half-life
+      // Need ~50+ days for score 70 to decay below 1% threshold
       const evidence = model.getEvidence(nodeId);
-      evidence.lastUpdated = Date.now() - (31 * 24 * 60 * 60 * 1000);  // 31 days ago
+      evidence.lastUpdated = Date.now() - (90 * 24 * 60 * 60 * 1000);  // 90 days ago
       
       // Reassess
       const result = model.assessTrust(nodeId);

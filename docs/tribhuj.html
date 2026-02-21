@@ -42,9 +42,11 @@
     </a>
     <a href="/dashboard" class="sidebar-dashboard-link"><span>📊</span> <span>Dashboard</span></a>
     <ul class="sidebar-nav">
+      <li class="sidebar-section"><span>📘 Guides</span></li>
       <li><a href="index.html"><span>🏠</span> <span>Overview</span></a></li>
       <li><a href="getting-started.html"><span>🚀</span> <span>Getting Started</span></a></li>
       <li><a href="tutorials.html"><span>📖</span> <span>Tutorials</span></a></li>
+      <li class="sidebar-section"><span>🐃 Protocol Stack</span></li>
       <li><a href="yak-protocol.html"><span class="yak-icon"></span> <span>YAK://</span></a></li>
       <li><a href="annex.html"><span>🌉</span> <span>ANNEX</span></a></li>
       <li><a href="nakpak.html"><span>🎒</span> <span>NAKPAK</span></a></li>
@@ -68,10 +70,19 @@
       <li><a href="sakshi.html"><span>👁️</span> <span>SAKSHI</span></a></li>
       <li><a href="geo-proof.html"><span>🌍</span> <span>PRAMAAN</span></a></li>
       <li><a href="trust-security.html"><span>🔒</span> <span>SURAKSHA</span></a></li>
+      <li><a href="tivra.html"><span>⚡</span> <span>TIVRA</span></a></li>
+      <li><a href="prahari.html"><span>🛰️</span> <span>PRAHARI</span></a></li>
+      <li><a href="dharma.html"><span>⚖️</span> <span>DHARMA</span></a></li>
+      <li><a href="seva.html"><span>🙏</span> <span>SEVA</span></a></li>
       <li><a href="docs-bundle.html"><span>📚</span> <span>GRANTH</span></a></li>
       <li><a href="api.html"><span>📡</span> <span>API</span></a></li>
       <li><a href="adapters.html"><span>🔌</span> <span>Adapters</span></a></li>
+      <li class="sidebar-section"><span>🚀 Applications</span></li>
+      <li><a href="yakapp.html"><span>💬</span> <span>YakApp</span></a></li>
+      <li><a href="c2c.html"><span>🚀</span> <span>C2C</span></a></li>
       <li><a href="studio.html"><span>🎨</span> <span>Studio</span></a></li>
+      <li><a href="thangka.html"><span>🎨</span> <span>THANGKA</span></a></li>
+      <li class="sidebar-section"><span>📋 Reference</span></li>
       <li><a href="quick-reference.html"><span>📋</span> <span>Quick Ref</span></a></li>
     </ul>
   </nav>
@@ -497,6 +508,42 @@ const product = poly1.polyMultiply(poly2, 27);
         </div>
       </section>
 
+      <!-- Ternary-144 Quantum Entropy -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+          <span>🛰️</span> Ternary-144 Quantum Entropy
+        </h2>
+        <p class="text-mountain-300 mb-4">
+          <a href="prahari.html" class="theme-accent">PRAHARI</a> extends TRIBHUJ's ternary
+          foundation to a 144-position addressing scheme modeled on the theoretical "Synergy Satellite
+          Tesseract" (SST) constellation of 144 quantum random number generators in orbit.
+        </p>
+        <h3 class="text-lg font-semibold mb-3">Family Groups</h3>
+        <div class="grid sm:grid-cols-3 gap-4 mb-6">
+          <div class="bg-mountain-800 rounded-xl p-4 border border-mountain-700 text-center">
+            <h4 class="text-lg font-bold text-blue-400 mb-1">Family A</h4>
+            <p class="text-sm text-mountain-400">Digital roots 1, 2, 4, 5, 7, 8</p>
+            <p class="text-xs text-mountain-500 mt-1">48 positions</p>
+          </div>
+          <div class="bg-mountain-800 rounded-xl p-4 border border-mountain-700 text-center">
+            <h4 class="text-lg font-bold text-purple-400 mb-1">Family B</h4>
+            <p class="text-sm text-mountain-400">Digital roots 3, 6</p>
+            <p class="text-xs text-mountain-500 mt-1">48 positions</p>
+          </div>
+          <div class="bg-mountain-800 rounded-xl p-4 border border-mountain-700 text-center">
+            <h4 class="text-lg font-bold theme-accent mb-1">Family C</h4>
+            <p class="text-sm text-mountain-400">Digital root 9 (singularity)</p>
+            <p class="text-xs text-mountain-500 mt-1">48 positions</p>
+          </div>
+        </div>
+        <p class="text-mountain-400 text-sm mb-4">
+          Each position is addressed by a 6-trit value (3⁶ = 729 possible, 144 mapped). Seed selection
+          uses a 24-position Fibonacci digital root cycle to choose the SST family, then round-robin within
+          the family. See the <a href="prahari.html" class="theme-accent">PRAHARI</a> documentation
+          for the full seed algorithm and Entropy Sentinel scoring.
+        </p>
+      </section>
+
       <!-- Version History -->
       <section class="mb-12">
         <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
@@ -512,6 +559,11 @@ const product = poly1.polyMultiply(poly2, 27);
             </thead>
             <tbody>
               <tr>
+                <td><span class="theme-badge px-2 py-1 rounded">v3.0.0</span></td>
+                <td class="text-left">Ternary-144 addressing via PRAHARI. SST family groups (A/B/C × 48).
+                    Fibonacci digital root cycle for seed selection. Entropy Sentinel quality scoring.</td>
+              </tr>
+              <tr>
                 <td><span class="theme-badge px-2 py-1 rounded">v2.8.0</span></td>
                 <td class="text-left">Initial TRIBHUJ module with Trit, TritArray, ternary logic operations</td>
               </tr>
@@ -521,7 +573,7 @@ const product = poly1.polyMultiply(poly2, 27);
       </section>
 
             <!-- Journey Navigation -->
-            <div class="border-t border-mountain-700 mt-12 pt-8">
+                                                            <div class="border-t border-mountain-700 mt-12 pt-8">
         <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
         <div class="flex flex-col sm:flex-row gap-4">
           <a href="tattva.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">

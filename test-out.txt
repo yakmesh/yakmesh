@@ -1,0 +1,1666 @@
+
+📦 Content Module Tests
+
+============================================================
+[2026-02-15T08:57:35.595Z] [INFO] [content:store] Content store initialized {"dataDir":"C:\\Users\\ABL\\Desktop\\Yakmesh\\yakmesh-node\\data\\_test_content_1771145855572","objectCount":0}
+[2026-02-15T08:57:35.603Z] [INFO] [content:store] Content stored {"hash":"90c9817a524affc7","ioName":"falcon-grating-diamond","size":13}
+[2026-02-15T08:57:35.605Z] [INFO] [content:store] Content stored {"hash":"49eed8a136cf26e2","ioName":"torus-cycle-csidh","size":18}
+[2026-02-15T08:57:35.610Z] [INFO] [content:store] Content stored {"hash":"fae3db15eaf930b8","ioName":"fermion-axion-bloch","size":11}
+[2026-02-15T08:57:35.613Z] [INFO] [content:store] Content stored {"hash":"3a432a1bd8a8a3ad","ioName":"isogeny-carbide-boson","size":15}
+[2026-02-15T08:57:35.615Z] [INFO] [content:store] Content stored {"hash":"6e3dcce150933428","ioName":"hash-majorana-contact","size":9}
+[2026-02-15T08:57:35.618Z] [INFO] [content:store] Content stored {"hash":"5061859255740c78","ioName":"casimir-finite-instanton","size":10}
+[2026-02-15T08:57:35.620Z] [INFO] [content:store] Content stored {"hash":"2a3cc9a6e84dc041","ioName":"modular-embed-indium","size":9}
+[2026-02-15T08:57:35.624Z] [INFO] [content:store] Content stored {"hash":"44c5670dab2b7b4a","ioName":"contact-ecdsa-falcon","size":14}
+[2026-02-15T08:57:35.626Z] [INFO] [content:store] Content stored {"hash":"734a6ee56c924a0c","ioName":"vertex-stable-nitrogen","size":16}
+[2026-02-15T08:57:35.627Z] [INFO] [content:store] Content store initialized {"dataDir":"C:\\Users\\ABL\\Desktop\\Yakmesh\\yakmesh-node\\data\\_test_content_1771145855572_tiny","objectCount":0}
+[2026-02-15T08:57:35.631Z] [INFO] [content:store] Content store initialized {"dataDir":"C:\\Users\\ABL\\Desktop\\Yakmesh\\yakmesh-node\\data\\_test_content_1771145855572_lru","objectCount":0}
+[2026-02-15T08:57:35.632Z] [INFO] [content:store] Content stored {"hash":"cc8e2dd8d348e344","ioName":"trap-superconductor-infinity","size":5}
+[2026-02-15T08:57:35.634Z] [INFO] [content:store] Content stored {"hash":"6cd1f101fc26ff9d","ioName":"oxide-insulator-vacancy","size":5}
+[2026-02-15T08:57:35.637Z] [INFO] [content:store] Content stored {"hash":"a5834ea6a3584023","ioName":"telluride-pseudo-finite","size":5}
+▶ computeContentHash
+  ✔ hashes a string (4.6158ms)
+  ✔ produces deterministic output (1.5458ms)
+  ✔ produces different hashes for different input (0.8574ms)
+  ✔ hashes a Buffer (0.3231ms)
+  ✔ hashes a Uint8Array (0.1868ms)
+  ✔ hashes an object (JSON-serialized) (0.1824ms)
+  ✔ object hash is deterministic for same shape (0.2192ms)
+✔ computeContentHash (9.1835ms)
+▶ deriveContentName
+  ✔ returns a human-readable string (1.2245ms)
+  ✔ is deterministic (0.7996ms)
+  ✔ uses hyphenated words (0.6127ms)
+✔ deriveContentName (2.9555ms)
+▶ ContentType
+  ✔ has expected MIME types (0.1712ms)
+✔ ContentType (0.2567ms)
+▶ ContentStatus
+  ✔ has all status values (0.131ms)
+✔ ContentStatus (0.2342ms)
+▶ ConsensusProof
+  ✔ constructs with defaults (0.2015ms)
+  ✔ hasQuorum returns false when no validators (0.1162ms)
+  ✔ addValidator adds unique validators (0.1521ms)
+  ✔ addValidator deduplicates by nodeId (0.0786ms)
+  ✔ hasQuorum returns true when quorum met (0.0897ms)
+  ✔ toJSON round-trips via fromJSON (0.1135ms)
+✔ ConsensusProof (0.9462ms)
+▶ ContentStore
+  ✔ creates data directories on init (0.8449ms)
+  ✔ stores string content and returns hash + ioName (4.2852ms)
+  ✔ stores return "exists" for duplicate content (2.4303ms)
+  ✔ retrieves stored content via get() (4.8015ms)
+  ✔ has() returns true for existing content (2.8498ms)
+  ✔ has() returns false for missing content (0.221ms)
+  ✔ getMeta() returns metadata (2.5639ms)
+  ✔ getWithProof() returns content + meta (2.4397ms)
+  ✔ delete() removes content from disk and cache (2.9721ms)
+  ✔ list() returns stored items (0.2648ms)
+  ✔ list() filters by tag (2.1434ms)
+  ✔ list() filters by status (0.1661ms)
+  ✔ getStats() returns summary (0.1633ms)
+  ✔ resolves iO name via get() (1.6774ms)
+  ✔ enforces maxContentSize (2.6911ms)
+  ✔ detects content type: JSON (0.1962ms)
+  ✔ detects content type: HTML (0.0987ms)
+  ✔ LRU cache evicts oldest entry (9.8113ms)
+✔ ContentStore (49.6245ms)
+
+💾 Database Replication Engine Tests
+
+============================================================
+[2026-02-15T08:57:35.713Z] [INFO] [database:replication] Database initialized {"path":"C:\\Users\\ABL\\Desktop\\Yakmesh\\yakmesh-node\\data\\_test_repl_1771145855630.db"}
+[2026-02-15T08:57:35.725Z] [INFO] [database:replication] Database initialized {"path":"C:\\Users\\ABL\\Desktop\\Yakmesh\\yakmesh-node\\data\\_test_repl_1771145855630.db.changes"}
+[2026-02-15T08:57:35.741Z] [INFO] [database:replication] Database initialized {"path":"C:\\Users\\ABL\\Desktop\\Yakmesh\\yakmesh-node\\data\\_test_repl_1771145855630.db.apply"}
+[2026-02-15T08:57:35.750Z] [INFO] [database:replication] Database initialized {"path":"C:\\Users\\ABL\\Desktop\\Yakmesh\\yakmesh-node\\data\\_test_repl_1771145855630.db.stats"}
+[2026-02-15T08:57:35.758Z] [INFO] [database:replication] Database initialized {"path":"C:\\Users\\ABL\\Desktop\\Yakmesh\\yakmesh-node\\data\\_test_repl_1771145855630.db.sync"}
+[2026-02-15T08:57:35.758Z] [INFO] [database:replication] Auto-sync started {"intervalSeconds":60}
+▶ ReplicationEngine: Init
+  ✔ creates the database file (0.7444ms)
+  ✔ creates _replication_log table (1.7035ms)
+  ✔ creates _replication_state table (2.7025ms)
+  ✔ sets nodeId from mesh identity (0.1948ms)
+✔ ReplicationEngine: Init (84.1922ms)
+▶ ReplicationEngine: Changes
+  ✔ recordChange inserts into log for replicated table (7.3622ms)
+  ✔ recordChange ignores non-replicated tables (2.8278ms)
+  ✔ getChangesSince filters by timestamp (1.6936ms)
+✔ ReplicationEngine: Changes (16.4811ms)
+▶ ReplicationEngine: applyChange
+  ✔ applies a new change and returns true (2.0471ms)
+  ✔ rejects duplicate change (same vector_clock) (1.773ms)
+✔ ReplicationEngine: applyChange (9.4803ms)
+▶ ReplicationEngine: Stats
+  ✔ returns replication log size (2.2469ms)
+  ✔ returns replicated tables list (0.3014ms)
+✔ ReplicationEngine: Stats (7.5874ms)
+▶ ReplicationEngine: Sync
+  ✔ startSync and stopSync manage interval (3.5658ms)
+✔ ReplicationEngine: Sync (3.6722ms)
+
+📿 MANTRA Gossip Protocol Tests
+
+============================================================
+[2026-02-15T08:57:35.616Z] [INFO] [mantra:protocol] MANTRA protocol started - prayer wheel spinning
+[2026-02-15T08:57:35.617Z] [INFO] [mantra:protocol] MANTRA protocol stopped - prayer wheel at rest
+[2026-02-15T08:57:35.618Z] [INFO] [mantra:protocol] MANTRA protocol started - prayer wheel spinning
+[2026-02-15T08:57:35.618Z] [INFO] [mantra:protocol] MANTRA protocol stopped - prayer wheel at rest
+[2026-02-15T08:57:35.927Z] [WARN] [mantra:protocol] No peers to propagate rumor to
+[2026-02-15T08:57:35.928Z] [WARN] [mantra:protocol] No peers to propagate rumor to
+[2026-02-15T08:57:35.928Z] [WARN] [mantra:protocol] No peers to propagate rumor to
+▶ MantraMessageType
+  ✔ has all expected types (0.9301ms)
+  ✔ GossipMessageType is alias for MantraMessageType (0.1804ms)
+✔ MantraMessageType (2.2824ms)
+▶ MantraProtocol: Construction
+  ✔ constructs with defaults (0.413ms)
+  ✔ accepts custom options (0.1738ms)
+✔ MantraProtocol: Construction (0.7535ms)
+▶ MantraProtocol: Lifecycle
+  ✔ start() registers gossip handler and creates intervals (1.8027ms)
+  ✔ stop() clears all intervals and removes handler (0.4551ms)
+✔ MantraProtocol: Lifecycle (2.4772ms)
+▶ MantraProtocol: BloomFilter
+  ✔ add + has tracks messages (2.9737ms)
+  ✔ shouldReset after filling beyond threshold (304.4575ms)
+  ✔ reset clears the filter (0.9561ms)
+✔ MantraProtocol: BloomFilter (308.7226ms)
+▶ MantraProtocol: Rumors
+  ✔ spreadRumor creates a message ID and buffers (1.0537ms)
+  ✔ spreadRumor deduplicates (second call is no-op) (0.5563ms)
+✔ MantraProtocol: Rumors (1.7563ms)
+▶ MantraProtocol: Rumor Buffer
+  ✔ getRecentRumors returns all by default (0.2781ms)
+  ✔ getRecentRumors filters by since (0.1784ms)
+  ✔ getRecentRumors filters by topic (0.4374ms)
+  ✔ buffer evicts when exceeding max (0.1579ms)
+✔ MantraProtocol: Rumor Buffer (1.2052ms)
+▶ MantraProtocol: Peers
+  ✔ getKnownPeers returns empty initially (0.72ms)
+  ✔ getKnownPeers filters expired peers (0.1801ms)
+✔ MantraProtocol: Peers (1.0304ms)
+▶ MantraProtocol: Stats
+  ✔ getStats returns expected shape (0.4896ms)
+✔ MantraProtocol: Stats (0.5764ms)
+▶ MantraProtocol: Fisher-Yates
+  ✔ returns requested count or fewer (0.7122ms)
+  ✔ returns all items when count > array size (0.3786ms)
+  ✔ does not mutate original array (0.2367ms)
+✔ MantraProtocol: Fisher-Yates (1.6922ms)
+▶ Legacy exports
+  ✔ GossipProtocol is alias for MantraProtocol (0.1013ms)
+✔ Legacy exports (0.1782ms)
+▶ KeyResolver
+  ▶ Self resolution
+    ✔ resolves own nodeId (0.9032ms)
+    ✔ resolves own dokoId (0.1937ms)
+    ✔ returns null for unknown id with no sources (0.1074ms)
+    ✔ returns null for null/undefined (0.0991ms)
+  ✔ Self resolution (2.1789ms)
+  ▶ Registry
+    ✔ registers and resolves a key (0.2369ms)
+    ✔ register overwrites existing entry (0.1208ms)
+    ✔ evicts oldest when at capacity (0.1385ms)
+    ✔ ignores null/undefined registration (0.1144ms)
+  ✔ Registry (0.8525ms)
+  ▶ NamcheGateway resolution
+    ✔ resolves from DOKO cache via lookupByNodeId (0.5386ms)
+    ✔ resolves from DOKO cache via lookupByHash (0.3222ms)
+    ✔ caches DOKO result in registry for fast future lookup (0.1476ms)
+  ✔ NamcheGateway resolution (1.1754ms)
+  ▶ Network peer resolution
+    ✔ resolves from peer map (0.2176ms)
+    ✔ resolves from relay peer keys (0.0887ms)
+  ✔ Network peer resolution (0.45ms)
+  ▶ SHERPA resolution
+    ✔ resolves from SHERPA registry (0.1387ms)
+  ✔ SHERPA resolution (0.196ms)
+  ▶ Resolution cascade
+    ✔ self takes priority over registry (0.157ms)
+    ✔ registry takes priority over DOKO (0.0948ms)
+  ✔ Resolution cascade (0.3267ms)
+  ▶ resolveWithMeta
+    ✔ returns source metadata for self (0.1756ms)
+    ✔ returns source metadata for registered key (0.08ms)
+    ✔ returns null for unknown (0.0754ms)
+  ✔ resolveWithMeta (0.4301ms)
+  ▶ has()
+    ✔ returns true for known keys (0.1271ms)
+    ✔ returns false for unknown keys (0.0772ms)
+  ✔ has() (0.3049ms)
+  ▶ Statistics
+    ✔ tracks resolution sources (0.1403ms)
+    ✔ reports attachment status (0.09ms)
+  ✔ Statistics (0.3133ms)
+✔ KeyResolver (7.0389ms)
+✔ mesh\tests\annex.test.js (191.2595ms)
+✔ mesh\tests\darshan.test.js (239.2457ms)
+GUMBA tests loaded
+[2026-02-15T08:57:35.991Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"test-bundle","owner":"doko-owner-e887e"}
+[2026-02-15T08:57:36.000Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"test-bundle","owner":"doko-owner-35a1b"}
+[2026-02-15T08:57:36.004Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"test-bundle","owner":"doko-owner-78b89"}
+[2026-02-15T08:57:36.011Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"test-bundle","owner":"doko-owner-bdaf0"}
+[2026-02-15T08:57:36.015Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"test-bundle","owner":"doko-owner-e36bf"}
+[2026-02-15T08:57:36.018Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"test-bundle","owner":"doko-owner-21731"}
+[2026-02-15T08:57:36.025Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"test-bundle","owner":"doko-owner-aa1fe"}
+[2026-02-15T08:57:36.039Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"test-bundle","owner":"doko-owner-eb693"}
+[2026-02-15T08:57:36.047Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"test-bundle","owner":"doko-owner-99da1"}
+[2026-02-15T08:57:36.054Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"test-bundle","owner":"doko-owner-1de39"}
+[2026-02-15T08:57:36.058Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"test-bundle","owner":"doko-owner-5253b"}
+[2026-02-15T08:57:36.061Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"test-bundle","owner":"doko-owner-5253b"}
+[2026-02-15T08:57:36.065Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"test-bundle","owner":"doko-owner-7ecd0"}
+[2026-02-15T08:57:36.068Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"test-bundle","owner":"doko-owner-ad240"}
+[2026-02-15T08:57:36.074Z] [INFO] [mesh:gumba] GumbaHub initialized
+[2026-02-15T08:57:36.075Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"my-bundle","owner":"doko-node-84b8f4"}
+[2026-02-15T08:57:36.075Z] [INFO] [mesh:gumba] Bundle created {"bundleId":"my-bundle","name":"My Bundle"}
+[2026-02-15T08:57:36.078Z] [INFO] [mesh:gumba] GumbaHub initialized
+[2026-02-15T08:57:36.078Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"my-bundle","owner":"doko-node-5d15c2"}
+[2026-02-15T08:57:36.078Z] [INFO] [mesh:gumba] Bundle created {"bundleId":"my-bundle"}
+[2026-02-15T08:57:36.081Z] [INFO] [mesh:gumba] GumbaHub initialized
+[2026-02-15T08:57:36.082Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"bundle-1","owner":"doko-node-b7b719"}
+[2026-02-15T08:57:36.082Z] [INFO] [mesh:gumba] Bundle created {"bundleId":"bundle-1","name":"Bundle 1"}
+[2026-02-15T08:57:36.082Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"bundle-2","owner":"doko-node-b7b719"}
+[2026-02-15T08:57:36.082Z] [INFO] [mesh:gumba] Bundle created {"bundleId":"bundle-2","name":"Bundle 2"}
+[2026-02-15T08:57:36.084Z] [INFO] [mesh:gumba] GumbaHub initialized
+[2026-02-15T08:57:36.085Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"my-bundle","owner":"doko-node-ae21ed"}
+[2026-02-15T08:57:36.085Z] [INFO] [mesh:gumba] Bundle created {"bundleId":"my-bundle"}
+[2026-02-15T08:57:36.088Z] [INFO] [mesh:gumba] GumbaHub initialized
+[2026-02-15T08:57:36.090Z] [INFO] [mesh:gumba] GumbaHub initialized
+[2026-02-15T08:57:36.091Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"my-bundle","owner":"doko-node-2b8ded"}
+[2026-02-15T08:57:36.091Z] [INFO] [mesh:gumba] Bundle created {"bundleId":"my-bundle"}
+[2026-02-15T08:57:36.103Z] [INFO] [mesh:gumba] Access granted {"bundleId":"my-bundle","dokoId":"doko-node-2b8ded","role":"member"}
+[2026-02-15T08:57:36.105Z] [INFO] [mesh:gumba] GumbaHub initialized
+[2026-02-15T08:57:36.106Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"my-bundle","owner":"doko-node-daf0f3"}
+[2026-02-15T08:57:36.106Z] [INFO] [mesh:gumba] Bundle created {"bundleId":"my-bundle"}
+[2026-02-15T08:57:36.115Z] [INFO] [mesh:gumba] Access granted {"bundleId":"my-bundle","dokoId":"doko-node-daf0f3","role":"member"}
+[2026-02-15T08:57:36.119Z] [INFO] [mesh:gumba] GumbaHub initialized
+[2026-02-15T08:57:36.119Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"my-bundle","owner":"doko-node-051e6e"}
+[2026-02-15T08:57:36.119Z] [INFO] [mesh:gumba] Bundle created {"bundleId":"my-bundle"}
+[2026-02-15T08:57:36.127Z] [INFO] [mesh:gumba] Access granted {"bundleId":"my-bundle","dokoId":"doko-node-051e6e","role":"member"}
+[2026-02-15T08:57:36.130Z] [INFO] [mesh:gumba] GumbaHub initialized
+[2026-02-15T08:57:36.130Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"my-bundle","owner":"doko-node-560b86"}
+[2026-02-15T08:57:36.130Z] [INFO] [mesh:gumba] Bundle created {"bundleId":"my-bundle"}
+[2026-02-15T08:57:36.142Z] [INFO] [mesh:gumba] Access granted {"bundleId":"my-bundle","dokoId":"doko-node-560b86","role":"member"}
+[2026-02-15T08:57:36.145Z] [INFO] [mesh:gumba] GumbaHub initialized
+[2026-02-15T08:57:36.145Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"my-bundle","owner":"doko-node-bed764"}
+[2026-02-15T08:57:36.145Z] [INFO] [mesh:gumba] Bundle created {"bundleId":"my-bundle"}
+[2026-02-15T08:57:36.145Z] [INFO] [mesh:gumba] Bundle deleted {"bundleId":"my-bundle"}
+[2026-02-15T08:57:36.148Z] [INFO] [mesh:gumba] GumbaHub initialized
+[2026-02-15T08:57:36.148Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"bundle-1","owner":"doko-node-7e94cd"}
+[2026-02-15T08:57:36.148Z] [INFO] [mesh:gumba] Bundle created {"bundleId":"bundle-1"}
+[2026-02-15T08:57:36.148Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"bundle-2","owner":"doko-node-7e94cd"}
+[2026-02-15T08:57:36.148Z] [INFO] [mesh:gumba] Bundle created {"bundleId":"bundle-2"}
+[2026-02-15T08:57:36.151Z] [INFO] [mesh:gumba] GumbaHub initialized
+[2026-02-15T08:57:36.152Z] [INFO] [mesh:gumba] GumbaHub initialized
+[2026-02-15T08:57:36.152Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"annex-room","owner":"doko-node-05154d"}
+[2026-02-15T08:57:36.152Z] [INFO] [mesh:gumba] Bundle created {"bundleId":"annex-room"}
+[2026-02-15T08:57:36.162Z] [INFO] [mesh:gumba] Access granted {"bundleId":"annex-room","dokoId":"doko-node-05154d","role":"member"}
+[2026-02-15T08:57:36.170Z] [INFO] [mesh:gumba] GumbaHub initialized
+[2026-02-15T08:57:36.170Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"plain-room","owner":"doko-node-b591cc"}
+[2026-02-15T08:57:36.171Z] [INFO] [mesh:gumba] Bundle created {"bundleId":"plain-room"}
+[2026-02-15T08:57:36.182Z] [INFO] [mesh:gumba] Access granted {"bundleId":"plain-room","dokoId":"doko-node-b591cc","role":"member"}
+[2026-02-15T08:57:36.185Z] [INFO] [mesh:gumba] GumbaHub initialized
+[2026-02-15T08:57:36.185Z] [INFO] [mesh:gumba] GumbaHub initialized
+[2026-02-15T08:57:36.185Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"fallback-room","owner":"doko-node-8c8ca9"}
+[2026-02-15T08:57:36.185Z] [INFO] [mesh:gumba] Bundle created {"bundleId":"fallback-room"}
+[2026-02-15T08:57:36.200Z] [INFO] [mesh:gumba] Access granted {"bundleId":"fallback-room","dokoId":"doko-node-8c8ca9","role":"member"}
+[2026-02-15T08:57:36.200Z] [WARN] [mesh:gumba] ANNEX delivery failed, returning plaintext {"visitor":"remote-visitor","error":"PEER_UNREACHABLE"}
+[2026-02-15T08:57:36.206Z] [INFO] [mesh:gumba] GumbaHub initialized
+[2026-02-15T08:57:36.206Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"chat-room","owner":"doko-node-owner-"}
+[2026-02-15T08:57:36.206Z] [INFO] [mesh:gumba] Bundle created {"bundleId":"chat-room","name":"Chat Room"}
+[2026-02-15T08:57:36.215Z] [INFO] [mesh:gumba] Access granted {"bundleId":"chat-room","dokoId":"doko-visitor-420","role":"member"}
+[2026-02-15T08:57:36.224Z] [INFO] [mesh:gumba] GumbaHub initialized
+[2026-02-15T08:57:36.224Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"private-room","owner":"doko-node-owner-"}
+[2026-02-15T08:57:36.225Z] [INFO] [mesh:gumba] Bundle created {"bundleId":"private-room"}
+[2026-02-15T08:57:36.237Z] [INFO] [mesh:gumba] GumbaHub initialized
+[2026-02-15T08:57:36.237Z] [INFO] [mesh:gumba] Bundle initialized {"bundleId":"private-room","owner":"doko-node-owner-"}
+[2026-02-15T08:57:36.237Z] [INFO] [mesh:gumba] Bundle created {"bundleId":"private-room"}
+[2026-02-15T08:57:36.243Z] [INFO] [mesh:gumba] Access granted {"bundleId":"private-room","dokoId":"doko-alice-0e00e","role":"member"}
+▶ GumbaKey
+  ✔ derives deterministic key from owner secret (3.2968ms)
+  ✔ derives different keys for different bundles (1.1835ms)
+  ✔ derives different keys for different owners (0.8811ms)
+  ✔ seals and unseals content correctly (1.1903ms)
+  ✔ tracks message count for rotation (0.3286ms)
+  ✔ destroys key material securely (0.2166ms)
+  ✔ fails to unseal with wrong key (0.4413ms)
+✔ GumbaKey (9.567ms)
+▶ GumbaMemberTree
+  ✔ adds and checks members (0.6243ms)
+  ✔ removes members (0.2787ms)
+  ✔ tracks member roles (0.2415ms)
+  ✔ checks role hierarchy correctly (0.2099ms)
+  ✔ builds Merkle root (4.844ms)
+  ✔ generates and verifies Merkle proofs (1.0813ms)
+  ✔ returns null proof for non-members (0.2196ms)
+  ✔ exports and imports correctly (0.5167ms)
+✔ GumbaMemberTree (8.4889ms)
+▶ GumbaProof
+  ▶ Challenge-Response
+    ✔ creates valid challenges (12.6643ms)
+    ✔ signs challenges with DOKO key (28.3109ms)
+    ✔ verifies valid signed challenges (27.9544ms)
+    ✔ rejects challenges signed with wrong key (41.8632ms)
+    ✔ rejects expired challenges (7.256ms)
+  ✔ Challenge-Response (118.3627ms)
+  ▶ Attestation
+    ✔ creates attestations (10.181ms)
+    ✔ verifies valid attestations (12.3893ms)
+    ✔ rejects attestations from non-members (23.3809ms)
+    ✔ rejects expired attestations (11.297ms)
+  ✔ Attestation (57.5912ms)
+  ▶ Merkle Proof
+    ✔ creates Merkle proofs (3.3178ms)
+    ✔ verifies valid Merkle proofs (3.2376ms)
+    ✔ rejects proofs with wrong root (3.6329ms)
+    ✔ returns null for non-members (4.2704ms)
+  ✔ Merkle Proof (14.7429ms)
+✔ GumbaProof (190.9003ms)
+▶ GumbaGate
+  ✔ issues challenges (4.1483ms)
+  ✔ verifies challenge-response access (17.7009ms)
+  ✔ denies access for non-members (21.3402ms)
+  ✔ prevents challenge replay (18.4891ms)
+  ✔ caches successful proofs (25.9541ms)
+  ✔ revokes cached access (36.7024ms)
+  ✔ tracks statistics (19.526ms)
+✔ GumbaGate (144.2666ms)
+▶ GumbaBundle
+  ✔ initializes with owner as member (9.0637ms)
+  ✔ adds messages (3.6356ms)
+  ✔ prevents unauthorized message posting (7.6324ms)
+  ✔ retrieves messages for authorized users (4.0052ms)
+  ✔ denies message retrieval without access (3.1442ms)
+  ✔ adds members with proper authorization (6.2675ms)
+  ✔ prevents unauthorized member addition (10.0623ms)
+  ✔ prevents granting higher role than own (12.8869ms)
+  ✔ removes members with proper authorization (5.9671ms)
+  ✔ prevents removing owner (3.9122ms)
+  ✔ exports and imports bundles (7.1623ms)
+  ✔ provides bundle info (3.2785ms)
+  ✔ emits events on message and member changes (6.1186ms)
+✔ GumbaBundle (83.8343ms)
+▶ GumbaHub
+  ✔ creates bundles (3.6002ms)
+  ✔ prevents duplicate bundle IDs (3.4639ms)
+  ✔ lists bundles (3.3572ms)
+  ✔ issues challenges (2.9193ms)
+  ✔ returns error for unknown bundle challenges (2.7843ms)
+  ✔ handles access requests (14.9612ms)
+  ✔ gets messages for active sessions (12.9594ms)
+  ✔ posts messages for active sessions (11.1667ms)
+  ✔ cleans up expired sessions (15.0909ms)
+  ✔ deletes bundles (2.9774ms)
+  ✔ tracks statistics (3.1286ms)
+  ✔ delivers messages via ANNEX when visitor has nodeId (15.312ms)
+  ✔ returns plaintext when no ANNEX is available (17.9832ms)
+  ✔ falls through to plaintext on ANNEX failure (18.3698ms)
+✔ GumbaHub (128.7909ms)
+▶ GUMBA Integration
+  ✔ complete access flow: challenge → verify → read (14.9272ms)
+  ✔ attestation-based access flow (16.0953ms)
+  ✔ access revocation flow (31.451ms)
+✔ GUMBA Integration (62.6752ms)
+▶ KathaMessage
+  ✔ should create a message with required fields (1.3008ms)
+  ✔ should generate unique IDs (1.5272ms)
+  ✔ should validate required fields (0.3873ms)
+  ✔ should validate content length (0.3842ms)
+  ✔ should serialize and deserialize (0.356ms)
+  ✔ should support reply threading (0.3725ms)
+✔ KathaMessage (5.7926ms)
+▶ KathaReaction
+  ✔ should add reaction to message (0.3466ms)
+  ✔ should prevent duplicate reactions (0.1856ms)
+  ✔ should remove reactions (0.2024ms)
+  ✔ should check user reaction (0.271ms)
+  ✔ should limit reaction emojis per message (0.2286ms)
+  ✔ should serialize reactions with message (0.3797ms)
+  ✔ should create reaction events (0.2606ms)
+✔ KathaReaction (2.2452ms)
+▶ KathaTyping
+  ✔ should create typing start event (0.2316ms)
+  ✔ should create typing stop event (0.1002ms)
+  ✔ should detect expired typing (0.4517ms)
+  ✔ should not be expired when fresh (0.1738ms)
+✔ KathaTyping (2.1198ms)
+▶ KathaReadReceipt
+  ✔ should create read receipt (0.4555ms)
+  ✔ should add messages to batch (0.1521ms)
+  ✔ should not duplicate message IDs (0.0923ms)
+  ✔ should respect batch limit (0.1697ms)
+✔ KathaReadReceipt (1.0507ms)
+▶ KathaMedia
+  ✔ should create media from buffer (1.6234ms)
+  ✔ should convert back to buffer (1.7207ms)
+  ✔ should verify data integrity (0.4498ms)
+  ✔ should validate size limit (0.2481ms)
+  ✔ should support captions (0.3275ms)
+  ✔ should serialize and deserialize (0.5942ms)
+✔ KathaMedia (5.2305ms)
+▶ KathaEdit
+  ✔ should create edit event (0.195ms)
+  ✔ should validate content length (0.0892ms)
+✔ KathaEdit (0.3721ms)
+▶ KathaDelete
+  ✔ should create delete event (0.2166ms)
+✔ KathaDelete (0.2879ms)
+▶ KathaChannel
+  ✔ should create channel with ID (0.3864ms)
+  ✔ should add and retrieve messages (1.5771ms)
+  ✔ should track threading (0.4054ms)
+  ✔ should apply reactions (0.2823ms)
+  ✔ should track typing indicators (0.2505ms)
+  ✔ should apply read receipts (0.3364ms)
+  ✔ should edit messages (0.2739ms)
+  ✔ should only allow sender to edit (0.2572ms)
+  ✔ should delete messages (0.256ms)
+  ✔ should mark parent as deleted if it has replies (0.2099ms)
+  ✔ should get messages with filters (0.5068ms)
+  ✔ should provide stats (0.2647ms)
+✔ KathaChannel (5.5634ms)
+▶ KathaHub
+  ✔ should create and manage channels (0.4231ms)
+  ✔ should handle text message events (0.6444ms)
+  ✔ should handle reaction events (0.2622ms)
+  ✔ should handle typing events (0.4099ms)
+  ✔ should emit events to handlers (0.6863ms)
+  ✔ should remove event handlers (0.8191ms)
+  ✔ should remove channels (0.329ms)
+  ✔ should provide global stats (0.4665ms)
+  ✔ should cleanup all channels (0.1631ms)
+✔ KathaHub (4.663ms)
+
+🔗 KHATA/SHERPA Ternary Link Quality
+──────────────────────────────────────────────────
+📡 Symmetric Good Link:
+   Outbound: 1 (10/0)
+   Inbound:  1 (10/0)
+   Overall:  GOOD
+
+📡 Asymmetric Link (outbound good, inbound bad):
+   Outbound: 1 (GOOD)
+   Inbound:  -1 (BAD)
+   Overall:  BAD ← Ternary AND = BAD
+   Symmetric: false
+
+📡 Mixed/Uncertain Link:
+   Outbound: 0 (NEUTRAL - mixed)
+   Inbound:  0 (NEUTRAL - mixed)
+   Overall:  NEUTRAL
+
+⚖️ Path Balance:
+   Good link balance: {"balance":2,"isBalanced":false,"quality":-1}
+   Asym link balance: {"balance":0,"isBalanced":true,"quality":1}
+
+──────────────────────────────────────────────────
+
+✅ KHATA/SHERPA ternary link quality tests complete!
+
+▶ KHATA/SHERPA Ternary Link Quality
+  ▶ LinkQuality Construction
+    ✔ starts with NEUTRAL quality (no data) (0.5819ms)
+  ✔ LinkQuality Construction (1.1428ms)
+  ▶ Outbound Quality
+    ✔ POSITIVE when >70% success (0.259ms)
+    ✔ NEGATIVE when <30% success (0.1352ms)
+    ✔ NEUTRAL when mixed (30-70%) (0.1234ms)
+  ✔ Outbound Quality (0.7351ms)
+  ▶ Inbound Quality
+    ✔ POSITIVE when >70% success (0.2163ms)
+    ✔ NEGATIVE when mostly failures (0.1523ms)
+  ✔ Inbound Quality (0.5199ms)
+  ▶ Bidirectional Quality
+    ✔ POSITIVE when both directions good (0.4561ms)
+    ✔ NEGATIVE when both directions bad (0.2076ms)
+    ✔ NEGATIVE when asymmetric (good out, bad in) (0.2332ms)
+    ✔ NEUTRAL when outbound mixed (0.3496ms)
+  ✔ Bidirectional Quality (1.4512ms)
+  ▶ Symmetry Detection
+    ✔ isSymmetric when both directions same (0.1622ms)
+    ✔ isAsymmetric when directions differ (0.1027ms)
+  ✔ Symmetry Detection (0.3456ms)
+  ▶ Path Balance
+    ✔ reports balance for symmetric good link (0.1302ms)
+    ✔ balanced when opposite qualities (sum = 0) (0.1032ms)
+  ✔ Path Balance (0.3161ms)
+  ▶ Reset and Decay
+    ✔ reset clears all counters (1.9759ms)
+    ✔ decay reduces counters (0.2674ms)
+  ✔ Reset and Decay (2.382ms)
+  ▶ Serialization
+    ✔ toJSON includes all metrics (0.2829ms)
+  ✔ Serialization (0.3671ms)
+✔ KHATA/SHERPA Ternary Link Quality (8.0021ms)
+✔ mesh\tests\nakpak-e2e.test.js (257.1203ms)
+✔ mesh\tests\nakpak-routing.test.js (262.6016ms)
+✔ mesh\tests\sherpa-discovery.test.js (294.3386ms)
+✔ mesh\tests\sherpa-geo.test.js (276.7527ms)
+
+🔱 TRISULA - Ternary Search Tree for YAKMESH
+
+──────────────────────────────────────────────────
+📍 Inserting node IDs:
+   a1b2c3d4e5f6 → Peer 1
+   a1b2c3d4aaaa → Peer 2
+   a1b2ffff0000 → Peer 3
+   deadbeef1234 → Peer 4
+   cafebabe5678 → Peer 5
+
+📊 Tree stats: {"size":5,"nodeCount":48,"maxDepth":14,"avgDepth":7}
+
+🔍 Prefix search for "a1b2":
+   a1b2c3d4aaaa → Peer 2
+   a1b2c3d4e5f6 → Peer 1
+   a1b2ffff0000 → Peer 3
+
+🎯 Finding nearest to "a1b2c3d5":
+   a1b2c3d4e5f6 (comparison: 1)
+
+─
+─
+─
+─
+─
+─
+─
+─
+─
+─
+─
+─
+─
+─
+─
+─
+─
+─
+─
+─
+─
+─
+─
+─
+─
+─
+─
+─
+─
+─
+─
+─
+─
+─
+─
+─
+─
+─
+─
+─
+─
+─
+─
+─
+─
+─
+─
+─
+─
+─
+
+🌐 TrisulaPeerRouter Demo:
+   Peer count: 3
+   Best route to 'aaaa...': wss://node-a:8080
+   Closest 2 peers to ab000000...:
+      aaaaaaaa... - wss://node-a:8080
+      bbbbbbbb... - wss://node-b:8080
+
+──────────────────────────────────────────────────
+
+
+✅ All TRISULA tests complete!
+
+▶ TRISULA - Ternary Search Tree
+  ▶ TrisulaTST Basic Operations
+    ✔ should start empty (1.304ms)
+    ✔ should insert and search keys (0.3287ms)
+    ✔ should return null for missing keys (0.215ms)
+    ✔ should update existing keys (0.194ms)
+    ✔ should check key existence with has() (0.2838ms)
+    ✔ should delete keys (0.2621ms)
+    ✔ should return false when deleting non-existent key (0.1829ms)
+    ✔ should throw on empty key (0.5451ms)
+    ✔ should support chained inserts (0.2626ms)
+  ✔ TrisulaTST Basic Operations (5.0541ms)
+  ▶ TrisulaTST Prefix Operations
+    ✔ should find all keys with prefix (1.0355ms)
+    ✔ should find keys with short prefix (0.1813ms)
+    ✔ should return empty for non-matching prefix (0.1469ms)
+    ✔ should return all keys for empty prefix (0.2406ms)
+    ✔ should find longest prefix of string (0.2077ms)
+    ✔ should find shorter longest prefix (0.1258ms)
+    ✔ should return null for no matching prefix (0.1035ms)
+  ✔ TrisulaTST Prefix Operations (2.345ms)
+  ▶ TrisulaTST Nearest Neighbor
+    ✔ should return exact match with NEUTRAL comparison (0.2553ms)
+    ✔ should find nearest when key not found (0.2365ms)
+    ✔ should indicate comparison direction (0.206ms)
+    ✔ should return null for empty tree (0.3724ms)
+  ✔ TrisulaTST Nearest Neighbor (1.2142ms)
+  ▶ TrisulaTST Iteration
+    ✔ should return sorted keys (0.2696ms)
+    ✔ should return all values (0.1706ms)
+    ✔ should return sorted entries (0.1955ms)
+    ✔ should be iterable (0.2489ms)
+  ✔ TrisulaTST Iteration (1.0559ms)
+  ▶ TrisulaTST Utility
+    ✔ should clear the tree (0.1612ms)
+    ✔ should report stats (0.1249ms)
+  ✔ TrisulaTST Utility (0.3905ms)
+  ▶ TrisulaPeerRouter
+    ✔ should add and get peers (0.2778ms)
+    ✔ should remove peers (0.2646ms)
+    ✔ should find by prefix (0.2915ms)
+    ✔ should find closest peers using XOR distance (0.3047ms)
+    ✔ should get all peers (0.2606ms)
+    ✔ should report stats (0.2268ms)
+  ✔ TrisulaPeerRouter (1.8702ms)
+  ▶ TrisulaTST with Hex Node IDs
+    ✔ should handle 64-char hex node IDs efficiently (0.79ms)
+  ✔ TrisulaTST with Hex Node IDs (0.8674ms)
+✔ TRISULA - Ternary Search Tree (14.7085ms)
+✔ mesh\tests\vani.test.js (256.2535ms)
+YURT Protocol Tests
+════════════════════════════════════════════════════════════
+[2026-02-15T08:57:36.013Z] [INFO] [mesh:yurt] Room announced {"name":"Test Room","bundleId":"bundle-adcc37e25861396f"}
+[2026-02-15T08:57:36.015Z] [INFO] [mesh:yurt] YURT gossip stopped
+[2026-02-15T08:57:36.024Z] [INFO] [mesh:yurt] Room announced {"name":"Test Room","bundleId":"bundle-7c5fd0bb31fdef67"}
+[2026-02-15T08:57:36.028Z] [INFO] [mesh:yurt] YURT gossip stopped
+[2026-02-15T08:57:36.047Z] [INFO] [mesh:yurt] Room announced {"name":"Test Room","bundleId":"bundle-2459664c787f8609"}
+[2026-02-15T08:57:36.048Z] [INFO] [mesh:yurt] YURT gossip stopped
+[2026-02-15T08:57:36.074Z] [INFO] [mesh:yurt] Room announced {"name":"Test Room","bundleId":"bundle-3d25c3fc1c33fae9"}
+[2026-02-15T08:57:36.074Z] [INFO] [mesh:yurt] Room withdrawn {"bundleId":"bundle-3d25c3fc1c33fae9"}
+[2026-02-15T08:57:36.074Z] [INFO] [mesh:yurt] YURT gossip stopped
+[2026-02-15T08:57:36.077Z] [INFO] [mesh:yurt] YURT gossip stopped
+[2026-02-15T08:57:36.080Z] [INFO] [mesh:yurt] YURT gossip stopped
+[2026-02-15T08:57:36.083Z] [INFO] [mesh:yurt] YURT gossip stopped
+▶ YurtEntry
+  ▶ constructor
+    ✔ creates entry with required fields (1.8941ms)
+    ✔ sets default values (0.9445ms)
+    ✔ computes deterministic entry ID (0.8751ms)
+  ✔ constructor (4.4954ms)
+  ▶ validation
+    ✔ validates required fields (0.7788ms)
+    ✔ validates name length (0.2906ms)
+    ✔ validates description length (0.3404ms)
+    ✔ validates tag count (0.2615ms)
+    ✔ validates tag length (0.271ms)
+    ✔ validates visibility (0.2759ms)
+    ✔ passes valid entry (0.6136ms)
+  ✔ validation (3.2407ms)
+  ▶ signing and verification
+    ✔ signs entry with secret key (21.5131ms)
+    ✔ verifies valid signature (21.21ms)
+    ✔ rejects invalid signature (wrong key) (13.8971ms)
+    ✔ rejects tampered entry (21.7292ms)
+    ✔ returns false for unsigned entry (4.2696ms)
+  ✔ signing and verification (83.018ms)
+  ▶ expiration
+    ✔ detects expired entry (0.2379ms)
+    ✔ returns false for fresh entry (0.1294ms)
+  ✔ expiration (0.4769ms)
+  ▶ URI generation
+    ✔ generates yak:// URI (0.2206ms)
+    ✔ generates invite URI with attestation (0.1832ms)
+  ✔ URI generation (0.4886ms)
+  ▶ serialization
+    ✔ exports to JSON (0.2132ms)
+    ✔ imports from JSON (0.1788ms)
+    ✔ preserves signature through serialization (13.1501ms)
+  ✔ serialization (13.7185ms)
+✔ YurtEntry (106.204ms)
+▶ YurtLink
+  ▶ parse
+    ✔ parses basic yak:// URI (0.4736ms)
+    ✔ parses URI with explicit port (0.1385ms)
+    ✔ parses URI with invite parameter (0.9148ms)
+    ✔ handles invalid URI gracefully (0.1551ms)
+    ✔ constructs endpoint from host:port (0.2117ms)
+  ✔ parse (2.0843ms)
+  ▶ create
+    ✔ creates basic URI (0.2218ms)
+    ✔ creates URI with custom port (0.1293ms)
+    ✔ creates invite URI (0.2039ms)
+  ✔ create (0.7204ms)
+  ▶ isValid
+    ✔ returns true for valid URI (2.1457ms)
+    ✔ returns false for non-yak scheme (0.0972ms)
+    ✔ returns false for invalid input (0.1361ms)
+  ✔ isValid (2.9295ms)
+  ▶ toHttpsGateway
+    ✔ converts to HTTPS gateway URL (0.2334ms)
+    ✔ uses custom gateway URL (0.1784ms)
+    ✔ returns null for invalid URI (0.1467ms)
+  ✔ toHttpsGateway (1.4168ms)
+✔ YurtLink (7.3978ms)
+▶ YurtDirectory
+  ▶ add
+    ✔ adds valid entry (0.8589ms)
+    ✔ rejects invalid entry (0.2208ms)
+    ✔ updates existing entry (0.732ms)
+    ✔ verifies signature when required (18.3431ms)
+    ✔ accepts valid signature (38.1796ms)
+  ✔ add (58.6067ms)
+  ▶ remove
+    ✔ removes existing entry (0.4828ms)
+    ✔ returns false for non-existent entry (0.1668ms)
+  ✔ remove (0.7895ms)
+  ▶ get and getByBundle
+    ✔ retrieves entry by ID (0.4759ms)
+    ✔ retrieves entry by bundle ID (0.3173ms)
+    ✔ returns null for missing entry (0.3363ms)
+  ✔ get and getByBundle (1.2677ms)
+  ▶ search
+    ✔ searches by text query (0.6993ms)
+    ✔ searches in description (0.4343ms)
+    ✔ searches by tags (0.3269ms)
+    ✔ filters by visibility (1.371ms)
+    ✔ applies limit (0.3639ms)
+    ✔ returns all matching entries (0.2749ms)
+  ✔ search (3.7416ms)
+  ▶ listPublic
+    ✔ returns only public entries (0.2438ms)
+  ✔ listPublic (0.2954ms)
+  ▶ own listings
+    ✔ tracks own listings (0.194ms)
+  ✔ own listings (0.2558ms)
+  ▶ cleanup
+    ✔ removes expired entries (0.2889ms)
+    ✔ preserves own listings even if expired (0.156ms)
+  ✔ cleanup (0.5161ms)
+  ▶ indexes
+    ✔ indexes by host (0.2475ms)
+    ✔ indexes by tag (0.4712ms)
+  ✔ indexes (0.7978ms)
+  ▶ persistence
+    ✔ exports and imports (0.3511ms)
+  ✔ persistence (0.4035ms)
+  ▶ stats
+    ✔ tracks statistics (0.2012ms)
+  ✔ stats (0.2472ms)
+✔ YurtDirectory (67.65ms)
+▶ YurtGossip
+  ▶ announce
+    ✔ announces room to network (33.2817ms)
+    ✔ signs entry with node identity (12.8586ms)
+    ✔ broadcasts to peers (19.4ms)
+  ✔ announce (66.0679ms)
+  ▶ withdraw
+    ✔ withdraws own listing (26.4107ms)
+    ✔ rejects withdrawing others listings (3.0017ms)
+  ✔ withdraw (29.5587ms)
+  ▶ query
+    ✔ broadcasts query to network (3.0845ms)
+  ✔ query (3.1642ms)
+  ▶ stats
+    ✔ tracks gossip statistics (2.692ms)
+  ✔ stats (2.7751ms)
+✔ YurtGossip (101.8026ms)
+▶ Integration Scenarios
+  ▶ QRL Official Room Flow
+    ✔ creates and discovers QRL room (18.8848ms)
+    ✔ discovers room via gossip (20.5414ms)
+  ✔ QRL Official Room Flow (39.7182ms)
+  ▶ Invite Flow
+    ✔ creates and parses invite links (0.5606ms)
+  ✔ Invite Flow (0.6416ms)
+  ▶ Browser Fallback
+    ✔ provides HTTPS gateway fallback (0.1623ms)
+  ✔ Browser Fallback (0.2342ms)
+✔ Integration Scenarios (40.717ms)
+
+🗳️ LAMA Ternary Consensus Retrofit
+──────────────────────────────────────────────────
+📊 Votes Cast:
+   node-1: ✓ ACCEPT (weight: 10)
+   node-2: ✓ ACCEPT (weight: 5)
+   node-3: ✗ REJECT (weight: 3) - SIGNATURE_EXPIRED
+   node-4: ◌ ABSTAIN (weight: 1) - AWAITING_VALIDATION
+   node-5: ✓ ACCEPT (weight: 2)
+[DEPRECATED] computeTernaryConsensus should not be used for validation
+
+📈 Consensus Result:
+   Decision: ACCEPT
+   Confidence: 66.7%
+   Accept/Reject/Abstain: 3/1/1
+   Weighted Accept/Reject: 17/3
+
+⚖️ Close Vote Scenario:
+   With 20% threshold: UNDECIDED (margin too close)
+
+──────────────────────────────────────────────────
+
+[DEPRECATED] computeTernaryConsensus should not be used for validation
+✅ LAMA ternary consensus tests complete!
+
+[DEPRECATED] computeTernaryConsensus should not be used for validation
+[DEPRECATED] computeTernaryConsensus should not be used for validation
+[DEPRECATED] computeTernaryConsensus should not be used for validation
+[DEPRECATED] computeTernaryConsensus should not be used for validation
+[DEPRECATED] computeTernaryConsensus should not be used for validation
+[DEPRECATED] computeTernaryConsensus should not be used for validation
+[DEPRECATED] computeTernaryConsensus should not be used for validation
+[DEPRECATED] computeTernaryConsensus should not be used for validation
+▶ LAMA Ternary Consensus
+  ▶ ConsensusVote
+    ✔ accept() creates positive vote (1.847ms)
+    ✔ reject() creates negative vote with reason (0.3481ms)
+    ✔ abstain() creates neutral vote (0.144ms)
+    ✔ has default weight of 1 (0.1548ms)
+    ✔ accepts custom weight (0.1756ms)
+    ✔ records timestamp (0.2285ms)
+    ✔ is immutable (0.3079ms)
+    ✔ toJSON includes all fields (0.3192ms)
+  ✔ ConsensusVote (4.9953ms)
+  ▶ computeTernaryConsensus
+    ✔ unanimous accept returns ACCEPT (0.4079ms)
+    ✔ unanimous reject returns REJECT (0.2324ms)
+    ✔ strong majority accept wins (0.2252ms)
+    ✔ close vote returns NEUTRAL (undecided) (0.1551ms)
+    ✔ abstain votes are neutral in weighted calculation (0.1564ms)
+    ✔ provides correct summary stats (0.1647ms)
+    ✔ handles empty votes array (0.1528ms)
+    ✔ single vote determines result (0.1393ms)
+  ✔ computeTernaryConsensus (1.9292ms)
+✔ LAMA Ternary Consensus (8.0806ms)
+🔐 Security level set to NIST Level 3
+🔐 Security level set to NIST Level 5
+🔐 Security level set to NIST Level 3
+🔐 Security level set to NIST Level 3
+🔐 Security level set to NIST Level 3
+🔐 Security level set to NIST Level 5
+🔐 Security level set to NIST Level 3
+🔐 Security level set to NIST Level 5
+🔐 Security level set to NIST Level 3
+🔐 Security level set to NIST Level 3
+🔐 Security level set to NIST Level 5
+🔐 Security level set to NIST Level 3
+🔐 Security level set to NIST Level 3
+🔐 Security level set to NIST Level 3
+🔐 Security level set to NIST Level 5
+🔐 Security level set to NIST Level 3
+🔐 Security level set to NIST Level 3
+🔐 Security level set to NIST Level 5
+🔐 Security level set to NIST Level 3
+🔐 Security level set to NIST Level 3
+🔐 Security level set to NIST Level 3
+ML-DSA-65: 10 sign+verify in 118.43ms (11.84ms each)
+🔐 Security level set to NIST Level 3
+ML-KEM-768: 10 encaps+decaps in 14.78ms (1.48ms each)
+🔐 Security level set to NIST Level 3
+🔐 Security level set to NIST Level 5
+Level 5 overhead: 71.9% slower than Level 3
+🔐 Security level set to NIST Level 3
+▶ Post-Quantum Cryptography Test Suite
+  ▶ Security Level Configuration
+    ✔ default security level is LEVEL_3 (1.0605ms)
+    ✔ can switch to LEVEL_5 (paranoid mode) (0.8542ms)
+    ✔ rejects invalid security levels (1.0027ms)
+    ✔ getCryptoSummary returns correct info (0.3915ms)
+  ✔ Security Level Configuration (4.2901ms)
+  ▶ ML-DSA-65 (Dilithium3) Signatures
+    ✔ generates valid key pair (1.06ms)
+    ✔ signs and verifies message (15.4408ms)
+    ✔ rejects tampered message (11.3011ms)
+    ✔ rejects tampered signature (25.438ms)
+    ✔ different keys produce different signatures (29.8298ms)
+    ✔ signature is deterministic for same message and key (15.1095ms)
+  ✔ ML-DSA-65 (Dilithium3) Signatures (115.8373ms)
+  ▶ ML-DSA-87 (Dilithium5) Signatures - Level 5
+    ✔ generates larger keys for Level 5 (0.1849ms)
+    ✔ produces larger signatures for Level 5 (11.345ms)
+    ✔ Level 5 signature incompatible with Level 3 verification (14.6461ms)
+  ✔ ML-DSA-87 (Dilithium5) Signatures - Level 5 (32.0107ms)
+  ▶ ML-KEM-768 (Kyber768) Key Encapsulation
+    ✔ generates valid KEM key pair (0.707ms)
+    ✔ encapsulation produces ciphertext and shared secret (3.0562ms)
+    ✔ decapsulation recovers same shared secret (4.3149ms)
+    ✔ different public keys produce different shared secrets (6.7052ms)
+    ✔ wrong secret key fails to decapsulate correctly (5.2059ms)
+    ✔ each encapsulation produces unique ciphertext (2.3048ms)
+  ✔ ML-KEM-768 (Kyber768) Key Encapsulation (29.1985ms)
+  ▶ ML-KEM-1024 (Kyber1024) Key Encapsulation - Level 5
+    ✔ generates larger keys for Level 5 (0.1938ms)
+    ✔ produces larger ciphertext for Level 5 (1.7772ms)
+    ✔ shared secret still 32 bytes at Level 5 (2.2535ms)
+  ✔ ML-KEM-1024 (Kyber1024) Key Encapsulation - Level 5 (6.1688ms)
+  ▶ SHA3-256 Hash Function
+    ✔ produces 256-bit (32 byte) output (0.2353ms)
+    ✔ is deterministic (0.178ms)
+    ✔ different inputs produce different hashes (0.1181ms)
+    ✔ small change produces completely different hash (avalanche) (0.1653ms)
+    ✔ empty input has known hash (0.1498ms)
+  ✔ SHA3-256 Hash Function (0.9982ms)
+  ▶ Node Identity Module
+    ✔ generateKeyPair produces valid ML-DSA-65 keys (3.627ms)
+    ✔ signMessage and verifySignature work correctly (15.9218ms)
+    ✔ verifySignature rejects tampered message (10.994ms)
+    ✔ verifySignature rejects wrong public key (25.3506ms)
+  ✔ Node Identity Module (56.1332ms)
+  ▶ Integration Tests
+    ✔ full handshake simulation: sign + KEM + encrypt (48.1316ms)
+    ✔ security level upgrade preserves functionality (47.1119ms)
+  ✔ Integration Tests (95.4001ms)
+  ▶ SLH-DSA-SHA2-192f Backup Signatures (Level 3)
+    ✔ generates valid SLH-DSA key pair (0.2081ms)
+    ✔ getBackupSignatureName returns correct algorithm (0.0873ms)
+    ✔ signs and verifies message with SLH-DSA (261.5097ms)
+    ✔ rejects tampered message (209.1252ms)
+    ✔ rejects tampered signature (209.2421ms)
+    ✔ crypto profile includes backup signature info (0.1472ms)
+  ✔ SLH-DSA-SHA2-192f Backup Signatures (Level 3) (708.312ms)
+  ▶ SLH-DSA-SHA2-256f Backup Signatures (Level 5)
+    ✔ generates valid Level 5 SLH-DSA key pair (0.2217ms)
+    ✔ getBackupSignatureName returns Level 5 algorithm (0.1394ms)
+    ✔ signs and verifies message at Level 5 (429.1753ms)
+  ✔ SLH-DSA-SHA2-256f Backup Signatures (Level 5) (450.8395ms)
+  ▶ Dual Signatures (ML-DSA + SLH-DSA)
+    ✔ generates both primary and backup keypairs (0.1852ms)
+    ✔ creates dual signature with both algorithms (218.5084ms)
+    ✔ verifies dual signature (both must be valid) (218.0238ms)
+    ✔ verifies combined dual signature (214.0709ms)
+    ✔ fails if primary signature is invalid (207.0181ms)
+    ✔ fails if backup signature is invalid (215.8209ms)
+    ✔ getCryptoSummary includes SLH-DSA info (0.1481ms)
+  ✔ Dual Signatures (ML-DSA + SLH-DSA) (1083.8746ms)
+  ▶ Performance Benchmarks
+    ✔ ML-DSA-65 sign/verify performance (121.5415ms)
+    ✔ ML-KEM-768 encaps/decaps performance (15.7073ms)
+    ✔ Level 5 vs Level 3 overhead (131.3394ms)
+  ✔ Performance Benchmarks (268.74ms)
+✔ Post-Quantum Cryptography Test Suite (2852.7744ms)
+
+🖖 "Modulate the shield frequency, Mr. La Forge!" - Captain Picard
+
+  ⚡ Current epoch: 81997
+  ⏰ Epoch 81997: 2026-02-15T06:00:00.000Z - 2026-02-15T12:00:00.000Z
+  ⏳ Time until rotation: 3h 2m 24s
+  ✅ Valid epochs: 81997, 81998
+  ⚡ Phase modulation creates unique salts per epoch
+  🔒 Phase fingerprint: cdf41522b5a7f11cfa47a309c99fc458
+  🔒 Fingerprints rotate with phase epochs (anti-replay protection)
+  ✓ Fingerprint verified: CURRENT_PHASE
+  🖖 Phase ID: Phase-10249ζ
+  🖖 Greek letters: Phase-0α, Phase-0β, Phase-0γ, Phase-0δ, Phase-0ε, Phase-0ζ, Phase-0η, Phase-0θ
+  📨 Challenge created, epoch 81997, binding a829950dda4a4cec
+
+  📊 Phase Status:
+     Current Epoch: 81997
+     In Grace Period: false
+     Valid Epochs: [81997, 81998]
+     Next rotation in 3h 2m
+
+  📊 Fingerprint Rotation Demo:
+     Phase-10249δ: 20d3f52d418d02b24a946aee71bd5274
+     Phase-10249ε: 837a5970b1de25169d54a88d628f4187
+     Phase-10249ζ: a2d9cd88a35ed13239364d27d934b615 ← current
+     Phase-10249η: 18bde4ae55726629eed3a978344cfec1
+     Phase-10249θ: 3f0bb4bc215e21259ee6aa1918f30c72
+  🛡️ Replay attack with expired phase would be rejected
+  ⏰ Epoch duration: 6 hours
+  🔧 Grace period: 15 minutes
+  👁️ Lookahead phases: 1
+▶ Phase Epoch System
+  ▶ getCurrentEpoch()
+    ✔ should return current epoch number (1.0535ms)
+    ✔ should return same epoch within same period (0.9921ms)
+    ✔ should accept optional timestamp (0.1677ms)
+  ✔ getCurrentEpoch() (3.5559ms)
+  ▶ getEpochStartTime() / getEpochEndTime()
+    ✔ should return valid time boundaries (0.8956ms)
+  ✔ getEpochStartTime() / getEpochEndTime() (1.2696ms)
+  ▶ getTimeUntilRotation()
+    ✔ should return time info (0.7502ms)
+  ✔ getTimeUntilRotation() (0.8617ms)
+  ▶ getValidEpochs()
+    ✔ should return array of valid epochs (0.3742ms)
+    ✔ should include current epoch (0.1634ms)
+  ✔ getValidEpochs() (0.8144ms)
+  ▶ modulateSalt()
+    ✔ should generate consistent salt for same epoch (1.8424ms)
+    ✔ should generate different salts for different epochs (0.3658ms)
+  ✔ modulateSalt() (2.3951ms)
+  ▶ derivePhaseFingerprint()
+    ✔ should derive fingerprint from hash and epoch (3.9907ms)
+    ✔ should produce same fingerprint for same hash and epoch (0.7549ms)
+    ✔ should produce different fingerprint for different epochs (0.8543ms)
+    ✔ should produce different fingerprint for different hashes (0.5238ms)
+  ✔ derivePhaseFingerprint() (6.3335ms)
+  ▶ verifyPhaseFingerprint()
+    ✔ should verify correct current fingerprint (0.6537ms)
+    ✔ should reject incorrect fingerprint (0.5202ms)
+  ✔ verifyPhaseFingerprint() (1.276ms)
+  ▶ formatPhaseId()
+    ✔ should format phase ID with Greek letter (0.2641ms)
+    ✔ should cycle through Greek letters (0.2361ms)
+  ✔ formatPhaseId() (0.5847ms)
+  ▶ createPhasedChallenge() / verifyPhasedChallenge()
+    ✔ should create phased challenge (0.3049ms)
+    ✔ should verify valid challenge (0.1514ms)
+    ✔ should reject expired challenge (0.1177ms)
+  ✔ createPhasedChallenge() / verifyPhasedChallenge() (0.7503ms)
+  ▶ getPhaseStatus()
+    ✔ should return comprehensive status (0.2996ms)
+  ✔ getPhaseStatus() (0.3694ms)
+  ▶ Anti-Replay Protection
+    ✔ should demonstrate fingerprint rotation (1.412ms)
+    ✔ should prevent replay attacks with expired epochs (0.9581ms)
+  ✔ Anti-Replay Protection (2.5061ms)
+  ▶ Constants
+    ✔ should have sensible epoch duration (0.1674ms)
+    ✔ should have reasonable grace period (0.0835ms)
+    ✔ should have lookahead phases (0.5092ms)
+  ✔ Constants (0.9126ms)
+✔ Phase Epoch System (26.5789ms)
+✨ SST - Synergy Sequence Theory Integration for YAKMESH
+
+============================================================
+
+📊 SST Family Groups (Wesley Long):
+   Family A: 1, 4, 7 → NEGATIVE (Physical Descending)
+   Family B: 2, 5, 8 → POSITIVE (Physical Ascending)
+   Family C: 3, 6, 9 → NEUTRAL (Governing Singularity)
+
+🔢 Digital Root Examples:
+   digitalRoot(27) = 9 → Family C
+   digitalRoot(123) = 6 → Family C
+   digitalRoot(999) = 9 → Family C
+
+📈 Fibonacci 24-Cycle:
+   1, 1, 2, 3, 5, 8, 4, 3, 7, 1, 8, 9
+   8, 8, 7, 6, 4, 1, 5, 6, 2, 8, 1, 9
+
+🔺 SST-YAKMESH Key Constants:
+   YPC-27 degree: 27 → root 9 → Family C
+   Fib cycle: 24 → root 6 → Family C
+   LCM(27,24): 216 → root 9 → Family C
+
+============================================================
+
+
+✅ SST Tests Complete
+
+▶ SST Digital Root
+  ✔ calculates digital roots correctly (1.5304ms)
+  ✔ handles zero as 9 (SST convention) (0.1407ms)
+  ✔ handles negative numbers (0.1108ms)
+  ✔ handles BigInt (0.1306ms)
+✔ SST Digital Root (3.4582ms)
+▶ SST Family Classification
+  ✔ classifies Family A (1,4,7) correctly (0.2636ms)
+  ✔ classifies Family B (2,5,8) correctly (0.1416ms)
+  ✔ classifies Family C (3,6,9) correctly (0.2183ms)
+  ✔ maps numbers to families via digital root (0.1572ms)
+✔ SST Family Classification (1.3476ms)
+▶ SST to Trit Mapping
+  ✔ maps Family A to NEGATIVE (0.2393ms)
+  ✔ maps Family B to POSITIVE (0.1467ms)
+  ✔ maps Family C to NEUTRAL (0.1934ms)
+✔ SST to Trit Mapping (0.7212ms)
+▶ Fibonacci 24-Cycle
+  ✔ has exactly 24 elements (0.1052ms)
+  ✔ starts correctly (0.0554ms)
+  ✔ has 9 at positions 11 and 23 (singularity markers) (0.0461ms)
+  ✔ correctly references cycle positions (0.0719ms)
+  ✔ correctly maps to families (0.0809ms)
+✔ Fibonacci 24-Cycle (0.4968ms)
+▶ Synergy Matrix
+  ✔ generates 9 rows (0.1735ms)
+  ✔ starts each row with its seed (0.0945ms)
+  ✔ generates standard Fibonacci on row 1 (0.6517ms)
+  ✔ all values are 1-9 (0.4405ms)
+✔ Synergy Matrix (1.5037ms)
+▶ Trust Propagation
+  ✔ returns full trust for direct connection (0.2006ms)
+  ✔ uses √3 ratio for one hop (0.1204ms)
+  ✔ uses 1/3 ratio for two hops (0.0936ms)
+  ✔ decays geometrically beyond 3 hops (0.0935ms)
+  ✔ scales with base trust (0.1101ms)
+✔ Trust Propagation (0.8364ms)
+▶ Hexagonal Geometry
+  ▶ HexCoord
+    ✔ creates coordinates (0.1939ms)
+    ✔ calculates neighbors (0.1181ms)
+    ✔ calculates distance (0.0931ms)
+    ✔ rounds fractional coordinates (0.1301ms)
+  ✔ HexCoord (0.6907ms)
+  ▶ hexRing
+    ✔ returns center for radius 0 (0.2133ms)
+    ✔ returns 6 cells for radius 1 (0.0836ms)
+    ✔ returns 12 cells for radius 2 (0.1766ms)
+    ✔ returns 6*r cells for any radius r (0.114ms)
+  ✔ hexRing (0.7073ms)
+  ▶ hexDisk
+    ✔ returns 1 cell for radius 0 (0.1084ms)
+    ✔ returns 7 cells for radius 1 (0.0658ms)
+    ✔ matches hexDiskSize formula (0.1551ms)
+  ✔ hexDisk (0.4129ms)
+  ▶ hexDiskSize
+    ✔ uses correct formula: 3*r*(r+1) + 1 (0.138ms)
+  ✔ hexDiskSize (0.2192ms)
+✔ Hexagonal Geometry (2.253ms)
+▶ SST-YAKMESH Integration Points
+  ✔ YPC-27: 27 has digital root 9 (Governing) (0.1372ms)
+  ✔ Fibonacci cycle length 24 has root 6 (Governing) (0.0765ms)
+  ✔ LCM(27,24) = 216 has root 9 (Governing) (0.057ms)
+  ✔ All key YAKMESH constants fall in Family C (Governing) (0.0955ms)
+✔ SST-YAKMESH Integration Points (0.4823ms)
+
+🕐 Running Time Source Detection...
+
+[2026-02-15T08:57:35.964Z] [INFO] [mani:time-source] Time Source Detection Results {"platform":"win32","trustLevel":"UNSYNC","phaseTolerance":30000,"primarySource":"none"}
+[2026-02-15T08:57:35.965Z] [INFO] [mani:time-source] NTP detected {"method":"not configured","server":"unknown","stratum":16,"synchronized":false}
+
+📋 Detection Summary:
+   Trust Level: UNSYNC
+   Phase Tolerance: ±30000ms
+   Ready for: Degraded mode only (UNSYNC)
+  ✅ All trust levels defined
+  ✅ Phase tolerances configured correctly
+     Atomic: ±100ms
+     GPS: ±500ms
+     NTP: ±5000ms
+  ✅ Stratum levels correct
+  ✅ Detector created with defaults
+  ✅ Custom options accepted
+  ✅ Detection completed
+     Platform: win32
+     Trust Level: unsync
+     Primary: none
+  ✅ Detection event emitted
+  ✅ Trust level: unsync
+  ✅ Phase tolerance: ±30000ms
+  ✅ Stratum: 16
+  ✅ Has atomic time: false
+  ✅ Has high precision: false
+  ✅ Status object generated
+     {"atomicTime":false,"highPrecisionTime":false,"tightPhaseWindow":false}
+  ✅ Phase config created
+     Epoch duration: 12 hours
+     Grace period: 30 minutes
+     Tolerance: ±30000ms
+  ✅ Atomic has tighter windows than NTP
+     Atomic: 1h epoch, ±100ms
+     NTP: 6h epoch, ±5000ms
+  ✅ Singleton pattern works
+  ✅ Quick detection completed
+     Trust: unsync
+
+  📊 Trust Level Hierarchy:
+  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─
+  🔬 Level 0: ATOMIC   | ±  100ms | Stratum 0
+  🛰️ Level 1: GPS      | ±  500ms | Stratum 1
+  📡 Level 2: PTP      | ±  500ms | Stratum 1
+  🌐 Level 3: NTP      | ± 5000ms | Stratum 2
+  ⚠️ Level 4: UNSYNC   | ±30000ms | Stratum 16
+  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─  ─
+  ✅ Trust levels correctly ordered
+
+  🔬 Atomic Clock Node Scenario:
+     Can be time oracle: true
+     Phase window: ±100ms
+     → This node can validate time-critical operations
+
+  🌐 Standard NTP Node Scenario:
+     Can be time oracle: false
+     Phase window: ±5000ms
+     → This node can participate but not lead time consensus
+
+  ⚠️ Unsynchronized Node Scenario:
+     Can participate: false
+     Phase window: ±30000ms
+     → This node operates in degraded mode
+▶ Time Source Detection Module
+  ▶ TimeTrustLevel Constants
+    ✔ should define all trust levels (0.6558ms)
+  ✔ TimeTrustLevel Constants (1.3006ms)
+  ▶ PhaseTolerance Constants
+    ✔ should have correct tolerance values (0.3386ms)
+  ✔ PhaseTolerance Constants (0.4553ms)
+  ▶ StratumLevel Constants
+    ✔ should have correct stratum values (0.1757ms)
+  ✔ StratumLevel Constants (0.3004ms)
+  ▶ TimeSourceDetector Class
+    ✔ should create detector with default options (0.3683ms)
+    ✔ should accept custom options (0.1698ms)
+    ✔ should detect time sources (101.6163ms)
+    ✔ should emit detected event (50.2515ms)
+    ✔ should provide trust level getter (66.5545ms)
+    ✔ should provide phase tolerance getter (67.8058ms)
+    ✔ should provide stratum getter (47.7762ms)
+    ✔ should report capabilities (31.2361ms)
+    ✔ should provide status for API (29.1417ms)
+  ✔ TimeSourceDetector Class (395.4653ms)
+  ▶ createPhaseConfig()
+    ✔ should create phase config from detector (29.3837ms)
+    ✔ should have tighter windows for atomic time (0.136ms)
+  ✔ createPhaseConfig() (29.6104ms)
+  ▶ getTimeSourceDetector()
+    ✔ should return singleton instance (0.136ms)
+  ✔ getTimeSourceDetector() (0.1799ms)
+  ▶ detectTimeSources()
+    ✔ should perform quick detection (32.9639ms)
+  ✔ detectTimeSources() (33.0344ms)
+  ▶ Trust Level Hierarchy
+    ✔ should demonstrate trust level ordering (0.2715ms)
+  ✔ Trust Level Hierarchy (0.326ms)
+  ▶ Integration Scenarios
+    ✔ should handle atomic clock node scenario (0.1329ms)
+    ✔ should handle standard NTP node scenario (0.1156ms)
+    ✔ should handle degraded mode scenario (0.0863ms)
+  ✔ Integration Scenarios (0.4206ms)
+✔ Time Source Detection Module (461.8405ms)
+🔺 TRIBHUJ - Balanced Ternary Mathematics for YAKMESH
+
+============================================================
+
+📐 Trit Values:
+   NEGATIVE: -1 (-1/-1/-1)
+   NEUTRAL:  0 (0/0/0)
+   POSITIVE: 1 (1/1/1)
+
+🧮 Trit Arithmetic:
+   1 + T = 0
+   1 × T = T
+   -1 = T
+   -T = 1 (self-inverting!)
+
+🔀 Ternary Logic (Kleene 3-valued):
+   TRUE AND UNKNOWN = UNKNOWN
+   TRUE OR UNKNOWN = TRUE
+   NOT UNKNOWN = UNKNOWN
+
+🗳️ Consensus Operation:
+   ACCEPT ⊕ ACCEPT = ACCEPT
+   ACCEPT ⊕ REJECT = ABSTAIN (disagreement!)
+   REJECT ⊕ REJECT = REJECT
+
+📊 TritArray (multi-trit values):
+   42 in balanced ternary: 1TTT0 (verify: 42)
+   -13 in balanced ternary: TTT (verify: -13)
+
+🔗 Path Balance (link quality):
+   Path [+1,+1,-1,-1]: balance=0, balanced=true
+   Path [+1,+1,+1]: balance=3, balanced=false
+
+⚠️  weightedConsensus REMOVED - validation is deterministic, not democratic
+   See security/sakshi.js for proper consensus via checkMathematicalAgreement()
+
+============================================================
+✅ Running test suite...
+
+
+✅ TRIBHUJ module ready for YAKMESH integration
+🔺 "The triangle stands stable on three points"
+
+▶ TRIBHUJ - Balanced Ternary Mathematics
+  ▶ Constants
+    ✔ should define correct trit values (0.7216ms)
+    ✔ should define semantic aliases (0.179ms)
+  ✔ Constants (1.6993ms)
+  ▶ Trit Class
+    ▶ Construction
+      ✔ should create from number (0.3277ms)
+      ✔ should clamp out-of-range values (0.434ms)
+      ✔ should parse string characters (0.6715ms)
+      ✔ should copy from another Trit (0.1818ms)
+    ✔ Construction (2.1825ms)
+    ▶ Properties
+      ✔ should report isNegative correctly (0.2322ms)
+      ✔ should report isNeutral correctly (0.2031ms)
+      ✔ should report isPositive correctly (0.1576ms)
+    ✔ Properties (0.8168ms)
+    ▶ Arithmetic
+      ✔ should negate correctly (self-inverting) (0.2558ms)
+      ✔ should add without carry (0.0934ms)
+      ✔ should add with positive carry (1 + 1 = T in next place + carry) (0.1127ms)
+      ✔ should add with negative carry (-1 + -1) (0.1043ms)
+      ✔ should multiply correctly (0.1012ms)
+    ✔ Arithmetic (0.8533ms)
+    ▶ Logic Operations
+      ✔ should AND correctly (minimum) (0.2342ms)
+      ✔ should OR correctly (maximum) (0.1433ms)
+      ✔ should compute consensus correctly (0.2449ms)
+    ✔ Logic Operations (0.7917ms)
+    ▶ Comparison
+      ✔ should compare correctly (0.1577ms)
+      ✔ should check equality (0.0979ms)
+    ✔ Comparison (0.3292ms)
+    ▶ Conversion
+      ✔ should convert to character (0.0907ms)
+      ✔ should convert to semantic name (0.0727ms)
+    ✔ Conversion (0.2262ms)
+  ✔ Trit Class (9.264ms)
+  ▶ TritArray Class
+    ▶ Construction
+      ✔ should create from decimal (0.1686ms)
+      ✔ should create from string (0.155ms)
+      ✔ should pad to fixed length (0.1109ms)
+    ✔ Construction (0.5318ms)
+    ▶ Arithmetic
+      ✔ should negate correctly (0.1601ms)
+      ✔ should add correctly (0.262ms)
+      ✔ should handle negative addition (0.1014ms)
+    ✔ Arithmetic (0.6648ms)
+    ▶ Aggregate Operations
+      ✔ should sum trits (0.1459ms)
+      ✔ should detect balanced arrays (0.0838ms)
+      ✔ should count trits (0.119ms)
+      ✔ should find majority (0.254ms)
+    ✔ Aggregate Operations (0.7161ms)
+  ✔ TritArray Class (2.0667ms)
+  ▶ Utility Functions
+    ▶ hexCompare
+      ✔ should compare hex strings (0.0987ms)
+    ✔ hexCompare (0.1476ms)
+    ▶ calculatePathBalance
+      ✔ should calculate balanced path (0.1251ms)
+      ✔ should detect asymmetric path (0.1552ms)
+    ✔ calculatePathBalance (0.345ms)
+  ✔ Utility Functions (0.5795ms)
+✔ TRIBHUJ - Balanced Ternary Mathematics (14.2156ms)
+
+🔺 TATTVA Ternary Retrofit - ValidationResult
+──────────────────────────────────────────────────
+📊 Three States:
+   ✓ SUCCESS: state=1, isValid=true
+   ✗ FAILURE: state=-1, isInvalid=true
+   ◌ PENDING: state=0, isPending=true
+
+🧮 Ternary Logic Operations:
+   VALID ∧ PENDING = 0 (ValidationResult(PENDING: AWAITING_CONSENSUS))
+   VALID ∨ PENDING = 1 (VALID if any valid)
+   VALID ⊕ INVALID = 0 (disagreement → PENDING)
+
+🔙 Backwards Compatibility:
+   valid.valid = true (deprecated but works)
+   invalid.valid = false (false for INVALID)
+
+📦 JSON Serialization:
+   {"state":0,"valid":false,"isValid":false,"isInvalid":false,"isPending":true,"rea...
+
+──────────────────────────────────────────────────
+
+✅ TATTVA ternary retrofit tests complete!
+
+▶ TATTVA Ternary ValidationResult
+  ▶ Static Constructors
+    ✔ success() creates VALID state (0.9793ms)
+    ✔ failure() creates INVALID state (0.2299ms)
+    ✔ pending() creates PENDING state (0.1547ms)
+    ✔ pending() has default reason (0.4272ms)
+  ✔ Static Constructors (3.0069ms)
+  ▶ Backwards Compatibility
+    ✔ valid getter returns true for success (0.2075ms)
+    ✔ valid getter returns false for failure (0.1127ms)
+    ✔ valid getter returns false for pending (0.1412ms)
+    ✔ accepts boolean in constructor (true → VALID) (0.121ms)
+    ✔ accepts boolean in constructor (false → INVALID) (0.1228ms)
+  ✔ Backwards Compatibility (0.9777ms)
+  ▶ Ternary Logic
+    ✔ AND: VALID ∧ VALID = VALID (0.3684ms)
+    ✔ AND: VALID ∧ INVALID = INVALID (0.1079ms)
+    ✔ AND: VALID ∧ PENDING = PENDING (0.1717ms)
+    ✔ AND: PENDING ∧ PENDING = PENDING (1.2876ms)
+    ✔ OR: VALID ∨ INVALID = VALID (0.5778ms)
+    ✔ OR: INVALID ∨ INVALID = INVALID (0.1716ms)
+    ✔ OR: PENDING ∨ PENDING = PENDING (0.1899ms)
+    ✔ OR: INVALID ∨ PENDING = PENDING (0.0913ms)
+    ✔ CONSENSUS: same states agree (0.1018ms)
+    ✔ CONSENSUS: different states → PENDING (0.1001ms)
+  ✔ Ternary Logic (3.6372ms)
+  ▶ Serialization
+    ✔ toJSON includes ternary state info (0.138ms)
+    ✔ toString shows state name (0.1686ms)
+  ✔ Serialization (0.4047ms)
+  ▶ Immutability
+    ✔ instance is frozen (0.3091ms)
+  ✔ Immutability (0.395ms)
+✔ TATTVA Ternary ValidationResult (9.4411ms)
+✔ oracle\tests\ypc27.test.js (201.5538ms)
+
+╔═══════════════════════════════════════════════════════════╗
+║     YAK:// PROTOCOL INTEGRATION TEST SUITE v2.2.0        ║
+╚═══════════════════════════════════════════════════════════╝
+
+Cannot bookmark "dashboard" - it's a builtin route
+📬 Subscribed to bookmarks from node-abc123...
+📭 Unsubscribed from node-abc123...
+Cannot subscribe to your own node
+📬 Subscribed to bookmarks from node-xyz789...
+📭 Unsubscribed from node-xyz789...
+📬 Subscribed to bookmarks from node-1...
+📬 Subscribed to bookmarks from node-2...
+📭 Unsubscribed from node-1...
+📭 Unsubscribed from node-2...
+Cannot bookmark "docs" - it's a builtin route
+📬 Subscribed to bookmarks from node-test...
+📭 Unsubscribed from node-test...
+▶ BookmarkManager
+  ▶ Basic Operations
+    ✔ should add a bookmark (2.4872ms)
+    ✔ should normalize bookmark names to lowercase (2.249ms)
+    ✔ should get bookmark target (1.3403ms)
+    ✔ should remove a bookmark (2.2457ms)
+    ✔ should list all bookmarks (6.1422ms)
+    ✔ should reject builtins as bookmark names (2.3639ms)
+  ✔ Basic Operations (18.0015ms)
+  ▶ Path Normalization
+    ✔ should normalize paths without leading slash (1.8375ms)
+    ✔ should preserve paths with leading slash (1.2389ms)
+    ✔ should handle site/ prefix correctly (1.0743ms)
+    ✔ should handle content/ prefix correctly (1.5576ms)
+  ✔ Path Normalization (6.0462ms)
+✔ BookmarkManager (24.5934ms)
+▶ YAK:// URL Parsing
+  ▶ Builtin Routes
+    ✔ should resolve yak://dashboard to builtin (0.4173ms)
+    ✔ should resolve yak://metrics to builtin (0.1609ms)
+    ✔ should resolve yak://site to builtin (0.083ms)
+    ✔ should handle subpaths in builtins (0.1809ms)
+  ✔ Builtin Routes (0.9879ms)
+  ▶ Content Hash Resolution
+    ✔ should resolve SHA3-256 content hashes (0.384ms)
+    ✔ should handle content subpaths (0.1381ms)
+    ✔ should reject invalid hashes (0.1305ms)
+    ✔ should reject short hashes (0.1775ms)
+  ✔ Content Hash Resolution (1.011ms)
+  ▶ iO Name Resolution
+    ✔ should resolve valid 3-word iO names (0.2219ms)
+    ✔ should handle iO name subpaths (0.1398ms)
+    ✔ should reject invalid iO names (wrong word count) (0.0925ms)
+    ✔ should reject invalid iO names (not in wordlist) (0.1522ms)
+    ✔ should be case-insensitive for iO names (0.1538ms)
+  ✔ iO Name Resolution (0.9174ms)
+  ▶ HTTP to YAK Conversion
+    ✔ should convert HTTP site URLs to yak:// (0.2732ms)
+    ✔ should convert HTTP dashboard URL to yak:// (0.093ms)
+    ✔ should handle URLs with query strings (0.1024ms)
+  ✔ HTTP to YAK Conversion (0.6175ms)
+  ▶ YAK to HTTP Conversion
+    ✔ should convert yak://site to HTTP (0.1945ms)
+    ✔ should convert yak://dashboard to HTTP (0.0991ms)
+  ✔ YAK to HTTP Conversion (0.3757ms)
+  ▶ Empty and Edge Cases
+    ✔ should handle empty yak:// URL (0.1196ms)
+    ✔ should handle y:// shorthand (0.103ms)
+    ✔ should handle case insensitive routes (0.103ms)
+  ✔ Empty and Edge Cases (0.4272ms)
+✔ YAK:// URL Parsing (4.7146ms)
+▶ RemoteBookmarkSync
+  ▶ Initialization
+    ✔ should initialize with empty subscriptions (0.9542ms)
+    ✔ should have correct message type (0.5675ms)
+    ✔ should link to local bookmark manager (0.6617ms)
+  ✔ Initialization (2.3286ms)
+  ▶ Subscriptions
+    ✔ should subscribe to a node (1.9832ms)
+    ✔ should not subscribe to self (2.0571ms)
+    ✔ should unsubscribe from a node (1.4661ms)
+    ✔ should return false when unsubscribing from non-subscribed node (0.4602ms)
+    ✔ should list subscriptions (2.8633ms)
+  ✔ Subscriptions (9.0998ms)
+  ▶ Remote Bookmark Lookup
+    ✔ should return null for non-existent remote bookmark (0.6029ms)
+    ✔ should list remote bookmarks (empty initially) (0.5127ms)
+  ✔ Remote Bookmark Lookup (1.2152ms)
+  ▶ Publishing
+    ✔ should track published lists locally (1.7168ms)
+  ✔ Publishing (1.7951ms)
+  ▶ Status
+    ✔ should report status correctly (1.4465ms)
+  ✔ Status (1.5344ms)
+✔ RemoteBookmarkSync (16.1971ms)
+▶ getRemoteBookmarkSync
+  ✔ should be a function (0.1102ms)
+  ✔ should return RemoteBookmarkSync instance (0.3321ms)
+✔ getRemoteBookmarkSync (0.5262ms)
+▶ DOKO Classes Integration
+  ▶ DOKOCertBinding
+    ✔ should export computeFingerprint static method (0.1146ms)
+    ✔ should export createBinding static method (0.0747ms)
+    ✔ should export verifyBinding static method (0.07ms)
+    ✔ should export addBinding static method (0.0571ms)
+  ✔ DOKOCertBinding (0.4252ms)
+  ▶ DOKOTransfer
+    ✔ should export createRequest static method (0.0981ms)
+    ✔ should export authorize static method (0.0479ms)
+    ✔ should export complete static method (0.0494ms)
+    ✔ should export reject static method (0.0538ms)
+    ✔ should export cancel static method (0.0502ms)
+    ✔ should export STATES constant (0.0582ms)
+    ✔ should export TYPES constant (0.0766ms)
+  ✔ DOKOTransfer (0.5709ms)
+✔ DOKO Classes Integration (1.0887ms)
+▶ Protocol Configuration
+  ✔ should export correct protocol config (0.1095ms)
+  ✔ should define builtin routes (0.055ms)
+  ✔ should have all expected builtin routes (0.0744ms)
+  ✔ should have YakProtocolHandler class (0.054ms)
+  ✔ should have getBookmarkManager function (0.0553ms)
+✔ Protocol Configuration (0.4583ms)
+✔ security\tests\doko-identity.test.js (242.9365ms)
+✔ security\tests\domain-consensus.test.js (207.8235ms)
+✔ security\tests\geo-proof.test.js (239.0795ms)
+✔ security\tests\hardware-attestation-extended.test.js (235.6695ms)
+✔ security\tests\hybrid-trust.test.js (195.2991ms)
+✔ security\tests\khata-protocol.test.js (215.5094ms)
+✔ security\tests\khata-trust-integration.test.js (216.948ms)
+✔ security\tests\mesh-auth.test.js (174.6877ms)
+✔ security\tests\mesh-revocation.test.js (251.7703ms)
+▶ SAKSHI Capability Levels
+  ✔ defines all expected capability levels (0.6529ms)
+  ✔ has info for all capability levels (0.2968ms)
+  ✔ capability levels are descriptive, not hierarchical permissions (0.1587ms)
+✔ SAKSHI Capability Levels (2.1919ms)
+▶ Time Precision Coefficients
+  ✔ atomic has highest precision (lowest value) (0.2132ms)
+  ✔ precision decreases with time source quality (0.1697ms)
+  ✔ precision values represent milliseconds (0.1278ms)
+✔ Time Precision Coefficients (0.7949ms)
+▶ Reliability Coefficient
+  ✔ maps uptime to 0.1-1.0 range (0.2411ms)
+  ✔ never returns zero (all nodes can participate) (0.2977ms)
+  ✔ caps at 1.0 (1.4886ms)
+✔ Reliability Coefficient (2.2819ms)
+▶ Age Confidence
+  ✔ starts low for new nodes (0.2341ms)
+  ✔ grows logarithmically (0.0892ms)
+  ✔ maxes out at 180 days (0.0957ms)
+✔ Age Confidence (0.5514ms)
+▶ NodeWitness
+  ▶ Capability Assessment
+    ✔ assesses ATOMIC_VETERAN for long-running atomic nodes (0.2823ms)
+    ✔ assesses PRECISION_NODE for reliable GPS nodes (0.1239ms)
+    ✔ assesses NEW_NODE for fresh joins (0.1055ms)
+    ✔ capability is purely descriptive (0.1254ms)
+  ✔ Capability Assessment (0.7719ms)
+  ▶ Derived Metrics
+    ✔ calculates time precision from source (0.1393ms)
+    ✔ calculates reliability coefficient from uptime (0.1102ms)
+    ✔ calculates age confidence from network age (0.1398ms)
+    ✔ combines quality score from reliability and age (0.1185ms)
+  ✔ Derived Metrics (0.6269ms)
+  ▶ Capability Checks
+    ✔ reports high precision time capability (0.1247ms)
+    ✔ reports hardware attestation status (0.0956ms)
+  ✔ Capability Checks (0.291ms)
+  ▶ Immutability
+    ✔ is frozen after creation (0.6132ms)
+  ✔ Immutability (1.4905ms)
+✔ NodeWitness (3.3937ms)
+▶ Time Attestation Fusion
+  ✔ returns single attestation directly (0.3543ms)
+  ✔ weights by precision (physics, not politics) (0.1488ms)
+  ✔ multiple imprecise measurements improve precision (0.1462ms)
+  ✔ detects agreement/disagreement (0.1305ms)
+✔ Time Attestation Fusion (1.028ms)
+▶ Mathematical Agreement
+  ✔ returns agreed when all match (0.4694ms)
+  ✔ detects disagreement without voting (0.1693ms)
+  ✔ does not use weights or tiers to resolve disagreement (0.2079ms)
+  ✔ supports custom equality functions (1.064ms)
+✔ Mathematical Agreement (2.1294ms)
+▶ Ranking by Reliability
+  ✔ sorts by reliability coefficient (0.2418ms)
+  ✔ includes all nodes by default (no gatekeeping) (0.0769ms)
+  ✔ can filter by minimum reliability for optimization (0.1406ms)
+  ✔ can prefer precision time sources (0.08ms)
+✔ Ranking by Reliability (0.6493ms)
+▶ Buddy System Verification
+  ✔ creates verification requests without tier requirements (0.1194ms)
+  ✔ verification succeeds when math matches (0.1062ms)
+  ✔ verification fails with recompute action when math differs (0.0934ms)
+✔ Buddy System Verification (0.3894ms)
+▶ SAKSHI Philosophy
+  ✔ NodeWitness has no permission-checking methods (0.0852ms)
+  ✔ no weight property for voting (0.0593ms)
+  ✔ disagreement leads to recomputation, not majority rule (0.1169ms)
+✔ SAKSHI Philosophy (0.3371ms)
+▶ VIVAAD Disagreement Analysis
+  ▶ DISAGREEMENT_CAUSE constants
+    ✔ defines hardware-related causes (0.1208ms)
+    ✔ defines timing-related causes (0.0593ms)
+    ✔ defines network-related causes (0.0485ms)
+    ✔ defines byzantine causes (rare) (0.0393ms)
+  ✔ DISAGREEMENT_CAUSE constants (0.3441ms)
+  ▶ REMEDIATION actions
+    ✔ defines gentle remediations (honor system) (0.0681ms)
+    ✔ defines observational updates (no punishment) (0.0372ms)
+    ✔ defines isolation only for repeated issues (0.0358ms)
+  ✔ REMEDIATION actions (0.2049ms)
+  ▶ analyzeDisagreement
+    ✔ detects compute timeout (slow hardware) (0.3146ms)
+    ✔ detects floating point variance as effectively agreeing (0.0957ms)
+    ✔ detects crypto hardware mismatch (0.0885ms)
+    ✔ detects clock drift between nodes (0.0995ms)
+    ✔ detects incomplete data (type mismatch) (0.0998ms)
+    ✔ marks unexplained disagreements as needing observation (not punishment) (0.1423ms)
+    ✔ defaults to retry when cause is unclear (0.108ms)
+  ✔ analyzeDisagreement (1.1035ms)
+  ▶ createRemediationPlan
+    ✔ creates retry plan for benign disagreements (0.2891ms)
+    ✔ creates observation plan for suspicious behavior (1.9669ms)
+    ✔ mesh observation is passive, not punitive (0.2243ms)
+  ✔ createRemediationPlan (2.6956ms)
+  ▶ trackDisagreementPattern
+    ✔ tracks disagreement history for a node (0.3221ms)
+    ✔ identifies patterns of benign hardware issues (0.1879ms)
+    ✔ flags nodes with many unexplained disagreements (0.2884ms)
+    ✔ keeps assessment NORMAL if mostly benign with some suspicious (0.1564ms)
+  ✔ trackDisagreementPattern (1.0886ms)
+✔ VIVAAD Disagreement Analysis (6.353ms)
+▶ VIVAAD Philosophy
+  ✔ assumes good faith — benign causes trigger positive assessment (1.2143ms)
+  ✔ remediation never includes permanent ban (0.1157ms)
+  ✔ most disagreements attributed to hardware/timing (~85%) (0.0929ms)
+  ✔ buddy system is remediation, not gatekeeping (0.1151ms)
+✔ VIVAAD Philosophy (1.7042ms)
+▶ SETU Trust-Tier Bridge
+  ▶ witnessFromTrustProfile
+    ✔ converts TrustProfile to NodeWitness (0.2595ms)
+    ✔ handles missing hardware attestation (0.0908ms)
+  ✔ witnessFromTrustProfile (0.4134ms)
+  ▶ trustProfileFromWitness
+    ✔ converts NodeWitness back to TrustProfile-compatible object (0.2872ms)
+  ✔ trustProfileFromWitness (0.3366ms)
+  ▶ checkRevocationAgreement
+    ✔ requires minimum reports (0.3577ms)
+    ✔ requires evidence agreement (not weighted voting) (0.2118ms)
+    ✔ revokes when all reports agree (0.2359ms)
+    ✔ can require precision node witness (0.1408ms)
+  ✔ checkRevocationAgreement (1.155ms)
+  ▶ aggregateAttestations
+    ✔ checks for mathematical agreement, not weighted voting (0.5542ms)
+    ✔ returns disagreement info when attestations conflict (0.1402ms)
+    ✔ provides contributors ranked by reliability (informational only) (0.5163ms)
+  ✔ aggregateAttestations (1.3114ms)
+  ▶ assessComputationTrust
+    ✔ trusts reproducible computations regardless of who computed (0.2329ms)
+    ✔ trusts computations with proofs (0.086ms)
+    ✔ requires proof when verification is required (0.0836ms)
+    ✔ checks verifier agreement when verifications provided (0.1184ms)
+    ✔ fails if verifiers disagree (0.1064ms)
+  ✔ assessComputationTrust (0.7637ms)
+✔ SETU Trust-Tier Bridge (4.1668ms)
+▶ SETU Philosophy
+  ✔ no weighted voting in revocation checks (0.1735ms)
+  ✔ attestation count is actual count, not weighted (0.1458ms)
+  ✔ trust is based on math verifiability, not node tier (0.0962ms)
+✔ SETU Philosophy (0.4996ms)
+✔ security\tests\silicon-parity.test.js (182.6136ms)
+✔ security\tests\strike-system.test.js (163.3183ms)
+✔ security\tests\sybil-graph.test.js (176.137ms)
+✔ security\tests\tls-binding.test.js (200.3274ms)
+✔ security\tests\trust-tier.test.js (204.1836ms)

@@ -13,11 +13,14 @@
 
 import express from 'express';
 import rateLimit from 'express-rate-limit';
+import crypto from 'node:crypto';
 import { existsSync } from 'fs';
+import { join } from 'path';
 import { networkInterfaces } from 'os';
 import { WebSocketServer } from 'ws';
 import { createLogger } from '../utils/logger.js';
 import * as accel from '../utils/accel.js';
+import * as steadywatch from '../security/steadywatch.js';
 
 const log = createLogger('server:main');
 import { NodeIdentity } from '../identity/node-key.js';
@@ -32,6 +35,8 @@ import { ContentStore, createContentAPI } from '../content/index.js';
 import { getDocsFile, serveDocsFile, getBundleInfo } from '../embedded-docs/index.js';
 
 // Annex lives in mesh/network.js — single instance, no duplication
+// ServerAnnexSession for client-facing WS (KOMM channel encryption)
+import { ServerAnnexSession, ANNEX_HANDSHAKE_TYPE } from './crypto/annex.js';
 
 // SHERPA - Secure Hidden Endpoint Resolution Path Architecture
 import { SherpaDiscovery, createBeaconMiddleware } from '../mesh/sherpa-discovery.js';
@@ -176,19 +181,36 @@ const DEFAULT_CONFIG = {
 };
 
 /**
- * Load configuration
+ * Load configuration.
+ * 
+ * SECURITY: Config MUST be loaded from the codebase-local yakmesh.config.js.
+ * The Validation Oracle hashes ALL .js files — config included — so any node
+ * loading a different config file would compute a different genesis hash and
+ * be rejected by the mesh.  Never allow runtime config file injection.
+ * 
+ * Resolution order:
+ *   1. CLI argument: --config <path>  (for production deployments)
+ *   2. Default: ./yakmesh.config.js   (byte-identical on every node)
+ * 
+ * Runtime overrides via env vars (applied AFTER config load, never touch files):
+ *   YAKMESH_HTTP_PORT   — override network.httpPort
+ *   YAKMESH_WS_PORT     — override network.wsPort
+ *   YAKMESH_DATA_DIR    — override database.path directory
+ *   YAKMESH_BOOTSTRAP   — override bootstrap peer list (comma-separated ws:// URLs)
  */
 async function loadConfig() {
-  // Check for --config argument
+  // 1. Check for --config CLI argument (operator-controlled, not env-injectable)
   const configArgIndex = process.argv.findIndex(arg => arg === '--config' || arg === '-c');
   let configPath = './yakmesh.config.js';
   
   if (configArgIndex !== -1 && process.argv[configArgIndex + 1]) {
     configPath = process.argv[configArgIndex + 1];
-    log.info(`📋 Using config: ${configPath}`);
+    log.info(`📋 Config source: CLI --config ${configPath}`);
   }
+
+  let config = { ...DEFAULT_CONFIG };
   
-  // Try to load config file
+  // Load config from the resolved path
   if (existsSync(configPath)) {
     // Handle both absolute and relative paths
     const isAbsolute = configPath.startsWith('/') || /^[A-Z]:/i.test(configPath);
@@ -196,15 +218,32 @@ async function loadConfig() {
       ? `file://${configPath.replace(/\\/g, '/')}`
       : `../${configPath.replace('./', '')}`;
     const { default: userConfig } = await import(importPath);
-    return { ...DEFAULT_CONFIG, ...userConfig };
+    config = { ...DEFAULT_CONFIG, ...userConfig };
+  } else {
+    log.warn(`⚠️ Config file not found: ${configPath} — using defaults`);
+  }
+
+  // Apply env var overrides (allows multi-node on same machine
+  // WITHOUT modifying the config file — config MUST stay byte-identical
+  // for oracle hash integrity)
+  if (process.env.YAKMESH_HTTP_PORT) {
+    config.network = { ...config.network, httpPort: parseInt(process.env.YAKMESH_HTTP_PORT, 10) };
+  }
+  if (process.env.YAKMESH_WS_PORT) {
+    config.network = { ...config.network, wsPort: parseInt(process.env.YAKMESH_WS_PORT, 10) };
+  }
+  if (process.env.YAKMESH_DATA_DIR) {
+    config.database = { ...config.database, path: `${process.env.YAKMESH_DATA_DIR}/yakmesh.db` };
+  }
+  if (process.env.YAKMESH_BOOTSTRAP) {
+    // Comma-separated WS URLs, e.g. ws://localhost:9011,ws://localhost:9012
+    config.bootstrap = process.env.YAKMESH_BOOTSTRAP
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean);
   }
   
-  // Fallback to default yakmesh.config.js
-  if (existsSync('./yakmesh.config.js')) {
-    const { default: userConfig } = await import('../yakmesh.config.js');
-    return { ...DEFAULT_CONFIG, ...userConfig };
-  }
-  return DEFAULT_CONFIG;
+  return config;
 }
 
 /**
@@ -302,12 +341,53 @@ export class YakmeshNode {
     if (accel.HW.nativePQ) caps.push(`PQ:${accel.HW.nativePQBackend}`);
     log.info(`✓ ACCEL: ${caps.length > 0 ? caps.join(' | ') : 'pure-JS fallback'}`);
 
+    // 0b½. Load ONNX models — NPU/GPU-accelerated security inference
+    // These models are used by EntropySentinel, SAKSHI, and KARMA subsystems.
+    // If onnxruntime-node is not installed, loadModel silently returns false
+    // and all subsystems fall back to CPU-only heuristic paths.
+    const modelsDir = join(import.meta.dirname, '..', 'models');
+    const ONNX_MODELS = [
+      { name: 'entropy-sentinel', file: 'entropy-sentinel.onnx' },
+      { name: 'sakshi-anomaly',   file: 'sakshi-anomaly.onnx' },
+      { name: 'karma-trust',      file: 'karma-trust.onnx' },
+    ];
+    let modelsLoaded = 0;
+    for (const { name, file } of ONNX_MODELS) {
+      const modelPath = join(modelsDir, file);
+      if (existsSync(modelPath)) {
+        const ok = await accel.inference.loadModel(name, modelPath);
+        if (ok) modelsLoaded++;
+      }
+    }
+    if (modelsLoaded > 0) {
+      log.info(`✓ ONNX models: ${modelsLoaded}/${ONNX_MODELS.length} loaded (${accel.inference._preferredProvider || 'CPU'})`);
+    } else {
+      log.info('○ ONNX models: none loaded (CPU heuristic fallback active)');
+    }
+    // 0c. Initialize STEADYWATCH — quantum-hardware-validated entropy seeds
+    // Hurwitz quaternion seeds (IBM ibm_marrakesh) for ANNEX ML-KEM-768 keygen.
+    // Two-source extractor: STEADYWATCH seed ⊕ CSPRNG → hybrid entropy.
+    // Uses ACCEL SHA3-native for seed fingerprinting, InferenceEngine for Entropy Sentinel.
+    log.info('🛰️  Initializing STEADYWATCH (quantum entropy)...');
+    const steadywatchResult = await steadywatch.initialize({
+      seedFile: this.config.steadywatch?.seedFile,
+      nodeIndex: this.config.steadywatch?.nodeIndex,
+      prime: this.config.steadywatch?.prime || 5,
+      generateTest: this.config.steadywatch?.generateTest ?? true,
+      inferenceEngine: accel.inference,
+    });
+    if (steadywatchResult.initialized) {
+      log.info(`✓ STEADYWATCH: ${steadywatchResult.seedCount} satellite seeds loaded (Sentinel: ${steadywatchResult.sentinel ? 'NPU' : 'CPU'})`);
+    } else {
+      log.warn('⚠️  STEADYWATCH: no seeds loaded, ANNEX will use pure CSPRNG');
+    }
+
     // 1. Initialize the Oracle system FIRST (provides codebase hash for identity)
     // This MUST happen before identity initialization
     this._initOracle();
     
-    // 1b. Initialize time source detection
-    this._initTimeSource();
+    // 1b. Initialize time source detection (async — MA-902 SNMP init)
+    await this._initTimeSource();
 
     // 2. Initialize identity - extract directory from database path
     // Pass the oracle so it can derive network name from codebase hash
@@ -498,14 +578,17 @@ export class YakmeshNode {
       }
     }, 60000); // Check every minute
     
+    // 5k. Start scheduled ML workloads through ComputeScheduler
+    this._startScheduledWorkloads();
+    
     // 6. Start HTTP server
     await this._startHttpServer();
     
     // 6b. Attach KOMM WebSocket upgrade paths to HTTP server
     this._initKommWebSocket();
 
-    // 7. Connect to bootstrap nodes
-    await this._connectToBootstrap();
+    // 7. Connect to bootstrap nodes (non-blocking — runs in background)
+    this._connectToBootstrap();
 
     // 7. Initialize PeerQuanta integration (if enabled)
     if (this.config.peerquanta?.enabled) {
@@ -569,13 +652,21 @@ export class YakmeshNode {
       const accelParts = [];
       if (a.nativeSha3) accelParts.push('SHA3');
       if (a.avx512) accelParts.push('AVX-512');
-      if (a.nvGpu) accelParts.push(`GPU(${a.nvGpuName})`);
+      if (a.nvGpu) accelParts.push(`GPU(${a.nvGpuName}, ${a.nvGpuTops}T)`);
       if (a.amdNpu) accelParts.push(`NPU(${a.amdNpuTops}T)`);
+      if (a.totalTops > 0) accelParts.push(`∑${a.totalTops}TOPS`);
       if (a.nativePQ) accelParts.push(`PQ(${a.nativePQBackend})`);
       if (accelParts.length > 0) {
         log.info(`  ACCEL:      ⚡ ${accelParts.join(' + ')}`);
       } else {
         log.info(`  ACCEL:      ○ pure-JS (install liboqs-node / onnxruntime-node for acceleration)`);
+      }
+      // Scheduler status
+      const sched = accel.scheduler.getStatus();
+      if (sched.initialized) {
+        const devNames = Object.keys(sched.devices).map(d => d.toUpperCase()).join('+');
+        const totalSlots = Object.values(sched.devices).reduce((s, d) => s + d.queue.capacity, 0);
+        log.info(`  SCHEDULER:  ✓ ${devNames} heterogeneous (${totalSlots} queue slots, ${sched.routing.mode} routing)`);
       }
     }
     if (this.adapter) {
@@ -600,6 +691,10 @@ export class YakmeshNode {
     this.karmaModel?.stopPromotionChecks?.();  // Stop KARMA auto-promotion
     this.nakpakRouter?.cleanupCircuits?.();  // Cleanup NAKPAK circuits
     this.kommWss?.close();  // Close KOMM WebSocket server
+    // Stop scheduled workloads
+    if (this._entropyCheckTimer) clearInterval(this._entropyCheckTimer);
+    if (this._peerAssessTimer) clearInterval(this._peerAssessTimer);
+    await accel.scheduler.shutdown();  // Drain compute scheduler queues
     // Annex channels cleaned up by mesh.stop()
     this.gossip?.stop();
     this.replication?.stopSync();
@@ -684,15 +779,20 @@ export class YakmeshNode {
    * Initialize time source detection
    * Detects precision time sources and configures phase epochs accordingly
    */
-  _initTimeSource() {
+  async _initTimeSource() {
     log.info('⏰ Initializing Time Source Detection...');
     
     // Get or create global time source detector
+    // MA-902/S-C1 GPS Time Server on LAN — provides satellite telemetry via SNMP
     this.timeSource = getTimeSourceDetector({
       detectHardware: true,
       checkNtp: true,
       refreshInterval: 60000,  // Re-check every minute
       verbose: false,
+      ma902: {
+        host: '192.168.1.30',   // MA-902/S-C1 Gigabit PTP Time Server
+        pollInterval: 10000,     // Poll SNMP telemetry every 10s
+      },
     });
     
     // Perform initial detection
@@ -703,8 +803,8 @@ export class YakmeshNode {
       setTimeSourceConfig(results.trustLevel);
     }
     
-    // Start continuous monitoring
-    this.timeSource.start();
+    // Start continuous monitoring (async — initialises MA-902 SNMP session)
+    await this.timeSource.start();
     
     // Log initial detection
     const trustIcons = {
@@ -843,6 +943,7 @@ export class YakmeshNode {
     // Behavior velocity monitor (detects rapid state changes / anomalies)
     this.velocityMonitor = new BehaviorVelocityMonitor({
       nodeId: this.identity.identity.nodeId,
+      inferenceEngine: accel.inference,
     });
     
     // Track connection churn per peer via velocity monitor
@@ -892,7 +993,10 @@ export class YakmeshNode {
   _initKarma() {
     log.info('☯️ Initializing KARMA...');
     
-    this.karmaModel = new KarmaTrustModel(this.config.karma || {});
+    this.karmaModel = new KarmaTrustModel({
+      ...this.config.karma,
+      inferenceEngine: accel.inference,
+    });
     
     // Wire SAKSHI velocity alerts → KARMA trust adjustments (ternary: NEGATIVE/NEUTRAL/ignored)
     if (this.velocityMonitor) {
@@ -910,6 +1014,17 @@ export class YakmeshNode {
             passed: false,
             reason: `Critical velocity anomaly: ${dimension} (z-score ${zScore.toFixed(1)})`,
           });
+
+          // Schedule deep NPU anomaly assessment via ComputeScheduler (HIGH)
+          const karmaEvidence = this.karmaModel.getEvidence(nodeId);
+          this._scheduledAnomalyAssessment(nodeId, {
+            karmaScore: karmaEvidence?.trustScore ? karmaEvidence.trustScore / 100 : 0.5,
+          }).then(({ result }) => {
+            if (result?.anomalyScore > 0.7) {
+              log.warn(`👁️ SAKSHI: Deep assessment confirms anomaly for ${nodeId.slice(0, 16)}... (score=${result.anomalyScore.toFixed(3)})`);
+            }
+          }).catch(() => {}); // Non-fatal — scheduler may reject under load
+
         } else if (level === VELOCITY_ALERT.WARNING) {
           log.debug(`☯️ KARMA: Warning velocity alert for ${nodeId.slice(0, 16)}... (${dimension}) → NEUTRAL`);
           // Record beacon sighting (neutral — keeps node active, doesn't penalize)
@@ -924,18 +1039,175 @@ export class YakmeshNode {
       this.karmaModel.recordBeaconSighting(peerId);
     });
     
-    // Wire KARMA trust level changes → log them
+    // Wire KARMA trust level changes → scheduled NPU trust prediction (second opinion)
     this.karmaModel.on('promoted', ({ nodeId, from, to, reason }) => {
       log.info(`☯️ KARMA: Node ${nodeId.slice(0, 16)}... promoted ${from}→${to} (${reason})`);
+      // Schedule NPU trust prediction for the promoted node
+      const evidence = this.karmaModel.getEvidence(nodeId);
+      if (evidence) {
+        this._scheduledTrustPrediction(evidence).then(({ result }) => {
+          if (result?.predicted) {
+            const agrees = result.predicted === ['UNTRUSTED', 'SEEKING', 'AWAKENED', 'ENLIGHTENED'][to];
+            log.debug(`☯️ KARMA NPU: ${result.source} predicts ${result.predicted} (${agrees ? 'agrees' : 'disagrees'} with rule-based ${to})`);
+          }
+        }).catch(() => {}); // Non-fatal
+      }
     });
     
     this.karmaModel.on('demoted', ({ nodeId, from, to, reason }) => {
       log.warn(`☯️ KARMA: Node ${nodeId.slice(0, 16)}... demoted ${from}→${to} (${reason})`);
+      // Schedule NPU trust prediction for the demoted node
+      const evidence = this.karmaModel.getEvidence(nodeId);
+      if (evidence) {
+        this._scheduledTrustPrediction(evidence).then(({ result }) => {
+          if (result?.predicted) {
+            const agrees = result.predicted === ['UNTRUSTED', 'SEEKING', 'AWAKENED', 'ENLIGHTENED'][to];
+            log.debug(`☯️ KARMA NPU: ${result.source} predicts ${result.predicted} (${agrees ? 'agrees' : 'disagrees'} with rule-based ${to})`);
+          }
+        }).catch(() => {}); // Non-fatal
+      }
     });
     
     log.info('✓ KARMA trust model initialized (SAKSHI → trust assessment pipeline)');
   }
-  
+
+  // =========================================================================
+  // SCHEDULED WORKLOADS — route ML inference through ComputeScheduler
+  // =========================================================================
+
+  /**
+   * Schedule a STEADYWATCH entropy quality check through the compute scheduler.
+   * CRITICAL priority — entropy degradation is a security emergency.
+   *
+   * @param {Uint8Array} data — raw bytes to score
+   * @returns {Promise<{ outcome, device, result, execMs, waitMs }>}
+   */
+  _scheduledEntropyCheck(data) {
+    const executor = () => steadywatch.scoreEntropy(data);
+    return accel.scheduler.submit({
+      type:      'entropy-sentinel',
+      priority:  accel.Priority.CRITICAL,
+      affinity:  accel.Affinity.NPU_PREFERRED,
+      timeoutMs: 2000,
+      inputSize: data?.length || 256,
+      executors: { npu: executor, gpu: executor, cpu: executor },
+    });
+  }
+
+  /**
+   * Schedule a SAKSHI anomaly assessment through the compute scheduler.
+   * HIGH priority — anomaly detection is security-sensitive.
+   *
+   * @param {string} nodeId — peer to assess
+   * @param {Object} context — additional context features for the ONNX model
+   * @returns {Promise<{ outcome, device, result, execMs, waitMs }>}
+   */
+  _scheduledAnomalyAssessment(nodeId, context = {}) {
+    const executor = () => this.velocityMonitor.assessNode(nodeId, context);
+    return accel.scheduler.submit({
+      type:      'sakshi-anomaly',
+      priority:  accel.Priority.HIGH,
+      affinity:  accel.Affinity.NPU_PREFERRED,
+      timeoutMs: 3000,
+      inputSize: 48,   // 12 × float32
+      executors: { npu: executor, gpu: executor, cpu: executor },
+    });
+  }
+
+  /**
+   * Schedule a KARMA trust prediction through the compute scheduler.
+   * HIGH priority — trust decisions affect network security.
+   *
+   * @param {Object} evidence — KarmaEvidence instance
+   * @returns {Promise<{ outcome, device, result, execMs, waitMs }>}
+   */
+  _scheduledTrustPrediction(evidence) {
+    const executor = () => this.karmaModel.predictTrustLevel(evidence);
+    return accel.scheduler.submit({
+      type:      'karma-trust',
+      priority:  accel.Priority.HIGH,
+      affinity:  accel.Affinity.NPU_PREFERRED,
+      timeoutMs: 3000,
+      inputSize: 56,   // 14 × float32
+      executors: { npu: executor, gpu: executor, cpu: executor },
+    });
+  }
+
+  /**
+   * Schedule batch ML-DSA-65 signature verification through the scheduler.
+   * HIGH priority — signature verification is security-critical.
+   *
+   * @param {Uint8Array} signature
+   * @param {Uint8Array} message
+   * @param {Uint8Array} publicKey
+   * @returns {Promise<{ outcome, device, result, execMs, waitMs }>}
+   */
+  _scheduledBatchVerify(signature, message, publicKey) {
+    const executor = () => accel.batchVerify.enqueue(signature, message, publicKey);
+    return accel.scheduler.submit({
+      type:      'batch-verify',
+      priority:  accel.Priority.HIGH,
+      affinity:  accel.Affinity.GPU_PREFERRED,
+      timeoutMs: 5000,
+      inputSize: (signature?.length || 0) + (message?.length || 0) + (publicKey?.length || 0),
+      executors: { gpu: executor, npu: executor, cpu: executor },
+    });
+  }
+
+  /**
+   * Start periodic scheduled workloads that exercise the compute scheduler.
+   * Called once during boot after all subsystems are initialized.
+   */
+  _startScheduledWorkloads() {
+    // ── Periodic entropy health check (every 30s) ──
+    // Generates fresh random bytes and scores them through STEADYWATCH sentinel.
+    // Detects entropy source degradation before it impacts ANNEX keygen.
+    this._entropyCheckTimer = setInterval(async () => {
+      try {
+        const sample = crypto.randomBytes(256);
+        const { result } = await this._scheduledEntropyCheck(sample);
+        if (result && result.score < 0.6) {
+          log.warn(`⚠️ STEADYWATCH: Entropy quality degraded (score=${result.score.toFixed(3)}, verdict=${result.verdict})`);
+        }
+      } catch (err) {
+        // Scheduler rejection (queue full) is fine — non-fatal
+        if (err?.outcome !== 'rejected') {
+          log.debug(`Entropy check error: ${err.message || err.reason || 'unknown'}`);
+        }
+      }
+    }, 30_000);
+    if (this._entropyCheckTimer.unref) this._entropyCheckTimer.unref();
+
+    // ── Periodic peer assessment sweep (every 60s) ──
+    // Deep-assesses the 5 most active peers via SAKSHI anomaly model.
+    // Catches slow-burn attacks that velocity z-scores alone miss.
+    this._peerAssessTimer = setInterval(async () => {
+      if (!this.velocityMonitor || !this.mesh) return;
+      const peers = this.mesh.getPeers ? this.mesh.getPeers() : [];
+      // Assess up to 5 peers per sweep — don't flood the scheduler
+      const batch = peers.slice(0, 5);
+      for (const peerId of batch) {
+        try {
+          const karmaEvidence = this.karmaModel?.getEvidence(peerId);
+          const context = {
+            karmaScore: karmaEvidence?.trustScore ? karmaEvidence.trustScore / 100 : 0.5,
+            uptimePercent: 0.5,
+            networkAgeDays: karmaEvidence ? (Date.now() - (karmaEvidence.firstSeen || Date.now())) / 86400000 : 0,
+          };
+          const { result } = await this._scheduledAnomalyAssessment(peerId, context);
+          if (result && result.anomalyScore > 0.7) {
+            log.warn(`👁️ SAKSHI: High anomaly score for ${peerId.slice(0, 16)}... (score=${result.anomalyScore.toFixed(3)}, source=${result.source})`);
+          }
+        } catch {
+          // Non-fatal — scheduler may have rejected the task
+        }
+      }
+    }, 60_000);
+    if (this._peerAssessTimer.unref) this._peerAssessTimer.unref();
+
+    log.info('✓ Scheduled workloads: entropy-sentinel(30s) + peer-assessment(60s) via ComputeScheduler');
+  }
+
   /**
    * Initialize KOMM WebSocket upgrade on the HTTP server
    * Provides real-time KATHA messages and VANI signaling over WS.
@@ -948,6 +1220,29 @@ export class YakmeshNode {
     if (!this.http || !this.kathaHub) return;
     
     this.kommWss = new WebSocketServer({ noServer: true, maxPayload: 1048576 }); // 1MB max message size
+    
+    // Per-client ANNEX sessions for PQ encryption
+    const kommAnnexSessions = new Map(); // ws → ServerAnnexSession
+    
+    /**
+     * secureSend — encrypt outbound KOMM messages via ANNEX when session exists
+     */
+    const secureSend = (ws, data) => {
+      if (ws.readyState !== 1) return; // OPEN
+      const session = kommAnnexSessions.get(ws);
+      if (session && !session.isExpired()) {
+        try {
+          const encrypted = session.encrypt(typeof data === 'string' ? data : JSON.stringify(data));
+          ws.send(JSON.stringify({ type: ANNEX_HANDSHAKE_TYPE.ENCRYPTED, payload: encrypted }));
+        } catch {
+          // Encryption failed — drop message (no plaintext fallback)
+          log.warn('KOMM ANNEX encrypt failed — message dropped');
+        }
+      } else {
+        // No ANNEX session yet — send plaintext (only during handshake/migration)
+        ws.send(typeof data === 'string' ? data : JSON.stringify(data));
+      }
+    };
     
     // Handle upgrade requests for /komm/ws path
     this.http.on('upgrade', (request, socket, head) => {
@@ -972,38 +1267,83 @@ export class YakmeshNode {
       
       ws.on('close', () => {
         kommClients.delete(ws);
+        // Destroy ANNEX session on close — zero key material
+        const session = kommAnnexSessions.get(ws);
+        if (session) { session.destroy(); kommAnnexSessions.delete(ws); }
         log.debug('📡 KOMM WS client disconnected');
       });
       
       ws.on('error', () => {
         kommClients.delete(ws);
+        const session = kommAnnexSessions.get(ws);
+        if (session) { session.destroy(); kommAnnexSessions.delete(ws); }
       });
       
       // Handle incoming messages from client
       ws.on('message', (raw) => {
         try {
           const msg = JSON.parse(raw.toString());
-          this._handleKommWsMessage(msg, ws);
+          
+          // ── ANNEX handshake layer (before any application logic) ──
+          if (msg.type === ANNEX_HANDSHAKE_TYPE.PUBLIC_KEY) {
+            const session = new ServerAnnexSession({
+              localId: this.identity.identity.nodeId.slice(0, 16),
+              remoteId: msg.clientId || 'komm-client',
+            });
+            const result = session.handlePublicKey(msg.publicKey);
+            kommAnnexSessions.set(ws, session);
+            ws.send(JSON.stringify({
+              type: ANNEX_HANDSHAKE_TYPE.ENCAPSULATED,
+              ciphertext: result.ciphertext,
+              serverId: this.identity.identity.nodeId.slice(0, 16),
+              sessionId: msg.sessionId,
+            }));
+            log.debug('📡 KOMM ANNEX handshake complete (ML-KEM-768)');
+            return;
+          }
+          
+          if (msg.type === 'annex:rekey_ack') {
+            const session = kommAnnexSessions.get(ws);
+            if (session) {
+              session.rekey(msg.publicKey);
+              log.debug('📡 KOMM ANNEX rekeyed');
+            }
+            return;
+          }
+          
+          if (msg.type === ANNEX_HANDSHAKE_TYPE.ENCRYPTED) {
+            const session = kommAnnexSessions.get(ws);
+            if (!session) return;
+            const plaintext = session.decrypt(msg.payload);
+            const decrypted = JSON.parse(plaintext);
+            // Check if rekey needed
+            if (session.isNearingExpiry()) {
+              secureSend(ws, { type: 'annex:rekey', reason: 'threshold' });
+            }
+            this._handleKommWsMessage(decrypted, ws, secureSend);
+            return;
+          }
+          
+          // Plaintext fallback (backward compat during migration)
+          this._handleKommWsMessage(msg, ws, secureSend);
         } catch {
-          ws.send(JSON.stringify({ error: 'Invalid JSON' }));
+          secureSend(ws, { error: 'Invalid message' });
         }
       });
       
-      // Send welcome
-      ws.send(JSON.stringify({
+      // Send welcome (may be plaintext if ANNEX not yet established)
+      secureSend(ws, {
         type: 'welcome',
         nodeId: this.identity.identity.nodeId.slice(0, 16),
         capabilities: ['katha', 'vani', 'yurt'],
-      }));
+      });
     });
     
-    // Broadcast helper
+    // Broadcast helper — now encrypts per-client via ANNEX
     const broadcastKomm = (type, data) => {
-      const msg = JSON.stringify({ type, data, ts: Date.now() });
+      const payload = { type, data, ts: Date.now() };
       for (const client of kommClients) {
-        if (client.readyState === 1) { // OPEN
-          client.send(msg);
-        }
+        secureSend(client, payload);
       }
     };
     
@@ -1036,13 +1376,13 @@ export class YakmeshNode {
       });
     }
     
-    log.info('✓ KOMM WebSocket initialized at /komm/ws');
+    log.info('✓ KOMM WebSocket initialized at /komm/ws (ANNEX PQ-encrypted)');
   }
   
   /**
    * Handle incoming KOMM WS messages from clients
    */
-  _handleKommWsMessage(msg, ws) {
+  _handleKommWsMessage(msg, ws, secureSend) {
     const { type, data } = msg;
     
     switch (type) {
@@ -1064,12 +1404,12 @@ export class YakmeshNode {
       case 'vani:call':
         if (this.vaniHub?.initiateCall) {
           this.vaniHub.initiateCall(data).then(result => {
-            ws.send(JSON.stringify({ type: 'vani:callResult', data: result }));
+            secureSend(ws, { type: 'vani:callResult', data: result });
           }).catch(() => {});
         }
         break;
       case 'ping':
-        ws.send(JSON.stringify({ type: 'pong', ts: Date.now() }));
+        secureSend(ws, { type: 'pong', ts: Date.now() });
         break;
     }
   }
@@ -1456,6 +1796,9 @@ export class YakmeshNode {
           candidates: this.sherpa.getConnectionCandidates(10).length,
         } : null,
         accel: accel.getStatus(),
+        steadywatch: steadywatch.getStatus(),
+        timeSource: this.timeSource ? this.timeSource.getStatus() : null,
+        security: this.mesh.getSecurityStats(),
       });
     });
 
@@ -1504,6 +1847,25 @@ export class YakmeshNode {
 
     app.get('/accel/telemetry', (req, res) => {
       res.json(accel.getTelemetry());
+    });
+
+    // =========================================
+    // COMPUTE SCHEDULER: Heterogeneous GPU/NPU/CPU
+    // =========================================
+    app.get('/scheduler', (req, res) => {
+      res.json(accel.scheduler.getStatus());
+    });
+
+    app.get('/scheduler/training-data', (req, res) => {
+      const n = Math.min(parseInt(req.query.n) || 100, 5000);
+      res.json(accel.scheduler.getTrainingData(n));
+    });
+
+    // =========================================
+    // STEADYWATCH: Quantum Entropy Status
+    // =========================================
+    app.get('/steadywatch', (req, res) => {
+      res.json(steadywatch.getStatus());
     });
 
     // =========================================
@@ -2715,42 +3077,144 @@ export class YakmeshNode {
     });
   }
 
-  async _connectToBootstrap() {
-    // Collect all local addresses for robust self-detection.
-    // Each node lists ALL peers in bootstrap (identical config everywhere).
-    // We skip any endpoint that points back to ourselves.
+  /**
+   * Non-blocking bootstrap connection.
+   *
+   * Instead of serially awaiting each TCP handshake (which blocks boot for
+   * ~30s per unreachable host), we:
+   *   1. Resolve the list of remote peers (filtering self).
+   *   2. Fire ALL connections concurrently with a short timeout (5s).
+   *   3. Start a periodic reconnect loop that retries failed/missing peers
+   *      every 30s with exponential backoff per endpoint.
+   *
+   * Boot completes instantly.  Peer connections happen in the background.
+   */
+  _connectToBootstrap() {
+    // ── Collect local addresses for self-detection ──
     const localAddrs = new Set(['localhost', '127.0.0.1', '::1', '0.0.0.0']);
     const ifaces = networkInterfaces();
     for (const addrs of Object.values(ifaces)) {
-      for (const addr of addrs) {
-        localAddrs.add(addr.address);
-      }
+      for (const addr of addrs) localAddrs.add(addr.address);
     }
-
     const ourWsPort = this.mesh.boundPort || this.config.network.wsPort;
 
+    // ── Build filtered peer list (skip self, skip invalid) ──
+    this._bootstrapPeers = [];
     for (const endpoint of this.config.bootstrap) {
-      // Parse endpoint URL to extract host and port
       let url;
-      try {
-        url = new URL(endpoint);
-      } catch {
+      try { url = new URL(endpoint); } catch {
         log.warn(`  (invalid bootstrap endpoint: ${endpoint})`);
         continue;
       }
-
       const epPort = parseInt(url.port, 10);
       if (epPort === ourWsPort && localAddrs.has(url.hostname)) {
         log.debug(`  (skipping self: ${endpoint})`);
         continue;
       }
-
-      try {
-        await this.mesh.connect(endpoint);
-      } catch (e) {
-        log.debug(`  (bootstrap ${endpoint} not available)`);
-      }
+      this._bootstrapPeers.push({
+        endpoint,
+        failures:   0,
+        lastTry:    0,
+        connected:  false,
+      });
     }
+
+    if (this._bootstrapPeers.length === 0) {
+      log.info('BOOTSTRAP: no remote peers configured');
+      return;
+    }
+
+    log.info(`BOOTSTRAP: ${this._bootstrapPeers.length} remote peer(s) — connecting in background`);
+
+    // ── Initial attempt: fire all concurrently ──
+    this._tryBootstrapConnections();
+
+    // ── Start reconnect loop ──
+    this._bootstrapInterval = setInterval(() => {
+      this._tryBootstrapConnections();
+    }, 30_000);
+
+    // Unref so the interval doesn't keep the process alive
+    if (this._bootstrapInterval.unref) this._bootstrapInterval.unref();
+  }
+
+  /**
+   * Attempt connections to all bootstrap peers that aren't already connected.
+   * Each attempt is wrapped with a 5s timeout — no more 30s TCP hangs.
+   */
+  _tryBootstrapConnections() {
+    if (!this._bootstrapPeers) return;
+
+    const connectedEndpoints = new Set(
+      (this.mesh?.getPeers?.() || []).map(p => p.endpoint).filter(Boolean)
+    );
+
+    for (const peer of this._bootstrapPeers) {
+      // Already connected — mark and skip
+      if (connectedEndpoints.has(peer.endpoint)) {
+        if (!peer.connected) {
+          peer.connected = true;
+          peer.failures  = 0;
+          log.info(`BOOTSTRAP: ✓ connected to ${peer.endpoint}`);
+        }
+        continue;
+      }
+      peer.connected = false;
+
+      // Exponential backoff: skip if too soon after last failure
+      // backoff = min(30s * 2^failures, 5 min) — but the interval is 30s,
+      // so we only skip within the same interval if we already tried recently
+      const backoffMs = Math.min(30_000 * Math.pow(2, peer.failures), 300_000);
+      if (Date.now() - peer.lastTry < backoffMs) continue;
+
+      peer.lastTry = Date.now();
+
+      // Fire-and-forget with 5s timeout
+      this._connectWithTimeout(peer.endpoint, 5_000)
+        .then(() => {
+          peer.connected = true;
+          peer.failures  = 0;
+          log.info(`BOOTSTRAP: ✓ connected to ${peer.endpoint}`);
+        })
+        .catch(() => {
+          peer.failures++;
+          const nextIn = Math.min(30 * Math.pow(2, peer.failures), 300);
+          log.debug(`BOOTSTRAP: ${peer.endpoint} unreachable (attempt ${peer.failures}, retry ~${nextIn}s)`);
+        });
+    }
+  }
+
+  /**
+   * Connect to a peer with an explicit timeout.
+   * Rejects if the connection hasn't completed within `ms` milliseconds,
+   * instead of waiting for the OS TCP timeout (21-30s on Windows).
+   */
+  _connectWithTimeout(endpoint, ms) {
+    return new Promise((resolve, reject) => {
+      let settled = false;
+      const timer = setTimeout(() => {
+        if (!settled) {
+          settled = true;
+          reject(new Error(`timeout after ${ms}ms`));
+        }
+      }, ms);
+
+      this.mesh.connect(endpoint)
+        .then((result) => {
+          if (!settled) {
+            settled = true;
+            clearTimeout(timer);
+            resolve(result);
+          }
+        })
+        .catch((err) => {
+          if (!settled) {
+            settled = true;
+            clearTimeout(timer);
+            reject(err);
+          }
+        });
+    });
   }
 
   /**

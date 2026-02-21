@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMax slice">
+  <defs>
+    <linearGradient id="gumbaGlow" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#101a16" stop-opacity="0"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- MOUNTAIN BACKDROP -->
+  <polygon points="0,600 150,350 300,550 0,1080" fill="#1a2a22" opacity="0.35"/>
+  <polygon points="1620,580 1800,300 1920,500 1920,1080 1620,1080" fill="#1a2a22" opacity="0.35"/>
+  <polygon points="1400,700 1550,450 1700,650 1700,1080 1400,1080" fill="#1a2a22" opacity="0.3"/>
+  
+  <!-- Central monastery glow -->
+  <ellipse cx="960" cy="400" rx="400" ry="200" fill="url(#gumbaGlow)"/>
+  
+  <!-- Main monastery structure -->
+  <!-- Base platform -->
+  <rect x="600" y="750" width="720" height="80" fill="#1a2a22" opacity="0.9"/>
+  <rect x="600" y="750" width="720" height="80" stroke="#f59e0b" stroke-width="2" fill="none" opacity="0.4"/>
+  
+  <!-- Main building -->
+  <rect x="700" y="500" width="520" height="250" fill="#1a2a22" opacity="0.85"/>
+  <rect x="700" y="500" width="520" height="250" stroke="#d97706" stroke-width="2" fill="none" opacity="0.5"/>
+  
+  <!-- Pagoda roof layers -->
+  <polygon points="650,500 1270,500 1320,450 600,450" fill="#1a2a22" opacity="0.85"/>
+  <polygon points="650,500 1270,500 1320,450 600,450" stroke="#f59e0b" stroke-width="2" fill="none" opacity="0.5"/>
+  <polygon points="700,450 1220,450 1260,410 660,410" fill="#1a2a22" opacity="0.85"/>
+  <polygon points="700,450 1220,450 1260,410 660,410" stroke="#fbbf24" stroke-width="2" fill="none" opacity="0.4"/>
+  <polygon points="750,410 1170,410 1200,380 720,380" fill="#1a2a22" opacity="0.85"/>
+  <polygon points="750,410 1170,410 1200,380 720,380" stroke="#fbbf24" stroke-width="2" fill="none" opacity="0.3"/>
+  
+  <!-- Central tower -->
+  <rect x="900" y="300" width="120" height="80" fill="#1a2a22" opacity="0.9"/>
+  <polygon points="880,300 1040,300 1060,260 860,260" fill="#1a2a22" opacity="0.9"/>
+  <polygon points="880,300 1040,300 1060,260 860,260" stroke="#fde68a" stroke-width="2" fill="none" opacity="0.5"/>
+  <polygon points="920,260 1000,260 1020,230 900,230" fill="#fbbf24" opacity="0.4"/>
+  
+  <!-- Pinnacle -->
+  <circle cx="960" cy="210" r="15" fill="#fbbf24" opacity="0.5"/>
+  
+  <!-- ROLE HIERARCHY GATES -->
+  <!-- Gate 1: OWNER (innermost, smallest, gold) -->
+  <rect x="920" y="620" width="80" height="130" fill="#fbbf24" opacity="0.2"/>
+  <rect x="920" y="620" width="80" height="130" stroke="#fde68a" stroke-width="3" fill="none" opacity="0.6"/>
+  <text x="960" y="700" fill="#fde68a" opacity="0.7" font-size="14" font-family="monospace" text-anchor="middle">OWNER</text>
+  
+  <!-- Gate 2: ADMIN -->
+  <rect x="840" y="650" width="240" height="100" stroke="#f59e0b" stroke-width="2" fill="none" opacity="0.45"/>
+  <text x="880" y="680" fill="#f59e0b" opacity="0.5" font-size="11" font-family="monospace" text-anchor="middle">ADMIN</text>
+  
+  <!-- Gate 3: MEMBER -->
+  <rect x="760" y="680" width="400" height="70" stroke="#d97706" stroke-width="2" fill="none" opacity="0.35"/>
+  <text x="800" y="710" fill="#d97706" opacity="0.4" font-size="11" font-family="monospace" text-anchor="middle">MEMBER</text>
+  
+  <!-- Gate 4: READER (outermost) -->
+  <rect x="680" y="710" width="560" height="40" stroke="#92400e" stroke-width="2" fill="none" opacity="0.3"/>
+  <text x="720" y="735" fill="#92400e" opacity="0.35" font-size="11" font-family="monospace" text-anchor="middle">READER</text>
+  
+  <!-- Decorative monks (silhouettes) -->
+  <circle cx="350" cy="720" r="25" fill="#1a2a22"/>
+  <ellipse cx="350" cy="780" rx="30" ry="40" fill="#1a2a22"/>
+  
+  <circle cx="1570" cy="700" r="25" fill="#1a2a22"/>
+  <ellipse cx="1570" cy="760" rx="30" ry="40" fill="#1a2a22"/>
+  
+  <!-- Prayer flags connecting to peaks -->
+  <path d="M150,350 Q400,300 700,380" stroke="#f59e0b" stroke-width="1" fill="none" opacity="0.3" stroke-dasharray="8,4"/>
+  <path d="M1800,300 Q1600,280 1200,380" stroke="#fbbf24" stroke-width="1" fill="none" opacity="0.3" stroke-dasharray="8,4"/>
+</svg>

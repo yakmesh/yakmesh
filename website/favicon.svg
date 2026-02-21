@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 36 36">
+  <!-- Background circle with theme colors -->
+  <circle cx="18" cy="18" r="17" fill="#1f332d"/>
+  <circle cx="18" cy="18" r="15" fill="#022c22" stroke="#10b981" stroke-width="1"/>
+  
+  <!-- Horns -->
+  <path d="M7 13c-2-3 0-6 2-8 1 2 0 5-1 7" fill="#BFA37C" stroke="#8B6914" stroke-width="0.3"/>
+  <path d="M29 13c2-3 0-6-2-8-1 2 0 5 1 7" fill="#BFA37C" stroke="#8B6914" stroke-width="0.3"/>
+  
+  <!-- Shaggy body -->
+  <ellipse cx="18" cy="22" rx="11" ry="8" fill="#5C4033"/>
+  
+  <!-- Hanging fur -->
+  <path d="M8 20c-1 3-1 6 0 8 1-2 1-5 0-7" fill="#4A3728"/>
+  <path d="M28 20c1 3 1 6 0 8-1-2-1-5 0-7" fill="#4A3728"/>
+  
+  <!-- Head -->
+  <circle cx="18" cy="13" r="6" fill="#5C4033"/>
+  
+  <!-- Face/muzzle -->
+  <ellipse cx="18" cy="15" rx="3" ry="2" fill="#704C36"/>
+  
+  <!-- Eyes - with theme glow -->
+  <circle cx="15" cy="11" r="1.2" fill="#10b981"/>
+  <circle cx="21" cy="11" r="1.2" fill="#10b981"/>
+  <circle cx="15" cy="11" r="0.5" fill="#34d399"/>
+  <circle cx="21" cy="11" r="0.5" fill="#34d399"/>
+  
+  <!-- Nose -->
+  <ellipse cx="18" cy="15" rx="2" ry="1.2" fill="#292929"/>
+  
+  <!-- Nostrils -->
+  <circle cx="17" cy="15" r="0.4" fill="#444"/>
+  <circle cx="19" cy="15" r="0.4" fill="#444"/>
+</svg>

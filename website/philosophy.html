@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Philosophy - The Y.A.K.M.E.S.H. Principles | YAKMESH</title>
+    <meta name="description" content="Explore the core philosophy behind YAKMESH: Yielding, Atomic, Kernel, Modular, Encryption, Secured, Hub - the seven principles that guide post-quantum decentralized development.">
+    
+    <!-- Open Graph / Social -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://yakmesh.dev/philosophy.html">
+    <meta property="og:title" content="The Y.A.K.M.E.S.H. Philosophy">
+    <meta property="og:description" content="Seven principles that guide post-quantum decentralized development.">
+    <meta property="og:image" content="https://yakmesh.dev/assets/yakmesh-logo.webp">
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:site" content="@yakmesh_dev">
+    <meta name="twitter:title" content="The Y.A.K.M.E.S.H. Philosophy">
+    <meta name="twitter:description" content="Seven principles that guide post-quantum decentralized development.">
+    
+    <!-- Favicons -->
+    <link rel="icon" href="favicon.ico" sizes="32x32">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <link rel="canonical" href="https://yakmesh.dev/philosophy.html">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="tailwind.min.css">
+    <style>
+        /* ========== HIMALAYAN MONASTERY/TEMPLE THEME ========== */
+        
+        body {
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        /* Atmospheric background - monastery/temple setting */
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: -2;
+            background: 
+                /* Warm spiritual glow */
+                radial-gradient(ellipse 50% 40% at 50% 20%, rgba(251, 191, 36, 0.08) 0%, transparent 60%),
+                /* Soft ambient light */
+                radial-gradient(ellipse 60% 50% at 30% 60%, rgba(16, 185, 129, 0.05) 0%, transparent 50%),
+                /* Base gradient */
+                linear-gradient(180deg, #0a0f0c 0%, #101a16 30%, #1a2a24 100%);
+        }
+        
+        /* Monastery silhouette with stupas and mandala elements */
+        body::after {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: -1;
+            pointer-events: none;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1920 1080' preserveAspectRatio='xMidYMax slice'%3E%3Cdefs%3E%3ClinearGradient id='mist' x1='0%25' y1='100%25' x2='0%25' y2='0%25'%3E%3Cstop offset='0%25' stop-color='%23101a16' stop-opacity='1'/%3E%3Cstop offset='60%25' stop-color='%23101a16' stop-opacity='0.6'/%3E%3Cstop offset='100%25' stop-color='%23101a16' stop-opacity='0'/%3E%3C/linearGradient%3E%3CradialGradient id='mandalaglow' cx='50%25' cy='30%25' r='40%25'%3E%3Cstop offset='0%25' stop-color='%23fbbf24' stop-opacity='0.06'/%3E%3Cstop offset='100%25' stop-color='%23101a16' stop-opacity='0'/%3E%3C/radialGradient%3E%3C/defs%3E%3C!-- Mandala glow in sky --%3E%3Cellipse cx='960' cy='200' rx='500' ry='300' fill='url(%23mandalaglow)'/%3E%3C!-- Distant peaks --%3E%3Cpolygon points='0,500 200,250 400,420 600,180 800,350 1000,120 1200,300 1400,150 1600,320 1800,200 1920,380 1920,1080 0,1080' fill='%231a2a24' opacity='0.3'/%3E%3C!-- Snow caps --%3E%3Cpolygon points='600,180 565,240 635,240' fill='%23ffffff' opacity='0.1'/%3E%3Cpolygon points='1000,120 955,190 1045,190' fill='%23ffffff' opacity='0.12'/%3E%3Cpolygon points='1400,150 1355,220 1445,220' fill='%23ffffff' opacity='0.1'/%3E%3C!-- Mid-range mountains --%3E%3Cpolygon points='0,650 180,400 360,550 540,320 720,480 900,280 1080,450 1260,300 1440,480 1620,350 1800,520 1920,420 1920,1080 0,1080' fill='%231f332d' opacity='0.45'/%3E%3C!-- Temple/monastery structure left --%3E%3Crect x='120' y='680' width='80' height='120' fill='%231a2a22' opacity='0.7'/%3E%3Cpolygon points='120,680 160,620 200,680' fill='%231a2a22' opacity='0.75'/%3E%3Crect x='145' y='640' width='30' height='40' fill='%231a2a22' opacity='0.7'/%3E%3Cpolygon points='145,640 160,600 175,640' fill='%231a2a22' opacity='0.7'/%3E%3C!-- Central large stupa --%3E%3Cellipse cx='960' cy='750' rx='120' ry='35' fill='%231a2a22' opacity='0.6'/%3E%3Crect x='900' y='680' width='120' height='70' fill='%231a2a22' opacity='0.7'/%3E%3Cellipse cx='960' cy='680' rx='80' ry='30' fill='%231f332d' opacity='0.7'/%3E%3Cellipse cx='960' cy='650' rx='60' ry='22' fill='%231a2a22' opacity='0.75'/%3E%3Crect x='945' y='520' width='30' height='130' fill='%231a2a22' opacity='0.75'/%3E%3Cpolygon points='930,540 960,480 990,540' fill='%23fbbf24' opacity='0.25'/%3E%3Cpolygon points='935,560 960,510 985,560' fill='%23f59e0b' opacity='0.2'/%3E%3Cpolygon points='940,580 960,540 980,580' fill='%23d97706' opacity='0.15'/%3E%3C!-- Temple structure right --%3E%3Crect x='1700' y='700' width='100' height='100' fill='%231a2a22' opacity='0.65'/%3E%3Cpolygon points='1700,700 1750,630 1800,700' fill='%231a2a22' opacity='0.7'/%3E%3Crect x='1730' y='660' width='40' height='40' fill='%231a2a22' opacity='0.65'/%3E%3Cpolygon points='1730,660 1750,620 1770,660' fill='%231a2a22' opacity='0.7'/%3E%3C!-- Ground with monastery courtyard --%3E%3Cpolygon points='0,820 200,780 400,830 600,790 800,840 1000,800 1200,850 1400,810 1600,860 1800,820 1920,870 1920,1080 0,1080' fill='%23101a16' opacity='0.8'/%3E%3C!-- Mist --%3E%3Crect x='0' y='750' width='1920' height='330' fill='url(%23mist)'/%3E%3C/svg%3E") no-repeat bottom center;
+            background-size: cover;
+        }
+        
+        /* Focus states for accessibility */
+        a:focus-visible, button:focus-visible {
+            outline: 2px solid #10b981;
+            outline-offset: 2px;
+        }
+        
+        /* Skip link */
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: #10b981;
+            color: white;
+            padding: 8px 16px;
+            z-index: 100;
+            transition: top 0.3s;
+        }
+        .skip-link:focus { top: 0; }
+        
+        /* Philosophy card styles */
+        .philosophy-card {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .philosophy-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 15px 50px rgba(16, 185, 129, 0.15);
+        }
+        .philosophy-card:hover .card-letter {
+            transform: scale(1.1);
+        }
+        .card-letter {
+            transition: transform 0.3s ease;
+        }
+        
+        /* Expanded card content */
+        .card-details {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease, padding 0.3s ease;
+        }
+        .philosophy-card.expanded .card-details {
+            max-height: 500px;
+            padding-top: 1rem;
+        }
+        
+        /* Connection lines between principles */
+        .principle-connector {
+            position: relative;
+        }
+        .principle-connector::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            right: -1rem;
+            width: 2rem;
+            height: 2px;
+            background: linear-gradient(90deg, rgba(16, 185, 129, 0.5), transparent);
+        }
+        
+        /* Gradient text */
+        .gradient-text {
+            background: linear-gradient(135deg, #10b981 0%, #34d399 40%, #fbbf24 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        /* Core values tree */
+        .value-branch {
+            position: relative;
+            padding-left: 2rem;
+        }
+        .value-branch::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(180deg, #10b981, #047857);
+        }
+        .value-branch::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 1.25rem;
+            width: 1.5rem;
+            height: 2px;
+            background: #10b981;
+        }
+        
+        /* Navigation styling - matches main site */
+        .nav-mountain {
+            position: relative;
+            background: linear-gradient(180deg, rgba(16, 26, 22, 0.98) 0%, rgba(16, 26, 22, 0.95) 100%);
+            border-bottom: 1px solid rgba(16, 185, 129, 0.2);
+        }
+        .nav-mountain::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent 0%, rgba(16, 185, 129, 0.5) 50%, transparent 100%);
+        }
+    </style>
+</head>
+<body class="bg-mountain-900 text-white">
+    <!-- Skip Link for Accessibility -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    
+    <!-- Navigation - matches main site structure -->
+    <nav class="sticky top-0 w-full z-50 nav-mountain backdrop-blur-md" aria-label="Main navigation">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="./" class="flex items-center gap-3">
+                <img src="assets/yakmesh-logo.webp" alt="Yakmesh" class="h-10 w-10" width="40" height="44">
+                <span class="text-xl font-bold">YAKMESH™</span>
+            </a>
+            <!-- Mobile menu button -->
+            <button id="mobile-menu-btn" class="md:hidden p-2 text-mountain-200 hover:text-white transition" aria-label="Toggle menu" aria-expanded="false">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path id="menu-icon" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                </svg>
+            </button>
+            <!-- Desktop menu -->
+            <div class="hidden md:flex items-center gap-6">
+                <a href="./" class="text-mountain-200 hover:text-white transition">Home</a>
+                <a href="philosophy.html" class="text-white font-medium transition" aria-current="page">Philosophy</a>
+                <a href="pricing.html" class="text-mountain-200 hover:text-white transition">Pricing</a>
+                <a href="docs/" class="text-mountain-200 hover:text-white transition">Docs</a>
+                <a href="https://github.com/yakmesh/yakmesh" class="text-mountain-200 hover:text-white transition">GitHub</a>
+                <a href="mailto:inquiry@peerquanta.com" class="bg-Yakmesh-600 hover:bg-Yakmesh-500 px-4 py-2 rounded-lg transition">Contact</a>
+            </div>
+        </div>
+        <!-- Mobile menu -->
+        <div id="mobile-menu" class="hidden md:hidden bg-mountain-900/95 border-t border-mountain-700">
+            <div class="px-6 py-4 space-y-3">
+                <a href="./" class="block py-2 text-mountain-200 hover:text-white transition">Home</a>
+                <a href="philosophy.html" class="block py-2 text-white font-medium transition" aria-current="page">Philosophy</a>
+                <a href="pricing.html" class="block py-2 text-mountain-200 hover:text-white transition">Pricing</a>
+                <a href="docs/" class="block py-2 text-mountain-200 hover:text-white transition">Docs</a>
+                <a href="https://github.com/yakmesh/yakmesh" class="block py-2 text-mountain-200 hover:text-white transition">GitHub</a>
+                <a href="mailto:inquiry@peerquanta.com" class="block bg-Yakmesh-600 hover:bg-Yakmesh-500 px-4 py-3 rounded-lg text-center transition mt-4">Contact</a>
+            </div>
+        </div>
+    </nav>
+
+    <main id="main-content">
+        <!-- Hero Section -->
+        <section class="py-20 text-center" aria-labelledby="philosophy-title">
+            <div class="max-w-4xl mx-auto px-6">
+                <h1 id="philosophy-title" class="text-5xl md:text-6xl font-bold mb-6">
+                    The <span class="gradient-text">Y.A.K.M.E.S.H.</span> Philosophy
+                </h1>
+                <p class="text-xl text-mountain-300 mb-8 max-w-2xl mx-auto">
+                    Seven principles that guide our approach to building resilient, quantum-resistant decentralized systems. More than an acronym — a design ethos.
+                </p>
+                <div class="flex justify-center gap-4">
+                    <img src="assets/yakmesh128.webp" alt="" class="w-16 h-16" width="64" height="64" aria-hidden="true">
+                </div>
+            </div>
+        </section>
+
+        <!-- The Seven Principles - Interactive Cards -->
+        <section class="py-16" aria-labelledby="principles-title">
+            <div class="max-w-6xl mx-auto px-6">
+                <h2 id="principles-title" class="sr-only">The Seven Principles</h2>
+                
+                <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+                    <!-- Y - Yielding -->
+                    <div class="philosophy-card bg-mountain-800/80 border border-mountain-700 hover:border-Yakmesh-500 rounded-xl p-6" data-principle="yielding" tabindex="0" role="button" aria-expanded="false">
+                        <div class="text-center mb-4">
+                            <div class="card-letter text-5xl font-bold text-Yakmesh-400 mb-2">Y</div>
+                            <h3 class="text-xl font-semibold">Yielding</h3>
+                        </div>
+                        <p class="text-mountain-400 text-sm text-center">Not brittle; flexible enough to absorb network shocks</p>
+                        <div class="card-details text-sm text-mountain-300 border-t border-mountain-700 mt-4">
+                            <p class="mb-3">Like bamboo in a storm, YAKMESH bends but doesn't break. When nodes fail or networks partition, the system adapts rather than collapses.</p>
+                            <ul class="space-y-2 text-mountain-400">
+                                <li class="flex items-start gap-2">
+                                    <span class="text-Yakmesh-400">→</span>
+                                    <span>Graceful degradation under stress</span>
+                                </li>
+                                <li class="flex items-start gap-2">
+                                    <span class="text-Yakmesh-400">→</span>
+                                    <span>Self-healing mesh topology</span>
+                                </li>
+                                <li class="flex items-start gap-2">
+                                    <span class="text-Yakmesh-400">→</span>
+                                    <span>No single point of failure</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="text-center mt-4 text-mountain-500 text-xs">Click to expand</div>
+                    </div>
+
+                    <!-- A - Atomic -->
+                    <div class="philosophy-card bg-mountain-800/80 border border-mountain-700 hover:border-cyan-500 rounded-xl p-6" data-principle="atomic" tabindex="0" role="button" aria-expanded="false">
+                        <div class="text-center mb-4">
+                            <div class="card-letter text-5xl font-bold text-cyan-400 mb-2">A</div>
+                            <h3 class="text-xl font-semibold">Atomic</h3>
+                        </div>
+                        <p class="text-mountain-400 text-sm text-center">Grounded in the absolute truth of physical time</p>
+                        <div class="card-details text-sm text-mountain-300 border-t border-mountain-700 mt-4">
+                            <p class="mb-3">Time is the one thing that cannot be faked. MANI sources from atomic clocks, GPS satellites, and NTP pools to create an unforgeable temporal anchor.</p>
+                            <ul class="space-y-2 text-mountain-400">
+                                <li class="flex items-start gap-2">
+                                    <span class="text-cyan-400">→</span>
+                                    <span>Physics-based timestamp verification</span>
+                                </li>
+                                <li class="flex items-start gap-2">
+                                    <span class="text-cyan-400">→</span>
+                                    <span>Resistant to clock manipulation</span>
+                                </li>
+                                <li class="flex items-start gap-2">
+                                    <span class="text-cyan-400">→</span>
+                                    <span>Nanosecond precision consensus</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="text-center mt-4 text-mountain-500 text-xs">Click to expand</div>
+                    </div>
+
+                    <!-- K - Kernel -->
+                    <div class="philosophy-card bg-mountain-800/80 border border-mountain-700 hover:border-purple-500 rounded-xl p-6" data-principle="kernel" tabindex="0" role="button" aria-expanded="false">
+                        <div class="text-center mb-4">
+                            <div class="card-letter text-5xl font-bold text-purple-400 mb-2">K</div>
+                            <h3 class="text-xl font-semibold">Kernel</h3>
+                        </div>
+                        <p class="text-mountain-400 text-sm text-center">The essential, innermost part of the secure stack</p>
+                        <div class="card-details text-sm text-mountain-300 border-t border-mountain-700 mt-4">
+                            <p class="mb-3">The kernel is the irreducible core — everything else is peripheral. YAKMESH identifies what's truly essential and protects it absolutely.</p>
+                            <ul class="space-y-2 text-mountain-400">
+                                <li class="flex items-start gap-2">
+                                    <span class="text-purple-400">→</span>
+                                    <span>Minimal trusted computing base</span>
+                                </li>
+                                <li class="flex items-start gap-2">
+                                    <span class="text-purple-400">→</span>
+                                    <span>Cryptographically locked codebase</span>
+                                </li>
+                                <li class="flex items-start gap-2">
+                                    <span class="text-purple-400">→</span>
+                                    <span>Defense in depth architecture</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="text-center mt-4 text-mountain-500 text-xs">Click to expand</div>
+                    </div>
+
+                    <!-- M - Modular -->
+                    <div class="philosophy-card bg-mountain-800/80 border border-mountain-700 hover:border-orange-500 rounded-xl p-6" data-principle="modular" tabindex="0" role="button" aria-expanded="false">
+                        <div class="text-center mb-4">
+                            <div class="card-letter text-5xl font-bold text-orange-400 mb-2">M</div>
+                            <h3 class="text-xl font-semibold">Modular</h3>
+                        </div>
+                        <p class="text-mountain-400 text-sm text-center">Swap out encryption primitives or transport layers as tech evolves</p>
+                        <div class="card-details text-sm text-mountain-300 border-t border-mountain-700 mt-4">
+                            <p class="mb-3">Technology evolves. Algorithms break. YAKMESH's modular design means you can upgrade cryptography without rebuilding from scratch.</p>
+                            <ul class="space-y-2 text-mountain-400">
+                                <li class="flex items-start gap-2">
+                                    <span class="text-orange-400">→</span>
+                                    <span>Pluggable encryption adapters</span>
+                                </li>
+                                <li class="flex items-start gap-2">
+                                    <span class="text-orange-400">→</span>
+                                    <span>Transport-agnostic messaging</span>
+                                </li>
+                                <li class="flex items-start gap-2">
+                                    <span class="text-orange-400">→</span>
+                                    <span>Future-proof by design</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="text-center mt-4 text-mountain-500 text-xs">Click to expand</div>
+                    </div>
+                </div>
+
+                <div class="grid md:grid-cols-3 gap-6">
+                    <!-- E - Encryption -->
+                    <div class="philosophy-card bg-mountain-800/80 border border-mountain-700 hover:border-pink-500 rounded-xl p-6" data-principle="encryption" tabindex="0" role="button" aria-expanded="false">
+                        <div class="text-center mb-4">
+                            <div class="card-letter text-5xl font-bold text-pink-400 mb-2">E</div>
+                            <h3 class="text-xl font-semibold">Encryption</h3>
+                        </div>
+                        <p class="text-mountain-400 text-sm text-center">Privacy and integrity by default</p>
+                        <div class="card-details text-sm text-mountain-300 border-t border-mountain-700 mt-4">
+                            <p class="mb-3">Security isn't a feature you add later — it's the foundation. Every message, every handshake, every stored byte is encrypted from day one.</p>
+                            <ul class="space-y-2 text-mountain-400">
+                                <li class="flex items-start gap-2">
+                                    <span class="text-pink-400">→</span>
+                                    <span>Zero plaintext by default</span>
+                                </li>
+                                <li class="flex items-start gap-2">
+                                    <span class="text-pink-400">→</span>
+                                    <span>End-to-end with no middlemen</span>
+                                </li>
+                                <li class="flex items-start gap-2">
+                                    <span class="text-pink-400">→</span>
+                                    <span>Perfect forward secrecy</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="text-center mt-4 text-mountain-500 text-xs">Click to expand</div>
+                    </div>
+
+                    <!-- S - Secured -->
+                    <div class="philosophy-card bg-mountain-800/80 border border-mountain-700 hover:border-red-500 rounded-xl p-6" data-principle="secured" tabindex="0" role="button" aria-expanded="false">
+                        <div class="text-center mb-4">
+                            <div class="card-letter text-5xl font-bold text-red-400 mb-2">S</div>
+                            <h3 class="text-xl font-semibold">Secured</h3>
+                        </div>
+                        <p class="text-mountain-400 text-sm text-center">Hardened against both classical and quantum vectors</p>
+                        <div class="card-details text-sm text-mountain-300 border-t border-mountain-700 mt-4">
+                            <p class="mb-3">Quantum computers will break RSA and ECC. YAKMESH uses NIST-approved post-quantum algorithms (ML-DSA, ML-KEM) to stay secure for decades.</p>
+                            <ul class="space-y-2 text-mountain-400">
+                                <li class="flex items-start gap-2">
+                                    <span class="text-red-400">→</span>
+                                    <span>ML-DSA-65 signatures (FIPS 204)</span>
+                                </li>
+                                <li class="flex items-start gap-2">
+                                    <span class="text-red-400">→</span>
+                                    <span>ML-KEM-768 key exchange</span>
+                                </li>
+                                <li class="flex items-start gap-2">
+                                    <span class="text-red-400">→</span>
+                                    <span>Hybrid classical+PQ modes</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="text-center mt-4 text-mountain-500 text-xs">Click to expand</div>
+                    </div>
+
+                    <!-- H - Hub -->
+                    <div class="philosophy-card bg-mountain-800/80 border border-mountain-700 hover:border-yellow-500 rounded-xl p-6" data-principle="hub" tabindex="0" role="button" aria-expanded="false">
+                        <div class="text-center mb-4">
+                            <div class="card-letter text-5xl font-bold text-yellow-400 mb-2">H</div>
+                            <h3 class="text-xl font-semibold">Hub</h3>
+                        </div>
+                        <p class="text-mountain-400 text-sm text-center">A nexus for decentralized data and peer-to-peer logic</p>
+                        <div class="card-details text-sm text-mountain-300 border-t border-mountain-700 mt-4">
+                            <p class="mb-3">The hub isn't a central server — it's every node working together. Data flows where it's needed, logic executes where it makes sense.</p>
+                            <ul class="space-y-2 text-mountain-400">
+                                <li class="flex items-start gap-2">
+                                    <span class="text-yellow-400">→</span>
+                                    <span>Peer-to-peer by nature</span>
+                                </li>
+                                <li class="flex items-start gap-2">
+                                    <span class="text-yellow-400">→</span>
+                                    <span>No central authority</span>
+                                </li>
+                                <li class="flex items-start gap-2">
+                                    <span class="text-yellow-400">→</span>
+                                    <span>Emergent coordination</span>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="text-center mt-4 text-mountain-500 text-xs">Click to expand</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- The Core Ethos - Branching Tree -->
+        <section class="py-20 bg-mountain-800/30" aria-labelledby="ethos-title">
+            <div class="max-w-5xl mx-auto px-6">
+                <div class="text-center mb-16">
+                    <h2 id="ethos-title" class="text-4xl font-bold mb-4">The Core Ethos</h2>
+                    <p class="text-xl text-mountain-300">What drives YAKMESH development at its heart</p>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-12">
+                    <!-- Trust No One -->
+                    <div class="bg-mountain-800/60 border border-mountain-700 rounded-xl p-8">
+                        <div class="flex items-center gap-4 mb-6">
+                            <div class="w-12 h-12 bg-red-900/50 rounded-lg flex items-center justify-center">
+                                <span class="text-2xl">🛡️</span>
+                            </div>
+                            <h3 class="text-2xl font-semibold">Trust No One</h3>
+                        </div>
+                        <p class="text-mountain-300 mb-6">Every claim must be mathematically verified. No certificate authority, no central server, no "just trust us."</p>
+                        <div class="space-y-4">
+                            <div class="value-branch">
+                                <h4 class="font-medium text-Yakmesh-400">Mathematical Verification</h4>
+                                <p class="text-sm text-mountain-400">Cryptographic proofs replace institutional trust</p>
+                            </div>
+                            <div class="value-branch">
+                                <h4 class="font-medium text-Yakmesh-400">Self-Verifying Code</h4>
+                                <p class="text-sm text-mountain-400">The codebase validates its own integrity</p>
+                            </div>
+                            <div class="value-branch">
+                                <h4 class="font-medium text-Yakmesh-400">Physics Over Promises</h4>
+                                <p class="text-sm text-mountain-400">Speed of light can't lie; timestamps can</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Build for the Long Haul -->
+                    <div class="bg-mountain-800/60 border border-mountain-700 rounded-xl p-8">
+                        <div class="flex items-center gap-4 mb-6">
+                            <div class="w-12 h-12 bg-purple-900/50 rounded-lg flex items-center justify-center">
+                                <span class="text-2xl">🏔️</span>
+                            </div>
+                            <h3 class="text-2xl font-semibold">Build for Decades</h3>
+                        </div>
+                        <p class="text-mountain-300 mb-6">Quantum computers aren't here yet, but your data will still exist when they arrive. Plan accordingly.</p>
+                        <div class="space-y-4">
+                            <div class="value-branch">
+                                <h4 class="font-medium text-purple-400">Post-Quantum Now</h4>
+                                <p class="text-sm text-mountain-400">Adopt NIST standards before it's urgent</p>
+                            </div>
+                            <div class="value-branch">
+                                <h4 class="font-medium text-purple-400">Modular Architecture</h4>
+                                <p class="text-sm text-mountain-400">Swap algorithms without rewriting systems</p>
+                            </div>
+                            <div class="value-branch">
+                                <h4 class="font-medium text-purple-400">Open Standards</h4>
+                                <p class="text-sm text-mountain-400">MIT licensed, community-driven evolution</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Resilience Over Efficiency -->
+                    <div class="bg-mountain-800/60 border border-mountain-700 rounded-xl p-8">
+                        <div class="flex items-center gap-4 mb-6">
+                            <div class="w-12 h-12 bg-green-900/50 rounded-lg flex items-center justify-center">
+                                <span class="text-2xl">🌿</span>
+                            </div>
+                            <h3 class="text-2xl font-semibold">Resilience Over Efficiency</h3>
+                        </div>
+                        <p class="text-mountain-300 mb-6">A system that's 10% slower but survives adversity is better than one that's fast but fragile.</p>
+                        <div class="space-y-4">
+                            <div class="value-branch">
+                                <h4 class="font-medium text-green-400">No Single Point of Failure</h4>
+                                <p class="text-sm text-mountain-400">Every node is expendable; the mesh survives</p>
+                            </div>
+                            <div class="value-branch">
+                                <h4 class="font-medium text-green-400">Graceful Degradation</h4>
+                                <p class="text-sm text-mountain-400">Partial failures don't cascade</p>
+                            </div>
+                            <div class="value-branch">
+                                <h4 class="font-medium text-green-400">Self-Healing</h4>
+                                <p class="text-sm text-mountain-400">Automatic recovery without manual intervention</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Privacy as Default -->
+                    <div class="bg-mountain-800/60 border border-mountain-700 rounded-xl p-8">
+                        <div class="flex items-center gap-4 mb-6">
+                            <div class="w-12 h-12 bg-cyan-900/50 rounded-lg flex items-center justify-center">
+                                <span class="text-2xl">🔐</span>
+                            </div>
+                            <h3 class="text-2xl font-semibold">Privacy as Default</h3>
+                        </div>
+                        <p class="text-mountain-300 mb-6">Privacy isn't a premium feature. It's the baseline. Opt-out of encryption, not into it.</p>
+                        <div class="space-y-4">
+                            <div class="value-branch">
+                                <h4 class="font-medium text-cyan-400">Encrypted by Default</h4>
+                                <p class="text-sm text-mountain-400">Plaintext requires explicit configuration</p>
+                            </div>
+                            <div class="value-branch">
+                                <h4 class="font-medium text-cyan-400">Minimal Metadata</h4>
+                                <p class="text-sm text-mountain-400">Even routing info is protected where possible</p>
+                            </div>
+                            <div class="value-branch">
+                                <h4 class="font-medium text-cyan-400">User Sovereignty</h4>
+                                <p class="text-sm text-mountain-400">Your keys, your data, your control</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- The Yak Parable -->
+        <section class="py-20" aria-labelledby="parable-title">
+            <div class="max-w-3xl mx-auto px-6 text-center">
+                <h2 id="parable-title" class="text-3xl font-bold mb-8">Why a Yak?</h2>
+                <div class="bg-mountain-800/60 border border-mountain-700 rounded-xl p-8">
+                    <img src="assets/yakmesh128.webp" alt="" class="w-24 h-24 mx-auto mb-6" width="96" height="96" aria-hidden="true">
+                    <blockquote class="text-lg text-mountain-200 italic mb-6 relative">
+                        <span class="absolute -left-2 -top-4 text-5xl text-Yakmesh-500 opacity-30">"</span>
+                        The yak thrives where others cannot. At 4,000 meters, in thin air and brutal cold, it carries loads that would break a lowland beast. It doesn't need perfect conditions — it needs the harsh highlands it was born for.
+                        <span class="absolute -right-2 bottom-0 text-5xl text-Yakmesh-500 opacity-30">"</span>
+                    </blockquote>
+                    <p class="text-mountain-400">
+                        YAKMESH is built for adversity. Not for ideal network conditions, but for the real world — where nodes fail, adversaries attack, and the unexpected is expected. Like the yak, it's sturdy, reliable, and built to endure.
+                    </p>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA Section -->
+        <section class="py-16 text-center">
+            <div class="max-w-2xl mx-auto px-6">
+                <h2 class="text-3xl font-bold mb-4">Ready to Build?</h2>
+                <p class="text-mountain-300 mb-8">Start with the documentation to see these principles in action.</p>
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <a href="docs/getting-started.html" class="bg-Yakmesh-600 hover:bg-Yakmesh-500 px-8 py-3 rounded-lg font-medium transition">
+                        Get Started →
+                    </a>
+                    <a href="./" class="border border-mountain-600 hover:border-mountain-500 px-8 py-3 rounded-lg transition">
+                        Back to Home
+                    </a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Himalayan Tribute -->
+    <section class="py-16 bg-gradient-to-b from-mountain-900/50 to-mountain-950/80 border-t border-mountain-800/50">
+        <div class="max-w-3xl mx-auto px-6 text-center">
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-amber-500/10 border border-amber-500/20 mb-6">
+                <svg class="w-8 h-8 text-amber-400" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2L1 21h22L12 2zm0 4l7.5 13h-15L12 6z" opacity="0.3"/>
+                    <path d="M12 6l-7.5 13h15L12 6zm0 3l4.5 8h-9L12 9z"/>
+                </svg>
+            </div>
+            <p class="text-lg text-mountain-300 italic leading-relaxed mb-4">
+                "YAKMESH draws its inspiration from the enduring spirit of the Himalayan peoples—the Sherpa, Tamang, Tibetan, Nepali, and all mountain communities who have navigated treacherous heights with grace and resilience for millennia."
+            </p>
+            <p class="text-mountain-400 text-sm leading-relaxed max-w-2xl mx-auto">
+                We honor their wisdom, their connection to the land, and their tradition of guiding others safely through impossible terrain. May this project carry forward even a fraction of their strength, humility, and spirit of mutual aid.
+            </p>
+            <p class="mt-6 text-amber-400/80 text-sm font-medium tracking-wide">
+                🙏 Tashi Delek — May all beings benefit
+                ~Thanks and Praises to Lord Yeshua and All Glory to God Jehovah!~
+            </p>
+        </div>
+    </section>
+
+    <footer class="bg-mountain-900 border-t border-mountain-800 py-8" role="contentinfo">
+        <div class="max-w-7xl mx-auto px-6 text-center text-mountain-500 text-sm">
+            <p>© 2026 YAKMESH™ Project. Sturdy & Secure.</p>
+            <p class="text-mountain-600 text-xs mt-2">YAKMESH™ is a trademark of PeerQuanta, application pending (Serial No. 99594620).</p>
+            <div class="flex flex-wrap justify-center gap-4 sm:gap-6 mt-4 text-mountain-400">
+                <a href="docs/" class="hover:text-white transition">Documentation</a>
+                <a href="docs/trademark-policy.html" class="hover:text-white transition">Trademark Policy</a>
+                <a href="docs/terms.html" class="hover:text-white transition">Terms</a>
+                <a href="docs/privacy.html" class="hover:text-white transition">Privacy</a>
+            </div>
+            <p class="mt-2">Built with ❤️ by <a href="https://peerquanta.com" class="text-Yakmesh-400 hover:text-Yakmesh-300">PeerQuanta</a></p>
+        </div>
+    </footer>
+
+    <!-- Scripts -->
+    <script>
+        // Mobile Menu Toggle
+        const menuBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const menuIcon = document.getElementById('menu-icon');
+        
+        menuBtn.addEventListener('click', () => {
+            const isOpen = !mobileMenu.classList.contains('hidden');
+            mobileMenu.classList.toggle('hidden');
+            menuBtn.setAttribute('aria-expanded', !isOpen);
+            menuIcon.setAttribute('d', isOpen 
+                ? 'M4 6h16M4 12h16M4 18h16' 
+                : 'M6 18L18 6M6 6l12 12');
+        });
+        
+        mobileMenu.querySelectorAll('a').forEach(link => {
+            link.addEventListener('click', () => {
+                mobileMenu.classList.add('hidden');
+                menuBtn.setAttribute('aria-expanded', 'false');
+                menuIcon.setAttribute('d', 'M4 6h16M4 12h16M4 18h16');
+            });
+        });
+
+        // Philosophy Card Expand/Collapse
+        document.querySelectorAll('.philosophy-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const isExpanded = card.classList.contains('expanded');
+                
+                // Close all other cards
+                document.querySelectorAll('.philosophy-card').forEach(c => {
+                    c.classList.remove('expanded');
+                    c.setAttribute('aria-expanded', 'false');
+                });
+                
+                // Toggle current card
+                if (!isExpanded) {
+                    card.classList.add('expanded');
+                    card.setAttribute('aria-expanded', 'true');
+                }
+            });
+            
+            // Keyboard support
+            card.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    card.click();
+                }
+            });
+        });
+    </script>
+</body>
+</html>

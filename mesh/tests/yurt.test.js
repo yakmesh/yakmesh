@@ -4,7 +4,7 @@
  * Tests for YAK Unified Room Tags - room discovery and direct access
  */
 
-import { describe, it, beforeEach, afterEach } from 'node:test';
+import { describe, it, beforeEach, afterEach } from 'vitest';
 import assert from 'node:assert';
 import { ml_dsa65 } from '@noble/post-quantum/ml-dsa.js';
 import { bytesToHex, hexToBytes } from '@noble/hashes/utils.js';

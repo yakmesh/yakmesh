@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMax slice">
+  <defs>
+    <radialGradient id="yurtGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#10b981" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#101a16" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  
+  <!-- MOUNTAIN BACKDROP -->
+  <polygon points="0,550 200,280 400,500 0,1080" fill="#1a2a22" opacity="0.35"/>
+  <polygon points="1550,600 1750,320 1920,550 1920,1080 1550,1080" fill="#1a2a22" opacity="0.35"/>
+  <polygon points="200,700 400,450 600,650 600,1080 200,1080" fill="#1a2a22" opacity="0.3"/>
+  
+  <!-- Grassland/meadow -->
+  <ellipse cx="960" cy="950" rx="800" ry="150" fill="#1a3329" opacity="0.4"/>
+  
+  <!-- Central YURT (main room) -->
+  <ellipse cx="960" cy="750" rx="200" ry="80" fill="#1a2a22" opacity="0.85"/>
+  <ellipse cx="960" cy="750" rx="200" ry="80" stroke="#10b981" stroke-width="3" fill="none" opacity="0.5"/>
+  <!-- Dome -->
+  <ellipse cx="960" cy="620" rx="180" ry="130" fill="#1a2a22" opacity="0.85"/>
+  <ellipse cx="960" cy="620" rx="180" ry="130" stroke="#34d399" stroke-width="2" fill="none" opacity="0.4"/>
+  <!-- Crown (tonoo) -->
+  <ellipse cx="960" cy="510" rx="50" ry="25" fill="#1a2a22" opacity="0.9"/>
+  <ellipse cx="960" cy="510" rx="50" ry="25" stroke="#6ee7b7" stroke-width="2" fill="none" opacity="0.5"/>
+  <!-- Smoke from crown -->
+  <path d="M960,485 Q970,450 955,420 Q965,380 950,340" stroke="#6ee7b7" stroke-width="2" fill="none" opacity="0.3"/>
+  <!-- Door -->
+  <rect x="930" y="680" width="60" height="70" stroke="#10b981" stroke-width="2" fill="none" opacity="0.4"/>
+  <text x="960" y="720" fill="#10b981" opacity="0.6" font-size="12" font-family="monospace" text-anchor="middle">MAIN</text>
+  
+  <!-- Lattice pattern on dome -->
+  <path d="M800,650 Q880,580 960,560 Q1040,580 1120,650" stroke="#34d399" stroke-width="1" fill="none" opacity="0.25" stroke-dasharray="5,3"/>
+  <path d="M820,680 Q900,620 960,605 Q1020,620 1100,680" stroke="#34d399" stroke-width="1" fill="none" opacity="0.2" stroke-dasharray="5,3"/>
+  
+  <!-- Smaller yurts (discovered rooms) -->
+  <!-- Room A (left) -->
+  <ellipse cx="500" cy="780" rx="100" ry="40" fill="#1a2a22" opacity="0.7"/>
+  <ellipse cx="500" cy="720" rx="90" ry="65" fill="#1a2a22" opacity="0.75"/>
+  <ellipse cx="500" cy="665" rx="25" ry="12" fill="#1a2a22" opacity="0.8"/>
+  <ellipse cx="500" cy="665" rx="25" ry="12" stroke="#10b981" stroke-width="1" fill="none" opacity="0.4"/>
+  <text x="500" y="740" fill="#10b981" opacity="0.4" font-size="10" font-family="monospace" text-anchor="middle">ROOM-A</text>
+  
+  <!-- Room B (right) -->
+  <ellipse cx="1400" cy="760" rx="90" ry="35" fill="#1a2a22" opacity="0.7"/>
+  <ellipse cx="1400" cy="705" rx="80" ry="58" fill="#1a2a22" opacity="0.75"/>
+  <ellipse cx="1400" cy="655" rx="22" ry="11" fill="#1a2a22" opacity="0.8"/>
+  <ellipse cx="1400" cy="655" rx="22" ry="11" stroke="#10b981" stroke-width="1" fill="none" opacity="0.4"/>
+  <text x="1400" y="720" fill="#10b981" opacity="0.4" font-size="10" font-family="monospace" text-anchor="middle">ROOM-B</text>
+  
+  <!-- Room C (far left) -->
+  <ellipse cx="250" cy="850" rx="70" ry="28" fill="#1a2a22" opacity="0.6"/>
+  <ellipse cx="250" cy="810" rx="65" ry="45" fill="#1a2a22" opacity="0.65"/>
+  <text x="250" y="825" fill="#34d399" opacity="0.3" font-size="9" font-family="monospace" text-anchor="middle">ROOM-C</text>
+  
+  <!-- Discovery signals (connecting rooms) -->
+  <path d="M500,720 Q700,600 780,620" stroke="#34d399" stroke-width="2" fill="none" opacity="0.2" stroke-dasharray="8,4"/>
+  <path d="M1400,705 Q1200,600 1140,620" stroke="#34d399" stroke-width="2" fill="none" opacity="0.2" stroke-dasharray="8,4"/>
+  <path d="M250,810 Q400,700 500,720" stroke="#10b981" stroke-width="1" fill="none" opacity="0.15" stroke-dasharray="6,3"/>
+  
+  <!-- Discovery pulse rings from main yurt -->
+  <ellipse cx="960" cy="680" rx="250" ry="100" fill="none" stroke="#34d399" stroke-width="1" opacity="0.25" stroke-dasharray="10,5"/>
+  <ellipse cx="960" cy="680" rx="400" ry="160" fill="none" stroke="#10b981" stroke-width="1" opacity="0.15" stroke-dasharray="10,5"/>
+  <ellipse cx="960" cy="680" rx="550" ry="220" fill="none" stroke="#059669" stroke-width="1" opacity="0.1" stroke-dasharray="10,5"/>
+  
+  <!-- Stars/markers -->
+  <circle cx="500" cy="660" r="4" fill="#6ee7b7" opacity="0.3"/>
+  <circle cx="1400" cy="650" r="4" fill="#6ee7b7" opacity="0.3"/>
+  <circle cx="960" cy="505" r="5" fill="#34d399" opacity="0.4"/>
+</svg>
