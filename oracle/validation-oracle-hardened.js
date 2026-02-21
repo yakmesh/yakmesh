@@ -454,6 +454,7 @@ export class ValidationOracle {
       'data',          // Runtime data
       'database',      // User data
       'logs',          // Runtime logs
+      'models',        // ONNX model binaries + manifest (not codebase logic)
       '.vscode',       // Editor config
       'coverage',      // Test coverage
       'dist',          // Build output
