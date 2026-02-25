@@ -15,6 +15,7 @@ import { ml_dsa65 } from '@noble/post-quantum/ml-dsa.js';
 // ACCEL: Hardware-accelerated crypto
 import { sha3_256, mlDsa65Sign, mlDsa65Verify } from '../utils/accel.js';
 import { createLogger } from '../utils/logger.js';
+import { ternaryId } from '../utils/ternary-id.js';
 
 // ═══ TRIBHUJ — Balanced ternary for validation verdicts ═══
 // POSITIVE: check passed, NEUTRAL: check skipped/not applicable, NEGATIVE: check failed
@@ -59,16 +60,16 @@ export class DOKODocument {
     this.publicKey = options.publicKey || null;
     this.created = options.created || Date.now();
     this.expires = options.expires || (this.created + DEFAULT_EXPIRY_MS);
-    
+
     // Claims - assertions about the identity
     this.claims = options.claims || {};
-    
+
     // Extensions - optional capabilities and bindings
     this.extensions = options.extensions || {};
-    
+
     // Endorsements - signed attestations from other DOKOs
     this.endorsements = options.endorsements || [];
-    
+
     // Self-signature
     this.signature = options.signature || null;
   }
@@ -81,20 +82,20 @@ export class DOKODocument {
    * Example: doko-trader-qubit-lattice-pq-a7x9
    */
   static computeDokoId(publicKey, type = DOKO_TYPES.USER) {
-    const keyBytes = typeof publicKey === 'string' 
-      ? hexToBytes(publicKey) 
+    const keyBytes = typeof publicKey === 'string'
+      ? hexToBytes(publicKey)
       : publicKey;
-    
+
     const hash = sha3_256(new Uint8Array([
       ...Buffer.from(type),
       ...keyBytes
     ]));
-    
+
     // Use iO obfuscation - never expose raw hash!
     const hashHex = bytesToHex(hash);
     const obfuscatedName = deriveNetworkName(hashHex, 2);  // 2 words for brevity
     const shortId = deriveNetworkId(hashHex);
-    
+
     // Format: doko-<type>-<obfuscated-name>-<short-id>
     // e.g., "doko-trader-qubit-lattice-pq-a7x9"
     return `doko-${type}-${obfuscatedName}-${shortId}`;
@@ -116,7 +117,7 @@ export class DOKODocument {
       extensions: this.extensions,
       // Note: endorsements and signature are NOT included
     };
-    
+
     // Use a replacer function that sorts keys at ALL levels
     const sortedJsonString = JSON.stringify(canonical, (key, value) => {
       if (value && typeof value === 'object' && !Array.isArray(value)) {
@@ -127,7 +128,7 @@ export class DOKODocument {
       }
       return value;
     });
-    
+
     return Buffer.from(sortedJsonString);
   }
 
@@ -196,10 +197,10 @@ export class DOKOGenerator {
     // Generate ML-DSA-65 keypair
     const seed = options.seed || crypto.getRandomValues(new Uint8Array(32));
     const keyPair = ml_dsa65.keygen(seed);
-    
+
     const type = options.type || DOKO_TYPES.USER;
     const publicKeyHex = bytesToHex(keyPair.publicKey);
-    
+
     const doko = new DOKODocument({
       type,
       dokoId: DOKODocument.computeDokoId(keyPair.publicKey, type),
@@ -209,12 +210,12 @@ export class DOKOGenerator {
       claims: options.claims || {},
       extensions: options.extensions || {},
     });
-    
+
     // Self-sign (ml_dsa65.sign takes message first, then secretKey)
     const signableBytes = doko.getSignableBytes();
     const signature = mlDsa65Sign(signableBytes, keyPair.secretKey);
     doko.signature = bytesToHex(signature);
-    
+
     return {
       doko,
       publicKey: keyPair.publicKey,
@@ -228,16 +229,16 @@ export class DOKOGenerator {
    * Generate a DOKO from an existing keypair
    */
   static fromKeyPair(publicKey, secretKey, options = {}) {
-    const publicKeyBytes = typeof publicKey === 'string' 
-      ? hexToBytes(publicKey) 
+    const publicKeyBytes = typeof publicKey === 'string'
+      ? hexToBytes(publicKey)
       : publicKey;
     const secretKeyBytes = typeof secretKey === 'string'
       ? hexToBytes(secretKey)
       : secretKey;
-    
+
     const type = options.type || DOKO_TYPES.USER;
     const publicKeyHex = bytesToHex(publicKeyBytes);
-    
+
     const doko = new DOKODocument({
       type,
       dokoId: DOKODocument.computeDokoId(publicKeyBytes, type),
@@ -247,12 +248,12 @@ export class DOKOGenerator {
       claims: options.claims || {},
       extensions: options.extensions || {},
     });
-    
+
     // Self-sign (ml_dsa65.sign takes message first, then secretKey)
     const signableBytes = doko.getSignableBytes();
     const signature = mlDsa65Sign(signableBytes, secretKeyBytes);
     doko.signature = bytesToHex(signature);
-    
+
     return doko;
   }
 
@@ -310,22 +311,22 @@ export class DOKOValidator {
     if (!doko.signature || !doko.publicKey) {
       return { valid: false, reason: 'MISSING_SIGNATURE_OR_KEY' };
     }
-    
+
     try {
       const publicKey = typeof doko.publicKey === 'string'
         ? hexToBytes(doko.publicKey)
         : doko.publicKey;
-      
+
       const signature = typeof doko.signature === 'string'
         ? hexToBytes(doko.signature)
         : doko.signature;
-      
+
       const doc = doko instanceof DOKODocument ? doko : DOKODocument.fromJSON(doko);
       const signableBytes = doc.getSignableBytes();
-      
+
       // ml_dsa65.verify takes (signature, message, publicKey)
       const valid = mlDsa65Verify(signature, signableBytes, publicKey);
-      
+
       return {
         valid,
         reason: valid ? 'SIGNATURE_VALID' : 'SIGNATURE_INVALID',
@@ -345,7 +346,7 @@ export class DOKOValidator {
   static verifyDokoId(doko) {
     const expectedId = DOKODocument.computeDokoId(doko.publicKey, doko.type);
     const valid = doko.dokoId === expectedId;
-    
+
     return {
       valid,
       reason: valid ? 'DOKO_ID_VALID' : 'DOKO_ID_MISMATCH',
@@ -366,7 +367,7 @@ export class DOKOValidator {
       verdict: POSITIVE,  // TRIBHUJ trit: POSITIVE=valid, NEUTRAL=skipped, NEGATIVE=failed
       checks: {},
     };
-    
+
     // Check structure
     if (!doc.version || !doc.type || !doc.dokoId || !doc.publicKey) {
       results.valid = false;
@@ -375,7 +376,7 @@ export class DOKOValidator {
       return results;
     }
     results.checks.structure = { valid: true, verdict: POSITIVE, reason: 'STRUCTURE_VALID' };
-    
+
     // Check version
     if (doc.version !== DOKO_VERSION) {
       results.valid = false;
@@ -384,7 +385,7 @@ export class DOKOValidator {
       return results;
     }
     results.checks.version = { valid: true, verdict: POSITIVE, reason: 'VERSION_VALID' };
-    
+
     // Check type
     if (!Object.values(DOKO_TYPES).includes(doc.type)) {
       results.valid = false;
@@ -393,7 +394,7 @@ export class DOKOValidator {
       return results;
     }
     results.checks.type = { valid: true, verdict: POSITIVE, reason: 'TYPE_VALID' };
-    
+
     // Check expiration — NEUTRAL if skipped by options
     if (!options.allowExpired && doc.isExpired()) {
       results.valid = false;
@@ -401,12 +402,12 @@ export class DOKOValidator {
       results.checks.expiration = { valid: false, verdict: NEGATIVE, reason: 'DOCUMENT_EXPIRED' };
       return results;
     }
-    results.checks.expiration = { 
-      valid: true, 
+    results.checks.expiration = {
+      valid: true,
       verdict: options.allowExpired ? NEUTRAL : POSITIVE,  // NEUTRAL = check skipped
       reason: options.allowExpired ? 'EXPIRY_CHECK_SKIPPED' : 'NOT_EXPIRED',
     };
-    
+
     // Verify DOKO ID
     const idCheck = DOKOValidator.verifyDokoId(doc);
     idCheck.verdict = idCheck.valid ? POSITIVE : NEGATIVE;
@@ -416,7 +417,7 @@ export class DOKOValidator {
       results.verdict = NEGATIVE;
       return results;
     }
-    
+
     // Verify signature
     const sigCheck = DOKOValidator.verifySignature(doc);
     sigCheck.verdict = sigCheck.valid ? POSITIVE : NEGATIVE;
@@ -426,7 +427,7 @@ export class DOKOValidator {
       results.verdict = NEGATIVE;
       return results;
     }
-    
+
     return results;
   }
 }
@@ -452,17 +453,17 @@ export class DOKOEndorsement {
       created: Date.now(),
       expires: Date.now() + DEFAULT_EXPIRY_MS,
     };
-    
+
     // Sign the endorsement
     // IMPORTANT: ml_dsa65.sign(message, secretKey) - message FIRST!
     const endorsementBytes = Buffer.from(JSON.stringify(endorsement, Object.keys(endorsement).sort()));
     const secretKey = typeof endorserSecretKey === 'string'
       ? hexToBytes(endorserSecretKey)
       : endorserSecretKey;
-    
+
     const signature = mlDsa65Sign(endorsementBytes, secretKey);
     endorsement.signature = bytesToHex(signature);
-    
+
     return endorsement;
   }
 
@@ -475,22 +476,22 @@ export class DOKOEndorsement {
       if (endorsement.targetDokoId !== targetDoko.dokoId) {
         return { valid: false, reason: 'TARGET_MISMATCH' };
       }
-      
+
       // Check not expired
       if (Date.now() > endorsement.expires) {
         return { valid: false, reason: 'ENDORSEMENT_EXPIRED' };
       }
-      
+
       // Verify signature
       // IMPORTANT: ml_dsa65.verify(signature, message, publicKey) - signature FIRST!
       const { signature, ...endorsementData } = endorsement;
       const endorsementBytes = Buffer.from(JSON.stringify(endorsementData, Object.keys(endorsementData).sort()));
-      
+
       const publicKey = hexToBytes(endorsement.endorserPublicKey);
       const sigBytes = hexToBytes(signature);
-      
+
       const valid = mlDsa65Verify(sigBytes, endorsementBytes, publicKey);
-      
+
       return {
         valid,
         reason: valid ? 'ENDORSEMENT_VALID' : 'SIGNATURE_INVALID',
@@ -525,7 +526,7 @@ export class DOKOCertBinding {
    */
   static computeFingerprint(cert) {
     let derBytes;
-    
+
     if (typeof cert === 'string') {
       // PEM format - extract the base64 content
       const pemMatch = cert.match(/-----BEGIN CERTIFICATE-----\s*([\s\S]+?)\s*-----END CERTIFICATE-----/);
@@ -539,7 +540,7 @@ export class DOKOCertBinding {
     } else {
       derBytes = cert;
     }
-    
+
     const hash = sha3_256(new Uint8Array(derBytes));
     return bytesToHex(hash);
   }
@@ -558,7 +559,7 @@ export class DOKOCertBinding {
     if (!options.domain || !options.fingerprint) {
       throw new Error('domain and fingerprint are required');
     }
-    
+
     return {
       domain: options.domain.toLowerCase(),
       fingerprint: options.fingerprint,
@@ -580,16 +581,16 @@ export class DOKOCertBinding {
     if (!doko.extensions) {
       doko.extensions = {};
     }
-    
+
     if (!doko.extensions.sslBindings) {
       doko.extensions.sslBindings = [];
     }
-    
+
     // Check if binding for this domain already exists
     const existingIdx = doko.extensions.sslBindings.findIndex(
       b => b.domain === binding.domain
     );
-    
+
     if (existingIdx >= 0) {
       // Update existing binding
       doko.extensions.sslBindings[existingIdx] = binding;
@@ -597,10 +598,10 @@ export class DOKOCertBinding {
       // Add new binding
       doko.extensions.sslBindings.push(binding);
     }
-    
+
     // Invalidate signature - document needs re-signing
     doko.signature = null;
-    
+
     return doko;
   }
 
@@ -613,7 +614,7 @@ export class DOKOCertBinding {
   static verifyBinding(binding, cert) {
     const fingerprint = this.computeFingerprint(cert);
     const matches = fingerprint === binding.fingerprint;
-    
+
     return {
       valid: matches,
       reason: matches ? 'FINGERPRINT_MATCH' : 'FINGERPRINT_MISMATCH',
@@ -653,17 +654,17 @@ export class DOKOCertBinding {
     if (!doko?.extensions?.sslBindings) {
       return false;
     }
-    
+
     const initialLen = doko.extensions.sslBindings.length;
     doko.extensions.sslBindings = doko.extensions.sslBindings.filter(
       b => b.domain !== domain.toLowerCase()
     );
-    
+
     if (doko.extensions.sslBindings.length < initialLen) {
       doko.signature = null; // Needs re-signing
       return true;
     }
-    
+
     return false;
   }
 
@@ -679,30 +680,30 @@ export class DOKOCertBinding {
       count: bindings.length,
       bindings: [],
     };
-    
+
     for (const binding of bindings) {
       const now = Date.now();
       const isExpired = binding.validTo && binding.validTo < now;
       const isNotYetValid = binding.validFrom && binding.validFrom > now;
-      
+
       const result = {
         domain: binding.domain,
         fingerprint: binding.fingerprint.substring(0, 16) + '...',
         valid: !isExpired && !isNotYetValid,
         verified: binding.verified,
-        reason: isExpired 
-          ? 'CERTIFICATE_EXPIRED' 
-          : isNotYetValid 
-            ? 'CERTIFICATE_NOT_YET_VALID' 
+        reason: isExpired
+          ? 'CERTIFICATE_EXPIRED'
+          : isNotYetValid
+            ? 'CERTIFICATE_NOT_YET_VALID'
             : 'VALID',
       };
-      
+
       results.bindings.push(result);
       if (!result.valid) {
         results.valid = false;
       }
     }
-    
+
     return results;
   }
 }
@@ -761,7 +762,7 @@ export class DOKOTransfer {
 
     const now = Date.now();
     const expiresIn = options.expiresIn || 7 * 24 * 60 * 60 * 1000; // 7 days default
-    
+
     const request = {
       version: '1.0',
       type: options.type,
@@ -784,10 +785,10 @@ export class DOKOTransfer {
       toDoko: request.toDoko,
       requestedAt: request.requestedAt,
     });
-    
+
     const hash = sha3_256(Buffer.from(canonical));
     request.requestId = 'xfer-' + bytesToHex(hash).substring(0, 16);
-    
+
     return request;
   }
 
@@ -930,7 +931,7 @@ export class DOKOTransfer {
     }
 
     const completedAt = Date.now();
-    
+
     // Create transfer proof
     const proofData = JSON.stringify({
       requestId: transfer.requestId,
@@ -941,7 +942,7 @@ export class DOKOTransfer {
       authorization: transfer.authorization,
       completedAt,
     });
-    
+
     const proofHash = sha3_256(Buffer.from(proofData));
 
     return {
@@ -1017,7 +1018,7 @@ export class DOKOTransfer {
         authorization: { ...proof.authorization, fromNodeId: undefined },
         completedAt: proof.completion.completedAt,
       });
-      
+
       // Note: Full proof verification would require the original authorization.fromNodeId
       checks.push({ check: 'proofHash', valid: true, reason: 'HASH_PRESENT' });
     }
@@ -1065,10 +1066,10 @@ export const REVOCATION_REASONS = {
  */
 export class DOKORevocation {
   static REVOCATION_STORE_KEY = 'doko-revocations';
-  
+
   // In-memory revocation cache
   static _revocations = new Map(); // dokoId -> revocation certificate
-  
+
   /**
    * Create a self-revocation certificate
    * Used when you still have access to the private key
@@ -1081,7 +1082,7 @@ export class DOKORevocation {
    */
   static createSelfRevocation(doko, privateKey, reason, options = {}) {
     const revokedAt = Date.now();
-    
+
     const revocationData = {
       version: '1.0',
       type: 'self',
@@ -1092,25 +1093,25 @@ export class DOKORevocation {
       message: options.message || null,
       successorDokoId: options.successorDokoId || null, // New DOKO replacing this one
     };
-    
+
     // Create canonical bytes for signing
     const dataBytes = new TextEncoder().encode(JSON.stringify(revocationData));
-    
+
     // Sign with ML-DSA (message first, then secretKey)
     const signature = mlDsa65Sign(dataBytes, privateKey);
-    
+
     const certificate = {
       ...revocationData,
       signature: bytesToHex(signature),
       signatureAlgorithm: 'ML-DSA-65',
     };
-    
+
     // Store locally
     DOKORevocation._revocations.set(doko.dokoId, certificate);
-    
+
     return certificate;
   }
-  
+
   /**
    * Create an emergency revocation using a pre-generated certificate
    * 
@@ -1124,9 +1125,9 @@ export class DOKORevocation {
     if (!preGeneratedCert || !preGeneratedCert.emergencyToken) {
       throw new Error('Invalid emergency certificate');
     }
-    
+
     const activatedAt = Date.now();
-    
+
     const certificate = {
       version: '1.0',
       type: 'emergency',
@@ -1138,13 +1139,13 @@ export class DOKORevocation {
       signature: preGeneratedCert.signature,
       signatureAlgorithm: 'ML-DSA-65',
     };
-    
+
     // Store locally
     DOKORevocation._revocations.set(certificate.dokoId, certificate);
-    
+
     return certificate;
   }
-  
+
   /**
    * Generate an emergency revocation certificate for future use
    * STORE THIS SECURELY OFFLINE!
@@ -1155,22 +1156,20 @@ export class DOKORevocation {
    */
   static generateEmergencyCertificate(doko, privateKey) {
     const createdAt = Date.now();
-    
-    // Generate random emergency token
-    const randomBytes = new Uint8Array(32);
-    crypto.getRandomValues(randomBytes);
-    const emergencyToken = bytesToHex(randomBytes);
-    
+
+    // Generate random emergency token (balanced ternary — '666' impossible)
+    const emergencyToken = ternaryId(32);
+
     const certData = {
       dokoId: doko.dokoId,
       createdAt,
       emergencyToken,
     };
-    
+
     // Sign the emergency cert (message first, then secretKey)
     const dataBytes = new TextEncoder().encode(JSON.stringify(certData));
     const signature = mlDsa65Sign(dataBytes, privateKey);
-    
+
     return {
       ...certData,
       signature: bytesToHex(signature),
@@ -1178,7 +1177,7 @@ export class DOKORevocation {
       _warning: 'STORE THIS OFFLINE AND SECURELY! This is your break-glass recovery option.',
     };
   }
-  
+
   /**
    * Verify a revocation certificate
    * 
@@ -1191,31 +1190,31 @@ export class DOKORevocation {
       if (!certificate || !certificate.signature) {
         return { valid: false, reason: 'MISSING_SIGNATURE' };
       }
-      
+
       // Extract signature
       const signature = hexToBytes(certificate.signature);
-      
+
       // Reconstruct signable data
       const certCopy = { ...certificate };
       delete certCopy.signature;
       delete certCopy.signatureAlgorithm;
-      
+
       const dataBytes = new TextEncoder().encode(JSON.stringify(certCopy));
       const pubKeyBytes = hexToBytes(publicKey);
-      
+
       // Verify with ML-DSA (signature, message, publicKey)
       const isValid = mlDsa65Verify(signature, dataBytes, pubKeyBytes);
-      
+
       if (!isValid) {
         return { valid: false, reason: 'INVALID_SIGNATURE' };
       }
-      
+
       return { valid: true, reason: null };
     } catch (e) {
       return { valid: false, reason: e.message };
     }
   }
-  
+
   /**
    * Check if a DOKO is revoked
    * 
@@ -1224,7 +1223,7 @@ export class DOKORevocation {
    */
   static isRevoked(dokoId) {
     const cert = DOKORevocation._revocations.get(dokoId);
-    
+
     if (cert) {
       return {
         revoked: true,
@@ -1233,10 +1232,10 @@ export class DOKORevocation {
         revokedAt: cert.revokedAt || cert.activatedAt,
       };
     }
-    
+
     return { revoked: false, certificate: null, reason: null };
   }
-  
+
   /**
    * Add a revocation certificate (from gossip/sync)
    * 
@@ -1247,17 +1246,17 @@ export class DOKORevocation {
   static addRevocation(certificate, publicKey) {
     // Verify the certificate
     const verification = DOKORevocation.verify(certificate, publicKey);
-    
+
     if (!verification.valid) {
       return { success: false, reason: verification.reason };
     }
-    
+
     // Store the revocation
     DOKORevocation._revocations.set(certificate.dokoId, certificate);
-    
+
     return { success: true, reason: null };
   }
-  
+
   /**
    * List all revocations
    * 
@@ -1266,7 +1265,7 @@ export class DOKORevocation {
   static listRevocations() {
     return Array.from(DOKORevocation._revocations.values());
   }
-  
+
   /**
    * Export revocations for sync/backup
    * 
@@ -1275,7 +1274,7 @@ export class DOKORevocation {
   static export() {
     return DOKORevocation.listRevocations();
   }
-  
+
   /**
    * Import revocations (with verification)
    * 
@@ -1286,17 +1285,17 @@ export class DOKORevocation {
   static import(certificates, publicKeyMap) {
     let imported = 0;
     let failed = 0;
-    
+
     for (const cert of certificates) {
-      const publicKey = publicKeyMap instanceof Map 
+      const publicKey = publicKeyMap instanceof Map
         ? publicKeyMap.get(cert.dokoId)
         : publicKeyMap[cert.dokoId];
-      
+
       if (!publicKey) {
         failed++;
         continue;
       }
-      
+
       const result = DOKORevocation.addRevocation(cert, publicKey);
       if (result.success) {
         imported++;
@@ -1304,29 +1303,29 @@ export class DOKORevocation {
         failed++;
       }
     }
-    
+
     return { imported, failed };
   }
-  
+
   /**
    * Clear all revocations (for testing)
    */
   static _clear() {
     DOKORevocation._revocations.clear();
   }
-  
+
   /**
    * Get revocation statistics
    */
   static getStats() {
     const byReason = {};
     const byType = {};
-    
+
     for (const cert of DOKORevocation._revocations.values()) {
       byReason[cert.reason] = (byReason[cert.reason] || 0) + 1;
       byType[cert.type] = (byType[cert.type] || 0) + 1;
     }
-    
+
     return {
       total: DOKORevocation._revocations.size,
       byReason,
@@ -1356,17 +1355,17 @@ export class DOKOStore {
         return { success: false, error: 'VALIDATION_FAILED', details: validation };
       }
     }
-    
+
     const doc = doko instanceof DOKODocument ? doko : DOKODocument.fromJSON(doko);
-    
+
     this.documents.set(doc.dokoId, doc);
     this.byPublicKey.set(doc.publicKey, doc.dokoId);
-    
+
     // Index by userId if present (PeerQuanta integration)
     if (doc.claims?.userId) {
       this.byUserId.set(doc.claims.userId, doc.dokoId);
     }
-    
+
     return { success: true, dokoId: doc.dokoId };
   }
 
@@ -1444,11 +1443,11 @@ export class DOKOStore {
     for (const type of Object.values(DOKO_TYPES)) {
       byType[type] = 0;
     }
-    
+
     for (const doc of this.documents.values()) {
       byType[doc.type] = (byType[doc.type] || 0) + 1;
     }
-    
+
     return {
       total: this.documents.size,
       byType,
@@ -1468,7 +1467,7 @@ export class DOKOStore {
   import(dokos, options = {}) {
     let imported = 0;
     let failed = 0;
-    
+
     for (const doko of dokos) {
       const result = this.add(doko, options);
       if (result.success) {
@@ -1477,7 +1476,7 @@ export class DOKOStore {
         failed++;
       }
     }
-    
+
     return { imported, failed };
   }
 }

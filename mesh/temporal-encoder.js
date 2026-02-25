@@ -20,7 +20,8 @@
  * @copyright 2026 YAKMESH™ Contributors
  */
 
-import { randomBytes, createHash } from 'crypto';
+import { createHash } from 'crypto';
+import { ternaryId } from '../utils/ternary-id.js';
 
 const TME_CONFIG = {
   defaultSliceIntervalNs: 50_000_000,
@@ -112,7 +113,7 @@ class TemporalStream {
   }
 
   _generateStreamId() {
-    return randomBytes(16).toString('hex');
+    return ternaryId(16);
   }
 
   encode(message, meshPosition = [0, 0, 0]) {
@@ -287,7 +288,7 @@ class TemporalReconstructor {
 
 class TemporalMeshEncoder {
   constructor(options = {}) {
-    this.nodeId = options.nodeId || randomBytes(16).toString('hex');
+    this.nodeId = options.nodeId || ternaryId(16);
     this.meshPosition = options.meshPosition || [0, 0, 0];
     this.reconstructor = new TemporalReconstructor();
     this.outboundStreams = new Map();

@@ -172,7 +172,7 @@ describe('MeshAuthenticator generateChallenge', () => {
     const c2 = authenticator.generateChallenge('peer-2');
 
     expect(c1.challengeId).not.toBe(c2.challengeId);
-    expect(c1.challengeId.length).toBe(32);
+    expect(c1.challengeId.length).toBe(80); // 16 bytes × 5 trits/byte (ternary encoding)
   });
 
   test('generates unique nonce', () => {
@@ -180,7 +180,7 @@ describe('MeshAuthenticator generateChallenge', () => {
     const c2 = authenticator.generateChallenge('peer-2');
 
     expect(c1.nonce).not.toBe(c2.nonce);
-    expect(c1.nonce.length).toBe(64);
+    expect(c1.nonce.length).toBe(160); // 32 bytes × 5 trits/byte (ternary encoding)
   });
 
   test('includes timestamp', () => {

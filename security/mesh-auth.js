@@ -9,7 +9,8 @@
  */
 
 import { sha3_256 } from '@noble/hashes/sha3.js';
-import { randomBytes, bytesToHex, hexToBytes, utf8ToBytes } from '@noble/hashes/utils.js';
+import { bytesToHex, hexToBytes, utf8ToBytes } from '@noble/hashes/utils.js';
+import { ternaryId } from '../utils/ternary-id.js';
 import { EventEmitter } from 'events';
 import { createLogger } from '../utils/logger.js';
 
@@ -33,7 +34,7 @@ export class MeshAuthenticator extends EventEmitter {
     this.sessions = new Map();
     this.stats = { authAttempts: 0, authSuccess: 0, authFailed: 0, blocked: 0 };
   }
-  
+
   isAllowed(peerId) {
     if (this.options.blocklist.has(peerId)) {
       this.stats.blocked++;
@@ -42,15 +43,15 @@ export class MeshAuthenticator extends EventEmitter {
     if (this.options.allowlist.size === 0) return true;
     return this.options.allowlist.has(peerId);
   }
-  
+
   generateChallenge(peerId) {
     if (this.pendingChallenges.size >= this.options.maxPendingAuth) {
       throw new Error('Too many pending authentication requests');
     }
     const challenge = {
       type: 'auth_challenge',
-      challengeId: bytesToHex(randomBytes(16)),
-      nonce: bytesToHex(randomBytes(32)),
+      challengeId: ternaryId(16),
+      nonce: ternaryId(32),
       timestamp: Date.now(),
       challengerNodeId: this.identity.identity.nodeId,
     };
@@ -59,7 +60,7 @@ export class MeshAuthenticator extends EventEmitter {
     this.stats.authAttempts++;
     return challenge;
   }
-  
+
   respondToChallenge(challenge) {
     const responseData = JSON.stringify({
       challengeId: challenge.challengeId,
@@ -77,7 +78,7 @@ export class MeshAuthenticator extends EventEmitter {
       signature,
     };
   }
-  
+
   verifyResponse(response) {
     const pending = this.pendingChallenges.get(response.challengeId);
     if (!pending) {
@@ -105,17 +106,17 @@ export class MeshAuthenticator extends EventEmitter {
     this.emit('authenticated', { peerId: response.responderNodeId });
     return { valid: true, peerId: response.responderNodeId, sessionKey: bytesToHex(sessionKey) };
   }
-  
+
   isAuthenticated(peerId) { return this.sessions.has(peerId); }
   getSession(peerId) { return this.sessions.get(peerId) || null; }
   revokeSession(peerId) { this.sessions.delete(peerId); this.emit('session-revoked', { peerId }); }
   block(peerId) { this.options.blocklist.add(peerId); this.revokeSession(peerId); }
   unblock(peerId) { this.options.blocklist.delete(peerId); }
-  
+
   _deriveSessionKey(peerId, nonce) {
     return sha3_256(utf8ToBytes(peerId + nonce + this.identity.identity.nodeId));
   }
-  
+
   getStats() {
     return { ...this.stats, pendingChallenges: this.pendingChallenges.size, activeSessions: this.sessions.size };
   }

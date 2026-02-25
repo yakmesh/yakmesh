@@ -59,7 +59,8 @@
  */
 
 import { sha3_256 } from '@noble/hashes/sha3.js';
-import { bytesToHex, utf8ToBytes, randomBytes } from '@noble/hashes/utils.js';
+import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js';
+import { ternaryId } from '../utils/ternary-id.js';
 import { EventEmitter } from 'events';
 
 /**
@@ -69,43 +70,43 @@ const DEFAULT_CONFIG = {
   // Quorum settings
   quorumSize: 3,              // Minimum verifiers needed for consensus
   verifiersToRequest: 5,      // Request from more than quorum (some may fail)
-  
+
   // Timeouts
   verificationTimeout: 30000,  // 30 seconds per verification
   totalTimeout: 120000,        // 2 minutes for entire process
-  
+
   // Retry settings
   maxRetries: 2,
   retryDelay: 5000,
-  
+
   // Beacon requirements
   beaconPath: '/.well-known/yakmesh/beacon',
   beaconMaxAge: 300000,        // Beacon must be < 5 minutes old
-  
+
   // Rate limiting
   maxConcurrentVerifications: 10,
   cooldownBetweenClaims: 3600000, // 1 hour between claims for same domain
-  
+
   // ═══════════════════════════════════════════════════════════════════════════
   // SYBIL DEFENSE CONFIGURATION
   // ═══════════════════════════════════════════════════════════════════════════
-  
+
   // Verifier age requirements
   minVerifierAge: 7 * 24 * 60 * 60 * 1000,  // 7 days minimum mesh presence
   preferredVerifierAge: 30 * 24 * 60 * 60 * 1000, // 30 days for bonus weight
-  
+
   // IP/ASN diversity requirements
   minDistinctSubnets: 3,      // Minimum different /24 subnets
   minDistinctASNs: 2,         // Minimum different ASNs (Autonomous Systems)
   subnetMaskBits: 24,         // /24 subnet grouping (256 IPs per group)
-  
+
   // Claimant exclusion radius
   claimantExclusionSubnet: 16, // Exclude verifiers in same /16 as claimant
-  
+
   // Reputation thresholds
   minReputationScore: 0.2,    // Minimum reputation to be eligible (0-1)
   reputationWeightFactor: 2.0, // Higher reputation = more likely selected
-  
+
   // Time-based verification windows
   enableTimeWindows: false,    // When true, verify at T, T+1hr, T+24hr
   timeWindowIntervals: [0, 3600000, 86400000], // 0, 1 hour, 24 hours
@@ -135,13 +136,13 @@ const DEFAULT_CONFIG = {
 class VerifierEligibilityChecker {
   constructor(config = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
-    
+
     // Node reputation store (nodeId -> reputation data)
     this.reputations = new Map();
-    
+
     // Node first-seen timestamps (nodeId -> timestamp)
     this.nodeFirstSeen = new Map();
-    
+
     // Node network info cache (nodeId -> { ip, asn, subnet })
     this.nodeNetworkInfo = new Map();
   }
@@ -153,7 +154,7 @@ class VerifierEligibilityChecker {
     if (!this.nodeFirstSeen.has(nodeId)) {
       this.nodeFirstSeen.set(nodeId, Date.now());
     }
-    
+
     if (networkInfo.ip) {
       this.nodeNetworkInfo.set(nodeId, {
         ip: networkInfo.ip,
@@ -194,14 +195,14 @@ class VerifierEligibilityChecker {
   getReputationScore(nodeId) {
     const rep = this.reputations.get(nodeId);
     if (!rep) return 0.5; // Neutral for unknown nodes
-    
+
     const total = rep.successCount + rep.failureCount;
     if (total === 0) return 0.5;
-    
+
     // Success ratio weighted by volume (more history = more reliable score)
     const successRatio = rep.successCount / total;
     const volumeWeight = Math.min(1, total / 20); // Full weight at 20+ verifications
-    
+
     // Blend toward neutral for low-volume nodes
     return 0.5 + (successRatio - 0.5) * volumeWeight;
   }
@@ -239,7 +240,7 @@ class VerifierEligibilityChecker {
     if (claimantInfo.ip) {
       const nodeInfo = this.nodeNetworkInfo.get(nodeId);
       const claimantWideSubnet = this.getSubnet(claimantInfo.ip, this.config.claimantExclusionSubnet);
-      
+
       if (nodeInfo && nodeInfo.wideSubnet === claimantWideSubnet) {
         reasons.push(`Same IP range as claimant (/${this.config.claimantExclusionSubnet})`);
       }
@@ -299,21 +300,21 @@ class VerifierEligibilityChecker {
       remaining.sort((a, b) => {
         const aInfo = this.nodeNetworkInfo.get(a.nodeId) || {};
         const bInfo = this.nodeNetworkInfo.get(b.nodeId) || {};
-        
+
         const aNewSubnet = !usedSubnets.has(aInfo.subnet) ? 1 : 0;
         const bNewSubnet = !usedSubnets.has(bInfo.subnet) ? 1 : 0;
         if (aNewSubnet !== bNewSubnet) return bNewSubnet - aNewSubnet;
-        
+
         const aNewASN = !usedASNs.has(aInfo.asn) ? 1 : 0;
         const bNewASN = !usedASNs.has(bInfo.asn) ? 1 : 0;
         if (aNewASN !== bNewASN) return bNewASN - aNewASN;
-        
+
         return b.weight - a.weight; // Higher weight preferred
       });
 
       const choice = remaining.shift();
       selected.push(choice);
-      
+
       const info = this.nodeNetworkInfo.get(choice.nodeId) || {};
       if (info.subnet) usedSubnets.add(info.subnet);
       if (info.asn) usedASNs.add(info.asn);
@@ -351,17 +352,17 @@ class VerifierEligibilityChecker {
   calculateSelectionWeight(nodeId) {
     const age = this.getNodeAge(nodeId);
     const reputation = this.getReputationScore(nodeId);
-    
+
     // Base weight from reputation
     let weight = reputation * this.config.reputationWeightFactor;
-    
+
     // Bonus for older nodes
     if (age >= this.config.preferredVerifierAge) {
       weight *= 1.5;
     } else if (age >= this.config.minVerifierAge * 2) {
       weight *= 1.25;
     }
-    
+
     return weight;
   }
 
@@ -370,24 +371,24 @@ class VerifierEligibilityChecker {
    */
   getSubnet(ip, maskBits) {
     if (!ip) return null;
-    
+
     // Handle IPv4
     const parts = ip.split('.');
     if (parts.length === 4) {
       const fullBits = parts.map(p => parseInt(p, 10));
       const octetsToKeep = Math.floor(maskBits / 8);
       const result = fullBits.slice(0, octetsToKeep);
-      
+
       // Handle partial octet
       const remainingBits = maskBits % 8;
       if (remainingBits > 0 && octetsToKeep < 4) {
         const mask = (0xFF << (8 - remainingBits)) & 0xFF;
         result.push(fullBits[octetsToKeep] & mask);
       }
-      
+
       return result.join('.') + '/' + maskBits;
     }
-    
+
     // For IPv6 or unknown, just return the IP (less effective but works)
     return ip;
   }
@@ -437,8 +438,8 @@ class VerifierEligibilityChecker {
     return {
       totalNodes: this.nodeFirstSeen.size,
       eligibleByAge: eligibleCount,
-      averageAge: this.nodeFirstSeen.size > 0 
-        ? Math.floor(totalAge / this.nodeFirstSeen.size / (24 * 60 * 60 * 1000)) 
+      averageAge: this.nodeFirstSeen.size > 0
+        ? Math.floor(totalAge / this.nodeFirstSeen.size / (24 * 60 * 60 * 1000))
         : 0,
       nodesWithReputation: this.reputations.size,
       nodesWithNetworkInfo: this.nodeNetworkInfo.size,
@@ -451,7 +452,7 @@ class VerifierEligibilityChecker {
  */
 class DomainVerificationRequest {
   constructor(options) {
-    this.id = bytesToHex(randomBytes(16));
+    this.id = ternaryId(16);
     this.domain = options.domain;
     this.claimantNodeId = options.claimantNodeId;
     this.claimantPublicKey = options.claimantPublicKey;
@@ -561,28 +562,28 @@ export class DomainConsensusVerifier extends EventEmitter {
     this.identity = nodeIdentity;
     this.gateway = namcheGateway;
     this.config = { ...DEFAULT_CONFIG, ...options };
-    
+
     // ═══════════════════════════════════════════════════════════════════════
     // SYBIL DEFENSE: Eligibility checker for verifier selection
     // ═══════════════════════════════════════════════════════════════════════
     this.eligibility = new VerifierEligibilityChecker(this.config);
-    
+
     // Active verification requests (by domain)
     this.activeRequests = new Map();
-    
+
     // Cooldown tracking (domain -> last claim timestamp)
     this.cooldowns = new Map();
-    
+
     // Fetch function (must be set by network layer)
     this.fetchBeacon = null;
-    
+
     // Peer messaging (must be set by network layer)
     this.requestVerification = null;  // (peerId, request) => Promise<proof>
     this.getVerifierPeers = null;     // () => [{ nodeId, ip?, asn? }, ...]
-    
+
     // Our own network info (for claimant exclusion when we claim)
     this.ownNetworkInfo = null;
-    
+
     this.stats = {
       claimsInitiated: 0,
       claimsSucceeded: 0,
@@ -640,9 +641,9 @@ export class DomainConsensusVerifier extends EventEmitter {
     const lastClaim = this.cooldowns.get(domain);
     if (lastClaim && Date.now() - lastClaim < this.config.cooldownBetweenClaims) {
       const waitTime = this.config.cooldownBetweenClaims - (Date.now() - lastClaim);
-      return { 
-        success: false, 
-        error: 'Cooldown active', 
+      return {
+        success: false,
+        error: 'Cooldown active',
         retryAfter: waitTime,
       };
     }
@@ -672,7 +673,7 @@ export class DomainConsensusVerifier extends EventEmitter {
       request.status = 'verifying';
 
       // Request verification from each peer (in parallel)
-      const verificationPromises = verifiers.map(peerId => 
+      const verificationPromises = verifiers.map(peerId =>
         this.requestVerificationFromPeer(peerId, request)
           .catch(err => {
             request.addError({ peerId, error: err.message });
@@ -683,7 +684,7 @@ export class DomainConsensusVerifier extends EventEmitter {
       // Wait for all with timeout
       const results = await Promise.race([
         Promise.all(verificationPromises),
-        new Promise((_, reject) => 
+        new Promise((_, reject) =>
           setTimeout(() => reject(new Error('Verification timeout')), this.config.totalTimeout)
         ),
       ]);
@@ -700,9 +701,9 @@ export class DomainConsensusVerifier extends EventEmitter {
         request.status = 'completed';
         this.stats.claimsSucceeded++;
         this.cooldowns.set(domain, Date.now());
-        
-        this.emit('claim-succeeded', { 
-          domain, 
+
+        this.emit('claim-succeeded', {
+          domain,
           requestId: request.id,
           proofs: request.proofs.map(p => p.serialize()),
         });
@@ -716,9 +717,9 @@ export class DomainConsensusVerifier extends EventEmitter {
       } else {
         request.status = 'failed';
         this.stats.claimsFailed++;
-        
-        this.emit('claim-failed', { 
-          domain, 
+
+        this.emit('claim-failed', {
+          domain,
           requestId: request.id,
           proofsCollected: request.proofs.length,
           quorumNeeded: this.config.quorumSize,
@@ -737,9 +738,9 @@ export class DomainConsensusVerifier extends EventEmitter {
     } catch (error) {
       request.status = 'failed';
       this.stats.claimsFailed++;
-      
+
       this.emit('claim-error', { domain, requestId: request.id, error: error.message });
-      
+
       return { success: false, error: error.message };
     } finally {
       this.activeRequests.delete(domain);
@@ -761,7 +762,7 @@ export class DomainConsensusVerifier extends EventEmitter {
     }
 
     const allPeers = await this.getVerifierPeers();
-    
+
     // Filter out ourselves
     const candidates = allPeers
       .filter(peer => {
@@ -820,15 +821,15 @@ export class DomainConsensusVerifier extends EventEmitter {
     };
 
     const startTime = Date.now();
-    
+
     try {
       const result = await this.requestVerification(peerId, verificationRequest);
       const responseTime = Date.now() - startTime;
-      
+
       // Update verifier reputation based on response
       const success = result && result.success && result.proof;
       this.eligibility.updateReputation(peerId, success, responseTime);
-      
+
       return result;
     } catch (error) {
       // Track failed response in reputation
@@ -855,7 +856,7 @@ export class DomainConsensusVerifier extends EventEmitter {
     try {
       // Fetch the beacon from the claimed domain
       const beaconUrl = `https://${domain}${this.config.beaconPath}`;
-      
+
       if (!this.fetchBeacon) {
         throw new Error('Network layer not configured');
       }
@@ -891,9 +892,9 @@ export class DomainConsensusVerifier extends EventEmitter {
       proof.signature = this.identity.sign(signableData);
 
       this.stats.verificationsSucceeded++;
-      
-      this.emit('verification-completed', { 
-        domain, 
+
+      this.emit('verification-completed', {
+        domain,
         claimantNodeId,
         beaconHash,
       });
@@ -902,9 +903,9 @@ export class DomainConsensusVerifier extends EventEmitter {
 
     } catch (error) {
       this.stats.verificationsFailed++;
-      
-      this.emit('verification-failed', { 
-        domain, 
+
+      this.emit('verification-failed', {
+        domain,
         claimantNodeId,
         error: error.message,
       });
@@ -924,9 +925,9 @@ export class DomainConsensusVerifier extends EventEmitter {
 
     // Check nodeId matches claimant
     if (beacon.nodeId !== expectedNodeId) {
-      return { 
-        valid: false, 
-        error: `NodeID mismatch: expected ${expectedNodeId}, got ${beacon.nodeId}` 
+      return {
+        valid: false,
+        error: `NodeID mismatch: expected ${expectedNodeId}, got ${beacon.nodeId}`
       };
     }
 
@@ -938,9 +939,9 @@ export class DomainConsensusVerifier extends EventEmitter {
     // Check beacon is fresh (not too old)
     const age = Date.now() - beacon.timestamp;
     if (age > this.config.beaconMaxAge) {
-      return { 
-        valid: false, 
-        error: `Beacon too old (${Math.round(age/1000)}s, max ${this.config.beaconMaxAge/1000}s)` 
+      return {
+        valid: false,
+        error: `Beacon too old (${Math.round(age / 1000)}s, max ${this.config.beaconMaxAge / 1000}s)`
       };
     }
 
@@ -982,8 +983,8 @@ export class DomainConsensusVerifier extends EventEmitter {
   verifyProof(proof) {
     try {
       // Deserialize if needed
-      const p = proof instanceof DomainVerificationProof 
-        ? proof 
+      const p = proof instanceof DomainVerificationProof
+        ? proof
         : DomainVerificationProof.deserialize(proof);
 
       // Verify signature
@@ -1024,7 +1025,7 @@ export class DomainConsensusVerifier extends EventEmitter {
    */
   verifyDomainClaim(proofs, domain, claimantNodeId, options = {}) {
     const checkDiversity = options.checkDiversity !== false;
-    
+
     if (!Array.isArray(proofs) || proofs.length === 0) {
       return { valid: false, error: 'No proofs provided' };
     }
@@ -1063,10 +1064,10 @@ export class DomainConsensusVerifier extends EventEmitter {
     // SYBIL DEFENSE: Check verifier diversity
     // ═══════════════════════════════════════════════════════════════════════
     let diversityCheck = { sufficient: true };
-    
+
     if (checkDiversity && hasQuorum) {
       diversityCheck = this.checkVerifierDiversity(validProofs);
-      
+
       if (!diversityCheck.sufficient) {
         return {
           valid: false,
@@ -1103,7 +1104,7 @@ export class DomainConsensusVerifier extends EventEmitter {
 
     for (const proof of proofs) {
       const info = this.eligibility.nodeNetworkInfo.get(proof.verifierNodeId);
-      
+
       if (info) {
         if (info.subnet) subnets.add(info.subnet);
         if (info.asn && info.asn !== 'unknown') asns.add(info.asn);
@@ -1114,13 +1115,13 @@ export class DomainConsensusVerifier extends EventEmitter {
 
     // If we have enough known verifiers, check diversity
     const knownCount = proofs.length - unknownNetwork.length;
-    
+
     // Require at least minDistinctSubnets known verifiers with different subnets
     const sufficientSubnets = subnets.size >= this.config.minDistinctSubnets;
-    
+
     // ASN diversity is a soft requirement (may not always have ASN info)
-    const sufficientASNs = asns.size >= this.config.minDistinctASNs || 
-                          unknownNetwork.length > 0; // Lenient if some are unknown
+    const sufficientASNs = asns.size >= this.config.minDistinctASNs ||
+      unknownNetwork.length > 0; // Lenient if some are unknown
 
     return {
       sufficient: sufficientSubnets,
@@ -1152,16 +1153,16 @@ export class DomainConsensusVerifier extends EventEmitter {
     // Basic domain validation
     if (!domain || typeof domain !== 'string') return false;
     if (domain.length > 253) return false;
-    
+
     // Must have at least one dot
     if (!domain.includes('.')) return false;
-    
+
     // No protocol prefix
     if (domain.includes('://')) return false;
-    
+
     // No path
     if (domain.includes('/')) return false;
-    
+
     // Basic pattern check
     const domainPattern = /^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?)*$/;
     return domainPattern.test(domain);
@@ -1215,7 +1216,7 @@ export class DomainConsensusVerifier extends EventEmitter {
    */
   restoreState(data) {
     if (!data) return;
-    
+
     // Only restore if version matches (or upgrade logic here)
     if (data.version >= 2) {
       if (data.eligibility) {

@@ -17,15 +17,16 @@
  */
 
 import { sha3_256 } from '@noble/hashes/sha3.js';
-import { bytesToHex, utf8ToBytes, randomBytes } from '@noble/hashes/utils.js';
+import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js';
 import { EventEmitter } from 'events';
 import { createLogger } from '../utils/logger.js';
+import { ternaryId } from '../utils/ternary-id.js';
 
 // YPC-27 quantum-hard checksums for message integrity
-import { 
-  PROTOCOL_DOMAIN, 
-  wrapWithChecksum, 
-  unwrapWithChecksum 
+import {
+  PROTOCOL_DOMAIN,
+  wrapWithChecksum,
+  unwrapWithChecksum
 } from '../oracle/packet-checksum.js';
 
 const log = createLogger('security:khata');
@@ -52,10 +53,10 @@ const DEFAULT_CONFIG = {
 };
 
 /**
- * Generate a unique message ID
+ * Generate a unique message ID (balanced ternary — '666' impossible by design)
  */
 function generateMessageId() {
-  return bytesToHex(randomBytes(16));
+  return ternaryId(16);
 }
 
 /**
@@ -93,17 +94,17 @@ export class KhataProtocol extends EventEmitter {
     this.gateway = namcheGateway;
     this.identity = nodeIdentity;
     this.config = { ...DEFAULT_CONFIG, ...options };
-    
+
     // Message deduplication (messageHash -> timestamp)
     this.seenMessages = new Map();
-    
+
     // Pending requests (requestId -> { resolve, reject, timeout })
     this.pendingRequests = new Map();
-    
+
     // Peer send function (must be set by network layer)
     this.sendToPeer = null;
     this.broadcastToPeers = null;
-    
+
     // Cleanup interval for seen messages
     this.cleanupInterval = setInterval(() => this.cleanup(), 60000);
 
@@ -230,10 +231,10 @@ export class KhataProtocol extends EventEmitter {
 
     // Verify the DOKO through NAMCHE gateway
     const verifyResult = await this.gateway.verify(message.doko);
-    
+
     if (verifyResult.valid) {
-      this.emit('announce', { 
-        doko: message.doko, 
+      this.emit('announce', {
+        doko: message.doko,
         dokoHash: verifyResult.dokoHash,
         fromPeerId,
         hops: message.hops,
@@ -319,7 +320,7 @@ export class KhataProtocol extends EventEmitter {
       this.pendingRequests.set(requestId, { resolve, reject, timeout });
 
       this.stats.requestsSent++;
-      
+
       // Broadcast request
       if (this.broadcastToPeers) {
         this.broadcastToPeers(message);
@@ -497,14 +498,14 @@ export class KhataProtocol extends EventEmitter {
 
     // Get the original DOKO to verify revocation authority
     const originalDoko = this.gateway.lookupByHash(message.dokoHash);
-    
+
     if (originalDoko) {
       // Process revocation through gateway
       const result = await this.gateway.processRevocation(message, originalDoko);
-      
+
       if (result.success) {
-        this.emit('revoke', { 
-          dokoHash: message.dokoHash, 
+        this.emit('revoke', {
+          dokoHash: message.dokoHash,
           reason: message.reason,
           fromPeerId,
         });
@@ -565,7 +566,7 @@ export class KhataProtocol extends EventEmitter {
   cleanup() {
     const now = Date.now();
     const maxAge = this.config.announceTTL;
-    
+
     for (const [hash, timestamp] of this.seenMessages.entries()) {
       if (now - timestamp > maxAge) {
         this.seenMessages.delete(hash);
@@ -589,7 +590,7 @@ export class KhataProtocol extends EventEmitter {
    */
   destroy() {
     clearInterval(this.cleanupInterval);
-    
+
     // Reject all pending requests
     for (const [requestId, pending] of this.pendingRequests.entries()) {
       clearTimeout(pending.timeout);
