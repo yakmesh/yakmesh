@@ -14,7 +14,8 @@
 
 import { EventEmitter } from 'events';
 import { sha3_256 as _nobleSha3 } from '@noble/hashes/sha3.js';
-import { bytesToHex, randomBytes, hexToBytes, utf8ToBytes } from '@noble/hashes/utils.js';
+import { bytesToHex, hexToBytes, utf8ToBytes } from '@noble/hashes/utils.js';
+import { ternaryId } from '../utils/ternary-id.js';
 import { ml_dsa65 } from '@noble/post-quantum/ml-dsa.js';
 // ACCEL: Hardware-accelerated crypto
 import { sha3_256, mlDsa65Verify } from '../utils/accel.js';
@@ -33,20 +34,20 @@ export const KHATA_TRUST_MESSAGE = {
   ATTESTATION_ANNOUNCE: 'khata:trust:attestation:announce',
   ATTESTATION_REQUEST: 'khata:trust:attestation:request',
   REVOCATION_CERTIFICATE: 'khata:trust:revocation:cert',
-  
+
   // Silicon Parity messages
   SILICON_CHALLENGE: 'khata:trust:silicon:challenge',
   SILICON_RESPONSE: 'khata:trust:silicon:response',
   SILICON_IDENTITY: 'khata:trust:silicon:identity',
-  
+
   // Sybil Graph messages
   GRAPH_UPDATE: 'khata:trust:graph:update',
   CLUSTER_ALERT: 'khata:trust:cluster:alert',
-  
+
   // Trust Tier messages
   TIER_ANNOUNCE: 'khata:trust:tier:announce',
   TIER_REQUEST: 'khata:trust:tier:request',
-  
+
   // v2.5.0 Geographic Proof messages
   GEO_PROOF_ANNOUNCE: 'khata:trust:geo:announce',
   GEO_PROOF_REQUEST: 'khata:trust:geo:request',
@@ -66,10 +67,10 @@ const DEFAULT_CONFIG = {
 };
 
 /**
- * Generate unique message ID
+ * Generate unique message ID (balanced ternary — '666' impossible by design)
  */
 function generateMessageId() {
-  return bytesToHex(randomBytes(16));
+  return ternaryId(16);
 }
 
 /**
@@ -81,9 +82,9 @@ function generateMessageId() {
 export class KhataTrustIntegration extends EventEmitter {
   constructor(options = {}) {
     super();
-    
+
     this.config = { ...DEFAULT_CONFIG, ...options };
-    
+
     // Core components (injected)
     this.meshRevocation = options.meshRevocation || null;
     this.siliconParity = options.siliconParity || null;
@@ -91,17 +92,17 @@ export class KhataTrustIntegration extends EventEmitter {
     this.trustRegistry = options.trustRegistry || null;
     this.nodeIdentity = options.nodeIdentity || null;
     this.geoProofService = options.geoProofService || null;  // v2.5.0
-    
+
     // Network layer (set by setNetworkLayer)
     this.sendToPeer = null;
     this.broadcastToPeers = null;
-    
+
     // Message deduplication
     this.seenMessages = new Map();
-    
+
     // Pending silicon challenges
     this.pendingChallenges = new Map();
-    
+
     // Statistics
     this.stats = {
       attestationsGossiped: 0,
@@ -114,11 +115,11 @@ export class KhataTrustIntegration extends EventEmitter {
       geoProofsReceived: 0,
       landmarksAnnounced: 0,
     };
-    
+
     // Cleanup interval
     this.cleanupInterval = setInterval(() => this.cleanup(), 60000);
   }
-  
+
   /**
    * Set network layer functions
    */
@@ -126,7 +127,7 @@ export class KhataTrustIntegration extends EventEmitter {
     this.sendToPeer = sendToPeer;
     this.broadcastToPeers = broadcastToPeers;
   }
-  
+
   /**
    * Set core components
    */
@@ -138,7 +139,7 @@ export class KhataTrustIntegration extends EventEmitter {
     if (nodeIdentity) this.nodeIdentity = nodeIdentity;
     if (geoProofService) this.geoProofService = geoProofService;
   }
-  
+
   /**
    * Verify ML-DSA-65 signature on an incoming trust message.
    * 
@@ -155,13 +156,13 @@ export class KhataTrustIntegration extends EventEmitter {
     if (!message.signature) {
       return { valid: false, reason: 'Missing signature' };
     }
-    
+
     // Identify the signer's public key. Trust messages carry dokoId or nodeId.
     const signerId = message.dokoId || message.landmark?.nodeId || fromPeerId;
     if (!signerId) {
       return { valid: false, reason: 'Cannot identify message signer' };
     }
-    
+
     // Resolve public key from mesh peer registry (same pattern as requirePeerAuth)
     let publicKey = null;
     if (this._resolvePublicKey) {
@@ -172,15 +173,15 @@ export class KhataTrustIntegration extends EventEmitter {
     if (!publicKey && signerId !== fromPeerId && this._resolvePublicKey) {
       publicKey = this._resolvePublicKey(fromPeerId);
     }
-    
+
     if (!publicKey) {
       return { valid: false, reason: `No public key for signer ${signerId.slice(0, 20)}` };
     }
-    
+
     // Reconstruct the signed payload based on message type
     try {
       let payload;
-      
+
       // Each announcement type signs a specific subset of fields
       switch (message.type) {
         case KHATA_TRUST_MESSAGE.TIER_ANNOUNCE:
@@ -209,18 +210,18 @@ export class KhataTrustIntegration extends EventEmitter {
           const { signature: _s, messageId: _m, hops: _h, ...rest } = message;
           payload = JSON.stringify(rest);
       }
-      
+
       const sigBytes = hexToBytes(message.signature);
       const pubKeyBytes = hexToBytes(publicKey);
       const msgBytes = utf8ToBytes(payload);
       const valid = mlDsa65Verify(sigBytes, msgBytes, pubKeyBytes);
-      
+
       return { valid };
     } catch (e) {
       return { valid: false, reason: `Verification error: ${e.message}` };
     }
   }
-  
+
   /**
    * Set public key resolver function.
    * Called during construction or setNetworkLayer to allow signature verification
@@ -230,11 +231,11 @@ export class KhataTrustIntegration extends EventEmitter {
   setPublicKeyResolver(resolver) {
     this._resolvePublicKey = resolver;
   }
-  
+
   // ═══════════════════════════════════════════════════════════════════════════
   // MESH REVOCATION GOSSIP
   // ═══════════════════════════════════════════════════════════════════════════
-  
+
   /**
    * Gossip an attestation to the network
    */
@@ -243,7 +244,7 @@ export class KhataTrustIntegration extends EventEmitter {
       log.warn('khata-trust', 'Cannot gossip: network layer not set');
       return;
     }
-    
+
     const message = {
       type: KHATA_TRUST_MESSAGE.ATTESTATION_ANNOUNCE,
       messageId: generateMessageId(),
@@ -252,19 +253,19 @@ export class KhataTrustIntegration extends EventEmitter {
       ttl: this.config.attestationTTL,
       hops: 0,
     };
-    
+
     // Mark as seen
     const hash = this.computeMessageHash(message);
     this.seenMessages.set(hash, Date.now());
-    
+
     this.stats.attestationsGossiped++;
     log.debug('khata-trust', `Gossiping attestation for ${attestation.targetDokoId}`);
-    
+
     await this.broadcastToPeers(message);
-    
+
     return message.messageId;
   }
-  
+
   /**
    * Handle incoming attestation announcement
    */
@@ -275,32 +276,32 @@ export class KhataTrustIntegration extends EventEmitter {
       return;
     }
     this.seenMessages.set(hash, Date.now());
-    
+
     // Check hop limit
     if (message.hops >= this.config.maxHops) {
       return;
     }
-    
+
     // Check TTL
     const age = Date.now() - message.timestamp;
     if (age > message.ttl) {
       return;
     }
-    
+
     this.stats.attestationsReceived++;
-    
+
     // Add to local mesh revocation system
     if (this.meshRevocation) {
       try {
         const result = await this.meshRevocation.addAttestation(message.attestation);
-        
+
         if (result.added) {
           this.emit('attestation-received', {
             attestation: message.attestation,
             fromPeerId,
             revocationTriggered: result.revoked,
           });
-          
+
           // Update sybil graph with attestation
           if (this.sybilGraph) {
             this.sybilGraph.addAttestation(
@@ -309,7 +310,7 @@ export class KhataTrustIntegration extends EventEmitter {
               message.timestamp
             );
           }
-          
+
           // Propagate to other peers
           if (this.broadcastToPeers) {
             await this.broadcastToPeers({
@@ -323,31 +324,31 @@ export class KhataTrustIntegration extends EventEmitter {
       }
     }
   }
-  
+
   /**
    * Broadcast revocation certificate
    */
   async broadcastRevocationCertificate(certificate) {
     if (!this.broadcastToPeers) return;
-    
+
     const message = {
       type: KHATA_TRUST_MESSAGE.REVOCATION_CERTIFICATE,
       messageId: generateMessageId(),
       certificate,
       timestamp: Date.now(),
     };
-    
+
     log.info('khata-trust', `Broadcasting revocation certificate for ${certificate.targetDokoId}`);
-    
+
     await this.broadcastToPeers(message);
   }
-  
+
   /**
    * Handle incoming revocation certificate
    */
   async handleRevocationCertificate(message, fromPeerId) {
     const { certificate } = message;
-    
+
     // Verify certificate
     if (this.meshRevocation) {
       const valid = await this.meshRevocation.constructor.verifyCertificate(
@@ -361,28 +362,28 @@ export class KhataTrustIntegration extends EventEmitter {
           return null;
         }
       );
-      
+
       if (valid) {
         this.emit('revocation-certificate', {
           certificate,
           fromPeerId,
           targetDokoId: certificate.targetDokoId,
         });
-        
+
         // Mark node as revoked in local state
-        log.info('khata-trust', 
+        log.info('khata-trust',
           `Verified revocation certificate for ${certificate.targetDokoId}`);
       } else {
-        log.warn('khata-trust', 
+        log.warn('khata-trust',
           `Invalid revocation certificate for ${certificate.targetDokoId}`);
       }
     }
   }
-  
+
   // ═══════════════════════════════════════════════════════════════════════════
   // SILICON PARITY CHALLENGES
   // ═══════════════════════════════════════════════════════════════════════════
-  
+
   /**
    * Challenge a peer to prove their silicon identity
    */
@@ -390,55 +391,55 @@ export class KhataTrustIntegration extends EventEmitter {
     if (!this.sendToPeer) {
       throw new Error('Network layer not set');
     }
-    
+
     const challengeId = generateMessageId();
     const challenge = {
       type: KHATA_TRUST_MESSAGE.SILICON_CHALLENGE,
       challengeId,
       challengerId: this.nodeIdentity?.identity?.nodeId,
-      nonce: bytesToHex(randomBytes(32)),
+      nonce: ternaryId(32),
       timestamp: Date.now(),
     };
-    
+
     // Create promise for response
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
         this.pendingChallenges.delete(challengeId);
         reject(new Error('Silicon challenge timeout'));
       }, this.config.siliconChallengeTimeout);
-      
-      this.pendingChallenges.set(challengeId, { 
-        resolve, 
-        reject, 
+
+      this.pendingChallenges.set(challengeId, {
+        resolve,
+        reject,
         timeout,
         peerId,
       });
-      
+
       this.stats.siliconChallengesSent++;
       this.sendToPeer(peerId, challenge);
     });
   }
-  
+
   /**
    * Handle incoming silicon challenge
    */
   async handleSiliconChallenge(message, fromPeerId) {
     this.stats.siliconChallengesReceived++;
-    
+
     if (!this.siliconParity) {
       log.warn('khata-trust', 'Received silicon challenge but SiliconParity not configured');
       return;
     }
-    
+
     // Collect or retrieve our silicon identity
     const myDokoId = this.nodeIdentity?.identity?.nodeId;
     let identity = this.siliconParity.getIdentity(myDokoId);
-    
+
     if (!identity) {
       // Collect identity on demand
       identity = await this.siliconParity.collectIdentity(myDokoId);
     }
-    
+
     // Create response
     const response = {
       type: KHATA_TRUST_MESSAGE.SILICON_RESPONSE,
@@ -446,10 +447,10 @@ export class KhataTrustIntegration extends EventEmitter {
       responderId: myDokoId,
       identity: identity.toJSON(),
       challengeNonce: message.nonce,
-      responseNonce: bytesToHex(randomBytes(16)),
+      responseNonce: ternaryId(16),
       timestamp: Date.now(),
     };
-    
+
     // Sign response
     if (this.nodeIdentity) {
       const payload = JSON.stringify({
@@ -460,12 +461,12 @@ export class KhataTrustIntegration extends EventEmitter {
       });
       response.signature = this.nodeIdentity.sign(payload);
     }
-    
+
     if (this.sendToPeer) {
       await this.sendToPeer(fromPeerId, response);
     }
   }
-  
+
   /**
    * Handle silicon challenge response
    */
@@ -474,10 +475,10 @@ export class KhataTrustIntegration extends EventEmitter {
     if (!pending) {
       return; // Unknown or expired challenge
     }
-    
+
     clearTimeout(pending.timeout);
     this.pendingChallenges.delete(message.challengeId);
-    
+
     // Verify response
     const result = {
       valid: true,
@@ -485,7 +486,7 @@ export class KhataTrustIntegration extends EventEmitter {
       responderId: message.responderId,
       issues: [],
     };
-    
+
     // Check signature if we have the public key
     if (message.signature && this.nodeIdentity) {
       const payload = JSON.stringify({
@@ -494,7 +495,7 @@ export class KhataTrustIntegration extends EventEmitter {
         responseNonce: message.responseNonce,
         fingerprint: message.identity.aesFingerprint,
       });
-      
+
       // Verify signature with responder's public key from trust registry
       if (this.trustRegistry && message.responderId) {
         try {
@@ -503,7 +504,7 @@ export class KhataTrustIntegration extends EventEmitter {
             const payloadBytes = utf8ToBytes(payload);
             const publicKey = hexToBytes(profile.publicKey);
             const signature = hexToBytes(message.signature);
-            
+
             // ml_dsa65.verify(signature, message, publicKey)
             const sigValid = mlDsa65Verify(signature, payloadBytes, publicKey);
             if (!sigValid) {
@@ -520,33 +521,33 @@ export class KhataTrustIntegration extends EventEmitter {
         }
       }
     }
-    
+
     // Check for VM indicators
     if (!message.identity.isRealSilicon) {
       result.issues.push('VM or emulation detected');
     }
-    
+
     // Check core count for weight calculation
     if (message.identity.coreCount > 64) {
       result.issues.push(`High core count: ${message.identity.coreCount}`);
     }
-    
+
     pending.resolve(result);
   }
-  
+
   /**
    * Announce silicon identity to network
    */
   async announceSiliconIdentity() {
     if (!this.broadcastToPeers || !this.siliconParity) return;
-    
+
     const myDokoId = this.nodeIdentity?.identity?.nodeId;
     let identity = this.siliconParity.getIdentity(myDokoId);
-    
+
     if (!identity) {
       identity = await this.siliconParity.collectIdentity(myDokoId);
     }
-    
+
     const message = {
       type: KHATA_TRUST_MESSAGE.SILICON_IDENTITY,
       messageId: generateMessageId(),
@@ -554,23 +555,23 @@ export class KhataTrustIntegration extends EventEmitter {
       identity: identity.toJSON(),
       timestamp: Date.now(),
     };
-    
+
     await this.broadcastToPeers(message);
   }
-  
+
   // ═══════════════════════════════════════════════════════════════════════════
   // SYBIL GRAPH UPDATES
   // ═══════════════════════════════════════════════════════════════════════════
-  
+
   /**
    * Share graph update with network
    */
   async shareGraphUpdate() {
     if (!this.broadcastToPeers || !this.sybilGraph) return;
-    
+
     const stats = this.sybilGraph.getGraphStats();
     const myDokoId = this.nodeIdentity?.identity?.nodeId;
-    
+
     const message = {
       type: KHATA_TRUST_MESSAGE.GRAPH_UPDATE,
       messageId: generateMessageId(),
@@ -578,31 +579,31 @@ export class KhataTrustIntegration extends EventEmitter {
       graphStats: stats,
       timestamp: Date.now(),
     };
-    
+
     await this.broadcastToPeers(message);
   }
-  
+
   /**
    * Handle incoming graph update
    */
   async handleGraphUpdate(message, fromPeerId) {
     this.stats.graphUpdatesReceived++;
-    
+
     this.emit('graph-update', {
       senderId: message.senderId,
       stats: message.graphStats,
       fromPeerId,
     });
-    
+
     // Could merge graph data here if implementing distributed analysis
   }
-  
+
   /**
    * Broadcast cluster alert
    */
   async broadcastClusterAlert(cluster) {
     if (!this.broadcastToPeers) return;
-    
+
     const message = {
       type: KHATA_TRUST_MESSAGE.CLUSTER_ALERT,
       messageId: generateMessageId(),
@@ -616,53 +617,53 @@ export class KhataTrustIntegration extends EventEmitter {
       detectedBy: this.nodeIdentity?.identity?.nodeId,
       timestamp: Date.now(),
     };
-    
-    log.warn('khata-trust', 
+
+    log.warn('khata-trust',
       `Broadcasting cluster alert: ${cluster.size} nodes, score=${cluster.suspicionScore}`);
-    
+
     await this.broadcastToPeers(message);
   }
-  
+
   /**
    * Handle incoming cluster alert
    */
   async handleClusterAlert(message, fromPeerId) {
     this.stats.clusterAlertsReceived++;
-    
+
     this.emit('cluster-alert', {
       cluster: message.cluster,
       detectedBy: message.detectedBy,
       fromPeerId,
     });
-    
+
     // Cross-reference with our own analysis
     if (this.sybilGraph) {
       const ourAnalysis = this.sybilGraph.analyze();
-      const matchingCluster = ourAnalysis.clusters.find(c => 
+      const matchingCluster = ourAnalysis.clusters.find(c =>
         c.nodes.some(n => message.cluster.nodes.includes(n))
       );
-      
+
       if (matchingCluster) {
-        log.info('khata-trust', 
+        log.info('khata-trust',
           `Cluster alert confirmed by local analysis: ${matchingCluster.size} nodes`);
       }
     }
   }
-  
+
   // ═══════════════════════════════════════════════════════════════════════════
   // TRUST TIER ANNOUNCEMENTS
   // ═══════════════════════════════════════════════════════════════════════════
-  
+
   /**
    * Announce our trust tier
    */
   async announceTier() {
     if (!this.broadcastToPeers || !this.trustRegistry) return;
-    
+
     const myDokoId = this.nodeIdentity?.identity?.nodeId;
     const tier = await this.trustRegistry.getTier(myDokoId);
     const weight = await this.trustRegistry.getWeight(myDokoId);
-    
+
     const message = {
       type: KHATA_TRUST_MESSAGE.TIER_ANNOUNCE,
       messageId: generateMessageId(),
@@ -671,7 +672,7 @@ export class KhataTrustIntegration extends EventEmitter {
       weight,
       timestamp: Date.now(),
     };
-    
+
     // Sign announcement
     if (this.nodeIdentity) {
       const payload = JSON.stringify({
@@ -682,26 +683,26 @@ export class KhataTrustIntegration extends EventEmitter {
       });
       message.signature = this.nodeIdentity.sign(payload);
     }
-    
+
     await this.broadcastToPeers(message);
   }
-  
+
   // ═══════════════════════════════════════════════════════════════════════════
   // GEOGRAPHIC PROOF (v2.5.0)
   // ═══════════════════════════════════════════════════════════════════════════
-  
+
   /**
    * Announce our geographic proof to the network
    */
   async announceGeoProof() {
     if (!this.broadcastToPeers || !this.geoProofService) return;
-    
+
     const proof = this.geoProofService.getProof();
     if (!proof) {
       log.debug('khata-trust', 'No geo-proof available to announce');
       return;
     }
-    
+
     const message = {
       type: KHATA_TRUST_MESSAGE.GEO_PROOF_ANNOUNCE,
       messageId: generateMessageId(),
@@ -710,7 +711,7 @@ export class KhataTrustIntegration extends EventEmitter {
       timestamp: Date.now(),
       hops: 0,
     };
-    
+
     // Sign announcement
     if (this.nodeIdentity) {
       const payload = JSON.stringify({
@@ -720,14 +721,14 @@ export class KhataTrustIntegration extends EventEmitter {
       });
       message.signature = this.nodeIdentity.sign(payload);
     }
-    
+
     this.stats.geoProofsGossiped++;
     log.debug('khata-trust', `Announcing geo-proof with ${proof.exclusionZones.length} zones`);
-    
+
     await this.broadcastToPeers(message);
     return message.messageId;
   }
-  
+
   /**
    * Request geographic proof from a specific peer
    */
@@ -735,18 +736,18 @@ export class KhataTrustIntegration extends EventEmitter {
     if (!this.sendToPeer) {
       throw new Error('Network layer not set');
     }
-    
+
     const message = {
       type: KHATA_TRUST_MESSAGE.GEO_PROOF_REQUEST,
       messageId: generateMessageId(),
       requesterId: this.nodeIdentity?.identity?.nodeId,
       timestamp: Date.now(),
     };
-    
+
     await this.sendToPeer(peerId, message);
     return message.messageId;
   }
-  
+
   /**
    * Handle incoming geo-proof announcement
    */
@@ -757,20 +758,20 @@ export class KhataTrustIntegration extends EventEmitter {
       return;
     }
     this.seenMessages.set(hash, Date.now());
-    
+
     // Check hop limit
     if (message.hops >= this.config.maxHops) {
       return;
     }
-    
+
     this.stats.geoProofsReceived++;
-    
+
     this.emit('geo-proof-received', {
       proof: message.proof,
       dokoId: message.dokoId,
       fromPeerId,
     });
-    
+
     // Store in local registry if trust registry supports it
     if (this.trustRegistry && this.trustRegistry.setGeoProof) {
       try {
@@ -790,7 +791,7 @@ export class KhataTrustIntegration extends EventEmitter {
         log.warn('khata-trust', `Failed to cache peer geo-proof: ${err.message}`);
       }
     }
-    
+
     // Propagate to other peers
     if (this.broadcastToPeers) {
       await this.broadcastToPeers({
@@ -799,19 +800,19 @@ export class KhataTrustIntegration extends EventEmitter {
       }, fromPeerId);
     }
   }
-  
+
   /**
    * Handle incoming geo-proof request
    */
   async handleGeoProofRequest(message, fromPeerId) {
     if (!this.sendToPeer || !this.geoProofService) return;
-    
+
     const proof = this.geoProofService.getProof();
     if (!proof) {
       log.debug('khata-trust', 'No geo-proof available to respond with');
       return;
     }
-    
+
     const response = {
       type: KHATA_TRUST_MESSAGE.GEO_PROOF_RESPONSE,
       requestId: message.messageId,
@@ -819,10 +820,10 @@ export class KhataTrustIntegration extends EventEmitter {
       dokoId: this.nodeIdentity?.identity?.nodeId,
       timestamp: Date.now(),
     };
-    
+
     await this.sendToPeer(fromPeerId, response);
   }
-  
+
   /**
    * Handle incoming geo-proof response
    */
@@ -834,13 +835,13 @@ export class KhataTrustIntegration extends EventEmitter {
       fromPeerId,
     });
   }
-  
+
   /**
    * Announce this node as a landmark
    */
   async announceLandmark(landmarkInfo) {
     if (!this.broadcastToPeers) return;
-    
+
     const message = {
       type: KHATA_TRUST_MESSAGE.LANDMARK_ANNOUNCE,
       messageId: generateMessageId(),
@@ -856,7 +857,7 @@ export class KhataTrustIntegration extends EventEmitter {
       },
       timestamp: Date.now(),
     };
-    
+
     // Sign announcement
     if (this.nodeIdentity) {
       const payload = JSON.stringify({
@@ -865,14 +866,14 @@ export class KhataTrustIntegration extends EventEmitter {
       });
       message.signature = this.nodeIdentity.sign(payload);
     }
-    
+
     this.stats.landmarksAnnounced++;
     log.info('khata-trust', `Announcing as landmark: ${landmarkInfo.name} (${landmarkInfo.region})`);
-    
+
     await this.broadcastToPeers(message);
     return message.messageId;
   }
-  
+
   /**
    * Handle incoming landmark announcement
    */
@@ -883,29 +884,29 @@ export class KhataTrustIntegration extends EventEmitter {
       return;
     }
     this.seenMessages.set(hash, Date.now());
-    
+
     this.emit('landmark-announce', {
       landmark: message.landmark,
       fromPeerId,
     });
-    
+
     // Register landmark if geo-proof service is available
     if (this.geoProofService) {
       try {
         this.geoProofService.registerLandmark(message.landmark);
-        log.info('khata-trust', 
+        log.info('khata-trust',
           `Registered landmark from gossip: ${message.landmark.name} (${message.landmark.region})`);
       } catch (err) {
         log.warn('khata-trust', `Failed to register landmark: ${err.message}`);
       }
     }
-    
+
     // Propagate to other peers
     if (this.broadcastToPeers) {
       await this.broadcastToPeers(message, fromPeerId);
     }
   }
-  
+
   /**
    * Request landmark verification from peer
    */
@@ -913,7 +914,7 @@ export class KhataTrustIntegration extends EventEmitter {
     if (!this.sendToPeer) {
       throw new Error('Network layer not set');
     }
-    
+
     const message = {
       type: KHATA_TRUST_MESSAGE.LANDMARK_VERIFY,
       messageId: generateMessageId(),
@@ -921,15 +922,15 @@ export class KhataTrustIntegration extends EventEmitter {
       requesterId: this.nodeIdentity?.identity?.nodeId,
       timestamp: Date.now(),
     };
-    
+
     await this.sendToPeer(peerId, message);
     return message.messageId;
   }
-  
+
   // ═══════════════════════════════════════════════════════════════════════════
   // MESSAGE ROUTING
   // ═══════════════════════════════════════════════════════════════════════════
-  
+
   /**
    * Handle incoming trust message
    */
@@ -945,16 +946,16 @@ export class KhataTrustIntegration extends EventEmitter {
       KHATA_TRUST_MESSAGE.ATTESTATION_ANNOUNCE,
       KHATA_TRUST_MESSAGE.REVOCATION_CERTIFICATE,
     ]);
-    
+
     if (SIGNED_TYPES.has(message.type)) {
       const sigResult = this._verifyMessageSignature(message, fromPeerId);
       if (!sigResult.valid) {
-        log.warn('khata-trust', 
+        log.warn('khata-trust',
           `Rejected unsigned/forged trust message: ${message.type} from ${fromPeerId?.slice(0, 20)} — ${sigResult.reason}`);
         return false;
       }
     }
-    
+
     switch (message.type) {
       // Mesh Revocation
       case KHATA_TRUST_MESSAGE.ATTESTATION_ANNOUNCE:
@@ -963,7 +964,7 @@ export class KhataTrustIntegration extends EventEmitter {
       case KHATA_TRUST_MESSAGE.REVOCATION_CERTIFICATE:
         await this.handleRevocationCertificate(message, fromPeerId);
         break;
-        
+
       // Silicon Parity
       case KHATA_TRUST_MESSAGE.SILICON_CHALLENGE:
         await this.handleSiliconChallenge(message, fromPeerId);
@@ -974,7 +975,7 @@ export class KhataTrustIntegration extends EventEmitter {
       case KHATA_TRUST_MESSAGE.SILICON_IDENTITY:
         this.emit('silicon-identity', { identity: message.identity, dokoId: message.dokoId, fromPeerId });
         break;
-        
+
       // Sybil Graph
       case KHATA_TRUST_MESSAGE.GRAPH_UPDATE:
         await this.handleGraphUpdate(message, fromPeerId);
@@ -982,12 +983,12 @@ export class KhataTrustIntegration extends EventEmitter {
       case KHATA_TRUST_MESSAGE.CLUSTER_ALERT:
         await this.handleClusterAlert(message, fromPeerId);
         break;
-        
+
       // Trust Tier
       case KHATA_TRUST_MESSAGE.TIER_ANNOUNCE:
         this.emit('tier-announce', { dokoId: message.dokoId, tier: message.tier, weight: message.weight, fromPeerId });
         break;
-        
+
       // Geographic Proof (v2.5.0)
       case KHATA_TRUST_MESSAGE.GEO_PROOF_ANNOUNCE:
         await this.handleGeoProofAnnounce(message, fromPeerId);
@@ -1004,26 +1005,26 @@ export class KhataTrustIntegration extends EventEmitter {
       case KHATA_TRUST_MESSAGE.LANDMARK_VERIFY:
         this.emit('landmark-verify-request', { landmarkId: message.landmarkId, requesterId: message.requesterId, fromPeerId });
         break;
-        
+
       default:
         // Unknown message type - might be handled by base KHATA protocol
         return false;
     }
-    
+
     return true;
   }
-  
+
   /**
    * Check if message type is a trust message
    */
   isTrustMessage(messageType) {
     return Object.values(KHATA_TRUST_MESSAGE).includes(messageType);
   }
-  
+
   // ═══════════════════════════════════════════════════════════════════════════
   // UTILITIES
   // ═══════════════════════════════════════════════════════════════════════════
-  
+
   /**
    * Compute message hash for deduplication
    */
@@ -1034,21 +1035,21 @@ export class KhataTrustIntegration extends EventEmitter {
     });
     return bytesToHex(sha3_256(new TextEncoder().encode(content)));
   }
-  
+
   /**
    * Cleanup old data
    */
   cleanup() {
     const now = Date.now();
     const maxAge = this.config.attestationTTL;
-    
+
     for (const [hash, timestamp] of this.seenMessages.entries()) {
       if (now - timestamp > maxAge) {
         this.seenMessages.delete(hash);
       }
     }
   }
-  
+
   /**
    * Get statistics
    */
@@ -1059,13 +1060,13 @@ export class KhataTrustIntegration extends EventEmitter {
       pendingChallenges: this.pendingChallenges.size,
     };
   }
-  
+
   /**
    * Shutdown
    */
   destroy() {
     clearInterval(this.cleanupInterval);
-    
+
     // Cleanup pending challenges
     for (const [id, pending] of this.pendingChallenges.entries()) {
       clearTimeout(pending.timeout);
