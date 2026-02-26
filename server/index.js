@@ -22,7 +22,11 @@ import { createLogger } from '../utils/logger.js';
 import * as accel from '../utils/accel.js';
 import * as steadywatch from '../security/steadywatch.js';
 
+// Embedded Caddy web server for HTTPS/443 reverse proxy
+import { YakmeshWebServer } from '../webserver/index.js';
+
 const log = createLogger('server:main');
+const peerTag = (id) => id?.split('-pq-').pop() || id?.slice?.(-8) || String(id);
 import { NodeIdentity } from '../identity/node-key.js';
 import { MeshNetwork } from '../mesh/network.js';
 import { ReplicationEngine } from '../database/replication.js';
@@ -42,9 +46,9 @@ import { ServerAnnexSession, ANNEX_HANDSHAKE_TYPE } from './crypto/annex.js';
 import { SherpaDiscovery, createBeaconMiddleware } from '../mesh/sherpa-discovery.js';
 
 // Oracle system imports
-import { 
-  getOracle, 
-  CodeProofProtocol, 
+import {
+  getOracle,
+  CodeProofProtocol,
   ConsensusEngine,
   ContentState,
   GenesisNetworkV2,
@@ -52,11 +56,13 @@ import {
   lockCodebase,
   unlockCodebase,
   setupUnlockOnExit,
+  onTamper,
+  getTamperEvents,
 } from '../oracle/index.js';
 
 // Time source imports
-import { 
-  TimeSourceDetector, 
+import {
+  TimeSourceDetector,
   getTimeSourceDetector,
   createPhaseConfig,
   detectTimeSources,
@@ -64,11 +70,11 @@ import {
 import { setTimeSourceConfig, getActiveConfig } from '../oracle/phase-epoch.js';
 
 // v2.0 Security imports - NAMCHE and DOKO
-import NamcheGateway, { 
+import NamcheGateway, {
   DOKO_TYPES as NAMCHE_DOKO_TYPES,
-  VERIFY_RESULT 
+  VERIFY_RESULT
 } from '../security/namche-gateway.js';
-import { 
+import {
   DOKO_TYPES as DOKOTypes,
   DOKODocument,
   DOKOGenerator,
@@ -94,7 +100,7 @@ const GATE_NAMES = [
 ];
 
 // YAK:// Protocol Handler
-import YakProtocolHandler, { 
+import YakProtocolHandler, {
   createProtocolEndpoints,
   parseYakUrl,
   yakToHttp,
@@ -141,8 +147,45 @@ import { NodeWitness, ObservationResult, BehaviorVelocityMonitor, BEHAVIOR_DIMEN
 // KARMA Trust Model — SAKSHI observations feed into trust assessment
 import { KarmaTrustModel, KarmaLevel } from '../security/hybrid-trust.js';
 
+// SANGHA — Unified Component Attestation (collective security)
+import { getSangha, joinSangha, SANGHA_COMPONENT } from '../security/sangha.js';
+
+// FS Hardening — File integrity with SANGHA-FS integration
+import { getFSHardening, PROTECTION_LEVEL } from '../security/fs-hardening.js';
+
+// Memory Safety — Circulating canaries for memory integrity
+import { getMemorySafety } from '../security/memory-safety.js';
+
+// Temporal Signing — GPS-bound code signatures with auto-expiry
+import { getTemporalSigner, TemporalSignature } from '../security/temporal-signing.js';
+
+// KARMA Rate Limiter — KARMA-adaptive rate limiting with input validation
+import { getKarmaRateLimiter, KARMA_TIERS, SIZE_LIMITS } from '../security/karma-rate-limiter.js';
+
+// Secure Config — Oracle-attested configuration management
+import { getSecureConfig, PROFILE_LEVEL, SECURE_DEFAULTS } from '../security/secure-config.js';
+
 // TRIBHUJ — Balanced ternary for KARMA trit mapping
 import { POSITIVE, NEUTRAL, NEGATIVE, TritState } from '../oracle/tribhuj.js';
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// TERNARY HARMONIZATION — SST × YPC-27 × 144T × ML
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// YPC27_SST — SST seed rotation for YPC-27 checksums
+import { YPC27_SST } from '../oracle/ypc27.js';
+
+// Batch checksum verification (GPU-accelerated)
+import { batchChecksumVerifier, BatchChecksumVerifier } from '../oracle/packet-checksum.js';
+
+// Ternary ML — quantized inference & trust classification
+import { TernaryInferenceAdapter } from '../oracle/ternary-ml.js';
+
+// 144T — Hierarchical ternary mesh addressing
+import { TritAddress, TernaryRoutingTable, hexIdToAddress, TierName } from '../oracle/ternary-144t.js';
+
+// Time API — HTTP bridge to MA-902 GPS time server (serves on port 3099)
+import { startTimeApi, stopTimeApi } from '../oracle/time-api.js';
 
 // Helper: Format uptime in human-readable format
 function formatUptime(seconds) {
@@ -150,7 +193,7 @@ function formatUptime(seconds) {
   const hours = Math.floor((seconds % 86400) / 3600);
   const mins = Math.floor((seconds % 3600) / 60);
   const secs = seconds % 60;
-  
+
   if (days > 0) return `${days}d ${hours}h ${mins}m`;
   if (hours > 0) return `${hours}h ${mins}m ${secs}s`;
   if (mins > 0) return `${mins}m ${secs}s`;
@@ -197,24 +240,25 @@ const DEFAULT_CONFIG = {
  *   YAKMESH_WS_PORT     — override network.wsPort
  *   YAKMESH_DATA_DIR    — override database.path directory
  *   YAKMESH_BOOTSTRAP   — override bootstrap peer list (comma-separated ws:// URLs)
+ *   YAKMESH_RELAY_PEERS  — auto-register with relay endpoints at startup (comma-separated https:// URLs)
  */
 async function loadConfig() {
   // 1. Check for --config CLI argument (operator-controlled, not env-injectable)
   const configArgIndex = process.argv.findIndex(arg => arg === '--config' || arg === '-c');
   let configPath = './yakmesh.config.js';
-  
+
   if (configArgIndex !== -1 && process.argv[configArgIndex + 1]) {
     configPath = process.argv[configArgIndex + 1];
     log.info(`📋 Config source: CLI --config ${configPath}`);
   }
 
   let config = { ...DEFAULT_CONFIG };
-  
+
   // Load config from the resolved path
   if (existsSync(configPath)) {
     // Handle both absolute and relative paths
     const isAbsolute = configPath.startsWith('/') || /^[A-Z]:/i.test(configPath);
-    const importPath = isAbsolute 
+    const importPath = isAbsolute
       ? `file://${configPath.replace(/\\/g, '/')}`
       : `../${configPath.replace('./', '')}`;
     const { default: userConfig } = await import(importPath);
@@ -242,7 +286,29 @@ async function loadConfig() {
       .map(s => s.trim())
       .filter(Boolean);
   }
-  
+
+  if (process.env.YAKMESH_RELAY_PEERS) {
+    // Comma-separated HTTPS relay URLs, e.g. https://yakmesh.dev/mesh/relay.php
+    config.relayPeers = process.env.YAKMESH_RELAY_PEERS
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean);
+  }
+
+  // Caddy web server config (HTTPS/443 reverse proxy)
+  // YAKMESH_DOMAIN=yakmesh.dev enables auto-HTTPS via Let's Encrypt
+  // YAKMESH_ACME_EMAIL=admin@yakmesh.dev for cert notifications
+  if (process.env.YAKMESH_DOMAIN) {
+    config.caddy = {
+      enabled: true,
+      domain: process.env.YAKMESH_DOMAIN,
+      autoHttps: true,
+      acmeEmail: process.env.YAKMESH_ACME_EMAIL || null,
+      nodeHttpPort: config.network?.httpPort || 3080,
+      nodeWsPort: config.network?.wsPort || 9080,
+    };
+  }
+
   return config;
 }
 
@@ -260,55 +326,73 @@ export class YakmeshNode {
     this.http = null;
     this.boundHttpPort = null;  // Actual bound port (may differ if fallback used)
     this.app = null;  // Store Express app for PeerQuanta endpoints
-    
+
     // Oracle system
     this.oracle = null;
     this.codeProof = null;
     this.consensus = null;
-    
+
     // Content store for public delivery
     this.contentStore = null;
-    
+
     // Annex lives in mesh.annex — single instance managed by mesh layer
-    
+
     // KOMM Stack — chat, voice, rooms, access control
     this.kathaHub = null;
     this.vaniHub = null;
     this.yurtHub = null;
     this.gumbaHub = null;
-    
+
     // DARSHAN — content streaming
     this.darshanGateway = null;
-    
+
     // NAKPAK — onion routing
     this.nakpakRouter = null;
-    
+
     // SAKSHI — witness consensus
     this.sakshiWitness = null;
     this.velocityMonitor = null;
-    
+
     // KARMA — trust model (fed by SAKSHI observations)
     this.karmaModel = null;
-    
+
     // KOMM WebSocket (real-time KATHA/VANI)
     this.kommWss = null;
-    
+
     // Time source detector
     this.timeSource = null;
-    
+
     // Geographic proof service (v2.5.0)
     this.geoProofService = null;
-    
+
     // iO Network Identity (hash obfuscation)
     this.genesisNetwork = null;
-    
+
+    // SANGHA — collective component attestation
+    this.sangha = null;
+
+    // FS Hardening — file integrity with SANGHA-FS
+    this.fsHardening = null;
+
+    // Memory Safety — circulating canaries
+    this.memorySafety = null;
+
+    // Temporal Signing — GPS-bound code signatures
+    this.temporalSigner = null;
+
+    // KARMA Rate Limiter — adaptive rate limiting
+    this.rateLimiter = null;
+
+    // Secure Config — oracle-attested configuration
+    this.secureConfig = null;
+
     // Codebase lock status
     this.codebaseLocked = false;
   }
 
   async start() {
     log.info('\n🦬 Starting Yakmesh Node...\n');
-    
+
     // Record start time for uptime tracking
     this._startTime = Date.now();
 
@@ -320,6 +404,20 @@ export class YakmeshNode {
       this.codebaseLocked = true;
       setupUnlockOnExit();  // Ensure cleanup on process exit
       log.info(`✓ Codebase locked: ${lockResult.fileCount} source files protected`);
+
+      // Subscribe to tampering events
+      onTamper((event) => {
+        log.error('🚨 SECURITY ALERT: Tampering detected!', {
+          type: event.type,
+          path: event.path,
+          time: event.isoTime,
+        });
+        // Could broadcast to mesh here for visibility
+      });
+
+      if (lockResult.watchdogActive) {
+        log.info('✓ Watchdog active: monitoring for tampering attempts');
+      }
     } else {
       log.warn(`⚠️ Codebase lock failed: ${lockResult.error}`);
       log.warn('   Node will continue but source files are not protected');
@@ -348,8 +446,8 @@ export class YakmeshNode {
     const modelsDir = join(import.meta.dirname, '..', 'models');
     const ONNX_MODELS = [
       { name: 'entropy-sentinel', file: 'entropy-sentinel.onnx' },
-      { name: 'sakshi-anomaly',   file: 'sakshi-anomaly.onnx' },
-      { name: 'karma-trust',      file: 'karma-trust.onnx' },
+      { name: 'sakshi-anomaly', file: 'sakshi-anomaly.onnx' },
+      { name: 'karma-trust', file: 'karma-trust.onnx' },
     ];
     let modelsLoaded = 0;
     for (const { name, file } of ONNX_MODELS) {
@@ -385,7 +483,7 @@ export class YakmeshNode {
     // 1. Initialize the Oracle system FIRST (provides codebase hash for identity)
     // This MUST happen before identity initialization
     this._initOracle();
-    
+
     // 1b. Initialize time source detection (async — MA-902 SNMP init)
     await this._initTimeSource();
 
@@ -394,7 +492,7 @@ export class YakmeshNode {
     const dbDir = this.config.database.path.replace(/[/\\\\][^/\\\\]+\.db$/, '');
     this.identity = new NodeIdentity(dbDir);
     await this.identity.init(this.config.node.name, this.config.node.region, this.oracle);
-    
+
     // 2b. Update codeProof and consensus with the initialized identity
     if (this.codeProof) {
       this.codeProof.nodeId = this.identity.identity?.nodeId;
@@ -406,6 +504,8 @@ export class YakmeshNode {
       // Pass network identity for peer verification
       networkId: this.genesisNetwork?.networkId,
       networkFingerprint: this.genesisNetwork?.fingerprint,
+      // JHILKE: Pass oracle code hash for deterministic bootstrap key derivation
+      codeHash: this.oracle?.selfHash,
     });
     await this.mesh.start();
 
@@ -421,47 +521,59 @@ export class YakmeshNode {
     this.gossip = new GossipProtocol(this.mesh, this.identity, {
       fanout: 3,
       helloInterval: 30000,
+      // Relay info callback — gossip includes our relay endpoints in HELLO broadcasts
+      getRelayInfo: () => this._getActiveRelayInfo(),
+      // Relay connect callback — gossip tells us to register with a discovered relay
+      connectRelay: (endpoint, nodeId) => this._registerWithRelay({ relayEndpoint: endpoint, nodeId: nodeId || `relay-${Date.now()}` }),
     });
     this.gossip.start();
 
     // Handle incoming rumors (data from other nodes)
     this.mesh.on('rumor', (topic, data, origin) => {
-      log.debug(`📨 Rumor [${topic}] from ${origin.slice(0, 16)}...`);
-      
+      log.debug(`📨 Rumor [${topic}] from ${peerTag(origin)}`);
+
       // Handle different rumor topics
       if (topic === 'data_update') {
         this.replication.recordChange(data.table, data.rowId, data.operation, data.data);
       }
-      
+
       // Handle code proof challenges
       if (topic === 'code_proof_challenge') {
         const response = this.codeProof.respondToChallenge(data);
         this.gossip.spreadRumor('code_proof_response', response);
       }
-      
+
       // Handle code proof responses
       if (topic === 'code_proof_response') {
         this.codeProof.verifyResponse(data);
       }
-      
+
       // Handle oracle-validated content
       if (topic === 'oracle_content') {
         this._handleOracleContent(data, origin);
       }
-      
+
       // Handle iO network handshakes
       if (topic === 'network_handshake') {
         this._handleNetworkHandshake(data, origin);
       }
-      
+
       // Handle content gossip (for public content delivery)
       if (topic === 'content') {
         if (this.contentStore) {
           this.contentStore._handleContentGossip(data, origin);
         }
       }
+
+      // Handle time heartbeat gossip (MANI grandmaster time propagation)
+      if (topic === 'time:heartbeat') {
+        this._handleTimeHeartbeat(data, origin);
+      }
     });
-    
+
+    // 4b. Start periodic time heartbeat gossip broadcast
+    this._startTimeHeartbeat();
+
     // Annex messages handled directly in mesh._handleMessage() — no separate routing needed
 
     // 5. Initialize content store for public delivery
@@ -469,26 +581,29 @@ export class YakmeshNode {
       dataDir: this.config.database?.contentPath || './data/content',
     });
     await this.contentStore.init(this);
-    
+
     // 5b. Annex — initialized inside mesh.start(), no duplicate instance needed
     log.info('✓ Annex channel ready (single instance in mesh layer)');
-    
+
     // 5c. Initialize KOMM stack (KATHA + VANI + YURT + GUMBA)
     this._initKommStack();
-    
+
     // 5d. Initialize DARSHAN content streaming gateway
     this._initDarshan();
-    
+
     // 5e. Initialize NAKPAK onion routing
     this._initNakpak();
-    
+
     // 5f. Initialize SAKSHI witness consensus
     this._initSakshi();
-    
+
     // 5g. Initialize KARMA trust model (fed by SAKSHI)
     this._initKarma();
-    
-    // 5h. Initialize SHERPA for decentralized peer discovery
+
+    // 5h. Initialize ternary harmonization stack (SST × YPC-27 × 144T × ML)
+    await this._initTernaryHarmonization();
+
+    // 5i. Initialize SHERPA for decentralized peer discovery
     this.sherpa = new SherpaDiscovery({
       nodeId: this.identity.identity.nodeId,
       networkName: this.genesisNetwork?.networkName,
@@ -512,7 +627,7 @@ export class YakmeshNode {
 
     // Expose SHERPA registry on mesh so ANNEX can look up relay peer public keys
     this.mesh.sherpa = this.sherpa;
-    
+
     // Start SHERPA if seeds are configured or selfEndpoint is set
     if (this.config.sherpa?.enabled !== false) {
       // Wire SHERPA auto-connect: when crawl discovers peers, connect outbound
@@ -529,10 +644,10 @@ export class YakmeshNode {
     // Route direct messages (sendTo) via relay when no WS connection
     this.mesh.on('outbound-relay', (targetNodeId, msg) => {
       if ((this._relayPollers && this._relayPollers.has(targetNodeId)) ||
-          (this._relayClients && this._relayClients.has(targetNodeId))) {
+        (this._relayClients && this._relayClients.has(targetNodeId))) {
         this._queueRelayMessage(targetNodeId, msg);
       } else {
-        log.debug(`No relay path to ${targetNodeId.slice(0, 20)}`);
+        log.debug(`No relay path to ${peerTag(targetNodeId)}`);
       }
     });
 
@@ -542,7 +657,7 @@ export class YakmeshNode {
     //   - _relayClients: nodes that poll US (they registered with our relay)
     this.mesh.on('outbound-gossip', (msg, excludeNodeIds = []) => {
       const excludeSet = new Set(excludeNodeIds);
-      
+
       // Queue for nodes we actively poll (outbound relay connections)
       if (this._relayPollers && this._relayPollers.size > 0) {
         for (const [relayNodeId] of this._relayPollers) {
@@ -573,22 +688,25 @@ export class YakmeshNode {
           // Also clear any queued messages and cached keys for expired client
           if (this._relayOutbox) this._relayOutbox.delete(clientNodeId);
           if (this.mesh?._relayPeerKeys) this.mesh._relayPeerKeys.delete(clientNodeId);
-          log.debug(`Relay client expired: ${clientNodeId.slice(0, 20)}`);
+          log.debug(`Relay client expired: ${peerTag(clientNodeId)}`);
         }
       }
     }, 60000); // Check every minute
-    
+
     // 5k. Start scheduled ML workloads through ComputeScheduler
     this._startScheduledWorkloads();
-    
+
     // 6. Start HTTP server
     await this._startHttpServer();
-    
+
     // 6b. Attach KOMM WebSocket upgrade paths to HTTP server
     this._initKommWebSocket();
 
     // 7. Connect to bootstrap nodes (non-blocking — runs in background)
     this._connectToBootstrap();
+
+    // 7b. Auto-register with relay peers from YAKMESH_RELAY_PEERS env var
+    this._connectToRelayPeers();
 
     // 7. Initialize PeerQuanta integration (if enabled)
     if (this.config.peerquanta?.enabled) {
@@ -677,39 +795,75 @@ export class YakmeshNode {
     }
     log.info('');
 
+    // 10. Start Time API (HTTP bridge to MA-902 GPS time server)
+    try {
+      await startTimeApi();
+      log.info('  TIME API:   ✓ GPS telemetry at http://localhost:3099/api/time');
+    } catch (err) {
+      log.warn(`  TIME API:   ⚠️  Failed to start: ${err.message}`);
+    }
+
+    // 11. Start Caddy reverse proxy (HTTPS/443 with auto Let's Encrypt)
+    // Only starts if YAKMESH_DOMAIN env var is set
+    if (this.config.caddy?.enabled && this.config.caddy?.domain) {
+      try {
+        this.webServer = new YakmeshWebServer({
+          domain: this.config.caddy.domain,
+          autoHttps: this.config.caddy.autoHttps !== false,
+          acmeEmail: this.config.caddy.acmeEmail,
+          nodeProxy: true,
+          nodeHttpPort: this.boundHttpPort || this.config.network.httpPort,
+          nodeWsPort: this.mesh.boundPort || this.config.network.wsPort,
+          root: './htdocs',
+          logPath: './logs',
+        });
+        await this.webServer.start();
+        log.info(`  CADDY:      ✓ HTTPS reverse proxy at https://${this.config.caddy.domain}`);
+        log.info(`              → HTTP:${this.boundHttpPort || this.config.network.httpPort} WS:${this.mesh.boundPort || this.config.network.wsPort}`);
+      } catch (err) {
+        log.warn(`  CADDY:      ⚠️  Failed to start: ${err.message}`);
+      }
+    }
+
     return this;
   }
 
   async stop() {
     log.info('\n🛑 Stopping Yakmesh Node...');
-    
+
     this.adapter?.stopSync();
     this.timeSource?.stop();  // Stop time source monitoring
+    await stopTimeApi().catch(() => { });  // Stop time API server
     this.consensus?.stop();  // Stop consensus engine
     this.yurtHub?.stop();  // Stop YURT room gossip
     this.velocityMonitor?.stop?.();  // Stop velocity monitoring
     this.karmaModel?.stopPromotionChecks?.();  // Stop KARMA auto-promotion
     this.nakpakRouter?.cleanupCircuits?.();  // Cleanup NAKPAK circuits
     this.kommWss?.close();  // Close KOMM WebSocket server
+    // Stop Caddy web server
+    if (this.webServer) {
+      await this.webServer.stop().catch(() => { });
+    }
     // Stop scheduled workloads
     if (this._entropyCheckTimer) clearInterval(this._entropyCheckTimer);
     if (this._peerAssessTimer) clearInterval(this._peerAssessTimer);
+    if (this._timeHeartbeatInterval) clearInterval(this._timeHeartbeatInterval);
     await accel.scheduler.shutdown();  // Drain compute scheduler queues
     // Annex channels cleaned up by mesh.stop()
     this.gossip?.stop();
     this.replication?.stopSync();
     await this.mesh?.stop();
-    
+
     if (this.http) {
       this.http.close();
     }
-    
+
     // Unlock codebase - allow modifications again
     if (this.codebaseLocked) {
       unlockCodebase();
       this.codebaseLocked = false;
     }
-    
+
     log.info('✓ Yakmesh Node stopped\n');
   }
 
@@ -720,34 +874,34 @@ export class YakmeshNode {
    */
   _initOracle() {
     log.info('🔮 Initializing Oracle System...');
-    
+
     // Get the singleton oracle instance (computes codebase hash)
     this.oracle = getOracle();
-    
+
     // Initialize code proof protocol (identity will be set later)
     this.codeProof = new CodeProofProtocol({ identity: null });
-    
+
     // Initialize consensus engine (identity will be set later)  
     this.consensus = new ConsensusEngine({ identity: null }, {
       minAttestations: this.config.oracle?.minAttestations || 1,
     });
-    
+
     // Listen for consensus events
     this.consensus.on('consensus', (event) => {
       log.info(`✓ Consensus reached for ${event.contentType}: ${event.contentHash.slice(0, 16)}...`);
     });
-    
+
     this.consensus.on('conflict-resolved', (event) => {
       log.info(`⚖️ Conflict resolved: ${event.winnerHash.slice(0, 16)}... won`);
     });
-    
+
     // Note: Raw oracle hash now hidden - use network identity instead
     log.info(`✓ Oracle initialized`);
-    
+
     // Initialize iO-inspired network identity (hash obfuscation)
     this._initGenesisNetwork();
   }
-  
+
   /**
    * Initialize the iO-inspired Genesis Network Identity
    * This derives a human-readable network name from the oracle hash
@@ -755,33 +909,33 @@ export class YakmeshNode {
    */
   _initGenesisNetwork() {
     log.info('🌐 Initializing iO Network Identity...');
-    
+
     // Create GenesisNetworkV2 from the oracle
     this.genesisNetwork = createGenesisNetworkV2(this.oracle);
-    
+
     // Update consensus engine with network fingerprint for security
     if (this.consensus) {
       this.consensus.networkFingerprint = this.genesisNetwork.fingerprint;
     }
-    
+
     // Update code proof protocol with fingerprint
     if (this.codeProof) {
       this.codeProof.networkFingerprint = this.genesisNetwork.fingerprint;
     }
-    
+
     log.debug(`   Network Name: ${this.genesisNetwork.networkName}`);
     log.debug(`   Network ID:   ${this.genesisNetwork.networkId}`);
     log.debug(`   Verify:       "${this.genesisNetwork.verificationPhrase}"`);
     log.info('✓ Genesis Network initialized (iO hash obfuscation active)');
   }
-  
+
   /**
    * Initialize time source detection
    * Detects precision time sources and configures phase epochs accordingly
    */
   async _initTimeSource() {
     log.info('⏰ Initializing Time Source Detection...');
-    
+
     // Get or create global time source detector
     // MA-902/S-C1 GPS Time Server on LAN — provides satellite telemetry via SNMP
     this.timeSource = getTimeSourceDetector({
@@ -794,18 +948,18 @@ export class YakmeshNode {
         pollInterval: 10000,     // Poll SNMP telemetry every 10s
       },
     });
-    
+
     // Perform initial detection
     const results = this.timeSource.detect();
-    
+
     // Configure phase epochs based on detected time source
     if (results.trustLevel) {
       setTimeSourceConfig(results.trustLevel);
     }
-    
+
     // Start continuous monitoring (async — initialises MA-902 SNMP session)
     await this.timeSource.start();
-    
+
     // Log initial detection
     const trustIcons = {
       atomic: '🔬',
@@ -814,42 +968,163 @@ export class YakmeshNode {
       ntp: '🌐',
       unsync: '⚠️',
     };
-    
+
     log.debug(`   Trust Level: ${trustIcons[results.trustLevel] || '?'} ${results.trustLevel.toUpperCase()}`);
     log.debug(`   Tolerance:   ±${results.phaseTolerance}ms`);
     log.debug(`   Primary:     ${results.primarySource || 'none'}`);
-    
+
+    // Track last known trust level to only log on actual changes
+    let lastKnownTrustLevel = results.trustLevel;
+
     // Listen for trust level changes
     this.timeSource.on('detected', (newResults) => {
-      if (newResults.trustLevel !== results.trustLevel) {
-        log.info(`⏰ Time source changed: ${newResults.trustLevel.toUpperCase()}`);
+      if (newResults.trustLevel !== lastKnownTrustLevel) {
+        log.info(`⏰ Time source changed: ${lastKnownTrustLevel.toUpperCase()} → ${newResults.trustLevel.toUpperCase()}`);
+        lastKnownTrustLevel = newResults.trustLevel;
         setTimeSourceConfig(newResults.trustLevel);
       }
     });
-    
+
     log.info('✓ Time Source initialized');
   }
-  
+
+  // =========================================
+  // MANI Time Heartbeat Gossip
+  // =========================================
+  // Broadcasts local time source status via MANTRA gossip so that every
+  // mesh peer receives grandmaster-quality timing data even if it only
+  // has system-clock NTP.  On the LAN node this carries MA-902 GPS
+  // satellite telemetry; on Hostinger (or any peer) the incoming
+  // heartbeats populate `this.meshTimeReference` — the best-known
+  // atomic/GPS time from the mesh.
+  //
+  // Public NTP: time.yakmesh.dev (UDP 123 → MA-902 GPS grandmaster)
+  // =========================================
+
+  /**
+   * Start periodic time heartbeat gossip.
+   * Called once after gossip + timeSource are both initialized.
+   */
+  _startTimeHeartbeat() {
+    // Mesh time reference — best peer time we've received via gossip
+    this.meshTimeReference = null;
+
+    const HEARTBEAT_INTERVAL = 30_000; // 30 s (matches relay poll cadence)
+
+    const broadcast = () => {
+      if (!this.gossip || !this.timeSource) return;
+
+      const status = this.timeSource.getStatus();
+      const sats = status.ma902?.satellites || status.satellites || {};
+      const locked = status.trustLevel === 'gps' || status.trustLevel === 'atomic';
+
+      const heartbeat = {
+        // Node identity
+        nodeId: this.identity.identity.nodeId,
+        nodeName: this.identity.identity.name,
+        // Time quality
+        trustLevel: status.trustLevel,
+        stratum: status.stratum ?? (locked ? 1 : 2),
+        accuracy_ms: locked ? 1 : 50,
+        phaseTolerance: status.phaseTolerance,
+        primarySource: status.primarySource,
+        // Satellite telemetry (only meaningful on GPS-backed nodes)
+        satellites: {
+          visible: sats.visible ?? 0,
+          used: sats.used ?? 0,
+          tracking: sats.tracking ?? 0,
+          constellations: sats.constellations ?? [],
+        },
+        lock: locked,
+        quality: locked ? 'excellent' : 'degraded',
+        offset_ns: status.offset ?? 0,
+        reference_id: locked ? 'GPS' : 'SYS',
+        // MA-902 enrichment (when available)
+        ma902: status.ma902 ? {
+          host: status.ma902.host,
+          locked: status.ma902.locked,
+          gpsTime: status.ma902.gpsTimeISO,
+          clockDelta: status.ma902.clockDeltaSeconds,
+          alarm: status.ma902.alarm,
+          quality: status.ma902.qualityIndicator,
+        } : null,
+        // Public NTP endpoint (resolvable from anywhere on the internet)
+        publicNtp: locked ? 'time.yakmesh.dev' : null,
+        // Timestamp of this heartbeat (local clock)
+        timestamp: Date.now(),
+      };
+
+      this.gossip.spreadRumor('time:heartbeat', heartbeat);
+    };
+
+    // First heartbeat after a short delay (let relay connect)
+    setTimeout(broadcast, 5_000);
+    // Then every 30 s
+    this._timeHeartbeatInterval = setInterval(broadcast, HEARTBEAT_INTERVAL);
+
+    log.info('⏰ MANI time heartbeat gossip started (every 30 s)');
+  }
+
+  /**
+   * Handle an incoming time:heartbeat rumor from a peer.
+   * Keeps track of the best (lowest stratum) grandmaster in the mesh.
+   */
+  _handleTimeHeartbeat(data, origin) {
+    // Ignore our own heartbeats
+    if (origin === this.identity.identity.nodeId) return;
+
+    const peerStratum = data.stratum ?? 16;
+    const peerLocked = !!data.lock;
+    const currentBest = this.meshTimeReference;
+
+    // Accept if:  no current reference, OR this peer has a lower (better) stratum,
+    //             OR same stratum but this one is locked and current isn't
+    const dominated =
+      !currentBest ||
+      peerStratum < (currentBest.stratum ?? 16) ||
+      (peerStratum === (currentBest.stratum ?? 16) && peerLocked && !currentBest.lock);
+
+    if (dominated) {
+      this.meshTimeReference = {
+        ...data,
+        receivedAt: Date.now(),
+        fromNodeId: origin,
+      };
+
+      log.info(`⏰ Mesh time reference updated — ${data.nodeName || peerTag(origin)} ` +
+        `stratum ${peerStratum}, lock=${peerLocked}, ` +
+        `sats=${data.satellites?.used ?? 0}/${data.satellites?.visible ?? 0}` +
+        (data.publicNtp ? `, ntp=${data.publicNtp}` : ''));
+    } else if (currentBest && origin === currentBest.fromNodeId) {
+      // Same grandmaster, refresh its data
+      this.meshTimeReference = {
+        ...data,
+        receivedAt: Date.now(),
+        fromNodeId: origin,
+      };
+    }
+  }
+
   /**
    * Initialize the KOMM Stack (KATHA + VANI + YURT + GUMBA)
    * This provides the chat, voice, room, and access control backend.
    */
   _initKommStack() {
     log.info('💬 Initializing KOMM Stack...');
-    
+
     // KATHA — Chat messaging hub
     this.kathaHub = new KathaHub();
     log.debug('   KATHA: Chat messaging hub ready');
-    
+
     // GUMBA — Access control (initialized before YURT, which depends on it)
     this.gumbaHub = new GumbaHub(this.identity, this.mesh?.annex, {});
     log.debug('   GUMBA: Access control hub ready');
-    
+
     // YURT — Room directory (depends on identity, gumbaHub, mesh)
     this.yurtHub = new YurtHub(this.identity, this.gumbaHub, this.mesh, {});
     this.yurtHub.start();
     log.debug('   YURT: Room directory + gossip started');
-    
+
     // VANI — Voice/video calling
     this.vaniHub = new VaniHub({
       localPeerId: this.identity.identity.nodeId,
@@ -862,36 +1137,36 @@ export class YakmeshNode {
       },
     });
     log.debug('   VANI: Voice/video signaling hub ready');
-    
+
     // Wire KOMM gossip handlers (incoming KATHA/VANI/YURT/GUMBA rumors)
     wireKommGossip(this.mesh, this.kathaHub, this.vaniHub, this.yurtHub, this.gumbaHub);
-    
+
     log.info('✓ KOMM Stack initialized (KATHA + VANI + YURT + GUMBA)');
   }
-  
+
   /**
    * Initialize DARSHAN content streaming gateway
    */
   _initDarshan() {
     log.info('📺 Initializing DARSHAN...');
-    
+
     this.darshanGateway = new DarshanGateway(this.identity, {
       maxBandwidth: this.config.darshan?.maxBandwidth || Infinity,
     });
-    
+
     // Wire DARSHAN gossip handlers
     wireDarshanGossip(this.mesh, this.darshanGateway);
-    
+
     log.info('✓ DARSHAN initialized (content streaming gateway)');
   }
-  
+
   /**
    * Initialize NAKPAK onion routing
    * Provides post-quantum anonymous routing for sensitive messages.
    */
   _initNakpak() {
     log.info('🧅 Initializing NAKPAK...');
-    
+
     this.nakpakRouter = new NakpakRouter({
       nodeId: this.identity.identity.nodeId,
       onMessageReceived: (message) => {
@@ -909,7 +1184,7 @@ export class YakmeshNode {
         }
       },
     });
-    
+
     // Register known peers as NAKPAK nodes
     // Re-register whenever new peers connect
     this.mesh.on('peer:connected', (peerId, peerInfo) => {
@@ -917,35 +1192,35 @@ export class YakmeshNode {
         this.nakpakRouter.registerNode(peerId, peerInfo.publicKey);
       }
     });
-    
+
     // Handle incoming NAKPAK relay packets
     this.mesh.on('rumor', (topic, data, origin) => {
       if (topic === 'nakpak:relay' && data.packet) {
         this.nakpakRouter.relay.handlePacket(data.packet);
       }
     });
-    
+
     log.info('✓ NAKPAK initialized (post-quantum onion routing)');
   }
-  
+
   /**
    * Initialize SAKSHI witness consensus
    * Observational capability system for node behavior monitoring.
    */
   _initSakshi() {
     log.info('👁️ Initializing SAKSHI...');
-    
+
     this.sakshiWitness = new NodeWitness({
       nodeId: this.identity.identity.nodeId,
       ...this.config.sakshi,
     });
-    
+
     // Behavior velocity monitor (detects rapid state changes / anomalies)
     this.velocityMonitor = new BehaviorVelocityMonitor({
       nodeId: this.identity.identity.nodeId,
       inferenceEngine: accel.inference,
     });
-    
+
     // Track connection churn per peer via velocity monitor
     this.mesh.on('peer:connected', (peerId) => {
       this.velocityMonitor.observe(
@@ -954,7 +1229,7 @@ export class YakmeshNode {
         1 // connect event = +1
       );
     });
-    
+
     this.mesh.on('peer:disconnected', (peerId) => {
       this.velocityMonitor.observe(
         peerId,
@@ -962,11 +1237,11 @@ export class YakmeshNode {
         -1 // disconnect event = -1
       );
     });
-    
+
     // Track gossip message rates per origin
     if (this.gossip && this.mesh) {
       let messageCountWindow = new Map(); // peerId -> count in current window
-      
+
       this.mesh.on('rumor', (topic, data, origin) => {
         const rumor = { origin };
         if (!rumor.origin) return;
@@ -978,37 +1253,37 @@ export class YakmeshNode {
           count
         );
       });
-      
+
       // Reset message count window every minute
       setInterval(() => { messageCountWindow.clear(); }, 60000);
     }
-    
+
     log.info('✓ SAKSHI initialized (witness consensus + velocity monitoring)');
   }
-  
+
   /**
    * Initialize KARMA trust model
    * SAKSHI velocity alerts feed into KARMA trust assessments.
    */
   _initKarma() {
     log.info('☯️ Initializing KARMA...');
-    
+
     this.karmaModel = new KarmaTrustModel({
       ...this.config.karma,
       inferenceEngine: accel.inference,
     });
-    
+
     // Wire SAKSHI velocity alerts → KARMA trust adjustments (ternary: NEGATIVE/NEUTRAL/ignored)
     if (this.velocityMonitor) {
       this.velocityMonitor.onAlert((alert) => {
         const { nodeId, level, dimension, zScore } = alert;
-        
+
         // ═══ TRIBHUJ ternary mapping ═══
         // CRITICAL → NEGATIVE karma (record as failed verification)
         // WARNING  → NEUTRAL observation (beacon sighting — keeps node active)
         // ELEVATED → ignored (normal variance — no karmic consequence)
         if (level === VELOCITY_ALERT.CRITICAL) {
-          log.warn(`☯️ KARMA: Critical velocity alert for ${nodeId.slice(0, 16)}... (${dimension}, z=${zScore.toFixed(1)}) → NEGATIVE`);
+          log.warn(`☯️ KARMA: Critical velocity alert for ${peerTag(nodeId)} (${dimension}, z=${zScore.toFixed(1)}) → NEGATIVE`);
           // Record negative evidence — failed behavioral verification
           this.karmaModel.recordDokoVerification(nodeId, {
             passed: false,
@@ -1021,59 +1296,415 @@ export class YakmeshNode {
             karmaScore: karmaEvidence?.trustScore ? karmaEvidence.trustScore / 100 : 0.5,
           }).then(({ result }) => {
             if (result?.anomalyScore > 0.7) {
-              log.warn(`👁️ SAKSHI: Deep assessment confirms anomaly for ${nodeId.slice(0, 16)}... (score=${result.anomalyScore.toFixed(3)})`);
+              log.warn(`👁️ SAKSHI: Deep assessment confirms anomaly for ${peerTag(nodeId)} (score=${result.anomalyScore.toFixed(3)})`);
             }
-          }).catch(() => {}); // Non-fatal — scheduler may reject under load
+          }).catch(() => { }); // Non-fatal — scheduler may reject under load
 
         } else if (level === VELOCITY_ALERT.WARNING) {
-          log.debug(`☯️ KARMA: Warning velocity alert for ${nodeId.slice(0, 16)}... (${dimension}) → NEUTRAL`);
+          log.debug(`☯️ KARMA: Warning velocity alert for ${peerTag(nodeId)} (${dimension}) → NEUTRAL`);
           // Record beacon sighting (neutral — keeps node active, doesn't penalize)
           this.karmaModel.recordBeaconSighting(nodeId);
         }
         // ELEVATED → no karmic consequence (positive path: absence of negative)
       });
     }
-    
+
     // Wire mesh peer events → KARMA beacon sightings (positive karma accumulation)
     this.mesh.on('peer:connected', (peerId) => {
       this.karmaModel.recordBeaconSighting(peerId);
     });
-    
+
     // Wire KARMA trust level changes → scheduled NPU trust prediction (second opinion)
     this.karmaModel.on('promoted', ({ nodeId, from, to, reason }) => {
-      log.info(`☯️ KARMA: Node ${nodeId.slice(0, 16)}... promoted ${from}→${to} (${reason})`);
+      const nid = String(nodeId ?? 'unknown');
+      log.info(`☯️ KARMA: Node ${peerTag(nid)} promoted ${from}→${to} (${reason})`);
       // Schedule NPU trust prediction for the promoted node
-      const evidence = this.karmaModel.getEvidence(nodeId);
+      const evidence = this.karmaModel.getEvidence(nid);
       if (evidence) {
         this._scheduledTrustPrediction(evidence).then(({ result }) => {
           if (result?.predicted) {
             const agrees = result.predicted === ['UNTRUSTED', 'SEEKING', 'AWAKENED', 'ENLIGHTENED'][to];
             log.debug(`☯️ KARMA NPU: ${result.source} predicts ${result.predicted} (${agrees ? 'agrees' : 'disagrees'} with rule-based ${to})`);
           }
-        }).catch(() => {}); // Non-fatal
+        }).catch(() => { }); // Non-fatal
       }
     });
-    
+
     this.karmaModel.on('demoted', ({ nodeId, from, to, reason }) => {
-      log.warn(`☯️ KARMA: Node ${nodeId.slice(0, 16)}... demoted ${from}→${to} (${reason})`);
+      const nid = String(nodeId ?? 'unknown');
+      log.warn(`☯️ KARMA: Node ${peerTag(nid)} demoted ${from}→${to} (${reason})`);
       // Schedule NPU trust prediction for the demoted node
-      const evidence = this.karmaModel.getEvidence(nodeId);
+      const evidence = this.karmaModel.getEvidence(nid);
       if (evidence) {
         this._scheduledTrustPrediction(evidence).then(({ result }) => {
           if (result?.predicted) {
             const agrees = result.predicted === ['UNTRUSTED', 'SEEKING', 'AWAKENED', 'ENLIGHTENED'][to];
             log.debug(`☯️ KARMA NPU: ${result.source} predicts ${result.predicted} (${agrees ? 'agrees' : 'disagrees'} with rule-based ${to})`);
           }
-        }).catch(() => {}); // Non-fatal
+        }).catch(() => { }); // Non-fatal
       }
     });
-    
+
     log.info('✓ KARMA trust model initialized (SAKSHI → trust assessment pipeline)');
+  }
+
+  // =========================================================================
+  // TERNARY HARMONIZATION — SST × YPC-27 × 144T × ML unification
+  // =========================================================================
+
+  /**
+   * Initialize the ternary harmonization stack.
+   * Wires together SST-rotated YPC-27 checksums, batch verification,
+   * ternary ML inference, and 144T hierarchical addressing.
+   * 
+   * Call after _initKarma() since it depends on the trust model.
+   */
+  async _initTernaryHarmonization() {
+    log.info('◬ Initializing ternary harmonization stack...');
+
+    // ── 1. 144T Address — derive from node identity ──
+    const nodeId = this.identity?.publicKeyHex || crypto.randomBytes(32).toString('hex');
+    this.tritAddress = hexIdToAddress(nodeId, {
+      galaxy: 0,  // Galaxy 0 = default mesh
+    });
+    log.info(`◬ 144T address: ${this.tritAddress.toString()}`);
+
+    // ── 2. Ternary routing table ──
+    this.ternaryRouter = new TernaryRoutingTable(this.tritAddress, 6);
+
+    // Wire mesh peer connections → ternary routing table
+    this.mesh.on('peer:connected', (peerId) => {
+      try {
+        const peerAddress = hexIdToAddress(peerId);
+        this.ternaryRouter.addPeer(peerId, peerAddress);
+        log.debug(`◬ 144T: Added peer ${peerTag(peerId)} (tier distance: ${this.tritAddress.tierDistance(peerAddress)})`);
+      } catch (err) {
+        log.debug(`◬ 144T: Could not add peer address: ${err.message}`);
+      }
+    });
+
+    this.mesh.on('peer:disconnected', (peerId) => {
+      this.ternaryRouter.removePeer(peerId);
+    });
+
+    // ── 3. Ternary inference adapter (bridges TRIBHUJ → ONNX) ──
+    this.ternaryInference = new TernaryInferenceAdapter(accel.inference);
+
+    // Wire KARMA trust changes → ternary trust classification (second opinion)
+    if (this.karmaModel) {
+      this.karmaModel.on('promoted', ({ nodeId, to }) => {
+        const evidence = this.karmaModel.getEvidence(nodeId);
+        if (evidence) {
+          this._scheduledTernaryTrustClassification(nodeId, evidence.trustScore || 50)
+            .catch(() => { }); // Non-fatal
+        }
+      });
+
+      this.karmaModel.on('demoted', ({ nodeId, to }) => {
+        const evidence = this.karmaModel.getEvidence(nodeId);
+        if (evidence) {
+          this._scheduledTernaryTrustClassification(nodeId, evidence.trustScore || 50)
+            .catch(() => { }); // Non-fatal
+        }
+      });
+    }
+
+    // ── 4. Batch checksum verifier — start auto-flush ──
+    // The BatchChecksumVerifier uses ComputeScheduler internally
+    log.info(`◬ Batch checksum verifier ready (flush threshold: ${batchChecksumVerifier.batchSize})`);
+
+    log.info('✓ Ternary harmonization stack initialized (YPC27_SST + BatchVerify + TernaryML + 144T)');
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // SANGHA — Unified Component Attestation (collective security)
+    // ═══════════════════════════════════════════════════════════════════════
+    // SANGHA creates cryptographic synapses between components for mutual
+    // attestation. Unlike isolation (each stands alone), SANGHA components
+    // protect each other — no component can be compromised silently.
+    // ═══════════════════════════════════════════════════════════════════════
+    log.info('🔗 Initializing SANGHA (collective attestation)...');
+
+    const sangha = getSangha();
+
+    // Bind time source for temporal attestations
+    if (this.timeSource) {
+      sangha.bindTimeSource(this.timeSource);
+    }
+
+    // Register core components with the collective
+    // Each component provides a state getter for antibody circulation
+    joinSangha(SANGHA_COMPONENT.CRYPTO, accel, () => ({
+      initialized: accel.initialized,
+      nativeSha3: accel.HW.nativeSha3,
+      gpuAvailable: accel.HW.gpuAvailable,
+      npuAvailable: accel.HW.npuAvailable,
+    }));
+
+    joinSangha(SANGHA_COMPONENT.ORACLE, this.oracle, () => ({
+      network: this.oracle?.getNetworkId?.() || 'unknown',
+      epoch: this.consensus?.getCurrentEpoch?.() || 0,
+      timeSource: this.timeSource?.getSourceType?.() || 'unknown',
+    }));
+
+    joinSangha(SANGHA_COMPONENT.MESH, this.mesh, () => ({
+      peerId: this.identity?.peerId || 'unknown',
+      peerCount: this.mesh?.getPeerCount?.() || 0,
+      annexActive: this.mesh?.annex?.enabled || false,
+    }));
+
+    joinSangha(SANGHA_COMPONENT.HTTP, this.app, () => ({
+      port: this.boundHttpPort || this.config.httpPort,
+      routes: this.app?._router?.stack?.length || 0,
+    }));
+
+    joinSangha(SANGHA_COMPONENT.IDENTITY, this.identity, () => ({
+      peerId: this.identity?.peerId || 'unknown',
+      keyAlgorithm: 'ML-DSA-65',
+      hasPrivateKey: !!this.identity?.privateKey,
+    }));
+
+    // Start the collective (antibody circulation every 5s)
+    sangha.start({ circulationIntervalMs: 5000 });
+
+    // Subscribe to collective events
+    sangha.on('anomalyDetected', (anomalies) => {
+      log.error('🚨 SANGHA: Anomalies detected in component collective', {
+        count: anomalies.length,
+        types: anomalies.map(a => a.type),
+      });
+    });
+
+    sangha.on('collectiveResponse', (response) => {
+      log.warn('🛡️ SANGHA: Collective response triggered', response);
+    });
+
+    this.sangha = sangha;
+    log.info('✓ SANGHA initialized (collective attestation active)');
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // FS HARDENING — File Integrity with SANGHA-FS Integration
+    // ═══════════════════════════════════════════════════════════════════════
+    // File guardians protect critical files and join the SANGHA collective.
+    // Tampering triggers collective response — no silent compromise possible.
+    // ═══════════════════════════════════════════════════════════════════════
+    log.info('[FS] Initializing FS Hardening (file guardians)...');
+
+    const fsHardening = getFSHardening(this.dataDir);
+    await fsHardening.init();
+
+    // Bind to SANGHA for collective response
+    fsHardening.bindSangha(sangha);
+
+    // Register FS as a SANGHA component
+    joinSangha('fs', fsHardening, async () => {
+      const status = fsHardening.getStatus();
+      return {
+        guardianCount: status.files.length,
+        allLocked: status.files.every(f => f.locked),
+        sanghaConnected: status.sanghaConnected,
+      };
+    });
+
+    // Forward tamper events to SANGHA
+    fsHardening.on('tamper', (event) => {
+      log.error('[!] FS TAMPER DETECTED - alerting SANGHA', event);
+      // The collective will respond via anomalyDetected event
+    });
+
+    // Start periodic verification (30s interval)
+    fsHardening.start(30000);
+
+    this.fsHardening = fsHardening;
+    log.info('✓ FS Hardening initialized', { guardians: fsHardening.getStatus().files.length });
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // MEMORY SAFETY — Circulating Canaries
+    // ═══════════════════════════════════════════════════════════════════════
+    // Canaries are strategically-placed memory regions with known content.
+    // During SANGHA circulation, canaries are checksummed and attested.
+    // Corruption (buffer overflow, use-after-free) is detected in one cycle.
+    // ═══════════════════════════════════════════════════════════════════════
+    log.info('[MEM] Initializing Memory Safety (circulating canaries)...');
+
+    const memorySafety = getMemorySafety();
+    memorySafety.init();
+
+    // Bind to SANGHA for collective response
+    memorySafety.bindSangha(sangha);
+
+    // Register as SANGHA component
+    joinSangha('memory', memorySafety, async () => {
+      return memorySafety.getState();
+    });
+
+    // Forward corruption events
+    memorySafety.on('corruption', (corruptions) => {
+      log.error('[!] MEMORY CORRUPTION - alerting SANGHA', { count: corruptions.length });
+    });
+
+    // Start monitoring (sync with SANGHA circulation)
+    memorySafety.start(5000);
+
+    this.memorySafety = memorySafety;
+    log.info('✓ Memory Safety initialized', {
+      canaries: memorySafety.getStatus().heapCanaries +
+        memorySafety.getStatus().closureCanaries +
+        memorySafety.getStatus().nativeCanaries,
+    });
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // TEMPORAL CODE SIGNING — GPS-bound signatures with auto-expiry
+    // ═══════════════════════════════════════════════════════════════════════
+    // Traditional code signing: sign once, valid forever (until compromise).
+    // Temporal signing: signatures BREATHE — bound to GPS time, auto-expire.
+    //
+    // This forces:
+    // - Regular re-attestation of releases
+    // - Leaked/stolen signatures become useless after expiry
+    // - Nodes reject code signed outside the trust window
+    // ═══════════════════════════════════════════════════════════════════════
+    log.info('[SIGN] Initializing Temporal Code Signing...');
+
+    const temporalSigner = getTemporalSigner({
+      timeSource: this.timeSourceDetector,
+      networkId: this.networkId || this._identity?.network?.name || 'yakmesh',
+    });
+
+    // Bind GPS time source if available
+    if (this.timeSourceDetector) {
+      temporalSigner.bindTimeSource(this.timeSourceDetector);
+    }
+
+    // Register as SANGHA component (signer participates in collective)
+    joinSangha('sign', temporalSigner, async () => {
+      return temporalSigner.getStatus();
+    });
+
+    this.temporalSigner = temporalSigner;
+    log.info('✓ Temporal Signing initialized', temporalSigner.getStatus());
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // KARMA RATE LIMITER — Trust-adaptive rate limiting + input validation
+    // ═══════════════════════════════════════════════════════════════════════
+    // Traditional rate limiting: Fixed thresholds for everyone.
+    // KARMA-adaptive: Throughput scales with earned reputation.
+    //
+    // - Unknown peers: 10 req/min (strict)
+    // - Hostile (KARMA 0-10): 2 req/min (almost blocked)
+    // - Low (KARMA 11-30): 25 req/min
+    // - Medium (KARMA 31-60): 50 req/min
+    // - High (KARMA 61-85): 100 req/min
+    // - Excellent (KARMA 86-100): 200 req/min
+    //
+    // This creates economic incentive: good behavior → higher throughput.
+    // ═══════════════════════════════════════════════════════════════════════
+    log.info('[RATE] Initializing KARMA Rate Limiter...');
+
+    const rateLimiter = getKarmaRateLimiter();
+
+    // Bind to KARMA trust model for reputation lookups
+    if (this.karmaTrust) {
+      rateLimiter.bindKarmaTrust(this.karmaTrust);
+    }
+
+    // Bind to SANGHA for collective response
+    rateLimiter.bindSangha(sangha);
+
+    // Register as SANGHA component
+    joinSangha('rate', rateLimiter, async () => {
+      return rateLimiter.getState();
+    });
+
+    // Forward block events
+    rateLimiter.on('blocked', ({ peerId, reason }) => {
+      log.warn('[BLOCKED] Peer rate-limited', { peerId: peerId.slice(0, 16), reason });
+    });
+
+    // Periodic cleanup of stale buckets
+    setInterval(() => rateLimiter.cleanup(), 300000); // Every 5 minutes
+
+    this.rateLimiter = rateLimiter;
+    log.info('✓ KARMA Rate Limiter initialized', rateLimiter.getStatus());
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // SECURE CONFIG — Oracle-attested configuration management
+    // ═══════════════════════════════════════════════════════════════════════
+    // Traditional secure defaults: Ship with good defaults, hope they stick.
+    // Oracle-attested config: Configuration is hashed and cryptographically
+    // verified. Any deviation from the secure profile is detected.
+    //
+    // Profiles:
+    // - PARANOID: Maximum security, minimal attack surface
+    // - HARDENED: Production-ready security (default)
+    // - STANDARD: Balanced security
+    // - DEVELOPMENT: Relaxed for local dev (warnings only)
+    // ═══════════════════════════════════════════════════════════════════════
+    log.info('[CFG] Initializing Secure Config...');
+
+    const secureConfig = getSecureConfig(); // Uses YAKMESH_SECURITY_PROFILE env or HARDENED
+
+    // Bind to SANGHA for collective verification
+    secureConfig.bindSangha(sangha);
+
+    // Register as SANGHA component
+    joinSangha('config', secureConfig, async () => {
+      return secureConfig.getState();
+    });
+
+    // Forward deviation events
+    secureConfig.on('deviation', ({ profileLevel, deviations }) => {
+      log.warn('[WARN] Config deviation from secure profile', {
+        profile: profileLevel,
+        deviations: deviations.length,
+      });
+    });
+
+    this.secureConfig = secureConfig;
+    log.info('✓ Secure Config initialized', secureConfig.getStatus());
   }
 
   // =========================================================================
   // SCHEDULED WORKLOADS — route ML inference through ComputeScheduler
   // =========================================================================
+
+  /**
+   * Schedule a ternary trust classification through the compute scheduler.
+   * Routes KARMA trust scores through the TernaryInferenceAdapter for
+   * SST-family-aware classification (NEGATIVE/NEUTRAL/POSITIVE mapping).
+   * 
+   * NORMAL priority — enrichment task, not security-critical path.
+   *
+   * @param {string} nodeId — peer to classify
+   * @param {number} trustScore — 0-100 trust score from KARMA
+   * @returns {Promise<{ outcome, device, result, execMs, waitMs }>}
+   */
+  _scheduledTernaryTrustClassification(nodeId, trustScore) {
+    const executor = () => this.ternaryInference.classifyTrust(trustScore);
+    return accel.scheduler.submit({
+      type: 'ternary-trust',
+      priority: accel.Priority.NORMAL,
+      affinity: accel.Affinity.NPU_PREFERRED,
+      timeoutMs: 2000,
+      inputSize: 4,
+      executors: { npu: executor, gpu: executor, cpu: executor },
+    });
+  }
+
+  /**
+   * Schedule a batch YPC-27 checksum verification via the compute scheduler.
+   * Wraps the BatchChecksumVerifier for protocol-level packet integrity.
+   * 
+   * HIGH priority — checksum verification is integrity-critical.
+   *
+   * @param {string} domain — protocol domain (e.g., 'STUPA', 'NAKPAK')
+   * @param {string} nodeId — peer node ID for seed derivation
+   * @param {Uint8Array} data — packet data to verify
+   * @param {Object} checksum — expected checksum from wire
+   * @returns {Promise<boolean>}
+   */
+  async _scheduledChecksumVerify(domain, nodeId, data, checksum) {
+    return batchChecksumVerifier.enqueue(domain, nodeId, data, checksum);
+  }
 
   /**
    * Schedule a STEADYWATCH entropy quality check through the compute scheduler.
@@ -1085,9 +1716,9 @@ export class YakmeshNode {
   _scheduledEntropyCheck(data) {
     const executor = () => steadywatch.scoreEntropy(data);
     return accel.scheduler.submit({
-      type:      'entropy-sentinel',
-      priority:  accel.Priority.CRITICAL,
-      affinity:  accel.Affinity.NPU_PREFERRED,
+      type: 'entropy-sentinel',
+      priority: accel.Priority.CRITICAL,
+      affinity: accel.Affinity.NPU_PREFERRED,
       timeoutMs: 2000,
       inputSize: data?.length || 256,
       executors: { npu: executor, gpu: executor, cpu: executor },
@@ -1105,9 +1736,9 @@ export class YakmeshNode {
   _scheduledAnomalyAssessment(nodeId, context = {}) {
     const executor = () => this.velocityMonitor.assessNode(nodeId, context);
     return accel.scheduler.submit({
-      type:      'sakshi-anomaly',
-      priority:  accel.Priority.HIGH,
-      affinity:  accel.Affinity.NPU_PREFERRED,
+      type: 'sakshi-anomaly',
+      priority: accel.Priority.HIGH,
+      affinity: accel.Affinity.NPU_PREFERRED,
       timeoutMs: 3000,
       inputSize: 48,   // 12 × float32
       executors: { npu: executor, gpu: executor, cpu: executor },
@@ -1124,9 +1755,9 @@ export class YakmeshNode {
   _scheduledTrustPrediction(evidence) {
     const executor = () => this.karmaModel.predictTrustLevel(evidence);
     return accel.scheduler.submit({
-      type:      'karma-trust',
-      priority:  accel.Priority.HIGH,
-      affinity:  accel.Affinity.NPU_PREFERRED,
+      type: 'karma-trust',
+      priority: accel.Priority.HIGH,
+      affinity: accel.Affinity.NPU_PREFERRED,
       timeoutMs: 3000,
       inputSize: 56,   // 14 × float32
       executors: { npu: executor, gpu: executor, cpu: executor },
@@ -1145,9 +1776,9 @@ export class YakmeshNode {
   _scheduledBatchVerify(signature, message, publicKey) {
     const executor = () => accel.batchVerify.enqueue(signature, message, publicKey);
     return accel.scheduler.submit({
-      type:      'batch-verify',
-      priority:  accel.Priority.HIGH,
-      affinity:  accel.Affinity.GPU_PREFERRED,
+      type: 'batch-verify',
+      priority: accel.Priority.HIGH,
+      affinity: accel.Affinity.GPU_PREFERRED,
       timeoutMs: 5000,
       inputSize: (signature?.length || 0) + (message?.length || 0) + (publicKey?.length || 0),
       executors: { gpu: executor, npu: executor, cpu: executor },
@@ -1196,7 +1827,7 @@ export class YakmeshNode {
           };
           const { result } = await this._scheduledAnomalyAssessment(peerId, context);
           if (result && result.anomalyScore > 0.7) {
-            log.warn(`👁️ SAKSHI: High anomaly score for ${peerId.slice(0, 16)}... (score=${result.anomalyScore.toFixed(3)}, source=${result.source})`);
+            log.warn(`👁️ SAKSHI: High anomaly score for ${peerTag(peerId)} (score=${result.anomalyScore.toFixed(3)}, source=${result.source})`);
           }
         } catch {
           // Non-fatal — scheduler may have rejected the task
@@ -1218,12 +1849,12 @@ export class YakmeshNode {
    */
   _initKommWebSocket() {
     if (!this.http || !this.kathaHub) return;
-    
+
     this.kommWss = new WebSocketServer({ noServer: true, maxPayload: 1048576 }); // 1MB max message size
-    
+
     // Per-client ANNEX sessions for PQ encryption
     const kommAnnexSessions = new Map(); // ws → ServerAnnexSession
-    
+
     /**
      * secureSend — encrypt outbound KOMM messages via ANNEX when session exists
      */
@@ -1243,11 +1874,17 @@ export class YakmeshNode {
         ws.send(typeof data === 'string' ? data : JSON.stringify(data));
       }
     };
-    
+
     // Handle upgrade requests for /komm/ws path
     this.http.on('upgrade', (request, socket, head) => {
+      // Catch TCP errors on the raw socket during upgrade — prevents
+      // ECONNRESET from bubbling up as an uncaught exception
+      socket.on('error', (err) => {
+        log.debug('Upgrade socket error (benign)', { code: err.code, msg: err.message });
+      });
+
       const url = new URL(request.url, `http://${request.headers.host}`);
-      
+
       if (url.pathname === '/komm/ws') {
         this.kommWss.handleUpgrade(request, socket, head, (ws) => {
           this.kommWss.emit('connection', ws, request);
@@ -1257,14 +1894,14 @@ export class YakmeshNode {
         // If no handler, the socket just hangs. Destroy it if unhandled.
       }
     });
-    
+
     // Track connected KOMM WebSocket clients
     const kommClients = new Set();
-    
+
     this.kommWss.on('connection', (ws, request) => {
       kommClients.add(ws);
       log.debug('📡 KOMM WS client connected');
-      
+
       ws.on('close', () => {
         kommClients.delete(ws);
         // Destroy ANNEX session on close — zero key material
@@ -1272,22 +1909,22 @@ export class YakmeshNode {
         if (session) { session.destroy(); kommAnnexSessions.delete(ws); }
         log.debug('📡 KOMM WS client disconnected');
       });
-      
+
       ws.on('error', () => {
         kommClients.delete(ws);
         const session = kommAnnexSessions.get(ws);
         if (session) { session.destroy(); kommAnnexSessions.delete(ws); }
       });
-      
+
       // Handle incoming messages from client
       ws.on('message', (raw) => {
         try {
           const msg = JSON.parse(raw.toString());
-          
+
           // ── ANNEX handshake layer (before any application logic) ──
           if (msg.type === ANNEX_HANDSHAKE_TYPE.PUBLIC_KEY) {
             const session = new ServerAnnexSession({
-              localId: this.identity.identity.nodeId.slice(0, 16),
+              localId: peerTag(this.identity.identity.nodeId),
               remoteId: msg.clientId || 'komm-client',
             });
             const result = session.handlePublicKey(msg.publicKey);
@@ -1295,13 +1932,13 @@ export class YakmeshNode {
             ws.send(JSON.stringify({
               type: ANNEX_HANDSHAKE_TYPE.ENCAPSULATED,
               ciphertext: result.ciphertext,
-              serverId: this.identity.identity.nodeId.slice(0, 16),
+              serverId: peerTag(this.identity.identity.nodeId),
               sessionId: msg.sessionId,
             }));
             log.debug('📡 KOMM ANNEX handshake complete (ML-KEM-768)');
             return;
           }
-          
+
           if (msg.type === 'annex:rekey_ack') {
             const session = kommAnnexSessions.get(ws);
             if (session) {
@@ -1310,7 +1947,7 @@ export class YakmeshNode {
             }
             return;
           }
-          
+
           if (msg.type === ANNEX_HANDSHAKE_TYPE.ENCRYPTED) {
             const session = kommAnnexSessions.get(ws);
             if (!session) return;
@@ -1323,22 +1960,22 @@ export class YakmeshNode {
             this._handleKommWsMessage(decrypted, ws, secureSend);
             return;
           }
-          
+
           // Plaintext fallback (backward compat during migration)
           this._handleKommWsMessage(msg, ws, secureSend);
         } catch {
           secureSend(ws, { error: 'Invalid message' });
         }
       });
-      
+
       // Send welcome (may be plaintext if ANNEX not yet established)
       secureSend(ws, {
         type: 'welcome',
-        nodeId: this.identity.identity.nodeId.slice(0, 16),
+        nodeId: peerTag(this.identity.identity.nodeId),
         capabilities: ['katha', 'vani', 'yurt'],
       });
     });
-    
+
     // Broadcast helper — now encrypts per-client via ANNEX
     const broadcastKomm = (type, data) => {
       const payload = { type, data, ts: Date.now() };
@@ -1346,95 +1983,247 @@ export class YakmeshNode {
         secureSend(client, payload);
       }
     };
-    
+
     // Wire KATHA events → WS broadcast
     if (this.kathaHub) {
       this.kathaHub.on?.('message', (msg) => broadcastKomm('katha:message', msg));
       this.kathaHub.on?.('typing', (data) => broadcastKomm('katha:typing', data));
       this.kathaHub.on?.('reaction', (data) => broadcastKomm('katha:reaction', data));
     }
-    
+
     // Wire VANI signals → WS broadcast
     if (this.vaniHub) {
       this.vaniHub.on?.('signal', (signal) => broadcastKomm('vani:signal', signal));
       this.vaniHub.on?.('callStateChanged', (state) => broadcastKomm('vani:callState', state));
     }
-    
+
     // Wire YURT room events → WS broadcast
     if (this.yurtHub) {
       this.yurtHub.on?.('roomRegistered', (room) => broadcastKomm('yurt:registered', room));
       this.yurtHub.on?.('roomUnregistered', (room) => broadcastKomm('yurt:unregistered', room));
     }
-    
+
     // Also broadcast gossip-received KATHA/VANI events
     if (this.mesh) {
       this.mesh.on('rumor', (topic, data, origin) => {
-        if (topic === 'katha:event' || topic === 'katha:typing' || 
-            topic === 'vani:signal') {
+        if (topic === 'katha:event' || topic === 'katha:typing' ||
+          topic === 'vani:signal') {
           broadcastKomm(topic, data);
         }
       });
     }
-    
+
     log.info('✓ KOMM WebSocket initialized at /komm/ws (ANNEX PQ-encrypted)');
   }
-  
+
   /**
    * Handle incoming KOMM WS messages from clients
    */
   _handleKommWsMessage(msg, ws, secureSend) {
     const { type, data } = msg;
-    
+
     switch (type) {
+      // ══════════════════════════════════════════════════════════════════
+      // KATHA (Chat) Handlers
+      // ══════════════════════════════════════════════════════════════════
+
+      case 'katha:auth':
+        // Client authentication — store username for this connection
+        ws._kathaUser = {
+          username: msg.username || data?.username || 'anon',
+          userId: msg.userId || data?.userId || `user_${Date.now()}`,
+          clientType: msg.clientType || 'web',
+        };
+        secureSend(ws, {
+          type: 'katha:auth-ok',
+          userId: ws._kathaUser.userId,
+          username: ws._kathaUser.username,
+        });
+        log.debug(`📡 KOMM client authenticated: ${ws._kathaUser.username}`);
+        break;
+
+      case 'katha:list-channels':
+        // Return list of channels
+        const channels = [];
+        if (this.kathaHub?.channels) {
+          for (const [id, channel] of this.kathaHub.channels) {
+            channels.push({
+              id,
+              name: channel.name || id,
+              type: channel.type || 'text',
+              memberCount: channel.members?.size || 0,
+            });
+          }
+        }
+        // Add default channels if none exist
+        if (channels.length === 0) {
+          channels.push(
+            { id: 'general', name: 'general', type: 'text', memberCount: 1 },
+            { id: 'random', name: 'random', type: 'text', memberCount: 0 },
+          );
+        }
+        secureSend(ws, { type: 'katha:channels', channels });
+        break;
+
+      case 'katha:join':
+        // Join a channel
+        const channelId = data?.channelId || msg.channelId;
+        if (channelId && this.kathaHub?.join) {
+          this.kathaHub.join(channelId, ws._kathaUser);
+        }
+        // Get channel messages
+        const channel = this.kathaHub?.channels?.get(channelId);
+        const messages = channel?.getMessages?.({ limit: 50 }) || [];
+        const members = channel?.members ? Array.from(channel.members.values()) : [];
+        secureSend(ws, {
+          type: 'katha:joined',
+          channelId,
+          messages,
+          members,
+        });
+        break;
+
       case 'katha:send':
+        // Process and broadcast chat message
+        const sendData = {
+          channelId: data.channelId,
+          messageId: data.messageId || `msg_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+          userId: ws._kathaUser?.userId || data.userId,
+          username: ws._kathaUser?.username || data.username,
+          content: data.content,
+          timestamp: new Date().toISOString(),
+          type: data.type || 'katha:text',
+        };
+
+        // Store message (if kathaHub supports it)
         if (this.kathaHub?.send) {
-          this.kathaHub.send(data);
+          this.kathaHub.send(sendData);
         }
+
+        // Broadcast to all KOMM clients (including sender for confirmation)
+        this.kommWss.clients.forEach(client => {
+          if (client.readyState === WebSocket.OPEN && client._kathaUser) {
+            client.send(JSON.stringify({ type: 'katha:message', data: sendData }));
+          }
+        });
         break;
+
       case 'katha:typing':
+        // Broadcast typing indicator to channel members
+        const typingData = {
+          channelId: data.channelId,
+          userId: ws._kathaUser?.userId || data.userId,
+          username: ws._kathaUser?.username || data.username,
+          isTyping: data.isTyping !== false,
+        };
+
         if (this.kathaHub?.setTyping) {
-          this.kathaHub.setTyping(data);
+          this.kathaHub.setTyping(typingData);
         }
+
+        // Broadcast to all KOMM clients in the same channel (except sender)
+        this.kommWss.clients.forEach(client => {
+          if (client !== ws && client.readyState === WebSocket.OPEN && client._kathaUser) {
+            client.send(JSON.stringify({ type: 'katha:typing', data: typingData }));
+          }
+        });
         break;
+
+      case 'katha:reaction':
+        // Toggle reaction on a message
+        const reactionData = {
+          channelId: data.channelId,
+          messageId: data.messageId,
+          emoji: data.emoji,
+          userId: ws._kathaUser?.userId || data.userId,
+        };
+
+        // Store reaction (if kathaHub supports it)
+        if (this.kathaHub?.toggleReaction) {
+          this.kathaHub.toggleReaction(reactionData);
+        }
+
+        // Broadcast to all KOMM clients (including sender for confirmation)
+        this.kommWss.clients.forEach(client => {
+          if (client.readyState === WebSocket.OPEN && client._kathaUser) {
+            client.send(JSON.stringify({ type: 'katha:reaction', data: reactionData }));
+          }
+        });
+        break;
+
+      // ══════════════════════════════════════════════════════════════════
+      // YURT (Rooms) Handlers  
+      // ══════════════════════════════════════════════════════════════════
+
+      case 'yurt:browse':
+        // Browse available rooms
+        const rooms = [];
+        if (this.yurtHub?.directory?.entries) {
+          for (const [id, entry] of this.yurtHub.directory.entries) {
+            rooms.push({
+              id,
+              name: entry.name || id,
+              description: entry.description || '',
+              memberCount: entry.memberCount || 0,
+              isPublic: entry.isPublic !== false,
+            });
+          }
+        }
+        secureSend(ws, { type: 'yurt:rooms', rooms });
+        break;
+
+      // ══════════════════════════════════════════════════════════════════
+      // VANI (Voice/Video) Handlers
+      // ══════════════════════════════════════════════════════════════════
+
       case 'vani:signal':
         if (this.vaniHub?.signal) {
           this.vaniHub.signal(data);
         }
         break;
+
       case 'vani:call':
         if (this.vaniHub?.initiateCall) {
           this.vaniHub.initiateCall(data).then(result => {
             secureSend(ws, { type: 'vani:callResult', data: result });
-          }).catch(() => {});
+          }).catch(() => { });
         }
         break;
+
+      // ══════════════════════════════════════════════════════════════════
+      // General
+      // ══════════════════════════════════════════════════════════════════
+
       case 'ping':
         secureSend(ws, { type: 'pong', ts: Date.now() });
         break;
+
+      default:
+        log.debug(`📡 Unknown KOMM message type: ${type}`);
     }
   }
-  
+
   /**
    * Handle oracle-validated content from peers
    */
   _handleOracleContent(data, origin) {
     const { sealedPackage, attestations } = data;
-    
+
     // Verify the peer is running valid code
     if (!this.codeProof.isPeerVerified(origin)) {
-      log.warn(`⚠️ Received content from unverified peer ${origin.slice(0, 16)}...`);
+      log.warn(`⚠️ Received content from unverified peer ${peerTag(origin)}`);
       // Challenge the peer
       const challenge = this.codeProof.generateChallenge(origin);
       this.gossip.spreadRumor('code_proof_challenge', challenge);
       return;
     }
-    
+
     // Submit to consensus engine
     const result = this.consensus.receivePackage(data);
-    
+
     if (result.accepted) {
       log.info(`✓ Oracle content accepted: ${result.contentHash?.slice(0, 16)}...`);
-      
+
       // Record in replication for persistence
       this.replication.recordChange(
         `oracle_${sealedPackage.type}`,
@@ -1453,20 +2242,20 @@ export class YakmeshNode {
    */
   _handleNetworkHandshake(data, origin) {
     if (!this.genesisNetwork) return;
-    
+
     const { handshake, nodeId } = data;
     const verification = this.genesisNetwork.verifyHandshake(handshake);
-    
+
     // Register the peer
     const compatible = this.genesisNetwork.registerPeer(nodeId || origin, handshake);
-    
+
     if (compatible) {
-      log.debug(`🌐 Peer ${origin.slice(0, 16)}... verified on same network: ${handshake.name}`);
+      log.debug(`🌐 Peer ${peerTag(origin)} verified on same network: ${handshake.name}`);
     } else {
-      log.debug(`⚠️ Peer ${origin.slice(0, 16)}... on different network: ${handshake.name} (${handshake.shortId})`);
+      log.debug(`⚠️ Peer ${peerTag(origin)} on different network: ${handshake.name} (${handshake.shortId})`);
       log.debug(`   Our network: ${this.genesisNetwork.networkName} (${this.genesisNetwork.networkId})`);
     }
-    
+
     // Optionally broadcast our handshake back
     if (compatible && !data.isResponse) {
       this.gossip.spreadRumor('network_handshake', {
@@ -1508,22 +2297,22 @@ export class YakmeshNode {
   async _startHttpServer() {
     const app = express();
     this.app = app;  // Store for PeerQuanta endpoints
-    
+
     // Enable strict routing: /docs and /docs/ are different routes
     app.set('strict routing', true);
-    
+
     // SECURITY: Do NOT set 'trust proxy'. This is a P2P mesh node, not
     // behind a reverse proxy. Setting trust proxy lets remote attackers
     // forge req.ip via X-Forwarded-For headers. Rate limiting uses
     // validate: { xForwardedForHeader: false } to avoid this class of attack.
     // If deployed behind a known proxy, configure trustedProxies explicitly.
-    
+
     app.use(express.json({ limit: '1mb' }));  // Limit payload size
-    
+
     // =========================================
     // SECURITY: Rate Limiting (DoS Protection)
     // =========================================
-    
+
     // General rate limit: 100 requests per minute per IP
     const generalLimiter = rateLimit({
       windowMs: 60 * 1000,  // 1 minute
@@ -1533,7 +2322,7 @@ export class YakmeshNode {
       legacyHeaders: false,
       validate: { xForwardedForHeader: false },
     });
-    
+
     // Strict rate limit for write operations: 20 per minute
     const writeLimiter = rateLimit({
       windowMs: 60 * 1000,
@@ -1543,10 +2332,10 @@ export class YakmeshNode {
       legacyHeaders: false,
       validate: { xForwardedForHeader: false },
     });
-    
+
     // Apply general limiter to all routes
     app.use(generalLimiter);
-    
+
     // CORS — restricted to localhost and configured origins
     const allowedOrigins = new Set([
       'http://localhost:3000',
@@ -1555,7 +2344,7 @@ export class YakmeshNode {
       'http://127.0.0.1:3090',
       ...(this.config.cors?.allowedOrigins || []),
     ]);
-    
+
     app.use((req, res, next) => {
       const origin = req.headers.origin;
       if (origin && allowedOrigins.has(origin)) {
@@ -1567,7 +2356,7 @@ export class YakmeshNode {
       if (req.method === 'OPTIONS') return res.sendStatus(200);
       next();
     });
-    
+
     // =========================================
     // SECURITY: Peer authentication middleware
     // =========================================
@@ -1578,7 +2367,7 @@ export class YakmeshNode {
       const nodeId = req.headers['x-node-id'];
       const sig = req.headers['x-node-signature'];
       const ts = req.headers['x-node-timestamp'];
-      
+
       // Use the RAW socket address, immune to X-Forwarded-For spoofing.
       // req.ip respects 'trust proxy' and can be forged — never use it for auth.
       const rawIP = req.socket?.remoteAddress || req.connection?.remoteAddress;
@@ -1586,12 +2375,12 @@ export class YakmeshNode {
       if (isLocal) {
         return next();
       }
-      
+
       // Require node identity headers for remote requests
       if (!nodeId || !sig || !ts) {
         return res.status(401).json({ error: 'Missing peer authentication headers' });
       }
-      
+
       // Reject stale timestamps — tightened from 30s to 10s
       // With TRIBHUJ ratchet and SSE push, nodes maintain tighter time sync.
       // 10s allows for reasonable network latency while preventing replay attacks.
@@ -1600,14 +2389,14 @@ export class YakmeshNode {
       if (isNaN(drift) || drift > MAX_AUTH_DRIFT_MS) {
         return res.status(401).json({ error: 'Request timestamp too old or invalid' });
       }
-      
+
       // Resolve the ACTUAL public key for this nodeId from mesh peer registry.
       // The annex._getPeerPublicKey pattern: peers → _relayPeerKeys → sherpa.registry
       const peerPublicKey = this._resolvePeerPublicKey(nodeId);
       if (!peerPublicKey) {
         return res.status(403).json({ error: 'Unknown peer — no public key on record' });
       }
-      
+
       // Verify ML-DSA-65 signature over (nodeId + timestamp + body hash)
       try {
         const bodyStr = JSON.stringify(req.body || {});
@@ -1623,11 +2412,11 @@ export class YakmeshNode {
         return res.status(403).json({ error: 'Signature verification failed' });
       }
     };
-    
+
     // =========================================
     // SECURITY: Input Validation Helpers
     // =========================================
-    
+
     const validateUrl = (url) => {
       if (!url || typeof url !== 'string') return false;
       try {
@@ -1635,19 +2424,19 @@ export class YakmeshNode {
         return ['ws:', 'wss:', 'http:', 'https:'].includes(parsed.protocol);
       } catch { return false; }
     };
-    
+
     const validateString = (str, maxLen = 1000) => {
       return str && typeof str === 'string' && str.length <= maxLen;
     };
-    
+
     const validateObject = (obj) => {
       return obj && typeof obj === 'object' && !Array.isArray(obj);
     };
-    
+
     // =========================================
     // PUBLIC CONTENT API (No Auth for reads)
     // =========================================
-    
+
     // Mount content API at /content
     const contentAPI = createContentAPI(this.contentStore, {
       writeLimiter,
@@ -1656,12 +2445,12 @@ export class YakmeshNode {
       requirePeerAuth,
     });
     app.use('/content', contentAPI);
-    
+
     // =========================================
     // KOMM STACK API (KATHA/VANI/YURT/GUMBA)
     // Backend for yakapp (GUI) and terminal (CLI) clients
     // =========================================
-    
+
     if (this.kathaHub) {
       const kommRouter = createKommAPI({
         kathaHub: this.kathaHub,
@@ -1676,12 +2465,12 @@ export class YakmeshNode {
       app.use('/komm', kommRouter);
       log.info('📡 KOMM API mounted at /komm');
     }
-    
+
     // =========================================
     // DARSHAN Content Streaming API
     // View-don't-copy content delivery
     // =========================================
-    
+
     if (this.darshanGateway) {
       const darshanRouter = createDarshanAPI({
         darshanGateway: this.darshanGateway,
@@ -1693,11 +2482,11 @@ export class YakmeshNode {
       app.use('/darshan', darshanRouter);
       log.info('📡 DARSHAN API mounted at /darshan');
     }
-    
+
     // =========================================
     // NAKPAK Status Endpoint
     // =========================================
-    
+
     if (this.nakpakRouter) {
       app.get('/nakpak/status', (req, res) => {
         const circuits = this.nakpakRouter.circuits || new Map();
@@ -1706,20 +2495,20 @@ export class YakmeshNode {
           active: true,
           circuits: circuits.size,
           relays: relays.size,
-          nodeId: this.identity.identity.nodeId.slice(0, 16) + '...',
+          nodeId: peerTag(this.identity.identity.nodeId),
         });
       });
     }
-    
+
     // =========================================
     // SAKSHI Witness + KARMA Status Endpoint
     // =========================================
-    
+
     if (this.sakshiWitness) {
       app.get('/sakshi/status', (req, res) => {
         const velocityStats = this.velocityMonitor?.getStats?.() || {};
         const karmaStats = this.karmaModel?.getStats?.() || {};
-        
+
         res.json({
           active: true,
           witness: this.sakshiWitness.toJSON(),
@@ -1735,20 +2524,68 @@ export class YakmeshNode {
         });
       });
     }
-    
+
+    // =========================================
+    // ANNEX + JHILKE Status Endpoint
+    // =========================================
+
+    app.get('/annex/status', (req, res) => {
+      const annex = this.mesh?.annex;
+      const jhilke = this.mesh?.jhilke;
+
+      if (!annex) {
+        return res.json({ active: false, reason: 'ANNEX not initialized' });
+      }
+
+      const sessions = annex.listAnnexes().map(s => ({
+        ...s,
+        nodeId: peerTag(s.nodeId),
+      }));
+
+      const jhilkeStats = jhilke?.getStats() || null;
+      if (jhilkeStats?.activeSessions !== undefined) {
+        // Tag any peer IDs in jhilke session data
+      }
+
+      res.json({
+        active: true,
+        nodeId: peerTag(this.identity.identity.nodeId),
+        stats: annex.getStats(),
+        sessions,
+        jhilke: jhilkeStats ? {
+          ...jhilkeStats,
+          coordinatorActive: true,
+        } : { coordinatorActive: false },
+      });
+    });
+
+    // =========================================
+    // Ternary Harmonization Status Endpoint
+    // =========================================
+
+    app.get('/ternary/status', (req, res) => {
+      res.json({
+        active: true,
+        address144t: this.tritAddress?.toString() || null,
+        routing: this.ternaryRouter?.getStatus() || null,
+        batchChecksum: batchChecksumVerifier.telemetry,
+        ternaryInference: !!this.ternaryInference,
+      });
+    });
+
     // =========================================
     // Embedded Documentation (hardcoded, hash-verified)
     // Accessible via yak://docs or http://localhost:PORT/docs/
     // =========================================
-    
+
     app.get('/docs', (req, res) => {
       res.redirect('/docs/');
     });
-    
+
     app.get('/docs/', (req, res) => {
       serveDocsFile('index.html', res);
     });
-    
+
     app.get('/docs/_bundle', (req, res) => {
       try {
         const info = getBundleInfo();
@@ -1757,12 +2594,12 @@ export class YakmeshNode {
         res.status(500).json({ error: 'Bundle info unavailable' });
       }
     });
-    
+
     app.get('/docs/:file(*)', (req, res) => {
       const file = req.params.file || 'index.html';
       serveDocsFile(file, res);
     });
-    
+
     // Serve dashboard
     app.get('/dashboard', (req, res) => {
       res.sendFile('dashboard/index.html', { root: import.meta.dirname + '/..' });
@@ -1773,8 +2610,8 @@ export class YakmeshNode {
       const wsPeers = this.mesh.getPeers();
       const relayPollCount = this._relayPollers?.size || 0;
       const relayClientCount = this._relayClients?.size || 0;
-      const relayOutboxSize = this._relayOutbox 
-        ? [...this._relayOutbox.values()].reduce((sum, q) => sum + q.length, 0) 
+      const relayOutboxSize = this._relayOutbox
+        ? [...this._relayOutbox.values()].reduce((sum, q) => sum + q.length, 0)
         : 0;
 
       res.json({
@@ -1815,7 +2652,7 @@ export class YakmeshNode {
     // =========================================
     // SHERPA: Decentralized Peer Discovery
     // =========================================
-    
+
     // Beacon endpoint for SHERPA peer discovery
     // This allows other nodes to discover us and our known peers
     if (this.sherpa) {
@@ -1873,7 +2710,7 @@ export class YakmeshNode {
     // =========================================
     // Allows nodes behind firewalls to exchange mesh messages via HTTP POST
     // instead of WebSocket. The PHP bridge on yakmesh.dev proxies to this.
-    // Message flow: Remote Node → HTTPS POST yakmesh.dev/mesh/relay → PHP → localhost:3080/mesh/relay
+    // Message flow: Remote Node → HTTPS POST yakmesh.dev/mesh/relay → PHP → localhost:<httpPort>/mesh/relay
 
     // Accept inbound mesh messages via HTTP (signed, verified)
     app.post('/mesh/relay', writeLimiter, (req, res) => {
@@ -1897,13 +2734,13 @@ export class YakmeshNode {
         if (!signature || !publicKey) {
           return res.status(403).json({ error: 'Signed registration required (signature + publicKey)' });
         }
-        
+
         // SECURITY: For FIRST registration, we must trust the supplied publicKey
         // since the peer is unknown. On subsequent registrations, verify against
         // the STORED key to prevent identity takeover.
         const knownKey = this._resolvePeerPublicKey(nodeId);
         const verifyKey = knownKey || publicKey;  // Trust first contact, verify thereafter
-        
+
         try {
           const sigData = JSON.stringify({ action: 'register', nodeId, networkName, timestamp });
           const valid = this.identity.verify(sigData, signature, verifyKey);
@@ -1913,7 +2750,7 @@ export class YakmeshNode {
         } catch {
           return res.status(403).json({ error: 'Registration signature verification failed' });
         }
-        
+
         // If we had a stored key and the supplied key differs, reject (identity conflict)
         if (knownKey && publicKey !== knownKey) {
           return res.status(403).json({ error: 'Public key mismatch — identity conflict' });
@@ -1940,8 +2777,14 @@ export class YakmeshNode {
         if (!this._relayClients) this._relayClients = new Map();
         this._relayClients.set(nodeId, Date.now());
 
-        log.info(`HTTP relay peer registered (verified): ${nodeId.slice(0, 20)}`);
-        return res.json({ success: true, nodeId: this.identity.identity.nodeId });
+        log.info(`HTTP relay peer registered (verified): ${peerTag(nodeId)}`);
+        log.info(`  ⚠ Relay peers use HTTP polling (30s cadence) — reduced throughput & latency vs WebSocket`);
+        log.info(`  ⚠ Relay is a firewall-traversal fallback, not the intended full-duplex mesh connection`);
+        return res.json({
+          success: true,
+          nodeId: this.identity.identity.nodeId,
+          publicKey: this.identity.identity.publicKey,
+        });
       }
 
       const { messages, senderNodeId, signature, publicKey } = req.body;
@@ -1960,7 +2803,7 @@ export class YakmeshNode {
       if (!signature) {
         return res.status(403).json({ error: 'Signed relay batch required' });
       }
-      
+
       // SECURITY: Look up the sender's STORED public key from our registry.
       // Never verify against an attacker-supplied publicKey in the body.
       const knownBatchKey = this._resolvePeerPublicKey(senderNodeId);
@@ -1986,7 +2829,7 @@ export class YakmeshNode {
             this.mesh.emit(msg.type, msg, null, senderNodeId);
             // Route ANNEX messages arriving via relay
             if (msg.annex && this.mesh.annex) {
-              this.mesh.annex._handleAnnexMessage(msg.annex, senderNodeId).catch(() => {});
+              this.mesh.annex._handleAnnexMessage(msg.annex, senderNodeId).catch(() => { });
             }
             accepted++;
           } catch {
@@ -2007,6 +2850,7 @@ export class YakmeshNode {
         accepted,
         outbound,
         nodeId: this.identity.identity.nodeId,
+        publicKey: this.identity.identity.publicKey,
         timestamp: Date.now(),
       });
     });
@@ -2041,7 +2885,7 @@ export class YakmeshNode {
         });
       }
 
-      log.info(`HTTP relay peer registered: ${nodeId.slice(0, 20)} via ${relayEndpoint}`);
+      log.info(`HTTP relay peer registered: ${peerTag(nodeId)} via ${relayEndpoint}`);
       res.json({ success: true, nodeId: this.identity.identity.nodeId });
     });
 
@@ -2054,17 +2898,46 @@ export class YakmeshNode {
     // SECURITY: Rate limited + URL validation
     app.post('/connect', writeLimiter, requirePeerAuth, async (req, res) => {
       const { address } = req.body;
-      
+
       if (!validateUrl(address)) {
         return res.status(400).json({ error: 'Valid WebSocket URL required (ws:// or wss://)' });
       }
-      
+
       try {
         await this.mesh.connectToPeer(address);
-        res.json({ 
-          success: true, 
+        res.json({
+          success: true,
           message: `Connecting to ${address}`,
-          peers: this.mesh.getPeers().length 
+          peers: this.mesh.getPeers().length
+        });
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    // Connect to a peer via HTTP relay (firewall traversal fallback)
+    app.post('/connect/relay', writeLimiter, requirePeerAuth, async (req, res) => {
+      const { relayEndpoint, nodeId } = req.body;
+
+      if (!relayEndpoint || typeof relayEndpoint !== 'string') {
+        return res.status(400).json({ error: 'relayEndpoint URL required (e.g. https://yakmesh.dev/mesh/relay.php)' });
+      }
+
+      // nodeId is optional — we'll learn it from the registration response
+      const candidate = {
+        nodeId: nodeId || `relay-${Date.now()}`,
+        relayEndpoint,
+      };
+
+      try {
+        await this._registerWithRelay(candidate);
+        const relayPollCount = this._relayPollers?.size || 0;
+        const relayClientCount = this._relayClients?.size || 0;
+        res.json({
+          success: true,
+          message: `Relay connection established to ${relayEndpoint}`,
+          relayPeers: relayPollCount + relayClientCount,
+          totalPeers: this.mesh.getPeers().length + relayPollCount + relayClientCount,
         });
       } catch (error) {
         res.status(500).json({ error: error.message });
@@ -2075,7 +2948,7 @@ export class YakmeshNode {
     // SECURITY: Rate limited + input validation
     app.post('/data', writeLimiter, requirePeerAuth, (req, res) => {
       const { table, data } = req.body;
-      
+
       // Validate inputs
       if (!validateString(table, 64)) {
         return res.status(400).json({ error: 'Valid table name required (max 64 chars)' });
@@ -2083,11 +2956,11 @@ export class YakmeshNode {
       if (!validateObject(data)) {
         return res.status(400).json({ error: 'Data must be an object' });
       }
-      
+
       // Record the change for replication
       const rowId = data.id || Date.now();
       this.replication.recordChange(table, rowId, 'INSERT', data);
-      
+
       // Spread via gossip protocol
       this.gossip.spreadRumor('data_update', {
         table,
@@ -2095,7 +2968,7 @@ export class YakmeshNode {
         operation: 'INSERT',
         data,
       });
-      
+
       res.json({ success: true, rowId });
     });
 
@@ -2113,14 +2986,14 @@ export class YakmeshNode {
     // SECURITY: Rate limited + input validation
     app.post('/rumor', writeLimiter, requirePeerAuth, (req, res) => {
       const { topic, data } = req.body;
-      
+
       if (!validateString(topic, 64)) {
         return res.status(400).json({ error: 'Valid topic required (max 64 chars)' });
       }
       if (!validateObject(data)) {
         return res.status(400).json({ error: 'Data must be an object' });
       }
-      
+
       const messageId = this.gossip.spreadRumor(topic, data);
       res.json({ success: true, messageId });
     });
@@ -2187,10 +3060,10 @@ export class YakmeshNode {
       }
 
       const integrity = this.oracle.verifySelfIntegrity();
-      
+
       // Use network identity fingerprint instead of raw hash
       const networkFingerprint = this.genesisNetwork?.fingerprint || 'not-initialized';
-      
+
       res.json({
         status: integrity.valid ? 'healthy' : 'compromised',
         integrity: {
@@ -2289,7 +3162,7 @@ export class YakmeshNode {
     // SECURITY: Rate limited + peer auth + input validation
     app.post('/oracle/challenge', writeLimiter, requirePeerAuth, (req, res) => {
       const { peerId } = req.body;
-      
+
       if (!validateString(peerId, 128)) {
         return res.status(400).json({ error: 'Valid peerId required (max 128 chars)' });
       }
@@ -2299,14 +3172,14 @@ export class YakmeshNode {
       }
 
       const challenge = this.codeProof.generateChallenge(peerId);
-      
+
       // Spread challenge via gossip
       this.gossip.spreadRumor('code_proof_challenge', challenge);
-      
+
       res.json({
         success: true,
         challengeId: challenge.challengeId,
-        message: `Challenge sent to peer ${peerId.slice(0, 16)}...`
+        message: `Challenge sent to peer ${peerTag(peerId)}`
       });
     });
 
@@ -2326,7 +3199,7 @@ export class YakmeshNode {
     // SECURITY: Rate limited + peer auth + input validation + hash obfuscation
     app.post('/oracle/submit', writeLimiter, requirePeerAuth, async (req, res) => {
       const { type, content } = req.body;
-      
+
       if (!validateString(type, 64)) {
         return res.status(400).json({ error: 'Valid type required (max 64 chars)' });
       }
@@ -2341,7 +3214,7 @@ export class YakmeshNode {
       try {
         // Validate through oracle
         const validation = await this.oracle.validate(type, content);
-        
+
         if (!validation.valid) {
           return res.status(400).json({
             success: false,
@@ -2407,28 +3280,29 @@ export class YakmeshNode {
     // =========================================
     // Metrics Endpoint - Dashboard Data
     // =========================================
-    
+
     app.get('/metrics', (req, res) => {
       const startTime = this._startTime || Date.now();
       const uptime = Math.floor((Date.now() - startTime) / 1000);
-      
+
       // Crypto configuration (imported at top of file)
       let cryptoInfo = null;
       try {
         // Dynamic import not needed - use the imported module
-        cryptoInfo = this._cryptoSummary || { 
+        cryptoInfo = this._cryptoSummary || {
           levelName: 'NIST Level 3',
           signatureAlgorithm: 'ML-DSA-65',
           backupSignatureAlgorithm: 'SLH-DSA-SHA2-192f',
           kemAlgorithm: 'ML-KEM-768',
           classicalSecurity: '192-bit',
           quantumSecurity: '128-bit',
+          routingSecurity: '256-bit (144T)',
           nistStandards: ['FIPS 203 (ML-KEM)', 'FIPS 204 (ML-DSA)', 'FIPS 205 (SLH-DSA)'],
         };
       } catch (e) {
         cryptoInfo = { error: 'Could not load crypto config' };
       }
-      
+
       // Time source info
       let timeInfo = null;
       if (this.timeSource) {
@@ -2441,7 +3315,7 @@ export class YakmeshNode {
           hasHighPrecisionTime: this.timeSource.hasHighPrecisionTime(),
         };
       }
-      
+
       // Oracle status
       let oracleInfo = null;
       if (this.oracle) {
@@ -2455,11 +3329,11 @@ export class YakmeshNode {
           verifiedPeers: this.codeProof?.getVerifiedPeers()?.length || 0,
         };
       }
-      
+
       // Mesh stats
       const peerCount = this.mesh?.getPeers()?.length || 0;
       const gossipStats = this.gossip?.getStats() || null;
-      
+
       // NAMCHE security gate status (v2.0)
       let namcheInfo = null;
       if (this.namcheGateway) {
@@ -2472,7 +3346,7 @@ export class YakmeshNode {
           gateCount: 7,
         };
       }
-      
+
       // DOKO identity status (v2.0)
       let dokoInfo = null;
       if (this.dokoRegistry) {
@@ -2483,13 +3357,16 @@ export class YakmeshNode {
           types: Object.keys(DOKOTypes),
         };
       }
-      
+
       // Website adapter status (v2.0)
       let websiteInfo = null;
       if (this.websiteAdapter) {
+        // Count unique websites by domain (not replicated manifests)
+        const uniqueSites = this.websiteAdapter.domains.size || 1; // At least our own site
         websiteInfo = {
           status: 'active',
-          websites: this.websiteAdapter.manifests.size,
+          websites: this.websiteAdapter.manifests.size,  // Total manifests (replicas from all nodes)
+          uniqueSites,                                    // Actual unique sites by domain
           domains: this.websiteAdapter.domains.size,
           filesServed: this.websiteAdapter.stats.filesServed,
           bytesServed: this.websiteAdapter.stats.bytesServed,
@@ -2497,7 +3374,7 @@ export class YakmeshNode {
       } else {
         websiteInfo = { status: 'uninitialized' };
       }
-      
+
       res.json({
         node: {
           id: this.identity?.identity?.nodeId || null,
@@ -2542,7 +3419,7 @@ export class YakmeshNode {
       }
 
       const results = this.timeSource.detect();
-      
+
       // Update phase config if trust level changed
       if (results.trustLevel) {
         setTimeSourceConfig(results.trustLevel);
@@ -2590,9 +3467,163 @@ export class YakmeshNode {
     });
 
     // =========================================
+    // Public Time API — GPS Time for the World
+    // =========================================
+    // These endpoints serve live GPS time from the MA-902 grandmaster clock.
+    // On the LAN node: data comes directly from SNMP. On meshed Hostinger node:
+    // data arrives via mesh peering with the LAN grandmaster.
+    // The landing page at yakmesh.dev/time/ polls these endpoints.
+
+    app.get('/api/time', (req, res) => {
+      const now = Date.now();
+      const status = this.timeSource?.getStatus() || {};
+      const sats = status.satellites || status.ma902?.satellites || {};
+      const locked = status.trustLevel === 'gps' || status.trustLevel === 'atomic';
+
+      // Mesh grandmaster reference (received via time:heartbeat gossip)
+      const meshRef = this.meshTimeReference;
+      const hasMeshGrandmaster = meshRef && meshRef.lock && (Date.now() - meshRef.receivedAt < 120_000);
+
+      // Effective source: local GPS if available, else mesh grandmaster, else system
+      const effectiveStratum = locked ? 1 : (hasMeshGrandmaster ? meshRef.stratum : 2);
+      const effectiveSource = locked ? 'MA-902/S-C1 GPS' :
+        (hasMeshGrandmaster ? `mesh/${meshRef.nodeName || peerTag(meshRef.fromNodeId)}` : 'system');
+      const effectiveAccuracy = locked ? 1 : (hasMeshGrandmaster ? (meshRef.accuracy_ms ?? 5) : 50);
+      const effectiveQuality = locked ? 'excellent' : (hasMeshGrandmaster ? 'mesh-synced' : 'degraded');
+
+      res.set({
+        'Access-Control-Allow-Origin': '*',
+        'Cache-Control': 'no-store, no-cache, must-revalidate',
+        'X-Yakmesh-Time': (now / 1000).toFixed(3),
+        'X-Yakmesh-Stratum': String(effectiveStratum),
+        'X-Yakmesh-Source': effectiveSource,
+      });
+
+      const body = {
+        iso: new Date(now).toISOString(),
+        unix: now / 1000,
+        unix_ms: now,
+        stratum: effectiveStratum,
+        source: effectiveSource,
+        accuracy_ms: effectiveAccuracy,
+        leap_indicator: 0,
+        satellites: {
+          visible: sats.visible ?? 0,
+          used: sats.used ?? 0,
+          tracking: sats.tracking ?? 0,
+          constellations: sats.constellations ?? [],
+        },
+        lock: locked,
+        quality: effectiveQuality,
+        offset_ns: status.offset ?? 0,
+        reference_id: locked ? 'GPS' : (hasMeshGrandmaster ? 'MESH' : 'SYS'),
+        // Public NTP server (always available — points to MA-902 grandmaster)
+        public_ntp: 'time.yakmesh.dev',
+      };
+
+      // If this node isn't GPS-backed but has a mesh grandmaster, include its data
+      if (!locked && hasMeshGrandmaster) {
+        body.mesh_grandmaster = {
+          nodeId: meshRef.fromNodeId,
+          nodeName: meshRef.nodeName,
+          stratum: meshRef.stratum,
+          lock: meshRef.lock,
+          satellites: meshRef.satellites,
+          ma902: meshRef.ma902 || null,
+          trustLevel: meshRef.trustLevel,
+          publicNtp: meshRef.publicNtp,
+          age_ms: Date.now() - meshRef.receivedAt,
+        };
+      }
+
+      res.json(body);
+    });
+
+    app.get('/api/time/simple', (req, res) => {
+      const now = Date.now();
+      const status = this.timeSource?.getStatus() || {};
+      const locked = status.trustLevel === 'gps' || status.trustLevel === 'atomic';
+      const meshRef = this.meshTimeReference;
+      const hasMeshGM = meshRef && meshRef.lock && (Date.now() - meshRef.receivedAt < 120_000);
+      const eff = locked ? 1 : (hasMeshGM ? meshRef.stratum : 2);
+      const q = locked ? 'excellent' : (hasMeshGM ? 'mesh-synced' : 'degraded');
+      res.set({ 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' });
+      res.json({ t: now, s: eff, q, ntp: 'time.yakmesh.dev' });
+    });
+
+    app.get('/api/health', (req, res) => {
+      const status = this.timeSource?.getStatus() || {};
+      const sats = status.satellites || status.ma902?.satellites || {};
+      const locked = status.trustLevel === 'gps' || status.trustLevel === 'atomic';
+      const meshRef = this.meshTimeReference;
+      const hasMeshGM = meshRef && meshRef.lock && (Date.now() - meshRef.receivedAt < 120_000);
+      const effectiveStatus = locked ? 'healthy' : (hasMeshGM ? 'mesh-synced' : 'degraded');
+
+      res.set({ 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' });
+      res.json({
+        status: effectiveStatus,
+        lock: locked,
+        satellites_visible: sats.visible ?? 0,
+        satellites_used: sats.used ?? 0,
+        constellations: sats.constellations ?? [],
+        alarm: status.alarm ?? false,
+        quality: locked ? 'excellent' : (hasMeshGM ? 'mesh-synced' : 'degraded'),
+        trust_level: status.trustLevel ?? 'unknown',
+        mesh_grandmaster: hasMeshGM ? {
+          nodeName: meshRef.nodeName,
+          stratum: meshRef.stratum,
+          lock: meshRef.lock,
+          satellites_used: meshRef.satellites?.used ?? 0,
+          publicNtp: meshRef.publicNtp,
+          age_ms: Date.now() - meshRef.receivedAt,
+        } : null,
+        public_ntp: 'time.yakmesh.dev',
+      });
+    });
+
+    // =========================================
+    // SANGHA Collective Status (v3.0)
+    // =========================================
+
+    // Get SANGHA collective status
+    app.get('/api/sangha', (req, res) => {
+      if (!this.sangha) {
+        return res.status(503).json({ error: 'SANGHA not initialized' });
+      }
+      res.set({ 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' });
+      res.json(this.sangha.getStatus());
+    });
+
+    // Get recent antibody circulations
+    app.get('/api/sangha/circulations', (req, res) => {
+      if (!this.sangha) {
+        return res.status(503).json({ error: 'SANGHA not initialized' });
+      }
+      const count = Math.min(parseInt(req.query.count) || 10, 100);
+      res.set({ 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' });
+      res.json({
+        circulations: this.sangha.getRecentCirculations(count),
+        status: this.sangha.getStatus(),
+      });
+    });
+
+    // Trigger manual circulation (for testing)
+    app.post('/api/sangha/circulate', async (req, res) => {
+      if (!this.sangha) {
+        return res.status(503).json({ error: 'SANGHA not initialized' });
+      }
+      try {
+        const result = await this.sangha.circulate();
+        res.json({ success: true, result });
+      } catch (e) {
+        res.status(500).json({ error: e.message });
+      }
+    });
+
+    // =========================================
     // NAMCHE Security Gate Endpoints (v2.0)
     // =========================================
-    
+
     // Get all gate statuses
     app.get('/security/namche/gates', (req, res) => {
       if (!this.namcheGateway) {
@@ -2608,7 +3639,7 @@ export class YakmeshNode {
       }
       res.json(this.namcheGateway.getStatus());
     });
-    
+
     // Verify a specific gate
     // SECURITY: Peer auth — only known peers can trigger gate verification
     app.post('/security/namche/verify/:gate', writeLimiter, requirePeerAuth, (req, res) => {
@@ -2616,11 +3647,11 @@ export class YakmeshNode {
       if (gateNum < 1 || gateNum > 7) {
         return res.status(400).json({ error: 'Gate must be 1-7' });
       }
-      
+
       if (!this.namcheGateway) {
         return res.status(503).json({ error: 'NAMCHE gateway not initialized' });
       }
-      
+
       const result = this.namcheGateway.verifyGate(gateNum, req.body);
       res.json({
         gate: gateNum,
@@ -2628,11 +3659,11 @@ export class YakmeshNode {
         ...result
       });
     });
-    
+
     // Get comprehensive security status
     app.get('/security/status', (req, res) => {
       const oracleIntegrity = this.oracle?.verifySelfIntegrity();
-      
+
       res.json({
         namche: this.namcheGateway?.getStatus() || { status: 'uninitialized' },
         doko: this.dokoRegistry?.getStats() || { status: 'uninitialized' },
@@ -2653,7 +3684,7 @@ export class YakmeshNode {
     // =========================================
     // DOKO Identity Endpoints (v2.0)
     // =========================================
-    
+
     // Get DOKO registry stats
     app.get('/security/doko/stats', (req, res) => {
       if (!this.dokoRegistry) {
@@ -2665,13 +3696,13 @@ export class YakmeshNode {
       }
       res.json(this.dokoRegistry.getStats());
     });
-    
+
     // List identities (limited info)
     app.get('/security/doko/identities', (req, res) => {
       if (!this.dokoRegistry) {
         return res.status(503).json({ error: 'DOKO registry not initialized' });
       }
-      
+
       const type = req.query.type || null;
       const identities = this.dokoRegistry.list(type);
       res.json({
@@ -2685,19 +3716,19 @@ export class YakmeshNode {
         }))
       });
     });
-    
+
     // Verify an identity
     // SECURITY: Peer auth — only known peers can request identity verification
     app.post('/security/doko/verify', writeLimiter, requirePeerAuth, (req, res) => {
       if (!this.dokoRegistry) {
         return res.status(503).json({ error: 'DOKO registry not initialized' });
       }
-      
+
       const { id, challenge, signature } = req.body;
       if (!id || !challenge || !signature) {
         return res.status(400).json({ error: 'Missing id, challenge, or signature' });
       }
-      
+
       const result = this.dokoRegistry.verify(id, challenge, signature);
       res.json(result);
     });
@@ -2706,11 +3737,11 @@ export class YakmeshNode {
     // Geographic Proof Endpoints (v2.5.0)
     // Speed-of-Light Exclusion Zones
     // =========================================
-    
+
     // Get geo proof status
     app.get('/geo/status', (req, res) => {
       const timeSourceStatus = this.timeSource?.getStatus() || null;
-      
+
       // Initialize geo proof service lazily if needed
       if (!this.geoProofService && this.timeSource && this.identity) {
         this.geoProofService = new GeoProofService({
@@ -2718,9 +3749,9 @@ export class YakmeshNode {
           timeSourceDetector: this.timeSource,
         });
       }
-      
+
       const service = this.geoProofService;
-      
+
       res.json({
         timeSource: timeSourceStatus ? {
           type: timeSourceStatus.trustLevel,
@@ -2748,7 +3779,7 @@ export class YakmeshNode {
         },
       });
     });
-    
+
     // List landmarks
     app.get('/geo/landmarks', (req, res) => {
       // Initialize geo proof service lazily if needed
@@ -2758,23 +3789,23 @@ export class YakmeshNode {
           timeSourceDetector: this.timeSource,
         });
       }
-      
+
       const service = this.geoProofService;
       if (!service) {
         return res.json({ landmarks: [], message: 'Geographic proof service not initialized' });
       }
-      
+
       const verifiedOnly = req.query.verified === 'true';
       let landmarks = Array.from(service.landmarkRegistry.landmarks.values());
-      
+
       if (verifiedOnly) {
         landmarks = landmarks.filter(l => l.verified);
       }
-      
+
       res.json({
         landmarks: landmarks.map(lm => ({
           nodeId: lm.nodeId,
-          name: lm.name || `Landmark ${lm.nodeId.slice(0, 8)}`,
+          name: lm.name || `Landmark ${peerTag(lm.nodeId)}`,
           lat: lm.lat,
           lon: lm.lon,
           tier: lm.tier,
@@ -2785,19 +3816,19 @@ export class YakmeshNode {
         count: landmarks.length,
       });
     });
-    
+
     // Add a landmark
     // SECURITY: Peer auth — prevent phantom landmark injection
     app.post('/geo/landmarks', writeLimiter, requirePeerAuth, (req, res) => {
       const { name, lat, lon, nodeId, endpoint } = req.body;
-      
+
       if (typeof lat !== 'number' || typeof lon !== 'number') {
         return res.status(400).json({ error: 'lat and lon must be numbers' });
       }
       if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
         return res.status(400).json({ error: 'Invalid coordinates' });
       }
-      
+
       // Initialize geo proof service lazily if needed
       if (!this.geoProofService && this.timeSource && this.identity) {
         this.geoProofService = new GeoProofService({
@@ -2805,12 +3836,12 @@ export class YakmeshNode {
           timeSourceDetector: this.timeSource,
         });
       }
-      
+
       const service = this.geoProofService;
       if (!service) {
         return res.status(503).json({ error: 'Geographic proof service not initialized' });
       }
-      
+
       const landmarkId = nodeId || `landmark-${Date.now()}`;
       service.landmarkRegistry.addLandmark(landmarkId, lat, lon, {
         name,
@@ -2818,21 +3849,21 @@ export class YakmeshNode {
         verified: false,
         addedManually: true,
       });
-      
+
       res.json({ success: true, landmarkId, name, lat, lon });
     });
-    
+
     // List exclusion zones
     app.get('/geo/zones', (req, res) => {
       if (!this.geoProofService) {
         return res.json({ zones: [], message: 'No geographic proof established' });
       }
-      
+
       const proof = this.geoProofService.myProof;
       if (!proof || !proof.zones) {
         return res.json({ zones: [], message: 'No exclusion zones established' });
       }
-      
+
       const zones = proof.zones.map(zone => {
         const landmark = this.geoProofService.landmarkRegistry.getLandmark(zone.landmarkId);
         return {
@@ -2845,15 +3876,15 @@ export class YakmeshNode {
           measuredAt: zone.measuredAt,
         };
       });
-      
+
       res.json({ zones, count: zones.length });
     });
-    
+
     // Generate geographic proof
     // SECURITY: Peer auth required for proof generation
     app.post('/geo/prove', writeLimiter, requirePeerAuth, async (req, res) => {
       const { force } = req.body || {};
-      
+
       // Initialize geo proof service lazily if needed
       if (!this.geoProofService && this.timeSource && this.identity) {
         this.geoProofService = new GeoProofService({
@@ -2861,20 +3892,20 @@ export class YakmeshNode {
           timeSourceDetector: this.timeSource,
         });
       }
-      
+
       const service = this.geoProofService;
       if (!service) {
-        return res.status(503).json({ 
-          success: false, 
+        return res.status(503).json({
+          success: false,
           error: 'Geographic proof service not initialized',
           reason: 'Time source or identity not available'
         });
       }
-      
+
       try {
         // Get all landmarks to measure
         const landmarks = Array.from(service.landmarkRegistry.landmarks.values());
-        
+
         if (landmarks.length === 0) {
           return res.json({
             success: false,
@@ -2882,7 +3913,7 @@ export class YakmeshNode {
             reason: 'Add landmarks via KHATA gossip or manually with POST /geo/landmarks'
           });
         }
-        
+
         // Measure RTT to each landmark (simulated for now - real implementation uses WebSocket)
         const measurements = [];
         for (const lm of landmarks) {
@@ -2896,10 +3927,10 @@ export class YakmeshNode {
             measuredAt: Date.now(),
           });
         }
-        
+
         // Create proof from measurements
         const proof = service.createProof(measurements);
-        
+
         res.json({
           success: true,
           proof: {
@@ -2910,7 +3941,7 @@ export class YakmeshNode {
             zones: (proof.zones || []).map(z => {
               const lm = service.landmarkRegistry.getLandmark(z.landmarkId);
               return {
-                landmarkName: lm?.name || z.landmarkId.slice(0, 16),
+                landmarkName: lm?.name || peerTag(z.landmarkId),
                 radiusKm: z.minDistanceKm,
               };
             }),
@@ -2920,23 +3951,23 @@ export class YakmeshNode {
         res.status(500).json({ success: false, error: error.message });
       }
     });
-    
+
     // Verify another node's geographic claims using PRAMAAN physics
     // Accepts either a nodeId (lookup cached proof) or a full proof payload
     app.post('/geo/verify', writeLimiter, async (req, res) => {
       const { nodeId, proof: proofData } = req.body;
-      
+
       if (!nodeId && !proofData) {
         return res.status(400).json({ error: 'nodeId or proof required' });
       }
-      
+
       if (!this.geoProofService) {
-        return res.status(503).json({ 
-          verified: false, 
-          reason: 'Geographic proof service not initialized' 
+        return res.status(503).json({
+          verified: false,
+          reason: 'Geographic proof service not initialized'
         });
       }
-      
+
       try {
         // Deserialize the peer's proof
         let peerProof;
@@ -3042,7 +4073,7 @@ export class YakmeshNode {
     return new Promise(async (resolve, reject) => {
       const basePort = this.config.network.httpPort;
       const maxRetries = 10;
-      
+
       for (let attempt = 0; attempt < maxRetries; attempt++) {
         const port = basePort + attempt;
         try {
@@ -3071,6 +4102,17 @@ export class YakmeshNode {
       const server = app.listen(port);
       server.on('listening', () => {
         this.http = server;
+
+        // Handle TCP-level client errors (ECONNRESET, EPIPE, etc.)
+        // These occur when clients disconnect abruptly — normal in P2P mesh.
+        // Without this handler, they bubble up as uncaught exceptions.
+        server.on('clientError', (err, socket) => {
+          if (socket.writable) {
+            socket.end('HTTP/1.1 400 Bad Request\r\n\r\n');
+          }
+          socket.destroy();
+        });
+
         resolve();
       });
       server.on('error', reject);
@@ -3078,45 +4120,84 @@ export class YakmeshNode {
   }
 
   /**
-   * Non-blocking bootstrap connection.
+   * Auto-register with relay peers from YAKMESH_RELAY_PEERS config.
+   * Non-blocking — runs after server is up, fire-and-forget like bootstrap.
+   */
+  _connectToRelayPeers() {
+    const relayPeers = this.config.relayPeers || [];
+    if (relayPeers.length === 0) return;
+
+    log.info(`RELAY: ${relayPeers.length} relay peer(s) from config — registering in background`);
+
+    // Delay slightly to let identity and mesh fully initialize
+    setTimeout(async () => {
+      for (const endpoint of relayPeers) {
+        if (!endpoint || typeof endpoint !== 'string' || !endpoint.startsWith('http')) {
+          log.warn(`RELAY: skipping invalid endpoint: ${endpoint}`);
+          continue;
+        }
+
+        const candidate = {
+          nodeId: `relay-${Date.now()}`,
+          relayEndpoint: endpoint,
+        };
+
+        try {
+          await this._registerWithRelay(candidate);
+          log.info(`RELAY: ✓ registered with ${endpoint}`);
+        } catch (err) {
+          log.warn(`RELAY: ${endpoint} registration failed — ${err.message}`);
+          // Retry after 30s (once) — relay peers may not be up yet
+          setTimeout(async () => {
+            try {
+              await this._registerWithRelay(candidate);
+              log.info(`RELAY: ✓ registered with ${endpoint} (retry)`);
+            } catch (e) {
+              log.warn(`RELAY: ${endpoint} retry failed — ${e.message}`);
+            }
+          }, 30000);
+        }
+      }
+    }, 3000);
+  }
+
+  /**
+   * Get active relay info for gossip propagation.
+   * Returns list of relay endpoints this node is registered with,
+   * so peers can discover relay paths through HELLO broadcasts.
+   */
+  _getActiveRelayInfo() {
+    const endpoints = [];
+    if (this._relayPollers) {
+      for (const [nodeId, _interval] of this._relayPollers) {
+        // Find the relay endpoint URL for this poller
+        // We track candidates when we register — check _relayEndpoints map
+        if (this._relayEndpoints?.has(nodeId)) {
+          endpoints.push(this._relayEndpoints.get(nodeId));
+        }
+      }
+    }
+    return { relayEndpoints: endpoints };
+  }
+
+  /**
+   * Bootstrap — SEED ONLY mechanism for initial network join.
    *
-   * Instead of serially awaiting each TCP handshake (which blocks boot for
-   * ~30s per unreachable host), we:
-   *   1. Resolve the list of remote peers (filtering self).
-   *   2. Fire ALL connections concurrently with a short timeout (5s).
-   *   3. Start a periodic reconnect loop that retries failed/missing peers
-   *      every 30s with exponential backoff per endpoint.
+   * Connection priority (proper flow):
+   *   1. DirectWS — known peers from gossip, saved state, inbound connections
+   *   2. Bootstrap — initial network discovery when no peers exist
+   *   3. Beacon Relays — NAT traversal fallback
+   *   4. Crawlers — active network discovery
+   *   5. Gossip — passive peer exchange (MANTRA)
    *
-   * Boot completes instantly.  Peer connections happen in the background.
+   * Bootstrap ONLY activates when we have zero peers. Once connected to the
+   * network, we rely on gossip for peer exchange. This prevents duplicate
+   * connections and race conditions.
    */
   _connectToBootstrap() {
-    // ── Collect local addresses for self-detection ──
-    const localAddrs = new Set(['localhost', '127.0.0.1', '::1', '0.0.0.0']);
-    const ifaces = networkInterfaces();
-    for (const addrs of Object.values(ifaces)) {
-      for (const addr of addrs) localAddrs.add(addr.address);
-    }
-    const ourWsPort = this.mesh.boundPort || this.config.network.wsPort;
-
-    // ── Build filtered peer list (skip self, skip invalid) ──
-    this._bootstrapPeers = [];
-    for (const endpoint of this.config.bootstrap) {
-      let url;
-      try { url = new URL(endpoint); } catch {
-        log.warn(`  (invalid bootstrap endpoint: ${endpoint})`);
-        continue;
-      }
-      const epPort = parseInt(url.port, 10);
-      if (epPort === ourWsPort && localAddrs.has(url.hostname)) {
-        log.debug(`  (skipping self: ${endpoint})`);
-        continue;
-      }
-      this._bootstrapPeers.push({
-        endpoint,
-        failures:   0,
-        lastTry:    0,
-        connected:  false,
-      });
+    // ── Build bootstrap peer list once at startup ──
+    if (!this._bootstrapPeers) {
+      this._buildBootstrapPeerList();
     }
 
     if (this._bootstrapPeers.length === 0) {
@@ -3124,62 +4205,97 @@ export class YakmeshNode {
       return;
     }
 
-    log.info(`BOOTSTRAP: ${this._bootstrapPeers.length} remote peer(s) — connecting in background`);
+    // ── Check if we actually need bootstrap (zero peers) ──
+    const currentPeers = this.mesh?.getPeers?.() || [];
+    if (currentPeers.length > 0) {
+      log.debug(`BOOTSTRAP: skipping — already have ${currentPeers.length} peer(s), using gossip for discovery`);
+      return;
+    }
 
-    // ── Initial attempt: fire all concurrently ──
+    log.info(`BOOTSTRAP: no peers — seeding network from ${this._bootstrapPeers.length} configured peer(s)`);
+
+    // ── Try all bootstrap peers concurrently ──
     this._tryBootstrapConnections();
 
-    // ── Start reconnect loop ──
-    this._bootstrapInterval = setInterval(() => {
-      this._tryBootstrapConnections();
-    }, 30_000);
-
-    // Unref so the interval doesn't keep the process alive
-    if (this._bootstrapInterval.unref) this._bootstrapInterval.unref();
+    // ── Setup recovery watcher (only runs when we lose all peers) ──
+    if (!this._bootstrapRecoverySetup) {
+      this._bootstrapRecoverySetup = true;
+      this.mesh.on('peer:disconnected', () => {
+        // Check if we lost ALL peers — if so, trigger bootstrap
+        setTimeout(() => {
+          const peers = this.mesh?.getPeers?.() || [];
+          if (peers.length === 0) {
+            log.info('BOOTSTRAP: lost all peers — re-seeding network');
+            this._tryBootstrapConnections();
+          }
+        }, 2000); // Small delay to allow reconnects
+      });
+    }
   }
 
   /**
-   * Attempt connections to all bootstrap peers that aren't already connected.
-   * Each attempt is wrapped with a 5s timeout — no more 30s TCP hangs.
+   * Build the filtered list of bootstrap peers (run once at startup).
+   */
+  _buildBootstrapPeerList() {
+    const localAddrs = new Set(['localhost', '127.0.0.1', '::1', '0.0.0.0']);
+    const ifaces = networkInterfaces();
+    for (const addrs of Object.values(ifaces)) {
+      for (const addr of addrs) localAddrs.add(addr.address);
+    }
+    const ourWsPort = this.mesh.boundPort || this.config.network.wsPort;
+
+    this._bootstrapPeers = [];
+    for (const endpoint of this.config.bootstrap) {
+      let url;
+      try { url = new URL(endpoint); } catch {
+        log.warn(`BOOTSTRAP: invalid endpoint: ${endpoint}`);
+        continue;
+      }
+      const epPort = parseInt(url.port, 10);
+      if (epPort === ourWsPort && localAddrs.has(url.hostname)) {
+        log.debug(`BOOTSTRAP: skipping self: ${endpoint}`);
+        continue;
+      }
+      this._bootstrapPeers.push({
+        endpoint,
+        failures: 0,
+        lastTry: 0,
+      });
+    }
+
+    if (this._bootstrapPeers.length > 0) {
+      log.info(`BOOTSTRAP: ${this._bootstrapPeers.length} seed peer(s) configured`);
+    }
+  }
+
+  /**
+   * Attempt to connect to bootstrap peers for initial network seeding.
+   * Only called when we have zero peers (not as a maintenance loop).
    */
   _tryBootstrapConnections() {
     if (!this._bootstrapPeers) return;
 
-    const connectedEndpoints = new Set(
-      (this.mesh?.getPeers?.() || []).map(p => p.endpoint).filter(Boolean)
-    );
+    // Double-check we still need to seed (another peer might have connected)
+    const currentPeers = this.mesh?.getPeers?.() || [];
+    if (currentPeers.length > 0) {
+      log.debug('BOOTSTRAP: peer connected during seeding, stopping');
+      return;
+    }
 
     for (const peer of this._bootstrapPeers) {
-      // Already connected — mark and skip
-      if (connectedEndpoints.has(peer.endpoint)) {
-        if (!peer.connected) {
-          peer.connected = true;
-          peer.failures  = 0;
-          log.info(`BOOTSTRAP: ✓ connected to ${peer.endpoint}`);
-        }
-        continue;
-      }
-      peer.connected = false;
-
-      // Exponential backoff: skip if too soon after last failure
-      // backoff = min(30s * 2^failures, 5 min) — but the interval is 30s,
-      // so we only skip within the same interval if we already tried recently
-      const backoffMs = Math.min(30_000 * Math.pow(2, peer.failures), 300_000);
-      if (Date.now() - peer.lastTry < backoffMs) continue;
-
+      // Simple backoff: 5s minimum between attempts to same peer
+      if (Date.now() - peer.lastTry < 5000) continue;
       peer.lastTry = Date.now();
 
       // Fire-and-forget with 5s timeout
       this._connectWithTimeout(peer.endpoint, 5_000)
         .then(() => {
-          peer.connected = true;
-          peer.failures  = 0;
-          log.info(`BOOTSTRAP: ✓ connected to ${peer.endpoint}`);
+          log.info(`BOOTSTRAP: ✓ seeded from ${peer.endpoint}`);
+          peer.failures = 0;
         })
         .catch(() => {
           peer.failures++;
-          const nextIn = Math.min(30 * Math.pow(2, peer.failures), 300);
-          log.debug(`BOOTSTRAP: ${peer.endpoint} unreachable (attempt ${peer.failures}, retry ~${nextIn}s)`);
+          log.debug(`BOOTSTRAP: ${peer.endpoint} unreachable (attempt ${peer.failures})`);
         });
     }
   }
@@ -3243,10 +4359,10 @@ export class YakmeshNode {
       // Try WebSocket first (preferred — full duplex)
       if (candidate.wsEndpoint) {
         try {
-          log.info(`SHERPA auto-connect WS → ${candidate.wsEndpoint} (${candidate.nodeId.slice(0, 20)})`);
+          log.info(`SHERPA auto-connect WS → ${candidate.wsEndpoint} (${peerTag(candidate.nodeId)})`);
           await this.mesh.connect(candidate.wsEndpoint);
           this.sherpa.markConnected(candidate.nodeId);
-          log.info(`SHERPA auto-connect ✓ ${candidate.nodeId.slice(0, 20)} via WS`);
+          log.info(`SHERPA auto-connect ✓ ${peerTag(candidate.nodeId)} via WS`);
           continue;  // Success — no need for relay fallback
         } catch (e) {
           log.debug(`SHERPA WS failed: ${candidate.wsEndpoint} — ${e.message}`);
@@ -3256,9 +4372,9 @@ export class YakmeshNode {
       // Fall back to HTTP relay (half-duplex, firewall traversal)
       if (candidate.relayEndpoint) {
         try {
-          log.info(`SHERPA relay register → ${candidate.relayEndpoint} (${candidate.nodeId.slice(0, 20)})`);
+          log.info(`SHERPA relay register → ${candidate.relayEndpoint} (${peerTag(candidate.nodeId)})`);
           await this._registerWithRelay(candidate);
-          log.info(`SHERPA relay registered ✓ ${candidate.nodeId.slice(0, 20)}`);
+          log.info(`SHERPA relay registered ✓ ${peerTag(candidate.nodeId)}`);
         } catch (e) {
           this.sherpa.markDisconnected(candidate.nodeId);
           log.debug(`SHERPA relay failed: ${candidate.relayEndpoint} — ${e.message}`);
@@ -3305,21 +4421,47 @@ export class YakmeshNode {
 
     if (!resp.ok) throw new Error(`Relay register HTTP ${resp.status}`);
 
+    // Learn the remote node's actual nodeId from the registration response
+    const regResult = await resp.json();
+    if (regResult.nodeId && candidate.nodeId.startsWith('relay-')) {
+      candidate.nodeId = regResult.nodeId;
+    }
+
+    // Store remote node's public key for signature verification (gossip, ANNEX)
+    // Without this, relay-only peers can't verify each other's rumor signatures
+    if (regResult.publicKey && regResult.nodeId) {
+      if (!this.mesh._relayPeerKeys) this.mesh._relayPeerKeys = new Map();
+      this.mesh._relayPeerKeys.set(regResult.nodeId, regResult.publicKey);
+      if (this.sherpa) {
+        this.sherpa.registry.upsert({
+          nodeId: regResult.nodeId,
+          publicKey: regResult.publicKey,
+          capabilities: { httpRelay: true },
+        });
+      }
+    }
+
     // Start polling for inbound messages if not already polling
     if (!this._relayPollers) this._relayPollers = new Map();
+    if (!this._relayEndpoints) this._relayEndpoints = new Map();
 
     if (!this._relayPollers.has(candidate.nodeId)) {
       const pollInterval = setInterval(async () => {
         try {
           await this._pollRelay(candidate);
         } catch (e) {
-          log.debug(`Relay poll error ${candidate.nodeId.slice(0, 12)}: ${e.message}`);
+          log.debug(`Relay poll error ${peerTag(candidate.nodeId)}: ${e.message}`);
         }
       }, 30000);  // Poll every 30 seconds
 
       this._relayPollers.set(candidate.nodeId, pollInterval);
+      this._relayEndpoints.set(candidate.nodeId, relayUrl);
       this.sherpa.markConnected(candidate.nodeId);
-      
+      log.warn(`Relay peer ${peerTag(candidate.nodeId)} connected via HTTP polling (30s cadence)`);
+      log.warn(`  ⚠ Relay connections have reduced throughput & higher latency vs direct WebSocket`);
+      log.warn(`  ⚠ This is a firewall-traversal fallback — useful for emergency mesh connectivity`);
+      log.warn(`  ⚠ Gossip propagation, ANNEX encryption, and consensus still function but may lag`);
+
       // Also do an immediate poll
       await this._pollRelay(candidate);
     }
@@ -3354,6 +4496,13 @@ export class YakmeshNode {
 
     const data = await resp.json();
 
+    // Learn/refresh remote node's public key from poll response
+    // Ensures relay-only peers can verify each other's gossip signatures
+    if (data.publicKey && data.nodeId) {
+      if (!this.mesh._relayPeerKeys) this.mesh._relayPeerKeys = new Map();
+      this.mesh._relayPeerKeys.set(data.nodeId, data.publicKey);
+    }
+
     // Process inbound messages from relay
     if (data.outbound && Array.isArray(data.outbound)) {
       for (const msg of data.outbound) {
@@ -3363,7 +4512,7 @@ export class YakmeshNode {
             this.mesh.emit(msg.type, msg, null, candidate.nodeId);
             // Route ANNEX messages arriving via relay
             if (msg.annex && this.mesh.annex) {
-              this.mesh.annex._handleAnnexMessage(msg.annex, candidate.nodeId).catch(() => {});
+              this.mesh.annex._handleAnnexMessage(msg.annex, candidate.nodeId).catch(() => { });
             }
           }
         } catch (e) {
@@ -3426,18 +4575,18 @@ export class YakmeshNode {
         this,
         this.config.peerquanta.phpbbDatabase
       );
-      
+
       await this.adapter.init();
-      
+
       // Register PeerQuanta API endpoints on existing HTTP app
       if (this.app && createAdapterEndpoints) {
         createAdapterEndpoints(this.app, this.adapter);
       }
-      
+
       if (this.config.peerquanta.syncInterval) {
         this.adapter.startSync(this.config.peerquanta.syncInterval);
       }
-      
+
       log.info('✓ PeerQuanta integration enabled');
     } catch (error) {
       log.error('Failed to initialize PeerQuanta:', { error: error.message });
@@ -3450,19 +4599,19 @@ export class YakmeshNode {
   async _initWebsiteAdapter() {
     try {
       const { default: WebsiteAdapter } = await import('../adapters/adapter-website/index.js');
-      
+
       // Get source directory from config or default
       const sourceDir = this.config.website?.sourceDir || '../website';
-      
+
       this.websiteAdapter = new WebsiteAdapter(this, {
         sourceDir,
         cacheDir: './data/websites',
         mountPath: '/site',
         yakDomains: true,
       });
-      
+
       await this.websiteAdapter.init();
-      
+
       // Register the yakmesh.yak domain if website exists
       if (this.websiteAdapter.manifests.size > 0) {
         const firstManifest = this.websiteAdapter.manifests.values().next().value;
@@ -3474,7 +4623,7 @@ export class YakmeshNode {
           }
         }
       }
-      
+
       log.info('✓ Website Adapter enabled');
       log.info(`  Site: http://localhost:${this.boundHttpPort}/site/`);
     } catch (error) {
@@ -3494,15 +4643,15 @@ export class YakmeshNode {
         port: this.boundHttpPort || this.config.network.httpPort,
         nodePath: process.cwd(),
       });
-      
+
       // Register protocol endpoints on Express app
       createProtocolEndpoints(this.app, this.protocolHandler);
-      
+
       // Auto-register protocol if configured
       if (this.config.protocol?.autoRegister) {
         await this.protocolHandler.register();
       }
-      
+
       log.info('✓ YAK:// Protocol handler initialized');
     } catch (error) {
       // Protocol handler is optional
@@ -3514,18 +4663,18 @@ export class YakmeshNode {
 // Run if executed directly (works on Windows and Unix)
 import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
-const isMainModule = process.argv[1] === __filename || 
-                     process.argv[1]?.replace(/\\/g, '/') === __filename.replace(/\\/g, '/');
+const isMainModule = process.argv[1] === __filename ||
+  process.argv[1]?.replace(/\\/g, '/') === __filename.replace(/\\/g, '/');
 if (isMainModule) {
   const config = await loadConfig();
   const node = new YakmeshNode(config);
-  
+
   // Handle shutdown
   process.on('SIGINT', async () => {
     await node.stop();
     process.exit(0);
   });
-  
+
   await node.start();
 }
 

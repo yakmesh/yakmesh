@@ -30,6 +30,7 @@
  */
 
 import { WebSocketServer, WebSocket } from 'ws';
+import { networkInterfaces } from 'os';
 import { ConnectionRateLimiter } from './rate-limiter.js';
 import { createLogger } from '../utils/logger.js';
 
@@ -37,11 +38,18 @@ import { createLogger } from '../utils/logger.js';
 // PQ-encrypted point-to-point communication between mesh peers
 import { Annex } from './annex.js';
 
+// JHILKE — Just Hidden In-band Legitimate Key Exchange (झिल्के — cricket chirps)
+// Deterministic bootstrap + steganographic rekey coordination
+import { JhilkeCoordinator } from './jhilke.js';
+
 // MessageValidator + SafeJsonParser — size limits, depth checks, proto pollution guard
 import MessageValidator, { SafeJsonParser } from './message-validator.js';
 
 // TRIBHUJ Key Ratchet — trinary rotating keypairs with gateway attestation
 import { TribhujRatchet, GatewayAttestation } from '../identity/tribhuj-ratchet.js';
+
+/** Extract unique peer suffix from nodeId (e.g. 'node-net-name-pq-kEEU' → 'kEEU') */
+const peerTag = (id) => id?.split('-pq-').pop() || id?.slice?.(-8) || String(id);
 
 const log = createLogger('mandala:network');
 
@@ -95,6 +103,9 @@ export class MandalaNetwork {
     // Network identity for code proof verification
     this.networkId = config.networkId || null;
     this.networkFingerprint = config.networkFingerprint || null;
+    
+    // Oracle code hash for JHILKE bootstrap key derivation
+    this.codeHash = config.codeHash || null;
     
     this.server = null;
     this.peers = new Map();        // nodeId -> { ws, identity, lastSeen }
@@ -164,7 +175,44 @@ export class MandalaNetwork {
         
         // Initialize ANNEX encryption layer
         this.annex = new Annex({ identity: this.identity, mesh: this });
+        
+        // CRITICAL: Route decrypted ANNEX payloads back to mesh handlers.
+        // Without this, messages encrypted by _send() via ANNEX are decrypted
+        // but never dispatched to GOSSIP/PING/PONG handlers — they vanish.
+        this.annex.onMessage(async (msg) => {
+          const payload = msg.payload;
+          if (!payload || typeof payload !== 'object') return;
+          
+          const msgType = payload.type || 'gossip';
+          const handlers = this.messageHandlers.get(msgType) || [];
+          if (handlers.length === 0) return;
+          
+          // Find the WS for this peer (needed by PING handler etc.)
+          const peer = this.peers.get(msg.from);
+          if (!peer) return;  // No peer = stale ANNEX session, skip
+          
+          for (const handler of handlers) {
+            try {
+              handler(payload, peer.ws, msg.from);
+            } catch (err) {
+              log.warn('ANNEX→mesh handler error', { type: msgType, error: err.message });
+            }
+          }
+        });
         log.info('ANNEX encryption layer initialized');
+        
+        // Initialize JHILKE coordinator (bootstrap + steganographic rekey)
+        if (this.codeHash) {
+          this.jhilke = new JhilkeCoordinator({
+            codeHash: this.codeHash,
+            nodeId: this.identity.identity.nodeId,
+            annex: this.annex,
+            mesh: this,
+          });
+          this.annex.jhilke = this.jhilke;  // Cross-reference for rekey routing
+          this.jhilke.start();  // Start 1s cricket tick loop
+          log.info('JHILKE coordinator initialized (cricket chorus active)');
+        }
         
         // Initialize TRIBHUJ key ratchet — trinary rotating keypairs
         this.ratchet = new TribhujRatchet({
@@ -231,9 +279,11 @@ export class MandalaNetwork {
       let settled = false;
       
       const ws = new WebSocket(endpoint);
+      ws._outboundEndpoint = endpoint;  // Track origin for reconnect detection
       
       ws.on('open', () => {
         // Send HELLO with our identity AND network fingerprint for code proof verification
+        // Include our advertised endpoint so inbound peers know how to reach us
         this._send(ws, {
           type: MessageTypes.HELLO,
           identity: {
@@ -241,6 +291,7 @@ export class MandalaNetwork {
             networkId: this.networkId,
             networkFingerprint: this.networkFingerprint,
           },
+          advertisedEndpoint: this._getAdvertisedEndpoint(),
           timestamp: Date.now(),
         });
       });
@@ -288,7 +339,7 @@ export class MandalaNetwork {
       }
     }
     // HARD FAIL: No plaintext fallback. Encryption is mandatory.
-    const err = new Error(`No active ANNEX session for ${nodeId.slice(0, 20)} — refusing plaintext send`);
+    const err = new Error(`No active ANNEX session for ${peerTag(nodeId)} — refusing plaintext send`);
     log.error(err.message);
     throw err;
   }
@@ -416,6 +467,42 @@ export class MandalaNetwork {
   }
 
   /**
+   * Get our advertised WebSocket endpoint for peer discovery.
+   * This tells inbound peers how to reconnect to us.
+   */
+  _getAdvertisedEndpoint() {
+    if (!this.boundPort) return null;
+    
+    // Use configured advertise address if set (for NAT/proxy scenarios)
+    if (this.config.advertiseAddress) {
+      return this.config.advertiseAddress;
+    }
+    
+    // Otherwise construct from best-guess local IP + bound port
+    // Prefer non-localhost addresses for LAN/WAN connectivity
+    const ifaces = networkInterfaces();
+    let bestIp = '127.0.0.1';
+    
+    for (const [name, addrs] of Object.entries(ifaces)) {
+      for (const addr of addrs) {
+        if (addr.family === 'IPv4' && !addr.internal) {
+          // Prefer 192.168.x.x or 10.x.x.x (private networks)
+          if (addr.address.startsWith('192.168.') || addr.address.startsWith('10.')) {
+            bestIp = addr.address;
+            break;
+          }
+          // Fallback to any non-internal IPv4
+          if (bestIp === '127.0.0.1') {
+            bestIp = addr.address;
+          }
+        }
+      }
+    }
+    
+    return `ws://${bestIp}:${this.boundPort}`;
+  }
+
+  /**
    * Stop the mesh server
    */
   async stop() {
@@ -431,6 +518,12 @@ export class MandalaNetwork {
         try { await this.annex.closeChannel(nodeId); } catch {}
       }
       this.annex = null;
+    }
+    
+    // Stop JHILKE coordinator
+    if (this.jhilke) {
+      this.jhilke.stop();
+      this.jhilke = null;
     }
     
     // Destroy TRIBHUJ ratchet — zero all key material
@@ -467,7 +560,7 @@ export class MandalaNetwork {
       // Nodes with different codebases will have different fingerprints
       if (this.networkFingerprint && msg.identity.networkFingerprint) {
         if (msg.identity.networkFingerprint !== this.networkFingerprint) {
-          console.warn(`✗ Rejected peer ${nodeId.slice(0, 20)}... - incompatible codebase`);
+          console.warn(`✗ Rejected peer ${peerTag(nodeId)} - incompatible codebase`);
           console.warn(`  Their network: ${msg.identity.networkId || 'unknown'}`);
           console.warn(`  Our network:   ${this.networkId || 'unknown'}`);
           
@@ -483,12 +576,44 @@ export class MandalaNetwork {
         }
       }
       
+      // DUPLICATE / RECONNECT DETECTION: If this peer is already connected
+      // with a different WebSocket, decide which connection to keep.
+      const existingPeer = this.peers.get(nodeId);
+      if (existingPeer && existingPeer.ws !== ws) {
+        const oldAlive = existingPeer.ws.readyState === WebSocket.OPEN;
+        if (oldAlive) {
+          // Existing connection is still alive — this is a duplicate, not a
+          // reconnect. Close the NEW socket to avoid ping-pong overwrites.
+          log.info('Duplicate connection from peer — keeping existing WS', { peer: peerTag(nodeId) });
+          try { ws.close(1000, 'Duplicate connection'); } catch {}
+          return;
+        }
+        // Old WS is dead — genuine reconnect. Reset ANNEX state.
+        log.info('Peer reconnected (new WS) — resetting ANNEX/JHILKE state', { peer: peerTag(nodeId) });
+        if (this.annex) {
+          this.annex.sessions.delete(nodeId);
+          this.annex.pendingHandshakes.delete(nodeId);
+        }
+        if (this.jhilke) {
+          this.jhilke.removePeer(nodeId);
+        }
+        try { existingPeer.ws.close(1000, 'Replaced by reconnect'); } catch {}
+      }
+
       // Store peer — no cap on total peers (mesh scales freely)
+      // For outbound connections, use our tracked endpoint.
+      // For inbound connections, use peer's advertised endpoint (so we can reconnect to them).
+      const peerEndpoint = ws._outboundEndpoint || msg.advertisedEndpoint || null;
       this.peers.set(nodeId, {
         ws,
         identity: msg.identity,
+        endpoint: peerEndpoint,
         lastSeen: Date.now(),
       });
+      
+      if (peerEndpoint && !ws._outboundEndpoint) {
+        log.debug('Learned peer endpoint from inbound connection', { peer: peerTag(nodeId), endpoint: peerEndpoint });
+      }
       
       // Release handshake slot — peer is now fully registered.
       // The slot was reserved in _handleIncomingConnection.
@@ -497,7 +622,7 @@ export class MandalaNetwork {
         this._pendingHandshakeWs.delete(ws);
       }
       
-      // Send WELCOME back with our network info
+      // Send WELCOME back with our network info + our advertised endpoint
       this._send(ws, {
         type: MessageTypes.WELCOME,
         identity: {
@@ -505,10 +630,11 @@ export class MandalaNetwork {
           networkId: this.networkId,
           networkFingerprint: this.networkFingerprint,
         },
+        advertisedEndpoint: this._getAdvertisedEndpoint(),
         peers: this.getPeers().filter(p => p.nodeId !== nodeId),
       });
       
-      log.info('Peer connected', { name: msg.identity.name, nodeId: nodeId.slice(0, 20), totalPeers: this.peers.size });
+      log.info('Peer connected', { name: msg.identity.name, peer: peerTag(nodeId), totalPeers: this.peers.size });
       
       // Signal that this peer's public key is now available — any deferred
       // ANNEX messages waiting for this key will be replayed.
@@ -523,15 +649,29 @@ export class MandalaNetwork {
         const existingSession = this.annex.sessions.get(nodeId);
         const pendingHandshake = this.annex.pendingHandshakes.get(nodeId);
         if (!existingSession && !pendingHandshake) {
-          log.debug('ANNEX: we initiate (lower nodeId)', { us: ourNodeId.slice(0, 12), them: nodeId.slice(0, 12) });
+          // JHILKE: Bootstrap session with deterministic key BEFORE KEM exchange
+          // Both nodes derive the same key from shared code hash + node IDs.
+          // This means traffic is encrypted from message #1 — no plaintext KEM.
+          if (this.jhilke) {
+            const bootstrapKey = this.jhilke.deriveBootstrapKey(nodeId);
+            this.annex.bootstrapSession(nodeId, bootstrapKey);
+          }
+          
+          log.debug('ANNEX: we initiate (lower nodeId)', { us: peerTag(ourNodeId), them: peerTag(nodeId) });
           this.annex.openChannel(nodeId).then(() => {
-            log.info('ANNEX channel established with peer', { nodeId: nodeId.slice(0, 20) });
+            log.info('ANNEX channel established with peer', { peerId: peerTag(nodeId) });
           }).catch(err => {
-            log.warn('ANNEX negotiation failed', { nodeId: nodeId.slice(0, 20), error: err.message });
+            log.warn('ANNEX negotiation failed', { peerId: peerTag(nodeId), error: err.message });
           });
         }
       } else if (this.annex) {
-        log.debug('ANNEX: waiting for peer to initiate (they have lower nodeId)', { us: ourNodeId.slice(0, 12), them: nodeId.slice(0, 12) });
+        // JHILKE: Responder also derives bootstrap key (same deterministic key)
+        // so it can decrypt the incoming KEM exchange from the initiator
+        if (this.jhilke && !this.annex.sessions.get(nodeId)) {
+          const bootstrapKey = this.jhilke.deriveBootstrapKey(nodeId);
+          this.annex.bootstrapSession(nodeId, bootstrapKey);
+        }
+        log.debug('ANNEX: waiting for peer to initiate (they have lower nodeId)', { us: peerTag(ourNodeId), them: peerTag(nodeId) });
       }
     });
 
@@ -543,7 +683,7 @@ export class MandalaNetwork {
       // This protects the INITIATOR - even if remote accepts us, we reject them if mismatched
       if (this.networkFingerprint && msg.identity.networkFingerprint) {
         if (msg.identity.networkFingerprint !== this.networkFingerprint) {
-          console.warn(`✗ Rejecting peer ${nodeId.slice(0, 20)}... - incompatible codebase (on WELCOME)`);
+          console.warn(`✗ Rejecting peer ${peerTag(nodeId)} - incompatible codebase (on WELCOME)`);
           console.warn(`  Their network: ${msg.identity.networkId || 'unknown'}`);
           console.warn(`  Our network:   ${this.networkId || 'unknown'}`);
           ws.close(1008, 'Incompatible codebase');
@@ -557,7 +697,7 @@ export class MandalaNetwork {
         }
       } else if (this.networkFingerprint && !msg.identity.networkFingerprint) {
         // Remote node didn't send fingerprint - they're running old code
-        console.warn(`✗ Rejecting peer ${nodeId.slice(0, 20)}... - no fingerprint (old codebase)`);
+        console.warn(`✗ Rejecting peer ${peerTag(nodeId)} - no fingerprint (old codebase)`);
         ws.close(1008, 'Missing network fingerprint');
         
         if (ws._pendingWelcome) {
@@ -567,11 +707,54 @@ export class MandalaNetwork {
         return;
       }
       
+      // DUPLICATE / RECONNECT DETECTION (WELCOME path): same logic as HELLO.
+      const existingPeerW = this.peers.get(nodeId);
+      if (existingPeerW && existingPeerW.ws !== ws) {
+        const oldAlive = existingPeerW.ws.readyState === WebSocket.OPEN;
+        if (oldAlive) {
+          // Existing connection is still alive — duplicate. Keep the old one.
+          // Tag the existing peer with this endpoint so bootstrap's
+          // connectedEndpoints check will match and stop retrying.
+          if (ws._outboundEndpoint && !existingPeerW.endpoint) {
+            log.info('Updating peer endpoint from duplicate outbound', { 
+              peer: peerTag(nodeId), 
+              newEndpoint: ws._outboundEndpoint 
+            });
+            existingPeerW.endpoint = ws._outboundEndpoint;
+          }
+          log.info('Duplicate outbound to peer — keeping existing WS', { peer: peerTag(nodeId) });
+          try { ws.close(1000, 'Duplicate connection'); } catch {}
+          // Still resolve the pending promise so bootstrap doesn't retry
+          if (ws._pendingWelcome) {
+            ws._pendingWelcome(msg);
+            delete ws._pendingWelcome;
+          }
+          return;
+        }
+        // Old WS is dead — genuine reconnect. Reset ANNEX state.
+        log.info('Peer reconnected on WELCOME (new WS) — resetting ANNEX/JHILKE state', { peer: peerTag(nodeId) });
+        if (this.annex) {
+          this.annex.sessions.delete(nodeId);
+          this.annex.pendingHandshakes.delete(nodeId);
+        }
+        if (this.jhilke) {
+          this.jhilke.removePeer(nodeId);
+        }
+        try { existingPeerW.ws.close(1000, 'Replaced by reconnect'); } catch {}
+      }
+
+      // Store peer — for outbound we have _outboundEndpoint, for inbound use advertised
+      const peerEndpoint = ws._outboundEndpoint || msg.advertisedEndpoint || null;
       this.peers.set(nodeId, {
         ws,
         identity: msg.identity,
+        endpoint: peerEndpoint,
         lastSeen: Date.now(),
       });
+      
+      if (peerEndpoint && !ws._outboundEndpoint) {
+        log.debug('Learned peer endpoint from WELCOME', { peer: peerTag(nodeId), endpoint: peerEndpoint });
+      }
       
       // Callback for pending connection
       if (ws._pendingWelcome) {
@@ -591,13 +774,46 @@ export class MandalaNetwork {
         const existingSession = this.annex.sessions.get(nodeId);
         const pendingHandshake = this.annex.pendingHandshakes.get(nodeId);
         if (!existingSession && !pendingHandshake) {
-          log.debug('ANNEX: we initiate on WELCOME (lower nodeId)', { us: ourNodeId.slice(0, 12), them: nodeId.slice(0, 12) });
+          // JHILKE: Bootstrap session with deterministic key
+          if (this.jhilke) {
+            const bootstrapKey = this.jhilke.deriveBootstrapKey(nodeId);
+            this.annex.bootstrapSession(nodeId, bootstrapKey);
+          }
+          
+          log.debug('ANNEX: we initiate on WELCOME (lower nodeId)', { us: peerTag(ourNodeId), them: peerTag(nodeId) });
           this.annex.openChannel(nodeId).then(() => {
-            log.info('ANNEX channel established with peer', { nodeId: nodeId.slice(0, 20) });
+            log.info('ANNEX channel established with peer', { peerId: peerTag(nodeId) });
           }).catch(err => {
-            log.warn('ANNEX negotiation failed', { nodeId: nodeId.slice(0, 20), error: err.message });
+            log.warn('ANNEX negotiation failed', { peerId: peerTag(nodeId), error: err.message });
           });
         }
+      } else if (this.annex) {
+        // JHILKE: Responder derives bootstrap key on WELCOME too
+        if (this.jhilke && !this.annex.sessions.get(nodeId)) {
+          const bootstrapKey = this.jhilke.deriveBootstrapKey(nodeId);
+          this.annex.bootstrapSession(nodeId, bootstrapKey);
+        }
+      }
+    });
+
+    // Handle REJECT — peer rejected our connection (incompatible codebase, etc.)
+    this.on('REJECT', (msg, ws) => {
+      log.warn('Connection rejected by peer', {
+        reason: msg.reason || 'unknown',
+        theirNetwork: msg.ourNetworkId || 'unknown',
+      });
+      // Signal rejection to pending promise if this was an outbound connection
+      if (ws._pendingWelcome) {
+        ws._pendingWelcome({ rejected: true, reason: msg.reason });
+        delete ws._pendingWelcome;
+      }
+      try { ws.close(1000, 'Rejected'); } catch {}
+    });
+
+    // Handle mesh_entropy — JHILKE cricket signals hidden in entropy exchange
+    this.on('mesh_entropy', (msg, ws, senderNodeId) => {
+      if (this.jhilke && senderNodeId) {
+        this.jhilke.handleIncoming(senderNodeId, msg);
       }
     });
 
@@ -617,11 +833,17 @@ export class MandalaNetwork {
     // Handle GOSSIP
     this.on(MessageTypes.GOSSIP, (msg, ws, nodeId) => {
       // Deduplicate
-      if (this.seenMessages.has(msg.id)) return;
+      if (this.seenMessages.has(msg.id)) {
+        log.debug('GOSSIP dedup — already seen', { id: msg.id?.slice(0, 12) });
+        return;
+      }
       this.seenMessages.add(msg.id);
       
       // TTL check
-      if (msg.ttl <= 0) return;
+      if (msg.ttl <= 0) {
+        log.debug('GOSSIP TTL expired', { id: msg.id?.slice(0, 12) });
+        return;
+      }
       
       // Check for gossip protocol message
       if (msg.payload && msg.payload.gossip) {
@@ -742,7 +964,7 @@ export class MandalaNetwork {
           // Attestation valid — skip expensive ML-DSA-65 verify (~0.01ms vs ~2-5ms)
           log.debug('Accepted via gateway attestation', {
             type: msg.type,
-            gateway: msg._gwAttest.gateway?.slice(0, 20),
+            gateway: peerTag(msg._gwAttest.gateway),
           });
         } else {
           // Attestation invalid — still try full verification below
@@ -769,7 +991,7 @@ export class MandalaNetwork {
             type: msg.type,
             epoch: msg._tribhujEpoch,
             keyState: result.keyState,
-            sender: senderNodeId?.slice(0, 20),
+            sender: peerTag(senderNodeId),
           });
           return; // Drop forged message
         }
@@ -785,8 +1007,8 @@ export class MandalaNetwork {
         if (!verified) {
           log.warn('Rejected message with invalid signature', {
             type: msg.type,
-            signer: msg._signer?.slice(0, 20),
-            sender: senderNodeId?.slice(0, 20),
+            signer: peerTag(msg._signer),
+            sender: peerTag(senderNodeId),
           });
           return; // Drop forged message
         }
@@ -800,13 +1022,13 @@ export class MandalaNetwork {
         // Allow through since the handshake handler validates identity
         log.debug('Signed message from unregistered peer, passing through', { type: msg.type });
       } else if (!msg._gwAttest && !msg._tribhujSig && !msg._signature) {
-        // UNSIGNED message — only allow handshake types (HELLO/WELCOME)
+        // UNSIGNED message — only allow handshake types (HELLO/WELCOME/REJECT)
         // All other message types from known peers MUST be signed
-        const HANDSHAKE_TYPES = new Set([MessageTypes.HELLO, MessageTypes.WELCOME]);
+        const HANDSHAKE_TYPES = new Set([MessageTypes.HELLO, MessageTypes.WELCOME, 'REJECT']);
         if (!HANDSHAKE_TYPES.has(msg.type)) {
           log.warn('Rejected unsigned message from peer', {
             type: msg.type,
-            sender: senderNodeId?.slice(0, 20) || 'unknown',
+            sender: peerTag(senderNodeId) || 'unknown',
           });
           return; // Drop unsigned non-handshake message
         }
@@ -837,6 +1059,10 @@ export class MandalaNetwork {
         if (this.annex) {
           this.annex.closeChannel(nodeId).catch(() => {});
         }
+        // Clean up JHILKE session for departing peer
+        if (this.jhilke) {
+          this.jhilke.removePeer(nodeId);
+        }
         this.peers.delete(nodeId);
         // Signal so deferred ANNEX messages for this peer are cleaned up
         this.emit('peer-disconnected', nodeId);
@@ -864,7 +1090,7 @@ export class MandalaNetwork {
               // HARD FAIL: No plaintext fallback. Encryption is mandatory per Yakmesh ethos.
               // Peer must re-negotiate ANNEX session. Dropping message is safer than leaking it.
               log.error('ANNEX send failed — message dropped (no plaintext fallback)', { 
-                nodeId: nodeId.slice(0, 20), error: err.message 
+                peer: peerTag(nodeId), error: err.message 
               });
             });
             return;
