@@ -1,0 +1,43 @@
+{
+  "name": "@yakmesh/adapter-byond",
+  "version": "1.0.0",
+  "description": "BYOND game server adapter for Yakmesh mesh network",
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./topic-client": "./topic-client.js",
+    "./http-bridge": "./http-bridge.js",
+    "./security": "./security.js"
+  },
+  "files": [
+    "index.js",
+    "topic-client.js",
+    "http-bridge.js",
+    "security.js",
+    "dmapi/",
+    "README.md"
+  ],
+  "scripts": {
+    "test": "node --test tests/*.test.js"
+  },
+  "keywords": [
+    "yakmesh",
+    "byond",
+    "ss13",
+    "game-server",
+    "mesh-network",
+    "p2p",
+    "dreamdaemon",
+    "dreammaker"
+  ],
+  "author": "AERProductions",
+  "license": "MIT",
+  "dependencies": {},
+  "peerDependencies": {
+    "@yakmesh/node": "^2.3.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

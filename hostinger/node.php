@@ -28,6 +28,12 @@ $allowed = [
     "network/status", 
     "network/identity", 
     "time/status",
+    "api/time",
+    "api/time/simple",
+    "api/health",
+    ".well-known/yakmesh/beacon",
+    "sherpa/status",
+    "network/handshake",
     "gossip",
     "discovered"
 ];

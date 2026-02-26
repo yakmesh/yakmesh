@@ -1,0 +1,410 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMax slice">
+  <defs>
+    <linearGradient id="nightGlow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#06120a" stop-opacity="0"/>
+      <stop offset="40%" stop-color="#081a0d" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#0a1a0e" stop-opacity="0.7"/>
+    </linearGradient>
+    <linearGradient id="grassGlow" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1a3a22" stop-opacity="0.4"/>
+      <stop offset="100%" stop-color="#0d1f12" stop-opacity="0.8"/>
+    </linearGradient>
+    <!-- Firefly glow — bright yellow-green core (like real Photinus pyralis) -->
+    <radialGradient id="fireflyGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#d4ff70" stop-opacity="0.9"/>
+      <stop offset="25%" stop-color="#a3e635" stop-opacity="0.6"/>
+      <stop offset="60%" stop-color="#4ade80" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#16a34a" stop-opacity="0"/>
+    </radialGradient>
+    <!-- Warm firefly — amber/gold variety -->
+    <radialGradient id="fireflyWarm" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#fde047" stop-opacity="0.85"/>
+      <stop offset="30%" stop-color="#facc15" stop-opacity="0.5"/>
+      <stop offset="60%" stop-color="#a3e635" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#16a34a" stop-opacity="0"/>
+    </radialGradient>
+    <!-- Cool firefly — blue-green variety -->
+    <radialGradient id="fireflyCool" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#86efac" stop-opacity="0.8"/>
+      <stop offset="30%" stop-color="#4ade80" stop-opacity="0.5"/>
+      <stop offset="60%" stop-color="#22c55e" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#064e3b" stop-opacity="0"/>
+    </radialGradient>
+    <!-- Large ambient glow halo -->
+    <radialGradient id="fireflyHalo" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#a3e635" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#16a34a" stop-opacity="0"/>
+    </radialGradient>
+    <!-- Moonlight gradient -->
+    <radialGradient id="moonGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#d9f99d" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="#0a1a0e" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Night sky gradient overlay -->
+  <rect width="1920" height="1080" fill="url(#nightGlow)"/>
+
+  <!-- Moonlight glow on landscape -->
+  <circle cx="1600" cy="150" r="400" fill="url(#moonGlow)"/>
+
+  <!-- Distant Himalayan peaks (night silhouette) -->
+  <polygon points="0,600 120,380 280,500 420,320 560,480 700,360 800,500 960,280 1100,450 1200,350 1360,480 1500,300 1640,420 1800,380 1920,500 1920,600" fill="#0d1f12" opacity="0.5"/>
+  <polygon points="0,650 200,520 380,600 520,480 680,570 840,450 960,550 1080,420 1200,530 1380,460 1520,560 1700,480 1920,550 1920,650" fill="#0f2316" opacity="0.6"/>
+
+  <!-- Rolling hills/meadow -->
+  <path d="M0,750 Q200,700 400,730 Q600,760 800,720 Q1000,680 1200,720 Q1400,760 1600,710 Q1800,680 1920,720 L1920,1080 L0,1080 Z" fill="url(#grassGlow)"/>
+
+  <!-- Tall grass silhouettes (foreground) — more clusters for firefly habitat -->
+  <!-- Left cluster -->
+  <path d="M80,850 Q85,780 90,750 Q92,720 88,700" stroke="#1a3a22" stroke-width="2" fill="none" opacity="0.5"/>
+  <path d="M100,840 Q105,770 110,740 Q115,700 108,680" stroke="#1a3a22" stroke-width="2" fill="none" opacity="0.45"/>
+  <path d="M120,845 Q115,790 118,760 Q122,730 116,700" stroke="#1a3a22" stroke-width="2" fill="none" opacity="0.5"/>
+  <path d="M140,848 Q138,800 142,770 Q145,740 140,710" stroke="#1a3a22" stroke-width="2" fill="none" opacity="0.4"/>
+  <path d="M60,855 Q65,800 62,770 Q58,740 64,710" stroke="#1a3a22" stroke-width="2" fill="none" opacity="0.45"/>
+  <path d="M45,860 Q50,810 47,780 Q42,750 48,720" stroke="#1a3a22" stroke-width="1.5" fill="none" opacity="0.35"/>
+  <path d="M155,850 Q152,795 156,765 Q160,735 154,705" stroke="#1a3a22" stroke-width="1.5" fill="none" opacity="0.35"/>
+
+  <!-- Center-left grass -->
+  <path d="M450,830 Q455,770 460,740 Q458,710 462,680" stroke="#1a3a22" stroke-width="2" fill="none" opacity="0.5"/>
+  <path d="M470,835 Q468,780 472,750 Q475,720 470,690" stroke="#1a3a22" stroke-width="2" fill="none" opacity="0.45"/>
+  <path d="M490,828 Q492,770 488,740 Q492,710 487,680" stroke="#1a3a22" stroke-width="2" fill="none" opacity="0.5"/>
+  <path d="M430,838 Q434,784 430,754 Q427,724 432,694" stroke="#1a3a22" stroke-width="1.5" fill="none" opacity="0.38"/>
+
+  <!-- Center grass (new, firefly gathering area) -->
+  <path d="M800,818 Q805,760 810,730 Q808,700 812,670" stroke="#1a3a22" stroke-width="2" fill="none" opacity="0.45"/>
+  <path d="M820,822 Q818,768 822,738 Q825,708 820,678" stroke="#1a3a22" stroke-width="2" fill="none" opacity="0.5"/>
+  <path d="M840,815 Q842,758 838,728 Q842,698 837,668" stroke="#1a3a22" stroke-width="2" fill="none" opacity="0.4"/>
+  <path d="M780,825 Q784,772 780,742 Q776,712 782,682" stroke="#1a3a22" stroke-width="1.5" fill="none" opacity="0.38"/>
+  <path d="M860,820 Q856,766 860,736 Q864,706 858,676" stroke="#1a3a22" stroke-width="1.5" fill="none" opacity="0.35"/>
+
+  <!-- Right cluster -->
+  <path d="M1700,835 Q1705,770 1710,740 Q1708,710 1712,680" stroke="#1a3a22" stroke-width="2" fill="none" opacity="0.5"/>
+  <path d="M1720,840 Q1718,780 1722,750 Q1725,720 1720,690" stroke="#1a3a22" stroke-width="2" fill="none" opacity="0.45"/>
+  <path d="M1740,832 Q1742,770 1738,740 Q1742,710 1737,680" stroke="#1a3a22" stroke-width="2" fill="none" opacity="0.5"/>
+  <path d="M1680,842 Q1685,790 1682,760 Q1678,730 1684,700" stroke="#1a3a22" stroke-width="2" fill="none" opacity="0.45"/>
+  <path d="M1760,838 Q1758,780 1762,750 Q1765,720 1760,690" stroke="#1a3a22" stroke-width="2" fill="none" opacity="0.4"/>
+
+  <!-- Center-right grass -->
+  <path d="M1400,825 Q1405,765 1408,735 Q1404,705 1410,675" stroke="#1a3a22" stroke-width="2" fill="none" opacity="0.45"/>
+  <path d="M1420,830 Q1418,775 1422,745 Q1425,715 1420,685" stroke="#1a3a22" stroke-width="2" fill="none" opacity="0.5"/>
+  <path d="M1380,832 Q1382,778 1378,748 Q1382,718 1377,688" stroke="#1a3a22" stroke-width="1.5" fill="none" opacity="0.35"/>
+
+  <!-- THE CRICKET (center-right, large, detailed silhouette) -->
+  <g transform="translate(1050, 720) scale(1.8)" opacity="0.35">
+    <ellipse cx="0" cy="0" rx="45" ry="18" fill="#0d2614"/>
+    <ellipse cx="-50" cy="-5" rx="18" ry="14" fill="#0d2614"/>
+    <circle cx="-60" cy="-12" r="6" fill="#102a18" opacity="0.8"/>
+    <path d="M-65,-15 Q-100,-60 -130,-80 Q-150,-95 -170,-85" stroke="#1a3a22" stroke-width="1.5" fill="none"/>
+    <path d="M-62,-18 Q-85,-70 -110,-100 Q-125,-115 -145,-120" stroke="#1a3a22" stroke-width="1.5" fill="none"/>
+    <ellipse cx="-25" cy="-2" rx="12" ry="10" fill="#0d2614"/>
+    <path d="M-10,-15 Q20,-25 50,-18 Q60,-12 55,0" fill="#102a18" opacity="0.6"/>
+    <path d="M-5,-12 Q25,-20 48,-14" stroke="#1a3a22" stroke-width="0.5" fill="none" opacity="0.3"/>
+    <path d="M0,-10 Q25,-16 45,-10" stroke="#1a3a22" stroke-width="0.5" fill="none" opacity="0.3"/>
+    <path d="M15,12 Q45,5 60,-20 Q65,-30 80,-25" stroke="#0d2614" stroke-width="4" fill="none"/>
+    <path d="M80,-25 Q95,-15 110,10 Q120,30 125,50" stroke="#0d2614" stroke-width="3" fill="none"/>
+    <path d="M-5,15 Q5,30 15,40 Q20,45 25,42" stroke="#0d2614" stroke-width="2.5" fill="none"/>
+    <path d="M-20,14 Q-15,28 -8,38 Q-3,42 2,40" stroke="#0d2614" stroke-width="2.5" fill="none"/>
+    <path d="M-40,10 Q-45,20 -50,30 Q-52,35 -48,38" stroke="#0d2614" stroke-width="2" fill="none"/>
+    <path d="M45,5 Q60,10 70,15" stroke="#1a3a22" stroke-width="1" fill="none"/>
+    <path d="M45,8 Q58,15 65,22" stroke="#1a3a22" stroke-width="1" fill="none"/>
+  </g>
+
+  <!-- Second smaller cricket (left side, on grass) -->
+  <g transform="translate(380, 780) scale(0.9) rotate(-15)" opacity="0.25">
+    <ellipse cx="0" cy="0" rx="30" ry="12" fill="#0d2614"/>
+    <ellipse cx="-35" cy="-3" rx="12" ry="9" fill="#0d2614"/>
+    <path d="M-44,-10 Q-70,-40 -90,-55" stroke="#1a3a22" stroke-width="1" fill="none"/>
+    <path d="M-42,-12 Q-60,-50 -75,-70" stroke="#1a3a22" stroke-width="1" fill="none"/>
+    <path d="M10,8 Q30,2 40,-15 Q45,-22 55,-18" stroke="#0d2614" stroke-width="3" fill="none"/>
+    <path d="M55,-18 Q65,-10 75,8" stroke="#0d2614" stroke-width="2" fill="none"/>
+    <path d="M-8,-10 Q15,-18 35,-12 Q42,-8 38,0" fill="#102a18" opacity="0.5"/>
+  </g>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- ✨ THE FIREFLY SWARM — ~30 fireflies across the meadow -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+
+  <!-- === LAYER 1: Background fireflies (distant, small, faint) === -->
+
+  <!-- Distant left sky -->
+  <g opacity="0.3">
+    <circle cx="180" cy="420" r="3" fill="url(#fireflyCool)">
+      <animate attributeName="opacity" values="0.3;0.05;0.3" dur="5.2s" repeatCount="indefinite"/>
+      <animateTransform attributeName="transform" type="translate" values="0,0;4,-8;-2,3;0,0" dur="12s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+  <g opacity="0.25">
+    <circle cx="520" cy="380" r="2.5" fill="url(#fireflyCool)">
+      <animate attributeName="opacity" values="0.25;0.03;0.25" dur="6.1s" repeatCount="indefinite"/>
+      <animateTransform attributeName="transform" type="translate" values="0,0;-5,6;3,-4;0,0" dur="14s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+  <g opacity="0.2">
+    <circle cx="1350" cy="350" r="2" fill="url(#fireflyCool)">
+      <animate attributeName="opacity" values="0.2;0.02;0.2" dur="7.4s" repeatCount="indefinite"/>
+      <animateTransform attributeName="transform" type="translate" values="0,0;6,4;-3,-6;0,0" dur="16s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+  <g opacity="0.28">
+    <circle cx="1750" cy="400" r="2.5" fill="url(#fireflyCool)">
+      <animate attributeName="opacity" values="0.28;0.04;0.28" dur="5.8s" repeatCount="indefinite"/>
+      <animateTransform attributeName="transform" type="translate" values="0,0;-3,-5;5,2;0,0" dur="13s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+
+  <!-- === LAYER 2: Mid-field fireflies (medium brightness, drifting) === -->
+
+  <!-- Left meadow cluster -->
+  <g opacity="0.6">
+    <circle cx="150" cy="640" r="6" fill="url(#fireflyGlow)">
+      <animate attributeName="opacity" values="0.6;0.08;0.6" dur="3.3s" repeatCount="indefinite"/>
+      <animateTransform attributeName="transform" type="translate" values="0,0;8,-15;-4,5;6,-10;0,0" dur="18s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="150" cy="640" r="18" fill="url(#fireflyHalo)">
+      <animate attributeName="opacity" values="0.4;0.02;0.4" dur="3.3s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+  <g opacity="0.5">
+    <circle cx="250" cy="580" r="5" fill="url(#fireflyWarm)">
+      <animate attributeName="opacity" values="0.5;0.06;0.5" dur="4.1s" repeatCount="indefinite"/>
+      <animateTransform attributeName="transform" type="translate" values="0,0;-6,10;10,-8;-3,4;0,0" dur="20s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="250" cy="580" r="15" fill="url(#fireflyHalo)">
+      <animate attributeName="opacity" values="0.3;0.01;0.3" dur="4.1s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+  <g opacity="0.55">
+    <circle cx="340" cy="620" r="4" fill="url(#fireflyGlow)">
+      <animate attributeName="opacity" values="0.55;0.05;0.55" dur="3.7s" repeatCount="indefinite"/>
+      <animateTransform attributeName="transform" type="translate" values="0,0;5,-12;-8,6;0,0" dur="15s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+
+  <!-- Center-left drifters -->
+  <g opacity="0.65">
+    <circle cx="520" cy="530" r="7" fill="url(#fireflyWarm)">
+      <animate attributeName="opacity" values="0.65;0.1;0.65" dur="2.9s" repeatCount="indefinite"/>
+      <animateTransform attributeName="transform" type="translate" values="0,0;-10,8;12,-14;-5,10;0,0" dur="22s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="520" cy="530" r="22" fill="url(#fireflyHalo)">
+      <animate attributeName="opacity" values="0.5;0.02;0.5" dur="2.9s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+  <g opacity="0.45">
+    <circle cx="680" cy="490" r="5" fill="url(#fireflyGlow)">
+      <animate attributeName="opacity" values="0.45;0.04;0.45" dur="4.5s" repeatCount="indefinite"/>
+      <animateTransform attributeName="transform" type="translate" values="0,0;7,-6;-9,12;4,-3;0,0" dur="17s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+
+  <!-- ★ Center swarm — the main firefly gathering above tall grass ★ -->
+  <g opacity="0.8">
+    <circle cx="810" cy="560" r="9" fill="url(#fireflyGlow)">
+      <animate attributeName="opacity" values="0.8;0.1;0.8" dur="2.4s" repeatCount="indefinite"/>
+      <animateTransform attributeName="transform" type="translate" values="0,0;-6,-18;10,5;-8,-12;4,8;0,0" dur="25s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="810" cy="560" r="28" fill="url(#fireflyHalo)">
+      <animate attributeName="opacity" values="0.6;0.03;0.6" dur="2.4s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+  <g opacity="0.7">
+    <circle cx="860" cy="530" r="7" fill="url(#fireflyWarm)">
+      <animate attributeName="opacity" values="0.7;0.08;0.7" dur="3.1s" repeatCount="indefinite"/>
+      <animateTransform attributeName="transform" type="translate" values="0,0;12,-10;-5,15;8,-8;0,0" dur="19s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="860" cy="530" r="20" fill="url(#fireflyHalo)">
+      <animate attributeName="opacity" values="0.45;0.02;0.45" dur="3.1s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+  <g opacity="0.6">
+    <circle cx="780" cy="510" r="5" fill="url(#fireflyGlow)">
+      <animate attributeName="opacity" values="0.6;0.06;0.6" dur="3.8s" repeatCount="indefinite"/>
+      <animateTransform attributeName="transform" type="translate" values="0,0;-8,12;14,-6;-10,8;0,0" dur="21s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+  <g opacity="0.55">
+    <circle cx="840" cy="580" r="6" fill="url(#fireflyCool)">
+      <animate attributeName="opacity" values="0.55;0.07;0.55" dur="4.2s" repeatCount="indefinite"/>
+      <animateTransform attributeName="transform" type="translate" values="0,0;5,-20;-12,8;7,-15;0,0" dur="24s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+  <g opacity="0.75">
+    <circle cx="900" cy="550" r="8" fill="url(#fireflyGlow)">
+      <animate attributeName="opacity" values="0.75;0.12;0.75" dur="2.6s" repeatCount="indefinite"/>
+      <animateTransform attributeName="transform" type="translate" values="0,0;-15,5;8,-18;-4,12;0,0" dur="20s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="900" cy="550" r="25" fill="url(#fireflyHalo)">
+      <animate attributeName="opacity" values="0.55;0.02;0.55" dur="2.6s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+  <g opacity="0.5">
+    <circle cx="750" cy="570" r="4" fill="url(#fireflyWarm)">
+      <animate attributeName="opacity" values="0.5;0.04;0.5" dur="5s" repeatCount="indefinite"/>
+      <animateTransform attributeName="transform" type="translate" values="0,0;10,-8;-6,14;0,0" dur="16s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+  <g opacity="0.45">
+    <circle cx="920" cy="500" r="4" fill="url(#fireflyCool)">
+      <animate attributeName="opacity" values="0.45;0.03;0.45" dur="5.5s" repeatCount="indefinite"/>
+      <animateTransform attributeName="transform" type="translate" values="0,0;-4,10;8,-12;0,0" dur="18s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+
+  <!-- Right-center drifters -->
+  <g opacity="0.6">
+    <circle cx="1100" cy="520" r="6" fill="url(#fireflyGlow)">
+      <animate attributeName="opacity" values="0.6;0.06;0.6" dur="3.5s" repeatCount="indefinite"/>
+      <animateTransform attributeName="transform" type="translate" values="0,0;8,-14;-10,6;5,-10;0,0" dur="20s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="1100" cy="520" r="18" fill="url(#fireflyHalo)">
+      <animate attributeName="opacity" values="0.4;0.02;0.4" dur="3.5s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+  <g opacity="0.5">
+    <circle cx="1250" cy="480" r="5" fill="url(#fireflyWarm)">
+      <animate attributeName="opacity" values="0.5;0.05;0.5" dur="4.3s" repeatCount="indefinite"/>
+      <animateTransform attributeName="transform" type="translate" values="0,0;-7,12;10,-8;0,0" dur="16s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+
+  <!-- Right meadow fireflies -->
+  <g opacity="0.7">
+    <circle cx="1450" cy="550" r="7" fill="url(#fireflyGlow)">
+      <animate attributeName="opacity" values="0.7;0.08;0.7" dur="2.8s" repeatCount="indefinite"/>
+      <animateTransform attributeName="transform" type="translate" values="0,0;-12,8;6,-16;10,4;0,0" dur="22s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="1450" cy="550" r="22" fill="url(#fireflyHalo)">
+      <animate attributeName="opacity" values="0.5;0.02;0.5" dur="2.8s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+  <g opacity="0.55">
+    <circle cx="1580" cy="500" r="5" fill="url(#fireflyCool)">
+      <animate attributeName="opacity" values="0.55;0.06;0.55" dur="3.9s" repeatCount="indefinite"/>
+      <animateTransform attributeName="transform" type="translate" values="0,0;8,-10;-5,14;0,0" dur="17s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+  <g opacity="0.45">
+    <circle cx="1650" cy="540" r="4" fill="url(#fireflyWarm)">
+      <animate attributeName="opacity" values="0.45;0.04;0.45" dur="4.7s" repeatCount="indefinite"/>
+      <animateTransform attributeName="transform" type="translate" values="0,0;-6,8;10,-12;0,0" dur="19s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+
+  <!-- Far right fireflies -->
+  <g opacity="0.6">
+    <circle cx="1800" cy="580" r="6" fill="url(#fireflyGlow)">
+      <animate attributeName="opacity" values="0.6;0.07;0.6" dur="3.2s" repeatCount="indefinite"/>
+      <animateTransform attributeName="transform" type="translate" values="0,0;-10,6;4,-14;8,10;0,0" dur="21s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="1800" cy="580" r="18" fill="url(#fireflyHalo)">
+      <animate attributeName="opacity" values="0.4;0.02;0.4" dur="3.2s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+  <g opacity="0.35">
+    <circle cx="1870" cy="520" r="3" fill="url(#fireflyCool)">
+      <animate attributeName="opacity" values="0.35;0.03;0.35" dur="5.5s" repeatCount="indefinite"/>
+      <animateTransform attributeName="transform" type="translate" values="0,0;5,-8;-3,4;0,0" dur="14s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+
+  <!-- === LAYER 3: Near-ground fireflies (close to grass, brightest) === -->
+
+  <g opacity="0.85">
+    <circle cx="120" cy="720" r="8" fill="url(#fireflyWarm)">
+      <animate attributeName="opacity" values="0.85;0.15;0.85" dur="2.2s" repeatCount="indefinite"/>
+      <animateTransform attributeName="transform" type="translate" values="0,0;6,-25;-8,10;12,-18;0,0" dur="16s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="120" cy="720" r="26" fill="url(#fireflyHalo)">
+      <animate attributeName="opacity" values="0.6;0.03;0.6" dur="2.2s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+  <g opacity="0.7">
+    <circle cx="480" cy="700" r="6" fill="url(#fireflyGlow)">
+      <animate attributeName="opacity" values="0.7;0.1;0.7" dur="2.7s" repeatCount="indefinite"/>
+      <animateTransform attributeName="transform" type="translate" values="0,0;-10,-20;14,5;-6,-12;0,0" dur="18s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="480" cy="700" r="20" fill="url(#fireflyHalo)">
+      <animate attributeName="opacity" values="0.45;0.02;0.45" dur="2.7s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+  <g opacity="0.9">
+    <circle cx="830" cy="680" r="10" fill="url(#fireflyGlow)">
+      <animate attributeName="opacity" values="0.9;0.15;0.0;0.12;0.9" dur="2s" repeatCount="indefinite"/>
+      <animateTransform attributeName="transform" type="translate" values="0,0;-5,-30;10,8;-12,-22;6,4;0,0" dur="24s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="830" cy="680" r="32" fill="url(#fireflyHalo)">
+      <animate attributeName="opacity" values="0.65;0.05;0.0;0.04;0.65" dur="2s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+  <g opacity="0.75">
+    <circle cx="1350" cy="690" r="7" fill="url(#fireflyWarm)">
+      <animate attributeName="opacity" values="0.75;0.1;0.75" dur="2.5s" repeatCount="indefinite"/>
+      <animateTransform attributeName="transform" type="translate" values="0,0;8,-22;-14,6;10,-16;0,0" dur="20s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="1350" cy="690" r="22" fill="url(#fireflyHalo)">
+      <animate attributeName="opacity" values="0.5;0.02;0.5" dur="2.5s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+  <g opacity="0.65">
+    <circle cx="1680" cy="710" r="6" fill="url(#fireflyGlow)">
+      <animate attributeName="opacity" values="0.65;0.08;0.65" dur="3s" repeatCount="indefinite"/>
+      <animateTransform attributeName="transform" type="translate" values="0,0;-8,-16;12,4;-5,-20;0,0" dur="19s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="1680" cy="710" r="18" fill="url(#fireflyHalo)">
+      <animate attributeName="opacity" values="0.4;0.02;0.4" dur="3s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+
+  <!-- Sound wave arcs emanating from cricket (subtle, like chirps) -->
+  <path d="M1140,700 Q1160,680 1180,700" stroke="#4ade80" stroke-width="1" fill="none" opacity="0.15">
+    <animate attributeName="opacity" values="0.15;0.05;0.15" dur="1.5s" repeatCount="indefinite"/>
+  </path>
+  <path d="M1150,690 Q1175,665 1200,690" stroke="#4ade80" stroke-width="1" fill="none" opacity="0.1">
+    <animate attributeName="opacity" values="0.1;0.03;0.1" dur="1.5s" begin="0.3s" repeatCount="indefinite"/>
+  </path>
+  <path d="M1160,680 Q1190,650 1220,680" stroke="#4ade80" stroke-width="1" fill="none" opacity="0.08">
+    <animate attributeName="opacity" values="0.08;0.02;0.08" dur="1.5s" begin="0.6s" repeatCount="indefinite"/>
+  </path>
+
+  <!-- Moon (quarter moon in the sky) -->
+  <circle cx="1600" cy="150" r="40" fill="#1a3a22" opacity="0.25"/>
+  <circle cx="1615" cy="145" r="38" fill="#06120a" opacity="0.85"/>
+  <circle cx="1600" cy="150" r="40" fill="none" stroke="#86efac" stroke-width="0.5" opacity="0.12"/>
+
+  <!-- Stars (tiny dots — more of them) -->
+  <circle cx="400" cy="100" r="1" fill="#d9f99d" opacity="0.2"/>
+  <circle cx="700" cy="60" r="1.2" fill="#d9f99d" opacity="0.15"/>
+  <circle cx="1000" cy="120" r="1" fill="#d9f99d" opacity="0.2"/>
+  <circle cx="1300" cy="80" r="1.5" fill="#d9f99d" opacity="0.12"/>
+  <circle cx="250" cy="180" r="1" fill="#d9f99d" opacity="0.18"/>
+  <circle cx="1750" cy="250" r="1" fill="#d9f99d" opacity="0.15"/>
+  <circle cx="550" cy="150" r="1.2" fill="#d9f99d" opacity="0.1"/>
+  <circle cx="1100" cy="200" r="1" fill="#d9f99d" opacity="0.2"/>
+  <circle cx="850" cy="50" r="1.3" fill="#d9f99d" opacity="0.12"/>
+  <circle cx="160" cy="90" r="0.8" fill="#d9f99d" opacity="0.14"/>
+  <circle cx="480" cy="170" r="1.1" fill="#d9f99d" opacity="0.16"/>
+  <circle cx="1450" cy="120" r="0.9" fill="#d9f99d" opacity="0.13"/>
+  <circle cx="1820" cy="100" r="1.3" fill="#d9f99d" opacity="0.1"/>
+  <circle cx="950" cy="180" r="0.7" fill="#d9f99d" opacity="0.18"/>
+  <circle cx="620" cy="40" r="1" fill="#d9f99d" opacity="0.11"/>
+
+  <!-- Ground-level mist (Himalayan night meadow — glowing faintly from fireflies) -->
+  <ellipse cx="300" cy="900" rx="200" ry="30" fill="#1a3a22" opacity="0.15"/>
+  <ellipse cx="830" cy="870" rx="280" ry="45" fill="#1a3a22" opacity="0.14">
+    <animate attributeName="opacity" values="0.14;0.08;0.14" dur="8s" repeatCount="indefinite"/>
+  </ellipse>
+  <ellipse cx="960" cy="890" rx="300" ry="40" fill="#1a3a22" opacity="0.12"/>
+  <ellipse cx="1600" cy="910" rx="250" ry="35" fill="#1a3a22" opacity="0.15"/>
+
+  <!-- Firefly-illuminated mist patches (ambient glow from the swarm) -->
+  <ellipse cx="820" cy="650" rx="150" ry="60" fill="#4ade80" opacity="0.02">
+    <animate attributeName="opacity" values="0.02;0.05;0.02" dur="6s" repeatCount="indefinite"/>
+  </ellipse>
+  <ellipse cx="500" cy="620" rx="100" ry="40" fill="#a3e635" opacity="0.015">
+    <animate attributeName="opacity" values="0.015;0.035;0.015" dur="7s" repeatCount="indefinite"/>
+  </ellipse>
+  <ellipse cx="1450" cy="630" rx="120" ry="50" fill="#4ade80" opacity="0.018">
+    <animate attributeName="opacity" values="0.018;0.04;0.018" dur="5.5s" repeatCount="indefinite"/>
+  </ellipse>
+</svg>

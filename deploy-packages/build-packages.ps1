@@ -66,8 +66,8 @@ $BasicDirs = $MinimalDirs + @(
     'adapters',      # PeerQuanta adapters (listings, chat, forum)
     'dashboard',     # Web dashboard UI
     'webserver',     # Static file serving
-    'announcements', # System announcements
     'templates'      # Template files
+    # NOTE: 'announcements' excluded — Discord/Telegram/X marketing, not needed at runtime
 )
 
 # FULL: Basic + CLI, yakbot, and bundled binaries
@@ -141,6 +141,20 @@ function Copy-PackageSource {
         }
     }
     
+    # Strip test files and directories — not needed in production deploys
+    $testDirs = Get-ChildItem $DestDir -Recurse -Directory -Filter "tests" -ErrorAction SilentlyContinue
+    foreach ($td in $testDirs) {
+        Remove-Item $td.FullName -Recurse -Force -ErrorAction SilentlyContinue
+    }
+    $testFiles = Get-ChildItem $DestDir -Recurse -File -Include "*.test.js","*.spec.js","*.test.mjs","*.spec.mjs" -ErrorAction SilentlyContinue
+    $stripped = ($testDirs.Count + ($testFiles | Measure-Object).Count)
+    foreach ($tf in $testFiles) {
+        Remove-Item $tf.FullName -Force -ErrorAction SilentlyContinue
+    }
+    if ($stripped -gt 0) {
+        Write-Host "    [STRIP] Removed $stripped test files/dirs" -ForegroundColor DarkGray
+    }
+
     # Create empty runtime directories
     @("data", "data/content", "logs") | ForEach-Object {
         New-Item -ItemType Directory -Path (Join-Path $DestDir $_) -Force | Out-Null
@@ -199,7 +213,7 @@ function Build-Minimal {
 function Build-Basic {
     Write-Host ""
     Write-Host "Building BASIC package (standard deployment)..." -ForegroundColor Green
-    Write-Host "  Includes: minimal + adapters, dashboard, webserver, announcements, templates" -ForegroundColor Gray
+    Write-Host "  Includes: minimal + adapters, dashboard, webserver, templates" -ForegroundColor Gray
     
     $basicDir = Join-Path $BuildDir "yakmesh-basic"
     

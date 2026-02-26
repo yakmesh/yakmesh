@@ -15,6 +15,11 @@ const path = require('path');
 
 const DOCS_DIR = path.join(__dirname, '..', 'docs');
 const NAV_ORDER_FILE = path.join(DOCS_DIR, 'nav-order.json');
+const ICONS_SVG_FILE = path.join(DOCS_DIR, 'assets', 'icons.svg');
+
+// Markers for idempotent sprite injection
+const SPRITE_START = '<!-- YAKMESH-ICON-SPRITE-START -->';
+const SPRITE_END   = '<!-- YAKMESH-ICON-SPRITE-END -->';
 
 // Parse args
 const args = process.argv.slice(2);
@@ -32,13 +37,91 @@ function loadNavOrder() {
   return JSON.parse(content).pages;
 }
 
-// Section labels for sidebar dividers
+// Section labels for sidebar dividers (SVG icon + label)
+function sectionIcon(iconName) {
+  return '<svg class="doc-icon" aria-hidden="true"><use href="#icon-' + iconName + '"/></svg>';
+}
+
 const SECTION_LABELS = {
-  guide: '📘 Guides',
-  protocol: '🐃 Protocol Stack',
-  applications: '🚀 Applications',
-  reference: '📋 Reference'
+  guide: sectionIcon('book') + ' Guides',
+  protocol: sectionIcon('yak') + ' Protocol Stack',
+  applications: sectionIcon('rocket') + ' Applications',
+  infrastructure: sectionIcon('gear') + ' Infrastructure',
+  'guide-extra': sectionIcon('book') + ' Tutorials',
+  reference: sectionIcon('quickref') + ' Reference'
 };
+
+/**
+ * Generate an icon element — SVG <use> if svgIcon is defined, else emoji <span>.
+ * @param {Object} page — nav-order entry
+ * @param {string} [extraClass] — additional CSS class (e.g. 'journey-icon')
+ */
+function iconHtml(page, extraClass) {
+  if (page.svgIcon) {
+    const cls = extraClass ? 'doc-icon ' + extraClass : 'doc-icon';
+    return '<svg class="' + cls + '" aria-hidden="true"><use href="#icon-' + page.svgIcon + '"/></svg>';
+  }
+  // Fallback: emoji span
+  if (extraClass) return '<span class="' + extraClass + '">' + page.icon + '</span>';
+  return '<span>' + page.icon + '</span>';
+}
+
+/**
+ * Load the SVG sprite sheet content and wrap in marker comments.
+ * Strips the outer <svg> wrapper since we re-wrap with our own.
+ */
+function loadSpriteBlock() {
+  const raw = fs.readFileSync(ICONS_SVG_FILE, 'utf8').trim();
+  return SPRITE_START + '\n' + raw + '\n' + SPRITE_END;
+}
+
+/**
+ * Inject (or replace) the SVG sprite sheet right after <body ...> in an HTML file.
+ */
+function injectSpriteSheet(filePath, spriteBlock) {
+  let content = fs.readFileSync(filePath, 'utf8');
+  const fileName = path.basename(filePath);
+
+  // If already injected, replace the old block
+  const existingPattern = new RegExp(
+    SPRITE_START.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') +
+    '[\\s\\S]*?' +
+    SPRITE_END.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'),
+    's'
+  );
+  // Build the actual regex without double-escaping
+  const spriteRe = new RegExp(
+    SPRITE_START.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&') +
+    '[\\s\\S]*?' +
+    SPRITE_END.replace(/[-/\\^$*+?.()|[\]{}]/g, '\\$&')
+  );
+
+  if (content.includes(SPRITE_START)) {
+    // Replace existing sprite block
+    const startIdx = content.indexOf(SPRITE_START);
+    const endIdx = content.indexOf(SPRITE_END);
+    if (startIdx !== -1 && endIdx !== -1) {
+      content = content.substring(0, startIdx) + spriteBlock + content.substring(endIdx + SPRITE_END.length);
+    }
+  } else {
+    // Insert after <body ...>
+    const bodyMatch = content.match(/<body[^>]*>/i);
+    if (!bodyMatch) {
+      log('  No <body> tag found in', fileName);
+      return false;
+    }
+    const insertPos = bodyMatch.index + bodyMatch[0].length;
+    content = content.substring(0, insertPos) + '\n' + spriteBlock + content.substring(insertPos);
+  }
+
+  // Also fix any leftover external refs: assets/icons.svg#icon- → #icon-
+  content = content.replace(/assets\/icons\.svg#icon-/g, '#icon-');
+
+  if (!DRY_RUN) {
+    fs.writeFileSync(filePath, content, 'utf8');
+  }
+  return true;
+}
 
 /**
  * Generate the canonical sidebar <li> entries from nav-order.json
@@ -52,11 +135,9 @@ function generateSidebarEntries(pages, activeFile) {
     }
     // Active class
     const activeClass = (page.file === activeFile) ? ' class="active"' : '';
-    // Special icon handling for yak-protocol (uses CSS class instead of emoji)
-    const iconSpan = (page.file === 'yak-protocol.html')
-      ? '<span class="yak-icon"></span>'
-      : '<span>' + page.icon + '</span>';
-    lines.push('      <li><a href="' + page.file + '"' + activeClass + '>' + iconSpan + ' <span>' + page.title + '</span></a></li>');
+    // SVG icon from sprite sheet (falls back to emoji if no svgIcon)
+    const iconEl = iconHtml(page);
+    lines.push('      <li><a href="' + page.file + '"' + activeClass + '>' + iconEl + ' <span>' + page.title + '</span></a></li>');
   }
   return lines.join('\n');
 }
@@ -100,7 +181,7 @@ function generateJourneyCard(page, direction) {
     '          <a href="' + page.file + '" class="flex-1 block bg-mountain-800 border ' + borderClass + ' rounded-xl p-4 hover:border-theme-accent transition group">',
     '            <div class="text-xs text-mountain-400 mb-1">' + label + '</div>',
     '            <div class="flex items-center gap-2">',
-    '              <span class="text-xl">' + page.icon + '</span>',
+    '              ' + iconHtml(page, 'journey-icon') + '',
     '              <span class="font-semibold group-hover:text-theme-accent">' + page.title + '</span>',
     '            </div>',
     '            <p class="text-mountain-400 text-sm mt-1">' + page.description + '</p>',
@@ -206,6 +287,78 @@ function updateAllNavigation() {
   console.log('Found', pages.length, 'pages in nav-order.json');
   console.log('');
   
+  // --- Phase 0: Inject SVG sprite sheet into every HTML page ---
+  console.log('--- SVG Sprite Injection ---');
+  const spriteBlock = loadSpriteBlock();
+  const allHtmlForSprite = fs.readdirSync(DOCS_DIR).filter(f => f.endsWith('.html'));
+  let spriteInjected = 0;
+  for (const htmlFile of allHtmlForSprite) {
+    const filePath = path.join(DOCS_DIR, htmlFile);
+    if (injectSpriteSheet(filePath, spriteBlock)) {
+      log('  ✅ Sprite:', htmlFile);
+      spriteInjected++;
+    }
+  }
+  console.log('  Sprite injected:', spriteInjected, 'files');
+  console.log('');
+
+  // --- Phase 0.5: Replace hero header emoji with SVG hero-icon ---
+  console.log('--- Hero Icon Replacement ---');
+  let heroReplaced = 0;
+  // Build a lookup: filename → svgIcon
+  const pagesByFile = {};
+  for (const page of pages) {
+    pagesByFile[page.file] = page;
+  }
+  for (const htmlFile of allHtmlForSprite) {
+    const page = pagesByFile[htmlFile];
+    if (!page || !page.svgIcon) continue;
+
+    let content = fs.readFileSync(path.join(DOCS_DIR, htmlFile), 'utf8');
+    // Match <span class="text-4xl">anything</span> (hero icon)
+    const heroPattern = /<span class="text-4xl">[^<]*<\/span>/;
+    const heroMatch = content.match(heroPattern);
+    if (heroMatch) {
+      const heroSvg = '<svg class="doc-icon hero-icon" aria-hidden="true"><use href="#icon-' + page.svgIcon + '"/></svg>';
+      content = content.replace(heroPattern, heroSvg);
+      if (!DRY_RUN) {
+        fs.writeFileSync(path.join(DOCS_DIR, htmlFile), content, 'utf8');
+      }
+      log('  ✅ Hero:', htmlFile);
+      heroReplaced++;
+    }
+  }
+  console.log('  Hero icons replaced:', heroReplaced, 'files');
+  console.log('');
+
+  // --- Phase 0.75: Replace chrome UI emojis (logo + dashboard) ---
+  console.log('--- Chrome UI Icon Replacement ---');
+  let chromeReplaced = 0;
+  const LOGO_SVG = '<svg class="doc-icon" aria-hidden="true"><use href="#icon-mountain"/></svg>';
+  const DASH_SVG = '<svg class="doc-icon" aria-hidden="true"><use href="#icon-dashboard"/></svg>';
+  for (const htmlFile of allHtmlForSprite) {
+    const filePath = path.join(DOCS_DIR, htmlFile);
+    let content = fs.readFileSync(filePath, 'utf8');
+    const original = content;
+    // Logo: <span class="logo-icon">EMOJI</span> → SVG
+    content = content.replace(
+      /<span class="logo-icon">[^<]*<\/span>/,
+      '<span class="logo-icon">' + LOGO_SVG + '</span>'
+    );
+    // Dashboard: <a ... class="sidebar-dashboard-link"><span>EMOJI</span>
+    content = content.replace(
+      /(<a[^>]*class="sidebar-dashboard-link"[^>]*>)<span>[^<]*<\/span>/,
+      '$1' + DASH_SVG
+    );
+    if (content !== original) {
+      if (!DRY_RUN) fs.writeFileSync(filePath, content, 'utf8');
+      log('  ✅ Chrome:', htmlFile);
+      chromeReplaced++;
+    }
+  }
+  console.log('  Chrome UI replaced:', chromeReplaced, 'files');
+  console.log('');
+
   // --- Phase 1: Sidebar sync (all HTML files in docs/) ---
   if (!NAV_ONLY) {
     console.log('--- Sidebar Sync ---');

@@ -1,5 +1,5 @@
 {
-  "generated": "2026-02-20 02:53:20",
+  "generated": "2026-02-25 18:49:50",
   "random_seed": 144,
   "models": {
     "entropy-sentinel": {
@@ -39,5 +39,5 @@
   },
   "total_size": 22829,
   "total_samples": 24200,
-  "training_time_seconds": 17.6
+  "training_time_seconds": 16.6
 }
