@@ -27,6 +27,9 @@ import { sha3_256 as _nobleSha3 } from '@noble/hashes/sha3.js';
 import { bytesToHex } from '@noble/hashes/utils.js';
 import { createLogger } from '../utils/logger.js';
 
+// 144T ternary addressing for message IDs (eliminates hex "666" patterns)
+import { TritAddress } from '../oracle/ternary-144t.js';
+
 // ACCEL: Hardware-accelerated SHA3-256 (OpenSSL/SHA-NI — 4.6x faster)
 import { sha3_256 } from '../utils/accel.js';
 
@@ -613,11 +616,16 @@ export class MantraProtocol {
   }
 
   /**
-   * Generate deterministic message ID
+   * Generate deterministic message ID using 144T ternary format
+   * Eliminates hex "666" patterns while maintaining collision resistance
+   * Returns tier 1 (36 trits) as compact string: "TT00TTT00:TTT00TTT0:0TTT00TTT:00TTT00TT"
    */
   _generateMessageId(topic, data) {
     const payload = JSON.stringify({ topic, data, origin: this.identity.identity.nodeId, ts: Date.now() });
-    return bytesToHex(sha3_256(new TextEncoder().encode(payload))).slice(0, 32);
+    const hex = bytesToHex(sha3_256(new TextEncoder().encode(payload)));
+    // Convert to 144T ternary address, extract tier 1 as compact string
+    const tritAddr = TritAddress.fromHex(hex);
+    return tritAddr.toString().split('.')[0];  // First tier only
   }
 
   /**

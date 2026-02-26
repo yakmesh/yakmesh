@@ -123,7 +123,7 @@ export function getCodebaseHash() {
  */
 export function generateNodeId(publicKey, codebaseHash = null) {
   const effectiveCodebaseHash = codebaseHash || cachedCodebaseHash;
-  
+
   if (!effectiveCodebaseHash) {
     throw new Error(
       'Codebase hash not set! Call setCodebaseHash() with the oracle\'s selfHash ' +
@@ -131,17 +131,17 @@ export function generateNodeId(publicKey, codebaseHash = null) {
       'network share the same network name.'
     );
   }
-  
+
   // NETWORK NAME: Derived from codebase hash
   // This is the SAME for all nodes running identical code
   const networkName = deriveNetworkName(effectiveCodebaseHash, 3);
-  
+
   // INSTANCE ID: Derived from public key hash  
   // This is UNIQUE per node instance
   const publicKeyHash = sha3_256(publicKey);
   const publicKeyHashHex = bytesToHex(publicKeyHash);
   const instanceId = deriveNetworkId(publicKeyHashHex);
-  
+
   // Format: "node-[network-name]-[instance-id]"
   // e.g., "node-qubit-lattice-prism-pq-a7x9"
   return `node-${networkName}-${instanceId}`;
@@ -183,7 +183,7 @@ export function generateKeyPair(deterministicSeed = null) {
  */
 export function signMessage(message, secretKeyHex) {
   const secretKey = hexToBytes(secretKeyHex);
-  const messageBytes = typeof message === 'string' 
+  const messageBytes = typeof message === 'string'
     ? new TextEncoder().encode(message)
     : message;
   // ml_dsa65.sign takes (message, secretKey) — ACCEL-accelerated
@@ -392,9 +392,10 @@ export class NodeIdentity {
    */
   getPublicIdentity() {
     if (!this.identity) throw new Error('Identity not initialized');
-    
+
     return {
       nodeId: this.identity.nodeId,
+      persistentId: this.machineSeed.getPersistentId(),  // Constant across upgrades
       networkName: this.identity.networkName || this.networkName,
       verificationPhrase: this.identity.verificationPhrase || this.verificationPhrase,
       name: this.identity.name,
@@ -408,7 +409,7 @@ export class NodeIdentity {
       createdAt: this.identity.createdAt,
     };
   }
-  
+
   /**
    * Get network identity info (for human verification)
    * All nodes on the same network should have matching values
@@ -429,6 +430,19 @@ export class NodeIdentity {
   }
 
   /**
+   * Get the persistent 144T machine identity.
+   * This ID is CONSTANT across all code upgrades — it identifies the
+   * physical machine/node owner regardless of network version.
+   * 
+   * Use this to link reputation across network upgrades.
+   * 
+   * @returns {string} Persistent 144T identifier like "yak-TT00TTT00:TTT00TTT0:..."
+   */
+  getPersistentId() {
+    return this.machineSeed.getPersistentId();
+  }
+
+  /**
    * Generate a migration proof that cryptographically links the current identity
    * to the previous identity on the migration chain.
    * 
@@ -444,24 +458,24 @@ export class NodeIdentity {
    */
   generateMigrationProof(oldOracleHash, oldVerPhrase) {
     if (!this.identity) throw new Error('Identity not initialized');
-    
+
     const seed = this.machineSeed.getSeed();
-    
+
     // Derive the OLD keypair from the same seed + old oracle hash
     const oldSecret = deriveNodeSecret(seed, oldOracleHash, oldVerPhrase);
     const oldKeyPair = generateKeyPair(oldSecret);
-    
+
     const newPubKey = this.identity.publicKey;
     const timestamp = Date.now();
-    
+
     // Sign with OLD key: "I (old identity) vouch for this new identity"
     const migrateMsg1 = `MIGRATE:${newPubKey}:${timestamp}`;
     const sigOld = signMessage(migrateMsg1, oldKeyPair.secretKey);
-    
+
     // Sign with NEW key: "I (new identity) claim this old identity"
     const migrateMsg2 = `MIGRATE:${oldKeyPair.publicKey}:${timestamp}`;
     const sigNew = signMessage(migrateMsg2, this.identity.secretKey);
-    
+
     return {
       oldPubKey: oldKeyPair.publicKey,
       newPubKey,
@@ -481,13 +495,13 @@ export class NodeIdentity {
    */
   static verifyMigrationProof(proof) {
     const { oldPubKey, newPubKey, sigOld, sigNew, timestamp } = proof;
-    
+
     const migrateMsg1 = `MIGRATE:${newPubKey}:${timestamp}`;
     const migrateMsg2 = `MIGRATE:${oldPubKey}:${timestamp}`;
-    
+
     const oldValid = verifySignature(migrateMsg1, sigOld, oldPubKey);
     const newValid = verifySignature(migrateMsg2, sigNew, newPubKey);
-    
+
     return {
       valid: oldValid && newValid,
       oldValid,

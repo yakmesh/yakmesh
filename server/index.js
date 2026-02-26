@@ -2617,6 +2617,7 @@ export class YakmeshNode {
       res.json({
         status: 'ok',
         nodeId: this.identity.identity.nodeId,
+        persistentId: this.identity.getPersistentId(),  // 144T identity across code upgrades
         peers: wsPeers.length,
         relayPeers: relayPollCount + relayClientCount,
         relayPollers: relayPollCount,

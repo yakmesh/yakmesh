@@ -22,14 +22,14 @@
  */
 
 import { Router } from 'express';
-import { ContentStore, ContentType, ContentStatus, computeContentHash } from './store.js';
+import { ContentStore, ContentType, ContentStatus, computeContentHash, isTritAddress } from './store.js';
 
 /**
  * Create content API router
  */
 export function createContentAPI(contentStore, options = {}) {
   const router = Router();
-  
+
   const {
     writeLimiter,
     readLimiter,
@@ -54,9 +54,9 @@ export function createContentAPI(contentStore, options = {}) {
 
     // Get content with metadata
     const result = contentStore.getWithProof(hash);
-    
+
     if (!result) {
-      return res.status(404).json({ 
+      return res.status(404).json({
         error: 'Content not found',
         hash,
         hint: 'Content may not have synced yet. Try again later.',
@@ -67,8 +67,9 @@ export function createContentAPI(contentStore, options = {}) {
     res.setHeader('Content-Type', result.meta?.contentType || 'application/octet-stream');
     res.setHeader('Content-Length', result.meta?.size || result.content.length);
     res.setHeader('X-Content-Hash', result.hash);
+    res.setHeader('X-Content-Hash-144T', result.hash144t || result.meta?.hash144t || '');
     res.setHeader('X-Content-Status', result.meta?.status || 'unknown');
-    
+
     // Cache headers (verified content = cache forever)
     if (result.verified) {
       res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
@@ -100,7 +101,7 @@ export function createContentAPI(contentStore, options = {}) {
   router.get('/:hash/meta', readLimiter, (req, res) => {
     const { hash } = req.params;
     const meta = contentStore.getMeta(hash);
-    
+
     if (!meta) {
       return res.status(404).json({ error: 'Content not found', hash });
     }
@@ -118,13 +119,15 @@ export function createContentAPI(contentStore, options = {}) {
   router.get('/:hash/integrity', readLimiter, (req, res) => {
     const { hash } = req.params;
     const meta = contentStore.getMeta(hash);
-    
+
     if (!meta) {
       return res.status(404).json({ error: 'Content not found', hash });
     }
 
     res.json({
-      hash,
+      hash: meta.hash,
+      hash144t: meta.hash144t,
+      ioName: meta.ioName,
       verified: meta.status === ContentStatus.VERIFIED,
       status: meta.status,
       publishedBy: meta.publishedBy,
@@ -147,7 +150,7 @@ export function createContentAPI(contentStore, options = {}) {
    */
   router.get('/', readLimiter, (req, res) => {
     const { tag, status, limit = 100, offset = 0 } = req.query;
-    
+
     const items = contentStore.list({
       tag,
       status,
@@ -168,7 +171,7 @@ export function createContentAPI(contentStore, options = {}) {
    */
   router.head('/:hash', readLimiter, (req, res) => {
     const { hash } = req.params;
-    
+
     if (contentStore.has(hash)) {
       const meta = contentStore.getMeta(hash);
       res.setHeader('Content-Type', meta?.contentType || 'application/octet-stream');
@@ -220,7 +223,7 @@ export function createContentAPI(contentStore, options = {}) {
           tags: req.body.tags || [],
           ttl: req.body.ttl || 0,
         };
-      } 
+      }
       // Handle raw body
       else if (req.body && Buffer.isBuffer(req.body)) {
         content = req.body;
@@ -249,9 +252,11 @@ export function createContentAPI(contentStore, options = {}) {
       res.status(201).json({
         success: true,
         hash: result.hash,
+        hash144t: result.hash144t,
+        ioName: result.ioName,
         status: result.status,
         meta: result.meta?.toJSON ? result.meta.toJSON() : result.meta,
-        url: `/content/${result.hash}`,
+        url: `/content/${result.hash144t || result.hash}`,
       });
     } catch (error) {
       res.status(500).json({ error: error.message });
@@ -264,7 +269,7 @@ export function createContentAPI(contentStore, options = {}) {
    */
   router.post('/request', writeLimiter, async (req, res) => {
     const { hash } = req.body;
-    
+
     if (!hash) {
       return res.status(400).json({ error: 'Hash required' });
     }
@@ -281,7 +286,7 @@ export function createContentAPI(contentStore, options = {}) {
 
       // Request from mesh
       const result = await contentStore.request(hash);
-      
+
       res.json({
         found: true,
         local: false,
@@ -303,7 +308,7 @@ export function createContentAPI(contentStore, options = {}) {
    */
   router.delete('/:hash', writeLimiter, requirePeerAuth, (req, res) => {
     const { hash } = req.params;
-    
+
     if (!contentStore.has(hash)) {
       return res.status(404).json({ error: 'Content not found', hash });
     }
@@ -333,13 +338,13 @@ export function createContentAPI(contentStore, options = {}) {
    */
   router.post('/verify', readLimiter, (req, res) => {
     const content = req.body.content || req.body;
-    
+
     if (!content) {
       return res.status(400).json({ error: 'Content required' });
     }
 
     const hash = computeContentHash(content);
-    
+
     res.json({
       hash,
       exists: contentStore.has(hash),

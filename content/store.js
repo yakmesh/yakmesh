@@ -24,6 +24,9 @@ import { createLogger } from '../utils/logger.js';
 // Import iO system for human-readable content names
 import { deriveNetworkName } from '../oracle/network-identity.js';
 
+// Import 144T ternary system for hex-free content addressing
+import { TritAddress, TOTAL_TRITS } from '../oracle/ternary-144t.js';
+
 const log = createLogger('content:store');
 
 /**
@@ -56,7 +59,8 @@ export const ContentStatus = {
 };
 
 /**
- * Compute content hash (SHA3-256)
+ * Compute content hash (SHA3-256) — returns hex string
+ * @deprecated Use computeContentHash144T for new content (hex-free addressing)
  */
 export function computeContentHash(content) {
   if (typeof content === 'string') {
@@ -70,6 +74,57 @@ export function computeContentHash(content) {
   }
   // Object - serialize deterministically
   return bytesToHex(sha3_256(utf8ToBytes(JSON.stringify(content))));
+}
+
+/**
+ * Compute content hash as 144T ternary address
+ * 
+ * This is the preferred content addressing format:
+ * - No hex digits (no "666" ever)
+ * - Unified with node/mesh addressing system
+ * - Enables hierarchical content routing
+ * - Alphabet: {T, 0, 1} only (T = -1 in balanced ternary)
+ * 
+ * @param {string | Buffer | Uint8Array | object} content — content to hash
+ * @returns {{ hex: string, trit: string, tritAddress: TritAddress }} — both formats for compatibility
+ */
+export function computeContentHash144T(content) {
+  // First compute SHA3-256 as hex (internal only)
+  const hex = computeContentHash(content);
+
+  // Convert to 144T ternary address
+  const tritAddress = TritAddress.fromHex(hex);
+  const trit = tritAddress.toString(true); // compact format with tier separators
+
+  return { hex, trit, tritAddress };
+}
+
+/**
+ * Validate that a hex string doesn't contain forbidden patterns.
+ * Used as a guard for any remaining hex output.
+ * 
+ * @param {string} hex — hex string to validate
+ * @returns {boolean} — true if safe, false if contains forbidden pattern
+ */
+export function isHexSafe(hex) {
+  // Reject any hex containing "666" sequence
+  return !hex.toLowerCase().includes('666');
+}
+
+/**
+ * Check if a string is a valid 144T trit address.
+ * Format: 4 tiers separated by dots, each tier has 4 sub-blocks separated by colons.
+ * Characters: T (negative), 0 (neutral), 1 (positive)
+ * 
+ * @param {string} s — string to check
+ * @returns {boolean}
+ */
+export function isTritAddress(s) {
+  if (!s || typeof s !== 'string') return false;
+  // Remove separators and check length + characters
+  const clean = s.replace(/[.:]/g, '');
+  if (clean.length !== TOTAL_TRITS) return false;
+  return /^[T01]+$/i.test(clean);
 }
 
 /**
@@ -88,7 +143,8 @@ export function deriveContentName(hash) {
  */
 class ContentMetadata {
   constructor(options = {}) {
-    this.hash = options.hash;
+    this.hash = options.hash;             // SHA3-256 hex (legacy, internal)
+    this.hash144t = options.hash144t || null;  // 144T ternary address (preferred, public)
     this.ioName = options.ioName || null;  // Auto-generated iO name (human-readable)
     this.contentType = options.contentType || ContentType.BINARY;
     this.size = options.size || 0;
@@ -105,6 +161,7 @@ class ContentMetadata {
   toJSON() {
     return {
       hash: this.hash,
+      hash144t: this.hash144t,
       ioName: this.ioName,
       contentType: this.contentType,
       size: this.size,
@@ -117,6 +174,14 @@ class ContentMetadata {
       name: this.name,
       ttl: this.ttl,
     };
+  }
+
+  /**
+   * Get the public-facing content ID (144T preferred, fallback to iO name)
+   * Never returns hex to external callers.
+   */
+  getPublicId() {
+    return this.hash144t || this.ioName || this.name;
   }
 
   static fromJSON(json) {
@@ -139,12 +204,12 @@ export class ContentStore {
 
     this.contentDir = join(this.config.dataDir, 'objects');
     this.metaDir = join(this.config.dataDir, 'meta');
-    
+
     // In-memory caches
     this.contentCache = new Map();  // hash -> content (LRU)
     this.metaCache = new Map();     // hash -> ContentMetadata
     this.nameIndex = new Map();     // name -> hash (for human-readable lookup)
-    
+
     // Mesh integration (set by init)
     this.mesh = null;
     this.identity = null;
@@ -169,13 +234,13 @@ export class ContentStore {
       this.identity = node.identity;
       this.oracle = node.oracle;
       this.gossip = node.gossip;
-      
+
       // Content gossip is handled by the server via mesh.on('rumor')
       // which calls contentStore._handleContentGossip()
     }
 
     log.info('Content store initialized', { dataDir: this.config.dataDir, objectCount: this.metaCache.size });
-    
+
     return this;
   }
 
@@ -193,7 +258,7 @@ export class ContentStore {
         const json = JSON.parse(readFileSync(metaPath, 'utf8'));
         const meta = ContentMetadata.fromJSON(json);
         this.metaCache.set(meta.hash, meta);
-        
+
         // Index iO name (auto-generated or derive if missing from old data)
         if (meta.ioName) {
           this.nameIndex.set(meta.ioName, meta.hash);
@@ -203,7 +268,7 @@ export class ContentStore {
           meta.ioName = ioName;
           this.nameIndex.set(ioName, meta.hash);
         }
-        
+
         // Index custom name if provided
         if (meta.name) {
           this.nameIndex.set(meta.name, meta.hash);
@@ -215,34 +280,50 @@ export class ContentStore {
   }
 
   /**
-   * Get content path for a hash
+   * Get content path for a hash (supports both hex and 144T)
+   * 
+   * For ternary addresses, uses first tier's first sub-block (9 chars) as prefix.
+   * For hex (legacy), uses first 2 chars as prefix.
    */
   _getContentPath(hash) {
-    // Store in subdirectories for filesystem efficiency (git-style)
+    // Check if this is a 144T address (contains T, 0, 1 and dots/colons)
+    if (isTritAddress(hash)) {
+      // Use first 9 trits (first sub-block) as directory prefix
+      const clean = hash.replace(/[.:]/g, '');
+      const prefix = clean.slice(0, 9);
+      const suffix = clean.slice(9);
+      return join(this.contentDir, 't', prefix, suffix);
+    }
+    // Legacy hex: store in subdirectories for filesystem efficiency (git-style)
     const prefix = hash.slice(0, 2);
     const suffix = hash.slice(2);
     return join(this.contentDir, prefix, suffix);
   }
 
   /**
-   * Get metadata path for a hash
+   * Get metadata path for a hash (supports both hex and 144T)
    */
   _getMetaPath(hash) {
-    return join(this.metaDir, `${hash}.json`);
+    // Normalize 144T to filename-safe format (remove separators)
+    const safeHash = hash.replace(/[.:]/g, '');
+    return join(this.metaDir, `${safeHash}.json`);
   }
 
   /**
    * Store content
+   * 
+   * Returns the 144T hash (preferred) along with legacy hex for compatibility.
+   * Internal storage uses hex paths for backward compatibility with existing content.
    */
   async store(content, options = {}) {
-    // Compute hash
-    const hash = computeContentHash(content);
-    
+    // Compute both hash formats
+    const { hex: hash, trit: hash144t } = computeContentHash144T(content);
+
     // Check size limit
-    const size = Buffer.isBuffer(content) ? content.length : 
-                 typeof content === 'string' ? Buffer.byteLength(content) :
-                 Buffer.byteLength(JSON.stringify(content));
-    
+    const size = Buffer.isBuffer(content) ? content.length :
+      typeof content === 'string' ? Buffer.byteLength(content) :
+        Buffer.byteLength(JSON.stringify(content));
+
     if (size > this.config.maxContentSize) {
       throw new Error(`Content exceeds max size: ${size} > ${this.config.maxContentSize}`);
     }
@@ -250,15 +331,22 @@ export class ContentStore {
     // Check if already exists
     if (this.has(hash)) {
       const existing = this.getMeta(hash);
-      return { hash, ioName: existing.ioName, status: 'exists', meta: existing };
+      return {
+        hash,
+        hash144t: existing.hash144t || hash144t,
+        ioName: existing.ioName,
+        status: 'exists',
+        meta: existing
+      };
     }
 
     // Generate iO name for human-readable sharing
     const ioName = deriveContentName(hash);
 
-    // Create metadata
+    // Create metadata with both hash formats
     const meta = new ContentMetadata({
       hash,
+      hash144t,
       ioName,
       contentType: options.contentType || this._detectContentType(content),
       size,
@@ -272,7 +360,7 @@ export class ContentStore {
     // Write content to disk
     const contentPath = this._getContentPath(hash);
     mkdirSync(dirname(contentPath), { recursive: true });
-    
+
     if (Buffer.isBuffer(content)) {
       writeFileSync(contentPath, content);
     } else if (typeof content === 'string') {
@@ -286,9 +374,10 @@ export class ContentStore {
 
     // Update caches
     this.metaCache.set(hash, meta);
-    
-    // Index both iO name and custom name for lookup
-    this.nameIndex.set(ioName, hash);  // iO name always indexed
+
+    // Index by iO name, 144T address, and custom name for flexible lookup
+    this.nameIndex.set(ioName, hash);     // iO name always indexed
+    this.nameIndex.set(hash144t, hash);   // 144T address indexed
     if (meta.name) {
       this.nameIndex.set(meta.name, hash);  // Custom name if provided
     }
@@ -299,18 +388,28 @@ export class ContentStore {
       await this.publish(hash);
     }
 
-    log.info('Content stored', { hash: hash.slice(0, 16), ioName, size });
-    return { hash, ioName, status: 'stored', meta };
+    log.info('Content stored', { hash144t: hash144t.split('.')[0] + '...', ioName, size });
+    return { hash, hash144t, ioName, status: 'stored', meta };
   }
 
   /**
-   * Retrieve content by hash
+   * Resolve any content identifier to internal hex hash.
+   * Accepts: hex hash, 144T address, iO name, or custom name.
+   * @private
    */
-  get(hash) {
-    // Resolve name to hash if needed
-    if (!hash.match(/^[a-f0-9]{64}$/i)) {
-      hash = this.nameIndex.get(hash) || hash;
-    }
+  _resolveHash(id) {
+    if (!id) return null;
+    // Already hex?
+    if (/^[a-f0-9]{64}$/i.test(id)) return id;
+    // 144T address or name - look up in index
+    return this.nameIndex.get(id) || id;
+  }
+
+  /**
+   * Retrieve content by hash, 144T address, iO name, or custom name
+   */
+  get(id) {
+    const hash = this._resolveHash(id);
 
     // Check memory cache
     if (this.contentCache.has(hash)) {
@@ -326,22 +425,24 @@ export class ContentStore {
     // Load and cache
     const content = readFileSync(contentPath);
     this._addToContentCache(hash, content);
-    
+
     return content;
   }
 
   /**
    * Get content with metadata and verification status
    */
-  getWithProof(hash) {
+  getWithProof(id) {
+    const hash = this._resolveHash(id);
     const content = this.get(hash);
     if (!content) return null;
 
     const meta = this.getMeta(hash);
-    
+
     return {
       content,
       hash,
+      hash144t: meta?.hash144t || null,
       meta: meta?.toJSON() || null,
       verified: meta?.status === ContentStatus.VERIFIED,
     };
@@ -350,22 +451,16 @@ export class ContentStore {
   /**
    * Get metadata for content
    */
-  getMeta(hash) {
-    // Resolve name if needed
-    if (!hash.match(/^[a-f0-9]{64}$/i)) {
-      hash = this.nameIndex.get(hash) || hash;
-    }
+  getMeta(id) {
+    const hash = this._resolveHash(id);
     return this.metaCache.get(hash) || null;
   }
 
   /**
    * Check if content exists
    */
-  has(hash) {
-    // Resolve name if needed
-    if (!hash.match(/^[a-f0-9]{64}$/i)) {
-      hash = this.nameIndex.get(hash) || hash;
-    }
+  has(id) {
+    const hash = this._resolveHash(id);
     return this.metaCache.has(hash) || existsSync(this._getContentPath(hash));
   }
 
@@ -374,11 +469,11 @@ export class ContentStore {
    */
   delete(hash) {
     const meta = this.getMeta(hash);
-    
+
     // Remove from disk
     const contentPath = this._getContentPath(hash);
     const metaPath = this._getMetaPath(hash);
-    
+
     if (existsSync(contentPath)) unlinkSync(contentPath);
     if (existsSync(metaPath)) unlinkSync(metaPath);
 
@@ -397,22 +492,22 @@ export class ContentStore {
    */
   list(options = {}) {
     const { tag, status, limit = 100, offset = 0 } = options;
-    
+
     let items = Array.from(this.metaCache.values());
-    
+
     // Filter by tag
     if (tag) {
       items = items.filter(m => m.tags.includes(tag));
     }
-    
+
     // Filter by status
     if (status) {
       items = items.filter(m => m.status === status);
     }
-    
+
     // Sort by created date (newest first)
     items.sort((a, b) => b.createdAt - a.createdAt);
-    
+
     // Paginate
     return items.slice(offset, offset + limit).map(m => m.toJSON());
   }
@@ -548,7 +643,7 @@ export class ContentStore {
             } else {
               contentBase64 = Buffer.from(JSON.stringify(result.content), 'utf8').toString('base64');
             }
-            
+
             this.gossip.spreadRumor('content', {
               type: 'content_response',
               hash: data.hash,
@@ -565,7 +660,7 @@ export class ContentStore {
         if (!this.has(data.hash)) {
           const content = Buffer.from(data.content, 'base64');
           const computedHash = computeContentHash(content);
-          
+
           // Gate 1: Verify hash integrity
           if (computedHash !== data.hash) {
             console.warn(`⚠️ Content hash mismatch from ${origin.slice(0, 16)}...`);
@@ -722,9 +817,9 @@ export class ContentStore {
     if (typeof content === 'object' && !Buffer.isBuffer(content)) {
       return ContentType.JSON;
     }
-    
+
     const str = content.toString().slice(0, 100);
-    
+
     if (str.startsWith('<!DOCTYPE') || str.startsWith('<html')) {
       return ContentType.HTML;
     }
@@ -734,7 +829,7 @@ export class ContentStore {
     if (str.includes('function') || str.includes('const ') || str.includes('import ')) {
       return ContentType.JAVASCRIPT;
     }
-    
+
     return ContentType.TEXT;
   }
 
