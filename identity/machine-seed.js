@@ -69,6 +69,9 @@ import { bytesToFamilyTrits, analyzeBytesFamilies } from '../oracle/sst.js';
 // iO derivation for domain separation
 import { deriveVerificationPhrase } from '../oracle/network-identity.js';
 
+// 144T ternary addressing for persistent machine identity
+import { TritAddress, TOTAL_TRITS } from '../oracle/ternary-144t.js';
+
 
 // =============================================================================
 // CONSTANTS
@@ -80,8 +83,11 @@ const SEED_BYTES = 32;
 /** Seed file name */
 const SEED_FILENAME = 'machine-seed.json';
 
-/** Current seed file schema version */
-const SCHEMA_VERSION = 1;
+/** Current seed file schema version — bumped for persistentId144T */
+const SCHEMA_VERSION = 2;
+
+/** Persistent ID prefix */
+const PERSISTENT_ID_PREFIX = 'yak';
 
 
 // =============================================================================
@@ -254,6 +260,33 @@ export function deriveBackupSecret(seed, oracleHash, verPhrase) {
 // =============================================================================
 
 /**
+ * Compute persistent machine ID in 144T ternary format.
+ * This ID is CONSTANT across all code upgrades — derived directly from seed.
+ * 
+ * Format: "yak-[tier1-144T]" where tier1 is 36 trits (≈57 bits entropy)
+ * Example: "yak-TT00TTT00:TTT00TTT0:0TTT00TTT:00TTT00TT"
+ * 
+ * @param {Uint8Array} seed - Raw 32-byte machine seed
+ * @returns {string} Persistent 144T identifier
+ */
+function computePersistentId144T(seed) {
+  // Domain-separate from other derivations — "persistent-machine-id" context
+  const context = new TextEncoder().encode('yakmesh:persistent-machine-id:v1');
+  const combined = new Uint8Array(seed.length + context.length);
+  combined.set(seed);
+  combined.set(context, seed.length);
+
+  const hash = sha3_256(combined);
+  const hex = bytesToHex(hash);
+
+  // Convert to 144T, extract tier 1 for compact persistent ID
+  const tritAddr = TritAddress.fromHex(hex);
+  const tier1 = tritAddr.toString().split('.')[0];
+
+  return `${PERSISTENT_ID_PREFIX}-${tier1}`;
+}
+
+/**
  * Add a migration entry to the chain.
  * Records that this seed derived a specific publicKey under a specific oracleHash.
  * 
@@ -270,11 +303,11 @@ function addMigrationEntry(chain, oracleHash, pubKeyHash, networkName) {
     networkName,
     timestamp: new Date().toISOString(),
   };
-  
+
   // Don't duplicate — if the same oracleHash already exists, skip
   const existing = chain.find(e => e.oracleHash === entry.oracleHash);
   if (existing) return chain;
-  
+
   return [...chain, entry];
 }
 
@@ -306,8 +339,11 @@ function analyzeSeedFamilies(seed) {
  * projections of the seed onto a specific network version.
  * 
  * File stored: machine-seed.json in dataDir
- * Contents: { encryptedSeed, ypc27Checksum, migrationChain[], sstFamilies, schemaVersion }
+ * Contents: { encryptedSeed, ypc27Checksum, persistentId144T, migrationChain[], sstFamilies, schemaVersion }
  * NEVER stored: raw seed, private keys
+ * 
+ * The persistentId144T is constant across ALL code upgrades — it identifies
+ * the physical machine/node owner regardless of which network version is running.
  */
 export class MachineSeed {
   /**
@@ -317,6 +353,7 @@ export class MachineSeed {
     this.dataDir = dataDir;
     this.seedPath = join(dataDir, SEED_FILENAME);
     this.seed = null;          // Raw seed (in memory only)
+    this.persistentId = null;  // 144T persistent identity (constant across upgrades)
     this.migrationChain = [];  // History of (oracleHash, pubKeyHash) pairs
     this.sstFamilies = null;   // SST family analysis
     this.created = false;      // True if seed was just generated (first run)
@@ -390,12 +427,20 @@ export class MachineSeed {
       }
 
       this.seed = seed;
+      this.persistentId = data.persistentId144T || computePersistentId144T(seed);
       this.migrationChain = data.migrationChain || [];
       this.sstFamilies = data.sstFamilies || analyzeSeedFamilies(seed);
       this.created = false;
 
+      // Schema migration: add persistentId if missing (v1 → v2)
+      if (!data.persistentId144T) {
+        log.info('Migrating seed file to v2 (adding persistentId144T)');
+        this._updateSeedFile();
+      }
+
       log.info('Machine seed loaded and verified', {
         ypc27: '✓',
+        persistentId: this.persistentId,
         migrationEntries: this.migrationChain.length,
         sstFamilies: this.sstFamilies,
       });
@@ -403,7 +448,7 @@ export class MachineSeed {
       return true;
     } catch (e) {
       if (e.message.includes('YPC-27')) throw e; // Re-throw integrity failures
-      
+
       log.error('Failed to load machine seed', { error: e.message });
       throw new Error(
         `Cannot load machine seed: ${e.message}. ` +
@@ -426,6 +471,9 @@ export class MachineSeed {
     // Compute YPC-27 integrity checksum (SIS-hard polynomial seal)
     const ypc27Checksum = computeSeedChecksum(seed);
 
+    // Compute persistent 144T identity (constant across all upgrades)
+    const persistentId144T = computePersistentId144T(seed);
+
     // Compute SST family analysis
     const sstFamilies = analyzeSeedFamilies(seed);
 
@@ -437,6 +485,7 @@ export class MachineSeed {
       schemaVersion: SCHEMA_VERSION,
       encryptedSeed,
       ypc27Checksum,
+      persistentId144T,
       sstFamilies,
       migrationChain: [],
       createdAt: new Date().toISOString(),
@@ -446,11 +495,13 @@ export class MachineSeed {
     this._secureFile();
 
     this.seed = seed;
+    this.persistentId = persistentId144T;
     this.migrationChain = [];
     this.sstFamilies = sstFamilies;
     this.created = true;
 
     log.info('Machine seed generated and secured', {
+      persistentId: persistentId144T,
       ypc27Checksum: ypc27Checksum.slice(0, 12) + '...',
       sstFamilies,
       encrypted: true,
@@ -519,9 +570,10 @@ export class MachineSeed {
 
     const encryptedSeed = encryptSeed(this.seed, this.dataDir);
     const ypc27Checksum = computeSeedChecksum(this.seed);
+    const persistentId144T = this.persistentId || computePersistentId144T(this.seed);
     const sstFamilies = this.sstFamilies || analyzeSeedFamilies(this.seed);
 
-    const existing = existsSync(this.seedPath) 
+    const existing = existsSync(this.seedPath)
       ? JSON.parse(readFileSync(this.seedPath, 'utf8'))
       : {};
 
@@ -529,6 +581,7 @@ export class MachineSeed {
       schemaVersion: SCHEMA_VERSION,
       encryptedSeed,
       ypc27Checksum,
+      persistentId144T,
       sstFamilies,
       migrationChain: this.migrationChain,
       createdAt: existing.createdAt || new Date().toISOString(),
@@ -548,6 +601,23 @@ export class MachineSeed {
       throw new Error('Machine seed not initialized. Call init() first.');
     }
     return this.seed;
+  }
+
+  /**
+   * Get the persistent 144T machine identity.
+   * This ID is CONSTANT across all code upgrades — it identifies the
+   * physical machine/node owner regardless of network version.
+   * 
+   * Format: "yak-[tier1-144T]"
+   * Example: "yak-TT00TTT00:TTT00TTT0:0TTT00TTT:00TTT00TT"
+   * 
+   * @returns {string} Persistent 144T identifier
+   */
+  getPersistentId() {
+    if (!this.persistentId) {
+      throw new Error('Machine seed not initialized. Call init() first.');
+    }
+    return this.persistentId;
   }
 
   /**

@@ -279,6 +279,36 @@ export class DOKOGenerator {
   }
 
   /**
+   * Generate a Node DOKO for mesh network nodes
+   * Includes persistentId144T for cross-upgrade identity continuity
+   * 
+   * @param {Object} options
+   * @param {string} options.persistentId - 144T persistent machine identity
+   * @param {string} options.nodeId - Current network-specific node ID
+   * @param {string} options.networkName - Network name from oracle
+   * @param {Uint8Array} [options.seed] - Optional deterministic seed
+   */
+  static generateNode(options = {}) {
+    if (!options.persistentId) {
+      throw new Error('Node DOKO requires persistentId (144T persistent machine identity)');
+    }
+    return DOKOGenerator.generate({
+      ...options,
+      type: DOKO_TYPES.NODE,
+      claims: {
+        ...options.claims,
+        nodeId: options.nodeId || null,
+        networkName: options.networkName || null,
+      },
+      extensions: {
+        ...options.extensions,
+        persistentId144T: options.persistentId,  // Constant across upgrades
+        capabilities: options.capabilities || ['mesh', 'gossip', 'relay'],
+      },
+    });
+  }
+
+  /**
    * Generate a Merchant DOKO for verified businesses
    */
   static generateMerchant(options = {}) {
