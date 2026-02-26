@@ -1,7 +1,7 @@
 <div align="center">
   <img src="https://yakmesh.dev/assets/yakmesh-logo2.png" alt="YAKMESH" width="200">
 
-  <h1>🏔️ YAKMESH™: Sturdy & Secure</h1>
+  <h1>🏔️ YAKMESH™ v3.0.0 — The Summit Release</h1>
 
   <p><strong>Yielding Atomic Kernel Modular Encryption Secured Hub</strong></p>
 
@@ -10,12 +10,14 @@
     <a href="https://nodejs.org"><img src="https://img.shields.io/badge/Node.js-18+-green.svg" alt="Node.js"></a>
     <a href="https://csrc.nist.gov/projects/post-quantum-cryptography"><img src="https://img.shields.io/badge/Crypto-Post--Quantum-blue.svg" alt="Post-Quantum"></a>
     <a href="https://www.npmjs.com/package/yakmesh"><img src="https://img.shields.io/npm/v/yakmesh.svg" alt="npm version"></a>
+    <img src="https://img.shields.io/badge/version-3.0.0-purple.svg" alt="v3.0.0">
+    <img src="https://img.shields.io/badge/Protocol_Layers-30-orange.svg" alt="30-Layer Stack">
   </p>
 </div>
 
 ---
 
-YAKMESH is a high-resiliency, decentralized networking layer designed for the 2026 threat landscape. Built with quantum-resistant cryptography at its core and anchored by PCIe atomic timing synchronization, YAKMESH provides a "sturdy" substrate for distributed systems that cannot afford to fail.
+YAKMESH is a post-quantum secure P2P mesh network with a 30-layer protocol stack, heterogeneous GPU+NPU compute scheduling, and hardware-anchored precision timing. Built for the 2026 threat landscape with NIST FIPS 204/203 cryptography at every layer, YAKMESH provides a "sturdy" substrate for distributed systems that cannot afford to fail.
 
 > **📚 Full documentation: [yakmesh.dev](https://yakmesh.dev)** | **[docs/](docs/)** for specifications
 
@@ -38,29 +40,61 @@ await node.start();
 
 ## Features
 
-- 🔒 **Post-Quantum Secure** - ML-DSA-65 (NIST FIPS 204) signatures
-- 🔮 **TATTVA Oracle** - Self-verifying validation without external trust
-- 🌐 **Mesh Networking** - P2P WebSocket communication with gossip protocol
-- ⏱️ **Precision Timing** - Support for atomic clocks, GPS, PTP, NTP
-- 🧭 **NAMCHE Gateway** - 7-gate mathematical identity verification
-- 🏔️ **SHERPA Discovery** - Decentralized peer discovery
-- 🔐 **ANNEX Channels** - ML-KEM768 encrypted P2P with forward secrecy
-- 🌍 **Geographic Proof** - Speed-of-light exclusion zones
+### Cryptography & Identity
+- 🔒 **Post-Quantum Secure** — ML-DSA-65 (FIPS 204) signatures, ML-KEM-768 (FIPS 203) key encapsulation
+- 🧬 **144-Trit Identity** — Ternary identity system with balanced-ternary encoding (YPC-27)
+- 🔐 **ANNEX Channels** — ML-KEM-768 encrypted P2P sessions with forward secrecy (TRIBHUJ ratchet)
+- 🧭 **NAMCHE Gateway** — 7-gate mathematical identity verification
 
-> See [yakmesh.dev](https://yakmesh.dev) for complete feature documentation
+### Networking & Discovery
+- 🌐 **Mesh Networking** — P2P WebSocket mesh with epidemic gossip protocol
+- 🏔️ **SHERPA Discovery** — Decentralized peer discovery with DNS beacon broadcast
+- 📦 **NAKPAK Routing** — Efficient binary message routing with checksum verification
+- 💬 **KOMM Stack** — Real-time communication layer (VANI messaging, GUMBA channels, KATHA sessions)
+
+### Validation & Consensus
+- 🔮 **TATTVA Oracle** — Self-verifying codebase validation; the code IS the network identity
+- 📜 **DHARMA Consensus** — Multi-phase consensus engine with phase-epoch timing
+- 👁️ **SAKSHI Witness** — Distributed witness protocol for transaction attestation
+- 🌍 **Geographic Proof** — Speed-of-light exclusion zones for physical locality verification
+
+### Compute & Acceleration
+- ⚡ **GPU+NPU Acceleration** — Heterogeneous compute via ONNX Runtime (DirectML, CUDA, CPU fallback)
+- 📊 **ComputeScheduler** — Priority-based task scheduling (CRITICAL → HIGH → NORMAL → LOW)
+- 🧠 **SEVA Compute** — Distributed ML inference mesh across network peers
+
+### Security & Monitoring
+- 🛡️ **SANGHA Security** — Community-driven threat circulation and collective defense
+- ⏱️ **Precision Timing** — GPS atomic clocks (MA-902), PTP, NTP with sub-millisecond sync
+- 📡 **DARSHAN Telemetry** — Real-time network visibility and diagnostics
+- 🔍 **STEADYWATCH** — Continuous uptime and integrity monitoring
+- ⚖️ **KARMA Rate Limiter** — Behavior-based reputation rate limiting
+
+> See [yakmesh.dev](https://yakmesh.dev) for the complete 30-layer protocol documentation
 
 ## Architecture
 
 ```
-yakmesh/
-├── security/         # NAMCHE gateway, DOKO identity, trust models
-├── oracle/           # TATTVA self-verifying validation engine
-├── mesh/             # SHERPA, NAKPAK, ANNEX networking
+yakmesh-node/
+├── server/           # HTTP/WS server (~3,300 lines), all API routes
+├── security/         # NAMCHE gateway, SANGHA, SAKSHI, trust models, geo-proof
+├── oracle/           # TATTVA validation, consensus engine, code-proof, phase-epoch
+├── identity/         # PQ key management, TRIBHUJ ratchet, 144T identity
+├── mesh/             # SHERPA discovery, NAKPAK routing, ANNEX sessions, pulse-sync
 ├── gossip/           # Epidemic-style message propagation
-├── protocol/         # STUPA, LAMA, MANI, KARMA, MANDALA
-├── adapters/         # Platform integration plugins
-├── embedded-docs/    # GRANTH documentation bundle
-└── server/           # HTTP/WS server
+├── protocol/         # STUPA, LAMA, MANI, KARMA, MANDALA protocol layers
+├── utils/            # Hardware acceleration, ComputeScheduler (GPU+NPU)
+├── cli/              # Command-line interface
+├── dashboard/        # Web-based monitoring UI
+├── database/         # SQLite persistence layer
+├── content/          # Distributed content system
+├── models/           # ONNX ML models for inference
+├── embedded-docs/    # GRANTH documentation bundle (served at /docs)
+├── adapters/         # Platform integration plugins (BYOND, etc.)
+├── templates/        # Configuration templates
+├── launcher/         # Process management and startup
+├── webserver/        # Static web serving
+└── yakbot/           # Bot integration
 ```
 
 ## Network Identity
@@ -78,16 +112,68 @@ import { deriveNetworkName, deriveVerificationPhrase } from 'yakmesh/oracle/netw
 
 Full API documentation at [yakmesh.dev/docs/api](https://yakmesh.dev/docs/api)
 
+### Core
+
 | Endpoint | Description |
 |----------|-------------|
-| `/health` | Node health status |
-| `/node` | Node identity info |
-| `/peers` | Connected peers |
-| `/oracle/status` | Oracle integrity check |
-| `/network/identity` | Network identity |
-| `/time/status` | Time source detection |
-| `/security/namche/gates` | Gateway verification status |
-| `/geo/status` | Geographic proof status |
+| `GET /health` | Node health status |
+| `GET /node` | Node identity info |
+| `GET /peers` | Connected peers |
+| `GET /metrics` | Prometheus-compatible metrics |
+| `GET /dashboard` | Web monitoring UI |
+
+### Oracle & Consensus
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /oracle/status` | Oracle integrity check |
+| `GET /oracle/consensus` | Consensus state |
+| `GET /oracle/peers` | Oracle peer list |
+| `POST /oracle/challenge` | Challenge-response verification |
+| `POST /oracle/submit` | Submit oracle data |
+
+### Network & Mesh
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /network/identity` | Network identity |
+| `GET /network/status` | Network state |
+| `GET /network/handshake` | Handshake data |
+| `POST /connect` | Initiate peer connection |
+| `POST /mesh/relay` | Relay message to peers |
+| `GET /gossip` | Gossip state |
+| `GET /discovered` | Discovered nodes |
+
+### Protocol Subsystems
+
+| Endpoint | Description |
+|----------|-------------|
+| `/komm/*` | KOMM real-time communication |
+| `/darshan/*` | DARSHAN network telemetry |
+| `GET /sherpa/status` | SHERPA peer discovery status |
+| `GET /nakpak/status` | NAKPAK routing status |
+| `GET /annex/status` | ANNEX encrypted channel status |
+| `GET /sakshi/status` | SAKSHI witness protocol status |
+| `GET /api/sangha` | SANGHA community security |
+| `/content/*` | Content API |
+
+### Timing & Compute
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /time/status` | Time source detection |
+| `GET /time/capabilities` | Timing hardware capabilities |
+| `GET /api/time` | Full time data |
+| `GET /accel` | Hardware acceleration status |
+| `GET /accel/telemetry` | GPU/NPU telemetry |
+| `GET /scheduler` | ComputeScheduler state |
+| `GET /steadywatch` | Uptime monitoring |
+
+### Security
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /security/namche/gates` | Gateway verification status |
 
 ## License
 
@@ -99,7 +185,7 @@ See [TRADEMARK.md](TRADEMARK.md) for trademark usage policy.
 ---
 
 <div align="center">
-  <sub>Built with quantum principles. Secured by math.</sub>
+  <sub>Built with quantum principles. Secured by math. 30 layers deep.</sub>
   <br><br>
   <strong><a href="https://yakmesh.dev">yakmesh.dev</a></strong>
   <br><br>
