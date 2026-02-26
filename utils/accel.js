@@ -547,13 +547,18 @@ export async function mlDsa65Keygen(seed) {
 export function mlDsa65Sign(message, secretKey) {
   telemetry.signCalls++;
   
+  // Defensive coercion — identity stores keys as hex strings,
+  // but @noble/post-quantum expects Uint8Array.  Handle both.
+  const sk = typeof secretKey === 'string' ? hexToBytes(secretKey) : secretKey;
+  const msg = typeof message === 'string' ? new TextEncoder().encode(message) : message;
+  
   // Synchronous path — native addon is pre-loaded after first call
   if (_nativePQ && _nativePQ.ml_dsa65?.sign) {
     telemetry.signNativeHits++;
-    return _nativePQ.ml_dsa65.sign(message, secretKey);
+    return _nativePQ.ml_dsa65.sign(msg, sk);
   }
   
-  return ml_dsa65.sign(message, secretKey);
+  return ml_dsa65.sign(msg, sk);
 }
 
 /**
@@ -568,12 +573,17 @@ export function mlDsa65Sign(message, secretKey) {
 export function mlDsa65Verify(signature, message, publicKey) {
   telemetry.verifyCalls++;
   
+  // Defensive coercion — accept hex strings or Uint8Array for all params
+  const sig = typeof signature === 'string' ? hexToBytes(signature) : signature;
+  const msg = typeof message === 'string' ? new TextEncoder().encode(message) : message;
+  const pk = typeof publicKey === 'string' ? hexToBytes(publicKey) : publicKey;
+  
   if (_nativePQ && _nativePQ.ml_dsa65?.verify) {
     telemetry.verifyNativeHits++;
-    return _nativePQ.ml_dsa65.verify(signature, message, publicKey);
+    return _nativePQ.ml_dsa65.verify(sig, msg, pk);
   }
   
-  return ml_dsa65.verify(signature, message, publicKey);
+  return ml_dsa65.verify(sig, msg, pk);
 }
 
 // =============================================================================
@@ -607,12 +617,15 @@ export async function mlKem768Keygen(seed) {
 export function mlKem768Encapsulate(publicKey) {
   telemetry.kemCalls++;
   
+  // Defensive coercion — accept hex string or Uint8Array
+  const pk = typeof publicKey === 'string' ? hexToBytes(publicKey) : publicKey;
+  
   if (_nativePQ && _nativePQ.ml_kem768?.encapsulate) {
     telemetry.kemNativeHits++;
-    return _nativePQ.ml_kem768.encapsulate(publicKey);
+    return _nativePQ.ml_kem768.encapsulate(pk);
   }
   
-  return ml_kem768.encapsulate(publicKey);
+  return ml_kem768.encapsulate(pk);
 }
 
 /**
@@ -625,12 +638,16 @@ export function mlKem768Encapsulate(publicKey) {
 export function mlKem768Decapsulate(cipherText, secretKey) {
   telemetry.kemCalls++;
   
+  // Defensive coercion — accept hex string or Uint8Array
+  const ct = typeof cipherText === 'string' ? hexToBytes(cipherText) : cipherText;
+  const sk = typeof secretKey === 'string' ? hexToBytes(secretKey) : secretKey;
+  
   if (_nativePQ && _nativePQ.ml_kem768?.decapsulate) {
     telemetry.kemNativeHits++;
-    return _nativePQ.ml_kem768.decapsulate(cipherText, secretKey);
+    return _nativePQ.ml_kem768.decapsulate(ct, sk);
   }
   
-  return ml_kem768.decapsulate(cipherText, secretKey);
+  return ml_kem768.decapsulate(ct, sk);
 }
 
 // =============================================================================
