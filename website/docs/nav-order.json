@@ -9,6 +9,7 @@
     { "file": "tutorials.html", "icon": "📖", "title": "Tutorials", "description": "Step-by-step guides" },
     { "file": "yak-protocol.html", "icon": "🐃", "title": "YAK://", "description": "Content addressing", "layer": 1, "purpose": "Universal resource addressing", "section": "protocol" },
     { "file": "annex.html", "icon": "🌉", "title": "ANNEX", "description": "Encrypted P2P", "layer": 2, "purpose": "Encrypted P2P (ML-KEM768)" },
+    { "file": "jhilke.html", "icon": "🦗", "title": "JHILKE", "description": "Key lifecycle", "layer": 2.5, "purpose": "Steganographic key lifecycle (bootstrap + rekey)" },
     { "file": "nakpak.html", "icon": "🎒", "title": "NAKPAK", "description": "Onion routing", "layer": 3, "purpose": "Onion routing & privacy" },
     { "file": "namche.html", "icon": "🚪", "title": "NAMCHE", "description": "Identity gateway", "layer": 4, "purpose": "Gateway & identity verification" },
     { "file": "doko.html", "icon": "🧺", "title": "DOKO", "description": "Identity certificates", "layer": 5, "purpose": "Identity certificates" },

@@ -93,6 +93,11 @@ body::after {
   background-image: url('assets/silhouettes/bridge.svg');
 }
 
+/* JHILKE - Cricket in Himalayan night meadow */
+[data-theme="jhilke"] body::after {
+  background-image: url('assets/silhouettes/jhilke-cricket.svg');
+}
+
 /* YAK Protocol - The yak */
 [data-theme="yak-protocol"] body::after {
   background-image: url('assets/silhouettes/yak.svg');
@@ -328,6 +333,15 @@ pre[class*="language-"] {
   --theme-accent: #60a5fa;
   --theme-bg: #172554;
   --theme-glow: rgba(59, 130, 246, 0.1);
+}
+
+/* JHILKE - Cricket green, night meadow steganography */
+[data-theme="jhilke"] {
+  --theme-primary: #22c55e;
+  --theme-secondary: #16a34a;
+  --theme-accent: #4ade80;
+  --theme-bg: #052e16;
+  --theme-glow: rgba(34, 197, 94, 0.1);
 }
 
 /* YAK Protocol - Warm brown, the yak itself */
@@ -622,6 +636,78 @@ pre[class*="language-"] {
   --theme-accent: #fbbf24;
   --theme-bg: #451a03;
   --theme-glow: rgba(245, 158, 11, 0.1);
+}
+
+/* GUMBA - Incense gold/warm amber, monastery hierarchy */
+[data-theme="gumba"] {
+  --theme-primary: #d97706;
+  --theme-secondary: #b45309;
+  --theme-accent: #fbbf24;
+  --theme-bg: #451a03;
+  --theme-glow: rgba(251, 191, 36, 0.15);
+}
+
+/* YURT - Campfire orange/red, nomadic discovery */
+[data-theme="yurt"] {
+  --theme-primary: #ea580c;
+  --theme-secondary: #c2410c;
+  --theme-accent: #fb923c;
+  --theme-bg: #431407;
+  --theme-glow: rgba(251, 146, 60, 0.15);
+}
+
+/* KATHA - Parchment gold, storytelling chat */
+[data-theme="katha"] {
+  --theme-primary: #eab308;
+  --theme-secondary: #ca8a04;
+  --theme-accent: #facc15;
+  --theme-bg: #422006;
+  --theme-glow: rgba(250, 204, 21, 0.15);
+}
+
+/* VANI - Conch pink/coral, voice & video calls */
+[data-theme="vani"] {
+  --theme-primary: #ec4899;
+  --theme-secondary: #db2777;
+  --theme-accent: #f472b6;
+  --theme-bg: #500724;
+  --theme-glow: rgba(244, 114, 182, 0.15);
+}
+
+/* DARSHAN - Lens violet, view-not-copy paradigm */
+[data-theme="darshan"] {
+  --theme-primary: #a78bfa;
+  --theme-secondary: #8b5cf6;
+  --theme-accent: #c4b5fd;
+  --theme-bg: #1e1b4b;
+  --theme-glow: rgba(196, 181, 253, 0.15);
+}
+
+/* TRIBHUJ - Ternary teal, three-peak balanced */
+[data-theme="tribhuj"] {
+  --theme-primary: #14b8a6;
+  --theme-secondary: #0d9488;
+  --theme-accent: #2dd4bf;
+  --theme-bg: #042f2e;
+  --theme-glow: rgba(45, 212, 191, 0.15);
+}
+
+/* YPC-27 - Matrix green, prayer bead mala encoding */
+[data-theme="ypc27"] {
+  --theme-primary: #22c55e;
+  --theme-secondary: #16a34a;
+  --theme-accent: #4ade80;
+  --theme-bg: #052e16;
+  --theme-glow: rgba(74, 222, 128, 0.15);
+}
+
+/* SAKSHI - Witness silver/ice, all-seeing observer */
+[data-theme="sakshi"] {
+  --theme-primary: #94a3b8;
+  --theme-secondary: #64748b;
+  --theme-accent: #cbd5e1;
+  --theme-bg: #0f172a;
+  --theme-glow: rgba(203, 213, 225, 0.15);
 }
 
 /* ============================================
@@ -2071,4 +2157,241 @@ body:has(.docs-sidebar.icon-only) .docs-footer {
 .docs-sidebar.icon-only .sidebar-nav .yak-icon {
   width: 1.5em;
   height: 1.5em;
+}
+
+/* ============================================
+   PARTICLE ANIMATION SYSTEM
+   Unique themed floating particles per module.
+   Spawned dynamically by docs.js initParticles().
+   ============================================ */
+
+/* --- Base Particle --- */
+.ym-particle {
+  position: fixed;
+  pointer-events: none;
+  z-index: 1;
+  border-radius: 50%;
+  will-change: transform, opacity;
+}
+
+/* Inner glow dot */
+.ym-particle .ym-dot {
+  display: block;
+  border-radius: 50%;
+  width: var(--p-size, 6px);
+  height: var(--p-size, 6px);
+  background: var(--p-color, var(--theme-accent, #4ade80));
+  box-shadow: 0 0 8px 3px var(--p-color, var(--theme-accent)),
+              0 0 20px 6px var(--p-glow, rgba(74, 222, 128, 0.3)),
+              0 0 40px 12px var(--p-glow-far, rgba(74, 222, 128, 0.08));
+  animation: ym-pulse var(--p-pulse, 3s) ease-in-out infinite;
+}
+
+/* Soft halo around dot */
+.ym-particle .ym-halo {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  width: calc(var(--p-size, 6px) * 6);
+  height: calc(var(--p-size, 6px) * 6);
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--p-glow, rgba(74, 222, 128, 0.08)) 0%, transparent 70%);
+  animation: ym-pulse var(--p-pulse, 3s) ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* --- Shape Variants --- */
+
+/* Snowflake: 6-ray rotated star */
+.ym-particle.ym-snowflake .ym-dot {
+  border-radius: 0;
+  background: transparent;
+  width: var(--p-size, 8px);
+  height: var(--p-size, 8px);
+  box-shadow: none;
+  position: relative;
+}
+.ym-particle.ym-snowflake .ym-dot::before,
+.ym-particle.ym-snowflake .ym-dot::after {
+  content: '';
+  position: absolute;
+  top: 50%; left: 50%;
+  width: 120%; height: 2px;
+  background: var(--p-color, #22d3ee);
+  box-shadow: 0 0 6px var(--p-color, #22d3ee);
+  transform-origin: center;
+}
+.ym-particle.ym-snowflake .ym-dot::before {
+  transform: translate(-50%, -50%) rotate(0deg);
+}
+.ym-particle.ym-snowflake .ym-dot::after {
+  transform: translate(-50%, -50%) rotate(60deg);
+}
+.ym-particle.ym-snowflake .ym-dot {
+  animation: ym-spin 12s linear infinite, ym-pulse var(--p-pulse, 4s) ease-in-out infinite;
+}
+
+/* Ring: expanding circle */
+.ym-particle.ym-ring .ym-dot {
+  background: transparent;
+  border: 1.5px solid var(--p-color, #a78bfa);
+  box-shadow: 0 0 6px var(--p-color, #a78bfa), inset 0 0 4px var(--p-glow, rgba(167, 139, 250, 0.3));
+  animation: ym-ring-expand var(--p-pulse, 4s) ease-out infinite;
+}
+
+/* Ember: flickering warm dot */
+.ym-particle.ym-ember .ym-dot {
+  animation: ym-ember-flicker var(--p-pulse, 2s) ease-in-out infinite;
+}
+
+/* Smoke: fading translucent blob */
+.ym-particle.ym-smoke .ym-dot {
+  background: var(--p-color, rgba(200, 200, 200, 0.25));
+  box-shadow: none;
+  filter: blur(3px);
+  animation: ym-smoke-fade var(--p-pulse, 6s) ease-in-out infinite;
+}
+.ym-particle.ym-smoke .ym-halo { display: none; }
+
+/* Leaf: asymmetric sway */
+.ym-particle.ym-leaf .ym-dot {
+  border-radius: 50% 0 50% 0;
+  animation: ym-leaf-tumble var(--p-pulse, 5s) ease-in-out infinite,
+             ym-pulse var(--p-pulse, 5s) ease-in-out infinite;
+}
+
+/* Spark: bright flash dot */
+.ym-particle.ym-spark .ym-dot {
+  animation: ym-spark-flash var(--p-pulse, 1.5s) ease-in-out infinite;
+}
+
+/* Hex: hexagonal glow */
+.ym-particle.ym-hex .ym-dot {
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  animation: ym-hex-glow var(--p-pulse, 3s) ease-in-out infinite;
+}
+
+/* Triangle: rotating prism */
+.ym-particle.ym-triangle .ym-dot {
+  border-radius: 0;
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+  animation: ym-spin 10s linear infinite, ym-pulse var(--p-pulse, 3s) ease-in-out infinite;
+}
+
+/* --- Animation Keyframes --- */
+
+@keyframes ym-pulse {
+  0%, 100% { opacity: var(--p-max, 0.9); }
+  40%       { opacity: 0; }
+  50%       { opacity: 0; }
+  60%       { opacity: var(--p-max, 0.9); }
+}
+
+@keyframes ym-ring-expand {
+  0%   { transform: scale(0.5); opacity: 0.8; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+
+@keyframes ym-spin {
+  0%   { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes ym-ember-flicker {
+  0%, 100% { opacity: 0.7; transform: scale(1); }
+  20%      { opacity: 1; transform: scale(1.3); }
+  40%      { opacity: 0.4; transform: scale(0.8); }
+  60%      { opacity: 0.9; transform: scale(1.1); }
+  80%      { opacity: 0.3; transform: scale(0.7); }
+}
+
+@keyframes ym-smoke-fade {
+  0%   { opacity: 0; transform: scale(0.6) translateY(0); }
+  30%  { opacity: 0.3; }
+  70%  { opacity: 0.15; transform: scale(1.8) translateY(-40px); }
+  100% { opacity: 0; transform: scale(2.2) translateY(-80px); }
+}
+
+@keyframes ym-leaf-tumble {
+  0%, 100% { transform: rotate(0deg) scaleX(1); }
+  25%      { transform: rotate(15deg) scaleX(0.8); }
+  50%      { transform: rotate(-10deg) scaleX(1); }
+  75%      { transform: rotate(20deg) scaleX(0.7); }
+}
+
+@keyframes ym-spark-flash {
+  0%, 100% { opacity: 0; transform: scale(0.5); }
+  10%      { opacity: 1; transform: scale(1.5); }
+  30%      { opacity: 0.8; transform: scale(1); }
+  50%      { opacity: 0; transform: scale(0.5); }
+}
+
+@keyframes ym-hex-glow {
+  0%, 100% { opacity: 0.6; box-shadow: 0 0 4px var(--p-color); }
+  50%      { opacity: 1; box-shadow: 0 0 16px var(--p-color), 0 0 30px var(--p-glow); }
+}
+
+/* --- Drift Paths (gentle wandering) --- */
+@keyframes ym-drift-1 { 0%,100% { transform: translate(0,0); } 25% { transform: translate(30px,-60px); } 50% { transform: translate(-20px,-100px); } 75% { transform: translate(50px,-40px); } }
+@keyframes ym-drift-2 { 0%,100% { transform: translate(0,0); } 25% { transform: translate(-40px,-80px); } 50% { transform: translate(20px,-120px); } 75% { transform: translate(-30px,-50px); } }
+@keyframes ym-drift-3 { 0%,100% { transform: translate(0,0); } 25% { transform: translate(50px,-40px); } 50% { transform: translate(-10px,-90px); } 75% { transform: translate(40px,-70px); } }
+@keyframes ym-drift-4 { 0%,100% { transform: translate(0,0); } 25% { transform: translate(-20px,-110px); } 50% { transform: translate(35px,-60px); } 75% { transform: translate(-45px,-90px); } }
+@keyframes ym-drift-5 { 0%,100% { transform: translate(0,0); } 25% { transform: translate(60px,-30px); } 50% { transform: translate(-25px,-80px); } 75% { transform: translate(15px,-55px); } }
+@keyframes ym-drift-6 { 0%,100% { transform: translate(0,0); } 25% { transform: translate(-35px,-70px); } 50% { transform: translate(45px,-110px); } 75% { transform: translate(-10px,-45px); } }
+@keyframes ym-drift-7 { 0%,100% { transform: translate(0,0); } 25% { transform: translate(25px,-95px); } 50% { transform: translate(-40px,-50px); } 75% { transform: translate(55px,-75px); } }
+@keyframes ym-drift-8 { 0%,100% { transform: translate(0,0); } 25% { transform: translate(-50px,-45px); } 50% { transform: translate(30px,-85px); } 75% { transform: translate(-15px,-65px); } }
+
+/* --- Directional Paths --- */
+@keyframes ym-fall-1 { 0% { transform: translateY(-10vh) translateX(0); opacity: 0; } 10% { opacity: var(--p-max, 0.8); } 90% { opacity: var(--p-max, 0.8); } 100% { transform: translateY(110vh) translateX(30px); opacity: 0; } }
+@keyframes ym-fall-2 { 0% { transform: translateY(-10vh) translateX(0); opacity: 0; } 10% { opacity: var(--p-max, 0.7); } 90% { opacity: var(--p-max, 0.7); } 100% { transform: translateY(110vh) translateX(-20px); opacity: 0; } }
+@keyframes ym-fall-3 { 0% { transform: translateY(-10vh) translateX(0); opacity: 0; } 10% { opacity: var(--p-max, 0.6); } 90% { opacity: var(--p-max, 0.6); } 100% { transform: translateY(110vh) translateX(15px); opacity: 0; } }
+
+@keyframes ym-rise-1 { 0% { transform: translateY(10vh); opacity: 0; } 15% { opacity: var(--p-max, 0.7); } 85% { opacity: var(--p-max, 0.7); } 100% { transform: translateY(-110vh); opacity: 0; } }
+@keyframes ym-rise-2 { 0% { transform: translateY(10vh); opacity: 0; } 15% { opacity: var(--p-max, 0.6); } 85% { opacity: var(--p-max, 0.6); } 100% { transform: translateY(-110vh); opacity: 0; } }
+@keyframes ym-rise-3 { 0% { transform: translateY(10vh); opacity: 0; } 15% { opacity: var(--p-max, 0.5); } 85% { opacity: var(--p-max, 0.5); } 100% { transform: translateY(-110vh); opacity: 0; } }
+
+/* --- Orbit Path --- */
+@keyframes ym-orbit {
+  0%   { transform: rotate(0deg) translateX(60px) rotate(0deg); }
+  100% { transform: rotate(360deg) translateX(60px) rotate(-360deg); }
+}
+
+/* --- Themed Dividers --- */
+.themed-divider {
+  height: 2px;
+  margin: 2rem 0;
+  border: none;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--theme-accent, #4ade80) 20%,
+    var(--theme-primary, #22c55e) 50%,
+    var(--theme-accent, #4ade80) 80%,
+    transparent 100%
+  );
+  opacity: 0.4;
+  box-shadow: 0 0 8px var(--theme-glow, rgba(34, 197, 94, 0.1));
+}
+
+/* --- Accessibility: respect prefers-reduced-motion --- */
+@media (prefers-reduced-motion: reduce) {
+  .ym-particle {
+    display: none !important;
+  }
+  .themed-divider {
+    animation: none !important;
+  }
+}
+
+/* --- Mobile: fewer, smaller particles --- */
+@media (max-width: 768px) {
+  .ym-particle:nth-child(n+7) {
+    display: none;
+  }
+  .ym-particle .ym-dot {
+    transform: scale(0.7);
+  }
+  .ym-particle .ym-halo {
+    display: none;
+  }
 }
