@@ -5,7 +5,6 @@
 
 # Development files
 node_modules/
-docs/
 templates/
 memory-bank/
 convert-tests.cjs
@@ -21,6 +20,9 @@ yakbot/
 announcements/
 marketing/
 discord.md
+
+# Website (marketing site — docs/ is the npm docs bundle)
+website/
 
 # Deployment configs (instance-specific)
 deploy/
@@ -48,11 +50,16 @@ test-*.mjs
 php-timing-test.php
 test-nodes/
 
-# Assets (keep logo for branding)
-# assets/
+# Assets (logos for website/marketing, not needed at runtime)
+assets/
 
-# Include website/ for self-hosted documentation
-# website/ - EXPLICITLY INCLUDED (not ignored)
+# Docs: heavy browser assets not needed in npm (use website for full experience)
+docs/apple-touch-icon.png
+docs/favicon.ico
+docs/icon.svg
+docs/yak-icon.svg
+docs/yak-icon.png
+docs/favicon.svg
 
 # Build artifacts
 *.log
@@ -62,3 +69,12 @@ test-nodes/
 
 # Build artifacts
 *.tgz
+
+# Test/dev output files
+test-output.txt
+test-results.txt
+test-out.txt
+test-err.txt
+train_models.py
+update-docs-nav.cjs
+update-nav.ps1
