@@ -1,30 +1,82 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="reference">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="favicon.ico" sizes="32x32">
-    <link rel="icon" href="icon.svg" type="image/svg+xml">
-    <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <title>Quick Reference | YAKMESH Documentation</title>
-    <meta name="description" content="YAKMESH quick reference card - protocols, CLI commands, API exports, and version history.">
-    <link rel="stylesheet" href="tailwind.min.css">
-    <link rel="stylesheet" href="prism-tomorrow.min.css">
-    <link rel="stylesheet" href="docs.css">
-    <style>
-        .theme-accent { color: #f59e0b; }
-        .theme-accent-hover:hover { color: #fbbf24; }
-        .theme-badge { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
-        .theme-border { border-color: #d97706; }
-        .theme-callout { background: rgba(245, 158, 11, 0.1); border-color: #b45309; }
-        .active-link { background: rgba(245, 158, 11, 0.2) !important; color: #f59e0b !important; }
-        .ref-table { width: 100%; border-collapse: collapse; }
-        .ref-table th { text-align: left; padding: 0.5rem; background: rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.1); }
-        .ref-table td { padding: 0.5rem; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        .ref-table code { background: rgba(0,0,0,0.3); padding: 0.125rem 0.375rem; border-radius: 0.25rem; font-size: 0.875rem; }
-        .version-tag { display: inline-block; background: rgba(245, 158, 11, 0.2); color: #f59e0b; padding: 0.125rem 0.5rem; border-radius: 0.25rem; font-weight: 600; font-size: 0.875rem; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="favicon.ico" sizes="32x32">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <title>Quick Reference | YAKMESH Documentation</title>
+  <meta name="description"
+    content="YAKMESH quick reference card - protocols, CLI commands, API exports, and version history.">
+  <link rel="stylesheet" href="tailwind.min.css">
+  <link rel="stylesheet" href="prism-tomorrow.min.css">
+  <link rel="stylesheet" href="docs.css">
+  <style>
+    .theme-accent {
+      color: #f59e0b;
+    }
+
+    .theme-accent-hover:hover {
+      color: #fbbf24;
+    }
+
+    .theme-badge {
+      background: rgba(245, 158, 11, 0.2);
+      color: #f59e0b;
+    }
+
+    .theme-border {
+      border-color: #d97706;
+    }
+
+    .theme-callout {
+      background: rgba(245, 158, 11, 0.1);
+      border-color: #b45309;
+    }
+
+    .active-link {
+      background: rgba(245, 158, 11, 0.2) !important;
+      color: #f59e0b !important;
+    }
+
+    .ref-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .ref-table th {
+      text-align: left;
+      padding: 0.5rem;
+      background: rgba(255, 255, 255, 0.05);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .ref-table td {
+      padding: 0.5rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .ref-table code {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 0.125rem 0.375rem;
+      border-radius: 0.25rem;
+      font-size: 0.875rem;
+    }
+
+    .version-tag {
+      display: inline-block;
+      background: rgba(245, 158, 11, 0.2);
+      color: #f59e0b;
+      padding: 0.125rem 0.5rem;
+      border-radius: 0.25rem;
+      font-weight: 600;
+      font-size: 0.875rem;
+    }
+  </style>
 </head>
+
 <body class="bg-mountain-900 text-white min-h-screen">
   <nav class="docs-sidebar" id="sidebar">
     <a href="index.html" class="sidebar-logo">
@@ -109,8 +161,12 @@
             </thead>
             <tbody>
               <tr>
-                <td><span class="version-tag" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">v3.0.0</span></td>
-                <td><strong>The Summit Release</strong> — 30-layer protocol stack, GPU+NPU ComputeScheduler (TIVRA/ACCEL), KOMM real-time communication, SANGHA community security, SEVA distributed compute, DARSHAN telemetry, 144T ternary identity, STEADYWATCH monitoring, 1,535 tests</td>
+                <td><span class="version-tag"
+                    style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white;">v3.0.0</span>
+                </td>
+                <td><strong>The Summit Release</strong> — 30-layer protocol stack, GPU+NPU ComputeScheduler
+                  (TIVRA/ACCEL), KOMM real-time communication, SANGHA community security, SEVA distributed compute,
+                  DARSHAN telemetry, 144T ternary identity, STEADYWATCH monitoring, 1,535 tests</td>
               </tr>
               <tr>
                 <td><span class="version-tag">v2.8.2</span></td>
@@ -308,27 +364,78 @@
           <h3 class="text-lg font-semibold mb-3">NAMCHE Gateway — 7 Mathematical Gates</h3>
           <table class="ref-table mb-6">
             <tbody>
-              <tr><td><strong>1. CRYPTO</strong></td><td>ML-DSA-65 signature verification (NIST FIPS 204)</td></tr>
-              <tr><td><strong>2. TEMPORAL</strong></td><td>Challenge/response timing analysis</td></tr>
-              <tr><td><strong>3. BEHAVIORAL</strong></td><td>Pattern consistency over time</td></tr>
-              <tr><td><strong>4. HARDWARE</strong></td><td>AES-NI timing attestation (real silicon proof)</td></tr>
-              <tr><td><strong>5. NETWORK</strong></td><td>Latency fingerprinting</td></tr>
-              <tr><td><strong>6. GEOGRAPHIC</strong></td><td>Speed-of-light location proof</td></tr>
-              <tr><td><strong>7. SOCIAL</strong></td><td>Cross-node vouching from Guardians</td></tr>
+              <tr>
+                <td><strong>1. CRYPTO</strong></td>
+                <td>ML-DSA-65 signature verification (NIST FIPS 204)</td>
+              </tr>
+              <tr>
+                <td><strong>2. TEMPORAL</strong></td>
+                <td>Challenge/response timing analysis</td>
+              </tr>
+              <tr>
+                <td><strong>3. BEHAVIORAL</strong></td>
+                <td>Pattern consistency over time</td>
+              </tr>
+              <tr>
+                <td><strong>4. HARDWARE</strong></td>
+                <td>AES-NI timing attestation (real silicon proof)</td>
+              </tr>
+              <tr>
+                <td><strong>5. NETWORK</strong></td>
+                <td>Latency fingerprinting</td>
+              </tr>
+              <tr>
+                <td><strong>6. GEOGRAPHIC</strong></td>
+                <td>Speed-of-light location proof</td>
+              </tr>
+              <tr>
+                <td><strong>7. SOCIAL</strong></td>
+                <td>Cross-node vouching from Guardians</td>
+              </tr>
             </tbody>
           </table>
-          
+
           <h3 class="text-lg font-semibold mb-3">KARMA Trust Tiers</h3>
           <table class="ref-table mb-6">
             <thead>
-              <tr><th>Tier</th><th>Nepali Name</th><th>Multiplier</th><th>Requirements</th></tr>
+              <tr>
+                <th>Tier</th>
+                <th>Nepali Name</th>
+                <th>Multiplier</th>
+                <th>Requirements</th>
+              </tr>
             </thead>
             <tbody>
-              <tr><td>ORACLE</td><td>SARATHI (सारथी)</td><td>2.0×</td><td>Atomic clock + AES-NI + 30 days</td></tr>
-              <tr><td>ANCHOR</td><td>SAMRAT (सम्राट)</td><td>1.5×</td><td>GPS+PPS + AES-NI + 14 days</td></tr>
-              <tr><td>SENTINEL</td><td>SIPAHI (सिपाही)</td><td>1.25×</td><td>PTP + AES-NI + 7 days</td></tr>
-              <tr><td>PARTICIPANT</td><td>PATHIK (पथिक)</td><td>1.0×</td><td>NTP + AES-NI verified</td></tr>
-              <tr><td>OBSERVER</td><td>PARYATAK (पर्यटक)</td><td>0.25×</td><td>New/unverified nodes</td></tr>
+              <tr>
+                <td>ORACLE</td>
+                <td>SARATHI (सारथी)</td>
+                <td>2.0×</td>
+                <td>Atomic clock + AES-NI + 30 days</td>
+              </tr>
+              <tr>
+                <td>ANCHOR</td>
+                <td>SAMRAT (सम्राट)</td>
+                <td>1.5×</td>
+                <td>GPS+PPS + AES-NI + 14 days</td>
+              </tr>
+              <tr>
+                <td>SENTINEL</td>
+                <td>SIPAHI (सिपाही)</td>
+                <td>1.25×</td>
+                <td>PTP + AES-NI + 7 days</td>
+              </tr>
+              <tr>
+                <td>PARTICIPANT</td>
+                <td>PATHIK (पथिक)</td>
+                <td>1.0×</td>
+                <td>NTP + AES-NI verified</td>
+              </tr>
+              <tr>
+                <td>OBSERVER</td>
+                <td>PARYATAK (पर्यटक)</td>
+                <td>0.25×</td>
+                <td>New/unverified nodes</td>
+              </tr>
             </tbody>
           </table>
 
@@ -352,14 +459,34 @@
           <p class="text-mountain-300 mb-4">"We prove where you CANNOT be, not where you ARE"</p>
           <table class="ref-table">
             <thead>
-              <tr><th>RTT</th><th>Minimum Distance</th><th>Physics</th></tr>
+              <tr>
+                <th>RTT</th>
+                <th>Minimum Distance</th>
+                <th>Physics</th>
+              </tr>
             </thead>
             <tbody>
-              <tr><td>1ms</td><td>≥100 km</td><td rowspan="5" class="text-mountain-400">Fiber: 199,861 km/s (0.67c)<br>Vacuum: 299,792 km/s</td></tr>
-              <tr><td>5ms</td><td>≥500 km</td></tr>
-              <tr><td>10ms</td><td>≥999 km</td></tr>
-              <tr><td>50ms</td><td>≥4,997 km</td></tr>
-              <tr><td>100ms</td><td>≥9,993 km</td></tr>
+              <tr>
+                <td>1ms</td>
+                <td>≥100 km</td>
+                <td rowspan="5" class="text-mountain-400">Fiber: 199,861 km/s (0.67c)<br>Vacuum: 299,792 km/s</td>
+              </tr>
+              <tr>
+                <td>5ms</td>
+                <td>≥500 km</td>
+              </tr>
+              <tr>
+                <td>10ms</td>
+                <td>≥999 km</td>
+              </tr>
+              <tr>
+                <td>50ms</td>
+                <td>≥4,997 km</td>
+              </tr>
+              <tr>
+                <td>100ms</td>
+                <td>≥9,993 km</td>
+              </tr>
             </tbody>
           </table>
         </div>
@@ -453,11 +580,26 @@ import {
               <h3 class="text-lg font-semibold mb-3">Core</h3>
               <table class="ref-table text-sm">
                 <tbody>
-                  <tr><td><code>GET /health</code></td><td>Node health</td></tr>
-                  <tr><td><code>GET /node</code></td><td>Node identity</td></tr>
-                  <tr><td><code>GET /peers</code></td><td>Connected peers</td></tr>
-                  <tr><td><code>GET /dashboard</code></td><td>Web UI</td></tr>
-                  <tr><td><code>GET /metrics</code></td><td>Prometheus</td></tr>
+                  <tr>
+                    <td><code>GET /health</code></td>
+                    <td>Node health</td>
+                  </tr>
+                  <tr>
+                    <td><code>GET /node</code></td>
+                    <td>Node identity</td>
+                  </tr>
+                  <tr>
+                    <td><code>GET /peers</code></td>
+                    <td>Connected peers</td>
+                  </tr>
+                  <tr>
+                    <td><code>GET /dashboard</code></td>
+                    <td>Web UI</td>
+                  </tr>
+                  <tr>
+                    <td><code>GET /metrics</code></td>
+                    <td>Prometheus</td>
+                  </tr>
                 </tbody>
               </table>
             </div>
@@ -465,11 +607,26 @@ import {
               <h3 class="text-lg font-semibold mb-3">Network</h3>
               <table class="ref-table text-sm">
                 <tbody>
-                  <tr><td><code>POST /connect</code></td><td>Connect to peer</td></tr>
-                  <tr><td><code>POST /data</code></td><td>Submit data</td></tr>
-                  <tr><td><code>POST /rumor</code></td><td>Spread gossip</td></tr>
-                  <tr><td><code>GET /gossip</code></td><td>Gossip stats</td></tr>
-                  <tr><td><code>GET /replication</code></td><td>Sync status</td></tr>
+                  <tr>
+                    <td><code>POST /connect</code></td>
+                    <td>Connect to peer</td>
+                  </tr>
+                  <tr>
+                    <td><code>POST /data</code></td>
+                    <td>Submit data</td>
+                  </tr>
+                  <tr>
+                    <td><code>POST /rumor</code></td>
+                    <td>Spread gossip</td>
+                  </tr>
+                  <tr>
+                    <td><code>GET /gossip</code></td>
+                    <td>Gossip stats</td>
+                  </tr>
+                  <tr>
+                    <td><code>GET /replication</code></td>
+                    <td>Sync status</td>
+                  </tr>
                 </tbody>
               </table>
             </div>
@@ -477,11 +634,26 @@ import {
               <h3 class="text-lg font-semibold mb-3">Oracle (TATTVA)</h3>
               <table class="ref-table text-sm">
                 <tbody>
-                  <tr><td><code>GET /oracle/status</code></td><td>Code proof status</td></tr>
-                  <tr><td><code>POST /oracle/challenge</code></td><td>Issue challenge</td></tr>
-                  <tr><td><code>GET /oracle/peers</code></td><td>Verified peers</td></tr>
-                  <tr><td><code>POST /oracle/submit</code></td><td>Submit content</td></tr>
-                  <tr><td><code>GET /oracle/consensus</code></td><td>Consensus state</td></tr>
+                  <tr>
+                    <td><code>GET /oracle/status</code></td>
+                    <td>Code proof status</td>
+                  </tr>
+                  <tr>
+                    <td><code>POST /oracle/challenge</code></td>
+                    <td>Issue challenge</td>
+                  </tr>
+                  <tr>
+                    <td><code>GET /oracle/peers</code></td>
+                    <td>Verified peers</td>
+                  </tr>
+                  <tr>
+                    <td><code>POST /oracle/submit</code></td>
+                    <td>Submit content</td>
+                  </tr>
+                  <tr>
+                    <td><code>GET /oracle/consensus</code></td>
+                    <td>Consensus state</td>
+                  </tr>
                 </tbody>
               </table>
             </div>
@@ -489,11 +661,26 @@ import {
               <h3 class="text-lg font-semibold mb-3">Geographic</h3>
               <table class="ref-table text-sm">
                 <tbody>
-                  <tr><td><code>GET /geo/status</code></td><td>Geo proof status</td></tr>
-                  <tr><td><code>GET /geo/landmarks</code></td><td>List landmarks</td></tr>
-                  <tr><td><code>GET /geo/zones</code></td><td>Exclusion zones</td></tr>
-                  <tr><td><code>POST /geo/prove</code></td><td>Generate proof</td></tr>
-                  <tr><td><code>POST /geo/verify</code></td><td>Verify proof</td></tr>
+                  <tr>
+                    <td><code>GET /geo/status</code></td>
+                    <td>Geo proof status</td>
+                  </tr>
+                  <tr>
+                    <td><code>GET /geo/landmarks</code></td>
+                    <td>List landmarks</td>
+                  </tr>
+                  <tr>
+                    <td><code>GET /geo/zones</code></td>
+                    <td>Exclusion zones</td>
+                  </tr>
+                  <tr>
+                    <td><code>POST /geo/prove</code></td>
+                    <td>Generate proof</td>
+                  </tr>
+                  <tr>
+                    <td><code>POST /geo/verify</code></td>
+                    <td>Verify proof</td>
+                  </tr>
                 </tbody>
               </table>
             </div>
@@ -501,10 +688,22 @@ import {
               <h3 class="text-lg font-semibold mb-3">Security</h3>
               <table class="ref-table text-sm">
                 <tbody>
-                  <tr><td><code>GET /security/status</code></td><td>Security overview</td></tr>
-                  <tr><td><code>GET /security/namche/gates</code></td><td>Gate status</td></tr>
-                  <tr><td><code>GET /security/doko/stats</code></td><td>DOKO stats</td></tr>
-                  <tr><td><code>POST /security/doko/verify</code></td><td>Verify identity</td></tr>
+                  <tr>
+                    <td><code>GET /security/status</code></td>
+                    <td>Security overview</td>
+                  </tr>
+                  <tr>
+                    <td><code>GET /security/namche/gates</code></td>
+                    <td>Gate status</td>
+                  </tr>
+                  <tr>
+                    <td><code>GET /security/doko/stats</code></td>
+                    <td>DOKO stats</td>
+                  </tr>
+                  <tr>
+                    <td><code>POST /security/doko/verify</code></td>
+                    <td>Verify identity</td>
+                  </tr>
                 </tbody>
               </table>
             </div>
@@ -512,9 +711,18 @@ import {
               <h3 class="text-lg font-semibold mb-3">Time</h3>
               <table class="ref-table text-sm">
                 <tbody>
-                  <tr><td><code>GET /time/status</code></td><td>Time source</td></tr>
-                  <tr><td><code>GET /time/detect</code></td><td>Detect sources</td></tr>
-                  <tr><td><code>GET /time/capabilities</code></td><td>Timing caps</td></tr>
+                  <tr>
+                    <td><code>GET /time/status</code></td>
+                    <td>Time source</td>
+                  </tr>
+                  <tr>
+                    <td><code>GET /time/detect</code></td>
+                    <td>Detect sources</td>
+                  </tr>
+                  <tr>
+                    <td><code>GET /time/capabilities</code></td>
+                    <td>Timing caps</td>
+                  </tr>
                 </tbody>
               </table>
             </div>
@@ -552,24 +760,66 @@ await node.start();</code></pre>
           <div class="grid md:grid-cols-2 gap-4">
             <table class="ref-table text-sm">
               <tbody>
-                <tr><td><strong>NAMCHE</strong></td><td>Named after Namche Bazaar, Sherpa gateway</td></tr>
-                <tr><td><strong>SHERPA</strong></td><td>Mountain guides who lead the way</td></tr>
-                <tr><td><strong>KARMA</strong></td><td>Buddhist concept of cause and effect</td></tr>
-                <tr><td><strong>TATTVA</strong></td><td>Sanskrit for "essence" or "truth"</td></tr>
-                <tr><td><strong>GRANTH</strong></td><td>Sanskrit for "text" or "scripture"</td></tr>
-                <tr><td><strong>SURAKSHA</strong></td><td>Hindi for "security" or "protection"</td></tr>
-                <tr><td><strong>PRAMAAN</strong></td><td>Sanskrit for "proof" or "evidence"</td></tr>
+                <tr>
+                  <td><strong>NAMCHE</strong></td>
+                  <td>Named after Namche Bazaar, Sherpa gateway</td>
+                </tr>
+                <tr>
+                  <td><strong>SHERPA</strong></td>
+                  <td>Mountain guides who lead the way</td>
+                </tr>
+                <tr>
+                  <td><strong>KARMA</strong></td>
+                  <td>Buddhist concept of cause and effect</td>
+                </tr>
+                <tr>
+                  <td><strong>TATTVA</strong></td>
+                  <td>Sanskrit for "essence" or "truth"</td>
+                </tr>
+                <tr>
+                  <td><strong>GRANTH</strong></td>
+                  <td>Sanskrit for "text" or "scripture"</td>
+                </tr>
+                <tr>
+                  <td><strong>SURAKSHA</strong></td>
+                  <td>Hindi for "security" or "protection"</td>
+                </tr>
+                <tr>
+                  <td><strong>PRAMAAN</strong></td>
+                  <td>Sanskrit for "proof" or "evidence"</td>
+                </tr>
               </tbody>
             </table>
             <table class="ref-table text-sm">
               <tbody>
-                <tr><td><strong>DOKO</strong></td><td>Nepali basket carried by porters</td></tr>
-                <tr><td><strong>MANTRA</strong></td><td>Sacred utterance, repeated prayer</td></tr>
-                <tr><td><strong>STUPA</strong></td><td>Buddhist monument, sacred structure</td></tr>
-                <tr><td><strong>LAMA</strong></td><td>Tibetan teacher, wise guide</td></tr>
-                <tr><td><strong>MANI</strong></td><td>Prayer wheels, time cycles</td></tr>
-                <tr><td><strong>MANDALA</strong></td><td>Sacred geometric pattern</td></tr>
-                <tr><td><strong>NAKPAK</strong></td><td>Layered backpack, nested protection</td></tr>
+                <tr>
+                  <td><strong>DOKO</strong></td>
+                  <td>Nepali basket carried by porters</td>
+                </tr>
+                <tr>
+                  <td><strong>MANTRA</strong></td>
+                  <td>Sacred utterance, repeated prayer</td>
+                </tr>
+                <tr>
+                  <td><strong>STUPA</strong></td>
+                  <td>Buddhist monument, sacred structure</td>
+                </tr>
+                <tr>
+                  <td><strong>LAMA</strong></td>
+                  <td>Tibetan teacher, wise guide</td>
+                </tr>
+                <tr>
+                  <td><strong>MANI</strong></td>
+                  <td>Prayer wheels, time cycles</td>
+                </tr>
+                <tr>
+                  <td><strong>MANDALA</strong></td>
+                  <td>Sacred geometric pattern</td>
+                </tr>
+                <tr>
+                  <td><strong>NAKPAK</strong></td>
+                  <td>Layered backpack, nested protection</td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -578,7 +828,8 @@ await node.start();</code></pre>
 
       <!-- Navigation -->
       <div class="mt-12 flex flex-col sm:flex-row gap-4">
-        <a href="api.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">
+        <a href="api.html"
+          class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">
           <div class="text-xs text-mountain-400 mb-1">← Previous</div>
           <div class="flex items-center gap-2">
             <span class="text-xl">📡</span>
@@ -586,7 +837,8 @@ await node.start();</code></pre>
           </div>
           <p class="text-mountain-400 text-sm mt-1">Complete REST API documentation</p>
         </a>
-        <a href="getting-started.html" class="flex-1 block bg-mountain-800 border border-theme-primary rounded-xl p-4 hover:border-theme-accent transition group">
+        <a href="getting-started.html"
+          class="flex-1 block bg-mountain-800 border border-theme-primary rounded-xl p-4 hover:border-theme-accent transition group">
           <div class="text-xs text-mountain-400 mb-1">🔄 Start Over</div>
           <div class="flex items-center gap-2">
             <span class="text-xl">🚀</span>
@@ -607,6 +859,5 @@ await node.start();</code></pre>
   <script src="prism-javascript.min.js"></script>
   <script src="docs.js"></script>
 </body>
+
 </html>
-
-
