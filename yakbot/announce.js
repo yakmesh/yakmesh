@@ -43,11 +43,31 @@ async function sendToDiscord(message, options = {}) {
   }
 
   try {
-    const payload = {
-      content: message,
-      username: options.username || 'YakBot',
-      avatar_url: options.avatar || 'https://yakmesh.dev/assets/yakmesh-logo2.png',
-    };
+    const username = options.username || 'YakBot';
+    const avatar_url = options.avatar || 'https://yakmesh.dev/assets/yakmesh-logo2.png';
+    let payload;
+
+    if (message.length <= 2000) {
+      // Short messages: use content field directly
+      payload = { content: message, username, avatar_url };
+    } else {
+      // Long messages: use embed (4096 char description limit)
+      // Extract title from first markdown heading
+      const titleMatch = message.match(/^#\s+(.+)$/m);
+      const title = titleMatch ? titleMatch[1] : 'Yakmesh Announcement';
+      const description = message.replace(/^#\s+.+\n+/, '').slice(0, 4096);
+      payload = {
+        username,
+        avatar_url,
+        embeds: [{
+          title,
+          description,
+          color: 0x22c55e, // yakmesh green
+          footer: { text: 'Sturdy & Secure 🦬' },
+          timestamp: new Date().toISOString(),
+        }],
+      };
+    }
 
     const response = await fetch(config.discordWebhook, {
       method: 'POST',
@@ -56,7 +76,8 @@ async function sendToDiscord(message, options = {}) {
     });
 
     if (!response.ok) {
-      throw new Error(`Discord API error: ${response.status}`);
+      const body = await response.text().catch(() => '');
+      throw new Error(`Discord API error: ${response.status} ${body}`);
     }
 
     console.log('✅ Discord: Message sent');
