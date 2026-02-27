@@ -1,36 +1,94 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="yurt">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="favicon.ico" sizes="32x32">
-    <link rel="icon" href="icon.svg" type="image/svg+xml">
-    <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <title>YURT - Room Discovery | YAKMESH Documentation</title>
-    <meta name="description" content="YURT: YAK Unified Room Tags. Decentralized room discovery for YakApp chat rooms with direct yak:// links and gossip propagation.">
-    
-    <link rel="stylesheet" href="tailwind.min.css">
-    <link rel="stylesheet" href="prism-tomorrow.min.css">
-    <link rel="stylesheet" href="docs.css">
-    <style>
-        /* Page-specific theme - Nomadic Steppe theme (warm browns/oranges) */
-        .theme-accent { color: #fb923c; }
-        .theme-accent-hover:hover { color: #fdba74; }
-        .theme-badge { background: rgba(251, 146, 60, 0.2); color: #fb923c; }
-        .theme-border { border-color: #ea580c; }
-        .theme-callout { background: rgba(251, 146, 60, 0.1); border-color: #c2410c; }
-        .active-link { background: rgba(251, 146, 60, 0.2) !important; color: #fb923c !important; }
-        .discovery-card { background: rgba(30, 41, 59, 0.5); border: 1px solid #334155; border-radius: 0.75rem; padding: 1.5rem; }
-        .discovery-card:hover { border-color: #ea580c; }
-        .visibility-badge { display: inline-block; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-size: 0.75rem; font-weight: 600; }
-        .vis-public { background: #16a34a; color: white; }
-        .vis-invite { background: #7c3aed; color: white; }
-        .vis-unlisted { background: #6b7280; color: white; }
-        .uri-example { font-family: monospace; background: rgba(0,0,0,0.3); padding: 0.5rem 1rem; border-radius: 0.5rem; border-left: 3px solid #fb923c; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="favicon.ico" sizes="32x32">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <title>YURT - Room Discovery | YAKMESH Documentation</title>
+  <meta name="description"
+    content="YURT: YAK Unified Room Tags. Decentralized room discovery for YakApp chat rooms with direct yak:// links and gossip propagation.">
+
+  <link rel="stylesheet" href="tailwind.min.css">
+  <link rel="stylesheet" href="prism-tomorrow.min.css">
+  <link rel="stylesheet" href="docs.css">
+  <style>
+    /* Page-specific theme - Nomadic Steppe theme (warm browns/oranges) */
+    .theme-accent {
+      color: #fb923c;
+    }
+
+    .theme-accent-hover:hover {
+      color: #fdba74;
+    }
+
+    .theme-badge {
+      background: rgba(251, 146, 60, 0.2);
+      color: #fb923c;
+    }
+
+    .theme-border {
+      border-color: #ea580c;
+    }
+
+    .theme-callout {
+      background: rgba(251, 146, 60, 0.1);
+      border-color: #c2410c;
+    }
+
+    .active-link {
+      background: rgba(251, 146, 60, 0.2) !important;
+      color: #fb923c !important;
+    }
+
+    .discovery-card {
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid #334155;
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+    }
+
+    .discovery-card:hover {
+      border-color: #ea580c;
+    }
+
+    .visibility-badge {
+      display: inline-block;
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.25rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .vis-public {
+      background: #16a34a;
+      color: white;
+    }
+
+    .vis-invite {
+      background: #7c3aed;
+      color: white;
+    }
+
+    .vis-unlisted {
+      background: #6b7280;
+      color: white;
+    }
+
+    .uri-example {
+      font-family: monospace;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 0.5rem 1rem;
+      border-radius: 0.5rem;
+      border-left: 3px solid #fb923c;
+    }
+  </style>
 </head>
+
 <body class="bg-mountain-900 text-white min-h-screen">
-    
+
   <nav class="docs-sidebar" id="sidebar">
     <a href="index.html" class="sidebar-logo">
       <span class="logo-icon">🏔️</span>
@@ -94,7 +152,7 @@
 
   <main class="docs-main" id="mainContent">
     <div class="docs-content">
-      
+
       <!-- Page Header -->
       <div class="flex items-center gap-3 mb-4">
         <span class="text-4xl">🏕️</span>
@@ -116,17 +174,20 @@
       <div class="bg-mountain-800 border border-mountain-700 rounded-xl p-6 mb-8">
         <h3 class="font-bold text-lg mb-3 theme-accent">The YURT Insight</h3>
         <p class="text-mountain-300 mb-4">
-          Traditional chat apps require central servers to discover rooms. YURT provides <strong>three discovery modes</strong> 
+          Traditional chat apps require central servers to discover rooms. YURT provides <strong>three discovery
+            modes</strong>
           that work independently:
         </p>
         <ul class="space-y-2 text-mountain-300">
           <li class="flex items-start gap-2">
             <span class="theme-accent mt-1">1.</span>
-            <div><strong>Direct Link</strong> — Click a yak:// link from any website. Works immediately, no gossip needed.</div>
+            <div><strong>Direct Link</strong> — Click a yak:// link from any website. Works immediately, no gossip
+              needed.</div>
           </li>
           <li class="flex items-start gap-2">
             <span class="theme-accent mt-1">2.</span>
-            <div><strong>Website Embed</strong> — "Join Chat" buttons on websites that link to yak:// or HTTPS gateway.</div>
+            <div><strong>Website Embed</strong> — "Join Chat" buttons on websites that link to yak:// or HTTPS gateway.
+            </div>
           </li>
           <li class="flex items-start gap-2">
             <span class="theme-accent mt-1">3.</span>
@@ -137,9 +198,9 @@
 
       <!-- URI Format Section -->
       <h2 class="text-2xl font-bold mt-12 mb-6" id="uri-format">The yak:// URI Scheme</h2>
-      
+
       <p class="text-mountain-300 mb-6">
-        YURT uses the <code class="theme-accent">yak://</code> URI scheme for direct room links. 
+        YURT uses the <code class="theme-accent">yak://</code> URI scheme for direct room links.
         Like clicking a Zoom link, but for decentralized chat.
       </p>
 
@@ -148,7 +209,7 @@
           yak://qrl-node.theqrl.org:8787/qrl-official
         </div>
         <p class="text-sm text-mountain-400">Basic format: yak://host:port/bundleId</p>
-        
+
         <div class="uri-example">
           yak://example.com/private-room?invite=eyJ0eXBlIjoiYXR0ZXN0YXRpb24i...
         </div>
@@ -182,7 +243,7 @@ const httpsUrl = YurtLink.toHttpsGateway(uri);
             <h3 class="font-bold theme-accent">Direct Link</h3>
           </div>
           <p class="text-mountain-300 text-sm mb-4">
-            The simplest path. User clicks a link, app connects directly to the host node. 
+            The simplest path. User clicks a link, app connects directly to the host node.
             No gossip propagation required.
           </p>
           <div class="text-xs text-mountain-400">
@@ -234,7 +295,7 @@ const httpsUrl = YurtLink.toHttpsGateway(uri);
       <h2 class="text-2xl font-bold mt-12 mb-6" id="room-entry">Room Entries</h2>
 
       <p class="text-mountain-300 mb-6">
-        A <code>YurtEntry</code> represents a discoverable room listing. Entries are signed by the host node 
+        A <code>YurtEntry</code> represents a discoverable room listing. Entries are signed by the host node
         and can be propagated via gossip or accessed directly.
       </p>
 
@@ -307,7 +368,7 @@ const inviteLink = entry.toInviteUri(attestation);
       <h2 class="text-2xl font-bold mt-12 mb-6" id="directory">Local Directory</h2>
 
       <p class="text-mountain-300 mb-6">
-        The <code>YurtDirectory</code> maintains a local index of known rooms. It handles searching, 
+        The <code>YurtDirectory</code> maintains a local index of known rooms. It handles searching,
         indexing by tags/host, and automatic cleanup of expired entries.
       </p>
 
@@ -342,7 +403,7 @@ directory.cleanup();</code></pre>
       <h2 class="text-2xl font-bold mt-12 mb-6" id="gossip">Gossip Propagation</h2>
 
       <p class="text-mountain-300 mb-6">
-        The <code>YurtGossip</code> module handles advertising rooms to the mesh network. 
+        The <code>YurtGossip</code> module handles advertising rooms to the mesh network.
         Entries expire after 7 days without refresh, preventing stale listings.
       </p>
 
@@ -373,7 +434,7 @@ gossip.stop();</code></pre>
       <h2 class="text-2xl font-bold mt-12 mb-6" id="integration">Integration with GUMBA</h2>
 
       <p class="text-mountain-300 mb-6">
-        YURT handles <strong>discovery</strong>. GUMBA handles <strong>access control</strong>. 
+        YURT handles <strong>discovery</strong>. GUMBA handles <strong>access control</strong>.
         They work together seamlessly.
       </p>
 
@@ -381,23 +442,28 @@ gossip.stop();</code></pre>
         <h4 class="font-bold mb-4 theme-accent">The Complete Flow</h4>
         <ol class="space-y-3 text-mountain-300">
           <li class="flex items-start gap-3">
-            <span class="bg-orange-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm shrink-0">1</span>
+            <span
+              class="bg-orange-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm shrink-0">1</span>
             <div><strong>Discovery</strong> — User finds room via YURT (link, gossip, or embed)</div>
           </li>
           <li class="flex items-start gap-3">
-            <span class="bg-orange-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm shrink-0">2</span>
+            <span
+              class="bg-orange-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm shrink-0">2</span>
             <div><strong>Connect</strong> — App connects to host node at the endpoint</div>
           </li>
           <li class="flex items-start gap-3">
-            <span class="bg-orange-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm shrink-0">3</span>
+            <span
+              class="bg-orange-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm shrink-0">3</span>
             <div><strong>Challenge</strong> — Host issues GUMBA challenge to visitor</div>
           </li>
           <li class="flex items-start gap-3">
-            <span class="bg-orange-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm shrink-0">4</span>
+            <span
+              class="bg-orange-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm shrink-0">4</span>
             <div><strong>Proof</strong> — Visitor proves identity (challenge-response, attestation, or Merkle)</div>
           </li>
           <li class="flex items-start gap-3">
-            <span class="bg-orange-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm shrink-0">5</span>
+            <span
+              class="bg-orange-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm shrink-0">5</span>
             <div><strong>Session</strong> — Host grants session, messages delivered via ANNEX</div>
           </li>
         </ol>
@@ -443,7 +509,7 @@ const inviteLink = hub.getJoinLink('private-room', { invite: attestation });</co
 
       <div class="bg-mountain-800 border border-orange-700 rounded-xl p-6 mb-8">
         <h4 class="font-bold mb-4 theme-accent">Setting Up the QRL Community Room</h4>
-        
+
         <pre class="bg-mountain-950 rounded-xl p-4 overflow-x-auto mb-6"><code class="language-javascript">// On the QRL server (qrl-node.theqrl.org)
 import { YurtHub, YurtEntry } from 'yakmesh/mesh/yurt.js';
 import { GumbaHub } from 'yakmesh/mesh/gumba.js';
@@ -474,7 +540,7 @@ console.log('Post this on the website:', joinLink);
 // → yak://qrl-node.theqrl.org:8787/qrl-official</code></pre>
 
         <p class="text-mountain-300 text-sm">
-          Now QRL can add a "Join Official Chat" button on their website that links directly to the room. 
+          Now QRL can add a "Join Official Chat" button on their website that links directly to the room.
           Users with YakApp installed get a native experience. Browser users can use the HTTPS gateway.
         </p>
       </div>
@@ -485,22 +551,26 @@ console.log('Post this on the website:', joinLink);
       <div class="space-y-4 mb-8">
         <div class="bg-mountain-800 border-l-4 border-green-500 rounded-r-xl p-4">
           <h4 class="font-bold text-green-400">All entries are signed</h4>
-          <p class="text-mountain-300 text-sm">Only the hosting node can create valid entries for its rooms. Signatures are verified before adding to directories.</p>
+          <p class="text-mountain-300 text-sm">Only the hosting node can create valid entries for its rooms. Signatures
+            are verified before adding to directories.</p>
         </div>
-        
+
         <div class="bg-mountain-800 border-l-4 border-green-500 rounded-r-xl p-4">
           <h4 class="font-bold text-green-400">Discovery ≠ Access</h4>
-          <p class="text-mountain-300 text-sm">Finding a room in YURT doesn't grant access. GUMBA proofs are still required. YURT only handles visibility.</p>
+          <p class="text-mountain-300 text-sm">Finding a room in YURT doesn't grant access. GUMBA proofs are still
+            required. YURT only handles visibility.</p>
         </div>
-        
+
         <div class="bg-mountain-800 border-l-4 border-green-500 rounded-r-xl p-4">
           <h4 class="font-bold text-green-400">Spam dies naturally</h4>
-          <p class="text-mountain-300 text-sm">Unsigned or invalid entries are rejected. Stale entries expire after 7 days. Nodes can filter by reputation.</p>
+          <p class="text-mountain-300 text-sm">Unsigned or invalid entries are rejected. Stale entries expire after 7
+            days. Nodes can filter by reputation.</p>
         </div>
-        
+
         <div class="bg-mountain-800 border-l-4 border-blue-500 rounded-r-xl p-4">
           <h4 class="font-bold text-blue-400">Unlisted rooms are truly private</h4>
-          <p class="text-mountain-300 text-sm">Rooms marked as "unlisted" never enter the gossip network. They only exist via direct link sharing.</p>
+          <p class="text-mountain-300 text-sm">Rooms marked as "unlisted" never enter the gossip network. They only
+            exist via direct link sharing.</p>
         </div>
       </div>
 
@@ -508,7 +578,8 @@ console.log('Post this on the website:', joinLink);
       <h2 class="text-2xl font-bold mt-12 mb-6" id="family">Himalayan Protocol Family</h2>
 
       <div class="bg-mountain-800 rounded-xl p-6 mb-8">
-        <p class="text-mountain-300 mb-4">YURT is part of the Himalayan Protocol Family for secure, decentralized communication:</p>
+        <p class="text-mountain-300 mb-4">YURT is part of the Himalayan Protocol Family for secure, decentralized
+          communication:</p>
         <ul class="space-y-2">
           <li class="flex items-center gap-2">
             <span>🌉</span> <a href="annex.html" class="theme-accent hover:underline">ANNEX</a>
@@ -529,11 +600,12 @@ console.log('Post this on the website:', joinLink);
         </ul>
       </div>
 
-            <!-- Journey Navigation -->
-                  <div class="border-t border-mountain-700 mt-12 pt-8">
+      <!-- Journey Navigation -->
+      <div class="border-t border-mountain-700 mt-12 pt-8">
         <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
         <div class="flex flex-col sm:flex-row gap-4">
-          <a href="gumba.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">
+          <a href="gumba.html"
+            class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">
             <div class="text-xs text-mountain-400 mb-1">← Previous</div>
             <div class="flex items-center gap-2">
               <span class="text-xl">🛕</span>
@@ -541,7 +613,8 @@ console.log('Post this on the website:', joinLink);
             </div>
             <p class="text-mountain-400 text-sm mt-1">Access control</p>
           </a>
-          <a href="katha.html" class="flex-1 block bg-mountain-800 border border-theme-primary rounded-xl p-4 hover:border-theme-accent transition group">
+          <a href="katha.html"
+            class="flex-1 block bg-mountain-800 border border-theme-primary rounded-xl p-4 hover:border-theme-accent transition group">
             <div class="text-xs text-mountain-400 mb-1">Next →</div>
             <div class="flex items-center gap-2">
               <span class="text-xl">💬</span>
@@ -553,11 +626,13 @@ console.log('Post this on the website:', joinLink);
       </div>
   </main>
 
-  <footer class="docs-footer"><p>© 2026 YAKMESH™</p></footer>
+  <footer class="docs-footer">
+    <p>© 2026 YAKMESH™</p>
+  </footer>
 
-  <script src="prism-core.min.js"></script>
+  <script src="prism.min.js"></script>
   <script src="prism-javascript.min.js"></script>
   <script src="docs.js"></script>
 </body>
-</html>
 
+</html>

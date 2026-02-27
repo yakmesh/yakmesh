@@ -41,29 +41,34 @@ await node.start();
 ## Features
 
 ### Cryptography & Identity
+
 - 🔒 **Post-Quantum Secure** — ML-DSA-65 (FIPS 204) signatures, ML-KEM-768 (FIPS 203) key encapsulation
 - 🧬 **144-Trit Identity** — Ternary identity system with balanced-ternary encoding (YPC-27)
 - 🔐 **ANNEX Channels** — ML-KEM-768 encrypted P2P sessions with forward secrecy (TRIBHUJ ratchet)
 - 🧭 **NAMCHE Gateway** — 7-gate mathematical identity verification
 
 ### Networking & Discovery
+
 - 🌐 **Mesh Networking** — P2P WebSocket mesh with epidemic gossip protocol
 - 🏔️ **SHERPA Discovery** — Decentralized peer discovery with DNS beacon broadcast
 - 📦 **NAKPAK Routing** — Efficient binary message routing with checksum verification
 - 💬 **KOMM Stack** — Real-time communication layer (VANI messaging, GUMBA channels, KATHA sessions)
 
 ### Validation & Consensus
+
 - 🔮 **TATTVA Oracle** — Self-verifying codebase validation; the code IS the network identity
 - 📜 **DHARMA Consensus** — Multi-phase consensus engine with phase-epoch timing
 - 👁️ **SAKSHI Witness** — Distributed witness protocol for transaction attestation
 - 🌍 **Geographic Proof** — Speed-of-light exclusion zones for physical locality verification
 
 ### Compute & Acceleration
+
 - ⚡ **GPU+NPU Acceleration** — Heterogeneous compute via ONNX Runtime (DirectML, CUDA, CPU fallback)
 - 📊 **ComputeScheduler** — Priority-based task scheduling (CRITICAL → HIGH → NORMAL → LOW)
 - 🧠 **SEVA Compute** — Distributed ML inference mesh across network peers
 
 ### Security & Monitoring
+
 - 🛡️ **SANGHA Security** — Community-driven threat circulation and collective defense
 - ⏱️ **Precision Timing** — GPS atomic clocks (MA-902), PTP, NTP with sub-millisecond sync
 - 📡 **DARSHAN Telemetry** — Real-time network visibility and diagnostics
@@ -200,4 +205,3 @@ See [TRADEMARK.md](TRADEMARK.md) for trademark usage policy.
   <br>
   <sub>YAKMESH™ is a trademark of PeerQuanta, application pending (Serial No. 99594620).</sub>
 </div>
-
