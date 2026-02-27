@@ -26,19 +26,19 @@ const log = createLogger('yakbot:main');
 const config = {
   // Discord bot token (from Discord Developer Portal)
   token: process.env.DISCORD_TOKEN,
-  
+
   // Gemini API key for AI responses
   geminiKey: process.env.GEMINI_API_KEY,
-  
+
   // Current version
   version: '3.0.0',
-  
+
   // Official YAKMESH nodes for health checks
   officialNodes: [
     { name: 'Primary (Hostinger)', url: 'https://yakmesh.dev/node.php?e=health', icon: '🦬' },
     { name: 'LAN (Abyss)', url: 'http://192.168.1.178:3000/health', icon: '🏠' },
   ],
-  
+
   // Links
   links: {
     github: 'https://github.com/yakmesh/yakmesh',
@@ -50,7 +50,7 @@ const config = {
     telegram: 'https://t.me/yakmesh',
     patreon: 'https://patreon.com/yakmesh',
   },
-  
+
   // Brand colors
   colors: {
     primary: 0x13B583,    // Yakmesh green
@@ -130,14 +130,14 @@ function createEmbed(options) {
   const embed = new EmbedBuilder()
     .setColor(options.color || config.colors.primary)
     .setTimestamp();
-    
+
   if (options.title) embed.setTitle(options.title);
   if (options.description) embed.setDescription(options.description);
   if (options.fields) embed.addFields(options.fields);
   if (options.footer) embed.setFooter({ text: options.footer, iconURL: 'https://raw.githubusercontent.com/yakmesh/yakmesh/main/assets/yakmesh-logo2.png' });
   if (options.thumbnail) embed.setThumbnail(options.thumbnail);
   if (options.url) embed.setURL(options.url);
-  
+
   return embed;
 }
 
@@ -176,16 +176,16 @@ async function checkNodeHealth(nodeUrl) {
   try {
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 5000); // 5s timeout
-    
+
     // Use the URL directly (it may already include the health endpoint)
-    const response = await fetch(nodeUrl, { 
+    const response = await fetch(nodeUrl, {
       signal: controller.signal,
       headers: { 'Accept': 'application/json' }
     });
-    
+
     clearTimeout(timeout);
     const latency = Date.now() - start;
-    
+
     if (response.ok) {
       // Try to get version info if available
       let version = null;
@@ -193,7 +193,7 @@ async function checkNodeHealth(nodeUrl) {
       let content = null;
       let algorithm = null;
       let networkName = null;
-      
+
       try {
         const data = await response.json();
         version = data.version;
@@ -204,7 +204,7 @@ async function checkNodeHealth(nodeUrl) {
       } catch {
         // Not JSON, that's OK
       }
-      
+
       return {
         online: true,
         latency,
@@ -237,9 +237,9 @@ const commands = {
   // /status - Show current status
   async status(interaction) {
     await interaction.deferReply();
-    
+
     const [npm, github] = await Promise.all([getNpmStats(), getGitHubStats()]);
-    
+
     const embed = createEmbed({
       title: '🦬 YAKMESH™ Status',
       description: 'Sturdy & Secure - Post-quantum P2P mesh network',
@@ -255,43 +255,43 @@ const commands = {
       ],
       footer: 'YAKMESH™ - Yielding Atomic Kernel Modular Encryption Secured Hub',
     });
-    
+
     await interaction.editReply({ embeds: [embed] });
   },
-  
+
   // /nodes - Check official node health
   async nodes(interaction) {
     await interaction.deferReply();
-    
+
     const results = await Promise.all(
       config.officialNodes.map(async (node) => {
         const health = await checkNodeHealth(node.url);
         return { ...node, ...health };
       })
     );
-    
+
     const fields = results.map(node => {
       const statusIcon = node.online ? '🟢' : '🔴';
       const latencyText = node.online ? `${node.latency}ms` : 'N/A';
-      
+
       let value = `${statusIcon} **${node.online ? 'Online' : 'Offline'}**\n`;
       value += `⏱️ Latency: ${latencyText}\n`;
-      
+
       if (node.algorithm) value += `🔐 ${node.algorithm}\n`;
       if (node.networkName) value += `🌐 ${node.networkName}\n`;
       if (node.peers !== null && node.peers !== undefined) value += `👥 Peers: ${node.peers}\n`;
       if (!node.online && node.error) value += `❌ Error: ${node.error}\n`;
-      
+
       return {
         name: `${node.icon} ${node.name}`,
         value,
         inline: true,
       };
     });
-    
+
     const allOnline = results.every(n => n.online);
     const someOnline = results.some(n => n.online);
-    
+
     let statusText, statusColor;
     if (allOnline) {
       statusText = '✅ All nodes operational';
@@ -303,7 +303,7 @@ const commands = {
       statusText = '🔴 All nodes offline';
       statusColor = config.colors.error;
     }
-    
+
     const embed = createEmbed({
       title: '🌐 YAKMESH Node Status',
       description: statusText,
@@ -311,14 +311,14 @@ const commands = {
       color: statusColor,
       footer: 'Official YAKMESH nodes • Last checked',
     });
-    
+
     await interaction.editReply({ embeds: [embed] });
   },
-  
+
   // /docs - Documentation links
   async docs(interaction) {
     const topic = interaction.options.getString('topic');
-    
+
     const docLinks = {
       'getting-started': { title: '🚀 Getting Started', url: `${config.links.docs}/getting-started` },
       'installation': { title: '📦 Installation', url: `${config.links.docs}/installation` },
@@ -330,7 +330,7 @@ const commands = {
       'gossip': { title: '💬 Gossip Protocol', url: `${config.links.docs}/gossip` },
       'oracle': { title: '🔮 Oracle System', url: `${config.links.docs}/oracle` },
     };
-    
+
     if (topic && docLinks[topic.toLowerCase()]) {
       const doc = docLinks[topic.toLowerCase()];
       const embed = createEmbed({
@@ -346,7 +346,7 @@ const commands = {
         value: `\`/docs ${key}\` or [view online](${val.url})`,
         inline: true,
       }));
-      
+
       const embed = createEmbed({
         title: '📚 YAKMESH Documentation',
         description: 'Choose a topic or visit the [full documentation](' + config.links.docs + ')',
@@ -356,7 +356,7 @@ const commands = {
       await interaction.reply({ embeds: [embed] });
     }
   },
-  
+
   // /changelog - Recent changes
   async changelog(interaction) {
     const embed = createEmbed({
@@ -365,27 +365,27 @@ const commands = {
       url: `${config.links.github}/blob/main/CHANGELOG.md`,
       fields: [
         {
-          name: '🧪 v2.3.0 - Testing & Oracle Hardening',
-          value: '• 562+ tests (Oracle, Protocol, Multi-Node, Security, Mesh)\n• Fixed ML-KEM768 cipherText capitalization\n• BYOND adapter for game server hosting\n• Oracle path normalization fix',
+          name: '🏔️ v3.0.0 — The Mega Release',
+          value: '• ACCEL hardware acceleration (CPU-SIMD/GPU/NPU)\n• 3 ONNX ML models (entropy, anomaly, trust)\n• STEADYWATCH quantum entropy (IBM 156-qubit)\n• Full KOMM stack (KATHA/VANI/YURT/GUMBA)\n• Voting consensus removed → A+C math proof\n• 1,535 tests (0 failures)',
           inline: false,
         },
         {
-          name: '🌐 v2.2.0 - YAK:// Protocol & Remote Bookmarks',
-          value: '• YAK:// custom URL scheme with builtin routes\n• Remote bookmark sync via mesh gossip\n• DOKO revocation system for key compromise\n• SSL/TLS binding with certificate fingerprints',
+          name: '🔐 v3.0.0 — Security & Protocol',
+          value: '• DARSHAN content streaming API\n• NAKPAK onion routing with ML-KEM circuits\n• SHERPA HTTP relay bridge for NAT traversal\n• ANNEX hardening (deterministic rekey, PFS)\n• TRIBHUJ ternary backbone across all subsystems\n• Deep audit: 30 findings fixed, 140 new tests',
           inline: false,
         },
         {
-          name: '🔐 v2.0.0 - NAMCHE Gateway & DOKO Identity',
-          value: '• 7-gate verification flow (math as authority)\n• DOKO distributed identity documents\n• iO obfuscation for all user-facing identifiers\n• Post-quantum ML-DSA-65 + ML-KEM768',
+          name: '📚 v3.0.0 — Documentation',
+          value: '• 48 themed docs pages with silhouette backgrounds\n• Particle animation system per theme\n• Full protocol stack documented\n• Interactive quick reference\n• SEO-optimized with Open Graph',
           inline: false,
         },
       ],
       footer: 'View full changelog on GitHub',
     });
-    
+
     await interaction.reply({ embeds: [embed] });
   },
-  
+
   // /install - Quick install guide
   async install(interaction) {
     const embed = createEmbed({
@@ -399,11 +399,11 @@ const commands = {
     });
     await interaction.reply({ embeds: [embed] });
   },
-  
+
   // /ask - AI-powered Q&A
   async ask(interaction) {
     const question = interaction.options.getString('question');
-    
+
     if (!model) {
       await interaction.reply({
         content: '❌ AI features are not configured. Please check the documentation or ask in the chat!',
@@ -411,19 +411,19 @@ const commands = {
       });
       return;
     }
-    
+
     await interaction.deferReply();
-    
+
     try {
       const prompt = `${YAKMESH_CONTEXT}\n\nUser question: ${question}\n\nProvide a helpful, concise answer:`;
       const result = await model.generateContent(prompt);
       const response = result.response.text();
-      
+
       // Truncate if too long for Discord
-      const truncated = response.length > 1900 
+      const truncated = response.length > 1900
         ? response.slice(0, 1900) + '...\n\n*[Response truncated]*'
         : response;
-      
+
       const embed = createEmbed({
         title: '🦬 YakBot Answer',
         description: truncated,
@@ -433,7 +433,7 @@ const commands = {
         color: config.colors.info,
         footer: 'Powered by Gemini AI • Always verify with official docs',
       });
-      
+
       await interaction.editReply({ embeds: [embed] });
     } catch (error) {
       console.error('AI error:', error);
@@ -442,7 +442,7 @@ const commands = {
       });
     }
   },
-  
+
   // /ping - Simple ping
   async ping(interaction) {
     const latency = Date.now() - interaction.createdTimestamp;
@@ -457,7 +457,7 @@ const commands = {
     });
     await interaction.reply({ embeds: [embed] });
   },
-  
+
   // /links - All social links
   async links(interaction) {
     const embed = createEmbed({
@@ -477,7 +477,7 @@ const commands = {
     });
     await interaction.reply({ embeds: [embed] });
   },
-  
+
   // /help - Show all commands
   async help(interaction) {
     const embed = createEmbed({
@@ -499,46 +499,46 @@ const commands = {
     });
     await interaction.reply({ embeds: [embed] });
   },
-  
+
   // /faq - Frequently asked questions
   async faq(interaction) {
     const embed = createEmbed({
       title: '❔ Frequently Asked Questions',
       description: 'Common questions about YAKMESH',
       fields: [
-        { 
-          name: '🦬 What is YAKMESH?', 
+        {
+          name: '🦬 What is YAKMESH?',
           value: 'YAKMESH (Yielding Atomic Kernel Modular Encryption Secured Hub) is a post-quantum secure P2P mesh network designed for the 2026 threat landscape.',
           inline: false,
         },
-        { 
-          name: '🔐 What makes it "post-quantum"?', 
+        {
+          name: '🔐 What makes it "post-quantum"?',
           value: 'We use ML-DSA-65/87 (NIST FIPS 204) for signatures and ML-KEM-768/1024 (NIST FIPS 203) for key exchange. These algorithms are resistant to quantum computer attacks.',
           inline: false,
         },
-        { 
-          name: '💻 What are the requirements?', 
-          value: 'Node.js 18+ is required. Install with `npm install yakmesh`.',
+        {
+          name: '💻 What are the requirements?',
+          value: 'Node.js 18+ (24+ recommended). Install with `npm install yakmesh`. Supports GPU (WebGPU), NPU (ONNX Runtime), and CPU-SIMD acceleration.',
           inline: false,
         },
-        { 
-          name: '🌐 How do nodes find each other?', 
+        {
+          name: '🌐 How do nodes find each other?',
           value: 'Nodes with identical code share the same "network name" derived from the codebase hash via iO obfuscation. SHERPA DHT and gossip handle peer discovery.',
           inline: false,
         },
-        { 
-          name: '🔒 Is traffic encrypted?', 
+        {
+          name: '🔒 Is traffic encrypted?',
           value: 'Yes! Annex provides ML-KEM768 key exchange + XChaCha20-Poly1305 encryption with perfect forward secrecy for P2P channels.',
           inline: false,
         },
-        { 
-          name: '🛡️ What is NAMCHE/DOKO?', 
+        {
+          name: '🛡️ What is NAMCHE/DOKO?',
           value: 'NAMCHE is the 7-gate verification gateway (math as authority). DOKO is the distributed identity system for nodes, users, and domains.',
           inline: false,
         },
-        { 
-          name: '📦 Is it production ready?', 
-          value: 'YAKMESH is actively developed with 562+ tests. Check releases for stable versions. Current: v' + config.version,
+        {
+          name: '📦 Is it production ready?',
+          value: 'YAKMESH v3.0 ships with 1,535 tests (0 failures), deep security audit (30 findings fixed), and 3 ONNX ML models for runtime protection. Current: v' + config.version,
           inline: false,
         },
       ],
@@ -546,7 +546,7 @@ const commands = {
     });
     await interaction.reply({ embeds: [embed] });
   },
-  
+
   // /botstats - Bot performance metrics
   async botstats(interaction) {
     const uptime = Date.now() - stats.startTime;
@@ -554,22 +554,22 @@ const commands = {
     const hours = Math.floor((uptime % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
     const minutes = Math.floor((uptime % (1000 * 60 * 60)) / (1000 * 60));
     const seconds = Math.floor((uptime % (1000 * 60)) / 1000);
-    
-    const uptimeStr = days > 0 
-      ? `${days}d ${hours}h ${minutes}m` 
-      : hours > 0 
+
+    const uptimeStr = days > 0
+      ? `${days}d ${hours}h ${minutes}m`
+      : hours > 0
         ? `${hours}h ${minutes}m ${seconds}s`
         : `${minutes}m ${seconds}s`;
-    
+
     // Memory usage
     const memUsage = process.memoryUsage();
     const memMB = (memUsage.heapUsed / 1024 / 1024).toFixed(1);
     const memTotal = (memUsage.heapTotal / 1024 / 1024).toFixed(1);
-    
+
     // Calculate messages per hour
     const hoursUp = uptime / (1000 * 60 * 60) || 1;
     const msgsPerHour = (stats.messagesReceived / hoursUp).toFixed(1);
-    
+
     const embed = createEmbed({
       title: '📈 YakBot Performance',
       description: 'Real-time bot statistics and metrics',
@@ -597,7 +597,7 @@ const commands = {
 // Handle slash commands
 client.on(Events.InteractionCreate, async (interaction) => {
   if (!interaction.isChatInputCommand()) return;
-  
+
   const handler = commands[interaction.commandName];
   if (handler) {
     try {
@@ -620,7 +620,7 @@ client.on(Events.GuildMemberAdd, async (member) => {
   const welcomeChannel = member.guild.channels.cache.find(
     ch => ch.name === 'welcome' || ch.name === 'general'
   );
-  
+
   if (welcomeChannel) {
     const embed = createEmbed({
       title: `🦬 Welcome to YAKMESH, ${member.user.username}!`,
@@ -632,7 +632,7 @@ client.on(Events.GuildMemberAdd, async (member) => {
       color: config.colors.success,
       footer: 'YAKMESH™ - Sturdy & Secure',
     });
-    
+
     await welcomeChannel.send({ embeds: [embed] });
   }
 });
@@ -641,18 +641,18 @@ client.on(Events.GuildMemberAdd, async (member) => {
 client.on(Events.MessageCreate, async (message) => {
   // Ignore bot messages
   if (message.author.bot) return;
-  
+
   // Check if bot was mentioned or it's a DM
   const isMentioned = message.mentions.has(client.user);
   const isDM = message.channel.type === 1; // DM channel
-  
+
   if (!isMentioned && !isDM) return;
-  
+
   // Get the message content without the mention
   let content = message.content
     .replace(new RegExp(`<@!?${client.user.id}>`, 'g'), '')
     .trim();
-  
+
   // If empty after removing mention, send help
   if (!content) {
     const embed = createEmbed({
@@ -668,22 +668,22 @@ client.on(Events.MessageCreate, async (message) => {
     await message.reply({ embeds: [embed] });
     return;
   }
-  
+
   // Quick responses for common keywords
   const lowerContent = content.toLowerCase();
-  
+
   // Greetings
   if (/^(hi|hello|hey|sup|yo|howdy|greetings)/i.test(lowerContent)) {
     await message.reply(`Hey ${message.author.username}! 👋 How can I help you with YAKMESH today? Feel free to ask me anything!`);
     return;
   }
-  
+
   // Thanks
   if (/^(thanks|thank you|thx|ty)/i.test(lowerContent)) {
     await message.reply(`You're welcome! 🦬 Let me know if you need anything else!`);
     return;
   }
-  
+
   // Install/setup questions - quick response
   if (/how.*(install|setup|start|begin|get started)/i.test(lowerContent)) {
     const embed = createEmbed({
@@ -698,28 +698,28 @@ client.on(Events.MessageCreate, async (message) => {
     await message.reply({ embeds: [embed] });
     return;
   }
-  
+
   // Version/status questions
   if (/what.*(version|latest)/i.test(lowerContent) || lowerContent === 'version') {
     const npm = await getNpmStats();
     await message.reply(`📦 The latest YAKMESH version is **v${npm.version}**\n\nInstall with: \`npm install yakmesh\``);
     return;
   }
-  
+
   // If AI is available, use it for complex questions
   if (model) {
     try {
       await message.channel.sendTyping();
-      
+
       const prompt = `${YAKMESH_CONTEXT}\n\nUser message: ${content}\n\nProvide a helpful, friendly, and concise response. Keep it under 1500 characters. Use Discord markdown formatting.`;
       const result = await model.generateContent(prompt);
       const response = result.response.text();
-      
+
       // Truncate if needed
-      const truncated = response.length > 1900 
+      const truncated = response.length > 1900
         ? response.slice(0, 1900) + '...'
         : response;
-      
+
       await message.reply(truncated);
     } catch (error) {
       console.error('AI chat error:', error);
@@ -746,7 +746,7 @@ client.once(Events.ClientReady, (c) => {
     ai: model ? 'Gemini enabled' : 'Not configured',
     chat: 'Mentions & DMs enabled'
   });
-  
+
   // Set activity
   client.user.setActivity('YAKMESH™ | @me or /help', { type: 3 }); // Watching
 });
