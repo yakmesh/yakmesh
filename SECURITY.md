@@ -1,26 +1,15 @@
 # Security Policy
 
-## Supported Versions
-
-| Version | Supported          |
-| ------- | ------------------ |
-| 2.5.x   | :white_check_mark: |
-| 2.4.x   | :white_check_mark: |
-| 2.2.x   | :white_check_mark: |
-| 2.0.x   | :warning: Security fixes only |
-| < 2.0   | :x: End of life |
-
 ## Reporting a Vulnerability
 
 We take security seriously at YAKMESH™. If you discover a security vulnerability, please report it responsibly.
 
 ### How to Report
 
-**Email**: security@yakmesh.dev
+1. **Open a GitHub issue**: <https://github.com/yakmesh/yakmesh/issues> — use the "Security" label if available, or prefix the title with `[SECURITY]`.
+2. **Email** (for sensitive disclosures): security@yakmesh.dev
 
-**Do NOT**:
-- Open a public GitHub issue for security vulnerabilities
-- Disclose the vulnerability publicly before we've had a chance to address it
+For sensitive vulnerabilities where public disclosure would be premature, prefer email. For general security concerns, questions, or non-critical findings, a GitHub issue is fine.
 
 ### What to Include
 
@@ -35,6 +24,10 @@ We take security seriously at YAKMESH™. If you discover a security vulnerabili
 - **Initial Assessment**: Within 7 days
 - **Resolution Target**: Within 30 days (depending on severity)
 
+### Version Policy
+
+Security reports are accepted for the **latest release only**. If you believe you've found a vulnerability in an older version, please verify it against the current release before reporting. Assistance with issues on older versions is available as premium support — contact us at support@yakmesh.dev.
+
 ### Recognition
 
 We appreciate responsible disclosure and will:
@@ -44,12 +37,15 @@ We appreciate responsible disclosure and will:
 
 ## Security Features
 
-YAKMESH implements multiple layers of security:
+YAKMESH implements multiple layers of post-quantum security:
 
-- **Post-Quantum Cryptography**: ML-DSA-65 signatures (NIST FIPS 204)
-- **Authenticated Encryption**: XChaCha20-Poly1305
+- **Post-Quantum Signatures**: ML-DSA-65 (NIST FIPS 204)
+- **Post-Quantum Key Encapsulation**: ML-KEM-768 (NIST FIPS 203) via ANNEX E2E sessions
+- **144T Ternary Security**: Dual-layer cryptographic backbone (NIST + 144T)
+- **Authenticated Encryption**: AES-256-GCM (ANNEX), XChaCha20-Poly1305
 - **Replay Protection**: Phase-epoch based message validation
 - **Code Integrity**: Self-verifying oracle with module sealing
+- **Entropy**: PRAHARI v2 mesh-consensus entropy engine (SHA3 sponge, GPS jitter, mesh timing)
 
 ---
 
@@ -168,7 +164,6 @@ Before merging any identity/crypto changes:
 ## Known Limitations
 
 - NTP time sources are not suitable for oracle operations (use GPS/PTP/Atomic)
-- Community edition does not include WebSocket authentication (see Pro)
 
 ---
 
