@@ -4,51 +4,396 @@
   "_layerNote": "Entries with 'layer' property appear in the Protocol Stack table on the overview page, sorted by layer number.",
   "_sectionNote": "Entries with 'section' property start a new sidebar section group. Valid sections: 'guide', 'protocol', 'applications', 'reference'.",
   "pages": [
-    { "file": "index.html", "icon": "🏠", "svgIcon": "home", "title": "Overview", "description": "Welcome to Yakmesh", "section": "guide" },
-    { "file": "getting-started.html", "icon": "🚀", "svgIcon": "rocket", "title": "Getting Started", "description": "Quick start guide" },
-    { "file": "tutorials.html", "icon": "📖", "svgIcon": "book", "title": "Tutorials", "description": "Step-by-step guides" },
-    { "file": "gumba-tutorial.html", "icon": "📖", "svgIcon": "gumba", "title": "GUMBA Tutorial", "description": "Step-by-step access control guide" },
-    { "file": "yak-protocol.html", "icon": "🐃", "svgIcon": "yak", "title": "YAK://", "description": "Content addressing", "layer": 1, "purpose": "Universal resource addressing", "section": "protocol" },
-    { "file": "annex.html", "icon": "🌉", "svgIcon": "annex", "title": "ANNEX", "description": "Encrypted P2P", "layer": 2, "purpose": "Encrypted P2P (ML-KEM768)" },
-    { "file": "jhilke.html", "icon": "🦗", "svgIcon": "jhilke", "title": "JHILKE", "description": "Key lifecycle", "layer": 2.5, "purpose": "Steganographic key lifecycle (bootstrap + rekey)" },
-    { "file": "nakpak.html", "icon": "🎒", "svgIcon": "nakpak", "title": "NAKPAK", "description": "Onion routing", "layer": 3, "purpose": "Onion routing & privacy" },
-    { "file": "namche.html", "icon": "🚪", "svgIcon": "namche", "title": "NAMCHE", "description": "Identity gateway", "layer": 4, "purpose": "Gateway & identity verification" },
-    { "file": "doko.html", "icon": "🧺", "svgIcon": "doko", "title": "DOKO", "description": "Identity certificates", "layer": 5, "purpose": "Identity certificates" },
-    { "file": "sherpa.html", "icon": "🧗", "svgIcon": "sherpa", "title": "SHERPA", "description": "Peer discovery", "layer": 6, "purpose": "Peer discovery & beacons" },
-    { "file": "mandala.html", "icon": "🌐", "svgIcon": "mandala", "title": "MANDALA", "description": "Network topology", "layer": 7, "purpose": "Mesh network topology" },
-    { "file": "mantra.html", "icon": "🕉️", "svgIcon": "mantra", "title": "MANTRA", "description": "Message protocol", "layer": 8, "purpose": "Gossip message propagation" },
-    { "file": "gumba.html", "icon": "🛕", "svgIcon": "gumba", "title": "GUMBA", "description": "Access control", "layer": 9, "purpose": "Role-based access control" },
-    { "file": "yurt.html", "icon": "🏕️", "svgIcon": "yurt", "title": "YURT", "description": "Room discovery", "layer": 10, "purpose": "Room discovery & management" },
-    { "file": "katha.html", "icon": "💬", "svgIcon": "katha", "title": "KATHA", "description": "Rich chat features", "layer": 11, "purpose": "Rich chat with reactions & threads" },
-    { "file": "vani.html", "icon": "🎙️", "svgIcon": "vani", "title": "VANI", "description": "Voice/video calls", "layer": 12, "purpose": "Voice & video calls" },
-    { "file": "darshan.html", "icon": "👁️", "svgIcon": "darshan", "title": "DARSHAN", "description": "Content streaming", "layer": 13, "purpose": "Content streaming (view-not-copy)" },
-    { "file": "stupa.html", "icon": "🛕", "svgIcon": "stupa", "title": "STUPA", "description": "Distributed storage", "layer": 14, "purpose": "Distributed storage" },
-    { "file": "lama.html", "icon": "🔮", "svgIcon": "lama", "title": "LAMA", "description": "Distributed consensus", "layer": 15, "purpose": "Consensus & agreement" },
-    { "file": "mani.html", "icon": "⏱️", "svgIcon": "mani", "title": "MANI", "description": "Time synchronization", "layer": 16, "purpose": "Time synchronization" },
-    { "file": "karma.html", "icon": "☯️", "svgIcon": "karma", "title": "KARMA", "description": "Reputation system", "layer": 17, "purpose": "Trust & reputation" },
-    { "file": "tattva.html", "icon": "🔯", "svgIcon": "tattva", "title": "TATTVA", "description": "Core principles", "layer": 18, "purpose": "State & element management" },
-    { "file": "tribhuj.html", "icon": "🔺", "svgIcon": "tribhuj", "title": "TRIBHUJ", "description": "Triangle verification", "layer": 19, "purpose": "Balanced ternary mathematics" },
-    { "file": "ypc27.html", "icon": "🔐", "svgIcon": "ypc27", "title": "YPC-27", "description": "Cryptographic suite", "layer": 20, "purpose": "Quantum-resistant checksums" },
-    { "file": "sakshi.html", "icon": "👁️", "svgIcon": "sakshi", "title": "SAKSHI", "description": "Witness protocol", "layer": 21, "purpose": "Observational capability system" },
-    { "file": "geo-proof.html", "icon": "🌍", "svgIcon": "pramaan", "title": "PRAMAAN", "description": "Geographic proofs", "layer": 22, "purpose": "Geographic proof & attestation" },
-    { "file": "trust-security.html", "icon": "🔒", "svgIcon": "suraksha", "title": "SURAKSHA", "description": "Security model", "layer": 23, "purpose": "Security & cryptographic core" },
-    { "file": "tivra.html", "icon": "⚡", "svgIcon": "tivra", "title": "TIVRA", "description": "Hardware acceleration", "layer": 24, "purpose": "SHA3 / PQ crypto / GPU / NPU acceleration" },
-    { "file": "prahari.html", "icon": "🛰️", "svgIcon": "prahari", "title": "PRAHARI", "description": "SHA3 sponge entropy engine", "layer": 25, "purpose": "SHA3 sponge entropy engine" },
-    { "file": "dharma.html", "icon": "⚖️", "svgIcon": "dharma", "title": "DHARMA", "description": "Content moderation", "layer": 26, "purpose": "Universal content moderation" },
-    { "file": "seva.html", "icon": "🙏", "svgIcon": "seva", "title": "SEVA", "description": "NPU compute sharing", "layer": 27, "purpose": "Distributed NPU inference" },
-    { "file": "darbar.html", "icon": "⚖️", "svgIcon": "darbar", "title": "DARBAR", "description": "Declarative API handler", "layer": 28, "purpose": "Auth-level declarative routing" },
-    { "file": "docs-bundle.html", "icon": "📚", "svgIcon": "granth", "title": "GRANTH", "description": "Documentation bundle", "layer": 29, "purpose": "Documentation bundle" },
-    { "file": "api.html", "icon": "📡", "svgIcon": "api", "title": "API", "description": "API reference", "layer": 30, "purpose": "REST interface & endpoints" },
-    { "file": "adapters.html", "icon": "🔌", "svgIcon": "adapters", "title": "Adapters", "description": "Protocol adapters", "layer": 31, "purpose": "Adapters for transport & discovery" },
-    { "file": "yakapp.html", "icon": "💬", "svgIcon": "yakapp", "title": "YakApp", "description": "P2P messenger", "section": "applications" },
-    { "file": "c2c.html", "icon": "🚀", "svgIcon": "c2c", "title": "C2C", "description": "Core to Cosmos integration" },
-    { "file": "studio.html", "icon": "🎨", "svgIcon": "studio", "title": "Studio", "description": "YakApp Studio creative suite" },
-    { "file": "cli.html", "icon": "💻", "svgIcon": "terminal", "title": "CLI", "description": "Command-line interface", "section": "infrastructure" },
-    { "file": "configuration.html", "icon": "⚙️", "svgIcon": "gear", "title": "Configuration", "description": "Node configuration reference" },
-    { "file": "mesh.html", "icon": "🕸️", "svgIcon": "mandala", "title": "Mesh Network", "description": "P2P mesh infrastructure" },
-    { "file": "time-sources.html", "icon": "⏱️", "svgIcon": "mani", "title": "Time Sources", "description": "Precision time synchronization" },
-    { "file": "webserver.html", "icon": "🌐", "svgIcon": "server", "title": "Web Server", "description": "HTTP & WebSocket server" },
-    { "file": "advanced-systems.html", "icon": "⚡", "svgIcon": "tivra", "title": "Advanced Systems", "description": "Gossip, load balancing & more" },
-    { "file": "quick-reference.html", "icon": "📋", "svgIcon": "quickref", "title": "Quick Ref", "description": "Cheat sheet", "section": "reference" }
+    {
+      "file": "index.html",
+      "icon": "🏠",
+      "svgIcon": "home",
+      "title": "Overview",
+      "description": "Welcome to Yakmesh",
+      "section": "guide"
+    },
+    {
+      "file": "getting-started.html",
+      "icon": "🚀",
+      "svgIcon": "rocket",
+      "title": "Getting Started",
+      "description": "Quick start guide"
+    },
+    {
+      "file": "tutorials.html",
+      "icon": "📖",
+      "svgIcon": "book",
+      "title": "Tutorials",
+      "description": "Step-by-step guides"
+    },
+    {
+      "file": "gumba-tutorial.html",
+      "icon": "📖",
+      "svgIcon": "gumba",
+      "title": "GUMBA Tutorial",
+      "description": "Step-by-step access control guide"
+    },
+    {
+      "file": "yak-protocol.html",
+      "icon": "🐃",
+      "svgIcon": "yak",
+      "title": "YAK://",
+      "description": "Content addressing",
+      "layer": 1,
+      "purpose": "Universal resource addressing",
+      "section": "protocol"
+    },
+    {
+      "file": "annex.html",
+      "icon": "🌉",
+      "svgIcon": "annex",
+      "title": "ANNEX",
+      "description": "Encrypted P2P",
+      "layer": 2,
+      "purpose": "Encrypted P2P (ML-KEM768)"
+    },
+    {
+      "file": "jhilke.html",
+      "icon": "🦗",
+      "svgIcon": "jhilke",
+      "title": "JHILKE",
+      "description": "Key lifecycle",
+      "layer": 2.5,
+      "purpose": "Steganographic key lifecycle (bootstrap + rekey)"
+    },
+    {
+      "file": "nakpak.html",
+      "icon": "🎒",
+      "svgIcon": "nakpak",
+      "title": "NAKPAK",
+      "description": "Onion routing",
+      "layer": 3,
+      "purpose": "Onion routing & privacy"
+    },
+    {
+      "file": "namche.html",
+      "icon": "🚪",
+      "svgIcon": "namche",
+      "title": "NAMCHE",
+      "description": "Identity gateway",
+      "layer": 4,
+      "purpose": "Gateway & identity verification"
+    },
+    {
+      "file": "doko.html",
+      "icon": "🧺",
+      "svgIcon": "doko",
+      "title": "DOKO",
+      "description": "Identity certificates",
+      "layer": 5,
+      "purpose": "Identity certificates"
+    },
+    {
+      "file": "sherpa.html",
+      "icon": "🧗",
+      "svgIcon": "sherpa",
+      "title": "SHERPA",
+      "description": "Peer discovery",
+      "layer": 6,
+      "purpose": "Peer discovery & beacons"
+    },
+    {
+      "file": "mandala.html",
+      "icon": "🌐",
+      "svgIcon": "mandala",
+      "title": "MANDALA",
+      "description": "Network topology",
+      "layer": 7,
+      "purpose": "Mesh network topology"
+    },
+    {
+      "file": "mantra.html",
+      "icon": "🕉️",
+      "svgIcon": "mantra",
+      "title": "MANTRA",
+      "description": "Message protocol",
+      "layer": 8,
+      "purpose": "Gossip message propagation"
+    },
+    {
+      "file": "gumba.html",
+      "icon": "🛕",
+      "svgIcon": "gumba",
+      "title": "GUMBA",
+      "description": "Access control",
+      "layer": 9,
+      "purpose": "Role-based access control"
+    },
+    {
+      "file": "yurt.html",
+      "icon": "🏕️",
+      "svgIcon": "yurt",
+      "title": "YURT",
+      "description": "Room discovery",
+      "layer": 10,
+      "purpose": "Room discovery & management"
+    },
+    {
+      "file": "katha.html",
+      "icon": "💬",
+      "svgIcon": "katha",
+      "title": "KATHA",
+      "description": "Rich chat features",
+      "layer": 11,
+      "purpose": "Rich chat with reactions & threads"
+    },
+    {
+      "file": "vani.html",
+      "icon": "🎙️",
+      "svgIcon": "vani",
+      "title": "VANI",
+      "description": "Voice/video calls",
+      "layer": 12,
+      "purpose": "Voice & video calls"
+    },
+    {
+      "file": "darshan.html",
+      "icon": "👁️",
+      "svgIcon": "darshan",
+      "title": "DARSHAN",
+      "description": "Content streaming",
+      "layer": 13,
+      "purpose": "Content streaming (view-not-copy)"
+    },
+    {
+      "file": "stupa.html",
+      "icon": "🛕",
+      "svgIcon": "stupa",
+      "title": "STUPA",
+      "description": "Distributed storage",
+      "layer": 14,
+      "purpose": "Distributed storage"
+    },
+    {
+      "file": "lama.html",
+      "icon": "🔮",
+      "svgIcon": "lama",
+      "title": "LAMA",
+      "description": "Distributed consensus",
+      "layer": 15,
+      "purpose": "Consensus & agreement"
+    },
+    {
+      "file": "mani.html",
+      "icon": "⏱️",
+      "svgIcon": "mani",
+      "title": "MANI",
+      "description": "Time synchronization",
+      "layer": 16,
+      "purpose": "Time synchronization"
+    },
+    {
+      "file": "karma.html",
+      "icon": "☯️",
+      "svgIcon": "karma",
+      "title": "KARMA",
+      "description": "Reputation system",
+      "layer": 17,
+      "purpose": "Trust & reputation"
+    },
+    {
+      "file": "tattva.html",
+      "icon": "🔯",
+      "svgIcon": "tattva",
+      "title": "TATTVA",
+      "description": "Core principles",
+      "layer": 18,
+      "purpose": "State & element management"
+    },
+    {
+      "file": "tribhuj.html",
+      "icon": "🔺",
+      "svgIcon": "tribhuj",
+      "title": "TRIBHUJ",
+      "description": "Triangle verification",
+      "layer": 19,
+      "purpose": "Balanced ternary mathematics"
+    },
+    {
+      "file": "ypc27.html",
+      "icon": "🔐",
+      "svgIcon": "ypc27",
+      "title": "YPC-27",
+      "description": "Cryptographic suite",
+      "layer": 20,
+      "purpose": "Quantum-resistant checksums"
+    },
+    {
+      "file": "sakshi.html",
+      "icon": "👁️",
+      "svgIcon": "sakshi",
+      "title": "SAKSHI",
+      "description": "Witness protocol",
+      "layer": 21,
+      "purpose": "Observational capability system"
+    },
+    {
+      "file": "geo-proof.html",
+      "icon": "🌍",
+      "svgIcon": "pramaan",
+      "title": "PRAMAAN",
+      "description": "Geographic proofs",
+      "layer": 22,
+      "purpose": "Geographic proof & attestation"
+    },
+    {
+      "file": "trust-security.html",
+      "icon": "🔒",
+      "svgIcon": "suraksha",
+      "title": "SURAKSHA",
+      "description": "Security model",
+      "layer": 23,
+      "purpose": "Security & cryptographic core"
+    },
+    {
+      "file": "tivra.html",
+      "icon": "⚡",
+      "svgIcon": "tivra",
+      "title": "TIVRA",
+      "description": "Hardware acceleration",
+      "layer": 24,
+      "purpose": "SHA3 / PQ crypto / GPU / NPU acceleration"
+    },
+    {
+      "file": "prahari.html",
+      "icon": "🛰️",
+      "svgIcon": "prahari",
+      "title": "PRAHARI",
+      "description": "SHA3 sponge entropy engine",
+      "layer": 25,
+      "purpose": "SHA3 sponge entropy engine"
+    },
+    {
+      "file": "dharma.html",
+      "icon": "⚖️",
+      "svgIcon": "dharma",
+      "title": "DHARMA",
+      "description": "Content moderation",
+      "layer": 26,
+      "purpose": "Universal content moderation"
+    },
+    {
+      "file": "seva.html",
+      "icon": "🙏",
+      "svgIcon": "seva",
+      "title": "SEVA",
+      "description": "NPU compute sharing",
+      "layer": 27,
+      "purpose": "Distributed NPU inference"
+    },
+    {
+      "file": "darbar.html",
+      "icon": "⚖️",
+      "svgIcon": "darbar",
+      "title": "DARBAR",
+      "description": "Declarative API handler",
+      "layer": 28,
+      "purpose": "Auth-level declarative routing"
+    },
+    {
+      "file": "docs-bundle.html",
+      "icon": "📚",
+      "svgIcon": "granth",
+      "title": "GRANTH",
+      "description": "Documentation bundle",
+      "layer": 29,
+      "purpose": "Documentation bundle"
+    },
+    {
+      "file": "api.html",
+      "icon": "📡",
+      "svgIcon": "api",
+      "title": "API",
+      "description": "API reference",
+      "layer": 30,
+      "purpose": "REST interface & endpoints"
+    },
+    {
+      "file": "adapters.html",
+      "icon": "🔌",
+      "svgIcon": "adapters",
+      "title": "Adapters",
+      "description": "Protocol adapters",
+      "layer": 31,
+      "purpose": "Adapters for transport & discovery"
+    },
+    {
+      "file": "yakapp.html",
+      "icon": "💬",
+      "svgIcon": "yakapp",
+      "title": "YakApp",
+      "description": "P2P messenger",
+      "section": "applications"
+    },
+    {
+      "file": "c2c.html",
+      "icon": "🚀",
+      "svgIcon": "c2c",
+      "title": "C2C",
+      "description": "Core to Cosmos integration"
+    },
+    {
+      "file": "studio.html",
+      "icon": "🎨",
+      "svgIcon": "studio",
+      "title": "Studio",
+      "description": "YakApp Studio creative suite"
+    },
+    {
+      "file": "cli.html",
+      "icon": "💻",
+      "svgIcon": "terminal",
+      "title": "CLI",
+      "description": "Command-line interface",
+      "section": "infrastructure"
+    },
+    {
+      "file": "configuration.html",
+      "icon": "⚙️",
+      "svgIcon": "gear",
+      "title": "Configuration",
+      "description": "Node configuration reference"
+    },
+    {
+      "file": "mesh.html",
+      "icon": "🕸️",
+      "svgIcon": "mandala",
+      "title": "Mesh Network",
+      "description": "P2P mesh infrastructure"
+    },
+    {
+      "file": "time-sources.html",
+      "icon": "⏱️",
+      "svgIcon": "mani",
+      "title": "Time Sources",
+      "description": "Precision time synchronization"
+    },
+    {
+      "file": "webserver.html",
+      "icon": "🌐",
+      "svgIcon": "server",
+      "title": "Web Server",
+      "description": "HTTP & WebSocket server"
+    },
+    {
+      "file": "advanced-systems.html",
+      "icon": "⚡",
+      "svgIcon": "tivra",
+      "title": "Advanced Systems",
+      "description": "Gossip, load balancing & more"
+    },
+    {
+      "file": "quick-reference.html",
+      "icon": "📋",
+      "svgIcon": "quickref",
+      "title": "Quick Ref",
+      "description": "Cheat sheet",
+      "section": "reference"
+    }
   ]
 }
