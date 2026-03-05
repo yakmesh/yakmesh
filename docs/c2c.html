@@ -691,11 +691,12 @@
           <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
             <h3 class="text-lg font-semibold mb-2">NPU Models</h3>
             <ul class="text-mountain-400 text-sm space-y-1">
-              <li>8 AI models via DirectML</li>
+              <li>16 AI models via DirectML</li>
               <li>Planet generation &amp; super-resolution</li>
-              <li>Faction AI decision-making</li>
-              <li>Combat prediction</li>
-              <li>Adaptive threat scaling</li>
+              <li>Faction AI &amp; strategic advisors</li>
+              <li>Voice commander &amp; STT (Whisper)</li>
+              <li>Behavioral spectrum detection (Dynamis)</li>
+              <li>Adaptive threat &amp; lore generation</li>
             </ul>
           </div>
         </div>
@@ -723,7 +724,7 @@
               </tr>
               <tr class="border-b border-mountain-700">
                 <td class="p-3"><a href="seva.html" class="theme-accent theme-accent-hover">SEVA</a></td>
-                <td class="p-3 text-mountain-400">5 NPU model slots (planet-variation, planet-heightmap, planet-superres, faction-brain, combat-predict) shared across the mesh</td>
+                <td class="p-3 text-mountain-400">16 NPU model slots shared across the mesh &mdash; planet generation, faction AI, voice commander, behavioral detection, and more</td>
               </tr>
               <tr class="border-b border-mountain-700">
                 <td class="p-3"><a href="tivra.html" class="theme-accent theme-accent-hover">TIVRA</a></td>
@@ -748,32 +749,87 @@
 
       <!-- SEVA Model Slots -->
       <section class="mb-12">
-        <h2 class="text-2xl font-bold mb-4">SEVA Model Slots</h2>
+        <h2 class="text-2xl font-bold mb-4">NPU Model Registry</h2>
         <p class="text-mountain-300 mb-4">
-          C2C registers 5 model slots with the <a href="seva.html" class="theme-accent theme-accent-hover">SEVA</a>
-          compute sharing protocol. When a player's machine lacks an NPU, SEVA transparently routes
-          inference to a peer node that has one:
+          C2C registers 16 model slots with the <a href="seva.html" class="theme-accent theme-accent-hover">SEVA</a>
+          compute sharing protocol. When a player&rsquo;s machine lacks an NPU, SEVA transparently routes
+          inference to a peer node that has one. Models are discovered automatically from
+          <code class="theme-accent">c2c/server/npu/models/</code> at boot.
         </p>
+
+        <h3 class="text-lg font-semibold mb-3">Game World</h3>
         <div class="space-y-3 mb-6">
           <div class="bg-mountain-800 rounded-lg p-4">
             <code class="theme-accent font-semibold">planet-variation</code>
-            <p class="text-mountain-400 text-sm mt-1">Generates planet variations from metadata. Input: 8-float parameter vector. Runs on NPU for real-time planet customization.</p>
-          </div>
-          <div class="bg-mountain-800 rounded-lg p-4">
-            <code class="theme-accent font-semibold">planet-heightmap</code>
-            <p class="text-mountain-400 text-sm mt-1">Procedural terrain heightmaps for planet surfaces. Creates unique geography per planet seed.</p>
+            <p class="text-mountain-400 text-sm mt-1">Planet metadata &rarr; enhancement parameter vector. Runs on NPU for real-time planet customization.</p>
           </div>
           <div class="bg-mountain-800 rounded-lg p-4">
             <code class="theme-accent font-semibold">planet-superres</code>
-            <p class="text-mountain-400 text-sm mt-1">Super-resolution upscaling of planet textures. Low-res textures upscaled on NPU for visual quality.</p>
+            <p class="text-mountain-400 text-sm mt-1">64&rarr;256 texture super-resolution upscaler for planet surfaces.</p>
           </div>
+          <div class="bg-mountain-800 rounded-lg p-4">
+            <code class="theme-accent font-semibold">expedition-oracle</code>
+            <p class="text-mountain-400 text-sm mt-1">Expedition event classification &mdash; determines encounter types and outcomes.</p>
+          </div>
+          <div class="bg-mountain-800 rounded-lg p-4">
+            <code class="theme-accent font-semibold">lore-generator</code>
+            <p class="text-mountain-400 text-sm mt-1">Procedural planetary lore generation from world state inputs.</p>
+          </div>
+          <div class="bg-mountain-800 rounded-lg p-4">
+            <code class="theme-accent font-semibold">lane-optimizer</code>
+            <p class="text-mountain-400 text-sm mt-1">Shipping lane route efficiency &mdash; optimizes trade and logistics paths.</p>
+          </div>
+        </div>
+
+        <h3 class="text-lg font-semibold mb-3">AI &amp; Strategy</h3>
+        <div class="space-y-3 mb-6">
           <div class="bg-mountain-800 rounded-lg p-4">
             <code class="theme-accent font-semibold">faction-brain</code>
-            <p class="text-mountain-400 text-sm mt-1">AI faction decision-making. Scores actions, picks strategies, generates faction narratives, handles diplomacy.</p>
+            <p class="text-mountain-400 text-sm mt-1">NPC faction decision-making. Scores actions, picks strategies, handles diplomacy.</p>
           </div>
           <div class="bg-mountain-800 rounded-lg p-4">
-            <code class="theme-accent font-semibold">combat-predict</code>
-            <p class="text-mountain-400 text-sm mt-1">Combat outcome prediction for battle resolution. Predicts winner probability given force composition.</p>
+            <code class="theme-accent font-semibold">commander-ai</code>
+            <p class="text-mountain-400 text-sm mt-1">In-game advisor for build, fleet, and research priorities.</p>
+          </div>
+          <div class="bg-mountain-800 rounded-lg p-4">
+            <code class="theme-accent font-semibold">fleet-advisor</code>
+            <p class="text-mountain-400 text-sm mt-1">Fast combat outcome prediction given force composition.</p>
+          </div>
+          <div class="bg-mountain-800 rounded-lg p-4">
+            <code class="theme-accent font-semibold">adaptive-threat</code>
+            <p class="text-mountain-400 text-sm mt-1">Difficulty adaptation from player behavior patterns.</p>
+          </div>
+          <div class="bg-mountain-800 rounded-lg p-4">
+            <code class="theme-accent font-semibold">threat-narrator</code>
+            <p class="text-mountain-400 text-sm mt-1">Enhanced threat narrative generation for immersive combat events.</p>
+          </div>
+        </div>
+
+        <h3 class="text-lg font-semibold mb-3">AI Commander <span class="text-xs theme-badge px-2 py-1 rounded">Premium</span></h3>
+        <div class="space-y-3 mb-6">
+          <div class="bg-mountain-800 rounded-lg p-4">
+            <code class="theme-accent font-semibold">sherpa-commander</code>
+            <p class="text-mountain-400 text-sm mt-1">NL&rarr;command parser (FunctionGemma-270M QLoRA INT8, pruned vocab, ~100MB).</p>
+          </div>
+          <div class="bg-mountain-800 rounded-lg p-4">
+            <code class="theme-accent font-semibold">lama-strategist</code>
+            <p class="text-mountain-400 text-sm mt-1">Strategic advisor with &lt;think&gt; chains (Qwen3-0.6B QLoRA INT8, ~1018MB).</p>
+          </div>
+          <div class="bg-mountain-800 rounded-lg p-4">
+            <code class="theme-accent font-semibold">whisper-transcribe</code>
+            <p class="text-mountain-400 text-sm mt-1">Whisper-small STT &mdash; 99 languages, 244MB.</p>
+          </div>
+          <div class="bg-mountain-800 rounded-lg p-4">
+            <code class="theme-accent font-semibold">vc-commander</code>
+            <p class="text-mountain-400 text-sm mt-1">Voice Commander NL&rarr;function call (FunctionGemma-270M SFT FP16, ~1.3GB).</p>
+          </div>
+        </div>
+
+        <h3 class="text-lg font-semibold mb-3">Anti-Cheat</h3>
+        <div class="space-y-3 mb-6">
+          <div class="bg-mountain-800 rounded-lg p-4">
+            <code class="theme-accent font-semibold">behavior-detector</code>
+            <p class="text-mountain-400 text-sm mt-1">Dynamis tri-class behavioral spectrum: normal / cheat / struggle (20&rarr;32&rarr;16&rarr;3 MLP, ~5KB).</p>
           </div>
         </div>
       </section>
@@ -1323,7 +1379,7 @@ const { profile } = await res.json();
             <tbody>
               <tr>
                 <td class="p-3"><span class="theme-badge px-2 py-1 rounded">v3.0.0</span></td>
-                <td class="p-3 text-mountain-400">C2C ships with yakmesh. Full SEVA integration, 8 AI models, MANI time protocol, ANNEX encryption, 391 art assets, 85/85 tests.</td>
+                <td class="p-3 text-mountain-400">C2C ships with yakmesh. Full SEVA integration, 16 AI models, MANI time protocol, ANNEX encryption, AI Commander voice pipeline, Dynamis anti-cheat, Governance Shield. 391 art assets, 85/85 tests.</td>
               </tr>
             </tbody>
           </table>
