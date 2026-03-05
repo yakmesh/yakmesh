@@ -769,37 +769,154 @@
       <section class="mb-12">
         <h2 class="text-2xl font-bold mb-4">Model Slots</h2>
         <p class="text-mountain-300 mb-4">
-          SEVA only accepts requests for pre-defined model slots. Currently 5 slots are registered,
-          all used by <a href="c2c.html" class="theme-accent theme-accent-hover">C2C (Core to Cosmos)</a>:
+          SEVA only accepts requests for pre-defined model slots. Currently 18 slots are registered
+          across four categories, all used by <a href="c2c.html" class="theme-accent theme-accent-hover">C2C (Core to Cosmos)</a>:
         </p>
+
+        <!-- Planet Rendering (21g) -->
+        <h3 class="text-lg font-semibold text-mountain-200 mt-6 mb-3">Planet Rendering (21g)</h3>
         <div class="overflow-x-auto mb-6">
           <table class="w-full bg-mountain-800 rounded-lg">
             <thead>
               <tr class="border-b border-mountain-700">
                 <th class="text-left p-3 text-mountain-300">Slot</th>
                 <th class="text-left p-3 text-mountain-300">Purpose</th>
+                <th class="text-left p-3 text-mountain-300">I/O</th>
               </tr>
             </thead>
             <tbody>
               <tr class="border-b border-mountain-700">
                 <td class="p-3"><code class="theme-accent">planet-variation</code></td>
-                <td class="p-3 text-mountain-400">Generate planet variations from metadata (8-float parameter vector)</td>
+                <td class="p-3 text-mountain-400">Planet metadata → enhancement parameter vector</td>
+                <td class="p-3 text-mountain-400">5 → 8</td>
               </tr>
               <tr class="border-b border-mountain-700">
                 <td class="p-3"><code class="theme-accent">planet-heightmap</code></td>
-                <td class="p-3 text-mountain-400">Generate terrain heightmaps for procedural planets</td>
-              </tr>
-              <tr class="border-b border-mountain-700">
-                <td class="p-3"><code class="theme-accent">planet-superres</code></td>
-                <td class="p-3 text-mountain-400">Super-resolution upscaling of planet textures</td>
-              </tr>
-              <tr class="border-b border-mountain-700">
-                <td class="p-3"><code class="theme-accent">faction-brain</code></td>
-                <td class="p-3 text-mountain-400">AI faction decision-making (scoring, actions, diplomacy)</td>
+                <td class="p-3 text-mountain-400">Simplex noise heightmap generation (CPU compute, no ONNX)</td>
+                <td class="p-3 text-mountain-400">3 → n×n</td>
               </tr>
               <tr>
+                <td class="p-3"><code class="theme-accent">planet-superres</code></td>
+                <td class="p-3 text-mountain-400">ESPCN 4× upscaler: 64×64 → 256×256 texture (NPU only)</td>
+                <td class="p-3 text-mountain-400">12288 → 196608</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Game AI Models -->
+        <h3 class="text-lg font-semibold text-mountain-200 mt-6 mb-3">Game AI Models (train_models.py MLPs)</h3>
+        <div class="overflow-x-auto mb-6">
+          <table class="w-full bg-mountain-800 rounded-lg">
+            <thead>
+              <tr class="border-b border-mountain-700">
+                <th class="text-left p-3 text-mountain-300">Slot</th>
+                <th class="text-left p-3 text-mountain-300">Purpose</th>
+                <th class="text-left p-3 text-mountain-300">Architecture</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3"><code class="theme-accent">faction-brain</code></td>
+                <td class="p-3 text-mountain-400">NPC faction decision inference</td>
+                <td class="p-3 text-mountain-400">12→[20,14]→6 softmax</td>
+              </tr>
+              <tr class="border-b border-mountain-700">
                 <td class="p-3"><code class="theme-accent">combat-predict</code></td>
-                <td class="p-3 text-mountain-400">Combat outcome prediction for battle resolution</td>
+                <td class="p-3 text-mountain-400">Combat outcome prediction</td>
+                <td class="p-3 text-mountain-400">CPU (delegates to advisor.js)</td>
+              </tr>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3"><code class="theme-accent">fleet-advisor</code></td>
+                <td class="p-3 text-mountain-400">Fast combat outcome prediction</td>
+                <td class="p-3 text-mountain-400">20→[32,24]→3 sigmoid</td>
+              </tr>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3"><code class="theme-accent">threat-narrator</code></td>
+                <td class="p-3 text-mountain-400">Enhanced threat narrative generation</td>
+                <td class="p-3 text-mountain-400">5→[12,8]→5 sigmoid</td>
+              </tr>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3"><code class="theme-accent">expedition-oracle</code></td>
+                <td class="p-3 text-mountain-400">Expedition event classification</td>
+                <td class="p-3 text-mountain-400">6→[12,8]→4 sigmoid</td>
+              </tr>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3"><code class="theme-accent">commander-ai</code></td>
+                <td class="p-3 text-mountain-400">Advisor build/fleet/research priorities</td>
+                <td class="p-3 text-mountain-400">18→[24,16]→5 softmax</td>
+              </tr>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3"><code class="theme-accent">adaptive-threat</code></td>
+                <td class="p-3 text-mountain-400">Threat difficulty adaptation from player patterns</td>
+                <td class="p-3 text-mountain-400">14→[20,14]→4 sigmoid</td>
+              </tr>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3"><code class="theme-accent">lane-optimizer</code></td>
+                <td class="p-3 text-mountain-400">Shipping lane route efficiency optimization</td>
+                <td class="p-3 text-mountain-400">9→[16,12]→3 sigmoid</td>
+              </tr>
+              <tr>
+                <td class="p-3"><code class="theme-accent">lore-generator</code></td>
+                <td class="p-3 text-mountain-400">Procedural planetary lore generation</td>
+                <td class="p-3 text-mountain-400">6→[16,12]→8 sigmoid</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- AI Commander (C.6) -->
+        <h3 class="text-lg font-semibold text-mountain-200 mt-6 mb-3">AI Commander (C.6)</h3>
+        <div class="overflow-x-auto mb-6">
+          <table class="w-full bg-mountain-800 rounded-lg">
+            <thead>
+              <tr class="border-b border-mountain-700">
+                <th class="text-left p-3 text-mountain-300">Slot</th>
+                <th class="text-left p-3 text-mountain-300">Purpose</th>
+                <th class="text-left p-3 text-mountain-300">Model</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3"><code class="theme-accent">sherpa-commander</code></td>
+                <td class="p-3 text-mountain-400">NL → structured game command parser</td>
+                <td class="p-3 text-mountain-400">FunctionGemma-270M INT8 (~100MB)</td>
+              </tr>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3"><code class="theme-accent">lama-strategist</code></td>
+                <td class="p-3 text-mountain-400">Strategic advisor with &lt;think&gt; reasoning chains</td>
+                <td class="p-3 text-mountain-400">Qwen3-0.6B INT8 (~1018MB)</td>
+              </tr>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3"><code class="theme-accent">whisper-transcribe</code></td>
+                <td class="p-3 text-mountain-400">Speech-to-text (Mel spectrogram → tokens)</td>
+                <td class="p-3 text-mountain-400">Whisper-small (244MB)</td>
+              </tr>
+              <tr>
+                <td class="p-3"><code class="theme-accent">vc-commander</code></td>
+                <td class="p-3 text-mountain-400">Voice → function call (native Gemma FC format)</td>
+                <td class="p-3 text-mountain-400">FunctionGemma-270M FP16 (~1.3GB)</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Dynamis Anti-Cheat -->
+        <h3 class="text-lg font-semibold text-mountain-200 mt-6 mb-3">Dynamis Anti-Cheat</h3>
+        <div class="overflow-x-auto mb-6">
+          <table class="w-full bg-mountain-800 rounded-lg">
+            <thead>
+              <tr class="border-b border-mountain-700">
+                <th class="text-left p-3 text-mountain-300">Slot</th>
+                <th class="text-left p-3 text-mountain-300">Purpose</th>
+                <th class="text-left p-3 text-mountain-300">Architecture</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="p-3"><code class="theme-accent">behavior-detector</code></td>
+                <td class="p-3 text-mountain-400">Tri-class behavioral spectrum: normal / cheat / struggle</td>
+                <td class="p-3 text-mountain-400">20→32→16→3 MLP GELU (NPU only)</td>
               </tr>
             </tbody>
           </table>
@@ -881,6 +998,10 @@
               <th class="text-left p-3 text-mountain-300">Changes</th>
             </tr></thead>
             <tbody>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3"><span class="theme-badge px-2 py-1 rounded">v3.1.0</span></td>
+                <td class="p-3 text-mountain-400">18-slot unified registry: added 8 game AI MLPs (train_models.py), behavior-detector (Dynamis), 4 AI Commander slots (C.6). Superres endpoint wired. All worker executors implemented.</td>
+              </tr>
               <tr>
                 <td class="p-3"><span class="theme-badge px-2 py-1 rounded">v3.0.0</span></td>
                 <td class="p-3 text-mountain-400">Full SEVA module: SevaMeshHandler, 5-slot registry, capability broadcast, peer selection, rate limiting, 5% spot-check verification, C2C integration.</td>
@@ -891,7 +1012,7 @@
       </section>
 
             <!-- Journey Navigation -->
-                                                                                                                                                                  <div class="border-t border-mountain-700 mt-12 pt-8">
+                                                                                                                                                                        <div class="border-t border-mountain-700 mt-12 pt-8">
         <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
         <div class="flex flex-col sm:flex-row gap-4">
           <a href="dharma.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">
