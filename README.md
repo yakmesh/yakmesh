@@ -72,7 +72,7 @@ await node.start();
 - 🛡️ **SANGHA Security** — Community-driven threat circulation and collective defense
 - ⏱️ **Precision Timing** — GPS atomic clocks (MA-902), PTP, NTP with sub-millisecond sync
 - 📡 **DARSHAN Telemetry** — Real-time network visibility and diagnostics
-- 🔍 **STEADYWATCH** — Continuous uptime and integrity monitoring
+- �️ **PRAHARI** — Mesh-consensus entropy engine with 5 pluggable sources and NPU-accelerated quality scoring
 - ⚖️ **KARMA Rate Limiter** — Behavior-based reputation rate limiting
 
 > See [yakmesh.dev](https://yakmesh.dev) for the complete 30-layer protocol documentation

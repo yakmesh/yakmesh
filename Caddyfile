@@ -31,32 +31,32 @@ mesh.yakmesh.dev {
         header Upgrade websocket
     }
     handle @websocket {
-        reverse_proxy localhost:9080
+        reverse_proxy localhost:3789
     }
 
     # SHERPA beacon — live peer discovery data
     handle /.well-known/yakmesh/beacon {
-        reverse_proxy localhost:3080
+        reverse_proxy localhost:3789
     }
 
     # Mesh relay — HTTP message bridge
     handle /mesh/relay* {
-        reverse_proxy localhost:3080
+        reverse_proxy localhost:3789
     }
 
     # Health endpoint
     handle /mesh/health {
-        reverse_proxy localhost:3080/health
+        reverse_proxy localhost:3789/health
     }
 
     # Dashboard (optional — remove in production)
     handle /dashboard* {
-        reverse_proxy localhost:3080
+        reverse_proxy localhost:3789
     }
 
     # Default: serve documentation
     handle {
-        reverse_proxy localhost:3080
+        reverse_proxy localhost:3789
     }
 
     # Logging

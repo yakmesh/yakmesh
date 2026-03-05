@@ -364,7 +364,7 @@ describe('KhataProtocol Request', () => {
   });
 
   test('request increments requestsSent stat', async () => {
-    protocol.request({ nodeId: 'target-node' }).catch(() => {});
+    protocol.request({ nodeId: 'target-node' }).catch(() => { });
 
     // Wait for async operations
     await new Promise(resolve => setTimeout(resolve, 10));
@@ -373,22 +373,22 @@ describe('KhataProtocol Request', () => {
   });
 
   test('request creates pending request entry', async () => {
-    protocol.request({ nodeId: 'target-node' }).catch(() => {});
+    protocol.request({ nodeId: 'target-node' }).catch(() => { });
 
     await new Promise(resolve => setTimeout(resolve, 10));
 
     expect(protocol.pendingRequests.size).toBe(1);
   });
 
-  test.skip('request times out if no response', async () => {
-    // Skip: requires complex async mocking - requestFromNetwork resolves to null, not rejects
+  test('request times out if no response', async () => {
+    // requestFromNetwork resolves to null on timeout (does not reject)
     const shortTimeout = new KhataProtocol(mockGateway, mockIdentity, {
       requestTimeout: 50,
     });
     shortTimeout.setNetworkLayer(sendFn, vi.fn());
 
-    await expect(shortTimeout.request({ nodeId: 'unreachable' }))
-      .rejects.toThrow(/timeout/i);
+    const result = await shortTimeout.request({ nodeId: 'unreachable' });
+    expect(result).toBeNull();
 
     clearInterval(shortTimeout.cleanupInterval);
   });
@@ -418,10 +418,10 @@ describe('KhataProtocol handleRequest', () => {
     vi.restoreAllMocks();
   });
 
-  test.skip('handles request and sends response if DOKO found', async () => {
-    // Skip: handleRequest method has different signature/behavior than expected
+  test('handles request and sends response if DOKO found', async () => {
+    // handleRequest uses lookupByNodeId (sync), not lookup (async)
     const storedDoko = createMockDoko('requested-node');
-    mockGateway.lookup.mockResolvedValue(storedDoko);
+    mockGateway.lookupByNodeId.mockReturnValue(storedDoko);
 
     const message = {
       type: KHATA_MESSAGE.REQUEST,
@@ -429,20 +429,20 @@ describe('KhataProtocol handleRequest', () => {
       requestId: bytesToHex(randomBytes(16)),
       query: { nodeId: 'requested-node' },
       timestamp: Date.now(),
-      originNodeId: 'requester-node',
+      requesterId: 'requester-node',
       hops: 0,
     };
 
     await protocol.handleRequest(message, 'peer-1');
 
-    expect(mockGateway.lookup).toHaveBeenCalled();
+    expect(mockGateway.lookupByNodeId).toHaveBeenCalledWith('requested-node');
     expect(protocol.stats.requestsReceived).toBe(1);
   });
 
-  test.skip('emits request event', async () => {
-    // Skip: handleRequest method has different signature/behavior than expected
-    const handler = vi.fn();
-    protocol.on('request', handler);
+  test('sends response to peer when DOKO found', async () => {
+    // handleRequest sends a RESPONSE message via sendFn when DOKO exists
+    const storedDoko = createMockDoko('target');
+    mockGateway.lookupByNodeId.mockReturnValue(storedDoko);
 
     const message = {
       type: KHATA_MESSAGE.REQUEST,
@@ -450,13 +450,17 @@ describe('KhataProtocol handleRequest', () => {
       requestId: bytesToHex(randomBytes(16)),
       query: { nodeId: 'target' },
       timestamp: Date.now(),
-      originNodeId: 'requester',
+      requesterId: 'requester',
       hops: 0,
     };
 
     await protocol.handleRequest(message, 'peer-1');
 
-    expect(handler).toHaveBeenCalled();
+    // Should have sent a response to the requesting peer
+    expect(sendFn).toHaveBeenCalled();
+    const sentArgs = sendFn.mock.calls[0];
+    // First arg is the peer ID to send to
+    expect(sentArgs[0]).toBe('peer-1');
   });
 });
 
@@ -607,15 +611,22 @@ describe('KhataProtocol handleRevoke', () => {
     vi.restoreAllMocks();
   });
 
-  test.skip('handles valid revoke message', async () => {
-    // Skip: handleRevoke method has different signature/behavior than expected
+  test('handles valid revoke message', async () => {
+    // handleRevoke fires 'revoke' event only when:
+    // 1. lookupByHash returns a DOKO (not null)
+    // 2. processRevocation returns { success: true }
     const handler = vi.fn();
     protocol.on('revoke', handler);
+
+    const dokoHash = bytesToHex(randomBytes(32));
+    const fakeDoko = createMockDoko('revoker');
+    mockGateway.lookupByHash.mockReturnValue(fakeDoko);
+    mockGateway.processRevocation = vi.fn(async () => ({ success: true }));
 
     const message = {
       type: KHATA_MESSAGE.REVOKE,
       messageId: bytesToHex(randomBytes(16)),
-      dokoHash: bytesToHex(randomBytes(32)),
+      dokoHash,
       reason: 'key_compromised',
       timestamp: Date.now(),
       originNodeId: 'revoker',
@@ -624,6 +635,8 @@ describe('KhataProtocol handleRevoke', () => {
 
     await protocol.handleRevoke(message, 'peer-1');
 
+    expect(mockGateway.lookupByHash).toHaveBeenCalledWith(dokoHash);
+    expect(mockGateway.processRevocation).toHaveBeenCalled();
     expect(handler).toHaveBeenCalled();
     expect(protocol.stats.revokesReceived).toBe(1);
   });

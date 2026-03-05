@@ -23,12 +23,13 @@
  * @version 2.6.0
  */
 
+import { EventEmitter } from 'node:events';
 import { sha3_256 as _nobleSha3 } from '@noble/hashes/sha3.js';
 import { bytesToHex } from '@noble/hashes/utils.js';
 import { createLogger } from '../utils/logger.js';
 
 // 144T ternary addressing for message IDs (eliminates hex "666" patterns)
-import { TritAddress } from '../oracle/ternary-144t.js';
+import { TritAddress } from '../oracle/ternary-routing.js';
 
 // ACCEL: Hardware-accelerated SHA3-256 (OpenSSL/SHA-NI — 4.6x faster)
 import { sha3_256 } from '../utils/accel.js';
@@ -115,8 +116,9 @@ class BloomFilter {
  * Spreads messages through the mesh like mantras carried by prayer wheels.
  * Each spin (propagation) brings the message closer to enlightenment (full network coverage).
  */
-export class MantraProtocol {
+export class MantraProtocol extends EventEmitter {
   constructor(mesh, identity, options = {}) {
+    super();
     this.mesh = mesh;
     this.identity = identity;
 
@@ -511,7 +513,8 @@ export class MantraProtocol {
     // Buffer for HTTP API consumers
     this._bufferRumor(rumor);
 
-    // Emit event for application layer
+    // Emit event for application layer (both on self and mesh for backward compat)
+    this.emit('rumor', rumor.topic, rumor.data, rumor.origin);
     this.mesh.emit('rumor', rumor.topic, rumor.data, rumor.origin);
 
     log.debug('Received rumor', { topic: rumor.topic, origin: peerTag(rumor.origin) });

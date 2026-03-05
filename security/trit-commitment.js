@@ -1,25 +1,25 @@
 /**
- * TRIT COMMITMENT — 144T Cryptographic Backbone
+ * TRIT COMMITMENT — Cryptographic Backbone
  * 
  * Provides a ternary cryptographic layer that runs ALONGSIDE NIST algorithms.
- * This is defense-in-depth: both NIST (ML-DSA-65) AND 144T must verify for
+ * This is defense-in-depth: both NIST (ML-DSA-65) AND 162T must verify for
  * a message to be trusted.
  * 
  * ═══════════════════════════════════════════════════════════════════════════════
- * ⚠️  SECURITY: This is the 144T backbone, not a replacement for NIST.
+ * ⚠️  SECURITY: This is the ternary backbone, not a replacement for NIST.
  *     Both layers must be broken to compromise a message.
- *     144T provides quantum-hard SIS-based integrity independent of NIST.
+ *     162T provides quantum-hard SIS-based integrity independent of NIST.
  * ═══════════════════════════════════════════════════════════════════════════════
  * 
  * The math:
  * - YPC-27 operates in ring Z[x]/(x^27 - 1) mod 3
  * - Forging a YPC-27 checksum requires solving the Shortest Vector Problem (SIS)
- * - 144T provides 3^144 ≈ 10^68 address space (~256-bit quantum equivalent)
+ * - 162T provides 3^162 ≈ 10^77 address space (~256-bit post-quantum)
  * - Combined binding uses polynomial multiplication for non-separability
  * 
  * Commitment Structure:
  * {
- *   senderAddress: "144-trit address (base64 encoded)",
+ *   senderAddress: "162-trit address (base64 encoded)",
  *   ypc27: "YPC-27 checksum (hex)",
  *   binding: "address ⊗ payload polynomial (hex)"
  * }
@@ -27,7 +27,7 @@
  * The binding ensures:
  * 1. Address cannot be separated from payload (polynomial non-commutativity)
  * 2. YPC-27 provides lattice-hard integrity independent of SHA/NIST
- * 3. 144T address pins the commitment to a specific mesh location
+ * 3. 162T address pins the commitment to a specific mesh location
  * 
  * @module security/trit-commitment
  * @version 1.0.0
@@ -37,7 +37,7 @@
 
 import { sha3_256 } from '../utils/accel.js';
 import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js';
-import { TritAddress, TOTAL_TRITS } from '../oracle/ternary-144t.js';
+import { TritAddress, TOTAL_TRITS } from '../oracle/ternary-routing.js';
 import { Poly27, YPC27_SST, DEFAULT_SEED, bytesToTrits, tritsToBytes, N } from '../oracle/ypc27.js';
 import { createLogger } from '../utils/logger.js';
 
@@ -84,13 +84,14 @@ function hexToPoly27(hex) {
 }
 
 /**
- * Encode 144 trits as base64 for compact transmission.
- * @param {Int8Array} trits — 144 trits (-1, 0, +1)
+ * Encode trits as base64 for compact transmission.
+ * @param {Int8Array} trits — TOTAL_TRITS balanced trits (-1, 0, +1)
  * @returns {string} base64-encoded
  */
-function encodeTrits144(trits) {
-    // Pad to 145 trits (divisible by 5)
-    const padded = new Int8Array(145);
+function encodeTrits(trits) {
+    // Pad to next multiple of 5 (165 for 162T)
+    const padLen = Math.ceil(TOTAL_TRITS / 5) * 5;
+    const padded = new Int8Array(padLen);
     for (let i = 0; i < TOTAL_TRITS; i++) {
         padded[i] = trits[i];
     }
@@ -99,14 +100,14 @@ function encodeTrits144(trits) {
 }
 
 /**
- * Decode base64 to 144 trits.
+ * Decode base64 to trits.
  * @param {string} encoded — base64-encoded trits
  * @returns {Int8Array}
  */
-function decodeTrits144(encoded) {
+function decodeTrits(encoded) {
     const bytes = new Uint8Array(Buffer.from(encoded, 'base64'));
     const trits = bytesToTrits(bytes);
-    // Trim to exactly 144 trits
+    // Trim to exactly TOTAL_TRITS
     return new Int8Array(trits.slice(0, TOTAL_TRITS));
 }
 
@@ -123,16 +124,16 @@ function hashToTrits27(hash) {
 }
 
 /**
- * Extract a Poly27 from the first 27 trits of a 144T address.
- * Uses the NODE tier (last 36 trits), taking only the first 27.
- * @param {TritAddress} address — 144-trit address
+ * Extract a Poly27 from the first 27 trits of a 162T address.
+ * Uses the BASE tier (last 54 trits), taking only the first 27.
+ * @param {TritAddress} address — 162-trit address
  * @returns {Poly27}
  */
 function addressToPoly27(address) {
-    // Use NODE tier (index 3), which is the identity-specific portion
-    const nodeTier = address.getTier(3); // 36 trits
+    // Use BASE tier (index 2), which is the identity-specific portion
+    const baseTier = address.getTier(2); // 54 trits
     // Take first 27 trits for polynomial
-    const poly27Trits = new Int8Array(nodeTier.slice(0, N));
+    const poly27Trits = new Int8Array(baseTier.slice(0, N));
     return new Poly27(poly27Trits);
 }
 
@@ -158,13 +159,13 @@ function canonicalize(obj) {
 // =============================================================================
 
 /**
- * Generate and verify 144T commitments.
+ * Generate and verify ternary commitments.
  * 
  * @example
  * const commitment = TritCommitment.create(payload, senderAddress);
  * // {
  * //   version: 1,
- * //   senderAddress: "base64-encoded 144T address",
+ * //   senderAddress: "base64-encoded 162T address",
  * //   ypc27: "hex checksum",
  * //   binding: "hex polynomial binding"
  * // }
@@ -173,14 +174,14 @@ function canonicalize(obj) {
  */
 export class TritCommitment {
     /**
-     * Create a 144T commitment for a payload.
+     * Create a ternary commitment for a payload.
      * 
-     * The commitment binds the sender's 144T address to the payload using:
+     * The commitment binds the sender's 162T address to the payload using:
      * 1. YPC-27 checksum of the canonical payload
      * 2. Polynomial multiplication: addressPoly ⊗ payloadHashPoly
      * 
      * @param {Object|string|Uint8Array} payload — message payload (will be canonicalized if object)
-     * @param {TritAddress} senderAddress — sender's 144T mesh address
+     * @param {TritAddress} senderAddress — sender's 162T mesh address
      * @param {Poly27|number[]} [seed] — optional custom seed (defaults to network seed)
      * @returns {Object} commitment object
      */
@@ -214,9 +215,9 @@ export class TritCommitment {
         const bindingHex = poly27ToHex(binding);
 
         // 5. Encode address for transmission
-        const addressEncoded = encodeTrits144(senderAddress.toTrits());
+        const addressEncoded = encodeTrits(senderAddress.toTrits());
 
-        log.debug('Created 144T commitment', {
+        log.debug('Created 162T commitment', {
             ypc27: ypc27Hex.slice(0, 12) + '...',
             binding: bindingHex.slice(0, 12) + '...'
         });
@@ -230,7 +231,7 @@ export class TritCommitment {
     }
 
     /**
-     * Verify a 144T commitment against a payload.
+     * Verify a ternary commitment against a payload.
      * 
      * @param {Object|string|Uint8Array} payload — original payload
      * @param {Object} commitment — commitment object from create()
@@ -274,7 +275,7 @@ export class TritCommitment {
             // ─────────────────────────────────────────────────────────────────────
             let senderAddress;
             try {
-                const addressTrits = decodeTrits144(commitment.senderAddress);
+                const addressTrits = decodeTrits(commitment.senderAddress);
                 senderAddress = new TritAddress(addressTrits);
             } catch (e) {
                 result.reason = 'INVALID_ADDRESS';
@@ -325,10 +326,10 @@ export class TritCommitment {
             // ALL CHECKS PASSED
             // ═══════════════════════════════════════════════════════════════════════
             result.valid = true;
-            result.reason = '144T_VERIFIED';
+            result.reason = '162T_VERIFIED';
             result.senderAddress = senderAddress;
 
-            log.debug('144T commitment verified', { checks: result.checks });
+            log.debug('162T commitment verified', { checks: result.checks });
 
             return result;
 
@@ -358,12 +359,12 @@ export class TritCommitment {
 // =============================================================================
 
 /**
- * Create a dual-layer signed message (NIST + 144T).
+ * Create a dual-layer signed message (NIST + 162T).
  * This is the backbone security model: both layers must verify.
  * 
  * @param {Object} payload — message payload
  * @param {Function} signNIST — function(payload) => hex signature (ML-DSA-65)
- * @param {TritAddress} senderAddress — sender's 144T address
+ * @param {TritAddress} senderAddress — sender's 162T address
  * @param {Poly27|number[]} [seed] — optional seed
  * @returns {Object} dual-signed message
  */
@@ -374,7 +375,7 @@ export function createDualLayerMessage(payload, signNIST, senderAddress, seed = 
     // Layer 1: NIST signature (ML-DSA-65)
     const nistSignature = signNIST(payloadStr);
 
-    // Layer 2: 144T commitment
+    // Layer 2: 162T commitment
     const tritCommitment = TritCommitment.create(payload, senderAddress, seed);
 
     return {
@@ -420,19 +421,19 @@ export function verifyDualLayerMessage(message, verifyNIST, senderPublicKey, see
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // Layer 2: 144T verification
+    // Layer 2: 162T verification
     // ─────────────────────────────────────────────────────────────────────────
     try {
         const tritResult = TritCommitment.verify(message.payload, message.tritCommitment, seed);
         result.tritValid = tritResult.valid;
         if (tritResult.valid) {
-            result.checks.push('144T_COMMITMENT_OK');
+            result.checks.push('162T_COMMITMENT_OK');
         } else {
             result.tritReason = `${tritResult.reason}: ${tritResult.detail || ''}`;
         }
         result.tritChecks = tritResult.checks;
     } catch (e) {
-        result.tritReason = `144T verification error: ${e.message}`;
+        result.tritReason = `162T verification error: ${e.message}`;
     }
 
     // ═══════════════════════════════════════════════════════════════════════
@@ -452,8 +453,10 @@ export function verifyDualLayerMessage(message, verifyNIST, senderPublicKey, see
 // =============================================================================
 
 export {
-    encodeTrits144,
-    decodeTrits144,
+    encodeTrits,
+    decodeTrits,
+    encodeTrits as encodeTrits144,  // backward compat alias
+    decodeTrits as decodeTrits144,  // backward compat alias
     hashToTrits27,
     addressToPoly27,
     canonicalize,

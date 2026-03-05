@@ -74,6 +74,12 @@ export const MandalaMessageTypes = {
   
   // Gossip (whispered teachings)
   GOSSIP: 'gossip',         // Broadcast message
+
+  // TME — Temporal Mesh Encoding wire protocol (Step 23)
+  TME_SLICE: 'tme_slice',               // Push a temporal slice to a peer
+  TME_PROOF_REQUEST: 'tme_proof_request', // Request a timing proof for a slice
+  TME_PROOF_RESPONSE: 'tme_proof_response', // Return a timing proof
+  TME_RECONSTRUCT: 'tme_reconstruct',   // Request full reconstruction of a stream
 };
 
 // Backward compatibility alias

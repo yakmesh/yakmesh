@@ -9,8 +9,6 @@
    BASE STYLES
    ============================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
-
 :root {
   /* Mountain Base Colors */
   --mountain-100: #f1f5f9;
@@ -32,12 +30,48 @@
   --sidebar-width: 16rem;
 }
 
-body {
-  font-family: 'Inter', system-ui, sans-serif;
+/* Background on html so body::after silhouettes render above it */
+html {
   background-color: var(--mountain-900);
+}
+
+/* ============================================
+   SKIP-LINK — keyboard / screen reader a11y
+   Hidden until focused, then overlays top-left.
+   ============================================ */
+
+.skip-link {
+  position: absolute;
+  top: -100%;
+  left: 0;
+  z-index: 9999;
+  padding: 0.75rem 1.5rem;
+  background: var(--theme-accent, #60a5fa);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.95rem;
+  text-decoration: none;
+  border-radius: 0 0 0.5rem 0;
+  transition: top 0.2s;
+}
+.skip-link:focus {
+  top: 0;
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+body {
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  background: transparent;
   color: #fff;
   min-height: 100vh;
   position: relative;
+  z-index: 0; /* Create stacking context so body::after (-1) renders above html bg */
+}
+
+/* Override utility class on body to keep it transparent */
+body.bg-mountain-900 {
+  background: transparent;
 }
 
 /* ============================================
@@ -45,15 +79,14 @@ body {
    Grand atmospheric scenes filling the viewport
    ============================================ */
 
-/* Base silhouette styling - full viewport */
+/* Base silhouette styling - aligned to content area (not behind sidebar) */
 body::after {
   content: '';
   position: fixed;
   top: 0;
-  left: 0;
+  left: var(--sidebar-width);
   right: 0;
   bottom: 0;
-  width: 100%;
   height: 100vh;
   background-repeat: no-repeat;
   background-position: center bottom;
@@ -61,6 +94,11 @@ body::after {
   pointer-events: none;
   z-index: -1;
   opacity: 0.85;
+}
+
+/* Collapsed sidebar: narrow inset */
+body.sidebar-narrow::after {
+  left: var(--sidebar-collapsed-width);
 }
 
 /* Getting Started - Base Camp with tents */
@@ -173,12 +211,6 @@ body::after {
   background-image: url('assets/silhouettes/base-camp.svg');
 }
 
-/* Index/Overview - Base camp (default) */
-[data-theme="index"] body::after,
-html[data-theme="index"]::after {
-  background-image: url('assets/silhouettes/base-camp.svg');
-}
-
 /* TRIBHUJ - Three peaks (balanced ternary) */
 [data-theme="tribhuj"] body::after {
   background-image: url('assets/silhouettes/three-peaks.svg');
@@ -270,7 +302,7 @@ html[data-theme="index"]::after {
 }
 
 code, pre {
-  font-family: 'JetBrains Mono', monospace;
+  font-family: 'Cascadia Code', 'Fira Code', Consolas, monospace;
 }
 
 pre[class*="language-"] {
@@ -470,10 +502,6 @@ pre[class*="language-"] {
   --theme-glow: rgba(251, 191, 36, 0.15);
 }
 
-[data-theme="stupa"] body::after {
-  background-image: url('assets/silhouettes/stupa-tower.svg');
-}
-
 /* LAMA - Deep purple/violet, wise teachers in contemplation */
 [data-theme="lama"] {
   --theme-primary: #a855f7;
@@ -573,6 +601,19 @@ pre[class*="language-"] {
   --theme-accent: #34d399;
   --theme-bg: #022c22;
   --theme-glow: rgba(52, 211, 153, 0.15);
+}
+
+/* DARBAR - Royal indigo/gold, declarative API court */
+[data-theme="darbar"] {
+  --theme-primary: #6366f1;
+  --theme-secondary: #4f46e5;
+  --theme-accent: #a5b4fc;
+  --theme-bg: #1e1b4b;
+  --theme-glow: rgba(99, 102, 241, 0.15);
+}
+
+[data-theme="darbar"] body::after {
+  background-image: url('assets/silhouettes/darbar-court.svg');
 }
 
 /* Documentation Index - Yakmesh green */
@@ -1127,6 +1168,11 @@ body:has(.docs-sidebar.icon-only) .docs-footer {
 
 /* Narrow screens - hide sidebar, show hamburger menu */
 @media (max-width: 900px) {
+  /* Silhouette spans full viewport when sidebar is hidden */
+  body::after {
+    left: 0;
+  }
+
   .docs-sidebar {
     display: none !important;
     position: fixed;
@@ -2139,6 +2185,33 @@ body:has(.docs-sidebar.icon-only) .docs-footer {
 }
 
 /* ============================================
+   TOUCH TARGETS — WCAG 2.5.5 minimum 44px
+   Only applied on coarse pointer (touch) devices.
+   ============================================ */
+
+@media (pointer: coarse) {
+  .sidebar-nav a {
+    min-height: 44px;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+  }
+
+  .docs-nav-footer a,
+  .border-t a.flex-1 {
+    min-height: 44px;
+  }
+
+  button,
+  [role="button"],
+  .sidebar-toggle {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* ============================================
    YAK ICON - Yakmesh logo (local SVG)
    ============================================ */
 
@@ -2157,6 +2230,79 @@ body:has(.docs-sidebar.icon-only) .docs-footer {
 .docs-sidebar.icon-only .sidebar-nav .yak-icon {
   width: 1.5em;
   height: 1.5em;
+}
+
+/* ============================================
+   DOC-ICON — Inline SVG icon system
+   Replaces emoji with theme-colorable SVG icons.
+   Uses <svg class="doc-icon"><use href="..."/></svg>
+   ============================================ */
+
+.doc-icon {
+  display: inline-block;
+  width: 1.2em;
+  height: 1.2em;
+  vertical-align: -0.15em;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex-shrink: 0;
+}
+
+/* Sidebar context: slightly larger, theme-tinted */
+.sidebar-nav .doc-icon {
+  width: 1.3em;
+  height: 1.3em;
+  vertical-align: -0.2em;
+  margin-right: 0.15em;
+  opacity: 0.8;
+  transition: opacity 0.2s, color 0.2s;
+}
+
+.sidebar-nav a:hover .doc-icon,
+.sidebar-nav a.active .doc-icon {
+  opacity: 1;
+  color: var(--theme-accent, #60a5fa);
+}
+
+/* Icon-only collapsed sidebar */
+.docs-sidebar.icon-only .sidebar-nav .doc-icon {
+  width: 1.5em;
+  height: 1.5em;
+  margin-right: 0;
+}
+
+/* Page header hero icon (large) */
+.hero-icon {
+  width: 3rem;
+  height: 3rem;
+  color: var(--theme-accent, #60a5fa);
+  filter: drop-shadow(0 0 8px var(--theme-glow, rgba(96,165,250,0.3)));
+}
+
+/* Journey nav card icon */
+.journey-icon {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+/* Inline body-text icon (Related Documentation, cross-references) */
+.inline-icon {
+  width: 1.15em;
+  height: 1.15em;
+  vertical-align: -0.15em;
+  opacity: 0.85;
+  color: var(--theme-accent, #60a5fa);
+}
+
+/* Module card header icon (replaces text-2xl emoji) */
+.card-icon {
+  width: 2rem;
+  height: 2rem;
+  color: var(--theme-accent, #60a5fa);
+  filter: drop-shadow(0 0 4px var(--theme-glow, rgba(96,165,250,0.2)));
 }
 
 /* ============================================
@@ -2246,9 +2392,9 @@ body:has(.docs-sidebar.icon-only) .docs-footer {
 
 /* Smoke: fading translucent blob */
 .ym-particle.ym-smoke .ym-dot {
-  background: var(--p-color, rgba(200, 200, 200, 0.25));
-  box-shadow: none;
-  filter: blur(3px);
+  background: var(--p-color, rgba(200, 200, 200, 0.5));
+  box-shadow: 0 0 12px 4px var(--p-glow, rgba(200, 200, 200, 0.2));
+  filter: blur(4px);
   animation: ym-smoke-fade var(--p-pulse, 6s) ease-in-out infinite;
 }
 .ym-particle.ym-smoke .ym-halo { display: none; }
@@ -2306,10 +2452,11 @@ body:has(.docs-sidebar.icon-only) .docs-footer {
 }
 
 @keyframes ym-smoke-fade {
-  0%   { opacity: 0; transform: scale(0.6) translateY(0); }
-  30%  { opacity: 0.3; }
-  70%  { opacity: 0.15; transform: scale(1.8) translateY(-40px); }
-  100% { opacity: 0; transform: scale(2.2) translateY(-80px); }
+  0%   { opacity: 0; transform: scale(0.8) translateY(0); }
+  20%  { opacity: 0.5; }
+  50%  { opacity: 0.35; transform: scale(1.5) translateY(-30px); }
+  80%  { opacity: 0.15; transform: scale(2.0) translateY(-60px); }
+  100% { opacity: 0; transform: scale(2.4) translateY(-90px); }
 }
 
 @keyframes ym-leaf-tumble {
@@ -2354,6 +2501,93 @@ body:has(.docs-sidebar.icon-only) .docs-footer {
 @keyframes ym-orbit {
   0%   { transform: rotate(0deg) translateX(60px) rotate(0deg); }
   100% { transform: rotate(360deg) translateX(60px) rotate(-360deg); }
+}
+
+/* ============================================
+   YM-TABS — Reusable tabbed content system
+   ARIA accessible, keyboard navigable, theme-aware
+   ============================================ */
+
+.ym-tabs {
+  margin: 1.5rem 0 2rem;
+  border: 1px solid var(--theme-primary, #2e4c43);
+  border-radius: 0.75rem;
+  overflow: hidden;
+  background: rgba(31, 51, 45, 0.5);
+}
+
+/* Tab bar */
+.ym-tab-bar {
+  display: flex;
+  gap: 0;
+  background: rgba(16, 26, 22, 0.6);
+  border-bottom: 2px solid var(--theme-primary, #2e4c43);
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.ym-tab-btn {
+  flex: 0 0 auto;
+  padding: 0.75rem 1.5rem;
+  border: none;
+  background: transparent;
+  color: var(--mountain-300, #88b4a6);
+  font-family: inherit;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  position: relative;
+  transition: color 0.2s, background 0.2s;
+}
+
+.ym-tab-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.ym-tab-btn:focus-visible {
+  outline: 2px solid var(--theme-accent, #4ade80);
+  outline-offset: -2px;
+  z-index: 1;
+}
+
+.ym-tab-btn[aria-selected="true"] {
+  color: var(--theme-accent, #4ade80);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.ym-tab-btn[aria-selected="true"]::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--theme-accent, #4ade80);
+  box-shadow: 0 0 8px var(--theme-glow, rgba(74, 222, 128, 0.3));
+}
+
+/* Tab panels */
+.ym-tab-panel {
+  padding: 1.5rem;
+}
+
+.ym-tab-panel[hidden] {
+  display: none;
+}
+
+/* Panel content inherits docs styling */
+.ym-tab-panel h3 { margin-top: 0; }
+.ym-tab-panel section { margin-bottom: 2rem; }
+.ym-tab-panel section:last-child { margin-bottom: 0; }
+
+/* Mobile: stack tabs if many */
+@media (max-width: 640px) {
+  .ym-tab-btn {
+    padding: 0.6rem 1rem;
+    font-size: 0.8rem;
+  }
 }
 
 /* --- Themed Dividers --- */

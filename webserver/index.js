@@ -38,7 +38,7 @@ export class YakmeshWebServer {
     this.config = {
       port: config.port || 8080,
       httpsPort: config.httpsPort || 443,
-      root: config.root || './htdocs',
+      root: config.root || './public',
       logPath: config.logPath || './logs',
       caddyPath: config.caddyPath || join(__dirname, 'bin'),
       autoHttps: config.autoHttps ?? false,
@@ -52,61 +52,61 @@ export class YakmeshWebServer {
       acmeEmail: config.acmeEmail || null,
       ...config
     };
-    
+
     this.process = null;
     this.running = false;
     this.caddyBinary = this._getCaddyBinaryPath();
   }
-  
+
   _getCaddyBinaryPath() {
     const ext = process.platform === 'win32' ? '.exe' : '';
     return join(this.config.caddyPath, `caddy${ext}`);
   }
-  
+
   _getPlatformKey() {
     return `${process.platform}-${process.arch}`;
   }
-  
+
   isInstalled() {
     return existsSync(this.caddyBinary);
   }
-  
+
   async install() {
     const platformKey = this._getPlatformKey();
     const downloadUrl = CADDY_DOWNLOADS[platformKey];
-    
+
     if (!downloadUrl) {
       throw new Error(`Unsupported platform: ${platformKey}`);
     }
-    
+
     log.info('Downloading Caddy', { platform: platformKey });
     mkdirSync(this.config.caddyPath, { recursive: true });
-    
+
     const isWindows = process.platform === 'win32';
     const archiveExt = isWindows ? 'zip' : 'tar.gz';
     const archivePath = join(this.config.caddyPath, `caddy.${archiveExt}`);
-    
+
     execSync(`curl -L -o "${archivePath}" "${downloadUrl}"`, { stdio: 'inherit' });
-    
+
     if (isWindows) {
       execSync(`powershell -Command "Expand-Archive -Path '${archivePath}' -DestinationPath '${this.config.caddyPath}' -Force"`, { stdio: 'inherit' });
     } else {
       execSync(`tar -xzf "${archivePath}" -C "${this.config.caddyPath}"`, { stdio: 'inherit' });
       execSync(`chmod +x "${this.caddyBinary}"`);
     }
-    
+
     unlinkSync(archivePath);
     log.info('Caddy installed successfully');
     return true;
   }
-  
+
   generateCaddyfile() {
     const phpBlock = this.config.phpEnabled ? `
     @phpFiles path *.php
     handle @phpFiles {
         reverse_proxy localhost:${this.config.phpPort}
     }` : '';
-    
+
     // Yakmesh node reverse proxy with WebSocket support
     const nodeProxyBlock = this.config.nodeProxy ? `
     # Yakmesh mesh WebSocket endpoint (priority)
@@ -148,7 +148,7 @@ export class YakmeshWebServer {
     handle @kommWs {
         reverse_proxy localhost:${this.config.nodeHttpPort}
     }` : '';
-    
+
     if (this.config.domain && this.config.autoHttps) {
       const acmeBlock = this.config.acmeEmail ? `
 {
@@ -178,7 +178,7 @@ ${this.config.domain} {
     }
 }`;
     }
-    
+
     // Local/dev mode without HTTPS
     return `# Yakmesh Web Server (Local Mode)
 {
@@ -200,37 +200,37 @@ ${this.config.domain} {
     }
 }`;
   }
-  
+
   writeCaddyfile(content = null) {
     const caddyfilePath = join(this.config.caddyPath, 'Caddyfile');
     mkdirSync(dirname(caddyfilePath), { recursive: true });
     writeFileSync(caddyfilePath, content || this.generateCaddyfile(), 'utf8');
     return caddyfilePath;
   }
-  
+
   async start() {
     if (this.running) {
       log.warn('Web server already running');
       return;
     }
-    
+
     if (!this.isInstalled()) {
       log.info('Caddy not found, installing...');
       await this.install();
     }
-    
+
     mkdirSync(this.config.root, { recursive: true });
     mkdirSync(this.config.logPath, { recursive: true });
-    
-const caddyfilePath = this.writeCaddyfile();
 
-    log.info('Starting Yakmesh Web Server', { port: this.config.port });    this.process = spawn(this.caddyBinary, ['run', '--config', caddyfilePath], {
+    const caddyfilePath = this.writeCaddyfile();
+
+    log.info('Starting Yakmesh Web Server', { port: this.config.port }); this.process = spawn(this.caddyBinary, ['run', '--config', caddyfilePath], {
       stdio: ['ignore', 'pipe', 'pipe'],
       detached: false
     });
-    
+
     this.process.stdout.on('data', (d) => log.debug('Caddy output', { message: d.toString().trim() }));
-    
+
     // Caddy writes JSON logs to stderr - parse level and route appropriately
     this.process.stderr.on('data', (d) => {
       const msg = d.toString().trim();
@@ -253,27 +253,27 @@ const caddyfilePath = this.writeCaddyfile();
         }
       }
     });
-    
+
     this.process.on('close', (code) => { this.running = false; });
-    
+
     this.running = true;
     await new Promise(r => setTimeout(r, 1000));
-    
+
     log.info('Web server running', { url: `http://localhost:${this.config.port}`, root: this.config.root });
     return this;
   }
-  
+
   async stop() {
     if (!this.running || !this.process) return;
     log.info('Stopping web server');
-    
+
     return new Promise((resolve) => {
       this.process.on('close', () => {
         this.running = false;
         this.process = null;
         resolve();
       });
-      
+
       if (process.platform === 'win32') {
         spawn('taskkill', ['/pid', this.process.pid, '/f', '/t']);
       } else {
@@ -281,7 +281,7 @@ const caddyfilePath = this.writeCaddyfile();
       }
     });
   }
-  
+
   status() {
     return {
       running: this.running,

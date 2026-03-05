@@ -6,7 +6,7 @@ Every module wired. Every path hardened. Every proof verifiable.
 
 🧠 ACCEL — Heterogeneous GPU+NPU+CPU-SIMD compute scheduling with 3 ONNX ML models (entropy-sentinel, sakshi-anomaly, karma-trust)
 
-🛡️ STEADYWATCH — Real quantum entropy from IBM ibm\_marrakesh (156-qubit Heron r2), 144 satellite seeds, NPU-accelerated monitoring
+🛡️ PRAHARI — Mesh-consensus entropy from 5 local sources (hardware RNG, GPS jitter, mesh packet arrival, interrupt timing, OS CSPRNG). More peers = better entropy. NPU-accelerated quality scoring
 
 📡 Full Protocol Stack — KOMM (chat/voice/rooms), DARSHAN (view-not-copy), NAKPAK (onion routing), SHERPA (NAT relay), ANNEX (encrypted sessions)
 
@@ -27,4 +27,4 @@ Every module wired. Every path hardened. Every proof verifiable.
 
 `npm install yakmesh`
 
-_MIT Licensed • Post-quantum since 2024 • Sturdy & Secure 🦬_
+*MIT Licensed • Post-quantum since 2024 • Sturdy & Secure 🦬*

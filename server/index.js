@@ -14,13 +14,19 @@
 import express from 'express';
 import rateLimit from 'express-rate-limit';
 import crypto from 'node:crypto';
-import { existsSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { networkInterfaces } from 'os';
 import { WebSocketServer } from 'ws';
 import { createLogger } from '../utils/logger.js';
 import * as accel from '../utils/accel.js';
-import * as steadywatch from '../security/steadywatch.js';
+import { startPipeServer, getPipePath, upgradePipeAntiCheat, isPipeServerRunning } from '../utils/scheduler-pipe.js';
+import * as prahari from '../security/prahari.js';
+import { registerGPSJitterWithPrahari } from '../security/sources/gps-jitter.js';
+import { registerMeshEntropyWithPrahari, wireCommitReveal } from '../security/prahari-mesh.js';
+
+// Backward compat alias — all internal references now use 'prahari'
+const steadywatch = prahari;
 
 // Embedded Caddy web server for HTTPS/443 reverse proxy
 import { YakmeshWebServer } from '../webserver/index.js';
@@ -128,6 +134,13 @@ import { GumbaHub, GUMBA_CONFIG } from '../mesh/gumba.js';
 // KOMM API router and gossip wiring
 import { createKommAPI, wireKommGossip } from './komm-api.js';
 
+// PROFILE — Unified mesh-distributed user profiles
+import { createProfileAPI, wireProfileGossip, ensureProfileTable } from './profile-api.js';
+
+// TME — Temporal Mesh Encoding (time-based packet resilience)
+import { createTmeAPI, wireTmeGossip } from './tme-api.js';
+import { wireTmeTransport } from '../mesh/tme-transport.js';
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // DARSHAN — Content Streaming (view, don't copy)
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -156,6 +169,9 @@ import { getFSHardening, PROTECTION_LEVEL } from '../security/fs-hardening.js';
 // Memory Safety — Circulating canaries for memory integrity
 import { getMemorySafety } from '../security/memory-safety.js';
 
+// SERVER DIRECTORY — C2C Lighthouse (server browser via gossip heartbeats)
+import ServerDirectory from '../mesh/server-directory.js';
+
 // Temporal Signing — GPS-bound code signatures with auto-expiry
 import { getTemporalSigner, TemporalSignature } from '../security/temporal-signing.js';
 
@@ -169,7 +185,7 @@ import { getSecureConfig, PROFILE_LEVEL, SECURE_DEFAULTS } from '../security/sec
 import { POSITIVE, NEUTRAL, NEGATIVE, TritState } from '../oracle/tribhuj.js';
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// TERNARY HARMONIZATION — SST × YPC-27 × 144T × ML
+// TERNARY HARMONIZATION — SST × YPC-27 × 162T × ML
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // YPC27_SST — SST seed rotation for YPC-27 checksums
@@ -181,8 +197,8 @@ import { batchChecksumVerifier, BatchChecksumVerifier } from '../oracle/packet-c
 // Ternary ML — quantized inference & trust classification
 import { TernaryInferenceAdapter } from '../oracle/ternary-ml.js';
 
-// 144T — Hierarchical ternary mesh addressing
-import { TritAddress, TernaryRoutingTable, hexIdToAddress, TierName } from '../oracle/ternary-144t.js';
+// 162T — Hierarchical ternary mesh addressing
+import { TritAddress, TernaryRoutingTable, hexIdToAddress, TierName } from '../oracle/ternary-routing.js';
 
 // Time API — HTTP bridge to MA-902 GPS time server (serves on port 3099)
 import { startTimeApi, stopTimeApi } from '../oracle/time-api.js';
@@ -203,6 +219,12 @@ function formatUptime(seconds) {
 // Optional adapter integration (loaded dynamically if enabled)
 let ActiveAdapter = null;
 
+// Read canonical ports from config/ports.json (single source of truth)
+let _defaultPorts = { httpPort: 3080, wsPort: 9080 };
+try {
+  _defaultPorts = JSON.parse(readFileSync(join(import.meta.dirname || '.', '..', 'config', 'ports.json'), 'utf8'));
+} catch { /* use hardcoded fallback */ }
+
 // Default config
 const DEFAULT_CONFIG = {
   node: {
@@ -210,8 +232,8 @@ const DEFAULT_CONFIG = {
     region: 'local',
   },
   network: {
-    httpPort: 3000,
-    wsPort: 9001,
+    httpPort: _defaultPorts.httpPort,
+    wsPort: _defaultPorts.wsPort,
   },
   bootstrap: [],
   database: {
@@ -377,6 +399,9 @@ export class YakmeshNode {
     // Memory Safety — circulating canaries
     this.memorySafety = null;
 
+    // SERVER DIRECTORY — C2C Lighthouse (aggregated heartbeats)
+    this.serverDirectory = null;
+
     // Temporal Signing — GPS-bound code signatures
     this.temporalSigner = null;
 
@@ -462,22 +487,33 @@ export class YakmeshNode {
     } else {
       log.info('○ ONNX models: none loaded (CPU heuristic fallback active)');
     }
-    // 0c. Initialize STEADYWATCH — quantum-hardware-validated entropy seeds
-    // Hurwitz quaternion seeds (IBM ibm_marrakesh) for ANNEX ML-KEM-768 keygen.
-    // Two-source extractor: STEADYWATCH seed ⊕ CSPRNG → hybrid entropy.
-    // Uses ACCEL SHA3-native for seed fingerprinting, InferenceEngine for Entropy Sentinel.
-    log.info('🛰️  Initializing STEADYWATCH (quantum entropy)...');
-    const steadywatchResult = await steadywatch.initialize({
-      seedFile: this.config.steadywatch?.seedFile,
-      nodeIndex: this.config.steadywatch?.nodeIndex,
-      prime: this.config.steadywatch?.prime || 5,
-      generateTest: this.config.steadywatch?.generateTest ?? true,
+
+    // 0b¾. Start Scheduler Pipe — cross-process compute coordination
+    // Named pipe server lets c2c/yakai request routing advice from the
+    // ComputeScheduler without HTTP overhead (~50μs vs ~2-8ms).
+    try {
+      const pipeResult = await startPipeServer({ accel, log });
+      if (pipeResult.listening) {
+        log.info(`✓ Scheduler pipe: ${pipeResult.path}`);
+      } else {
+        log.info('○ Scheduler pipe: not started (port in use or unavailable)');
+      }
+    } catch (err) {
+      log.warn(`⚠️ Scheduler pipe failed: ${err.message} — c2c will use standalone mode`);
+    }
+
+    // 0c. Initialize PRAHARI v3 — Pure Sponge Entropy Engine
+    // Two-source extractor: sponge_squeeze ⊕ CSPRNG → hybrid entropy.
+    // Built-in sources: CPU interrupt jitter + CSPRNG. GPS jitter + mesh arrival register later.
+    log.info('🛡️  Initializing PRAHARI v3 (sponge entropy)...');
+    const prahariResult = await prahari.initialize({
+      seedFile: this.config.prahari?.seedFile || this.config.steadywatch?.seedFile,
       inferenceEngine: accel.inference,
     });
-    if (steadywatchResult.initialized) {
-      log.info(`✓ STEADYWATCH: ${steadywatchResult.seedCount} satellite seeds loaded (Sentinel: ${steadywatchResult.sentinel ? 'NPU' : 'CPU'})`);
+    if (prahariResult.initialized) {
+      log.info(`✓ PRAHARI v3: Sponge engine ready (Sentinel: ${prahariResult.sentinel ? 'NPU' : 'CPU'})`);
     } else {
-      log.warn('⚠️  STEADYWATCH: no seeds loaded, ANNEX will use pure CSPRNG');
+      log.warn('⚠️  PRAHARI: sponge not initialized, ANNEX will use pure CSPRNG');
     }
 
     // 1. Initialize the Oracle system FIRST (provides codebase hash for identity)
@@ -486,6 +522,11 @@ export class YakmeshNode {
 
     // 1b. Initialize time source detection (async — MA-902 SNMP init)
     await this._initTimeSource();
+
+    // 1c. Register GPS jitter entropy source with PRAHARI (lazy — needs MANI)
+    if (this.timeSource) {
+      registerGPSJitterWithPrahari(prahari, this.timeSource);
+    }
 
     // 2. Initialize identity - extract directory from database path
     // Pass the oracle so it can derive network name from codebase hash
@@ -509,9 +550,15 @@ export class YakmeshNode {
     });
     await this.mesh.start();
 
+    // 3a. Register mesh arrival entropy source with PRAHARI (lazy — needs mesh)
+    registerMeshEntropyWithPrahari(prahari, this.mesh);
+
     // 3. Initialize replication
     this.replication = new ReplicationEngine(this.mesh, this.config.database.path);
     await this.replication.init();
+
+    // 3b. Ensure user_profiles table exists in replication DB
+    ensureProfileTable(this.replication);
 
     if (this.config.database.replication.enabled) {
       this.replication.startSync(this.config.database.replication.syncInterval);
@@ -527,6 +574,71 @@ export class YakmeshNode {
       connectRelay: (endpoint, nodeId) => this._registerWithRelay({ relayEndpoint: endpoint, nodeId: nodeId || `relay-${Date.now()}` }),
     });
     this.gossip.start();
+
+    // 4a. Wire PRAHARI Commit-Reveal entropy protocol into gossip
+    //     Registers as 'mesh-commit-reveal' entropy source (weight: 10, highest)
+    //     Subscribes to prahari:entropy:commit / prahari:entropy:reveal rumor topics
+    //     MANI: Epoch-aligned rounds based on time trust level
+    //     SAKSHI: Witness validation + behavioral velocity monitoring
+    this.commitReveal = wireCommitReveal({
+      gossip: this.gossip,
+      prahari,
+      mesh: this.mesh,
+      nodeId: this.identity.identity.nodeId,
+      maniDetector: this.timeSource || null,
+      sakshiMonitor: this.velocityMonitor || null,
+      witnessMap: this._getWitnessMap?.() || new Map(),
+    });
+
+    // 4b. Wire profile gossip — handles 'profile:update' rumors
+    wireProfileGossip({
+      mesh: this.mesh,
+      replication: this.replication,
+      identity: this.identity,
+    });
+
+    // 4b2. Initialize Server Directory (C2C Lighthouse)
+    //      Collects 'server:heartbeat' rumors from C2C game servers.
+    //      Optional beacon file writer for yakmesh.dev public server list.
+    this.serverDirectory = new ServerDirectory({
+      beaconPath: process.env.SERVER_BEACON === 'true'
+        ? join(this.config.publicDir || 'public', 'servers.json')
+        : null,
+    });
+    this.serverDirectory.start();
+    log.info('✓ Server Directory (C2C Lighthouse) started');
+
+    // 4c. Initialize TME encoder + wire gossip
+    //     Creates the TemporalMeshEncoder and listens for tme:* rumor topics
+    //     Passes MANI timeSource for GPS/atomic timestamps, and a getter for
+    //     the meshTimeReference (populated later by _startTimeHeartbeat)
+    const { router: tmeRouter, encoder: tmeEncoder } = createTmeAPI({
+      gossip: this.gossip,
+      identity: this.identity,
+      timeSource: this.timeSource || null,
+      getMeshTimeRef: () => this.meshTimeReference || null,
+      writeLimiter: (_req, _res, next) => next(), // placeholder — real limiter on routes
+      tmeTransportGetter: () => this.tmeTransport || null,
+    });
+    this.tmeEncoder = tmeEncoder;
+    this.tmeRouter = tmeRouter;
+
+    wireTmeGossip({
+      mesh: this.mesh,
+      encoder: this.tmeEncoder,
+      nodeId: this.identity.identity.nodeId,
+    });
+
+    // 4d. Wire TME dedicated wire protocol (Step 25)
+    //     Adds point-to-point TME_SLICE, TME_PROOF_REQUEST/RESPONSE,
+    //     TME_RECONSTRUCT handlers for multi-path dispatch + on-demand recovery.
+    //     Gossip remains the broadcast backbone; wire protocol adds targeted delivery.
+    this.tmeTransport = wireTmeTransport({
+      mesh: this.mesh,
+      encoder: this.tmeEncoder,
+      nodeId: this.identity.identity.nodeId,
+      log,
+    });
 
     // Handle incoming rumors (data from other nodes)
     this.mesh.on('rumor', (topic, data, origin) => {
@@ -569,6 +681,11 @@ export class YakmeshNode {
       if (topic === 'time:heartbeat') {
         this._handleTimeHeartbeat(data, origin);
       }
+
+      // Handle C2C server heartbeats (Lighthouse directory)
+      if (topic === 'server:heartbeat') {
+        this.serverDirectory?.handleHeartbeat(data, origin);
+      }
     });
 
     // 4b. Start periodic time heartbeat gossip broadcast
@@ -600,7 +717,7 @@ export class YakmeshNode {
     // 5g. Initialize KARMA trust model (fed by SAKSHI)
     this._initKarma();
 
-    // 5h. Initialize ternary harmonization stack (SST × YPC-27 × 144T × ML)
+    // 5h. Initialize ternary harmonization stack (SST × YPC-27 × 162T × ML)
     await this._initTernaryHarmonization();
 
     // 5i. Initialize SHERPA for decentralized peer discovery
@@ -718,6 +835,11 @@ export class YakmeshNode {
       await this._initWebsiteAdapter();
     }
 
+    // 8b. Initialize YakAI Adapter (compute bridge for yakai)
+    if (process.env.YAKMESH_YAKAI_ENABLED !== 'false') {
+      await this._initYakaiAdapter();
+    }
+
     // 9. Initialize YAK:// Protocol Handler
     await this._initProtocolHandler();
 
@@ -795,6 +917,16 @@ export class YakmeshNode {
     }
     log.info('');
 
+    // 9a. Upgrade pipe server with anti-cheat ops (identity/karma/oracle now available)
+    if (isPipeServerRunning()) {
+      upgradePipeAntiCheat({
+        identity: this.identity,
+        karmaLimiter: getKarmaRateLimiter(),
+        oracle: this.oracle,
+        gossip: this.gossip,
+      });
+    }
+
     // 10. Start Time API (HTTP bridge to MA-902 GPS time server)
     try {
       await startTimeApi();
@@ -840,6 +972,7 @@ export class YakmeshNode {
     this.karmaModel?.stopPromotionChecks?.();  // Stop KARMA auto-promotion
     this.nakpakRouter?.cleanupCircuits?.();  // Cleanup NAKPAK circuits
     this.kommWss?.close();  // Close KOMM WebSocket server
+    this.serverDirectory?.stop();  // Stop C2C Lighthouse directory
     // Stop Caddy web server
     if (this.webServer) {
       await this.webServer.stop().catch(() => { });
@@ -1262,6 +1395,30 @@ export class YakmeshNode {
   }
 
   /**
+   * Get current witness map (nodeId → NodeWitness) for CommitReveal quality weighting.
+   * Built from known peers + our own SAKSHI witness profile.
+   */
+  _getWitnessMap() {
+    const map = new Map();
+    // Add our own witness
+    if (this.sakshiWitness) {
+      map.set(this.identity.identity.nodeId, this.sakshiWitness);
+    }
+    // Add known peer witnesses from velocity monitor profiles
+    if (this.velocityMonitor?.profiles) {
+      for (const [nodeId] of this.velocityMonitor.profiles) {
+        if (!map.has(nodeId)) {
+          // Create a basic witness for known peers based on observed behavior
+          try {
+            map.set(nodeId, new NodeWitness({ nodeId }));
+          } catch { /* ignore — peer may not have full profile yet */ }
+        }
+      }
+    }
+    return map;
+  }
+
+  /**
    * Initialize KARMA trust model
    * SAKSHI velocity alerts feed into KARMA trust assessments.
    */
@@ -1349,25 +1506,25 @@ export class YakmeshNode {
   }
 
   // =========================================================================
-  // TERNARY HARMONIZATION — SST × YPC-27 × 144T × ML unification
+  // TERNARY HARMONIZATION — SST × YPC-27 × 162T × ML unification
   // =========================================================================
 
   /**
    * Initialize the ternary harmonization stack.
    * Wires together SST-rotated YPC-27 checksums, batch verification,
-   * ternary ML inference, and 144T hierarchical addressing.
+   * ternary ML inference, and 162T hierarchical addressing.
    * 
    * Call after _initKarma() since it depends on the trust model.
    */
   async _initTernaryHarmonization() {
     log.info('◬ Initializing ternary harmonization stack...');
 
-    // ── 1. 144T Address — derive from node identity ──
+    // ── 1. 162T Address — derive from node identity ──
     const nodeId = this.identity?.publicKeyHex || crypto.randomBytes(32).toString('hex');
     this.tritAddress = hexIdToAddress(nodeId, {
-      galaxy: 0,  // Galaxy 0 = default mesh
+      summit: 0,  // Summit 0 = default mesh
     });
-    log.info(`◬ 144T address: ${this.tritAddress.toString()}`);
+    log.info(`◬ 162T address: ${this.tritAddress.toString()}`);
 
     // ── 2. Ternary routing table ──
     this.ternaryRouter = new TernaryRoutingTable(this.tritAddress, 6);
@@ -1377,9 +1534,9 @@ export class YakmeshNode {
       try {
         const peerAddress = hexIdToAddress(peerId);
         this.ternaryRouter.addPeer(peerId, peerAddress);
-        log.debug(`◬ 144T: Added peer ${peerTag(peerId)} (tier distance: ${this.tritAddress.tierDistance(peerAddress)})`);
+        log.debug(`◬ 162T: Added peer ${peerTag(peerId)} (tier distance: ${this.tritAddress.tierDistance(peerAddress)})`);
       } catch (err) {
-        log.debug(`◬ 144T: Could not add peer address: ${err.message}`);
+        log.debug(`◬ 162T: Could not add peer address: ${err.message}`);
       }
     });
 
@@ -1413,7 +1570,7 @@ export class YakmeshNode {
     // The BatchChecksumVerifier uses ComputeScheduler internally
     log.info(`◬ Batch checksum verifier ready (flush threshold: ${batchChecksumVerifier.batchSize})`);
 
-    log.info('✓ Ternary harmonization stack initialized (YPC27_SST + BatchVerify + TernaryML + 144T)');
+    log.info('✓ Ternary harmonization stack initialized (YPC27_SST + BatchVerify + TernaryML + 162T)');
 
     // ═══════════════════════════════════════════════════════════════════════
     // SANGHA — Unified Component Attestation (collective security)
@@ -1707,14 +1864,14 @@ export class YakmeshNode {
   }
 
   /**
-   * Schedule a STEADYWATCH entropy quality check through the compute scheduler.
+   * Schedule a PRAHARI entropy quality check through the compute scheduler.
    * CRITICAL priority — entropy degradation is a security emergency.
    *
    * @param {Uint8Array} data — raw bytes to score
    * @returns {Promise<{ outcome, device, result, execMs, waitMs }>}
    */
   _scheduledEntropyCheck(data) {
-    const executor = () => steadywatch.scoreEntropy(data);
+    const executor = () => prahari.scoreEntropy(data);
     return accel.scheduler.submit({
       type: 'entropy-sentinel',
       priority: accel.Priority.CRITICAL,
@@ -1798,7 +1955,7 @@ export class YakmeshNode {
         const sample = crypto.randomBytes(256);
         const { result } = await this._scheduledEntropyCheck(sample);
         if (result && result.score < 0.6) {
-          log.warn(`⚠️ STEADYWATCH: Entropy quality degraded (score=${result.score.toFixed(3)}, verdict=${result.verdict})`);
+          log.warn(`⚠️ PRAHARI: Entropy quality degraded (score=${result.score.toFixed(3)}, verdict=${result.verdict})`);
         }
       } catch (err) {
         // Scheduler rejection (queue full) is fine — non-fatal
@@ -1898,12 +2055,16 @@ export class YakmeshNode {
     // Track connected KOMM WebSocket clients
     const kommClients = new Set();
 
+    // Dashboard-subscribed clients (subset of kommClients)
+    const dashboardSubscribers = new Set();
+
     this.kommWss.on('connection', (ws, request) => {
       kommClients.add(ws);
       log.debug('📡 KOMM WS client connected');
 
       ws.on('close', () => {
         kommClients.delete(ws);
+        dashboardSubscribers.delete(ws);
         // Destroy ANNEX session on close — zero key material
         const session = kommAnnexSessions.get(ws);
         if (session) { session.destroy(); kommAnnexSessions.delete(ws); }
@@ -1912,6 +2073,7 @@ export class YakmeshNode {
 
       ws.on('error', () => {
         kommClients.delete(ws);
+        dashboardSubscribers.delete(ws);
         const session = kommAnnexSessions.get(ws);
         if (session) { session.destroy(); kommAnnexSessions.delete(ws); }
       });
@@ -1972,7 +2134,7 @@ export class YakmeshNode {
       secureSend(ws, {
         type: 'welcome',
         nodeId: peerTag(this.identity.identity.nodeId),
-        capabilities: ['katha', 'vani', 'yurt'],
+        capabilities: ['katha', 'vani', 'yurt', 'dashboard', 'servers'],
       });
     });
 
@@ -1983,6 +2145,138 @@ export class YakmeshNode {
         secureSend(client, payload);
       }
     };
+
+    // ── Dashboard push infrastructure ──────────────────────────────────
+
+    /**
+     * Gather a full dashboard snapshot — same data the HTTP dashboard polls
+     * Returns { node, peers, metrics, gossip, discovered }
+     */
+    const gatherDashboardSnapshot = () => {
+      const startTime = this._startTime || Date.now();
+      const uptime = Math.floor((Date.now() - startTime) / 1000);
+
+      // Build lightweight metrics (mirrors /metrics endpoint)
+      const oracleInfo = this.oracle ? (() => {
+        const integrity = this.oracle.verifySelfIntegrity();
+        return {
+          status: integrity.valid ? 'healthy' : 'compromised',
+          valid: integrity.valid,
+          networkName: this.genesisNetwork?.networkName || null,
+          networkId: this.genesisNetwork?.networkId || null,
+          fingerprint: this.genesisNetwork?.fingerprint || null,
+          verifiedPeers: this.codeProof?.getVerifiedPeers()?.length || 0,
+        };
+      })() : null;
+
+      const websiteInfo = this.websiteAdapter ? {
+        status: 'active',
+        websites: this.websiteAdapter.manifests.size,
+        uniqueSites: this.websiteAdapter.domains.size || 1,
+        domains: this.websiteAdapter.domains.size,
+        filesServed: this.websiteAdapter.stats.filesServed,
+        bytesServed: this.websiteAdapter.stats.bytesServed,
+        publisherDoko: this.websiteAdapter.publisherDoko || null,
+      } : { status: 'uninitialized' };
+
+      const cryptoInfo = this._cryptoSummary || {
+        levelName: 'NIST Level 3',
+        signatureAlgorithm: 'ML-DSA-65',
+        backupSignatureAlgorithm: 'SLH-DSA-SHA2-192f',
+        kemAlgorithm: 'ML-KEM-768',
+        classicalSecurity: '192-bit',
+        quantumSecurity: '128-bit',
+        routingSecurity: '256-bit (162T)',
+        nistStandards: ['FIPS 203 (ML-KEM)', 'FIPS 204 (ML-DSA)', 'FIPS 205 (SLH-DSA)'],
+      };
+
+      // Time source info
+      let timeInfo = null;
+      if (this.timeSource) {
+        const status = this.timeSource.getStatus();
+        timeInfo = {
+          trustLevel: status.trustLevel,
+          stratum: status.stratum,
+          phaseTolerance: status.phaseTolerance,
+          hasAtomicTime: this.timeSource.hasAtomicTime(),
+          hasHighPrecisionTime: this.timeSource.hasHighPrecisionTime(),
+        };
+      }
+
+      // NAMCHE security gate status
+      let namcheInfo = null;
+      if (this.namcheGateway) {
+        namcheInfo = this.namcheGateway.getStatus();
+      } else {
+        namcheInfo = { gates: GATE_NAMES, status: 'uninitialized', gateCount: 7 };
+      }
+
+      // DOKO identity status
+      let dokoInfo = null;
+      if (this.dokoRegistry) {
+        dokoInfo = this.dokoRegistry.getStats();
+      } else {
+        dokoInfo = { status: 'uninitialized', types: Object.keys(DOKOTypes) };
+      }
+
+      return {
+        node: this.identity.getPublicIdentity(),
+        peers: this.mesh.getPeers(),
+        metrics: {
+          node: {
+            id: this.identity?.identity?.nodeId || null,
+            name: this.config?.node?.name || 'unknown',
+            version: '2.9.0',
+            uptime,
+            uptimeFormatted: formatUptime(uptime),
+          },
+          crypto: cryptoInfo,
+          oracle: oracleInfo,
+          website: websiteInfo,
+          time: timeInfo,
+          security: {
+            namche: namcheInfo,
+            doko: dokoInfo,
+          },
+        },
+        gossip: this.gossip.getStats(),
+        discovered: this.gossip.getKnownPeers(),
+      };
+    };
+
+    /**
+     * Push dashboard:update to all subscribed clients.
+     * Debounced — event-triggered pushes coalesce within 2 s window.
+     */
+    let _dashPushTimer = null;
+    const pushDashboardUpdate = (immediate = false) => {
+      if (dashboardSubscribers.size === 0) return;
+
+      const send = () => {
+        _dashPushTimer = null;
+        if (dashboardSubscribers.size === 0) return;
+        const snapshot = gatherDashboardSnapshot();
+        const payload = { type: 'dashboard:update', data: snapshot, ts: Date.now() };
+        for (const sub of dashboardSubscribers) {
+          secureSend(sub, payload);
+        }
+      };
+
+      if (immediate) {
+        if (_dashPushTimer) { clearTimeout(_dashPushTimer); _dashPushTimer = null; }
+        send();
+      } else {
+        // Debounce: coalesce rapid events into one push
+        if (!_dashPushTimer) {
+          _dashPushTimer = setTimeout(send, 2000);
+        }
+      }
+    };
+
+    // Store references for use in _handleKommWsMessage
+    this._dashboardSubscribers = dashboardSubscribers;
+    this._pushDashboardUpdate = pushDashboardUpdate;
+    this._gatherDashboardSnapshot = gatherDashboardSnapshot;
 
     // Wire KATHA events → WS broadcast
     if (this.kathaHub) {
@@ -2013,7 +2307,16 @@ export class YakmeshNode {
       });
     }
 
-    log.info('✓ KOMM WebSocket initialized at /komm/ws (ANNEX PQ-encrypted)');
+    // ── Wire mesh events → dashboard push (debounced) ──────────────────
+    if (this.mesh) {
+      this.mesh.on('peer:connected', () => pushDashboardUpdate());
+      this.mesh.on('peer:disconnected', () => pushDashboardUpdate());
+    }
+
+    // 10 s heartbeat — keeps dashboards fresh even when nothing changes
+    setInterval(() => pushDashboardUpdate(true), 10_000);
+
+    log.info('✓ KOMM WebSocket initialized at /komm/ws (ANNEX PQ-encrypted, dashboard push)');
   }
 
   /**
@@ -2194,9 +2497,57 @@ export class YakmeshNode {
       // General
       // ══════════════════════════════════════════════════════════════════
 
+      case 'dashboard:subscribe':
+        // Register this client for real-time dashboard pushes
+        if (this._dashboardSubscribers) {
+          this._dashboardSubscribers.add(ws);
+          log.debug('📡 Dashboard subscriber registered');
+          // Send an immediate full snapshot
+          const snapshot = this._gatherDashboardSnapshot();
+          secureSend(ws, { type: 'dashboard:update', data: snapshot, ts: Date.now() });
+        }
+        break;
+
+      case 'dashboard:unsubscribe':
+        if (this._dashboardSubscribers) {
+          this._dashboardSubscribers.delete(ws);
+          log.debug('📡 Dashboard subscriber removed');
+        }
+        break;
+
       case 'ping':
         secureSend(ws, { type: 'pong', ts: Date.now() });
         break;
+
+      // ══════════════════════════════════════════════════════════════════
+      // SERVER DIRECTORY — C2C Lighthouse (query via encrypted WS)
+      // ══════════════════════════════════════════════════════════════════
+
+      case 'servers:query': {
+        // Query the C2C server directory
+        if (!this.serverDirectory) {
+          secureSend(ws, { type: 'servers:list', servers: [], stats: {}, serverTime: Date.now() });
+          break;
+        }
+        const status = data?.status || null;
+        const limit = data?.limit || 100;
+        const directory = this.serverDirectory.getDirectory({ status, limit });
+        const stats = this.serverDirectory.getStats();
+        secureSend(ws, { type: 'servers:list', servers: directory, stats, serverTime: Date.now() });
+        break;
+      }
+
+      case 'servers:detail': {
+        // Get single server detail
+        const nodeId = data?.nodeId;
+        if (!nodeId || !this.serverDirectory) {
+          secureSend(ws, { type: 'servers:detail', server: null, error: nodeId ? 'Directory not ready' : 'nodeId required' });
+          break;
+        }
+        const server = this.serverDirectory.getServer(nodeId);
+        secureSend(ws, { type: 'servers:detail', server: server || null, error: server ? null : 'Server not found' });
+        break;
+      }
 
       default:
         log.debug(`📡 Unknown KOMM message type: ${type}`);
@@ -2313,20 +2664,30 @@ export class YakmeshNode {
     // SECURITY: Rate Limiting (DoS Protection)
     // =========================================
 
-    // General rate limit: 100 requests per minute per IP
+    // Skip rate limiting for localhost — dashboard, yakapp, and CLI all hit the
+    // local node heavily; throttling them degrades the user experience.
+    // Remote IPs still get full rate limiting.
+    const isLoopback = (req) => {
+      const ip = req.ip || req.socket?.remoteAddress || '';
+      return ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1';
+    };
+
+    // General rate limit: 100 requests per minute per IP (remote only)
     const generalLimiter = rateLimit({
       windowMs: 60 * 1000,  // 1 minute
       max: 100,
+      skip: isLoopback,
       message: { error: 'Too many requests, please try again later' },
       standardHeaders: true,
       legacyHeaders: false,
       validate: { xForwardedForHeader: false },
     });
 
-    // Strict rate limit for write operations: 20 per minute
+    // Strict rate limit for write operations: 20 per minute (remote only)
     const writeLimiter = rateLimit({
       windowMs: 60 * 1000,
       max: 20,
+      skip: isLoopback,
       message: { error: 'Too many write requests, please slow down' },
       standardHeaders: true,
       legacyHeaders: false,
@@ -2337,10 +2698,11 @@ export class YakmeshNode {
     app.use(generalLimiter);
 
     // CORS — restricted to localhost and configured origins
+    const httpPort = this.boundHttpPort || this.config.network.httpPort;
     const allowedOrigins = new Set([
-      'http://localhost:3000',
+      `http://localhost:${httpPort}`,
       'http://localhost:3090',
-      'http://127.0.0.1:3000',
+      `http://127.0.0.1:${httpPort}`,
       'http://127.0.0.1:3090',
       ...(this.config.cors?.allowedOrigins || []),
     ]);
@@ -2434,6 +2796,26 @@ export class YakmeshNode {
     };
 
     // =========================================
+    // UNIFIED PUBLIC WEB ROOT
+    // =========================================
+    // Single static mount for all public assets:
+    //   public/dashboard/  — web dashboard UI
+    //   public/assets/     — logos and brand assets
+    //   public/c2c/assets/ — C2C game art (build artifact)
+    //   public/yakai/      — YakAI portraits (build artifact)
+    // Build with: npm run build:public
+    const publicDir = join(import.meta.dirname, '..', 'public');
+    if (existsSync(publicDir)) {
+      app.use(express.static(publicDir, {
+        maxAge: '7d',
+        etag: true,
+        fallthrough: true,
+        index: false,           // Don't auto-serve index.html at /
+        redirect: false,        // Don't redirect /dashboard → /dashboard/
+      }));
+    }
+
+    // =========================================
     // PUBLIC CONTENT API (No Auth for reads)
     // =========================================
 
@@ -2481,6 +2863,28 @@ export class YakmeshNode {
       });
       app.use('/darshan', darshanRouter);
       log.info('📡 DARSHAN API mounted at /darshan');
+    }
+
+    // =========================================
+    // PROFILE — Unified Mesh Profiles
+    // =========================================
+
+    const profileRouter = createProfileAPI({
+      replication: this.replication,
+      gossip: this.gossip,
+      identity: this.identity,
+      writeLimiter,
+    });
+    app.use('/profile', profileRouter);
+    log.info('📡 Profile API mounted at /profile');
+
+    // =========================================
+    // TME — Temporal Mesh Encoding
+    // =========================================
+
+    if (this.tmeRouter) {
+      app.use('/tme', this.tmeRouter);
+      log.info('📡 TME API mounted at /tme');
     }
 
     // =========================================
@@ -2566,7 +2970,7 @@ export class YakmeshNode {
     app.get('/ternary/status', (req, res) => {
       res.json({
         active: true,
-        address144t: this.tritAddress?.toString() || null,
+        address162t: this.tritAddress?.toString() || null,
         routing: this.ternaryRouter?.getStatus() || null,
         batchChecksum: batchChecksumVerifier.telemetry,
         ternaryInference: !!this.ternaryInference,
@@ -2600,9 +3004,15 @@ export class YakmeshNode {
       serveDocsFile(file, res);
     });
 
-    // Serve dashboard
+    // Serve dashboard — falls through to public/dashboard/index.html via static mount
     app.get('/dashboard', (req, res) => {
-      res.sendFile('dashboard/index.html', { root: import.meta.dirname + '/..' });
+      const dashboardPath = join(import.meta.dirname, '..', 'public', 'dashboard', 'index.html');
+      if (existsSync(dashboardPath)) {
+        res.sendFile(dashboardPath);
+      } else {
+        // Fallback to legacy location
+        res.sendFile('dashboard/index.html', { root: import.meta.dirname + '/..' });
+      }
     });
 
     // Health check
@@ -2617,7 +3027,7 @@ export class YakmeshNode {
       res.json({
         status: 'ok',
         nodeId: this.identity.identity.nodeId,
-        persistentId: this.identity.getPersistentId(),  // 144T identity across code upgrades
+        persistentId: this.identity.getPersistentId(),  // 162T identity across code upgrades
         peers: wsPeers.length,
         relayPeers: relayPollCount + relayClientCount,
         relayPollers: relayPollCount,
@@ -2634,7 +3044,8 @@ export class YakmeshNode {
           candidates: this.sherpa.getConnectionCandidates(10).length,
         } : null,
         accel: accel.getStatus(),
-        steadywatch: steadywatch.getStatus(),
+        prahari: prahari.getStatus(),
+        commitReveal: this.commitReveal ? this.commitReveal.getStats() : null,
         timeSource: this.timeSource ? this.timeSource.getStatus() : null,
         security: this.mesh.getSecurityStats(),
       });
@@ -2700,10 +3111,21 @@ export class YakmeshNode {
     });
 
     // =========================================
-    // STEADYWATCH: Quantum Entropy Status
+    // PRAHARI: Mesh-Consensus Entropy Status
     // =========================================
+    app.get('/prahari', (req, res) => {
+      res.json({
+        ...prahari.getStatus(),
+        commitReveal: this.commitReveal ? this.commitReveal.getStats() : null,
+      });
+    });
+
+    // Backward compat: /steadywatch still works
     app.get('/steadywatch', (req, res) => {
-      res.json(steadywatch.getStatus());
+      res.json({
+        ...prahari.getStatus(),
+        commitReveal: this.commitReveal ? this.commitReveal.getStats() : null,
+      });
     });
 
     // =========================================
@@ -2973,6 +3395,34 @@ export class YakmeshNode {
       res.json({ success: true, rowId });
     });
 
+    // ═══════════════════════════════════════════════════════════════════
+    // SERVER DIRECTORY — C2C Lighthouse (public server browser)
+    // ═══════════════════════════════════════════════════════════════════
+
+    // List all servers (public — no auth required)
+    app.get('/servers', (req, res) => {
+      if (!this.serverDirectory) {
+        return res.status(503).json({ error: 'Server directory not initialized' });
+      }
+      const status = req.query.status || null;
+      const limit = parseInt(req.query.limit) || 100;
+      const directory = this.serverDirectory.getDirectory({ status, limit });
+      const stats = this.serverDirectory.getStats();
+      res.json({ servers: directory, stats, serverTime: Date.now() });
+    });
+
+    // Single server detail
+    app.get('/servers/:nodeId', (req, res) => {
+      if (!this.serverDirectory) {
+        return res.status(503).json({ error: 'Server directory not initialized' });
+      }
+      const server = this.serverDirectory.getServer(req.params.nodeId);
+      if (!server) {
+        return res.status(404).json({ error: 'Server not found' });
+      }
+      res.json({ server });
+    });
+
     // Gossip stats
     app.get('/gossip', (req, res) => {
       res.json(this.gossip.getStats());
@@ -3097,6 +3547,151 @@ export class YakmeshNode {
         verificationPhrase: this.genesisNetwork.verificationPhrase,
         // Note: raw oracle hash is NEVER included
       });
+    });
+
+    // =========================================
+    // Identity Backup / Recovery (localhost-only)
+    // =========================================
+
+    // Export mnemonic backup (CRITICAL — localhost-only, never expose to network)
+    app.post('/identity/backup', writeLimiter, (req, res) => {
+      const remoteAddr = req.socket?.remoteAddress || '';
+      const isLocal = remoteAddr === '127.0.0.1' || remoteAddr === '::1' || remoteAddr === '::ffff:127.0.0.1';
+      if (!isLocal) {
+        return res.status(403).json({ error: 'Identity backup restricted to localhost' });
+      }
+
+      if (!this.identity?.machineSeed) {
+        return res.status(503).json({ error: 'Identity not initialized' });
+      }
+
+      try {
+        const { password } = req.body || {};
+        const result = this.identity.machineSeed.exportMnemonic(password || undefined);
+        res.json({
+          words: result.words,
+          encrypted: result.encrypted || null,
+          persistentId: this.identity.machineSeed.getPersistentId(),
+          wordCount: result.words.length,
+          warning: 'WRITE THESE WORDS DOWN OFFLINE. This is the ONLY way to recover your identity on new hardware.',
+        });
+      } catch (e) {
+        res.status(500).json({ error: e.message });
+      }
+    });
+
+    // Verify mnemonic matches current seed (localhost-only)
+    app.post('/identity/verify-mnemonic', writeLimiter, (req, res) => {
+      const remoteAddr = req.socket?.remoteAddress || '';
+      const isLocal = remoteAddr === '127.0.0.1' || remoteAddr === '::1' || remoteAddr === '::ffff:127.0.0.1';
+      if (!isLocal) {
+        return res.status(403).json({ error: 'Identity verification restricted to localhost' });
+      }
+
+      if (!this.identity?.machineSeed) {
+        return res.status(503).json({ error: 'Identity not initialized' });
+      }
+
+      try {
+        const { words } = req.body || {};
+        if (!Array.isArray(words) || words.length !== 33) {
+          return res.status(400).json({ error: 'Must provide array of 33 mnemonic words' });
+        }
+        const result = this.identity.machineSeed.verifyMnemonic(words);
+        res.json(result);
+      } catch (e) {
+        res.status(500).json({ error: e.message });
+      }
+    });
+
+    // Restore identity from mnemonic on new hardware (localhost-only, destructive)
+    app.post('/identity/restore', writeLimiter, async (req, res) => {
+      const remoteAddr = req.socket?.remoteAddress || '';
+      const isLocal = remoteAddr === '127.0.0.1' || remoteAddr === '::1' || remoteAddr === '::ffff:127.0.0.1';
+      if (!isLocal) {
+        return res.status(403).json({ error: 'Identity restore restricted to localhost' });
+      }
+
+      try {
+        const { words, encrypted, password } = req.body || {};
+
+        let mnemonicWords = words;
+
+        // If encrypted blob provided, decrypt first
+        if (encrypted && password) {
+          const MachineSeed = (await import('../identity/machine-seed.js')).default;
+          mnemonicWords = MachineSeed.decryptMnemonic(encrypted, password);
+        }
+
+        if (!Array.isArray(mnemonicWords) || mnemonicWords.length !== 33) {
+          return res.status(400).json({ error: 'Must provide 33 mnemonic words (or encrypted blob + password)' });
+        }
+
+        const MachineSeed = (await import('../identity/machine-seed.js')).default;
+        const dataDir = this.config?.node?.dataDir || './data';
+        const restored = MachineSeed.importFromMnemonic(mnemonicWords, dataDir);
+
+        res.json({
+          success: true,
+          persistentId: restored.getPersistentId(),
+          message: 'Identity restored. Restart the node to use the new identity.',
+        });
+      } catch (e) {
+        res.status(500).json({ error: e.message });
+      }
+    });
+
+    // =========================================
+    // Anti-Cheat: Signing API (localhost-only, Tier 3 fallback)
+    // =========================================
+    // C2C and yakapp can request ML-DSA-65 signatures via HTTP when the
+    // named pipe isn't available. Localhost-only to prevent remote abuse.
+
+    app.post('/sign', writeLimiter, (req, res) => {
+      const remoteAddr = req.socket?.remoteAddress || '';
+      const isLocal = remoteAddr === '127.0.0.1' || remoteAddr === '::1' || remoteAddr === '::ffff:127.0.0.1';
+      if (!isLocal) {
+        return res.status(403).json({ error: 'Signing restricted to localhost' });
+      }
+
+      if (!this.identity?.identity) {
+        return res.status(503).json({ error: 'Identity not initialized' });
+      }
+
+      const { message } = req.body;
+      if (!message || typeof message !== 'string') {
+        return res.status(400).json({ error: 'message (string) required' });
+      }
+      if (message.length > 65536) {
+        return res.status(400).json({ error: 'message too large (max 64KB)' });
+      }
+
+      try {
+        const signature = this.identity.sign(message);
+        res.json({
+          signature,
+          publicKey: this.identity.identity.publicKey,
+          persistentId: this.identity.identity.persistentId || null,
+          algorithm: 'ML-DSA-65',
+        });
+      } catch (e) {
+        res.status(500).json({ error: `Signing failed: ${e.message}` });
+      }
+    });
+
+    // Verify a signature (public — anyone can verify, only localhost can sign)
+    app.post('/sign/verify', (req, res) => {
+      const { message, signature, publicKey } = req.body;
+      if (!message || !signature || !publicKey) {
+        return res.status(400).json({ error: 'message, signature, and publicKey required' });
+      }
+
+      try {
+        const valid = this.identity.verify(message, signature, publicKey);
+        res.json({ valid, algorithm: 'ML-DSA-65' });
+      } catch (e) {
+        res.json({ valid: false, error: e.message });
+      }
     });
 
     // Get handshake payload (for peer connection)
@@ -3297,7 +3892,7 @@ export class YakmeshNode {
           kemAlgorithm: 'ML-KEM-768',
           classicalSecurity: '192-bit',
           quantumSecurity: '128-bit',
-          routingSecurity: '256-bit (144T)',
+          routingSecurity: '256-bit (162T)',
           nistStandards: ['FIPS 203 (ML-KEM)', 'FIPS 204 (ML-DSA)', 'FIPS 205 (SLH-DSA)'],
         };
       } catch (e) {
@@ -4636,6 +5231,36 @@ export class YakmeshNode {
   }
 
   /**
+   * Initialize YakAI Adapter — bridges yakai with ComputeScheduler + identity
+   * Follows the same pattern as _initWebsiteAdapter.
+   */
+  async _initYakaiAdapter() {
+    try {
+      const { YakaiAdapter, createYakaiEndpoints } = await import('../adapters/adapter-yakai/index.js');
+
+      this.yakaiAdapter = new YakaiAdapter(this, {
+        yakaiPort: parseInt(process.env.YAKAI_PORT || '3092', 10),
+        maxConcurrentInference: parseInt(process.env.YAKAI_MAX_INFERENCE || '4', 10),
+      });
+
+      await this.yakaiAdapter.init();
+
+      // Mount yakai bridge endpoints on yakmesh HTTP server
+      if (this.app && createYakaiEndpoints) {
+        createYakaiEndpoints(this.app, this.yakaiAdapter);
+      }
+
+      log.info('✓ YakAI Adapter enabled');
+      log.info(`  Bridge: /yakai/capabilities, /yakai/identity, /yakai/sign, /yakai/stats`);
+    } catch (error) {
+      // YakAI adapter is optional — yakai still works with Gemini API fallback
+      if (error.code !== 'ERR_MODULE_NOT_FOUND') {
+        log.warn('⚠️ YakAI Adapter:', { error: error.message });
+      }
+    }
+  }
+
+  /**
    * Initialize YAK:// Protocol Handler
    */
   async _initProtocolHandler() {
@@ -4667,6 +5292,91 @@ const __filename = fileURLToPath(import.meta.url);
 const isMainModule = process.argv[1] === __filename ||
   process.argv[1]?.replace(/\\/g, '/') === __filename.replace(/\\/g, '/');
 if (isMainModule) {
+  const args = process.argv.slice(2);
+
+  // ── CLI: yakmesh identity backup ──
+  if (args[0] === 'identity' && args[1] === 'backup') {
+    const MachineSeed = (await import('../identity/machine-seed.js')).default;
+    const config = await loadConfig();
+    const dataDir = config.node?.dataDir || './data';
+    const ms = new MachineSeed(dataDir);
+    await ms.init();
+
+    const password = args[2] || undefined; // optional password as 3rd arg
+    const result = ms.exportMnemonic(password);
+
+    console.log('\n╔═══════════════════════════════════════════════════════════════╗');
+    console.log('║          🦬 YAKMESH IDENTITY BACKUP — MNEMONIC              ║');
+    console.log('╠═══════════════════════════════════════════════════════════════╣');
+    console.log('║ WRITE THESE WORDS ON PAPER. NEVER STORE DIGITALLY.          ║');
+    console.log('║ This is the ONLY way to recover your identity.              ║');
+    console.log('╚═══════════════════════════════════════════════════════════════╝\n');
+    console.log(`Persistent ID: ${ms.getPersistentId()}`);
+    console.log(`Words (${result.words.length}):\n`);
+    result.words.forEach((w, i) => {
+      const num = String(i + 1).padStart(2, ' ');
+      process.stdout.write(`  ${num}. ${w.padEnd(16)}`);
+      if ((i + 1) % 4 === 0) process.stdout.write('\n');
+    });
+    if (result.encrypted) {
+      console.log(`\nEncrypted backup (password-protected):\n${result.encrypted}`);
+    }
+    console.log('\n');
+    process.exit(0);
+  }
+
+  // ── CLI: yakmesh identity verify ──
+  if (args[0] === 'identity' && args[1] === 'verify') {
+    const MachineSeed = (await import('../identity/machine-seed.js')).default;
+    const config = await loadConfig();
+    const dataDir = config.node?.dataDir || './data';
+    const ms = new MachineSeed(dataDir);
+    await ms.init();
+
+    // Read 33 words from remaining args
+    const words = args.slice(2);
+    if (words.length !== 33) {
+      console.error(`\n❌ Expected 33 mnemonic words, got ${words.length}`);
+      console.error('Usage: node index.js identity verify word1 word2 ... word33\n');
+      process.exit(1);
+    }
+
+    const result = ms.verifyMnemonic(words);
+    if (result.valid) {
+      console.log('\n✅ Mnemonic verification PASSED — words match current identity.\n');
+    } else {
+      console.error(`\n❌ Mnemonic verification FAILED: ${result.error}\n`);
+      process.exit(1);
+    }
+    process.exit(0);
+  }
+
+  // ── CLI: yakmesh identity restore ──
+  if (args[0] === 'identity' && args[1] === 'restore') {
+    const MachineSeed = (await import('../identity/machine-seed.js')).default;
+    const config = await loadConfig();
+    const dataDir = config.node?.dataDir || './data';
+
+    const words = args.slice(2);
+    if (words.length !== 33) {
+      console.error(`\n❌ Expected 33 mnemonic words, got ${words.length}`);
+      console.error('Usage: node index.js identity restore word1 word2 ... word33\n');
+      process.exit(1);
+    }
+
+    try {
+      const restored = MachineSeed.importFromMnemonic(words, dataDir);
+      console.log('\n✅ Identity restored successfully!');
+      console.log(`Persistent ID: ${restored.getPersistentId()}`);
+      console.log('Restart the node to use the restored identity.\n');
+    } catch (e) {
+      console.error(`\n❌ Restore failed: ${e.message}\n`);
+      process.exit(1);
+    }
+    process.exit(0);
+  }
+
+  // ── Normal startup ──
   const config = await loadConfig();
   const node = new YakmeshNode(config);
 

@@ -6,19 +6,19 @@
 // Test direct WebSocket connection to remote node
 const WebSocket = (await import('ws')).default;
 
-const REMOTE_NODE = 'ws://WIN-LQH9ULSNBFU:3000/ws';
-const LOCAL_NODE = 'ws://localhost:3000/ws';
+const REMOTE_NODE = 'ws://WIN-LQH9ULSNBFU:3080/ws';
+const LOCAL_NODE = 'ws://localhost:3080/ws';
 
 async function testConnection(url, name) {
   return new Promise((resolve) => {
     console.log('Connecting to ' + name + '...');
-    
+
     try {
       const ws = new WebSocket(url);
-      
+
       ws.on('open', () => {
         console.log('  ✅ Connected to ' + name);
-        
+
         // Send a test gossip message
         const msg = JSON.stringify({
           type: 'hello',
@@ -27,22 +27,22 @@ async function testConnection(url, name) {
         });
         ws.send(msg);
         console.log('  → Sent test message');
-        
+
         setTimeout(() => {
           ws.close();
           resolve({ success: true, name });
         }, 2000);
       });
-      
+
       ws.on('message', (data) => {
         console.log('  ← Received: ' + data.toString().slice(0, 100));
       });
-      
+
       ws.on('error', (err) => {
         console.log('  ❌ Error: ' + err.message);
         resolve({ success: false, name, error: err.message });
       });
-      
+
     } catch (e) {
       console.log('  ❌ Failed: ' + e.message);
       resolve({ success: false, name, error: e.message });

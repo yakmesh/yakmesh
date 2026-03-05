@@ -7,7 +7,7 @@ We take security seriously at YAKMESH™. If you discover a security vulnerabili
 ### How to Report
 
 1. **Open a GitHub issue**: <https://github.com/yakmesh/yakmesh/issues> — use the "Security" label if available, or prefix the title with `[SECURITY]`.
-2. **Email** (for sensitive disclosures): security@yakmesh.dev
+2. **Email** (for sensitive disclosures): <security@yakmesh.dev>
 
 For sensitive vulnerabilities where public disclosure would be premature, prefer email. For general security concerns, questions, or non-critical findings, a GitHub issue is fine.
 
@@ -26,11 +26,12 @@ For sensitive vulnerabilities where public disclosure would be premature, prefer
 
 ### Version Policy
 
-Security reports are accepted for the **latest release only**. If you believe you've found a vulnerability in an older version, please verify it against the current release before reporting. Assistance with issues on older versions is available as premium support — contact us at support@yakmesh.dev.
+Security reports are accepted for the **latest release only**. If you believe you've found a vulnerability in an older version, please verify it against the current release before reporting. Assistance with issues on older versions is available as premium support — contact us at <support@yakmesh.dev>.
 
 ### Recognition
 
 We appreciate responsible disclosure and will:
+
 - Credit you in the security advisory (unless you prefer anonymity)
 - Work with you to understand and resolve the issue
 - Not take legal action for good-faith security research
@@ -70,6 +71,7 @@ node-[networkName]-[instanceId]
 | `instanceId` | Public key hash via iO | Unique per node instance |
 
 **Security Properties**:
+
 1. **Codebase Integrity** - Network name proves nodes run identical code
 2. **Instance Uniqueness** - Instance ID is deterministically tied to keypair
 3. **Human Verifiability** - Word-based names can be verified verbally
@@ -89,6 +91,7 @@ node-[networkName]-[instanceId]
 **Location**: `oracle/network-identity.js`
 
 The indistinguishability obfuscation (iO) system provides:
+
 - Deterministic identity derivation from hashes
 - Human-readable, verifiable names
 - Phase modulation for replay protection
@@ -106,6 +109,7 @@ The indistinguishability obfuscation (iO) system provides:
 | Internal DHT keys | ❌ NO | Lookup efficiency requires actual hashes |
 
 **DO NOT**:
+
 - Bypass the oracle for "faster" identity generation
 - Expose raw hashes in user-facing displays or network messages
 - Cache identities without oracle verification
@@ -113,6 +117,7 @@ The indistinguishability obfuscation (iO) system provides:
 - Display truncated hex hashes (e.g., `7f3a9b2c...`) to users
 
 **WHY RAW HASH EXPOSURE IS DANGEROUS**:
+
 1. **Fingerprinting** - Track users across sessions
 2. **Precomputation** - Build rainbow tables for known entities
 3. **Oracle queries** - Probe for specific identity existence

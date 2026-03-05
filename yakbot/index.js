@@ -36,7 +36,7 @@ const config = {
   // Official YAKMESH nodes for health checks
   officialNodes: [
     { name: 'Primary (Hostinger)', url: 'https://yakmesh.dev/node.php?e=health', icon: '🦬' },
-    { name: 'LAN (Abyss)', url: 'http://192.168.1.178:3000/health', icon: '🏠' },
+    { name: 'LAN (Abyss)', url: 'http://192.168.1.178:3080/health', icon: '🏠' },
   ],
 
   // Links

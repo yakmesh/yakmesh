@@ -1,0 +1,5 @@
+{
+    "_comment": "Canonical port configuration — single source of truth. Read by both ESM (.js) and CommonJS (.cjs) consumers. Override at runtime via YAKMESH_HTTP_PORT / YAKMESH_WS_PORT env vars.",
+    "httpPort": 3080,
+    "wsPort": 9080
+}

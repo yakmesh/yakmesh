@@ -19,7 +19,7 @@ async function main() {
     name: 'My Yakmesh Node',
     port: 9001,
     enableDashboard: true,
-    dashboardPort: 3000
+    dashboardPort: 3080
   });
 
   // 2. Start the web server

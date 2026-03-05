@@ -25,7 +25,7 @@ import { createLogger } from '../utils/logger.js';
 import { deriveNetworkName } from '../oracle/network-identity.js';
 
 // Import 144T ternary system for hex-free content addressing
-import { TritAddress, TOTAL_TRITS } from '../oracle/ternary-144t.js';
+import { TritAddress, TOTAL_TRITS } from '../oracle/ternary-routing.js';
 
 const log = createLogger('content:store');
 
@@ -60,7 +60,7 @@ export const ContentStatus = {
 
 /**
  * Compute content hash (SHA3-256) — returns hex string
- * @deprecated Use computeContentHash144T for new content (hex-free addressing)
+ * @deprecated Use computeContentHashTernary for new content (hex-free addressing)
  */
 export function computeContentHash(content) {
   if (typeof content === 'string') {
@@ -77,7 +77,7 @@ export function computeContentHash(content) {
 }
 
 /**
- * Compute content hash as 144T ternary address
+ * Compute content hash as 162T ternary address
  * 
  * This is the preferred content addressing format:
  * - No hex digits (no "666" ever)
@@ -88,16 +88,19 @@ export function computeContentHash(content) {
  * @param {string | Buffer | Uint8Array | object} content — content to hash
  * @returns {{ hex: string, trit: string, tritAddress: TritAddress }} — both formats for compatibility
  */
-export function computeContentHash144T(content) {
+export function computeContentHashTernary(content) {
   // First compute SHA3-256 as hex (internal only)
   const hex = computeContentHash(content);
 
-  // Convert to 144T ternary address
+  // Convert to 162T ternary address
   const tritAddress = TritAddress.fromHex(hex);
   const trit = tritAddress.toString(true); // compact format with tier separators
 
   return { hex, trit, tritAddress };
 }
+
+/** @deprecated Use computeContentHashTernary */
+export const computeContentHash144T = computeContentHashTernary;
 
 /**
  * Validate that a hex string doesn't contain forbidden patterns.
@@ -112,8 +115,8 @@ export function isHexSafe(hex) {
 }
 
 /**
- * Check if a string is a valid 144T trit address.
- * Format: 4 tiers separated by dots, each tier has 4 sub-blocks separated by colons.
+ * Check if a string is a valid trit address.
+ * Format: 3 tiers separated by dots, each tier has 6 sub-blocks separated by colons.
  * Characters: T (negative), 0 (neutral), 1 (positive)
  * 
  * @param {string} s — string to check
@@ -312,12 +315,12 @@ export class ContentStore {
   /**
    * Store content
    * 
-   * Returns the 144T hash (preferred) along with legacy hex for compatibility.
+   * Returns the ternary hash (preferred) along with legacy hex for compatibility.
    * Internal storage uses hex paths for backward compatibility with existing content.
    */
   async store(content, options = {}) {
     // Compute both hash formats
-    const { hex: hash, trit: hash144t } = computeContentHash144T(content);
+    const { hex: hash, trit: hashTrit } = computeContentHashTernary(content);
 
     // Check size limit
     const size = Buffer.isBuffer(content) ? content.length :
@@ -333,7 +336,7 @@ export class ContentStore {
       const existing = this.getMeta(hash);
       return {
         hash,
-        hash144t: existing.hash144t || hash144t,
+        hash144t: existing.hash144t || hashTrit,
         ioName: existing.ioName,
         status: 'exists',
         meta: existing
@@ -346,7 +349,7 @@ export class ContentStore {
     // Create metadata with both hash formats
     const meta = new ContentMetadata({
       hash,
-      hash144t,
+      hash144t: hashTrit,
       ioName,
       contentType: options.contentType || this._detectContentType(content),
       size,
@@ -375,9 +378,9 @@ export class ContentStore {
     // Update caches
     this.metaCache.set(hash, meta);
 
-    // Index by iO name, 144T address, and custom name for flexible lookup
+    // Index by iO name, ternary address, and custom name for flexible lookup
     this.nameIndex.set(ioName, hash);     // iO name always indexed
-    this.nameIndex.set(hash144t, hash);   // 144T address indexed
+    this.nameIndex.set(hashTrit, hash);   // ternary address indexed
     if (meta.name) {
       this.nameIndex.set(meta.name, hash);  // Custom name if provided
     }
@@ -388,13 +391,13 @@ export class ContentStore {
       await this.publish(hash);
     }
 
-    log.info('Content stored', { hash144t: hash144t.split('.')[0] + '...', ioName, size });
-    return { hash, hash144t, ioName, status: 'stored', meta };
+    log.info('Content stored', { hash: hashTrit.split('.')[0] + '...', ioName, size });
+    return { hash, hash144t: hashTrit, ioName, status: 'stored', meta };
   }
 
   /**
    * Resolve any content identifier to internal hex hash.
-   * Accepts: hex hash, 144T address, iO name, or custom name.
+   * Accepts: hex hash, ternary address, iO name, or custom name.
    * @private
    */
   _resolveHash(id) {
@@ -406,7 +409,7 @@ export class ContentStore {
   }
 
   /**
-   * Retrieve content by hash, 144T address, iO name, or custom name
+   * Retrieve content by hash, ternary address, iO name, or custom name
    */
   get(id) {
     const hash = this._resolveHash(id);

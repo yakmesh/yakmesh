@@ -32,6 +32,12 @@ coverage/
 dist/
 build/
 
+# Public web root build artifacts (copied from sibling projects)
+# The public/ dir itself and public/dashboard/ + public/assets/ are tracked,
+# but C2C game art and YakAI portraits are build-time copies.
+public/c2c/
+public/yakai/
+
 # Temporary test/debug files
 test-verify-*.mjs
 test-full-hash.mjs
