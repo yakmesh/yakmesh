@@ -58,13 +58,29 @@ export const SEVA_CONFIG = Object.freeze({
   capabilityBroadcastInterval: 60000,  // Advertise every 60s
   capabilityTTL: 180000,              // Expire after 3 minutes
   
-  // Model slots (must match c2c server SEVA_SLOTS)
+  // Model slots (must match c2c server SEVA_SLOTS — 18 slots)
   validSlots: new Set([
+    // Planet rendering (21g)
     'planet-variation',
     'planet-heightmap',
     'planet-superres',
+    // Game AI models
     'faction-brain',
     'combat-predict',
+    'threat-narrator',
+    'fleet-advisor',
+    'expedition-oracle',
+    'commander-ai',
+    'adaptive-threat',
+    'lane-optimizer',
+    'lore-generator',
+    // AI Commander (C.6)
+    'sherpa-commander',
+    'lama-strategist',
+    'whisper-transcribe',
+    'vc-commander',
+    // Dynamis anti-cheat
+    'behavior-detector',
   ]),
   
   // Message types
