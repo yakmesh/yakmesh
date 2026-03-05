@@ -47,10 +47,10 @@
   <circle cx="840" cy="330" r="3" fill="url(#seedGlow)"/>
   <circle cx="1000" cy="160" r="2.5" fill="url(#seedGlow)"/>
   <circle cx="920" cy="400" r="2.5" fill="url(#seedGlow)"/>
-  <!-- 144 label -->
-  <text x="960" y="285" fill="#a78bfa" opacity="0.3" font-size="18" font-family="monospace" text-anchor="middle">144</text>
-  <!-- Quaternion symbols -->
-  <text x="800" y="700" fill="#c4b5fd" opacity="0.15" font-size="24" font-family="serif">H(ℤ)</text>
+  <!-- 162T label -->
+  <text x="960" y="285" fill="#a78bfa" opacity="0.3" font-size="18" font-family="monospace" text-anchor="middle">162</text>
+  <!-- Sponge symbol -->
+  <text x="800" y="700" fill="#c4b5fd" opacity="0.15" font-size="24" font-family="serif">SHA3</text>
   <text x="1100" y="710" fill="#c4b5fd" opacity="0.15" font-size="24" font-family="serif">𝔽₃</text>
   <!-- GROUND -->
   <polygon points="0,920 350,890 700,930 960,900 1200,940 1500,895 1920,920 1920,1080 0,1080" fill="#101a16" opacity="0.75"/>
