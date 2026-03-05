@@ -74,6 +74,7 @@ export const SEVA_CONFIG = Object.freeze({
     'adaptive-threat',
     'lane-optimizer',
     'lore-generator',
+    'anomaly-classifier',
     // AI Commander (C.6)
     'sherpa-commander',
     'lama-strategist',
