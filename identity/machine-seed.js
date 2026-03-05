@@ -66,11 +66,11 @@ import { YPC27Checksum, Poly27, bytesToTrits, DEFAULT_SEED as YPC27_DEFAULT_SEED
 // SST family analysis
 import { bytesToFamilyTrits, analyzeBytesFamilies } from '../oracle/sst.js';
 
-// iO derivation for domain separation
-import { deriveVerificationPhrase } from '../oracle/network-identity.js';
+// iO derivation for domain separation + QUANTUM_WORDLIST for mnemonic backup
+import { deriveVerificationPhrase, QUANTUM_WORDLIST } from '../oracle/network-identity.js';
 
-// 144T ternary addressing for persistent machine identity
-import { TritAddress, TOTAL_TRITS } from '../oracle/ternary-144t.js';
+// 162T ternary addressing for persistent machine identity
+import { TritAddress, TOTAL_TRITS } from '../oracle/ternary-routing.js';
 
 
 // =============================================================================
@@ -83,8 +83,8 @@ const SEED_BYTES = 32;
 /** Seed file name */
 const SEED_FILENAME = 'machine-seed.json';
 
-/** Current seed file schema version — bumped for persistentId144T */
-const SCHEMA_VERSION = 2;
+/** Current seed file schema version — bumped for persistentId 162T */
+const SCHEMA_VERSION = 3;
 
 /** Persistent ID prefix */
 const PERSISTENT_ID_PREFIX = 'yak';
@@ -260,18 +260,19 @@ export function deriveBackupSecret(seed, oracleHash, verPhrase) {
 // =============================================================================
 
 /**
- * Compute persistent machine ID in 144T ternary format.
+ * Compute persistent machine ID in 162T ternary format.
  * This ID is CONSTANT across all code upgrades — derived directly from seed.
  * 
- * Format: "yak-[tier1-144T]" where tier1 is 36 trits (≈57 bits entropy)
- * Example: "yak-TT00TTT00:TTT00TTT0:0TTT00TTT:00TTT00TT"
+ * Format: "yak-[summit-162T]" where summit is 54 trits (≈85.6 bits entropy)
+ * Example: "yak-TT00TTT00:TTT00TTT0:0TTT00TTT:00TTT00TT:TT00TTT00:TTT00TTT0"
  * 
  * @param {Uint8Array} seed - Raw 32-byte machine seed
- * @returns {string} Persistent 144T identifier
+ * @returns {string} Persistent 162T identifier
  */
-function computePersistentId144T(seed) {
+function computePersistentId(seed) {
   // Domain-separate from other derivations — "persistent-machine-id" context
-  const context = new TextEncoder().encode('yakmesh:persistent-machine-id:v1');
+  // v2 domain separator for 162T upgrade
+  const context = new TextEncoder().encode('yakmesh:persistent-machine-id:v2');
   const combined = new Uint8Array(seed.length + context.length);
   combined.set(seed);
   combined.set(context, seed.length);
@@ -279,11 +280,11 @@ function computePersistentId144T(seed) {
   const hash = sha3_256(combined);
   const hex = bytesToHex(hash);
 
-  // Convert to 144T, extract tier 1 for compact persistent ID
+  // Convert to 162T, extract summit tier for compact persistent ID
   const tritAddr = TritAddress.fromHex(hex);
-  const tier1 = tritAddr.toString().split('.')[0];
+  const summit = tritAddr.toString().split('.')[0];
 
-  return `${PERSISTENT_ID_PREFIX}-${tier1}`;
+  return `${PERSISTENT_ID_PREFIX}-${summit}`;
 }
 
 /**
@@ -325,6 +326,88 @@ function addMigrationEntry(chain, oracleHash, pubKeyHash, networkName) {
  */
 function analyzeSeedFamilies(seed) {
   return analyzeBytesFamilies(seed);
+}
+
+
+// =============================================================================
+// MNEMONIC BACKUP / RECOVERY (QUANTUM_WORDLIST)
+// =============================================================================
+
+/**
+ * Convert raw seed bytes to a mnemonic phrase using QUANTUM_WORDLIST.
+ * Each byte (0-255) maps to one of the 256 words in QUANTUM_WORDLIST.
+ * 32 bytes → 32 words.
+ * 
+ * The last word is a YPC-27-derived checksum word for integrity verification.
+ * Total output: 33 words (32 seed + 1 checksum).
+ * 
+ * @param {Uint8Array} seed - Raw 32-byte seed
+ * @returns {string[]} Array of 33 mnemonic words
+ */
+function seedToMnemonic(seed) {
+  if (!seed || seed.length !== SEED_BYTES) {
+    throw new Error(`Seed must be ${SEED_BYTES} bytes, got ${seed?.length}`);
+  }
+
+  const words = [];
+  for (let i = 0; i < seed.length; i++) {
+    words.push(QUANTUM_WORDLIST[seed[i]]);
+  }
+
+  // Append YPC-27-derived checksum word
+  const checksumHash = sha3_256(seed);
+  const checksumByte = checksumHash[0]; // First byte of SHA3-256 of seed
+  words.push(QUANTUM_WORDLIST[checksumByte]);
+
+  return words;
+}
+
+/**
+ * Convert a mnemonic phrase back to raw seed bytes.
+ * Verifies the checksum word (33rd word) matches.
+ * 
+ * @param {string[]} words - Array of 33 mnemonic words
+ * @returns {Uint8Array} Raw 32-byte seed
+ * @throws {Error} If words are invalid or checksum fails
+ */
+function mnemonicToSeed(words) {
+  if (!Array.isArray(words) || words.length !== SEED_BYTES + 1) {
+    throw new Error(`Mnemonic must be ${SEED_BYTES + 1} words, got ${words?.length}`);
+  }
+
+  // Build reverse lookup map
+  const wordToIndex = new Map();
+  for (let i = 0; i < QUANTUM_WORDLIST.length; i++) {
+    wordToIndex.set(QUANTUM_WORDLIST[i].toLowerCase(), i);
+  }
+
+  const seedBytes = new Uint8Array(SEED_BYTES);
+  for (let i = 0; i < SEED_BYTES; i++) {
+    const word = words[i].toLowerCase().trim();
+    const idx = wordToIndex.get(word);
+    if (idx === undefined) {
+      throw new Error(`Unknown mnemonic word at position ${i + 1}: "${words[i]}"`);
+    }
+    seedBytes[i] = idx;
+  }
+
+  // Verify checksum word
+  const checksumWord = words[SEED_BYTES].toLowerCase().trim();
+  const checksumIdx = wordToIndex.get(checksumWord);
+  if (checksumIdx === undefined) {
+    throw new Error(`Unknown checksum word: "${words[SEED_BYTES]}"`);
+  }
+
+  const expectedHash = sha3_256(seedBytes);
+  const expectedByte = expectedHash[0];
+  if (checksumIdx !== expectedByte) {
+    throw new Error(
+      'Mnemonic checksum verification FAILED. ' +
+      'One or more words may be incorrect or in the wrong order.'
+    );
+  }
+
+  return seedBytes;
 }
 
 
@@ -427,14 +510,16 @@ export class MachineSeed {
       }
 
       this.seed = seed;
-      this.persistentId = data.persistentId144T || computePersistentId144T(seed);
+      this.persistentId = data.persistentId || data.persistentId144T
+        ? computePersistentId(seed)  // always re-derive for 162T format
+        : computePersistentId(seed);
       this.migrationChain = data.migrationChain || [];
       this.sstFamilies = data.sstFamilies || analyzeSeedFamilies(seed);
       this.created = false;
 
-      // Schema migration: add persistentId if missing (v1 → v2)
-      if (!data.persistentId144T) {
-        log.info('Migrating seed file to v2 (adding persistentId144T)');
+      // Schema migration: upgrade to v3 (162T persistent ID)
+      if (data.schemaVersion < 3 || !data.persistentId) {
+        log.info('Migrating seed file to v3 (162T persistentId)');
         this._updateSeedFile();
       }
 
@@ -471,8 +556,8 @@ export class MachineSeed {
     // Compute YPC-27 integrity checksum (SIS-hard polynomial seal)
     const ypc27Checksum = computeSeedChecksum(seed);
 
-    // Compute persistent 144T identity (constant across all upgrades)
-    const persistentId144T = computePersistentId144T(seed);
+    // Compute persistent 162T identity (constant across all upgrades)
+    const persistentId = computePersistentId(seed);
 
     // Compute SST family analysis
     const sstFamilies = analyzeSeedFamilies(seed);
@@ -485,7 +570,7 @@ export class MachineSeed {
       schemaVersion: SCHEMA_VERSION,
       encryptedSeed,
       ypc27Checksum,
-      persistentId144T,
+      persistentId,
       sstFamilies,
       migrationChain: [],
       createdAt: new Date().toISOString(),
@@ -495,13 +580,13 @@ export class MachineSeed {
     this._secureFile();
 
     this.seed = seed;
-    this.persistentId = persistentId144T;
+    this.persistentId = persistentId;
     this.migrationChain = [];
     this.sstFamilies = sstFamilies;
     this.created = true;
 
     log.info('Machine seed generated and secured', {
-      persistentId: persistentId144T,
+      persistentId: persistentId,
       ypc27Checksum: ypc27Checksum.slice(0, 12) + '...',
       sstFamilies,
       encrypted: true,
@@ -570,7 +655,7 @@ export class MachineSeed {
 
     const encryptedSeed = encryptSeed(this.seed, this.dataDir);
     const ypc27Checksum = computeSeedChecksum(this.seed);
-    const persistentId144T = this.persistentId || computePersistentId144T(this.seed);
+    const persistentId = this.persistentId || computePersistentId(this.seed);
     const sstFamilies = this.sstFamilies || analyzeSeedFamilies(this.seed);
 
     const existing = existsSync(this.seedPath)
@@ -581,7 +666,7 @@ export class MachineSeed {
       schemaVersion: SCHEMA_VERSION,
       encryptedSeed,
       ypc27Checksum,
-      persistentId144T,
+      persistentId,
       sstFamilies,
       migrationChain: this.migrationChain,
       createdAt: existing.createdAt || new Date().toISOString(),
@@ -590,6 +675,194 @@ export class MachineSeed {
 
     writeFileSync(this.seedPath, JSON.stringify(seedFile, null, 2));
     this._secureFile();
+  }
+
+  /**
+   * Export the seed as a mnemonic phrase (33 QUANTUM_WORDLIST words).
+   * 
+   * The mnemonic is the ONLY way to recover this identity on new hardware.
+   * It MUST be stored offline (paper, steel plate, etc.) — never digitally.
+   * 
+   * If a password is provided, the mnemonic words are additionally encrypted
+   * with AES-256-GCM under a scrypt-derived key and returned as a hex blob.
+   * Without a password, the raw word array is returned directly.
+   * 
+   * @param {string} [password] - Optional password to encrypt mnemonic output
+   * @returns {{ words: string[], encrypted?: string }} Mnemonic words (+ encrypted blob if password given)
+   */
+  exportMnemonic(password) {
+    if (!this.seed) {
+      throw new Error('Machine seed not initialized. Call init() first.');
+    }
+
+    const words = seedToMnemonic(this.seed);
+
+    const result = { words };
+
+    if (password && typeof password === 'string' && password.length > 0) {
+      // Derive encryption key from password (NOT the hardware key)
+      const salt = randomBytes(16);
+      const key = scryptSync(password, salt, 32, { N: 2 ** 17, r: 8, p: 1 });
+      const nonce = randomBytes(12);
+      const cipher = createCipheriv('aes-256-gcm', key, nonce);
+      const plaintext = words.join(' ');
+      const encrypted = Buffer.concat([
+        cipher.update(Buffer.from(plaintext, 'utf8')),
+        cipher.final(),
+      ]);
+      const tag = cipher.getAuthTag();
+
+      result.encrypted = [
+        salt.toString('hex'),
+        nonce.toString('hex'),
+        tag.toString('hex'),
+        encrypted.toString('hex'),
+      ].join(':');
+    }
+
+    log.info('Mnemonic exported', {
+      wordCount: words.length,
+      passwordProtected: !!password,
+      persistentId: this.persistentId,
+    });
+
+    return result;
+  }
+
+  /**
+   * Verify a mnemonic phrase against this machine's seed.
+   * Compares the mnemonic-derived seed with the in-memory seed.
+   * 
+   * @param {string[]} words - Array of 33 mnemonic words to verify
+   * @returns {{ valid: boolean, error?: string }}
+   */
+  verifyMnemonic(words) {
+    if (!this.seed) {
+      return { valid: false, error: 'Machine seed not initialized. Call init() first.' };
+    }
+
+    try {
+      const recoveredSeed = mnemonicToSeed(words);
+
+      // Constant-time comparison to prevent timing attacks
+      if (recoveredSeed.length !== this.seed.length) {
+        return { valid: false, error: 'Recovered seed length mismatch' };
+      }
+
+      let diff = 0;
+      for (let i = 0; i < recoveredSeed.length; i++) {
+        diff |= recoveredSeed[i] ^ this.seed[i];
+      }
+
+      if (diff !== 0) {
+        return { valid: false, error: 'Mnemonic does not match current machine seed' };
+      }
+
+      return { valid: true };
+    } catch (e) {
+      return { valid: false, error: e.message };
+    }
+  }
+
+  /**
+   * Decrypt an encrypted mnemonic blob and verify it.
+   * 
+   * @param {string} encryptedBlob - The encrypted hex blob from exportMnemonic()
+   * @param {string} password - Password used during export
+   * @returns {string[]} Array of 33 mnemonic words
+   */
+  static decryptMnemonic(encryptedBlob, password) {
+    const [saltHex, nonceHex, tagHex, ciphertextHex] = encryptedBlob.split(':');
+    if (!saltHex || !nonceHex || !tagHex || !ciphertextHex) {
+      throw new Error('Invalid encrypted mnemonic format');
+    }
+
+    const key = scryptSync(password, Buffer.from(saltHex, 'hex'), 32, { N: 2 ** 17, r: 8, p: 1 });
+    const decipher = createDecipheriv(
+      'aes-256-gcm',
+      key,
+      Buffer.from(nonceHex, 'hex'),
+    );
+    decipher.setAuthTag(Buffer.from(tagHex, 'hex'));
+    const decrypted = Buffer.concat([
+      decipher.update(Buffer.from(ciphertextHex, 'hex')),
+      decipher.final(),
+    ]);
+
+    return decrypted.toString('utf8').split(' ');
+  }
+
+  /**
+   * Restore a machine seed from a mnemonic phrase on new hardware.
+   * Creates a new seed file encrypted under the NEW machine's hardware key.
+   * The persistent identity (persistentId) will be the SAME because
+   * it's derived deterministically from the seed.
+   * 
+   * @param {string[]} words - Array of 33 mnemonic words
+   * @param {string} dataDir - Data directory on the new machine
+   * @returns {MachineSeed} Initialized MachineSeed instance
+   */
+  static importFromMnemonic(words, dataDir = './data') {
+    // Convert mnemonic back to raw seed (validates checksum)
+    const seed = mnemonicToSeed(words);
+
+    // Verify YPC-27 integrity (the seed must produce a valid checksum)
+    const ypc27Checksum = computeSeedChecksum(seed);
+    const persistentId = computePersistentId(seed);
+    const sstFamilies = analyzeSeedFamilies(seed);
+
+    // Ensure data directory exists
+    if (!existsSync(dataDir)) {
+      mkdirSync(dataDir, { recursive: true });
+    }
+
+    const seedPath = join(dataDir, SEED_FILENAME);
+    if (existsSync(seedPath)) {
+      throw new Error(
+        'Seed file already exists at this location. ' +
+        'Delete the existing seed file first if you want to import. ' +
+        'WARNING: This will permanently lose the existing identity!'
+      );
+    }
+
+    // Encrypt seed under NEW machine's hardware-derived key
+    const encryptedSeed = encryptSeed(seed, dataDir);
+
+    const seedFile = {
+      schemaVersion: SCHEMA_VERSION,
+      encryptedSeed,
+      ypc27Checksum,
+      persistentId,
+      sstFamilies,
+      migrationChain: [],
+      createdAt: new Date().toISOString(),
+      restoredFromMnemonic: true,
+      restoredAt: new Date().toISOString(),
+    };
+
+    writeFileSync(seedPath, JSON.stringify(seedFile, null, 2));
+
+    // Set permissions (no-op on Windows)
+    if (platform() !== 'win32') {
+      try { chmodSync(seedPath, 0o600); } catch { /* ignore */ }
+    }
+
+    // Create and return a ready MachineSeed instance
+    const instance = new MachineSeed(dataDir);
+    instance.seed = seed;
+    instance.persistentId = persistentId;
+    instance.migrationChain = [];
+    instance.sstFamilies = sstFamilies;
+    instance.created = false;
+
+    log.info('Identity restored from mnemonic', {
+      persistentId: persistentId,
+      ypc27Checksum: ypc27Checksum.slice(0, 12) + '...',
+      sstFamilies,
+      restoredAt: new Date().toISOString(),
+    });
+
+    return instance;
   }
 
   /**
@@ -604,14 +877,14 @@ export class MachineSeed {
   }
 
   /**
-   * Get the persistent 144T machine identity.
+   * Get the persistent 162T machine identity.
    * This ID is CONSTANT across all code upgrades — it identifies the
    * physical machine/node owner regardless of network version.
    * 
-   * Format: "yak-[tier1-144T]"
-   * Example: "yak-TT00TTT00:TTT00TTT0:0TTT00TTT:00TTT00TT"
+   * Format: "yak-[summit-162T]"
+   * Example: "yak-TT00TTT00:TTT00TTT0:0TTT00TTT:00TTT00TT:TT00TTT00:TTT00TTT0"
    * 
-   * @returns {string} Persistent 144T identifier
+   * @returns {string} Persistent 162T identifier
    */
   getPersistentId() {
     if (!this.persistentId) {
@@ -630,3 +903,4 @@ export class MachineSeed {
 }
 
 export default MachineSeed;
+export { seedToMnemonic, mnemonicToSeed };

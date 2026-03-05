@@ -26,12 +26,33 @@ async function initSQL() {
 }
 
 /**
+ * Time-trust ranking (higher = more authoritative).
+ * When two changes conflict for the same SC entity, the one with
+ * higher trust wins. Equal trust falls through to timestamp ordering.
+ */
+const TIME_TRUST_RANK = {
+  quantum: 6,
+  atomic: 5,
+  gps: 4,
+  ptp: 3,
+  ntp: 2,
+  unsync: 1,
+};
+
+/** SC tables that use time-trust conflict resolution.
+ *  sc_transactions is append-only (unique IDs) so no conflict is possible. */
+const SC_TABLES = new Set(['sc_ledger']);
+
+/**
  * Tables to replicate across the mesh
  */
 const REPLICATED_TABLES = [
   'pq_listings',
   'pq_chat_messages',
   'qcoa_certificates',
+  'user_profiles',
+  'sc_ledger',
+  'sc_transactions',
 ];
 
 /**
@@ -83,7 +104,7 @@ export class ReplicationEngine {
         synced_to TEXT DEFAULT '[]'
       )
     `);
-    
+
     this.db.run(`
       CREATE TABLE IF NOT EXISTS _replication_state (
         peer_node_id TEXT PRIMARY KEY,
@@ -159,14 +180,14 @@ export class ReplicationEngine {
       nodeId: this.nodeId, vectorClock,
     });
     const signature = this.identity.sign(sigPayload);
-    
+
     this.db.run(
       `INSERT INTO _replication_log 
        (table_name, row_id, operation, data, node_id, vector_clock, created_at, signature)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
       [tableName, String(rowId), operation, dataJson, this.nodeId, vectorClock, Date.now(), signature]
     );
-    
+
     this._saveDb();
   }
 
@@ -175,7 +196,7 @@ export class ReplicationEngine {
    */
   async syncWithPeers() {
     const peers = this.mesh.getPeers();
-    
+
     for (const peer of peers) {
       await this.syncWithPeer(peer.nodeId);
     }
@@ -254,6 +275,64 @@ export class ReplicationEngine {
       return false; // Already applied
     }
 
+    // ── Time-trust conflict resolution for SC tables ──────────────────────
+    // When we already have a change for the same SC entity, compare
+    // time_trust levels. Higher trust wins; equal trust → latest timestamp.
+    // This prevents a node with sloppy NTP from overriding GPS-attested data.
+    if (SC_TABLES.has(table_name)) {
+      let existingData = null;
+      try {
+        const stmt = this.db.prepare(
+          `SELECT data, created_at FROM _replication_log
+           WHERE table_name = ? AND row_id = ?
+           ORDER BY created_at DESC LIMIT 1`
+        );
+        stmt.bind([table_name, row_id]);
+        if (stmt.step()) {
+          const row = stmt.get();
+          existingData = { data: row[0], createdAt: row[1] };
+        }
+        stmt.free();
+      } catch (e) {
+        log.debug('SC conflict check failed (proceeding): %s', e.message);
+      }
+
+      if (existingData) {
+        try {
+          const incoming = JSON.parse(data);
+          const existing = JSON.parse(existingData.data);
+          const incomingTrust = TIME_TRUST_RANK[incoming._timeTrust] || 0;
+          const existingTrust = TIME_TRUST_RANK[existing._timeTrust] || 0;
+
+          if (incomingTrust < existingTrust) {
+            log.debug('SC conflict: rejecting lower-trust change', {
+              table: table_name, rowId: row_id,
+              incomingTrust: incoming._timeTrust,
+              existingTrust: existing._timeTrust,
+            });
+            return false;
+          }
+
+          if (incomingTrust === existingTrust && created_at <= existingData.createdAt) {
+            log.debug('SC conflict: rejecting same-trust older/equal change', {
+              table: table_name, rowId: row_id,
+              incomingAt: created_at, existingAt: existingData.createdAt,
+            });
+            return false;
+          }
+
+          // Incoming wins — higher trust or same trust + newer timestamp
+          log.debug('SC conflict: accepting higher-priority change', {
+            table: table_name, rowId: row_id,
+            incomingTrust: incoming._timeTrust,
+            existingTrust: existing._timeTrust,
+          });
+        } catch {
+          // If JSON parsing fails, fall through to normal insert
+        }
+      }
+    }
+
     // Record the change
     this.db.run(
       `INSERT INTO _replication_log 
@@ -272,7 +351,7 @@ export class ReplicationEngine {
    */
   getChangesSince(since, tables = REPLICATED_TABLES) {
     const placeholders = tables.map(() => '?').join(',');
-    
+
     try {
       const stmt = this.db.prepare(
         `SELECT * FROM _replication_log 
@@ -281,7 +360,7 @@ export class ReplicationEngine {
          LIMIT 1000`
       );
       stmt.bind([since, ...tables]);
-      
+
       const columns = stmt.getColumnNames();
       const results = [];
       while (stmt.step()) {
@@ -304,10 +383,10 @@ export class ReplicationEngine {
   getStats() {
     const logResult = this.db.exec('SELECT COUNT(*) as count FROM _replication_log');
     const logCount = logResult.length > 0 ? logResult[0].values[0][0] : 0;
-    
+
     const statesResult = this.db.exec('SELECT * FROM _replication_state');
     const peerStates = statesResult.length > 0 ? statesResult[0].values : [];
-    
+
     return {
       replicationLogSize: logCount,
       peerStates,
@@ -354,11 +433,11 @@ export class ReplicationEngine {
     // Handle sync requests
     this.mesh.on(MessageTypes.SYNC_REQUEST, (msg, ws, peerNodeId) => {
       if (!peerNodeId) return;
-      
+
       log.debug('Sync request received', { from: peerNodeId.slice(0, 12), since: msg.since });
-      
+
       const changes = this.getChangesSince(msg.since, msg.tables);
-      
+
       this.mesh.sendTo(peerNodeId, {
         type: MessageTypes.SYNC_RESPONSE,
         changes,
@@ -369,23 +448,23 @@ export class ReplicationEngine {
     // Handle sync responses
     this.mesh.on(MessageTypes.SYNC_RESPONSE, (msg, ws, peerNodeId) => {
       if (!peerNodeId) return;
-      
+
       log.debug('Sync response received', { from: peerNodeId.slice(0, 12), changes: msg.changes.length });
-      
+
       let applied = 0;
       for (const change of msg.changes) {
         if (this.applyChange(change)) {
           applied++;
         }
       }
-      
+
       // Update sync state
       this.db.run(
         `INSERT OR REPLACE INTO _replication_state (peer_node_id, last_sync_at) VALUES (?, ?)`,
         [peerNodeId, msg.asOf]
       );
       this._saveDb();
-      
+
       if (applied > 0) {
         log.info('Applied new changes', { count: applied, from: peerNodeId.slice(0, 12) });
       }

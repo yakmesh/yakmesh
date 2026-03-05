@@ -56,16 +56,16 @@ export const HW = Object.seal({
   cpuArch: '',
   cores: 0,
   threads: 0,
-  
+
   // CPU SIMD features (detected via OpenSSL/OS)
   avx512: false,
   vaes: false,
   shaNI: false,
   gfni: false,
-  
+
   // SHA3 native support (Node.js crypto module via OpenSSL)
   nativeSha3: false,
-  
+
   // NVIDIA GPU
   nvGpu: false,
   nvGpuName: '',
@@ -74,18 +74,18 @@ export const HW = Object.seal({
   nvCudaVersion: '',    // e.g. '13.1'
   nvDriverVersion: '',
   nvGpuTops: 0,        // INT8 Tensor Core TOPS
-  
+
   // AMD NPU (XDNA)
   amdNpu: false,
   amdNpuTops: 0,
-  
+
   // Combined compute budget
   totalTops: 0,        // GPU + NPU combined INT8 TOPS
-  
+
   // ONNX Runtime availability
   onnxRuntime: false,
   onnxProviders: [],   // ['dml', 'cuda', 'cpu'] — short names per ONNX Runtime 1.24+
-  
+
   // Native PQ addon (liboqs bindings)
   nativePQ: false,
   nativePQBackend: '',  // 'liboqs' | 'pqcrypto-node' | ''
@@ -129,37 +129,37 @@ const telemetry = {
 export async function probe() {
   const t0 = performance.now();
   log.info('ACCEL probing hardware capabilities...');
-  
+
   // ---- CPU ----
   const cpus = os.cpus();
   HW.cpuModel = cpus[0]?.model || 'unknown';
   HW.cpuArch = os.arch();
   HW.cores = new Set(cpus.map(c => c.model)).size * (cpus.length / (cpus.length || 1));
   HW.threads = cpus.length;
-  
+
   // Detect SIMD features from CPU model string + platform heuristics
   _detectCpuFeatures();
-  
+
   // ---- SHA3 native ----
   HW.nativeSha3 = _probeNativeSha3();
-  
+
   // ---- NVIDIA GPU ----
   _probeNvidiaGpu();
-  
+
   // ---- AMD NPU ----
   _probeAmdNpu();
-  
+
   // ---- ONNX Runtime ----
   await _probeOnnxRuntime();
-  
+
   // ---- Native PQ addon ----
   _probeNativePQ();
-  
+
   // ---- Compute combined TOPS budget ----
   HW.totalTops = (HW.nvGpuTops || 0) + (HW.amdNpuTops || 0);
-  
+
   const elapsed = (performance.now() - t0).toFixed(1);
-  
+
   // Log capability summary
   const caps = [];
   if (HW.nativeSha3) caps.push('SHA3-native');
@@ -172,13 +172,13 @@ export async function probe() {
   if (HW.totalTops > 0) caps.push(`TOTAL:${HW.totalTops}TOPS`);
   if (HW.onnxRuntime) caps.push(`ONNX:[${HW.onnxProviders.join(',')}]`);
   if (HW.nativePQ) caps.push(`PQ:${HW.nativePQBackend}`);
-  
+
   if (caps.length === 0) {
     caps.push('pure-JS-only');
   }
-  
+
   log.info(`ACCEL probe complete in ${elapsed}ms — ${caps.join(' | ')}`);
-  
+
   return HW;
 }
 
@@ -189,14 +189,14 @@ export async function probe() {
 function _detectCpuFeatures() {
   const model = HW.cpuModel.toLowerCase();
   const arch = HW.cpuArch;
-  
+
   if (arch !== 'x64') return;
-  
+
   // AMD Zen 4 (Ryzen 7000/8000 series, EPYC Genoa) — has everything
   if (model.includes('ryzen') || model.includes('epyc')) {
     const genMatch = model.match(/(\d{4})/);
     const gen = genMatch ? parseInt(genMatch[1]) : 0;
-    
+
     // Zen 4 = Ryzen 7000/8000 series, EPYC 9004
     if (gen >= 7000 || (model.includes('epyc') && gen >= 9000)) {
       HW.avx512 = true;
@@ -208,7 +208,7 @@ function _detectCpuFeatures() {
       HW.shaNI = true;
     }
   }
-  
+
   // Intel — 11th gen+ (Tiger Lake) has AVX-512, VAES, SHA-NI, GFNI
   if (model.includes('core') && model.includes('intel')) {
     const genMatch = model.match(/(\d{2})(\d{2,3})/);
@@ -224,7 +224,7 @@ function _detectCpuFeatures() {
       }
     }
   }
-  
+
   // Server Xeons — Ice Lake+ has AVX-512
   if (model.includes('xeon')) {
     HW.avx512 = true;
@@ -252,43 +252,43 @@ function _probeNativeSha3() {
 // Sorted longest-match-first within each gen to avoid false partial matches.
 const GPU_TOPS_TABLE = [
   // Ada Lovelace (RTX 40-series)
-  ['RTX 4090',            1321],
-  ['RTX 4080 SUPER',       836],
-  ['RTX 4080',             780],
-  ['RTX 4070 Ti SUPER',    568],
-  ['RTX 4070 Ti',          485],
-  ['RTX 4070 SUPER',       418],
-  ['RTX 4070',             364],
-  ['RTX 4060 Ti',          353],
-  ['RTX 4060',             242],
+  ['RTX 4090', 1321],
+  ['RTX 4080 SUPER', 836],
+  ['RTX 4080', 780],
+  ['RTX 4070 Ti SUPER', 568],
+  ['RTX 4070 Ti', 485],
+  ['RTX 4070 SUPER', 418],
+  ['RTX 4070', 364],
+  ['RTX 4060 Ti', 353],
+  ['RTX 4060', 242],
   // Ampere (RTX 30-series)
-  ['RTX 3090 Ti',          320],
-  ['RTX 3090',             285],
-  ['RTX 3080 Ti',          273],
-  ['RTX 3080',             238],
-  ['RTX 3070 Ti',          174],
-  ['RTX 3070',             163],
-  ['RTX 3060 Ti',          163],
-  ['RTX 3060',             101],
-  ['RTX 3050',              73],
+  ['RTX 3090 Ti', 320],
+  ['RTX 3090', 285],
+  ['RTX 3080 Ti', 273],
+  ['RTX 3080', 238],
+  ['RTX 3070 Ti', 174],
+  ['RTX 3070', 163],
+  ['RTX 3060 Ti', 163],
+  ['RTX 3060', 101],
+  ['RTX 3050', 73],
   // Turing (RTX 20-series)
-  ['RTX 2080 Ti',          215],
-  ['RTX 2080 SUPER',       181],
-  ['RTX 2080',             161],
-  ['RTX 2070 SUPER',       145],
-  ['RTX 2070',             130],
-  ['RTX 2060 SUPER',       115],
-  ['RTX 2060',             104],
+  ['RTX 2080 Ti', 215],
+  ['RTX 2080 SUPER', 181],
+  ['RTX 2080', 161],
+  ['RTX 2070 SUPER', 145],
+  ['RTX 2070', 130],
+  ['RTX 2060 SUPER', 115],
+  ['RTX 2060', 104],
   // Workstation
-  ['RTX A6000',            310],
-  ['RTX A5500',            260],
-  ['RTX A5000',            222],
-  ['RTX A4500',            180],
-  ['RTX A4000',            153],
+  ['RTX A6000', 310],
+  ['RTX A5500', 260],
+  ['RTX A5000', 222],
+  ['RTX A4500', 180],
+  ['RTX A4000', 153],
   // Data center
-  ['A100',                 624],
-  ['H100',                3958],
-  ['L40',                  362],
+  ['A100', 624],
+  ['H100', 3958],
+  ['L40', 362],
 ];
 
 /**
@@ -309,15 +309,15 @@ function _lookupGpuTops(gpuName) {
  */
 function _probeNvidiaGpu() {
   if (os.platform() !== 'win32' && os.platform() !== 'linux') return;
-  
+
   try {
     const output = execSync(
       'nvidia-smi --query-gpu=name,compute_cap,memory.total,driver_version --format=csv,noheader,nounits',
       { timeout: 5000, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }
     ).trim();
-    
+
     if (!output) return;
-    
+
     const parts = output.split(',').map(s => s.trim());
     if (parts.length >= 4) {
       HW.nvGpu = true;
@@ -330,7 +330,7 @@ function _probeNvidiaGpu() {
         log.debug(`  GPU TOPS: ${HW.nvGpuName} → ${HW.nvGpuTops} INT8 TOPS`);
       }
     }
-    
+
     // Get CUDA version separately
     const smiOutput = execSync('nvidia-smi', {
       timeout: 5000, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe']
@@ -350,7 +350,7 @@ function _probeNvidiaGpu() {
  */
 function _probeAmdNpu() {
   if (os.platform() !== 'win32') return;
-  
+
   try {
     // Check for AMD IPU/NPU device via PowerShell.
     // XDNA registers under multiple PnP classes (System, Processor, SoftwareDevice)
@@ -359,7 +359,7 @@ function _probeAmdNpu() {
       'powershell -NoProfile -Command "Get-PnpDevice -ErrorAction SilentlyContinue | Where-Object { $_.FriendlyName -match \'AMD\' -and $_.FriendlyName -match \'IPU|NPU|XDNA|AI\' } | Select-Object -First 1 -ExpandProperty FriendlyName"',
       { timeout: 8000, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }
     ).trim();
-    
+
     if (output) {
       HW.amdNpu = true;
       log.debug(`  NPU detected (PnP): ${output}`);
@@ -374,15 +374,15 @@ function _probeAmdNpu() {
   } catch {
     // PnP query failed — fallback below will handle it
   }
-  
+
   // Fallback: if PnP didn't detect (empty result or error), check CPU model.
   // The 8700F HAS XDNA NPU — PnP can return empty if driver class doesn't match.
   if (!HW.amdNpu) {
     const model = HW.cpuModel.toLowerCase();
     if (model.includes('8700f') || model.includes('8700g') ||
-        model.includes('8600g') || model.includes('8500g') ||
-        model.includes('7840') || model.includes('7940') ||
-        model.includes('ai 9')) {
+      model.includes('8600g') || model.includes('8500g') ||
+      model.includes('7840') || model.includes('7940') ||
+      model.includes('ai 9')) {
       HW.amdNpu = true;
       HW.amdNpuTops = model.includes('8700') || model.includes('8600') ? 16 : 10;
       log.debug(`  NPU detected (model fallback): ${HW.cpuModel} → ${HW.amdNpuTops} TOPS`);
@@ -398,7 +398,7 @@ async function _probeOnnxRuntime() {
     // Dynamic import — only resolves if onnxruntime-node is installed
     const ort = await import('onnxruntime-node');
     HW.onnxRuntime = true;
-    
+
     // ONNX Runtime 1.24+ uses listSupportedBackends() with short names
     // Short names: 'cpu', 'dml' (DirectML/NPU), 'cuda', 'webgpu'
     if (typeof ort.listSupportedBackends === 'function') {
@@ -429,7 +429,7 @@ function _probeNativePQ() {
     { name: 'pqcrypto-node', backend: 'pqcrypto' },
     { name: '@aspect/pq-native', backend: 'aspect' },
   ];
-  
+
   for (const { name, backend } of candidates) {
     try {
       // Synchronous require check (we don't actually load here, just test availability)
@@ -460,22 +460,22 @@ function _probeNativePQ() {
  */
 export function sha3_256(input) {
   telemetry.sha3Calls++;
-  
+
   if (HW.nativeSha3) {
     telemetry.sha3NativeHits++;
     const hash = createHash('sha3-256');
-    
+
     if (typeof input === 'string') {
       hash.update(input, 'utf8');
     } else {
       hash.update(input);
     }
-    
+
     // Return Uint8Array for compatibility with @noble/hashes API
     const buf = hash.digest();
     return new Uint8Array(buf.buffer, buf.byteOffset, buf.byteLength);
   }
-  
+
   // Fallback: pure JS
   if (typeof input === 'string') {
     return nobleSha3_256(new TextEncoder().encode(input));
@@ -503,7 +503,7 @@ let _nativePQ = null;
 async function _loadNativePQ() {
   if (_nativePQ !== null) return _nativePQ;
   if (!HW.nativePQ) { _nativePQ = false; return false; }
-  
+
   try {
     switch (HW.nativePQBackend) {
       case 'liboqs': _nativePQ = await import('liboqs-node'); break;
@@ -527,12 +527,12 @@ async function _loadNativePQ() {
  */
 export async function mlDsa65Keygen(seed) {
   const native = await _loadNativePQ();
-  
+
   if (native && native.ml_dsa65?.keygen) {
     telemetry.signNativeHits++;
     return native.ml_dsa65.keygen(seed);
   }
-  
+
   return ml_dsa65.keygen(seed);
 }
 
@@ -546,18 +546,18 @@ export async function mlDsa65Keygen(seed) {
  */
 export function mlDsa65Sign(message, secretKey) {
   telemetry.signCalls++;
-  
+
   // Defensive coercion — identity stores keys as hex strings,
   // but @noble/post-quantum expects Uint8Array.  Handle both.
   const sk = typeof secretKey === 'string' ? hexToBytes(secretKey) : secretKey;
   const msg = typeof message === 'string' ? new TextEncoder().encode(message) : message;
-  
+
   // Synchronous path — native addon is pre-loaded after first call
   if (_nativePQ && _nativePQ.ml_dsa65?.sign) {
     telemetry.signNativeHits++;
     return _nativePQ.ml_dsa65.sign(msg, sk);
   }
-  
+
   return ml_dsa65.sign(msg, sk);
 }
 
@@ -572,17 +572,17 @@ export function mlDsa65Sign(message, secretKey) {
  */
 export function mlDsa65Verify(signature, message, publicKey) {
   telemetry.verifyCalls++;
-  
+
   // Defensive coercion — accept hex strings or Uint8Array for all params
   const sig = typeof signature === 'string' ? hexToBytes(signature) : signature;
   const msg = typeof message === 'string' ? new TextEncoder().encode(message) : message;
   const pk = typeof publicKey === 'string' ? hexToBytes(publicKey) : publicKey;
-  
+
   if (_nativePQ && _nativePQ.ml_dsa65?.verify) {
     telemetry.verifyNativeHits++;
     return _nativePQ.ml_dsa65.verify(sig, msg, pk);
   }
-  
+
   return ml_dsa65.verify(sig, msg, pk);
 }
 
@@ -598,13 +598,13 @@ export function mlDsa65Verify(signature, message, publicKey) {
  */
 export async function mlKem768Keygen(seed) {
   telemetry.kemCalls++;
-  
+
   const native = await _loadNativePQ();
   if (native && native.ml_kem768?.keygen) {
     telemetry.kemNativeHits++;
     return native.ml_kem768.keygen(seed);
   }
-  
+
   return ml_kem768.keygen(seed);
 }
 
@@ -616,15 +616,15 @@ export async function mlKem768Keygen(seed) {
  */
 export function mlKem768Encapsulate(publicKey) {
   telemetry.kemCalls++;
-  
+
   // Defensive coercion — accept hex string or Uint8Array
   const pk = typeof publicKey === 'string' ? hexToBytes(publicKey) : publicKey;
-  
+
   if (_nativePQ && _nativePQ.ml_kem768?.encapsulate) {
     telemetry.kemNativeHits++;
     return _nativePQ.ml_kem768.encapsulate(pk);
   }
-  
+
   return ml_kem768.encapsulate(pk);
 }
 
@@ -637,16 +637,16 @@ export function mlKem768Encapsulate(publicKey) {
  */
 export function mlKem768Decapsulate(cipherText, secretKey) {
   telemetry.kemCalls++;
-  
+
   // Defensive coercion — accept hex string or Uint8Array
   const ct = typeof cipherText === 'string' ? hexToBytes(cipherText) : cipherText;
   const sk = typeof secretKey === 'string' ? hexToBytes(secretKey) : secretKey;
-  
+
   if (_nativePQ && _nativePQ.ml_kem768?.decapsulate) {
     telemetry.kemNativeHits++;
     return _nativePQ.ml_kem768.decapsulate(ct, sk);
   }
-  
+
   return ml_kem768.decapsulate(ct, sk);
 }
 
@@ -703,7 +703,7 @@ class BatchVerifyQueue {
     this._jobCounter = 0;
     this._poolReady = false;
   }
-  
+
   /**
    * Initialize batch verification subsystem.
    * Creates worker thread pool and checks for GPU availability.
@@ -767,7 +767,7 @@ class BatchVerifyQueue {
       }
     }
   }
-  
+
   /**
    * Enqueue a verification request.
    * Returns a promise that resolves with the verification result.
@@ -780,7 +780,7 @@ class BatchVerifyQueue {
   enqueue(signature, message, publicKey) {
     return new Promise((resolve, reject) => {
       this.queue.push({ signature, message, publicKey, resolve, reject });
-      
+
       if (this.queue.length >= this.minBatchSize) {
         this._flush();
       } else if (!this._timer) {
@@ -788,7 +788,7 @@ class BatchVerifyQueue {
       }
     });
   }
-  
+
   /**
    * Process all queued verifications.
    * Routes to the fastest available backend:
@@ -802,9 +802,9 @@ class BatchVerifyQueue {
       clearTimeout(this._timer);
       this._timer = null;
     }
-    
+
     if (this.queue.length === 0) return;
-    
+
     const batch = this.queue.splice(0, this.maxBatchSize);
     telemetry.batchVerifyCalls++;
 
@@ -813,7 +813,7 @@ class BatchVerifyQueue {
       telemetry.batchGpuHits++;
       log.trace(`GPU batch verify: ${batch.length} items routed to worker pool (CUDA NTT kernel TBD)`);
     }
-    
+
     // ---- Worker Thread Pool (true CPU parallelism) ----
     if (this._poolReady && batch.length >= this.minBatchSize) {
       this._dispatchToWorkers(batch);
@@ -861,7 +861,7 @@ class BatchVerifyQueue {
       worker.postMessage({ id: jobId, items });
     }
   }
-  
+
   /**
    * Drain queue and stop timer. Terminate worker pool.
    */
@@ -873,7 +873,7 @@ class BatchVerifyQueue {
     }
     // Terminate worker threads
     for (const w of this._workers) {
-      w.terminate().catch(() => {});
+      w.terminate().catch(() => { });
     }
     this._workers = [];
     this._poolReady = false;
@@ -898,23 +898,23 @@ class InferenceEngine {
     this._initialized = false;
     this._preferredProvider = null;
   }
-  
+
   /**
    * Initialize the inference engine.
    * Detects best available provider: DirectML (NPU) > CUDA (GPU) > CPU.
    */
   async initialize() {
     if (this._initialized) return;
-    
+
     if (!HW.onnxRuntime) {
       log.debug('Inference engine: ONNX Runtime not available');
       this._initialized = true;
       return;
     }
-    
+
     try {
       this._ort = await import('onnxruntime-node');
-      
+
       // Provider priority: NPU (DirectML) > GPU (CUDA) > CPU
       // ONNX Runtime 1.24+ uses short names: 'dml', 'cuda', 'cpu'
       const providers = HW.onnxProviders;
@@ -931,14 +931,14 @@ class InferenceEngine {
         this._preferredProvider = 'cpu';
         log.info('Inference engine: CPU fallback');
       }
-      
+
       this._initialized = true;
     } catch (err) {
       log.warn('Inference engine initialization failed:', err.message);
       this._initialized = true;
     }
   }
-  
+
   /**
    * Load an ONNX model for inference.
    * 
@@ -951,16 +951,16 @@ class InferenceEngine {
       log.debug(`Cannot load model ${modelName}: no ONNX Runtime`);
       return false;
     }
-    
+
     try {
       const options = {};
       if (this._preferredProvider) {
         options.executionProviders = [this._preferredProvider, 'cpu'];
       }
-      
+
       const session = await this._ort.InferenceSession.create(modelPath, options);
       this._sessions.set(modelName, session);
-      
+
       log.info(`Model loaded: ${modelName} → ${this._preferredProvider || 'CPU'}`);
       return true;
     } catch (err) {
@@ -968,7 +968,7 @@ class InferenceEngine {
       return false;
     }
   }
-  
+
   /**
    * Run inference on a loaded model.
    * 
@@ -978,42 +978,42 @@ class InferenceEngine {
    */
   async infer(modelName, inputs) {
     telemetry.inferCalls++;
-    
+
     const session = this._sessions.get(modelName);
     if (!session) {
       log.trace(`Model ${modelName} not loaded, skipping inference`);
       return null;
     }
-    
+
     try {
       // Build ONNX tensor feeds
       const feeds = {};
       for (const [name, data] of Object.entries(inputs)) {
         feeds[name] = new this._ort.Tensor('float32', data, [1, data.length]);
       }
-      
+
       const results = await session.run(feeds);
-      
+
       // Track NPU/GPU hits
       if (this._preferredProvider === 'dml') {
         telemetry.inferNpuHits++;
       } else if (this._preferredProvider === 'cuda') {
         telemetry.inferGpuHits++;
       }
-      
+
       // Convert output tensors to plain objects
       const output = {};
       for (const [name, tensor] of Object.entries(results)) {
         output[name] = tensor.data;
       }
-      
+
       return output;
     } catch (err) {
       log.warn(`Inference failed for ${modelName}: ${err.message}`);
       return null;
     }
   }
-  
+
   /**
    * Unload a model and free resources.
    */
@@ -1025,21 +1025,21 @@ class InferenceEngine {
       log.debug(`Model unloaded: ${modelName}`);
     }
   }
-  
+
   /**
    * Check if inference is available for a model.
    */
   hasModel(modelName) {
     return this._sessions.has(modelName);
   }
-  
+
   /**
    * Check if any hardware acceleration is available.
    */
   get isAccelerated() {
     return this._preferredProvider !== 'cpu' && this._preferredProvider !== null;
   }
-  
+
   /**
    * Get the active execution provider.
    */
@@ -1074,9 +1074,9 @@ export const inference = new InferenceEngine();
 
 /** Priority classes — higher number = higher priority */
 export const Priority = Object.freeze({
-  LOW:      0,   // Telemetry, optional analytics — first to shed
-  NORMAL:   1,   // SEVA mesh work, planet enhance — rejection allowed
-  HIGH:     2,   // Batch verify, trust evaluation — bounded wait
+  LOW: 0,   // Telemetry, optional analytics — first to shed
+  NORMAL: 1,   // SEVA mesh work, planet enhance — rejection allowed
+  HIGH: 2,   // Batch verify, trust evaluation — bounded wait
   CRITICAL: 3,   // Entropy sentinel, security checks — NEVER dropped, preempts
 });
 
@@ -1091,16 +1091,16 @@ export const Device = Object.freeze({
 export const Affinity = Object.freeze({
   GPU_PREFERRED: 'gpu-preferred',
   NPU_PREFERRED: 'npu-preferred',
-  EITHER:        'either',
-  CPU_ONLY:      'cpu-only',
+  EITHER: 'either',
+  CPU_ONLY: 'cpu-only',
 });
 
 /** Task outcome states */
 const Outcome = Object.freeze({
-  COMPLETED:  'completed',
-  REJECTED:   'rejected',
-  TIMED_OUT:  'timed-out',
-  ERROR:      'error',
+  COMPLETED: 'completed',
+  REJECTED: 'rejected',
+  TIMED_OUT: 'timed-out',
+  ERROR: 'error',
 });
 
 // ---------------------------------------------------------------------------
@@ -1843,7 +1843,7 @@ class ComputeScheduler {
       const execStart = performance.now();
 
       // Execute asynchronously
-      this._executeTask(task, device, execStart).catch(() => {});
+      this._executeTask(task, device, execStart).catch(() => { });
     }
   }
 
@@ -2063,6 +2063,54 @@ class ComputeScheduler {
     };
   }
 
+  // =========================================================================
+  // ADVISORY ROUTING (for cross-process pipe clients)
+  // =========================================================================
+
+  /**
+   * Get a routing recommendation without enqueuing a task.
+   * Used by c2c/yakai via named pipe to decide which device to run on.
+   * Does NOT consume queue capacity — purely advisory.
+   *
+   * @param {Object} descriptor
+   * @param {string} descriptor.type     — task type name
+   * @param {number} descriptor.priority — Priority value
+   * @param {string} descriptor.affinity — Affinity value
+   * @param {number} [descriptor.inputSize] — rough input payload size
+   * @returns {Promise<{ device: string, queueLoad: Object, method: string }>}
+   */
+  async advise(descriptor) {
+    const task = {
+      id: 0,
+      type: descriptor.type || 'advisory',
+      taskTypeId: descriptor.typeId || 0,
+      priority: descriptor.priority ?? Priority.NORMAL,
+      affinity: descriptor.affinity || Affinity.EITHER,
+      inputSize: descriptor.inputSize || 0,
+    };
+
+    // Try ML routing first, fall back to rules (same logic as submit)
+    let device, method;
+    const mlDecision = await this._mlRoute(task);
+    if (mlDecision) {
+      device = mlDecision.device;
+      method = 'ml';
+    } else {
+      device = this._ruleRoute(task);
+      method = 'rules';
+    }
+
+    return {
+      device,
+      method,
+      queueLoad: {
+        gpu: +(this._queues[Device.GPU]?.loadFactor || 0).toFixed(3),
+        npu: +(this._queues[Device.NPU]?.loadFactor || 0).toFixed(3),
+        cpu: +(this._queues[Device.CPU]?.loadFactor || 0).toFixed(3),
+      },
+    };
+  }
+
   /**
    * Full scheduler status for /health and monitoring.
    */
@@ -2150,12 +2198,12 @@ export async function initialize() {
   await batchVerify.initialize();
   await inference.initialize();
   await scheduler.initialize();
-  
+
   // Pre-load native PQ if available
   if (HW.nativePQ) {
     await _loadNativePQ();
   }
-  
+
   return { hw: HW, telemetry: getTelemetry() };
 }
 
@@ -2168,7 +2216,7 @@ export async function initialize() {
  */
 export function getTelemetry() {
   const elapsed = Date.now() - telemetry.lastReset;
-  
+
   return {
     ...telemetry,
     elapsedMs: elapsed,
@@ -2202,7 +2250,7 @@ export function resetTelemetry() {
  */
 export function getStatus() {
   const t = getTelemetry();
-  
+
   return {
     hardware: {
       cpu: HW.cpuModel,

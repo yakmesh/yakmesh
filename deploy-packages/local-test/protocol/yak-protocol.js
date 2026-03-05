@@ -41,9 +41,9 @@ const __dirname = dirname(__filename);
 const peerTag = (id) => id?.split('-pq-').pop() || id?.slice?.(-8) || String(id);
 
 /**
- * Default node port
+ * Default node port — must match yakmesh.config.js network.httpPort
  */
-const DEFAULT_PORT = 3000;
+const DEFAULT_PORT = 3080;
 
 /**
  * Protocol configuration
@@ -142,18 +142,18 @@ export class BookmarkManager {
   add(name, target) {
     name = name.toLowerCase().replace(/[^a-z0-9_-]/g, '');
     if (!name) return false;
-    
+
     // Don't allow overwriting builtins
     if (BUILTIN_ROUTES[name]) {
       console.warn(`Cannot bookmark "${name}" - it's a builtin route`);
       return false;
     }
-    
+
     // Normalize target - ensure it starts with /
     if (!target.startsWith('/')) {
       target = '/' + target;
     }
-    
+
     this.bookmarks[name] = {
       target,
       createdAt: Date.now(),
@@ -214,10 +214,10 @@ export class BookmarkManager {
   rename(oldName, newName) {
     oldName = oldName.toLowerCase();
     newName = newName.toLowerCase().replace(/[^a-z0-9_-]/g, '');
-    
+
     if (!this.bookmarks[oldName]) return false;
     if (BUILTIN_ROUTES[newName]) return false;
-    
+
     this.bookmarks[newName] = { ...this.bookmarks[oldName], updatedAt: Date.now() };
     delete this.bookmarks[oldName];
     this._save();
@@ -247,27 +247,27 @@ export class BookmarkManager {
  */
 export class RemoteBookmarkSync {
   static REMOTE_FILE = join(__dirname, '..', 'data', 'remote-bookmarks.json');
-  
+
   constructor(options = {}) {
     this.nodeId = options.nodeId;
     this.network = options.network;
     this.localBookmarks = options.localBookmarks || getBookmarkManager();
-    
+
     // Support custom data directory for tests
     this.dataDir = options.dataDir || join(__dirname, '..', 'data');
     this.remoteFile = join(this.dataDir, 'remote-bookmarks.json');
-    
+
     // Remote bookmark storage
     this.remoteBookmarks = new Map(); // nodeId → { bookmarks, publishedAt, signature }
     this.subscriptions = new Set();   // nodeIds we're subscribed to
     this.publishedLists = {};         // Our shared lists
-    
+
     // Load persisted state
     this._load();
-    
+
     // Gossip message type
     this.MESSAGE_TYPE = 'bookmark-sync';
-    
+
     // Register gossip handler if network provided
     if (this.network) {
       this._registerGossipHandler();
@@ -283,7 +283,7 @@ export class RemoteBookmarkSync {
         const data = JSON.parse(readFileSync(this.remoteFile, 'utf-8'));
         this.subscriptions = new Set(data.subscriptions || []);
         this.publishedLists = data.publishedLists || {};
-        
+
         // Restore remote bookmarks
         if (data.remoteBookmarks) {
           for (const [nodeId, entry] of Object.entries(data.remoteBookmarks)) {
@@ -305,14 +305,14 @@ export class RemoteBookmarkSync {
       if (!existsSync(dir)) {
         mkdirSync(dir, { recursive: true });
       }
-      
+
       const data = {
         subscriptions: [...this.subscriptions],
         publishedLists: this.publishedLists,
         remoteBookmarks: Object.fromEntries(this.remoteBookmarks),
         savedAt: Date.now(),
       };
-      
+
       writeFileSync(this.remoteFile, JSON.stringify(data, null, 2));
     } catch (e) {
       console.error('Failed to save remote bookmarks:', e.message);
@@ -338,13 +338,13 @@ export class RemoteBookmarkSync {
     if (!this.subscriptions.has(fromNodeId)) {
       return;
     }
-    
+
     // Verify signature (basic check - DOKO verification is recommended)
     if (!msg.signature) {
       console.warn(`Ignoring unsigned bookmark sync from ${fromNodeId}`);
       return;
     }
-    
+
     // Update remote bookmarks
     this.remoteBookmarks.set(fromNodeId, {
       bookmarks: msg.bookmarks,
@@ -353,7 +353,7 @@ export class RemoteBookmarkSync {
       signature: msg.signature,
       receivedAt: Date.now(),
     });
-    
+
     this._save();
     console.log(`📥 Received bookmarks from ${peerTag(fromNodeId)} (${Object.keys(msg.bookmarks).length} items)`);
   }
@@ -369,10 +369,10 @@ export class RemoteBookmarkSync {
       console.warn('Cannot publish - no network connection');
       return false;
     }
-    
+
     // Use provided bookmarks or all local ones
     const toShare = bookmarks || this.localBookmarks.list();
-    
+
     // Create signed message
     const msg = {
       type: this.MESSAGE_TYPE,
@@ -381,17 +381,17 @@ export class RemoteBookmarkSync {
       publishedAt: Date.now(),
       nodeId: this.nodeId,
     };
-    
+
     // Broadcast to mesh
     this.network.broadcast({ gossip: msg });
-    
+
     // Track published list
     this.publishedLists[listName] = {
       bookmarks: toShare,
       publishedAt: msg.publishedAt,
       count: Object.keys(toShare).length,
     };
-    
+
     this._save();
     console.log(`📤 Published bookmark list "${listName}" (${Object.keys(toShare).length} items)`);
     return true;
@@ -407,7 +407,7 @@ export class RemoteBookmarkSync {
       console.warn('Cannot subscribe to your own node');
       return false;
     }
-    
+
     this.subscriptions.add(nodeId);
     this._save();
     console.log(`📬 Subscribed to bookmarks from ${peerTag(nodeId)}`);
@@ -437,7 +437,7 @@ export class RemoteBookmarkSync {
    */
   getRemote(name) {
     name = name.toLowerCase();
-    
+
     // Search all subscribed nodes
     for (const [nodeId, entry] of this.remoteBookmarks) {
       const bm = entry.bookmarks[name];
@@ -450,7 +450,7 @@ export class RemoteBookmarkSync {
         };
       }
     }
-    
+
     return null;
   }
 
@@ -460,7 +460,7 @@ export class RemoteBookmarkSync {
    */
   listRemote() {
     const all = [];
-    
+
     for (const [nodeId, entry] of this.remoteBookmarks) {
       for (const [name, bm] of Object.entries(entry.bookmarks)) {
         all.push({
@@ -472,7 +472,7 @@ export class RemoteBookmarkSync {
         });
       }
     }
-    
+
     return all;
   }
 
@@ -547,17 +547,17 @@ export function getBookmarkManager() {
 export function parseYakUrl(url) {
   // Remove the scheme (supports both y:// and yak:// for compatibility)
   let path = url.replace(/^(y|yak):\/\//i, '');
-  
+
   // Handle empty URL
   if (!path || path === '/') {
     return { type: 'builtin', route: 'dashboard', path: '/dashboard/' };
   }
-  
+
   // Split into parts
   const parts = path.split('/').filter(Boolean);
   const host = parts[0].toLowerCase();
   const subpath = parts.length > 1 ? '/' + parts.slice(1).join('/') : '';
-  
+
   // Check if it's a built-in route
   if (BUILTIN_ROUTES[host]) {
     return {
@@ -566,7 +566,7 @@ export function parseYakUrl(url) {
       path: BUILTIN_ROUTES[host] + subpath,
     };
   }
-  
+
   // Phase 2: Check local bookmarks
   const bookmarks = getBookmarkManager();
   if (bookmarks.has(host)) {
@@ -578,7 +578,7 @@ export function parseYakUrl(url) {
       path: target + subpath,
     };
   }
-  
+
   // Check for content hash (64 hex characters)
   if (/^[a-f0-9]{64}$/i.test(host)) {
     return {
@@ -587,7 +587,7 @@ export function parseYakUrl(url) {
       path: `/content/${host}${subpath}`,
     };
   }
-  
+
   // Check for iO name (3-word quantum wordlist pattern like "qubit-lattice-prism")
   if (isValidIoName(host)) {
     return {
@@ -596,7 +596,7 @@ export function parseYakUrl(url) {
       path: `/content/${host}${subpath}`,  // Content API resolves iO names to hashes
     };
   }
-  
+
   // Check for "content/" prefix explicitly
   if (host === 'content' && parts.length > 1) {
     const hashOrName = parts[1];
@@ -606,7 +606,7 @@ export function parseYakUrl(url) {
       path: `/content/${hashOrName}`,
     };
   }
-  
+
   // Unknown - return 404 path
   return {
     type: 'unknown',
@@ -624,11 +624,11 @@ export function parseYakUrl(url) {
 export function yakToHttp(yakUrl, port = DEFAULT_PORT) {
   const parsed = parseYakUrl(yakUrl);
   const base = `http://localhost:${port}`;
-  
+
   if (parsed.type === 'domain') {
     return `${base}/yak/${parsed.domain}${parsed.path === '/' ? '' : parsed.path}`;
   }
-  
+
   return base + parsed.path;
 }
 
@@ -640,7 +640,7 @@ export function yakToHttp(yakUrl, port = DEFAULT_PORT) {
 export function httpToYak(httpUrl) {
   const url = new URL(httpUrl);
   const path = url.pathname;
-  
+
   // Check built-in routes
   for (const [route, httpPath] of Object.entries(BUILTIN_ROUTES)) {
     if (path === httpPath || path.startsWith(httpPath + '/')) {
@@ -648,13 +648,13 @@ export function httpToYak(httpUrl) {
       return `yak://${route}${subpath}`;
     }
   }
-  
+
   // Check content route
   if (path.startsWith('/content/')) {
     const hash = path.slice(9);
     return `yak://content/${hash}`;
   }
-  
+
   return `yak://${path.slice(1)}`;
 }
 
@@ -674,9 +674,9 @@ export class YakProtocolHandler {
    */
   async register() {
     const os = platform();
-    
+
     console.log(`📡 Registering yak:// protocol (${os})...`);
-    
+
     try {
       switch (os) {
         case 'win32':
@@ -692,7 +692,7 @@ export class YakProtocolHandler {
           console.warn(`⚠️ Protocol registration not supported on ${os}`);
           return false;
       }
-      
+
       this.registered = true;
       console.log('✓ yak:// protocol registered');
       return true;
@@ -707,7 +707,7 @@ export class YakProtocolHandler {
    */
   async unregister() {
     const os = platform();
-    
+
     try {
       switch (os) {
         case 'win32':
@@ -720,7 +720,7 @@ export class YakProtocolHandler {
           await this._unregisterLinux();
           break;
       }
-      
+
       this.registered = false;
       console.log('✓ yak:// protocol unregistered');
       return true;
@@ -736,13 +736,13 @@ export class YakProtocolHandler {
   async handle(url) {
     const parsed = parseYakUrl(url);
     const httpUrl = yakToHttp(url, this.port);
-    
+
     console.log(`🔗 Handling: ${url}`);
     console.log(`   → ${httpUrl}`);
-    
+
     // Open in default browser
     this._openBrowser(httpUrl);
-    
+
     return { parsed, httpUrl };
   }
 
@@ -856,7 +856,7 @@ exec(cmd, (error) => {
 
     writeFileSync(this.handlerPath, handlerScript);
     console.log(`✓ Created handler: ${this.handlerPath}`);
-    
+
     return this.handlerPath;
   }
 
@@ -866,10 +866,10 @@ exec(cmd, (error) => {
   async _registerWindows() {
     // Create the handler script first
     this.createHandler();
-    
+
     const nodePath = process.execPath;
     const handlerCmd = `"${nodePath}" "${this.handlerPath}" "%1"`;
-    
+
     // Create .reg file content
     const regContent = `Windows Registry Editor Version 5.00
 
@@ -891,7 +891,7 @@ exec(cmd, (error) => {
     // Write .reg file
     const regPath = join(this.nodePath, 'protocol', 'yak-protocol.reg');
     writeFileSync(regPath, regContent);
-    
+
     // Import the registry file
     try {
       execSync(`reg import "${regPath}"`, { stdio: 'pipe' });
@@ -902,12 +902,12 @@ exec(cmd, (error) => {
         `reg add "HKCU\\Software\\Classes\\yak" /v "URL Protocol" /d "" /f`,
         `reg add "HKCU\\Software\\Classes\\yak\\shell\\open\\command" /ve /d "${handlerCmd}" /f`,
       ];
-      
+
       for (const cmd of commands) {
         execSync(cmd, { stdio: 'pipe' });
       }
     }
-    
+
     console.log('✓ Windows Registry updated');
   }
 
@@ -927,14 +927,14 @@ exec(cmd, (error) => {
    */
   async _registerMacOS() {
     this.createHandler();
-    
+
     const plistPath = join(process.env.HOME, 'Library', 'LaunchAgents', 'com.yakmesh.protocol.plist');
     const plistDir = dirname(plistPath);
-    
+
     if (!existsSync(plistDir)) {
       mkdirSync(plistDir, { recursive: true });
     }
-    
+
     const plistContent = `<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -961,7 +961,7 @@ exec(cmd, (error) => {
 </plist>`;
 
     writeFileSync(plistPath, plistContent);
-    
+
     // For macOS, we need an app bundle or use a helper
     console.log('⚠️ macOS: Full protocol registration requires app bundle');
     console.log('  Created launch agent at:', plistPath);
@@ -986,14 +986,14 @@ exec(cmd, (error) => {
    */
   async _registerLinux() {
     this.createHandler();
-    
+
     const desktopPath = join(process.env.HOME, '.local', 'share', 'applications', 'yakmesh-protocol.desktop');
     const desktopDir = dirname(desktopPath);
-    
+
     if (!existsSync(desktopDir)) {
       mkdirSync(desktopDir, { recursive: true });
     }
-    
+
     const desktopContent = `[Desktop Entry]
 Name=Yakmesh Protocol Handler
 Comment=Handle yak:// URLs
@@ -1005,7 +1005,7 @@ NoDisplay=true
 `;
 
     writeFileSync(desktopPath, desktopContent);
-    
+
     // Register with xdg-mime
     try {
       execSync(`xdg-mime default yakmesh-protocol.desktop x-scheme-handler/y`, { stdio: 'pipe' });
@@ -1035,7 +1035,7 @@ NoDisplay=true
   _openBrowser(url) {
     const os = platform();
     let cmd;
-    
+
     switch (os) {
       case 'win32':
         cmd = `start "" "${url}"`;
@@ -1046,7 +1046,7 @@ NoDisplay=true
       default:
         cmd = `xdg-open "${url}"`;
     }
-    
+
     try {
       execSync(cmd, { stdio: 'pipe' });
     } catch (e) {
@@ -1081,10 +1081,10 @@ export function createProtocolEndpoints(app, handler) {
     if (!yakUrl) {
       return res.status(400).json({ error: 'Missing url parameter' });
     }
-    
+
     const parsed = parseYakUrl(yakUrl);
     const httpUrl = yakToHttp(yakUrl, handler.port);
-    
+
     res.json({ yakUrl, parsed, httpUrl });
   });
 
@@ -1092,13 +1092,13 @@ export function createProtocolEndpoints(app, handler) {
   app.get('/protocol/link', (req, res) => {
     const httpUrl = req.query.url || `http://${req.headers.host}${req.path}`;
     const yakUrl = httpToYak(httpUrl);
-    
+
     res.json({ httpUrl, yakUrl });
   });
 
   // === BOOKMARKS API ===
   const bookmarks = getBookmarkManager();
-  
+
   // List all bookmarks
   app.get('/bookmarks', (req, res) => {
     const all = bookmarks.list();
@@ -1114,19 +1114,19 @@ export function createProtocolEndpoints(app, handler) {
       bookmarks: formatted,
     });
   });
-  
+
   // Get specific bookmark
   app.get('/bookmarks/:name', (req, res) => {
     const { name } = req.params;
     const target = bookmarks.get(name);
-    
+
     if (!target) {
       return res.status(404).json({ error: `Bookmark '${name}' not found` });
     }
-    
+
     const all = bookmarks.list();
     const bm = all[name.toLowerCase()];
-    
+
     res.json({
       name: name.toLowerCase(),
       yakUrl: `yak://${name.toLowerCase()}`,
@@ -1135,17 +1135,17 @@ export function createProtocolEndpoints(app, handler) {
       createdAt: bm?.createdAt,
     });
   });
-  
+
   // Add bookmark (POST)
   app.post('/bookmarks', (req, res) => {
     const { name, target } = req.body;
-    
+
     if (!name || !target) {
       return res.status(400).json({ error: 'name and target required' });
     }
-    
+
     const success = bookmarks.add(name, target);
-    
+
     if (success) {
       res.json({
         success: true,
@@ -1157,15 +1157,15 @@ export function createProtocolEndpoints(app, handler) {
       res.status(400).json({ error: `Cannot add bookmark '${name}' - may be a builtin route` });
     }
   });
-  
+
   // Remove bookmark (DELETE)
   app.delete('/bookmarks/:name', (req, res) => {
     const { name } = req.params;
-    
+
     if (!bookmarks.has(name)) {
       return res.status(404).json({ error: `Bookmark '${name}' not found` });
     }
-    
+
     bookmarks.remove(name);
     res.json({ success: true, removed: name.toLowerCase() });
   });
@@ -1212,11 +1212,11 @@ export function createProtocolEndpoints(app, handler) {
   app.get('/bookmarks/remote/:name', (req, res) => {
     const sync = getRemoteSync();
     const bm = sync.getRemote(req.params.name);
-    
+
     if (!bm) {
       return res.status(404).json({ error: `Remote bookmark '${req.params.name}' not found` });
     }
-    
+
     res.json({
       name: req.params.name.toLowerCase(),
       target: bm.target,
@@ -1231,14 +1231,14 @@ export function createProtocolEndpoints(app, handler) {
   // Subscribe to a node's bookmarks
   app.post('/bookmarks/remote/subscribe', (req, res) => {
     const { nodeId } = req.body;
-    
+
     if (!nodeId) {
       return res.status(400).json({ error: 'nodeId required' });
     }
-    
+
     const sync = getRemoteSync();
     const success = sync.subscribe(nodeId);
-    
+
     res.json({
       success,
       subscriptions: sync.getSubscriptions(),
@@ -1248,14 +1248,14 @@ export function createProtocolEndpoints(app, handler) {
   // Unsubscribe from a node
   app.post('/bookmarks/remote/unsubscribe', (req, res) => {
     const { nodeId } = req.body;
-    
+
     if (!nodeId) {
       return res.status(400).json({ error: 'nodeId required' });
     }
-    
+
     const sync = getRemoteSync();
     const success = sync.unsubscribe(nodeId);
-    
+
     res.json({
       success,
       subscriptions: sync.getSubscriptions(),
@@ -1266,11 +1266,11 @@ export function createProtocolEndpoints(app, handler) {
   app.post('/bookmarks/remote/publish', (req, res) => {
     const { listName } = req.body;
     const sync = getRemoteSync();
-    
+
     // Without network, we just save locally what would be published
     const allBookmarks = bookmarks.list();
     const name = listName || 'default';
-    
+
     // Update the published lists record
     sync.publishedLists[name] = {
       bookmarks: allBookmarks,
@@ -1278,7 +1278,7 @@ export function createProtocolEndpoints(app, handler) {
       count: Object.keys(allBookmarks).length,
     };
     sync._save();
-    
+
     res.json({
       success: true,
       listName: name,

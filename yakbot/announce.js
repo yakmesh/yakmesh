@@ -24,11 +24,11 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const config = {
   // Discord webhook for announcements
   discordWebhook: process.env.DISCORD_WEBHOOK_URL,
-  
+
   // Telegram bot token and channel
   telegramToken: process.env.TELEGRAM_BOT_TOKEN || '8503356631:AAESiZx7K6Ca78VfJh_sTqmsvTGgEXYDPEA',
   telegramChannel: process.env.TELEGRAM_CHANNEL_ID || '@yakmesh', // Channel username or chat ID
-  
+
   // Announcements directory
   announcementsDir: join(__dirname, '..', 'announcements'),
 };
@@ -94,7 +94,7 @@ async function sendToDiscord(message, options = {}) {
 async function sendToTelegram(message, options = {}) {
   try {
     const url = `https://api.telegram.org/bot${config.telegramToken}/sendMessage`;
-    
+
     const payload = {
       chat_id: options.chatId || config.telegramChannel,
       text: message,
@@ -109,7 +109,7 @@ async function sendToTelegram(message, options = {}) {
     });
 
     const data = await response.json();
-    
+
     if (!data.ok) {
       throw new Error(data.description || 'Telegram API error');
     }
@@ -126,19 +126,19 @@ async function sendToTelegram(message, options = {}) {
  * Load announcement from file
  */
 function loadAnnouncement(filename) {
-  const filepath = filename.startsWith('/') || filename.includes(':') 
-    ? filename 
+  const filepath = filename.startsWith('/') || filename.includes(':')
+    ? filename
     : join(config.announcementsDir, filename);
-  
+
   if (!existsSync(filepath)) {
     throw new Error(`Announcement file not found: ${filepath}`);
   }
-  
+
   let content = readFileSync(filepath, 'utf-8');
-  
+
   // Remove markdown code fences if present
   content = content.replace(/^```markdown\n?/m, '').replace(/\n?```$/m, '');
-  
+
   return content.trim();
 }
 
@@ -197,7 +197,7 @@ function parseArgs() {
   if (!options.discord && !options.telegram && !options.all) {
     options.all = true;
   }
-  
+
   if (options.all) {
     options.discord = true;
     options.telegram = true;
@@ -236,7 +236,7 @@ Examples:
  */
 async function main() {
   console.log('🏔️  YAKMESH Announcement Broadcaster\n');
-  
+
   const options = parseArgs();
   const results = { discord: null, telegram: null };
 
@@ -253,14 +253,14 @@ async function main() {
     // Load platform-specific announcements
     const discordFile = `discord-v${options.version}.md`;
     const telegramFile = `telegram-v${options.version}.md`;
-    
+
     if (options.discord && existsSync(join(config.announcementsDir, discordFile))) {
       discordMessage = loadAnnouncement(discordFile);
     }
     if (options.telegram && existsSync(join(config.announcementsDir, telegramFile))) {
       telegramMessage = loadAnnouncement(telegramFile);
     }
-    
+
     // Fall back to telegram format for both if discord-specific doesn't exist
     if (!discordMessage && telegramMessage) {
       discordMessage = telegramMessage;
@@ -291,7 +291,7 @@ async function main() {
   if (options.discord && discordMessage) {
     results.discord = await sendToDiscord(discordMessage);
   }
-  
+
   if (options.telegram && telegramMessage) {
     results.telegram = await sendToTelegram(telegramMessage);
   }

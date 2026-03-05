@@ -10,12 +10,12 @@
  */
 
 import { sha3_256 as _nobleSha3 } from '@noble/hashes/sha3.js';
-import { bytesToHex, hexToBytes } from '@noble/hashes/utils.js';
+import { bytesToHex, hexToBytes, randomBytes as _nobleRandomBytes } from '@noble/hashes/utils.js';
 import { ml_dsa65 } from '@noble/post-quantum/ml-dsa.js';
 // ACCEL: Hardware-accelerated crypto
 import { sha3_256, mlDsa65Sign, mlDsa65Verify } from '../utils/accel.js';
 import { createLogger } from '../utils/logger.js';
-import { ternaryId } from '../utils/ternary-id.js';
+import { ternaryId, hexToTernary } from '../utils/ternary-id.js';
 
 // ═══ TRIBHUJ — Balanced ternary for validation verdicts ═══
 // POSITIVE: check passed, NEUTRAL: check skipped/not applicable, NEGATIVE: check failed
@@ -25,6 +25,24 @@ const log = createLogger('security:doko');
 
 // Import iO obfuscation for DOKO IDs - never expose raw hashes
 import { deriveNetworkName, deriveNetworkId } from '../oracle/network-identity.js';
+
+// ═══ TOKEN FORMAT DETECTION ═══
+// DOKO uses dual-format tokens: hex (ML-DSA layer) + balanced ternary (144T layer)
+const HEX_RE = /^[a-f0-9]+$/i;
+const TRIT_RE = /^[T01]+$/;
+
+/**
+ * Detect whether a token string is hex, balanced ternary, or unknown.
+ * Used for backward-compatible certificate verification.
+ * @param {string} token
+ * @returns {'hex'|'trit'|'unknown'}
+ */
+export function detectTokenFormat(token) {
+  if (!token || typeof token !== 'string') return 'unknown';
+  if (TRIT_RE.test(token) && token.length >= 80) return 'trit';  // ≥ 16 bytes → 80 trits
+  if (HEX_RE.test(token) && token.length % 2 === 0) return 'hex';
+  return 'unknown';
+}
 
 /**
  * DOKO Document Types
@@ -1152,11 +1170,16 @@ export class DOKORevocation {
    * @returns {Object} Activated revocation certificate
    */
   static activateEmergencyRevocation(preGeneratedCert) {
-    if (!preGeneratedCert || !preGeneratedCert.emergencyToken) {
+    if (!preGeneratedCert || (!preGeneratedCert.emergencyToken && !preGeneratedCert.emergencyTokenHex)) {
       throw new Error('Invalid emergency certificate');
     }
 
     const activatedAt = Date.now();
+
+    // Accept both ternary and hex tokens — dual security layer
+    // Legacy certs may only have emergencyToken in hex, new certs have both
+    const emergencyToken = preGeneratedCert.emergencyToken || null;
+    const emergencyTokenHex = preGeneratedCert.emergencyTokenHex || null;
 
     const certificate = {
       version: '1.0',
@@ -1165,7 +1188,8 @@ export class DOKORevocation {
       reason: REVOCATION_REASONS.KEY_COMPROMISED,
       createdAt: preGeneratedCert.createdAt,
       activatedAt,
-      emergencyToken: preGeneratedCert.emergencyToken,
+      ...(emergencyToken && { emergencyToken }),
+      ...(emergencyTokenHex && { emergencyTokenHex }),
       signature: preGeneratedCert.signature,
       signatureAlgorithm: 'ML-DSA-65',
     };
@@ -1187,13 +1211,20 @@ export class DOKORevocation {
   static generateEmergencyCertificate(doko, privateKey) {
     const createdAt = Date.now();
 
-    // Generate random emergency token (balanced ternary — '666' impossible)
-    const emergencyToken = ternaryId(32);
+    // Generate random emergency token — DUAL FORMAT for double security layer:
+    // - emergencyTokenHex:  64-char hex (ML-DSA/classical layer)
+    // - emergencyToken:     160-char balanced ternary (144T/TRIBHUJ layer, '666' impossible)
+    // Both are derived from the same 32 bytes of randomness.
+    // Verification accepts EITHER format for backward compatibility with legacy hex certs.
+    const tokenBytes = _nobleRandomBytes(32);
+    const emergencyTokenHex = bytesToHex(tokenBytes);
+    const emergencyToken = ternaryId(32);  // Independent ternary token (different entropy)
 
     const certData = {
       dokoId: doko.dokoId,
       createdAt,
-      emergencyToken,
+      emergencyToken,       // Primary: balanced ternary (new format)
+      emergencyTokenHex,    // Secondary: hex (classical compatibility layer)
     };
 
     // Sign the emergency cert (message first, then secretKey)

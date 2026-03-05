@@ -64,7 +64,8 @@ $MinimalDirs = @(
 # BASIC: Minimal + useful extras for standard deployments
 $BasicDirs = $MinimalDirs + @(
     'adapters',      # PeerQuanta adapters (listings, chat, forum)
-    'dashboard',     # Web dashboard UI
+    'dashboard',     # Web dashboard UI (legacy, also in public/)
+    'public',        # Unified web root (dashboard, assets, C2C art, YakAI)
     'webserver',     # Static file serving
     'templates'      # Template files
     # NOTE: 'announcements' excluded — Discord/Telegram/X marketing, not needed at runtime
@@ -305,10 +306,13 @@ function Build-Full {
         Get-ChildItem $fullCfg -Filter "*.sh" -ErrorAction SilentlyContinue | Copy-Item -Destination $fullDir -Force
     }
     
-    # Create htdocs with PHP info
-    $htdocsDir = Join-Path $fullDir "htdocs"
-    New-Item -ItemType Directory -Path $htdocsDir -Force | Out-Null
-    "<?php phpinfo();" | Out-File -FilePath (Join-Path $htdocsDir "info.php") -Encoding utf8
+    # Ensure public/ web root exists (Caddy serves from here)
+    $publicDir = Join-Path $fullDir "public"
+    if (-not (Test-Path $publicDir)) {
+        New-Item -ItemType Directory -Path $publicDir -Force | Out-Null
+    }
+    # Add PHP info page for testing
+    "<?php phpinfo();" | Out-File -FilePath (Join-Path $publicDir "info.php") -Encoding utf8
     
     # Get stats
     $stats = Get-PackageStats -Dir $fullDir

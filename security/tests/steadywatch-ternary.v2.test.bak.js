@@ -11,13 +11,14 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
+// PRAHARI replaced STEADYWATCH — using backward-compat aliases
 import {
   SteadywatchSeedStore,
   EntropySentinel,
   SATELLITE_COUNTS,
   TRIT_ADDRESS_LENGTH,
   FAMILY_GROUPS,
-} from '../steadywatch.js';
+} from '../prahari.js';
 import { Trit, TritArray, POSITIVE, NEUTRAL, NEGATIVE } from '../../oracle/tribhuj.js';
 import { digitalRoot, getFamily, SSTFamily } from '../../oracle/sst.js';
 
@@ -279,14 +280,15 @@ describe('STEADYWATCH Ternary-144 Integration', () => {
       expect(consensus.counts.negative).toBe(0);
     });
 
-    it('returns NEUTRAL consensus when no quality checks run (default verdicts)', () => {
+    it('returns correct consensus when quality checks are already run by generateTestSeeds', () => {
       const freshStore = new SteadywatchSeedStore();
       freshStore.generateTestSeeds(5);
       const consensus = freshStore.batchQualityConsensus();
-      // Seeds exist but no _checkBias called → all default to NEUTRAL
+      // PRAHARI's generateTestSeeds runs _checkBias on all slots automatically
+      // SHA3-generated test seeds are high quality → all POSITIVE
       expect(consensus.total).toBe(144);
-      expect(consensus.counts.neutral).toBe(144);
-      expect(consensus.majority.value).toBe(NEUTRAL);
+      expect(consensus.counts.positive).toBe(144);
+      expect(consensus.majority.value).toBe(POSITIVE);
     });
   });
 

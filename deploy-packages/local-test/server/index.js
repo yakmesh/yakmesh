@@ -210,8 +210,8 @@ const DEFAULT_CONFIG = {
     region: 'local',
   },
   network: {
-    httpPort: 3000,
-    wsPort: 9001,
+    httpPort: 3080,
+    wsPort: 9080,
   },
   bootstrap: [],
   database: {
@@ -2331,10 +2331,11 @@ export class YakmeshNode {
     app.use(generalLimiter);
 
     // CORS — restricted to localhost and configured origins
+    const httpPort = this.boundHttpPort || this.config.network.httpPort;
     const allowedOrigins = new Set([
-      'http://localhost:3000',
+      `http://localhost:${httpPort}`,
       'http://localhost:3090',
-      'http://127.0.0.1:3000',
+      `http://127.0.0.1:${httpPort}`,
       'http://127.0.0.1:3090',
       ...(this.config.cors?.allowedOrigins || []),
     ]);

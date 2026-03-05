@@ -26,6 +26,8 @@
     <meta property="og:site_name" content="Yakmesh Documentation">
     <meta property="og:title" content="SURAKSHA — Yakmesh">
     <meta property="og:description" content="SURAKSHA security model — post-quantum cryptographic core protecting the mesh.">
+    <meta property="og:url" content="https://yakmesh.dev/docs/trust-security.html">
+    <link rel="canonical" href="https://yakmesh.dev/docs/trust-security.html">
 </head>
 <body class="bg-mountain-900 text-white min-h-screen">
 <!-- YAKMESH-ICON-SPRITE-START -->
@@ -593,11 +595,11 @@
     </a>
     <a href="/dashboard" class="sidebar-dashboard-link"><svg class="doc-icon" aria-hidden="true"><use href="#icon-dashboard"/></svg> <span>Dashboard</span></a>
     <ul class="sidebar-nav">
-      <li class="sidebar-section"><span><svg class="doc-icon" aria-hidden="true"><use href="#icon-book"/></svg> Guides</span></li>
+      <li class="sidebar-section"><span>📘 Guides</span></li>
       <li><a href="index.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-home"/></svg> <span>Overview</span></a></li>
       <li><a href="getting-started.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-rocket"/></svg> <span>Getting Started</span></a></li>
       <li><a href="tutorials.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-book"/></svg> <span>Tutorials</span></a></li>
-      <li class="sidebar-section"><span><svg class="doc-icon" aria-hidden="true"><use href="#icon-yak"/></svg> Protocol Stack</span></li>
+      <li class="sidebar-section"><span>🐃 Protocol Stack</span></li>
       <li><a href="yak-protocol.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-yak"/></svg> <span>YAK://</span></a></li>
       <li><a href="annex.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-annex"/></svg> <span>ANNEX</span></a></li>
       <li><a href="jhilke.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-jhilke"/></svg> <span>JHILKE</span></a></li>
@@ -626,23 +628,24 @@
       <li><a href="prahari.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-prahari"/></svg> <span>PRAHARI</span></a></li>
       <li><a href="dharma.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-dharma"/></svg> <span>DHARMA</span></a></li>
       <li><a href="seva.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-seva"/></svg> <span>SEVA</span></a></li>
+      <li><a href="darbar.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-darbar"/></svg> <span>DARBAR</span></a></li>
       <li><a href="docs-bundle.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-granth"/></svg> <span>GRANTH</span></a></li>
       <li><a href="api.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-api"/></svg> <span>API</span></a></li>
       <li><a href="adapters.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-adapters"/></svg> <span>Adapters</span></a></li>
-      <li class="sidebar-section"><span><svg class="doc-icon" aria-hidden="true"><use href="#icon-rocket"/></svg> Applications</span></li>
+      <li class="sidebar-section"><span>🚀 Applications</span></li>
       <li><a href="yakapp.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-yakapp"/></svg> <span>YakApp</span></a></li>
       <li><a href="c2c.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-c2c"/></svg> <span>C2C</span></a></li>
       <li><a href="studio.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-studio"/></svg> <span>Studio</span></a></li>
-      <li class="sidebar-section"><span><svg class="doc-icon" aria-hidden="true"><use href="#icon-gear"/></svg> Infrastructure</span></li>
+      <li class="sidebar-section"><span>🔧 Infrastructure</span></li>
       <li><a href="cli.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-terminal"/></svg> <span>CLI</span></a></li>
       <li><a href="configuration.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-gear"/></svg> <span>Configuration</span></a></li>
       <li><a href="mesh.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-mandala"/></svg> <span>Mesh Network</span></a></li>
       <li><a href="time-sources.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-mani"/></svg> <span>Time Sources</span></a></li>
       <li><a href="webserver.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-server"/></svg> <span>Web Server</span></a></li>
       <li><a href="advanced-systems.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-tivra"/></svg> <span>Advanced Systems</span></a></li>
-      <li class="sidebar-section"><span><svg class="doc-icon" aria-hidden="true"><use href="#icon-book"/></svg> Tutorials</span></li>
+      <li class="sidebar-section"><span>📖 Tutorials</span></li>
       <li><a href="gumba-tutorial.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-gumba"/></svg> <span>GUMBA Tutorial</span></a></li>
-      <li class="sidebar-section"><span><svg class="doc-icon" aria-hidden="true"><use href="#icon-quickref"/></svg> Reference</span></li>
+      <li class="sidebar-section"><span>📋 Reference</span></li>
       <li><a href="quick-reference.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-quickref"/></svg> <span>Quick Ref</span></a></li>
     </ul>
   </nav>
@@ -990,8 +993,157 @@ if (result.isRealSilicon) {
                 </div>
             </section>
 
+            <!-- 162T Ternary Routing & Trit Commitment (Tabbed) -->
+            <section class="mb-12">
+                <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+                    <svg class="doc-icon inline-icon" aria-hidden="true"><use href="#icon-tribhuj"/></svg> Ternary Integrity Layer
+                </h2>
+                <p class="text-mountain-300 mb-6">
+                    The ternary integrity layer provides 162-trit hierarchical addressing and polynomial-binding
+                    commitments. These primitives underpin mesh routing and message authentication.
+                </p>
+
+                <div class="ym-tabs">
+                    <div class="ym-tab-bar" role="tablist" aria-label="Ternary integrity tabs">
+                        <button class="ym-tab-btn" role="tab" aria-controls="panel-162t" id="tab-162t">162T Routing</button>
+                        <button class="ym-tab-btn" role="tab" aria-controls="panel-trit-commit" id="tab-trit-commit">Trit Commitment</button>
+                    </div>
+
+                    <!-- 162T Routing Panel -->
+                    <div class="ym-tab-panel" role="tabpanel" id="panel-162t" aria-labelledby="tab-162t">
+                        <h3 class="text-xl font-semibold mb-3">162-Trit Hierarchical Addresses</h3>
+                        <p class="text-mountain-300 mb-4">
+                            162T replaces the legacy 144T scheme with 3&times;54-trit tiers (Summit / Ridge / Base),
+                            delivering 162&times;log&sub2;(3) &asymp; 256.8 bits of true post-quantum security with
+                            zero YPC-27 padding waste (54 = 2&times;27).
+                        </p>
+
+                        <div class="grid md:grid-cols-3 gap-4 mb-6">
+                            <div class="bg-mountain-800 rounded-xl p-4 border border-mountain-700 text-center">
+                                <div class="text-2xl font-mono theme-accent mb-1">SUMMIT</div>
+                                <div class="text-mountain-400 text-sm">54 trits &mdash; global routing</div>
+                                <div class="text-xs text-mountain-500 mt-1">2&times;27 = zero waste</div>
+                            </div>
+                            <div class="bg-mountain-800 rounded-xl p-4 border border-mountain-700 text-center">
+                                <div class="text-2xl font-mono theme-accent mb-1">RIDGE</div>
+                                <div class="text-mountain-400 text-sm">54 trits &mdash; regional routing</div>
+                                <div class="text-xs text-mountain-500 mt-1">2&times;27 = zero waste</div>
+                            </div>
+                            <div class="bg-mountain-800 rounded-xl p-4 border border-mountain-700 text-center">
+                                <div class="text-2xl font-mono theme-accent mb-1">BASE</div>
+                                <div class="text-mountain-400 text-sm">54 trits &mdash; local identity</div>
+                                <div class="text-xs text-mountain-500 mt-1">2&times;27 = zero waste</div>
+                            </div>
+                        </div>
+
+                        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700 mb-6">
+                            <h4 class="font-semibold theme-accent mb-3">Why 162T over 144T?</h4>
+                            <div class="overflow-x-auto">
+                                <table class="w-full">
+                                    <thead><tr class="border-b border-mountain-700">
+                                        <th class="text-left p-2 text-mountain-300">Metric</th>
+                                        <th class="text-left p-2 text-mountain-300">144T</th>
+                                        <th class="text-left p-2 theme-accent">162T</th>
+                                    </tr></thead>
+                                    <tbody>
+                                        <tr class="border-b border-mountain-700">
+                                            <td class="p-2 text-mountain-400">Total trits</td>
+                                            <td class="p-2 text-mountain-400">144 (4&times;36)</td>
+                                            <td class="p-2 theme-accent">162 (3&times;54)</td>
+                                        </tr>
+                                        <tr class="border-b border-mountain-700">
+                                            <td class="p-2 text-mountain-400">Security bits</td>
+                                            <td class="p-2 text-mountain-400">228.3</td>
+                                            <td class="p-2 theme-accent">256.8</td>
+                                        </tr>
+                                        <tr class="border-b border-mountain-700">
+                                            <td class="p-2 text-mountain-400">YPC-27 waste</td>
+                                            <td class="p-2 text-mountain-400">18 trits/chunk</td>
+                                            <td class="p-2 theme-accent">0 (54 = 2&times;27)</td>
+                                        </tr>
+                                        <tr>
+                                            <td class="p-2 text-mountain-400">Tier structure</td>
+                                            <td class="p-2 text-mountain-400">4 tiers of 36</td>
+                                            <td class="p-2 theme-accent">3 tiers of 54</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <pre class="language-javascript rounded-lg mb-4"><code>import { TritAddress, TernaryRoutingTable } from 'yakmesh/oracle/ternary-routing';
+
+const addr = TritAddress.generate();     // 162-trit address
+const summit = addr.tier('SUMMIT');      // first 54 trits
+const ridge  = addr.tier('RIDGE');       // middle 54 trits
+const base   = addr.tier('BASE');        // last 54 trits
+
+const table = new TernaryRoutingTable();
+table.insert(addr, peerConnection);
+const route = table.lookup(targetAddr);  // longest-prefix match</code></pre>
+                    </div>
+
+                    <!-- Trit Commitment Panel -->
+                    <div class="ym-tab-panel" role="tabpanel" id="panel-trit-commit" aria-labelledby="tab-trit-commit">
+                        <h3 class="text-xl font-semibold mb-3">Dual-Layer Trit Commitment</h3>
+                        <p class="text-mountain-300 mb-4">
+                            Trit commitments provide non-separable binding between a NIST-standard SHA3 hash
+                            and a YPC-27 polynomial checksum. An attacker cannot forge one without invalidating the other.
+                        </p>
+
+                        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700 mb-6">
+                            <h4 class="font-semibold theme-accent mb-3">5-Check Verification Pipeline</h4>
+                            <div class="space-y-2 text-mountain-300">
+                                <div class="flex items-center gap-2">
+                                    <span class="theme-badge px-2 py-1 rounded text-xs">1</span>
+                                    <span><strong>VERSION_OK</strong> &mdash; Protocol version matches</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="theme-badge px-2 py-1 rounded text-xs">2</span>
+                                    <span><strong>STRUCTURE_OK</strong> &mdash; Message envelope valid</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="theme-badge px-2 py-1 rounded text-xs">3</span>
+                                    <span><strong>ADDRESS_DECODED</strong> &mdash; 162T address parses correctly</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="theme-badge px-2 py-1 rounded text-xs">4</span>
+                                    <span><strong>YPC27_VALID</strong> &mdash; Polynomial checksum passes cyclic convolution</span>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <span class="theme-badge px-2 py-1 rounded text-xs">5</span>
+                                    <span><strong>BINDING_VALID</strong> &mdash; SHA3 &oplus; YPC-27 binding holds</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700 mb-6">
+                            <h4 class="font-semibold theme-accent mb-3">Polynomial Binding</h4>
+                            <p class="text-mountain-300 mb-2">
+                                YPC-27 operates in Z[x]/(x&sup2;&sup7;&minus;1) mod 3 &mdash; cyclic convolution makes the checksum
+                                non-separable from the content. Each 27-trit block maps to one polynomial coefficient,
+                                and 162T addresses divide evenly into 6 blocks (162 / 27 = 6) with zero waste.
+                            </p>
+                        </div>
+
+                        <pre class="language-javascript rounded-lg mb-4"><code>import { TritCommitment, createDualLayerMessage } from 'yakmesh/security/trit-commitment';
+
+// Create a committed message
+const msg = createDualLayerMessage(payload, senderAddress162);
+// { version, payload, address, sha3Hash, ypc27Checksum, binding }
+
+// Verify on receiving end
+const result = TritCommitment.verify(msg);
+// { valid: true, checks: ['VERSION_OK','STRUCTURE_OK','ADDRESS_DECODED','YPC27_VALID','BINDING_VALID'] }
+
+// If any check fails, the specific failure is identified:
+// { valid: false, checks: ['VERSION_OK','STRUCTURE_OK','ADDRESS_DECODED'], failedAt: 'YPC27_VALID' }</code></pre>
+                    </div>
+                </div>
+            </section>
+
                               <!-- Journey Navigation -->
-                                                                                                                                                <div class="border-t border-mountain-700 mt-12 pt-8">
+                                                                                                                                                      <div class="border-t border-mountain-700 mt-12 pt-8">
         <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
         <div class="flex flex-col sm:flex-row gap-4">
           <a href="geo-proof.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">

@@ -19,7 +19,7 @@ async function main() {
     name: 'My Yakmesh Node',
     port: 9001,
     enableDashboard: true,
-    dashboardPort: 3000
+    dashboardPort: 3080
   });
 
   // 2. Start the web server
@@ -35,7 +35,7 @@ async function main() {
 
   log.info('All services running', {
     meshNode: 'ws://localhost:9001',
-    dashboard: 'http://localhost:3000',
+    dashboard: 'http://localhost:3080',
     webServer: 'http://localhost:8080'
   });
 

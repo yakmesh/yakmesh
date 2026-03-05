@@ -14,7 +14,7 @@
 
 import { sha3_256 } from '@noble/hashes/sha3.js';
 import { bytesToHex } from '@noble/hashes/utils.js';
-import { readFileSync, writeFileSync, readdirSync, statSync, existsSync } from 'fs';
+import { readFileSync, writeFileSync, readdirSync, statSync, existsSync, mkdirSync, copyFileSync, rmSync } from 'fs';
 import { join, relative, extname, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { deriveNetworkName } from '../oracle/network-identity.js';
@@ -25,6 +25,13 @@ const WEBSITE_ROOT = join(PROJECT_ROOT, '..', 'website');
 const DOCS_SOURCE = join(WEBSITE_ROOT, 'docs');
 const ASSETS_SOURCE = join(WEBSITE_ROOT, 'assets');
 const BUNDLE_OUTPUT = join(PROJECT_ROOT, 'embedded-docs', 'bundle.js');
+
+// Internal docs copies that ship with the package
+const INTERNAL_DOCS = [
+  join(PROJECT_ROOT, 'docs'),
+  join(PROJECT_ROOT, 'website', 'docs'),
+];
+const INTERNAL_ASSETS = join(PROJECT_ROOT, 'website', 'assets');
 
 // Content type mapping
 const CONTENT_TYPES = {
@@ -55,27 +62,27 @@ function getContentType(filePath) {
  */
 function collectFiles(dir, base = dir, prefix = '') {
   const files = [];
-  
+
   if (!existsSync(dir)) {
     console.warn(`⚠️  Directory not found: ${dir}`);
     return files;
   }
-  
+
   for (const entry of readdirSync(dir)) {
     const fullPath = join(dir, entry);
     const stat = statSync(fullPath);
-    
+
     if (stat.isDirectory()) {
       files.push(...collectFiles(fullPath, base, prefix));
     } else {
       // Get path relative to base, normalize slashes
       let relativePath = relative(base, fullPath).replace(/\\/g, '/');
-      
+
       // Add prefix if specified (for assets)
       if (prefix) {
         relativePath = prefix + '/' + relativePath;
       }
-      
+
       files.push({
         path: relativePath,
         fullPath,
@@ -83,7 +90,7 @@ function collectFiles(dir, base = dir, prefix = '') {
       });
     }
   }
-  
+
   return files;
 }
 
@@ -96,53 +103,122 @@ function hashFile(filePath) {
 }
 
 /**
+ * Mirror a source directory to a destination, syncing all files.
+ * Creates directories as needed, copies changed files, removes extras.
+ */
+function mirrorDirectory(src, dest) {
+  if (!existsSync(src)) return 0;
+  mkdirSync(dest, { recursive: true });
+
+  const srcFiles = collectFiles(src, src);
+  const destFiles = existsSync(dest) ? collectFiles(dest, dest) : [];
+  const destSet = new Set(destFiles.map(f => f.path));
+  let copied = 0;
+
+  for (const file of srcFiles) {
+    const destPath = join(dest, file.path);
+    mkdirSync(dirname(destPath), { recursive: true });
+
+    // Copy if missing or different size
+    if (!existsSync(destPath) || statSync(destPath).size !== file.size) {
+      copyFileSync(file.fullPath, destPath);
+      copied++;
+    } else {
+      // Same size — check content via hash
+      const srcHash = hashFile(file.fullPath);
+      const destHash = hashFile(destPath);
+      if (srcHash !== destHash) {
+        copyFileSync(file.fullPath, destPath);
+        copied++;
+      }
+    }
+    destSet.delete(file.path);
+  }
+
+  // Remove files that no longer exist in source
+  for (const extra of destSet) {
+    const extraPath = join(dest, extra);
+    if (existsSync(extraPath)) {
+      rmSync(extraPath);
+    }
+  }
+
+  return copied;
+}
+
+/**
+ * Sync source docs/assets to internal package copies
+ */
+function syncInternalCopies() {
+  console.log('🔄 Syncing internal docs copies...\n');
+
+  for (const destDir of INTERNAL_DOCS) {
+    const label = relative(PROJECT_ROOT, destDir).replace(/\\/g, '/');
+    const copied = mirrorDirectory(DOCS_SOURCE, destDir);
+    console.log(`  ${label}: ${copied} files updated`);
+  }
+
+  // Sync assets too
+  if (existsSync(ASSETS_SOURCE) && existsSync(INTERNAL_ASSETS)) {
+    const label = relative(PROJECT_ROOT, INTERNAL_ASSETS).replace(/\\/g, '/');
+    const copied = mirrorDirectory(ASSETS_SOURCE, INTERNAL_ASSETS);
+    console.log(`  ${label}: ${copied} files updated`);
+  }
+
+  console.log('');
+}
+
+/**
  * Main build function
  */
 function buildDocsBundle() {
   console.log('📦 YAKMESH Documentation Bundle Generator');
   console.log('=========================================\n');
-  
+
   // Check if source exists
   if (!existsSync(DOCS_SOURCE)) {
     console.error(`❌ Documentation source not found: ${DOCS_SOURCE}`);
     process.exit(1);
   }
-  
+
+  // Sync source docs to internal package copies first
+  syncInternalCopies();
+
   console.log(`📁 Source: ${DOCS_SOURCE}`);
   console.log(`📁 Assets: ${ASSETS_SOURCE}`);
   console.log(`📄 Output: ${BUNDLE_OUTPUT}\n`);
-  
+
   // Collect files from docs and assets
   const docsFiles = collectFiles(DOCS_SOURCE, DOCS_SOURCE);
   const assetFiles = collectFiles(join(ASSETS_SOURCE, 'silhouettes'), join(ASSETS_SOURCE, 'silhouettes'), 'assets/silhouettes');
-  
+
   const allFiles = [...docsFiles, ...assetFiles];
-  
+
   console.log(`📊 Found ${docsFiles.length} documentation files`);
   console.log(`📊 Found ${assetFiles.length} asset files`);
   console.log(`📊 Total: ${allFiles.length} files\n`);
-  
+
   // Build file index
   const fileIndex = {};
   const hashes = [];
   let totalSize = 0;
-  
+
   console.log('🔐 Computing hashes...\n');
-  
+
   for (const file of allFiles) {
     try {
       const hash = hashFile(file.fullPath);
       const contentType = getContentType(file.path);
-      
+
       fileIndex[file.path] = {
         hash,
         size: file.size,
         contentType,
       };
-      
+
       hashes.push(hash);
       totalSize += file.size;
-      
+
       // Show progress for larger files or all HTML files
       const isImportant = file.path.endsWith('.html') || file.size > 10000;
       if (isImportant) {
@@ -152,21 +228,21 @@ function buildDocsBundle() {
       console.error(`  ✗ ${file.path}: ${err.message}`);
     }
   }
-  
+
   // Compute bundle hash = SHA3-256(sorted individual hashes joined)
   hashes.sort();
   const joinedHashes = hashes.join('');
   const bundleHash = bytesToHex(sha3_256(new TextEncoder().encode(joinedHashes)));
-  
+
   // Get version from package.json
   let version = '0.0.0';
   try {
     const pkg = JSON.parse(readFileSync(join(PROJECT_ROOT, 'package.json'), 'utf-8'));
     version = pkg.version;
-  } catch {}
-  
+  } catch { }
+
   const buildTime = new Date().toISOString();
-  
+
   // Generate bundle.js content
   const bundleContent = `/**
  * YAKMESH Embedded Documentation Bundle
@@ -230,7 +306,7 @@ export function getFileMeta(path) {
 
   // Write bundle
   writeFileSync(BUNDLE_OUTPUT, bundleContent, 'utf-8');
-  
+
   // Summary
   const ioName = deriveNetworkName(bundleHash, 3);
   console.log('\n=========================================');
@@ -242,7 +318,7 @@ export function getFileMeta(path) {
   console.log(`  🕐 Built: ${buildTime}`);
   console.log(`\n  Output: ${BUNDLE_OUTPUT}`);
   console.log('=========================================\n');
-  
+
   return { bundleHash, version, fileCount: Object.keys(fileIndex).length, totalSize };
 }
 

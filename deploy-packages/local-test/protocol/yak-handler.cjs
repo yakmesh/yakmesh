@@ -7,8 +7,16 @@
 
 const { exec } = require('child_process');
 const { platform } = require('os');
+const { readFileSync } = require('fs');
+const { join } = require('path');
 
-const PORT = 3000;
+// Read port from canonical config — single source of truth
+// Override via YAKMESH_HTTP_PORT env var for multi-node setups
+let PORT = 3080;
+try {
+  const portsJson = JSON.parse(readFileSync(join(__dirname, '..', 'config', 'ports.json'), 'utf8'));
+  PORT = parseInt(process.env.YAKMESH_HTTP_PORT, 10) || portsJson.httpPort || 3080;
+} catch { PORT = parseInt(process.env.YAKMESH_HTTP_PORT, 10) || 3080; }
 
 // Built-in routes that map to HTTP endpoints
 const BUILTIN_ROUTES = {
@@ -39,27 +47,27 @@ const BUILTIN_ROUTES = {
 function yakToHttp(yakUrl, port) {
   const match = yakUrl.match(/^(y|yak):\/\/(.+)$/i);
   if (!match) return `http://localhost:${port}/dashboard/`;
-  
+
   const path = match[2];
   const parts = path.split('/').filter(Boolean);
   const host = parts[0].toLowerCase();
   const subPath = parts.length > 1 ? '/' + parts.slice(1).join('/') : '';
-  
+
   // Check builtin routes
   if (BUILTIN_ROUTES[host]) {
     return `http://localhost:${port}${BUILTIN_ROUTES[host]}${subPath}`;
   }
-  
+
   // Check content hash (64 char hex)
   if (/^[a-f0-9]{64}$/i.test(host)) {
     return `http://localhost:${port}/content/${host}`;
   }
-  
+
   // Content with explicit prefix
   if (host === 'content' && parts.length > 1) {
     return `http://localhost:${port}/content/${parts[1]}`;
   }
-  
+
   // Unknown - 404
   return `http://localhost:${port}/404?url=${encodeURIComponent(yakUrl)}`;
 }

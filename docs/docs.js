@@ -8,11 +8,12 @@
  * - Dashboard button visibility (localhost only)
  */
 
-document.addEventListener('DOMContentLoaded', function () {
+document.addEventListener('DOMContentLoaded', function() {
   initDashboardButton();
   initSidebar();
   initActiveLinks();
   initParticles();
+  initTabs();
 });
 
 /**
@@ -22,13 +23,13 @@ document.addEventListener('DOMContentLoaded', function () {
 function initDashboardButton() {
   const dashboardLink = document.querySelector('.sidebar-dashboard-link');
   if (!dashboardLink) return;
-
-  const isLocalhost = window.location.hostname === 'localhost' ||
-    window.location.hostname === '127.0.0.1' ||
-    window.location.hostname.startsWith('192.168.') ||
-    window.location.hostname.startsWith('10.') ||
-    window.location.protocol === 'file:';
-
+  
+  const isLocalhost = window.location.hostname === 'localhost' || 
+                      window.location.hostname === '127.0.0.1' ||
+                      window.location.hostname.startsWith('192.168.') ||
+                      window.location.hostname.startsWith('10.') ||
+                      window.location.protocol === 'file:';
+  
   if (!isLocalhost) {
     dashboardLink.style.display = 'none';
   }
@@ -44,12 +45,12 @@ function initSidebar() {
   const toggle = document.getElementById('sidebarToggle') || document.querySelector('.sidebar-toggle');
   const overlay = document.getElementById('sidebarOverlay') || document.querySelector('.sidebar-overlay');
   const main = document.getElementById('mainContent') || document.querySelector('.docs-main');
-
+  
   if (!sidebar || !toggle) return;
-
+  
   // Check if we're on mobile
   const isMobile = () => window.innerWidth <= 900;
-
+  
   // Desktop: check for saved preference
   if (!isMobile()) {
     const savedState = localStorage.getItem('sidebar-collapsed');
@@ -60,12 +61,12 @@ function initSidebar() {
       document.body.classList.add('sidebar-narrow');
     }
   }
-
+  
   // Toggle sidebar
-  toggle.addEventListener('click', function (e) {
+  toggle.addEventListener('click', function(e) {
     e.preventDefault();
     e.stopPropagation();
-
+    
     if (isMobile()) {
       // Mobile: slide in/out overlay style
       sidebar.classList.toggle('open');
@@ -78,42 +79,42 @@ function initSidebar() {
       toggle.classList.toggle('collapsed');
       if (main) main.classList.toggle('sidebar-collapsed');
       document.body.classList.toggle('sidebar-narrow', sidebar.classList.contains('icon-only'));
-
+      
       // Save preference
       localStorage.setItem('sidebar-collapsed', sidebar.classList.contains('icon-only'));
     }
   });
-
+  
   // Close on overlay click (mobile only)
   if (overlay) {
-    overlay.addEventListener('click', function () {
+    overlay.addEventListener('click', function() {
       closeMobileSidebar();
     });
   }
-
+  
   // Close on escape key
-  document.addEventListener('keydown', function (e) {
+  document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape' && sidebar.classList.contains('open')) {
       closeMobileSidebar();
     }
   });
-
+  
   // Close sidebar when clicking a link (mobile only)
-  sidebar.querySelectorAll('a').forEach(function (link) {
-    link.addEventListener('click', function () {
+  sidebar.querySelectorAll('a').forEach(function(link) {
+    link.addEventListener('click', function() {
       if (isMobile() && sidebar.classList.contains('open')) {
         closeMobileSidebar();
       }
     });
   });
-
+  
   // Handle resize - close mobile sidebar if resizing to desktop
-  window.addEventListener('resize', function () {
+  window.addEventListener('resize', function() {
     if (!isMobile() && sidebar.classList.contains('open')) {
       closeMobileSidebar();
     }
   });
-
+  
   function closeMobileSidebar() {
     sidebar.classList.remove('open');
     if (overlay) overlay.classList.remove('open');
@@ -128,8 +129,8 @@ function initSidebar() {
 function initActiveLinks() {
   const currentPage = window.location.pathname.split('/').pop() || 'index.html';
   const links = document.querySelectorAll('.docs-sidebar a');
-
-  links.forEach(function (link) {
+  
+  links.forEach(function(link) {
     const href = link.getAttribute('href');
     if (href === currentPage || (currentPage === '' && href === 'index.html')) {
       link.classList.add('active');
@@ -151,8 +152,8 @@ function getCloseIcon() {
 /**
  * Smooth scroll for anchor links
  */
-document.querySelectorAll('a[href^="#"]').forEach(function (anchor) {
-  anchor.addEventListener('click', function (e) {
+document.querySelectorAll('a[href^="#"]').forEach(function(anchor) {
+  anchor.addEventListener('click', function(e) {
     e.preventDefault();
     const target = document.querySelector(this.getAttribute('href'));
     if (target) {
@@ -323,6 +324,12 @@ var PARTICLE_THEMES = {
     colors: ['#34d399', '#059669', '#6ee7b7'],
     glows: ['rgba(52,211,153,0.3)', 'rgba(5,150,105,0.25)', 'rgba(110,231,183,0.2)'],
     sizes: [4, 7], pulse: [3, 6], drift: 'rise', max: 0.7
+  },
+  'darbar': {
+    shape: 'ym-hex', count: 7,
+    colors: ['#a5b4fc', '#6366f1', '#818cf8'],
+    glows: ['rgba(165,180,252,0.3)', 'rgba(99,102,241,0.25)', 'rgba(129,140,248,0.2)'],
+    sizes: [5, 9], pulse: [3, 5], drift: 'drift', max: 0.7
   },
 
   // ─── Applications & Reference ──────────────────────────
@@ -553,4 +560,57 @@ function initParticles() {
 /** Random float between min and max */
 function randBetween(min, max) {
   return min + Math.random() * (max - min);
+}
+
+/**
+ * YM-TABS — Accessible tabbed content panels.
+ * Auto-initialises all .ym-tabs containers on the page.
+ * Keyboard: Arrow Left/Right to cycle, Home/End for first/last.
+ */
+function initTabs() {
+  document.querySelectorAll('.ym-tabs').forEach(function(tabGroup) {
+    var buttons = tabGroup.querySelectorAll('.ym-tab-btn');
+    var panels  = tabGroup.querySelectorAll('.ym-tab-panel');
+    if (!buttons.length || !panels.length) return;
+
+    function activate(index) {
+      buttons.forEach(function(btn, i) {
+        var selected = i === index;
+        btn.setAttribute('aria-selected', selected ? 'true' : 'false');
+        btn.setAttribute('tabindex', selected ? '0' : '-1');
+      });
+      panels.forEach(function(panel, i) {
+        panel.hidden = i !== index;
+      });
+    }
+
+    // Click handler
+    buttons.forEach(function(btn, i) {
+      btn.addEventListener('click', function() { activate(i); });
+    });
+
+    // Keyboard navigation
+    tabGroup.querySelector('.ym-tab-bar').addEventListener('keydown', function(e) {
+      var idx = Array.prototype.indexOf.call(buttons, document.activeElement);
+      if (idx < 0) return;
+      var next = idx;
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+        next = (idx + 1) % buttons.length;
+      } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+        next = (idx - 1 + buttons.length) % buttons.length;
+      } else if (e.key === 'Home') {
+        next = 0;
+      } else if (e.key === 'End') {
+        next = buttons.length - 1;
+      } else {
+        return;
+      }
+      e.preventDefault();
+      activate(next);
+      buttons[next].focus();
+    });
+
+    // Ensure first tab is active on init
+    activate(0);
+  });
 }
