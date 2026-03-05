@@ -44,20 +44,20 @@ const log = createLogger('mesh:seva');
 
 export const SEVA_CONFIG = Object.freeze({
   version: 1,
-  
+
   // Capacity management
   defaultMaxConcurrent: 10,
   maxRequestsPerPeerPerMinute: 30,
   requestTimeout: 5000,       // 5s timeout for work responses
-  
+
   // Verification
   verifyProbability: 0.05,    // 5% of results get spot-checked
   verifyTimeout: 10000,       // 10s for verification round-trip
-  
+
   // Capability broadcast
   capabilityBroadcastInterval: 60000,  // Advertise every 60s
   capabilityTTL: 180000,              // Expire after 3 minutes
-  
+
   // Model slots (must match c2c server SEVA_SLOTS — 18 slots)
   validSlots: new Set([
     // Planet rendering (21g)
@@ -75,6 +75,8 @@ export const SEVA_CONFIG = Object.freeze({
     'lane-optimizer',
     'lore-generator',
     'anomaly-classifier',
+    'crew-morale',
+    'nebula-nav',
     // AI Commander (C.6)
     'sherpa-commander',
     'lama-strategist',
@@ -83,13 +85,13 @@ export const SEVA_CONFIG = Object.freeze({
     // Dynamis anti-cheat
     'behavior-detector',
   ]),
-  
+
   // Message types
   messageTypes: {
     CAPABILITY: 'seva:capability',
-    REQUEST:    'seva:request',
-    RESPONSE:   'seva:response',
-    VERIFY:     'seva:verify',
+    REQUEST: 'seva:request',
+    RESPONSE: 'seva:response',
+    VERIFY: 'seva:verify',
     VERIFY_ACK: 'seva:verify:ack',
   },
 });
@@ -116,20 +118,20 @@ export class SevaMeshHandler extends EventEmitter {
     this.hardware = opts.hardware || {};
     this.executor = opts.executor || null;
     this.maxConcurrent = opts.maxConcurrent || SEVA_CONFIG.defaultMaxConcurrent;
-    
+
     // State
     this.activeJobs = 0;
     this.totalServed = 0;
     this.peerCapabilities = new Map();   // peerId → { slots, capacity, lastSeen }
     this.peerRateLimits = new Map();     // peerId → { timestamps: number[] }
     this.pendingRequests = new Map();     // requestId → { resolve, reject, timer }
-    
+
     // Broadcast timer
     this._capBroadcastTimer = null;
   }
-  
+
   // ─── LIFECYCLE ────────────────────────────────────────────────────────────
-  
+
   start() {
     if (this.enabled) {
       // Broadcast our capabilities immediately, then periodically
@@ -146,27 +148,27 @@ export class SevaMeshHandler extends EventEmitter {
     } else {
       log.info('SEVA mesh handler started (consumer only — no NPU sharing)');
     }
-    
+
     // Always listen for capabilities and responses (even if not serving)
     // The network adapter will call handleMessage() for seva: messages
   }
-  
+
   stop() {
     if (this._capBroadcastTimer) clearInterval(this._capBroadcastTimer);
     this._capBroadcastTimer = null;
-    
+
     // Reject all pending requests
     for (const [id, pending] of this.pendingRequests) {
       clearTimeout(pending.timer);
       pending.reject(new Error('SEVA handler stopped'));
     }
     this.pendingRequests.clear();
-    
+
     log.info('SEVA mesh handler stopped');
   }
-  
+
   // ─── INCOMING MESSAGE HANDLER ─────────────────────────────────────────────
-  
+
   /**
    * Handle an incoming SEVA mesh message.
    * Called by MandalaNetwork when a seva: message arrives.
@@ -196,12 +198,12 @@ export class SevaMeshHandler extends EventEmitter {
         log.debug({ type }, 'Unknown SEVA message type');
     }
   }
-  
+
   // ─── CAPABILITY MANAGEMENT ────────────────────────────────────────────────
-  
+
   _broadcastCapability() {
     if (!this.enabled || !this.network) return;
-    
+
     const ad = {
       nodeId: this.identity?.nodeId,
       version: SEVA_CONFIG.version,
@@ -214,10 +216,10 @@ export class SevaMeshHandler extends EventEmitter {
       },
       ts: Date.now(),
     };
-    
+
     this.network.broadcast({ type: SEVA_CONFIG.messageTypes.CAPABILITY, ...ad });
   }
-  
+
   _getActiveSlots() {
     const slots = [];
     for (const slotId of SEVA_CONFIG.validSlots) {
@@ -228,23 +230,23 @@ export class SevaMeshHandler extends EventEmitter {
     }
     return slots;
   }
-  
+
   _handleCapability(payload, peerId) {
     if (!payload || !payload.slots) return;
-    
+
     this.peerCapabilities.set(peerId, {
       slots: new Set(payload.slots.map(s => s.id)),
       capacity: payload.capacity || {},
       accelerated: payload.capacity?.accelerated || false,
       lastSeen: Date.now(),
     });
-    
+
     this.emit('peerCapability', peerId, payload);
-    
+
     // Evict stale peer capabilities
     this._cleanStalePeers();
   }
-  
+
   _cleanStalePeers() {
     const now = Date.now();
     for (const [peerId, cap] of this.peerCapabilities) {
@@ -253,9 +255,9 @@ export class SevaMeshHandler extends EventEmitter {
       }
     }
   }
-  
+
   // ─── WORK REQUEST (CONSUMER SIDE) ─────────────────────────────────────────
-  
+
   /**
    * Submit a work request to the mesh.
    * Finds the best capable peer and sends the request.
@@ -268,30 +270,30 @@ export class SevaMeshHandler extends EventEmitter {
     if (!SEVA_CONFIG.validSlots.has(slot)) {
       throw new Error(`Invalid SEVA slot: ${slot}`);
     }
-    
+
     // Validate params are math-only
     if (!this._validateNumericOnly(params)) {
       throw new Error('SEVA params must be numbers only');
     }
-    
+
     // Find best peer for this slot
     const peer = this._findBestPeer(slot);
     if (!peer) {
       throw new Error('No SEVA-capable peers available');
     }
-    
+
     // Generate request ID
     const reqId = this._generateId();
-    
+
     // Send request and wait for response
     return new Promise((resolve, reject) => {
       const timer = setTimeout(() => {
         this.pendingRequests.delete(reqId);
         reject(new Error('SEVA request timeout'));
       }, SEVA_CONFIG.requestTimeout);
-      
+
       this.pendingRequests.set(reqId, { resolve, reject, timer, slot, params });
-      
+
       this.network.sendTo(peer, {
         type: SEVA_CONFIG.messageTypes.REQUEST,
         id: reqId,
@@ -301,7 +303,7 @@ export class SevaMeshHandler extends EventEmitter {
       });
     });
   }
-  
+
   /**
    * Find the best peer for a given slot.
    * Prefers: accelerated > lowest load > most recent capability ad.
@@ -309,10 +311,10 @@ export class SevaMeshHandler extends EventEmitter {
   _findBestPeer(slot) {
     let bestPeer = null;
     let bestScore = -1;
-    
+
     for (const [peerId, cap] of this.peerCapabilities) {
       if (!cap.slots.has(slot)) continue;
-      
+
       // Score: NPU acceleration = 100, low load bonus = 0-50, freshness = 0-10
       let score = 0;
       if (cap.accelerated) score += 100;
@@ -320,18 +322,18 @@ export class SevaMeshHandler extends EventEmitter {
       score += (1 - loadRatio) * 50;
       const ageMs = Date.now() - cap.lastSeen;
       score += Math.max(0, 10 - ageMs / 10000);
-      
+
       if (score > bestScore) {
         bestScore = score;
         bestPeer = peerId;
       }
     }
-    
+
     return bestPeer;
   }
-  
+
   // ─── WORK REQUEST (SERVER SIDE) ───────────────────────────────────────────
-  
+
   async _handleRequest(payload, peerId) {
     if (!this.enabled || !this.executor) {
       this.network.sendTo(peerId, {
@@ -342,7 +344,7 @@ export class SevaMeshHandler extends EventEmitter {
       });
       return;
     }
-    
+
     // Rate limit check
     if (!this._checkPeerRateLimit(peerId)) {
       this.network.sendTo(peerId, {
@@ -353,7 +355,7 @@ export class SevaMeshHandler extends EventEmitter {
       });
       return;
     }
-    
+
     // Validate slot
     if (!SEVA_CONFIG.validSlots.has(payload.slot)) {
       this.network.sendTo(peerId, {
@@ -364,7 +366,7 @@ export class SevaMeshHandler extends EventEmitter {
       });
       return;
     }
-    
+
     // Validate math-only params
     if (!this._validateNumericOnly(payload.params)) {
       this.network.sendTo(peerId, {
@@ -375,7 +377,7 @@ export class SevaMeshHandler extends EventEmitter {
       });
       return;
     }
-    
+
     // Concurrency check
     if (this.activeJobs >= this.maxConcurrent) {
       this.network.sendTo(peerId, {
@@ -386,7 +388,7 @@ export class SevaMeshHandler extends EventEmitter {
       });
       return;
     }
-    
+
     // Execute
     this.activeJobs++;
     try {
@@ -394,7 +396,7 @@ export class SevaMeshHandler extends EventEmitter {
       const result = await this.executor(payload.slot, payload.params);
       const computeMs = Math.round(performance.now() - t0);
       this.totalServed++;
-      
+
       this.network.sendTo(peerId, {
         type: SEVA_CONFIG.messageTypes.RESPONSE,
         id: payload.id,
@@ -404,7 +406,7 @@ export class SevaMeshHandler extends EventEmitter {
         source: this.hardware.npu ? 'npu' : 'cpu',
         computeMs,
       });
-      
+
       log.debug({ slot: payload.slot, computeMs, peer: peerId.slice(0, 8) }, 'SEVA work served');
     } catch (err) {
       this.network.sendTo(peerId, {
@@ -417,33 +419,33 @@ export class SevaMeshHandler extends EventEmitter {
       this.activeJobs--;
     }
   }
-  
+
   _handleResponse(payload, peerId) {
     const pending = this.pendingRequests.get(payload.id);
     if (!pending) return;
-    
+
     clearTimeout(pending.timer);
     this.pendingRequests.delete(payload.id);
-    
+
     if (payload.status === 'ok') {
       pending.resolve(payload);
     } else {
       pending.reject(new Error(payload.error || 'SEVA response error'));
     }
   }
-  
+
   // ─── VERIFICATION ─────────────────────────────────────────────────────────
-  
+
   async _handleVerify(payload, peerId) {
     if (!this.enabled || !this.executor) return;
-    
+
     // Re-execute the computation
     try {
       const result = await this.executor(payload.slot, payload.params);
-      
+
       // Compare with claimed result using canonical JSON comparison
       const match = JSON.stringify(result) === JSON.stringify(payload.claimedResult);
-      
+
       this.network.sendTo(peerId, {
         type: SEVA_CONFIG.messageTypes.VERIFY_ACK,
         id: payload.id,
@@ -454,18 +456,18 @@ export class SevaMeshHandler extends EventEmitter {
       // Can't verify — skip
     }
   }
-  
+
   _handleVerifyAck(payload, peerId) {
     this.emit('verifyResult', payload.id, payload.match, peerId);
-    
+
     if (!payload.match) {
       log.warn({ id: payload.id, peer: peerId.slice(0, 8) }, 'SEVA verification MISMATCH');
       this.emit('verifyMismatch', payload.id, peerId);
     }
   }
-  
+
   // ─── RATE LIMITING ────────────────────────────────────────────────────────
-  
+
   _checkPeerRateLimit(peerId) {
     const now = Date.now();
     let state = this.peerRateLimits.get(peerId);
@@ -473,16 +475,16 @@ export class SevaMeshHandler extends EventEmitter {
       state = { timestamps: [] };
       this.peerRateLimits.set(peerId, state);
     }
-    
+
     // Remove timestamps older than 60s
     state.timestamps = state.timestamps.filter(t => now - t < 60000);
     state.timestamps.push(now);
-    
+
     return state.timestamps.length <= SEVA_CONFIG.maxRequestsPerPeerPerMinute;
   }
-  
+
   // ─── UTILITIES ────────────────────────────────────────────────────────────
-  
+
   _validateNumericOnly(obj, depth = 0) {
     if (depth > 3) return false;
     if (typeof obj === 'number' && isFinite(obj)) return true;
@@ -497,7 +499,7 @@ export class SevaMeshHandler extends EventEmitter {
     }
     return false;
   }
-  
+
   _generateId() {
     const chars = '0123456789abcdef';
     let id = '';
@@ -506,9 +508,9 @@ export class SevaMeshHandler extends EventEmitter {
     }
     return id;
   }
-  
+
   // ─── PUBLIC API ───────────────────────────────────────────────────────────
-  
+
   /**
    * Get all known SEVA-capable peers.
    */
@@ -520,7 +522,7 @@ export class SevaMeshHandler extends EventEmitter {
     }
     return peers;
   }
-  
+
   /**
    * Get this node's current SEVA stats.
    */
