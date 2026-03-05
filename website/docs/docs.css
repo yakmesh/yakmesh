@@ -2523,11 +2523,7 @@ body:has(.docs-sidebar.icon-only) .docs-footer {
   background: rgba(16, 26, 22, 0.6);
   border-bottom: 2px solid var(--theme-primary, #2e4c43);
   overflow-x: auto;
-  scrollbar-width: none;           /* Firefox */
-  -ms-overflow-style: none;        /* IE/Edge */
-}
-.ym-tab-bar::-webkit-scrollbar {
-  display: none;                   /* Chrome/Safari */
+  scrollbar-width: thin;
 }
 
 .ym-tab-btn {
