@@ -47,7 +47,6 @@ const SECTION_LABELS = {
   protocol: sectionIcon('yak') + ' Protocol Stack',
   applications: sectionIcon('rocket') + ' Applications',
   infrastructure: sectionIcon('gear') + ' Infrastructure',
-  'guide-extra': sectionIcon('book') + ' Tutorials',
   reference: sectionIcon('quickref') + ' Reference'
 };
 

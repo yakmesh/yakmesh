@@ -7,6 +7,7 @@
     { "file": "index.html", "icon": "🏠", "svgIcon": "home", "title": "Overview", "description": "Welcome to Yakmesh", "section": "guide" },
     { "file": "getting-started.html", "icon": "🚀", "svgIcon": "rocket", "title": "Getting Started", "description": "Quick start guide" },
     { "file": "tutorials.html", "icon": "📖", "svgIcon": "book", "title": "Tutorials", "description": "Step-by-step guides" },
+    { "file": "gumba-tutorial.html", "icon": "📖", "svgIcon": "gumba", "title": "GUMBA Tutorial", "description": "Step-by-step access control guide" },
     { "file": "yak-protocol.html", "icon": "🐃", "svgIcon": "yak", "title": "YAK://", "description": "Content addressing", "layer": 1, "purpose": "Universal resource addressing", "section": "protocol" },
     { "file": "annex.html", "icon": "🌉", "svgIcon": "annex", "title": "ANNEX", "description": "Encrypted P2P", "layer": 2, "purpose": "Encrypted P2P (ML-KEM768)" },
     { "file": "jhilke.html", "icon": "🦗", "svgIcon": "jhilke", "title": "JHILKE", "description": "Key lifecycle", "layer": 2.5, "purpose": "Steganographic key lifecycle (bootstrap + rekey)" },
@@ -48,7 +49,6 @@
     { "file": "time-sources.html", "icon": "⏱️", "svgIcon": "mani", "title": "Time Sources", "description": "Precision time synchronization" },
     { "file": "webserver.html", "icon": "🌐", "svgIcon": "server", "title": "Web Server", "description": "HTTP & WebSocket server" },
     { "file": "advanced-systems.html", "icon": "⚡", "svgIcon": "tivra", "title": "Advanced Systems", "description": "Gossip, load balancing & more" },
-    { "file": "gumba-tutorial.html", "icon": "📖", "svgIcon": "gumba", "title": "GUMBA Tutorial", "description": "Step-by-step access control guide", "section": "guide-extra" },
     { "file": "quick-reference.html", "icon": "📋", "svgIcon": "quickref", "title": "Quick Ref", "description": "Cheat sheet", "section": "reference" }
   ]
 }
