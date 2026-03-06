@@ -84,6 +84,8 @@ export const SEVA_CONFIG = Object.freeze({
     'vc-commander',
     // Dynamis anti-cheat
     'behavior-detector',
+    // Market predictor
+    'market-predictor',
   ]),
 
   // Message types
