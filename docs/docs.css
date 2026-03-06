@@ -1260,12 +1260,30 @@ body:has(.docs-sidebar.icon-only) .docs-footer {
   }
 
   /* Cards single column on mobile */
-  .grid.md\\:grid-cols-2 {
+  .grid.md\\:grid-cols-2,
+  .grid.md\\:grid-cols-3,
+  .grid.sm\\:grid-cols-2,
+  .grid.sm\\:grid-cols-3,
+  .grid.lg\\:grid-cols-3,
+  .grid.lg\\:grid-cols-4,
+  .grid.grid-cols-2,
+  .grid.grid-cols-3 {
     grid-template-columns: 1fr !important;
   }
 
   .flex {
     flex-wrap: wrap;
+  }
+
+  /* Prevent horizontal overflow on content area */
+  .docs-main {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+
+  /* Page header: stack icon above title on narrow screens */
+  header .flex.items-center.gap-4 {
+    gap: 0.75rem;
   }
 
   pre {
@@ -2340,11 +2358,16 @@ body:has(.docs-sidebar.icon-only) .docs-footer {
     padding: 0;
   }
 
-  /* Tables become scrollable */
+  /* Tables become scrollable but allow text wrapping */
   table {
     display: block;
     overflow-x: auto;
-    white-space: nowrap;
+  }
+
+  table th,
+  table td {
+    white-space: normal;
+    word-break: break-word;
   }
 
   /* Reduce heading sizes */
@@ -2366,11 +2389,24 @@ body:has(.docs-sidebar.icon-only) .docs-footer {
   .docs-main {
     padding: 0.75rem 0.5rem;
     padding-top: 3.5rem;
+    overflow-x: hidden;
   }
 
   /* Stack items that have flex-1 */
   .flex>.flex-1 {
     min-width: 100%;
+  }
+
+  /* Page header: stack vertically on small phones */
+  header .flex.items-center.gap-4 {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  /* Reduce hero icon size on small screens */
+  .hero-icon {
+    width: 2.5rem;
+    height: 2.5rem;
   }
 
   /* Reduce badge and tag sizes */
@@ -2388,6 +2424,12 @@ body:has(.docs-sidebar.icon-only) .docs-footer {
 
   pre code {
     font-size: 0.75rem;
+  }
+
+  /* Ensure all content stays within viewport */
+  .docs-content {
+    max-width: 100%;
+    overflow-x: hidden;
   }
 }
 
@@ -2486,6 +2528,8 @@ body:has(.docs-sidebar.icon-only) .docs-footer {
   width: 3rem;
   height: 3rem;
   color: var(--theme-accent, #60a5fa);
+  stroke: var(--theme-accent, #60a5fa);
+  fill: none;
   filter: drop-shadow(0 0 8px var(--theme-glow, rgba(96, 165, 250, 0.3)));
 }
 
