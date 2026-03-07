@@ -61,17 +61,17 @@ export const MandalaMessageTypes = {
   // Handshake (greeting rituals)
   HELLO: 'hello',           // Initial connection with identity
   WELCOME: 'welcome',       // Response to hello
-  
+
   // Node management (maintaining the mandala pattern)
   PING: 'ping',
   PONG: 'pong',
   PEERS: 'peers',           // Share known peers (reveal the pattern)
-  
+
   // Data replication (sacred knowledge transmission)
   SYNC_REQUEST: 'sync_request',
   SYNC_RESPONSE: 'sync_response',
   REPLICATE: 'replicate',   // Push new data
-  
+
   // Gossip (whispered teachings)
   GOSSIP: 'gossip',         // Broadcast message
 
@@ -102,44 +102,44 @@ export class MandalaNetwork {
       maxConcurrentHandshakes: config.maxConcurrentHandshakes || 50,
       ...config,
     };
-    
+
     // Track actual bound port (may differ from config if fallback used)
     this.boundPort = null;
-    
+
     // Network identity for code proof verification
     this.networkId = config.networkId || null;
     this.networkFingerprint = config.networkFingerprint || null;
-    
+
     // Oracle code hash for JHILKE bootstrap key derivation
     this.codeHash = config.codeHash || null;
-    
+
     this.server = null;
     this.peers = new Map();        // nodeId -> { ws, identity, lastSeen }
     this.knownNodes = new Map();   // nodeId -> { endpoint, identity }
     this.messageHandlers = new Map();
     this.seenMessages = new Set(); // For gossip deduplication
-    
+
     // ANNEX - PQ-encrypted point-to-point channels
     // Initialized after start() when identity is available
     this.annex = null;
-    
+
     // TRIBHUJ ratchet - trinary rotating keypairs for forward secrecy
     this.ratchet = null;
     this.gateway = null;  // Gateway attestation for gossip verify-once
-    
+
     // Track peer ratchet states (their announced TRIBHUJ public keys)
     this.peerRatchets = new Map(); // nodeId -> { currentPubKey, previousPubKey, epoch }
-    
+
     // Rate limiter for connection/message flood protection
     this.rateLimiter = new ConnectionRateLimiter(config.rateLimiter || {});
-    
+
     // Concurrent handshake tracking — limits how many peers can be in the
     // HELLO/WELCOME negotiation window at the same time. Legitimate nodes
     // trickle in; a burst of 200 simultaneous connections is a Sybil tell.
     // Total peer count is UNBOUNDED (mesh scales freely).
     this._pendingHandshakeCount = 0;
     this._pendingHandshakeWs = new Set();  // Track WSs in handshake state
-    
+
     // Connection burst detector — sliding window for GPS-timestamped alerts.
     // A sudden spike from baseline to hundreds of connections per minute
     // shows up as a "bright spot" with microsecond-precise timing evidence.
@@ -147,18 +147,19 @@ export class MandalaNetwork {
     this._burstWindowMs = 60000;      // 60-second sliding window
     this._burstThreshold = 30;        // connections/minute that trigger alert
     this._burstAlerted = false;       // debounce: one alert per burst episode
+    this._burstAlertTimeout = null;   // stored handle for cleanup
     this._burstStats = {
       totalBurstsDetected: 0,
       lastBurstAt: null,
       lastBurstRate: 0,
       peakRate: 0,
     };
-    
+
     // Message validation — size limits, depth limits, proto pollution guard
     // This was implemented but never wired in. Now it gates ALL incoming WS messages.
     this.messageValidator = new MessageValidator();
     this.safeJsonParser = new SafeJsonParser();
-    
+
     this._setupDefaultHandlers();
   }
 
@@ -168,7 +169,7 @@ export class MandalaNetwork {
   async start() {
     const basePort = this.config.wsPort;
     const maxRetries = this.config.portRetries;
-    
+
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       const port = basePort + attempt;
       try {
@@ -178,25 +179,25 @@ export class MandalaNetwork {
           log.warn('Port was in use, bound to alternate', { originalPort: basePort, boundPort: port });
         }
         log.info('Mesh server listening', { url: `ws://localhost:${port}` });
-        
+
         // Initialize ANNEX encryption layer
         this.annex = new Annex({ identity: this.identity, mesh: this });
-        
+
         // CRITICAL: Route decrypted ANNEX payloads back to mesh handlers.
         // Without this, messages encrypted by _send() via ANNEX are decrypted
         // but never dispatched to GOSSIP/PING/PONG handlers — they vanish.
         this.annex.onMessage(async (msg) => {
           const payload = msg.payload;
           if (!payload || typeof payload !== 'object') return;
-          
+
           const msgType = payload.type || 'gossip';
           const handlers = this.messageHandlers.get(msgType) || [];
           if (handlers.length === 0) return;
-          
+
           // Find the WS for this peer (needed by PING handler etc.)
           const peer = this.peers.get(msg.from);
           if (!peer) return;  // No peer = stale ANNEX session, skip
-          
+
           for (const handler of handlers) {
             try {
               handler(payload, peer.ws, msg.from);
@@ -206,7 +207,7 @@ export class MandalaNetwork {
           }
         });
         log.info('ANNEX encryption layer initialized');
-        
+
         // Initialize JHILKE coordinator (bootstrap + steganographic rekey)
         if (this.codeHash) {
           this.jhilke = new JhilkeCoordinator({
@@ -219,7 +220,7 @@ export class MandalaNetwork {
           this.jhilke.start();  // Start 1s cricket tick loop
           log.info('JHILKE coordinator initialized (cricket chorus active)');
         }
-        
+
         // Initialize TRIBHUJ key ratchet — trinary rotating keypairs
         this.ratchet = new TribhujRatchet({
           rotationInterval: this.config.tribhujRotation || 300000,  // 5min default
@@ -227,7 +228,7 @@ export class MandalaNetwork {
         });
         await this.ratchet.initialize();
         this.ratchet.startAutoRotation();
-        
+
         // Gateway attestation — verify gossip once, attest for downstream
         this.gateway = new GatewayAttestation(
           this.identity.identity.nodeId,
@@ -235,7 +236,7 @@ export class MandalaNetwork {
           { attestationTTL: 60000 }
         );
         log.info('TRIBHUJ ratchet + gateway attestation initialized');
-        
+
         this._startPingLoop();
         return;
       } catch (err) {
@@ -245,7 +246,7 @@ export class MandalaNetwork {
         throw err;
       }
     }
-    
+
     throw new Error(`Could not bind to any port in range ${basePort}-${basePort + maxRetries - 1}`);
   }
 
@@ -258,7 +259,7 @@ export class MandalaNetwork {
 
       server.on('listening', () => {
         this.server = server;
-        
+
         server.on('connection', (ws, req) => {
           this._handleIncomingConnection(ws, req);
         });
@@ -266,7 +267,7 @@ export class MandalaNetwork {
         server.on('error', (err) => {
           console.error('Mesh server error:', err);
         });
-        
+
         resolve();
       });
 
@@ -283,10 +284,10 @@ export class MandalaNetwork {
     return new Promise((resolve, reject) => {
       log.debug('Connecting to peer', { endpoint });
       let settled = false;
-      
+
       const ws = new WebSocket(endpoint);
       ws._outboundEndpoint = endpoint;  // Track origin for reconnect detection
-      
+
       ws.on('open', () => {
         // Send HELLO with our identity AND network fingerprint for code proof verification
         // Include our advertised endpoint so inbound peers know how to reach us
@@ -317,7 +318,7 @@ export class MandalaNetwork {
           reject(err);
         }
         // If already settled (e.g. caller timed out), just silently close
-        try { ws.close(); } catch {}
+        try { ws.close(); } catch { }
       });
 
       // Resolve when we get WELCOME back
@@ -362,7 +363,7 @@ export class MandalaNetwork {
    */
   broadcast(message) {
     const msgId = `${this.identity.identity.nodeId}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    
+
     const gossipMsg = {
       type: MessageTypes.GOSSIP,
       id: msgId,
@@ -376,9 +377,9 @@ export class MandalaNetwork {
     const signed = this.ratchet
       ? this.ratchet.signObject(gossipMsg)
       : this.identity.signObject(gossipMsg);
-    
+
     this.seenMessages.add(msgId);
-    
+
     // Send to all WS peers
     for (const [nodeId, peer] of this.peers) {
       this._send(peer.ws, signed);
@@ -478,17 +479,17 @@ export class MandalaNetwork {
    */
   _getAdvertisedEndpoint() {
     if (!this.boundPort) return null;
-    
+
     // Use configured advertise address if set (for NAT/proxy scenarios)
     if (this.config.advertiseAddress) {
       return this.config.advertiseAddress;
     }
-    
+
     // Otherwise construct from best-guess local IP + bound port
     // Prefer non-localhost addresses for LAN/WAN connectivity
     const ifaces = networkInterfaces();
     let bestIp = '127.0.0.1';
-    
+
     for (const [name, addrs] of Object.entries(ifaces)) {
       for (const addr of addrs) {
         if (addr.family === 'IPv4' && !addr.internal) {
@@ -504,7 +505,7 @@ export class MandalaNetwork {
         }
       }
     }
-    
+
     return `ws://${bestIp}:${this.boundPort}`;
   }
 
@@ -517,21 +518,22 @@ export class MandalaNetwork {
       clearInterval(this._pingInterval);
       this._pingInterval = null;
     }
-    
+    clearTimeout(this._burstAlertTimeout);
+
     // Close all ANNEX channels
     if (this.annex) {
       for (const nodeId of this.annex.sessions.keys()) {
-        try { await this.annex.closeChannel(nodeId); } catch {}
+        try { await this.annex.closeChannel(nodeId); } catch { }
       }
       this.annex = null;
     }
-    
+
     // Stop JHILKE coordinator
     if (this.jhilke) {
       this.jhilke.stop();
       this.jhilke = null;
     }
-    
+
     // Destroy TRIBHUJ ratchet — zero all key material
     if (this.ratchet) {
       this.ratchet.destroy();
@@ -539,19 +541,19 @@ export class MandalaNetwork {
     }
     this.gateway = null;
     this.peerRatchets.clear();
-    
+
     // Close all peer connections
     for (const [nodeId, peer] of this.peers) {
       peer.ws.close();
     }
     this.peers.clear();
-    
+
     // Stop server
     if (this.server) {
       this.server.close();
       this.server = null;
     }
-    
+
     log.info('Mesh server stopped');
   }
 
@@ -561,7 +563,7 @@ export class MandalaNetwork {
     // Handle HELLO
     this.on(MessageTypes.HELLO, (msg, ws) => {
       const nodeId = msg.identity.nodeId;
-      
+
       // CODE PROOF VERIFICATION: Check network fingerprint
       // Nodes with different codebases will have different fingerprints
       if (this.networkFingerprint && msg.identity.networkFingerprint) {
@@ -569,7 +571,7 @@ export class MandalaNetwork {
           console.warn(`✗ Rejected peer ${peerTag(nodeId)} - incompatible codebase`);
           console.warn(`  Their network: ${msg.identity.networkId || 'unknown'}`);
           console.warn(`  Our network:   ${this.networkId || 'unknown'}`);
-          
+
           // Send rejection and close connection
           this._send(ws, {
             type: 'REJECT',
@@ -581,7 +583,7 @@ export class MandalaNetwork {
           return;
         }
       }
-      
+
       // DUPLICATE / RECONNECT DETECTION: If this peer is already connected
       // with a different WebSocket, decide which connection to keep.
       const existingPeer = this.peers.get(nodeId);
@@ -591,7 +593,7 @@ export class MandalaNetwork {
           // Existing connection is still alive — this is a duplicate, not a
           // reconnect. Close the NEW socket to avoid ping-pong overwrites.
           log.info('Duplicate connection from peer — keeping existing WS', { peer: peerTag(nodeId) });
-          try { ws.close(1000, 'Duplicate connection'); } catch {}
+          try { ws.close(1000, 'Duplicate connection'); } catch { }
           return;
         }
         // Old WS is dead — genuine reconnect. Reset ANNEX state.
@@ -603,7 +605,7 @@ export class MandalaNetwork {
         if (this.jhilke) {
           this.jhilke.removePeer(nodeId);
         }
-        try { existingPeer.ws.close(1000, 'Replaced by reconnect'); } catch {}
+        try { existingPeer.ws.close(1000, 'Replaced by reconnect'); } catch { }
       }
 
       // Store peer — no cap on total peers (mesh scales freely)
@@ -616,18 +618,18 @@ export class MandalaNetwork {
         endpoint: peerEndpoint,
         lastSeen: Date.now(),
       });
-      
+
       if (peerEndpoint && !ws._outboundEndpoint) {
         log.debug('Learned peer endpoint from inbound connection', { peer: peerTag(nodeId), endpoint: peerEndpoint });
       }
-      
+
       // Release handshake slot — peer is now fully registered.
       // The slot was reserved in _handleIncomingConnection.
       if (this._pendingHandshakeWs.has(ws)) {
         this._pendingHandshakeCount = Math.max(0, this._pendingHandshakeCount - 1);
         this._pendingHandshakeWs.delete(ws);
       }
-      
+
       // Send WELCOME back with our network info + our advertised endpoint
       this._send(ws, {
         type: MessageTypes.WELCOME,
@@ -639,13 +641,13 @@ export class MandalaNetwork {
         advertisedEndpoint: this._getAdvertisedEndpoint(),
         peers: this.getPeers().filter(p => p.nodeId !== nodeId),
       });
-      
+
       log.info('Peer connected', { name: msg.identity.name, peer: peerTag(nodeId), totalPeers: this.peers.size });
-      
+
       // Signal that this peer's public key is now available — any deferred
       // ANNEX messages waiting for this key will be replayed.
       this.emit('peer-registered', nodeId);
-      
+
       // Deterministic initiator: lower nodeId always initiates ANNEX
       // Prevents duplicate sessions when both sides try to openChannel simultaneously
       // Guard: skip if the WELCOME handler already initiated (both fire when
@@ -662,7 +664,7 @@ export class MandalaNetwork {
             const bootstrapKey = this.jhilke.deriveBootstrapKey(nodeId);
             this.annex.bootstrapSession(nodeId, bootstrapKey);
           }
-          
+
           log.debug('ANNEX: we initiate (lower nodeId)', { us: peerTag(ourNodeId), them: peerTag(nodeId) });
           this.annex.openChannel(nodeId).then(() => {
             log.info('ANNEX channel established with peer', { peerId: peerTag(nodeId) });
@@ -684,7 +686,7 @@ export class MandalaNetwork {
     // Handle WELCOME
     this.on(MessageTypes.WELCOME, (msg, ws) => {
       const nodeId = msg.identity.nodeId;
-      
+
       // CODE PROOF VERIFICATION: Check network fingerprint on WELCOME too
       // This protects the INITIATOR - even if remote accepts us, we reject them if mismatched
       if (this.networkFingerprint && msg.identity.networkFingerprint) {
@@ -693,7 +695,7 @@ export class MandalaNetwork {
           console.warn(`  Their network: ${msg.identity.networkId || 'unknown'}`);
           console.warn(`  Our network:   ${this.networkId || 'unknown'}`);
           ws.close(1008, 'Incompatible codebase');
-          
+
           // Signal rejection to pending promise
           if (ws._pendingWelcome) {
             ws._pendingWelcome({ rejected: true, reason: 'INCOMPATIBLE_CODEBASE' });
@@ -705,14 +707,14 @@ export class MandalaNetwork {
         // Remote node didn't send fingerprint - they're running old code
         console.warn(`✗ Rejecting peer ${peerTag(nodeId)} - no fingerprint (old codebase)`);
         ws.close(1008, 'Missing network fingerprint');
-        
+
         if (ws._pendingWelcome) {
           ws._pendingWelcome({ rejected: true, reason: 'MISSING_FINGERPRINT' });
           delete ws._pendingWelcome;
         }
         return;
       }
-      
+
       // DUPLICATE / RECONNECT DETECTION (WELCOME path): same logic as HELLO.
       const existingPeerW = this.peers.get(nodeId);
       if (existingPeerW && existingPeerW.ws !== ws) {
@@ -722,14 +724,14 @@ export class MandalaNetwork {
           // Tag the existing peer with this endpoint so bootstrap's
           // connectedEndpoints check will match and stop retrying.
           if (ws._outboundEndpoint && !existingPeerW.endpoint) {
-            log.info('Updating peer endpoint from duplicate outbound', { 
-              peer: peerTag(nodeId), 
-              newEndpoint: ws._outboundEndpoint 
+            log.info('Updating peer endpoint from duplicate outbound', {
+              peer: peerTag(nodeId),
+              newEndpoint: ws._outboundEndpoint
             });
             existingPeerW.endpoint = ws._outboundEndpoint;
           }
           log.info('Duplicate outbound to peer — keeping existing WS', { peer: peerTag(nodeId) });
-          try { ws.close(1000, 'Duplicate connection'); } catch {}
+          try { ws.close(1000, 'Duplicate connection'); } catch { }
           // Still resolve the pending promise so bootstrap doesn't retry
           if (ws._pendingWelcome) {
             ws._pendingWelcome(msg);
@@ -746,7 +748,7 @@ export class MandalaNetwork {
         if (this.jhilke) {
           this.jhilke.removePeer(nodeId);
         }
-        try { existingPeerW.ws.close(1000, 'Replaced by reconnect'); } catch {}
+        try { existingPeerW.ws.close(1000, 'Replaced by reconnect'); } catch { }
       }
 
       // Store peer — for outbound we have _outboundEndpoint, for inbound use advertised
@@ -757,20 +759,20 @@ export class MandalaNetwork {
         endpoint: peerEndpoint,
         lastSeen: Date.now(),
       });
-      
+
       if (peerEndpoint && !ws._outboundEndpoint) {
         log.debug('Learned peer endpoint from WELCOME', { peer: peerTag(nodeId), endpoint: peerEndpoint });
       }
-      
+
       // Callback for pending connection
       if (ws._pendingWelcome) {
         ws._pendingWelcome(msg);
         delete ws._pendingWelcome;
       }
-      
+
       // Signal that this peer's public key is now available
       this.emit('peer-registered', nodeId);
-      
+
       // Deterministic initiator: connector side also checks
       // Lower nodeId always initiates ANNEX — mirrors the HELLO handler logic
       // Guard: skip if the HELLO handler already initiated (openChannel returns
@@ -785,7 +787,7 @@ export class MandalaNetwork {
             const bootstrapKey = this.jhilke.deriveBootstrapKey(nodeId);
             this.annex.bootstrapSession(nodeId, bootstrapKey);
           }
-          
+
           log.debug('ANNEX: we initiate on WELCOME (lower nodeId)', { us: peerTag(ourNodeId), them: peerTag(nodeId) });
           this.annex.openChannel(nodeId).then(() => {
             log.info('ANNEX channel established with peer', { peerId: peerTag(nodeId) });
@@ -813,7 +815,7 @@ export class MandalaNetwork {
         ws._pendingWelcome({ rejected: true, reason: msg.reason });
         delete ws._pendingWelcome;
       }
-      try { ws.close(1000, 'Rejected'); } catch {}
+      try { ws.close(1000, 'Rejected'); } catch { }
     });
 
     // Handle mesh_entropy — JHILKE cricket signals hidden in entropy exchange
@@ -844,18 +846,18 @@ export class MandalaNetwork {
         return;
       }
       this.seenMessages.add(msg.id);
-      
+
       // TTL check
       if (msg.ttl <= 0) {
         log.debug('GOSSIP TTL expired', { id: msg.id?.slice(0, 12) });
         return;
       }
-      
+
       // Check for gossip protocol message
       if (msg.payload && msg.payload.gossip) {
         this.emit('gossip', msg.payload.gossip, nodeId);
       }
-      
+
       // Forward to other WS peers
       const forwardMsg = { ...msg, ttl: msg.ttl - 1 };
       for (const [peerId, peer] of this.peers) {
@@ -872,7 +874,7 @@ export class MandalaNetwork {
   _handleIncomingConnection(ws, req) {
     const clientIp = req.socket.remoteAddress || 'unknown';
     log.debug('Incoming connection', { clientIp });
-    
+
     // SECURITY: Rate limit check for connection flood protection (per-IP)
     const connectionCheck = this.rateLimiter.checkConnection(clientIp);
     if (!connectionCheck.allowed) {
@@ -880,7 +882,7 @@ export class MandalaNetwork {
       ws.close(1008, connectionCheck.reason);
       return;
     }
-    
+
     // SECURITY: Concurrent handshake gate — limits how many peers can be
     // negotiating HELLO/WELCOME simultaneously. Total peers is unbounded;
     // only the handshake window is capped. A burst of connections from
@@ -894,15 +896,15 @@ export class MandalaNetwork {
       ws.close(1013, 'Try again later — handshake slots full');
       return;
     }
-    
+
     // Track this connection as pending handshake
     this._pendingHandshakeCount++;
     this._pendingHandshakeWs.add(ws);
-    
+
     // SECURITY: Burst detection — track connection rate in sliding window.
     // GPS-timestamped evidence for Sybil forensics.
     this._recordConnectionBurst(clientIp);
-    
+
     ws.on('message', (data) => {
       this._handleMessage(ws, data, req);
     });
@@ -924,14 +926,14 @@ export class MandalaNetwork {
   _handleMessage(ws, data, req) {
     try {
       const rawStr = data.toString();
-      
+
       // STAGE 1: Raw size validation — reject before parsing
       const rawCheck = this.messageValidator.validateRaw(rawStr);
       if (!rawCheck.valid) {
         log.warn('Rejected oversized WS message', { reason: rawCheck.reason, size: rawStr.length });
         return;
       }
-      
+
       // STAGE 2: Safe JSON parse — proto pollution guard + size check
       const parseResult = this.safeJsonParser.parse(rawStr);
       if (!parseResult.success) {
@@ -939,7 +941,7 @@ export class MandalaNetwork {
         return;
       }
       const msg = parseResult.data;
-      
+
       // STAGE 3: Structure validation — depth, array length, required fields
       const msgType = msg.type || 'gossip';
       const structCheck = this.messageValidator.validateStructure(msg, msgType);
@@ -947,7 +949,7 @@ export class MandalaNetwork {
         log.warn('Rejected invalid WS message structure', { reason: structCheck.reason, type: msgType });
         return;
       }
-      
+
       // Find nodeId for this connection
       let senderNodeId = null;
       let senderPublicKey = null;
@@ -962,7 +964,7 @@ export class MandalaNetwork {
 
       // SECURITY: Verify signatures on messages from known peers
       // Priority: (1) gateway attestation (fast), (2) TRIBHUJ ratchet, (3) legacy identity
-      
+
       // Check for gateway attestation first — "verify once, trust the stamp"
       if (msg._gwAttest && this.gateway) {
         const attestResult = this.gateway.verifyAttestation(msg._gwAttest);
@@ -980,18 +982,18 @@ export class MandalaNetwork {
           msg._gwAttest = null; // Clear bad attestation
         }
       }
-      
+
       // TRIBHUJ ratchet verification (rotating keys)
       if (msg._tribhujSig && !msg._gwAttest?.hash) {
         const payload = { ...msg };
         delete payload._tribhujSig;
         delete payload._tribhujEpoch;
         delete payload._tribhujPubKey;
-        
+
         const result = this.ratchet
           ? this.ratchet.verifyObject(msg, msg._tribhujPubKey)
           : { valid: false, keyState: 'no_ratchet' };
-        
+
         if (!result.valid) {
           log.warn('Rejected message with invalid TRIBHUJ signature', {
             type: msg.type,
@@ -1001,7 +1003,7 @@ export class MandalaNetwork {
           });
           return; // Drop forged message
         }
-        
+
         // If we're also a gateway, attest this for downstream peers
         if (this.gateway && msg.type === MessageTypes.GOSSIP && msg.id) {
           msg._gwAttest = this.gateway.attest(msg.id, msg.origin || senderNodeId);
@@ -1018,7 +1020,7 @@ export class MandalaNetwork {
           });
           return; // Drop forged message
         }
-        
+
         // Attest for downstream if we have a gateway
         if (this.gateway && msg.type === MessageTypes.GOSSIP && msg.id) {
           msg._gwAttest = this.gateway.attest(msg.id, msg.origin || senderNodeId);
@@ -1045,7 +1047,7 @@ export class MandalaNetwork {
       for (const handler of handlers) {
         handler(msg, ws, senderNodeId);
       }
-      
+
       // Route ANNEX messages — extract envelope and pass correctly
       if (msg.annex && this.annex) {
         this.annex._handleAnnexMessage(msg.annex, senderNodeId).catch(err => {
@@ -1063,7 +1065,7 @@ export class MandalaNetwork {
         log.info('Peer disconnected', { name: peer.identity.name });
         // Close ANNEX channel for departing peer
         if (this.annex) {
-          this.annex.closeChannel(nodeId).catch(() => {});
+          this.annex.closeChannel(nodeId).catch(() => { });
         }
         // Clean up JHILKE session for departing peer
         if (this.jhilke) {
@@ -1079,7 +1081,7 @@ export class MandalaNetwork {
 
   _send(ws, message) {
     if (ws.readyState !== WebSocket.OPEN) return;
-    
+
     // Opportunistic ANNEX encryption: if we have an active session
     // for this peer, encrypt the message transparently.
     // This ensures gossip, broadcast, ping — ALL traffic — is encrypted on the wire.
@@ -1095,8 +1097,8 @@ export class MandalaNetwork {
             this.annex.send(nodeId, message).catch(err => {
               // HARD FAIL: No plaintext fallback. Encryption is mandatory per Yakmesh ethos.
               // Peer must re-negotiate ANNEX session. Dropping message is safer than leaking it.
-              log.error('ANNEX send failed — message dropped (no plaintext fallback)', { 
-                peer: peerTag(nodeId), error: err.message 
+              log.error('ANNEX send failed — message dropped (no plaintext fallback)', {
+                peer: peerTag(nodeId), error: err.message
               });
             });
             return;
@@ -1105,7 +1107,7 @@ export class MandalaNetwork {
         }
       }
     }
-    
+
     // Plaintext only for ANNEX handshake messages (type 'annex') and initial
     // HELLO/WELCOME before ANNEX is established. Once ANNEX exists for a
     // peer, ALL traffic MUST go through it.
@@ -1125,7 +1127,7 @@ export class MandalaNetwork {
           this._send(peer.ws, { type: MessageTypes.PING, timestamp: now });
         }
       }
-      
+
       // LRU eviction — keep newest half instead of clearing all (prevents dedup bypass window)
       if (this.seenMessages.size > 10000) {
         const entries = [...this.seenMessages];
@@ -1143,32 +1145,32 @@ export class MandalaNetwork {
    */
   _recordConnectionBurst(ip) {
     const now = Date.now();
-    
+
     // Add to sliding window
     this._burstWindow.push({ ts: now, ip });
-    
+
     // Evict entries older than window
     const cutoff = now - this._burstWindowMs;
     while (this._burstWindow.length > 0 && this._burstWindow[0].ts < cutoff) {
       this._burstWindow.shift();
     }
-    
+
     const rate = this._burstWindow.length;  // connections in last 60s
-    
+
     // Track peak
     if (rate > this._burstStats.peakRate) {
       this._burstStats.peakRate = rate;
     }
-    
+
     if (rate >= this._burstThreshold && !this._burstAlerted) {
       // Count unique IPs in burst
       const uniqueIps = new Set(this._burstWindow.map(e => e.ip)).size;
-      
+
       this._burstAlerted = true;
       this._burstStats.totalBurstsDetected++;
       this._burstStats.lastBurstAt = new Date().toISOString();
       this._burstStats.lastBurstRate = rate;
-      
+
       console.warn(`🛰️ BURST DETECTED: ${rate} connections/min (threshold: ${this._burstThreshold}) from ${uniqueIps} unique IPs`);
       log.warn('Connection burst detected — possible Sybil flood', {
         connectionsPerMinute: rate,
@@ -1181,7 +1183,7 @@ export class MandalaNetwork {
         // IP frequency distribution (top 5 offenders)
         topIps: this._getTopBurstIps(5),
       });
-      
+
       // Emit event for external consumers (health endpoint, SAKSHI anomaly detection)
       this.emit('connection-burst', {
         rate,
@@ -1189,9 +1191,10 @@ export class MandalaNetwork {
         topIps: this._getTopBurstIps(5),
         timestamp: new Date().toISOString(),
       });
-      
+
       // Reset alert after 30s (allow re-triggering if burst continues)
-      setTimeout(() => { this._burstAlerted = false; }, 30000);
+      clearTimeout(this._burstAlertTimeout);
+      this._burstAlertTimeout = setTimeout(() => { this._burstAlerted = false; }, 30000);
     }
   }
 

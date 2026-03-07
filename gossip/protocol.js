@@ -182,7 +182,7 @@ export class MantraProtocol extends EventEmitter {
     );
 
     // Initial hello
-    setTimeout(() => this._broadcastHello(), 1000);
+    this._helloTimer = setTimeout(() => this._broadcastHello(), 1000);
   }
 
   /**
@@ -191,6 +191,7 @@ export class MantraProtocol extends EventEmitter {
   stop() {
     this.intervals.forEach(clearInterval);
     this.intervals = [];
+    clearTimeout(this._helloTimer);
     this.mesh.off('gossip', this._handleGossipMessage);
     log.info('MANTRA protocol stopped - prayer wheel at rest');
   }

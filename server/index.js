@@ -795,7 +795,7 @@ export class YakmeshNode {
     });
 
     // 5j. Expire stale relay clients (no poll for 5 minutes)
-    setInterval(() => {
+    this._relayExpiryInterval = setInterval(() => {
       if (!this._relayClients || this._relayClients.size === 0) return;
       const now = Date.now();
       const RELAY_CLIENT_TTL = 5 * 60 * 1000; // 5 minutes
@@ -982,6 +982,8 @@ export class YakmeshNode {
     if (this._entropyCheckTimer) clearInterval(this._entropyCheckTimer);
     if (this._peerAssessTimer) clearInterval(this._peerAssessTimer);
     if (this._timeHeartbeatInterval) clearInterval(this._timeHeartbeatInterval);
+    if (this._messageCountInterval) clearInterval(this._messageCountInterval);
+    if (this._relayExpiryInterval) clearInterval(this._relayExpiryInterval);
     await accel.scheduler.shutdown();  // Drain compute scheduler queues
     // Annex channels cleaned up by mesh.stop()
     this.gossip?.stop();
@@ -1374,13 +1376,13 @@ export class YakmeshNode {
 
     // Track gossip message rates per origin
     if (this.gossip && this.mesh) {
-      let messageCountWindow = new Map(); // peerId -> count in current window
+      this._messageCountWindow = new Map(); // peerId -> count in current window
 
       this.mesh.on('rumor', (topic, data, origin) => {
         const rumor = { origin };
         if (!rumor.origin) return;
-        const count = (messageCountWindow.get(rumor.origin) || 0) + 1;
-        messageCountWindow.set(rumor.origin, count);
+        const count = (this._messageCountWindow.get(rumor.origin) || 0) + 1;
+        this._messageCountWindow.set(rumor.origin, count);
         this.velocityMonitor.observe(
           rumor.origin,
           BEHAVIOR_DIMENSION.MESSAGE_RATE,
@@ -1389,7 +1391,7 @@ export class YakmeshNode {
       });
 
       // Reset message count window every minute
-      setInterval(() => { messageCountWindow.clear(); }, 60000);
+      this._messageCountInterval = setInterval(() => { this._messageCountWindow.clear(); }, 60000);
     }
 
     log.info('✓ SAKSHI initialized (witness consensus + velocity monitoring)');
