@@ -2072,7 +2072,8 @@ export class YakmeshNode {
         log.debug('📡 KOMM WS client disconnected');
       });
 
-      ws.on('error', () => {
+      ws.on('error', (err) => {
+        log.warn({ code: err.code, message: err.message }, 'KOMM WebSocket error');
         kommClients.delete(ws);
         dashboardSubscribers.delete(ws);
         const session = kommAnnexSessions.get(ws);

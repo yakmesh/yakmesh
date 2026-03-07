@@ -454,8 +454,8 @@ export class SevaMeshHandler extends EventEmitter {
         match,
         slot: payload.slot,
       });
-    } catch {
-      // Can't verify — skip
+    } catch (err) {
+      log.debug({ slot: payload.slot, peer: peerId?.slice(0, 8), err: err.message }, 'SEVA verification execution failed');
     }
   }
 
