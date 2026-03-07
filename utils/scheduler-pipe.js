@@ -76,6 +76,9 @@ let _oracle = null;
 /** @type {import('../gossip/protocol.js').GossipProtocol|null} */
 let _gossip = null;
 
+/** @type {Object|null} - ServerDirectory for local heartbeat delivery */
+let _serverDirectory = null;
+
 /** @type {Map<string, { persistentId: string, publicKey: string, createdAt: number }>} */
 const _visitorIdentities = new Map();
 
@@ -743,12 +746,13 @@ export function getVisitorIdentities() {
  * @param {Object} [opts.strikeBridge] — StrikeRevocationBridge instance
  * @param {Object} [opts.oracle]       — Validation oracle instance
  */
-export function upgradePipeAntiCheat({ identity, karmaLimiter, strikeBridge, oracle, gossip } = {}) {
+export function upgradePipeAntiCheat({ identity, karmaLimiter, strikeBridge, oracle, gossip, serverDirectory } = {}) {
     if (identity) _identity = identity;
     if (karmaLimiter) _karmaLimiter = karmaLimiter;
     if (strikeBridge) _strikeBridge = strikeBridge;
     if (oracle) _oracle = oracle;
     if (gossip) _gossip = gossip;
+    if (serverDirectory) _serverDirectory = serverDirectory;
 
     const capabilities = [];
     if (_identity) capabilities.push('SIGN');
@@ -820,6 +824,11 @@ function _handleServerHeartbeat(client, msg) {
     };
 
     _gossip.spreadRumor('server:heartbeat', heartbeat);
+
+    // Deliver directly to local ServerDirectory — spreadRumor only emits
+    // to remote peers; solo nodes with no peers would never see their own heartbeat.
+    _serverDirectory?.handleHeartbeat(heartbeat, heartbeat.nodeId);
+
     _send(client, { op: 'ACK', id: msg.id });
     _log.debug({ nodeId: heartbeat.nodeId, players: heartbeat.playerCount }, 'Server heartbeat broadcast');
 }

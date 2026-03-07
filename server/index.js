@@ -924,6 +924,7 @@ export class YakmeshNode {
         karmaLimiter: getKarmaRateLimiter(),
         oracle: this.oracle,
         gossip: this.gossip,
+        serverDirectory: this.serverDirectory,
       });
     }
 
