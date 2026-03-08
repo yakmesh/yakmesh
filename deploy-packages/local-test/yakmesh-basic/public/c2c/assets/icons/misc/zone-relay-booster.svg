@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-
-  <!-- Signal tower -->
-  <line x1="16" y1="28" x2="16" y2="8" stroke-width="2.5"/>
-  <line x1="10" y1="28" x2="22" y2="28"/>
-  <path d="M10 12 Q16 6 22 12" fill="none"/>
-  <path d="M6 16 Q16 4 26 16" fill="none" opacity="0.5"/>
-</svg>

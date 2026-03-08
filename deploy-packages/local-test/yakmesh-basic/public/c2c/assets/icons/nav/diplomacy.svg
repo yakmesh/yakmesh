@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-
-  <!-- Balanced scales -->
-  <line x1="12" y1="3" x2="12" y2="20"/>
-  <line x1="4" y1="6" x2="20" y2="6"/>
-  <path d="M2 6 L6 14 L2 14 Z" transform="translate(0,0)"/>
-  <path d="M18 6 L22 14 L18 14 Z" transform="translate(0,0)"/>
-  <line x1="8" y1="20" x2="16" y2="20"/>
-</svg>

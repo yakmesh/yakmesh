@@ -1,7 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-
-  <!-- Air flow -->
-  <path d="M4 8 Q8 4 12 8 Q16 12 20 8" fill="none"/>
-  <path d="M4 12 Q8 8 12 12 Q16 16 20 12" fill="none"/>
-  <path d="M4 16 Q8 12 12 16 Q16 20 20 16" fill="none"/>
-</svg>
