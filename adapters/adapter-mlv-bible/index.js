@@ -30,7 +30,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 /**
  * Bible book metadata
  */
-const BIBLE_BOOKS = {
+export const BIBLE_BOOKS = {
   // Old Testament
   'Genesis': { abbrev: ['Gen', 'Ge'], chapters: 50, testament: 'OT' },
   'Exodus': { abbrev: ['Ex', 'Exod'], chapters: 40, testament: 'OT' },
@@ -71,7 +71,7 @@ const BIBLE_BOOKS = {
   'Haggai': { abbrev: ['Hag'], chapters: 2, testament: 'OT' },
   'Zechariah': { abbrev: ['Zech', 'Zec'], chapters: 14, testament: 'OT' },
   'Malachi': { abbrev: ['Mal'], chapters: 4, testament: 'OT' },
-  
+
   // New Testament
   'Matthew': { abbrev: ['Matt', 'Mt'], chapters: 28, testament: 'NT' },
   'Mark': { abbrev: ['Mark', 'Mk'], chapters: 16, testament: 'NT' },
@@ -105,28 +105,28 @@ const BIBLE_BOOKS = {
 /**
  * Parse a scripture reference (e.g., \"John 3:16\" or \"Gen 1:1-5\")
  */
-function parseReference(ref) {
+export function parseReference(ref) {
   // Pattern: Book Chapter:Verse(-EndVerse)?
   const pattern = /^(\d?\s*[A-Za-z]+)\s*(\d+):(\d+)(?:-(\d+))?$/;
   const match = ref.trim().match(pattern);
-  
+
   if (!match) return null;
-  
+
   const [, bookPart, chapter, startVerse, endVerse] = match;
   const bookName = bookPart.trim();
-  
+
   // Find the book
   let foundBook = null;
   for (const [name, data] of Object.entries(BIBLE_BOOKS)) {
     if (name.toLowerCase() === bookName.toLowerCase() ||
-        data.abbrev.some(a => a.toLowerCase() === bookName.toLowerCase())) {
+      data.abbrev.some(a => a.toLowerCase() === bookName.toLowerCase())) {
       foundBook = { name, ...data };
       break;
     }
   }
-  
+
   if (!foundBook) return null;
-  
+
   return {
     book: foundBook.name,
     chapter: parseInt(chapter, 10),
@@ -155,24 +155,24 @@ export class MLVContentAdapter extends ContentAdapter {
       ],
       ...config,
     });
-    
+
     // Path to MLV content files
     this.contentPath = config.contentPath || join(__dirname, 'content');
-    
+
     // In-memory verse index (populated on init)
     this.verseIndex = new Map();  // \"John 3:16\" -> verse text
   }
-  
+
   async init() {
     // Register PDF files
     try {
       const files = await fs.readdir(this.contentPath);
-      
+
       for (const file of files) {
         if (file.endsWith('.pdf')) {
           const filePath = join(this.contentPath, file);
           const stat = await fs.stat(filePath);
-          
+
           const id = file.replace('.pdf', '');
           this.catalog.set(id, new ContentMetadata({
             id,
@@ -187,7 +187,7 @@ export class MLVContentAdapter extends ContentAdapter {
             tags: ['bible', 'scripture', 'mlv', 'christianity'],
           }));
         }
-        
+
         // Load verse JSON index if present
         if (file === 'verses.json') {
           const data = await fs.readFile(join(this.contentPath, file), 'utf8');
@@ -201,10 +201,10 @@ export class MLVContentAdapter extends ContentAdapter {
       // Content directory might not exist yet - that's okay
       console.log('[MLV] No content directory found. Create:', this.contentPath);
     }
-    
+
     this.emit('initialized', { catalogSize: this.catalog.size });
   }
-  
+
   _formatTitle(id) {
     // Convert \"mlv-nt\" to \"MLV New Testament\", etc.
     return id
@@ -213,13 +213,13 @@ export class MLVContentAdapter extends ContentAdapter {
       .replace('ot', 'Old Testament')
       .replace('complete', 'Complete Bible');
   }
-  
+
   async search(query, options = {}) {
     this.stats.searchQueries++;
-    
+
     const results = [];
     const q = query.toLowerCase();
-    
+
     for (const [ref, data] of this.verseIndex) {
       if (ref.includes(q) || data.text.toLowerCase().includes(q)) {
         results.push({
@@ -227,26 +227,26 @@ export class MLVContentAdapter extends ContentAdapter {
           text: data.text,
           score: ref.includes(q) ? 1.0 : 0.5,
         });
-        
+
         if (results.length >= (options.limit || 20)) break;
       }
     }
-    
+
     return results.sort((a, b) => b.score - a.score);
   }
-  
+
   async lookupReference(reference) {
     const parsed = parseReference(reference);
     if (!parsed) return null;
-    
+
     // Build the lookup key
-    const key = \\ \:\\;
-    
+    const key = `${parsed.book} ${parsed.chapter}:${parsed.startVerse}`;
+
     // Check verse index
     const verse = this.verseIndex.get(key);
     if (verse) {
       return {
-        reference: \\ \:\\,
+        reference: `${parsed.book} ${parsed.chapter}:${parsed.startVerse}`,
         text: verse.text,
         book: parsed.book,
         chapter: parsed.chapter,
@@ -254,10 +254,10 @@ export class MLVContentAdapter extends ContentAdapter {
         testament: parsed.testament,
       };
     }
-    
+
     // If not in index, return a placeholder indicating lookup needed
     return {
-      reference: \\ \:\\,
+      reference: `${parsed.book} ${parsed.chapter}:${parsed.startVerse}`,
       text: '[Verse text available in PDF - download MLV from modernliteralversion.org]',
       book: parsed.book,
       chapter: parsed.chapter,
@@ -266,16 +266,16 @@ export class MLVContentAdapter extends ContentAdapter {
       needsFullContent: true,
     };
   }
-  
+
   async getContentStream(id, options = {}) {
     const meta = this.catalog.get(id);
     if (!meta) {
       throw new Error('Content not found: ' + id);
     }
-    
+
     const filePath = join(this.contentPath, id + '.pdf');
     this.stats.contentServed++;
-    
+
     return createReadStream(filePath, {
       start: options.start || 0,
       end: options.end,
@@ -308,34 +308,34 @@ export class MLVChatAdapter extends ChatModAdapter {
       }),
       config
     );
-    
+
     this.contentAdapter = contentAdapter;
   }
-  
+
   async init() {
     await this.contentAdapter.init();
     this.emit('initialized');
   }
-  
+
   async onCommand(command, args, context) {
     const reference = args.join(' ');
-    
+
     if (!reference) {
       return {
         type: 'text',
-        content: \Usage: /\ <reference>\nExample: /\ John 3:16\,
+        content: `Usage: /${command} <reference>\nExample: /${command} John 3:16`,
       };
     }
-    
+
     const result = await this.contentAdapter.lookupReference(reference);
-    
+
     if (!result) {
       return {
         type: 'text',
-        content: \Could not find: \\nCheck the format: Book Chapter:Verse (e.g., John 3:16)\,
+        content: `Could not find: ${reference}\nCheck the format: Book Chapter:Verse (e.g., John 3:16)`,
       };
     }
-    
+
     // Return a rich scripture card
     return {
       type: 'scripture-card',
@@ -361,18 +361,18 @@ export class MLVBibleAdapter {
     this.contentAdapter = new MLVContentAdapter(config);
     this.chatAdapter = new MLVChatAdapter(this.contentAdapter, config);
   }
-  
+
   async init() {
     await this.contentAdapter.init();
     // Chat adapter shares the content adapter's data
   }
-  
+
   /**
    * Register with a DARSHAN instance for content streaming
    */
   async registerWithDarshan(darshan) {
     this.contentAdapter.darshan = darshan;
-    
+
     // Register all PDF content
     for (const [id] of this.contentAdapter.catalog) {
       await this.contentAdapter.registerWithDarshan(id, {
@@ -380,7 +380,7 @@ export class MLVBibleAdapter {
       });
     }
   }
-  
+
   /**
    * Register with KATHA chat for commands
    */
@@ -388,7 +388,7 @@ export class MLVBibleAdapter {
     registry.register(this.chatAdapter);
     this.chatAdapter.katha = katha;
   }
-  
+
   getStats() {
     return {
       content: this.contentAdapter.getStats(),
