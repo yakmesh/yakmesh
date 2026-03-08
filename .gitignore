@@ -34,8 +34,12 @@ build/
 *.tgz
 *.pruned
 
-# Deploy-package build outputs and local data backups
+# Deploy-package build outputs, test deployments, and local data backups
 deploy-packages/_stow/
+deploy-packages/build/
+deploy-packages/local-test/
+deploy-packages/local-run/
+deploy-packages/downloads/
 deploy-packages/_local-data-*/
 
 # Public web root build artifacts (copied from sibling projects)
