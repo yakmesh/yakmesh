@@ -21,6 +21,7 @@
  * @version 1.0.0
  */
 
+import crypto from 'crypto';
 import { createServer } from 'http';
 import { URL } from 'url';
 import { EventEmitter } from 'events';
@@ -35,12 +36,12 @@ import { EventEmitter } from 'events';
 export class BYONDHttpBridge extends EventEmitter {
   constructor(adapter, options = {}) {
     super();
-    
+
     this.adapter = adapter;
     this.port = options.port || 8080;
     this.host = options.host || '127.0.0.1';
     this.apiKey = options.apiKey || null; // Optional API key for security
-    
+
     this.server = null;
     this.stats = {
       requestsTotal: 0,
@@ -56,7 +57,7 @@ export class BYONDHttpBridge extends EventEmitter {
   async start() {
     return new Promise((resolve, reject) => {
       this.server = createServer((req, res) => this._handleRequest(req, res));
-      
+
       this.server.on('error', (err) => {
         if (err.code === 'EADDRINUSE') {
           reject(new Error(`Port ${this.port} is already in use`));
@@ -92,7 +93,7 @@ export class BYONDHttpBridge extends EventEmitter {
    */
   async _handleRequest(req, res) {
     this.stats.requestsTotal++;
-    
+
     const url = new URL(req.url, `http://${req.headers.host}`);
     const path = url.pathname;
     const method = req.method;
@@ -113,9 +114,12 @@ export class BYONDHttpBridge extends EventEmitter {
     }
 
     // API key check (if configured)
-    if (this.apiKey && req.headers['x-api-key'] !== this.apiKey) {
-      // Allow status endpoint without key
-      if (path !== '/status') {
+    if (this.apiKey) {
+      const supplied = req.headers['x-api-key'] || '';
+      // SECURITY: Constant-time comparison prevents timing attacks on API key
+      const keyMatch = supplied.length === this.apiKey.length &&
+        crypto.timingSafeEqual(Buffer.from(supplied), Buffer.from(this.apiKey));
+      if (!keyMatch && path !== '/status') {
         return this._sendError(res, 401, 'Invalid or missing API key');
       }
     }
@@ -237,8 +241,8 @@ export class BYONDHttpBridge extends EventEmitter {
 
   _handleGetServer(serverId) {
     const server = this.adapter.localServers.get(serverId) ||
-                   this.adapter.remoteServers.get(serverId);
-    
+      this.adapter.remoteServers.get(serverId);
+
     if (!server) {
       const err = new Error(`Server not found: ${serverId}`);
       err.statusCode = 404;
@@ -415,7 +419,7 @@ export class BYONDHttpBridge extends EventEmitter {
           resolve(null);
           return;
         }
-        
+
         try {
           // Try JSON first
           resolve(JSON.parse(data));

@@ -16,6 +16,35 @@
     .\build-packages.ps1 -Target minimal
     .\build-packages.ps1 -Target yakbot
     .\build-packages.ps1 -Target all
+
+.NOTES
+    ╔═══════════════════════════════════════════════════════════════════════════╗
+    ║  DEPLOYMENT RULE — READ THIS BEFORE TOUCHING THIS FILE                  ║
+    ║                                                                         ║
+    ║  The build/ directory is for BUILD OUTPUT ONLY.                          ║
+    ║                                                                         ║
+    ║  NEVER run 'npm install', 'node server/index.js', or launch any         ║
+    ║  process from inside build/. Doing so creates runtime files             ║
+    ║  (machine-seed.json, node-key.json, yakmesh.db, sponge state)           ║
+    ║  that contaminate the build and will BREAK other machines when           ║
+    ║  the package is deployed — especially machine-seed.json which           ║
+    ║  is hardware-encrypted and cannot be decrypted on any other machine.    ║
+    ║                                                                         ║
+    ║  CORRECT workflow:                                                      ║
+    ║    1. Run this script to build the package                              ║
+    ║    2. Copy build/yakmesh-basic/ (or .zip) to the deployment target      ║
+    ║    3. Run 'npm install' and 'node server/index.js' THERE                ║
+    ║                                                                         ║
+    ║  UPGRADE workflow (existing deployment):                                ║
+    ║    1. Build the package (this script)                                   ║
+    ║    2. Copy source dirs (server/, mesh/, oracle/, etc.) over the         ║
+    ║       existing deployment — but DO NOT overwrite data/                  ║
+    ║    3. The existing machine-seed.json, node-key.json, and database       ║
+    ║       stay intact. The node keeps its identity. nodeId will change      ║
+    ║       (new oracle hash = new code proven) but persistentId is stable.   ║
+    ║                                                                         ║
+    ║  These are DEPLOYMENT packages. Build them, then deploy them elsewhere. ║
+    ╚═══════════════════════════════════════════════════════════════════════════╝
 #>
 
 param(
@@ -160,6 +189,34 @@ function Copy-PackageSource {
     @("data", "data/content", "logs") | ForEach-Object {
         New-Item -ItemType Directory -Path (Join-Path $DestDir $_) -Force | Out-Null
     }
+
+    # Clean runtime-generated files that must NOT ship in packages
+    # These are machine-specific (encrypted to hardware) or ephemeral
+    $runtimeFiles = @(
+        "data/machine-seed.json",    # Hardware-encrypted identity — cannot transfer between machines
+        "data/node-key.json",        # ML-DSA-65 keypair derived from seed
+        "data/prahari-sponge-v3.json", # Entropy state — machine-specific
+        "data/yakmesh.db",           # Runtime database
+        "data/yakmesh.db-wal",
+        "data/yakmesh.db-shm"
+    )
+    $cleaned = 0
+    foreach ($rf in $runtimeFiles) {
+        $rfPath = Join-Path $DestDir $rf
+        if (Test-Path $rfPath) {
+            Remove-Item $rfPath -Force -ErrorAction SilentlyContinue
+            $cleaned++
+        }
+    }
+    # Also clean any website cache dirs that might appear
+    $dataDirClean = Join-Path (Join-Path $DestDir "data") "websites"
+    if (Test-Path $dataDirClean) {
+        Remove-Item $dataDirClean -Recurse -Force -ErrorAction SilentlyContinue
+        $cleaned++
+    }
+    if ($cleaned -gt 0) {
+        Write-Host "    [CLEAN] Removed $cleaned runtime-generated files from data/" -ForegroundColor DarkGray
+    }
 }
 
 function Get-PackageStats {
@@ -180,6 +237,20 @@ function Get-PackageStats {
 # BUILD FUNCTIONS
 # =============================================================================
 
+function Generate-Manifest {
+    param([string]$PackageDir)
+
+    $manifestScript = Join-Path $ScriptDir "generate-manifest.js"
+    if (Test-Path $manifestScript) {
+        Write-Host "  Generating iO manifest..." -ForegroundColor Yellow
+        & node $manifestScript --root $PackageDir 2>&1 | ForEach-Object {
+            Write-Host "    $_" -ForegroundColor DarkGray
+        }
+    } else {
+        Write-Host "  [SKIP] generate-manifest.js not found" -ForegroundColor Yellow
+    }
+}
+
 function Build-Minimal {
     Write-Host ""
     Write-Host "Building MINIMAL package (barebones mesh node)..." -ForegroundColor Green
@@ -194,6 +265,9 @@ function Build-Minimal {
     # Copy source
     Write-Host "  Copying source files..." -ForegroundColor Yellow
     Copy-PackageSource -DestDir $minimalDir -Directories $MinimalDirs
+    
+    # Generate iO file manifest
+    Generate-Manifest -PackageDir $minimalDir
     
     # Get stats
     $stats = Get-PackageStats -Dir $minimalDir
@@ -225,6 +299,9 @@ function Build-Basic {
     # Copy source
     Write-Host "  Copying source files..." -ForegroundColor Yellow
     Copy-PackageSource -DestDir $basicDir -Directories $BasicDirs
+    
+    # Generate iO file manifest
+    Generate-Manifest -PackageDir $basicDir
     
     # Get stats
     $stats = Get-PackageStats -Dir $basicDir
@@ -314,6 +391,9 @@ function Build-Full {
     # Add PHP info page for testing
     "<?php phpinfo();" | Out-File -FilePath (Join-Path $publicDir "info.php") -Encoding utf8
     
+    # Generate iO manifest
+    Generate-Manifest -PackageDir $fullDir
+
     # Get stats
     $stats = Get-PackageStats -Dir $fullDir
     

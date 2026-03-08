@@ -1,62 +1,36 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="c2c">
-
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="icon" href="favicon.ico" sizes="32x32">
-  <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <link rel="apple-touch-icon" href="apple-touch-icon.png">
-  <title>C2C Integration | YAKMESH Documentation</title>
-  <meta name="description"
-    content="Core to Cosmos — space strategy game integration with yakmesh networking and NPU acceleration.">
-  <link rel="stylesheet" href="tailwind.min.css">
-  <link rel="stylesheet" href="prism-tomorrow.min.css" media="print" onload="this.media='all'">
-  <noscript>
-    <link rel="stylesheet" href="prism-tomorrow.min.css">
-  </noscript>
-  <link rel="stylesheet" href="docs.css">
-  <style>
-    .theme-accent {
-      color: #fb923c;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="favicon.ico" sizes="32x32">
+    <link rel="icon" href="icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="apple-touch-icon.png">
+    <title>C2C Integration | YAKMESH Documentation</title>
+    <meta name="description" content="Core to Cosmos — space strategy game integration with yakmesh networking and NPU acceleration.">
+    <link rel="stylesheet" href="tailwind.min.css">
+    <link rel="stylesheet" href="prism-tomorrow.min.css" media="print" onload="this.media='all'">
+    <noscript><link rel="stylesheet" href="prism-tomorrow.min.css"></noscript>
+    <link rel="stylesheet" href="docs.css">
+    <style>
+        .theme-accent { color: #fb923c; }
+        .theme-accent-hover:hover { color: #fdba74; }
+        .theme-badge { background: rgba(251, 146, 60, 0.2); color: #fb923c; }
+        .theme-border { border-color: #ea580c; }
+        .theme-callout { background: rgba(251, 146, 60, 0.1); border-color: #c2410c; }
+        .active-link { background: rgba(251, 146, 60, 0.2) !important; color: #fb923c !important; }
+    </style>
 
-    .theme-accent-hover:hover {
-      color: #fdba74;
-    }
-
-    .theme-badge {
-      background: rgba(251, 146, 60, 0.2);
-      color: #fb923c;
-    }
-
-    .theme-border {
-      border-color: #ea580c;
-    }
-
-    .theme-callout {
-      background: rgba(251, 146, 60, 0.1);
-      border-color: #c2410c;
-    }
-
-    .active-link {
-      background: rgba(251, 146, 60, 0.2) !important;
-      color: #fb923c !important;
-    }
-  </style>
-
-  <!-- Open Graph -->
-  <meta property="og:type" content="article">
-  <meta property="og:site_name" content="Yakmesh Documentation">
-  <meta property="og:title" content="C2C — Yakmesh">
-  <meta property="og:description"
-    content="Core to Cosmos — game and application integration platform on the mesh network.">
-  <meta property="og:url" content="https://yakmesh.dev/docs/c2c.html">
-  <link rel="canonical" href="https://yakmesh.dev/docs/c2c.html">
+    <!-- Open Graph -->
+    <meta property="og:type" content="article">
+    <meta property="og:site_name" content="Yakmesh Documentation">
+    <meta property="og:title" content="C2C — Yakmesh">
+    <meta property="og:description" content="Core to Cosmos — game and application integration platform on the mesh network.">
+    <meta property="og:url" content="https://yakmesh.dev/docs/c2c.html">
+    <link rel="canonical" href="https://yakmesh.dev/docs/c2c.html">
 </head>
-
 <body class="bg-mountain-900 text-white min-h-screen">
-  <!-- YAKMESH-ICON-SPRITE-START -->
+<!-- YAKMESH-ICON-SPRITE-START -->
 <svg xmlns="http://www.w3.org/2000/svg" style="display:none">
 <!--
   Yakmesh Docs Icon Sprite Sheet
@@ -622,15 +596,11 @@
 
 </svg>
 <!-- YAKMESH-ICON-SPRITE-END -->
-  <a href="#mainContent" class="skip-link">Skip to main content</a>
+<a href="#mainContent" class="skip-link">Skip to main content</a>
 
   <nav class="docs-sidebar" id="sidebar">
-    <a href="index.html" class="sidebar-logo"><span class="logo-icon"><svg class="doc-icon" aria-hidden="true">
-          <use href="#icon-mountain" />
-        </svg></span><span class="logo-text">Yakmesh</span></a>
-    <a href="/dashboard" class="sidebar-dashboard-link"><svg class="doc-icon" aria-hidden="true">
-        <use href="#icon-dashboard" />
-      </svg> <span>Dashboard</span></a>
+    <a href="index.html" class="sidebar-logo"><span class="logo-icon"><svg class="doc-icon" aria-hidden="true"><use href="#icon-mountain"/></svg></span><span class="logo-text">Yakmesh</span></a>
+    <a href="/dashboard" class="sidebar-dashboard-link"><svg class="doc-icon" aria-hidden="true"><use href="#icon-dashboard"/></svg> <span>Dashboard</span></a>
     <ul class="sidebar-nav">
       <li class="sidebar-section"><span><svg class="doc-icon" aria-hidden="true"><use href="#icon-book"/></svg> Guides</span></li>
       <li><a href="index.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-home"/></svg> <span>Overview</span></a></li>
@@ -695,11 +665,8 @@
 
   <main class="docs-main" id="mainContent">
     <div class="docs-content">
-      <h1 class="text-4xl font-bold mb-4"><svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true">
-          <use href="#icon-rocket" />
-        </svg> C2C — Core to Cosmos</h1>
-      <p class="text-xl text-mountain-300 mb-8">Space strategy game shipping with yakmesh — the first application built
-        on the full protocol stack.</p>
+      <h1 class="text-4xl font-bold mb-4"><svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true"><use href="#icon-rocket"/></svg> C2C — Core to Cosmos</h1>
+      <p class="text-xl text-mountain-300 mb-8">Space strategy game shipping with yakmesh — the first application built on the full protocol stack.</p>
 
       <!-- What is C2C -->
       <section class="mb-12">
@@ -752,13 +719,11 @@
             <tbody>
               <tr class="border-b border-mountain-700">
                 <td class="p-3"><a href="annex.html" class="theme-accent theme-accent-hover">ANNEX</a></td>
-                <td class="p-3 text-mountain-400">ML-KEM-768 encrypted WebSocket connections between game server and
-                  clients</td>
+                <td class="p-3 text-mountain-400">ML-KEM-768 encrypted WebSocket connections between game server and clients</td>
               </tr>
               <tr class="border-b border-mountain-700">
                 <td class="p-3"><a href="seva.html" class="theme-accent theme-accent-hover">SEVA</a></td>
-                <td class="p-3 text-mountain-400">16 NPU model slots shared across the mesh &mdash; planet generation,
-                  faction AI, voice commander, behavioral detection, and more</td>
+                <td class="p-3 text-mountain-400">16 NPU model slots shared across the mesh &mdash; planet generation, faction AI, voice commander, behavioral detection, and more</td>
               </tr>
               <tr class="border-b border-mountain-700">
                 <td class="p-3"><a href="tivra.html" class="theme-accent theme-accent-hover">TIVRA</a></td>
@@ -766,8 +731,7 @@
               </tr>
               <tr class="border-b border-mountain-700">
                 <td class="p-3"><a href="mani.html" class="theme-accent theme-accent-hover">MANI</a></td>
-                <td class="p-3 text-mountain-400">Authoritative game clock — every tick, mutation, and NPU inference
-                  uses MANI time</td>
+                <td class="p-3 text-mountain-400">Authoritative game clock — every tick, mutation, and NPU inference uses MANI time</td>
               </tr>
               <tr class="border-b border-mountain-700">
                 <td class="p-3"><a href="katha.html" class="theme-accent theme-accent-hover">KATHA</a></td>
@@ -796,18 +760,15 @@
         <div class="space-y-3 mb-6">
           <div class="bg-mountain-800 rounded-lg p-4">
             <code class="theme-accent font-semibold">planet-variation</code>
-            <p class="text-mountain-400 text-sm mt-1">Planet metadata &rarr; enhancement parameter vector. Runs on NPU
-              for real-time planet customization.</p>
+            <p class="text-mountain-400 text-sm mt-1">Planet metadata &rarr; enhancement parameter vector. Runs on NPU for real-time planet customization.</p>
           </div>
           <div class="bg-mountain-800 rounded-lg p-4">
             <code class="theme-accent font-semibold">planet-superres</code>
-            <p class="text-mountain-400 text-sm mt-1">64&rarr;256 texture super-resolution upscaler for planet surfaces.
-            </p>
+            <p class="text-mountain-400 text-sm mt-1">64&rarr;256 texture super-resolution upscaler for planet surfaces.</p>
           </div>
           <div class="bg-mountain-800 rounded-lg p-4">
             <code class="theme-accent font-semibold">expedition-oracle</code>
-            <p class="text-mountain-400 text-sm mt-1">Expedition event classification &mdash; determines encounter types
-              and outcomes.</p>
+            <p class="text-mountain-400 text-sm mt-1">Expedition event classification &mdash; determines encounter types and outcomes.</p>
           </div>
           <div class="bg-mountain-800 rounded-lg p-4">
             <code class="theme-accent font-semibold">lore-generator</code>
@@ -815,8 +776,7 @@
           </div>
           <div class="bg-mountain-800 rounded-lg p-4">
             <code class="theme-accent font-semibold">lane-optimizer</code>
-            <p class="text-mountain-400 text-sm mt-1">Shipping lane route efficiency &mdash; optimizes trade and
-              logistics paths.</p>
+            <p class="text-mountain-400 text-sm mt-1">Shipping lane route efficiency &mdash; optimizes trade and logistics paths.</p>
           </div>
         </div>
 
@@ -824,8 +784,7 @@
         <div class="space-y-3 mb-6">
           <div class="bg-mountain-800 rounded-lg p-4">
             <code class="theme-accent font-semibold">faction-brain</code>
-            <p class="text-mountain-400 text-sm mt-1">NPC faction decision-making. Scores actions, picks strategies,
-              handles diplomacy.</p>
+            <p class="text-mountain-400 text-sm mt-1">NPC faction decision-making. Scores actions, picks strategies, handles diplomacy.</p>
           </div>
           <div class="bg-mountain-800 rounded-lg p-4">
             <code class="theme-accent font-semibold">commander-ai</code>
@@ -841,23 +800,19 @@
           </div>
           <div class="bg-mountain-800 rounded-lg p-4">
             <code class="theme-accent font-semibold">threat-narrator</code>
-            <p class="text-mountain-400 text-sm mt-1">Enhanced threat narrative generation for immersive combat events.
-            </p>
+            <p class="text-mountain-400 text-sm mt-1">Enhanced threat narrative generation for immersive combat events.</p>
           </div>
         </div>
 
-        <h3 class="text-lg font-semibold mb-3">AI Commander <span
-            class="text-xs theme-badge px-2 py-1 rounded">Premium</span></h3>
+        <h3 class="text-lg font-semibold mb-3">AI Commander <span class="text-xs theme-badge px-2 py-1 rounded">Premium</span></h3>
         <div class="space-y-3 mb-6">
           <div class="bg-mountain-800 rounded-lg p-4">
             <code class="theme-accent font-semibold">sherpa-commander</code>
-            <p class="text-mountain-400 text-sm mt-1">NL&rarr;command parser (FunctionGemma-270M QLoRA INT8, pruned
-              vocab, ~100MB).</p>
+            <p class="text-mountain-400 text-sm mt-1">NL&rarr;command parser (FunctionGemma-270M QLoRA INT8, pruned vocab, ~100MB).</p>
           </div>
           <div class="bg-mountain-800 rounded-lg p-4">
             <code class="theme-accent font-semibold">lama-strategist</code>
-            <p class="text-mountain-400 text-sm mt-1">Strategic advisor with &lt;think&gt; chains (Qwen3-0.6B QLoRA
-              INT8, ~1018MB).</p>
+            <p class="text-mountain-400 text-sm mt-1">Strategic advisor with &lt;think&gt; chains (Qwen3-0.6B QLoRA INT8, ~1018MB).</p>
           </div>
           <div class="bg-mountain-800 rounded-lg p-4">
             <code class="theme-accent font-semibold">whisper-transcribe</code>
@@ -865,8 +820,7 @@
           </div>
           <div class="bg-mountain-800 rounded-lg p-4">
             <code class="theme-accent font-semibold">vc-commander</code>
-            <p class="text-mountain-400 text-sm mt-1">Voice Commander NL&rarr;function call (FunctionGemma-270M SFT
-              FP16, ~1.3GB).</p>
+            <p class="text-mountain-400 text-sm mt-1">Voice Commander NL&rarr;function call (FunctionGemma-270M SFT FP16, ~1.3GB).</p>
           </div>
         </div>
 
@@ -874,8 +828,7 @@
         <div class="space-y-3 mb-6">
           <div class="bg-mountain-800 rounded-lg p-4">
             <code class="theme-accent font-semibold">behavior-detector</code>
-            <p class="text-mountain-400 text-sm mt-1">Dynamis tri-class behavioral spectrum: normal / cheat / struggle
-              (20&rarr;32&rarr;16&rarr;3 MLP, ~5KB).</p>
+            <p class="text-mountain-400 text-sm mt-1">Dynamis tri-class behavioral spectrum: normal / cheat / struggle (20&rarr;32&rarr;16&rarr;3 MLP, ~5KB).</p>
           </div>
         </div>
       </section>
@@ -902,8 +855,7 @@
         <h2 class="text-2xl font-bold mb-4">Building Your Own Realm</h2>
         <p class="text-mountain-300 mb-4">
           C2C uses the <a href="adapters.html" class="theme-accent theme-accent-hover">Adapter</a> pattern for realms.
-          Each realm is a self-contained folder in <code class="theme-accent">c2c/server/realms/</code> with a manifest
-          and
+          Each realm is a self-contained folder in <code class="theme-accent">c2c/server/realms/</code> with a manifest and
           an optional narrative module. The server discovers and loads all realms at boot.
         </p>
 
@@ -915,8 +867,7 @@
 
         <h3 class="text-xl font-semibold mb-3">Manifest Skeleton</h3>
         <p class="text-mountain-300 mb-4">
-          The <code class="theme-accent">manifest.json</code> defines everything the server needs to register your
-          realm,
+          The <code class="theme-accent">manifest.json</code> defines everything the server needs to register your realm,
           create NPC factions, and drive the story arc system. Here is the minimum required structure:
         </p>
         <pre class="language-javascript rounded-lg mb-6"><code>{
@@ -959,8 +910,7 @@
               </tr>
               <tr class="border-b border-mountain-700">
                 <td class="p-3"><code class="theme-accent">coop-pve</code></td>
-                <td class="p-3 text-mountain-400">Players unite against NPU-driven NPC factions (e.g. Obsidian Scion)
-                </td>
+                <td class="p-3 text-mountain-400">Players unite against NPU-driven NPC factions (e.g. Obsidian Scion)</td>
               </tr>
               <tr>
                 <td class="p-3"><code class="theme-accent">pvp</code></td>
@@ -1046,13 +996,11 @@
               </tr>
               <tr class="border-b border-mountain-700">
                 <td class="p-3"><code class="theme-accent">faction_state</code></td>
-                <td class="p-3 text-mountain-400">NPC faction state matches a condition (e.g.
-                  <code>planets_controlled >= 5</code>)</td>
+                <td class="p-3 text-mountain-400">NPC faction state matches a condition (e.g. <code>planets_controlled >= 5</code>)</td>
               </tr>
               <tr>
                 <td class="p-3"><code class="theme-accent">community_goal</code></td>
-                <td class="p-3 text-mountain-400">Players collectively reach a threshold (alliance size, research, etc.)
-                </td>
+                <td class="p-3 text-mountain-400">Players collectively reach a threshold (alliance size, research, etc.)</td>
               </tr>
             </tbody>
           </table>
@@ -1141,8 +1089,7 @@ export const NPC_DIALOGUE = {
             inserts factions and arcs, and loads the narrative module. No code changes needed.
           </p>
           <p class="text-mountain-400 text-sm">
-            See the built-in <code class="theme-accent">obsidian-scion/</code> realm for a complete reference
-            implementation
+            See the built-in <code class="theme-accent">obsidian-scion/</code> realm for a complete reference implementation
             with 6 story arcs, 6 NPCs, 2 factions, custom tech trees, and a full narrative voice.
           </p>
         </div>
@@ -1150,10 +1097,7 @@ export const NPC_DIALOGUE = {
 
       <!-- AI Profiles -->
       <section class="mb-12">
-        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2"><svg class="doc-icon inline-icon" width="24"
-            height="24" aria-hidden="true">
-            <use href="#icon-gear" />
-          </svg> AI Profiles</h2>
+        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2"><svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true"><use href="#icon-gear"/></svg> AI Profiles</h2>
         <p class="text-mountain-300 mb-6">
           AI Profiles give players control over NPC faction behaviour. Instead of being locked to the personality
           baked into a realm manifest, players can select preset profiles, build custom personalities via sliders,
@@ -1163,31 +1107,26 @@ export const NPC_DIALOGUE = {
         <h3 class="text-lg font-semibold mb-3">Three Tiers</h3>
         <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700 mb-6">
           <table class="w-full">
-            <thead>
-              <tr class="border-b border-mountain-700">
-                <th class="text-left p-3 text-mountain-300">Tier</th>
-                <th class="text-left p-3 text-mountain-300">Source</th>
-                <th class="text-left p-3 text-mountain-300">How</th>
-              </tr>
-            </thead>
+            <thead><tr class="border-b border-mountain-700">
+              <th class="text-left p-3 text-mountain-300">Tier</th>
+              <th class="text-left p-3 text-mountain-300">Source</th>
+              <th class="text-left p-3 text-mountain-300">How</th>
+            </tr></thead>
             <tbody>
               <tr class="border-b border-mountain-700/50">
                 <td class="p-3"><span class="theme-badge px-2 py-1 rounded">Preset</span></td>
                 <td class="p-3 text-mountain-400">Realm manifest</td>
-                <td class="p-3 text-mountain-400">Select from built-in profiles — Berserker, Turtle, Diplomat,
-                  Expansionist, Balanced</td>
+                <td class="p-3 text-mountain-400">Select from built-in profiles — Berserker, Turtle, Diplomat, Expansionist, Balanced</td>
               </tr>
               <tr class="border-b border-mountain-700/50">
                 <td class="p-3"><span class="theme-badge px-2 py-1 rounded">Custom</span></td>
                 <td class="p-3 text-mountain-400">Slider UI</td>
-                <td class="p-3 text-mountain-400">Set each personality axis (aggression, expansion, diplomacy, target
-                  pref, retreat threshold) manually</td>
+                <td class="p-3 text-mountain-400">Set each personality axis (aggression, expansion, diplomacy, target pref, retreat threshold) manually</td>
               </tr>
               <tr>
                 <td class="p-3"><span class="theme-badge px-2 py-1 rounded">NPU-Generated</span></td>
                 <td class="p-3 text-mountain-400">Text description</td>
-                <td class="p-3 text-mountain-400">Describe the AI you want in plain language — the NPU faction-brain
-                  model maps it to a personality vector</td>
+                <td class="p-3 text-mountain-400">Describe the AI you want in plain language — the NPU faction-brain model maps it to a personality vector</td>
               </tr>
             </tbody>
           </table>
@@ -1195,11 +1134,10 @@ export const NPC_DIALOGUE = {
 
         <h3 class="text-lg font-semibold mb-3">Personality Shape</h3>
         <p class="text-mountain-300 mb-3">
-          Every profile stores the same personality object used by NPC factions. The <a href="seva.html"
-            class="text-theme-accent hover:underline">SEVA</a>
+          Every profile stores the same personality object used by NPC factions. The <a href="seva.html" class="text-theme-accent hover:underline">SEVA</a>
           faction-brain model reads these numbers to drive NPC decision-making via NPU inference.
         </p>
-        <pre class="theme-pre"><code class="language-json">{
+<pre class="theme-pre"><code class="language-json">{
   "aggression":            0.85,   // 0 = pacifist, 1 = berserk
   "expansion_priority":    0.9,    // 0 = hunker down, 1 = claim everything
   "diplomacy_willingness": 0.0,    // 0 = no talks, 1 = always negotiate
@@ -1209,11 +1147,10 @@ export const NPC_DIALOGUE = {
 
         <h3 class="text-lg font-semibold mb-3 mt-6">Adding Presets to a Manifest</h3>
         <p class="text-mountain-300 mb-3">
-          Realm creators add an <code class="theme-accent">ai_profiles</code> array to their <code
-            class="theme-accent">manifest.json</code>.
+          Realm creators add an <code class="theme-accent">ai_profiles</code> array to their <code class="theme-accent">manifest.json</code>.
           The realm loader seeds them into the database automatically at boot.
         </p>
-        <pre class="theme-pre"><code class="language-json">"ai_profiles": [
+<pre class="theme-pre"><code class="language-json">"ai_profiles": [
   {
     "name": "Berserker",
     "description": "All-out aggression. Attacks relentlessly, never retreats.",
@@ -1231,13 +1168,11 @@ export const NPC_DIALOGUE = {
         <h3 class="text-lg font-semibold mb-3 mt-6">API Endpoints</h3>
         <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700 mb-6">
           <table class="w-full">
-            <thead>
-              <tr class="border-b border-mountain-700">
-                <th class="text-left p-3 text-mountain-300">Method</th>
-                <th class="text-left p-3 text-mountain-300">Endpoint</th>
-                <th class="text-left p-3 text-mountain-300">Description</th>
-              </tr>
-            </thead>
+            <thead><tr class="border-b border-mountain-700">
+              <th class="text-left p-3 text-mountain-300">Method</th>
+              <th class="text-left p-3 text-mountain-300">Endpoint</th>
+              <th class="text-left p-3 text-mountain-300">Description</th>
+            </tr></thead>
             <tbody class="text-sm">
               <tr class="border-b border-mountain-700/50">
                 <td class="p-3"><code class="text-green-400">GET</code></td>
@@ -1278,7 +1213,7 @@ export const NPC_DIALOGUE = {
           Describe what you want in natural language. The faction-brain SEVA slot converts it into a personality vector
           using keyword extraction (CPU fallback) or NPU inference (when SEVA is online).
         </p>
-        <pre class="theme-pre"><code class="language-javascript">// POST /realms/:realmId/ai-profiles/generate
+<pre class="theme-pre"><code class="language-javascript">// POST /realms/:realmId/ai-profiles/generate
 const res = await fetch(`/api/game/realms/${realmId}/ai-profiles/generate`, {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
@@ -1296,8 +1231,7 @@ const { profile } = await res.json();
           <h3 class="text-lg font-semibold mb-2">Applying a Profile</h3>
           <p class="text-mountain-300 mb-3">
             Once created or selected, apply a profile to any NPC faction in your realm. The personality vector merges
-            into the faction's existing config — faction-specific fields like <code
-              class="theme-accent">npu_voice</code>
+            into the faction's existing config — faction-specific fields like <code class="theme-accent">npu_voice</code>
             and <code class="theme-accent">taunts</code> are preserved, while the core personality axes get overwritten
             with your chosen profile.
           </p>
@@ -1310,9 +1244,7 @@ const { profile } = await res.json();
       <!-- Server Lighthouse & Security (Tabbed) -->
       <section class="mb-12">
         <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
-          <svg class="doc-icon inline-icon" aria-hidden="true">
-            <use href="#icon-server" />
-          </svg> Server Infrastructure
+          <svg class="doc-icon inline-icon" aria-hidden="true"><use href="#icon-server"/></svg> Server Infrastructure
         </h2>
         <p class="text-mountain-300 mb-6">
           C2C servers are discoverable, rated, and secured through purpose-built subsystems.
@@ -1320,10 +1252,8 @@ const { profile } = await res.json();
 
         <div class="ym-tabs">
           <div class="ym-tab-bar" role="tablist" aria-label="Server infrastructure tabs">
-            <button class="ym-tab-btn" role="tab" aria-controls="panel-lighthouse" id="tab-lighthouse">Lighthouse &amp;
-              Browser</button>
-            <button class="ym-tab-btn" role="tab" aria-controls="panel-c2c-security" id="tab-c2c-security">Security
-              &amp; Governance</button>
+            <button class="ym-tab-btn" role="tab" aria-controls="panel-lighthouse" id="tab-lighthouse">Lighthouse &amp; Browser</button>
+            <button class="ym-tab-btn" role="tab" aria-controls="panel-c2c-security" id="tab-c2c-security">Security &amp; Governance</button>
           </div>
 
           <!-- Lighthouse Panel -->
@@ -1337,24 +1267,19 @@ const { profile } = await res.json();
             <div class="grid md:grid-cols-2 gap-4 mb-6">
               <div class="bg-mountain-800 rounded-xl p-4 border border-mountain-700">
                 <h4 class="font-semibold theme-accent mb-2">ServerDirectory</h4>
-                <p class="text-sm text-mountain-400">Registers servers, tracks heartbeats, prunes stale entries (90s
-                  timeout). Stores name, host, port, region, game mode, max players.</p>
+                <p class="text-sm text-mountain-400">Registers servers, tracks heartbeats, prunes stale entries (90s timeout). Stores name, host, port, region, game mode, max players.</p>
               </div>
               <div class="bg-mountain-800 rounded-xl p-4 border border-mountain-700">
                 <h4 class="font-semibold theme-accent mb-2">Piped Heartbeat</h4>
-                <p class="text-sm text-mountain-400">Servers send heartbeats every 30s containing player count, CPU
-                  load, ping, and <code class="theme-accent">governanceScore</code>. Missed beats trigger pruning.</p>
+                <p class="text-sm text-mountain-400">Servers send heartbeats every 30s containing player count, CPU load, ping, and <code class="theme-accent">governanceScore</code>. Missed beats trigger pruning.</p>
               </div>
               <div class="bg-mountain-800 rounded-xl p-4 border border-mountain-700">
                 <h4 class="font-semibold theme-accent mb-2">Community Pool</h4>
-                <p class="text-sm text-mountain-400">Portable-hosted servers join a community pool. Featured/VIP tiers
-                  via host uptime rewards drive server ecosystem growth.</p>
+                <p class="text-sm text-mountain-400">Portable-hosted servers join a community pool. Featured/VIP tiers via host uptime rewards drive server ecosystem growth.</p>
               </div>
               <div class="bg-mountain-800 rounded-xl p-4 border border-mountain-700">
                 <h4 class="font-semibold theme-accent mb-2">Server Browser UI</h4>
-                <p class="text-sm text-mountain-400">Desktop (YakApp) and web clients share a <code
-                    class="theme-accent">useServers</code> hook with filtering by region, mode, ping, and player count.
-                </p>
+                <p class="text-sm text-mountain-400">Desktop (YakApp) and web clients share a <code class="theme-accent">useServers</code> hook with filtering by region, mode, ping, and player count.</p>
               </div>
             </div>
 
@@ -1385,23 +1310,19 @@ const { profile } = await res.json();
               <div class="grid md:grid-cols-2 gap-3">
                 <div class="bg-mountain-900 rounded-lg p-3">
                   <div class="font-semibold text-sm mb-1">1. Tick Integrity</div>
-                  <div class="text-xs text-mountain-400">Server-authoritative simulation. Clients predict; server
-                    reconciles every tick.</div>
+                  <div class="text-xs text-mountain-400">Server-authoritative simulation. Clients predict; server reconciles every tick.</div>
                 </div>
                 <div class="bg-mountain-900 rounded-lg p-3">
                   <div class="font-semibold text-sm mb-1">2. Input Validation</div>
-                  <div class="text-xs text-mountain-400">Rate-limited commands with physics bounds checking. Impossible
-                    actions rejected.</div>
+                  <div class="text-xs text-mountain-400">Rate-limited commands with physics bounds checking. Impossible actions rejected.</div>
                 </div>
                 <div class="bg-mountain-900 rounded-lg p-3">
                   <div class="font-semibold text-sm mb-1">3. State Attestation</div>
-                  <div class="text-xs text-mountain-400">Periodic state hashes signed with node identity. Divergence
-                    triggers investigation.</div>
+                  <div class="text-xs text-mountain-400">Periodic state hashes signed with node identity. Divergence triggers investigation.</div>
                 </div>
                 <div class="bg-mountain-900 rounded-lg p-3">
                   <div class="font-semibold text-sm mb-1">4. Behavioral Analysis</div>
-                  <div class="text-xs text-mountain-400">NPU-powered Dynamis spectrum detects anomalies across input
-                    timing, accuracy, and reaction patterns.</div>
+                  <div class="text-xs text-mountain-400">NPU-powered Dynamis spectrum detects anomalies across input timing, accuracy, and reaction patterns.</div>
                 </div>
               </div>
             </div>
@@ -1410,8 +1331,7 @@ const { profile } = await res.json();
               <h4 class="font-semibold theme-accent mb-3">Governance Shield</h4>
               <p class="text-mountain-300 mb-3">
                 Evidence-based moderation with Dev Mode toggle. Bans include cryptographic evidence bundles
-                (replay data, Dynamis scores, state attestation logs). A <code
-                  class="theme-accent">governanceScore</code>
+                (replay data, Dynamis scores, state attestation logs). A <code class="theme-accent">governanceScore</code>
                 (0.0&ndash;1.0) rates each server&rsquo;s moderation quality and flows into Lighthouse heartbeats.
               </p>
               <div class="grid md:grid-cols-3 gap-3">
@@ -1448,32 +1368,25 @@ const { profile } = await res.json();
 
       <!-- Version History -->
       <section class="mb-12">
-        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2"><svg class="doc-icon inline-icon" width="24"
-            height="24" aria-hidden="true">
-            <use href="#icon-hourglass" />
-          </svg> Version History</h2>
+        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2"><svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true"><use href="#icon-hourglass"/></svg> Version History</h2>
         <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
           <table class="w-full">
-            <thead>
-              <tr class="border-b border-mountain-700">
-                <th class="text-left p-3 text-mountain-300">Version</th>
-                <th class="text-left p-3 text-mountain-300">Changes</th>
-              </tr>
-            </thead>
+            <thead><tr class="border-b border-mountain-700">
+              <th class="text-left p-3 text-mountain-300">Version</th>
+              <th class="text-left p-3 text-mountain-300">Changes</th>
+            </tr></thead>
             <tbody>
               <tr>
                 <td class="p-3"><span class="theme-badge px-2 py-1 rounded">v3.0.0</span></td>
-                <td class="p-3 text-mountain-400">C2C ships with yakmesh. Full SEVA integration, 16 AI models, MANI time
-                  protocol, ANNEX encryption, AI Commander voice pipeline, Dynamis anti-cheat, Governance Shield. 391
-                  art assets, 85/85 tests.</td>
+                <td class="p-3 text-mountain-400">C2C ships with yakmesh. Full SEVA integration, 16 AI models, MANI time protocol, ANNEX encryption, AI Commander voice pipeline, Dynamis anti-cheat, Governance Shield. 391 art assets, 85/85 tests.</td>
               </tr>
             </tbody>
           </table>
         </div>
       </section>
 
-      <!-- Journey Navigation -->
-            <div class="border-t border-mountain-700 mt-12 pt-8">
+            <!-- Journey Navigation -->
+                                                                                                                                                                  <div class="border-t border-mountain-700 mt-12 pt-8">
         <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
         <div class="flex flex-col sm:flex-row gap-4">
           <a href="yakapp.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">
@@ -1496,12 +1409,9 @@ const { profile } = await res.json();
       </div>
   </main>
 
-  <footer class="docs-footer">
-    <p>© 2026 YAKMESH™</p>
-  </footer>
+  <footer class="docs-footer"><p>© 2026 YAKMESH™</p></footer>
   <script src="prism.min.js" defer></script>
   <script src="prism-javascript.min.js" defer></script>
   <script src="docs.js" defer></script>
 </body>
-
 </html>

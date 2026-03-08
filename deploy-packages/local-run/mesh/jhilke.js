@@ -29,6 +29,7 @@
  */
 
 import { randomBytes } from 'crypto';
+import { seedStore } from '../security/prahari.js';
 import { sha3_256 } from '@noble/hashes/sha3.js';
 import { hkdf } from '@noble/hashes/hkdf.js';
 import { bytesToHex, hexToBytes, utf8ToBytes } from '@noble/hashes/utils.js';
@@ -39,6 +40,9 @@ import { POSITIVE, NEUTRAL, NEGATIVE } from '../oracle/tribhuj.js';
 
 // SST Fibonacci 24-cycle for signal modulation
 import { fibonacciRoot } from '../oracle/sst.js';
+
+// AGUWA — canonical mesh time source
+import { aguwa } from './aguwa.js';
 
 const log = createLogger('mesh:jhilke');
 
@@ -72,8 +76,8 @@ const JHILKE_CONFIG = {
 
   // Ternary intents (TRIBHUJ trits)
   INTENT_PREPARE: POSITIVE,   // +1: I'm preparing new keys
-  INTENT_READY:   NEUTRAL,    //  0: My new key is ready
-  INTENT_SWITCH:  NEGATIVE,   // -1: Switching to new key now
+  INTENT_READY: NEUTRAL,    //  0: My new key is ready
+  INTENT_SWITCH: NEGATIVE,   // -1: Switching to new key now
 };
 
 /**
@@ -156,7 +160,7 @@ export class JhilkeCoordinator {
    * The per-node _globalTick is still used for session age tracking.
    */
   _sharedTick() {
-    return Math.floor(Date.now() / 1000);
+    return aguwa.tick();
   }
 
   // ══════════════════════════════════════════════════════════════════
@@ -354,7 +358,7 @@ export class JhilkeCoordinator {
 
     session.state = 'prepare';
     session.initiator = true;
-    session.startedAt = Date.now();
+    session.startedAt = aguwa.now();
     session.tick = this._globalTick;
 
     this.stats.rekeyCoordinations++;
@@ -387,7 +391,7 @@ export class JhilkeCoordinator {
     log.debug('JHILKE cricket decoded', {
       peer: fromPeerId.slice(0, 16),
       intent: decoded.intent === JHILKE_CONFIG.INTENT_PREPARE ? 'PREPARE' :
-              decoded.intent === JHILKE_CONFIG.INTENT_READY   ? 'READY'   : 'SWITCH',
+        decoded.intent === JHILKE_CONFIG.INTENT_READY ? 'READY' : 'SWITCH',
       tick: decoded.tick,
       offset: decoded.offset,
     });
@@ -406,7 +410,7 @@ export class JhilkeCoordinator {
       this.sessions.set(peerId, session);
     }
 
-    session.lastSignalReceived = Date.now();
+    session.lastSignalReceived = aguwa.now();
     const { intent } = decoded;
 
     switch (intent) {
@@ -416,7 +420,7 @@ export class JhilkeCoordinator {
           // They initiated — we join the coordination
           session.state = 'prepare';
           session.initiator = false;
-          session.startedAt = Date.now();
+          session.startedAt = aguwa.now();
           session.tick = this._globalTick;
           this.stats.rekeyCoordinations++;
           log.info('JHILKE: peer initiated rekey, joining dance', {
@@ -545,24 +549,25 @@ export class JhilkeCoordinator {
   _sendSignal(peerId, intent) {
     const signal = this._generateSignal(peerId, this._sharedTick(), intent);
 
-    // Random padding to vary message size (camouflage)
+    // Random padding to vary message size (camouflage) — PRAHARI sponge entropy
+    const paddingRange = JHILKE_CONFIG.paddingMax - JHILKE_CONFIG.paddingMin;
     const paddingSize = JHILKE_CONFIG.paddingMin +
-      Math.floor(Math.random() * (JHILKE_CONFIG.paddingMax - JHILKE_CONFIG.paddingMin));
-    const padding = bytesToHex(randomBytes(paddingSize));
+      (seedStore.squeeze(4, 'JHILKE-PADDING-SIZE').readUInt32BE(0) % paddingRange);
+    const padding = bytesToHex(seedStore.squeeze(paddingSize, 'JHILKE-PADDING'));
 
     // Send as mesh_entropy — blends with normal entropy exchange traffic
     this.mesh.sendTo(peerId, {
       type: 'mesh_entropy',
-      entropy: bytesToHex(randomBytes(32)),  // Genuine entropy contribution
+      entropy: bytesToHex(seedStore.squeeze(32, 'JHILKE-ENTROPY')),  // Genuine entropy contribution
       jhilke: bytesToHex(signal),            // Hidden cricket signal
       pad: padding,                           // Variable-size camouflage
-      t: Date.now(),
+      t: aguwa.now(),
     });
 
     this.stats.signalsSent++;
 
     const session = this.sessions.get(peerId);
-    if (session) session.lastSignalSent = Date.now();
+    if (session) session.lastSignalSent = aguwa.now();
   }
 
   /**

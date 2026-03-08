@@ -248,12 +248,10 @@ describe('AnnexSession', () => {
     });
   });
 
-  // SKIPPED: These tests fail due to ml_kem768.encapsulate returning 'cipherText' (camelCase)
-  // but implementation uses 'ciphertext' (lowercase). This is a bug in annex.js:176.
-  describe.skip('Key Exchange', () => {
+  describe('Key Exchange', () => {
     let initiator, responder;
 
-    beforeEach(() => {
+    beforeEach(async () => {
       initiator = new AnnexSession({
         localNodeId: 'alice',
         remoteNodeId: 'bob',
@@ -261,13 +259,14 @@ describe('AnnexSession', () => {
       });
 
       responder = new AnnexSession({
+        sessionId: initiator.sessionId,
         localNodeId: 'bob',
         remoteNodeId: 'alice',
         initiator: false,
       });
 
-      // Responder generates key pair first
-      responder.generateKeyPair();
+      // Responder generates key pair first (async — uses PRAHARI seed)
+      await responder.generateKeyPair();
     });
 
     test('initiator encapsulates with responder public key', () => {
@@ -320,11 +319,10 @@ describe('AnnexSession', () => {
     });
   });
 
-  // SKIPPED: These tests depend on encapsulate which has the cipherText bug
-  describe.skip('Message Encryption', () => {
+  describe('Message Encryption', () => {
     let alice, bob;
 
-    beforeEach(() => {
+    beforeEach(async () => {
       alice = new AnnexSession({
         localNodeId: 'alice',
         remoteNodeId: 'bob',
@@ -332,12 +330,13 @@ describe('AnnexSession', () => {
       });
 
       bob = new AnnexSession({
+        sessionId: alice.sessionId,
         localNodeId: 'bob',
         remoteNodeId: 'alice',
         initiator: false,
       });
 
-      bob.generateKeyPair();
+      await bob.generateKeyPair();
       const bobPubKey = bytesToHex(bob.kemKeyPair.publicKey);
       const ciphertext = alice.encapsulate(bobPubKey);
       bob.decapsulate(ciphertext);
@@ -386,11 +385,10 @@ describe('AnnexSession', () => {
     });
   });
 
-  // SKIPPED: These tests depend on encapsulate which has the cipherText bug
-  describe.skip('Message Decryption', () => {
+  describe('Message Decryption', () => {
     let alice, bob;
 
-    beforeEach(() => {
+    beforeEach(async () => {
       alice = new AnnexSession({
         localNodeId: 'alice',
         remoteNodeId: 'bob',
@@ -398,12 +396,13 @@ describe('AnnexSession', () => {
       });
 
       bob = new AnnexSession({
+        sessionId: alice.sessionId,
         localNodeId: 'bob',
         remoteNodeId: 'alice',
         initiator: false,
       });
 
-      bob.generateKeyPair();
+      await bob.generateKeyPair();
       const bobPubKey = bytesToHex(bob.kemKeyPair.publicKey);
       const ciphertext = alice.encapsulate(bobPubKey);
       bob.decapsulate(ciphertext);
@@ -471,13 +470,12 @@ describe('AnnexSession', () => {
     });
   });
 
-  // SKIPPED: These tests depend on encapsulate which has the cipherText bug
-  describe.skip('Session Lifecycle', () => {
-    test('tracks message count', () => {
+  describe('Session Lifecycle', () => {
+    test('tracks message count', async () => {
       const alice = new AnnexSession({ localNodeId: 'a', remoteNodeId: 'b' });
       const bob = new AnnexSession({ localNodeId: 'b', remoteNodeId: 'a' });
 
-      bob.generateKeyPair();
+      await bob.generateKeyPair();
       alice.encapsulate(bytesToHex(bob.kemKeyPair.publicKey));
 
       alice.encrypt('1');
@@ -487,51 +485,28 @@ describe('AnnexSession', () => {
       expect(alice.messageCount).toBe(3);
     });
 
-    test('needsRekey returns true after max messages', () => {
+    // needsRekey tests REMOVED — JHILKE v2 replaced KEM-based rekeying
+    // with deterministic bootstrap keys. No rekeyInterval or maxMessagesPerKey.
+
+    test('isExpired returns false for active session', async () => {
       const alice = new AnnexSession({ localNodeId: 'a', remoteNodeId: 'b' });
       const bob = new AnnexSession({ localNodeId: 'b', remoteNodeId: 'a' });
 
-      bob.generateKeyPair();
-      alice.encapsulate(bytesToHex(bob.kemKeyPair.publicKey));
-
-      // Simulate many messages
-      alice.messageCount = ANNEX_CONFIG.maxMessagesPerKey + 1;
-
-      expect(alice.needsRekey()).toBe(true);
-    });
-
-    test('needsRekey returns true after rekey interval', () => {
-      const alice = new AnnexSession({ localNodeId: 'a', remoteNodeId: 'b' });
-      const bob = new AnnexSession({ localNodeId: 'b', remoteNodeId: 'a' });
-
-      bob.generateKeyPair();
-      alice.encapsulate(bytesToHex(bob.kemKeyPair.publicKey));
-
-      // Simulate old rekey
-      alice.lastRekey = Date.now() - ANNEX_CONFIG.rekeyInterval - 1000;
-
-      expect(alice.needsRekey()).toBe(true);
-    });
-
-    test('isExpired returns false for active session', () => {
-      const alice = new AnnexSession({ localNodeId: 'a', remoteNodeId: 'b' });
-      const bob = new AnnexSession({ localNodeId: 'b', remoteNodeId: 'a' });
-
-      bob.generateKeyPair();
+      await bob.generateKeyPair();
       alice.encapsulate(bytesToHex(bob.kemKeyPair.publicKey));
 
       expect(alice.isExpired()).toBe(false);
     });
 
-    test('isExpired returns true after timeout', () => {
+    test('isExpired returns true after timeout', async () => {
       const alice = new AnnexSession({ localNodeId: 'a', remoteNodeId: 'b' });
       const bob = new AnnexSession({ localNodeId: 'b', remoteNodeId: 'a' });
 
-      bob.generateKeyPair();
+      await bob.generateKeyPair();
       alice.encapsulate(bytesToHex(bob.kemKeyPair.publicKey));
 
-      // Simulate old session
-      alice.createdAt = Date.now() - ANNEX_CONFIG.sessionTimeout - 1000;
+      // Simulate old session — isExpired() checks lastActivity, not createdAt
+      alice.lastActivity = Date.now() - ANNEX_CONFIG.sessionTimeout - 1000;
 
       expect(alice.isExpired()).toBe(true);
     });
@@ -582,14 +557,8 @@ describe('Annex', () => {
   });
 
   describe('Session Management', () => {
-    // Skip tests that require mesh for openChannel - they need real mesh connection
-    test.skip('openChannel creates new session', async () => {
-      // Requires mesh connection to send key exchange
-    });
-
-    test.skip('openChannel stores session in pendingHandshakes', async () => {
-      // Requires mesh connection
-    });
+    // openChannel, increments sessionsCreated — require live mesh connection,
+    // covered by integration/e2e tests rather than unit tests.
 
     test('sessions.get retrieves existing session', () => {
       // Manually add a session for testing
@@ -599,7 +568,7 @@ describe('Annex', () => {
         initiator: true,
       });
       annex.sessions.set('remote-peer', session);
-      
+
       const retrieved = annex.sessions.get('remote-peer');
       expect(retrieved).toBe(session);
     });
@@ -621,15 +590,10 @@ describe('Annex', () => {
       expect(annex.sessions.size).toBe(0);
     });
 
-    test.skip('increments sessionsCreated stat', async () => {
-      // Requires mesh connection for openChannel
-    });
+    // sessionsCreated stat — requires live mesh connection
   });
 
-  describe.skip('Key Exchange Messages', () => {
-    // These tests require mesh connection and proper key exchange flow
-    // which is done internally by the Annex class
-  });
+  // Key Exchange Messages — internal to Annex, tested via E2E integration
 
   describe('Encrypted Messaging', () => {
     let peerAnnex;
@@ -655,12 +619,13 @@ describe('Annex', () => {
       });
 
       const peerSession = new AnnexSession({
+        sessionId: localSession.sessionId,
         localNodeId: 'peer-node',
         remoteNodeId: 'channel-test-node',
         initiator: false,
       });
 
-      peerSession.generateKeyPair();
+      await peerSession.generateKeyPair();
       const ciphertext = localSession.encapsulate(bytesToHex(peerSession.kemKeyPair.publicKey));
       peerSession.decapsulate(ciphertext);
 
@@ -668,20 +633,16 @@ describe('Annex', () => {
       peerAnnex.sessions.set('channel-test-node', peerSession);
     });
 
-    test.skip('send creates encrypted envelope', async () => {
-      // Requires mesh connection for send
-    });
+    // send/sign/stats — require live mesh connection,
+    // covered by integration/e2e tests rather than unit tests.
 
-    test.skip('send signs the envelope', async () => {
-      // Requires mesh connection for send
-    });
+    test('established session can encrypt and decrypt between peers', () => {
+      const localSession = annex.sessions.get('peer-node');
+      const peerSession = peerAnnex.sessions.get('channel-test-node');
 
-    test.skip('send increments messagesEncrypted stat', async () => {
-      // Requires mesh connection for send
-    });
-
-    test.skip('throws when no mesh connection', async () => {
-      // The send method requires mesh
+      const encrypted = localSession.encrypt('test message');
+      const decrypted = peerSession.decrypt(encrypted, encrypted.sequence);
+      expect(decrypted).toBe('test message');
     });
   });
 
@@ -691,8 +652,27 @@ describe('Annex', () => {
       expect(info).toBeNull();
     });
 
-    test.skip('getSessionInfo returns info for known session', () => {
-      // SKIPPED: This test depends on encapsulate which has the cipherText bug
+    test('getSessionInfo returns info for known session', async () => {
+      const localSession = new AnnexSession({
+        localNodeId: 'channel-test-node',
+        remoteNodeId: 'info-peer',
+        initiator: true,
+      });
+      const peerSession = new AnnexSession({
+        sessionId: localSession.sessionId,
+        localNodeId: 'info-peer',
+        remoteNodeId: 'channel-test-node',
+        initiator: false,
+      });
+      await peerSession.generateKeyPair();
+      localSession.encapsulate(bytesToHex(peerSession.kemKeyPair.publicKey));
+
+      annex.sessions.set('info-peer', localSession);
+      const info = annex.getSessionInfo('info-peer');
+
+      expect(info).toBeDefined();
+      expect(info.sessionId).toBe(localSession.sessionId);
+      expect(info.established).toBe(true);
     });
 
     test('listAnnexes returns all sessions', () => {
@@ -704,10 +684,10 @@ describe('Annex', () => {
         localNodeId: 'channel-test-node',
         remoteNodeId: 'peer-2',
       });
-      
+
       annex.sessions.set('peer-1', session1);
       annex.sessions.set('peer-2', session2);
-      
+
       const annexes = annex.listAnnexes();
       expect(annexes.length).toBe(2);
     });
@@ -739,17 +719,12 @@ describe('ANNEX Configuration', () => {
     expect(ANNEX_CONFIG.sessionTimeout).toBeGreaterThan(0);
   });
 
-  test('has rekey parameters', () => {
-    expect(ANNEX_CONFIG.rekeyInterval).toBeGreaterThan(0);
-    expect(ANNEX_CONFIG.maxMessagesPerKey).toBeGreaterThan(0);
-  });
-
   test('has all required message types', () => {
     expect(ANNEX_CONFIG.messageTypes.KEY_EXCHANGE).toBeDefined();
     expect(ANNEX_CONFIG.messageTypes.KEY_RESPONSE).toBeDefined();
     expect(ANNEX_CONFIG.messageTypes.ENCRYPTED).toBeDefined();
-    expect(ANNEX_CONFIG.messageTypes.REKEY).toBeDefined();
     expect(ANNEX_CONFIG.messageTypes.CLOSE).toBeDefined();
+    // REKEY type removed — JHILKE v2 handles all rekeys deterministically
   });
 });
 
@@ -758,8 +733,7 @@ describe('ANNEX Configuration', () => {
 // ═══════════════════════════════════════════════════════════════════════════
 
 describe('ANNEX End-to-End Integration', () => {
-  // SKIPPED: This test depends on encapsulate which has the cipherText bug
-  test.skip('full key exchange and messaging flow', async () => {
+  test('full key exchange and messaging flow', async () => {
     // Create two identities
     const aliceIdentity = {
       nodeId: 'alice',
@@ -781,13 +755,14 @@ describe('ANNEX End-to-End Integration', () => {
     });
 
     const bobSession = new AnnexSession({
+      sessionId: aliceSession.sessionId,
       localNodeId: 'bob',
       remoteNodeId: 'alice',
       initiator: false,
     });
 
     // Bob generates key pair
-    const bobPubKey = bobSession.generateKeyPair();
+    const bobPubKey = await bobSession.generateKeyPair();
 
     // Alice encapsulates (key exchange initiation)
     const ciphertext = aliceSession.encapsulate(bobPubKey);

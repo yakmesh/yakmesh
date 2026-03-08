@@ -20,7 +20,8 @@
  * @copyright 2026 YAKMESH™ Contributors
  */
 
-import { randomBytes, createCipheriv, createDecipheriv, createHash } from 'crypto';
+import { createCipheriv, createDecipheriv, createHash } from 'crypto';
+import { seedStore } from '../security/prahari.js';
 import { ml_dsa65 } from '@noble/post-quantum/ml-dsa.js';
 import { ml_kem768 } from '@noble/post-quantum/ml-kem.js';
 import { sha3_256 as _nobleSha3 } from '@noble/hashes/sha3.js';
@@ -30,11 +31,11 @@ import { bytesToHex, hexToBytes, utf8ToBytes } from '@noble/hashes/utils.js';
 import { sha3_256, mlDsa65Sign, mlDsa65Verify, mlKem768Encapsulate, mlKem768Decapsulate } from '../utils/accel.js';
 
 // YPC-27 quantum-hard checksums for packet integrity
-import { 
-  PROTOCOL_DOMAIN, 
-  checksumToWire, 
-  checksumFromWire, 
-  PacketChecksum 
+import {
+  PROTOCOL_DOMAIN,
+  checksumToWire,
+  checksumFromWire,
+  PacketChecksum
 } from '../oracle/packet-checksum.js';
 
 // NAKPAK checksum engine (singleton per module)
@@ -45,21 +46,21 @@ const NAKPAK_CONFIG = {
   defaultHopCount: 3,           // Number of hops (like Tor)
   maxHopCount: 7,               // Maximum allowed hops
   circuitTimeout: 300000,       // 5 minute circuit lifetime
-  
+
   // Encryption
   layerEncryption: 'aes-256-gcm',
   nonceSize: 12,
   authTagLength: 16,
-  
+
   // Timing obfuscation
   minPaddingMs: 10,             // Minimum random delay
   maxPaddingMs: 100,            // Maximum random delay
   decoyProbability: 0.1,        // 10% chance of sending decoy
-  
+
   // Packet sizing
   fixedPacketSize: 8192,        // Fixed size to prevent length analysis
   maxPayloadSize: 7000,         // Max actual payload
-  
+
   // Key derivation
   keyDerivationSalt: 'NAKPAK-YAKMESH-2026',
 };
@@ -73,7 +74,7 @@ class NakpakLayer {
     this.nodeId = options.nodeId;
     this.nextHop = options.nextHop || null;
     this.isExit = options.isExit || false;
-    
+
     // Ephemeral keys for this layer
     this.kemKeyPair = null;
     this.sharedSecret = null;
@@ -84,7 +85,7 @@ class NakpakLayer {
    * Generate ephemeral key pair for key encapsulation
    */
   async generateKeys() {
-    const seed = randomBytes(64);
+    const seed = seedStore.squeeze(64, 'NAKPAK-KEM-KEYGEN');
     this.kemKeyPair = ml_kem768.keygen(seed);
     return {
       publicKey: bytesToHex(this.kemKeyPair.publicKey),
@@ -98,10 +99,10 @@ class NakpakLayer {
   encapsulateKey(peerPublicKey) {
     const publicKeyBytes = hexToBytes(peerPublicKey);
     const result = mlKem768Encapsulate(publicKeyBytes);
-    
+
     this.sharedSecret = result.sharedSecret;
     this.encryptionKey = this._deriveEncryptionKey(this.sharedSecret);
-    
+
     return {
       ciphertext: bytesToHex(result.cipherText),
       hopIndex: this.hopIndex,
@@ -115,11 +116,11 @@ class NakpakLayer {
     if (!this.kemKeyPair) {
       throw new Error('No key pair generated');
     }
-    
+
     const ciphertextBytes = hexToBytes(ciphertext);
     this.sharedSecret = mlKem768Decapsulate(ciphertextBytes, this.kemKeyPair.secretKey);
     this.encryptionKey = this._deriveEncryptionKey(this.sharedSecret);
-    
+
     return true;
   }
 
@@ -131,7 +132,7 @@ class NakpakLayer {
       throw new Error('No encryption key established');
     }
 
-    const nonce = randomBytes(NAKPAK_CONFIG.nonceSize);
+    const nonce = seedStore.squeeze(NAKPAK_CONFIG.nonceSize, 'NAKPAK-NONCE');
     const cipher = createCipheriv(
       NAKPAK_CONFIG.layerEncryption,
       this.encryptionKey,
@@ -196,7 +197,7 @@ class NakpakLayer {
  */
 class NakpakPacket {
   constructor(options = {}) {
-    this.id = options.id || bytesToHex(randomBytes(16));
+    this.id = options.id || bytesToHex(seedStore.squeeze(16, 'NAKPAK-PACKET-ID'));
     this.circuitId = options.circuitId;
     this.layers = [];           // Encrypted layers (outermost first)
     this.timestamp = options.timestamp || Date.now();
@@ -265,7 +266,7 @@ class NakpakPacket {
     if (!this.ypc27) {
       this.ypc27 = this._computeYpc27();
     }
-    
+
     const serialized = JSON.stringify({
       id: this.id,
       circuitId: this.circuitId,
@@ -278,7 +279,7 @@ class NakpakPacket {
     const paddingNeeded = NAKPAK_CONFIG.fixedPacketSize - currentSize - 50; // Reserve for padding field
 
     if (paddingNeeded > 0) {
-      this.padding = randomBytes(Math.max(1, paddingNeeded)).toString('base64');
+      this.padding = seedStore.squeeze(Math.max(1, paddingNeeded), 'NAKPAK-PADDING').toString('base64');
     }
   }
 
@@ -290,16 +291,16 @@ class NakpakPacket {
       circuitId,
       isDecoy: true,
     });
-    
+
     // Fill with random encrypted-looking data
     for (let i = 0; i < 3; i++) {
       decoy.addLayer({
-        nonce: randomBytes(12).toString('hex'),
-        data: randomBytes(256).toString('hex'),
-        tag: randomBytes(16).toString('hex'),
+        nonce: seedStore.squeeze(12, 'NAKPAK-DECOY-NONCE').toString('hex'),
+        data: seedStore.squeeze(256, 'NAKPAK-DECOY-DATA').toString('hex'),
+        tag: seedStore.squeeze(16, 'NAKPAK-DECOY-TAG').toString('hex'),
       });
     }
-    
+
     decoy.padToFixedSize();
     return decoy;
   }
@@ -324,12 +325,12 @@ class NakpakPacket {
     });
     packet.layers = obj.layers;
     packet.padding = obj.padding;
-    
+
     // Verify YPC-27 quantum checksum if present
     if (obj.ypc27 && !packet.verifyYpc27()) {
       throw new Error('YPC-27 checksum mismatch - possible quantum attack or packet corruption');
     }
-    
+
     return packet;
   }
 }
@@ -339,7 +340,7 @@ class NakpakPacket {
  */
 class NakpakCircuit {
   constructor(options = {}) {
-    this.circuitId = options.circuitId || bytesToHex(randomBytes(16));
+    this.circuitId = options.circuitId || bytesToHex(seedStore.squeeze(16, 'NAKPAK-CIRCUIT-ID'));
     this.hops = [];                // Array of NakpakLayer
     this.isEstablished = false;
     this.createdAt = Date.now();
@@ -356,7 +357,7 @@ class NakpakCircuit {
     }
 
     this.hops = [];
-    
+
     for (let i = 0; i < nodeIds.length; i++) {
       const layer = new NakpakLayer({
         hopIndex: i,
@@ -364,7 +365,7 @@ class NakpakCircuit {
         nextHop: nodeIds[i + 1] || null,
         isExit: i === nodeIds.length - 1,
       });
-      
+
       await layer.generateKeys();
       this.hops.push(layer);
     }
@@ -384,17 +385,17 @@ class NakpakCircuit {
    */
   establishKeys(hopPublicKeys) {
     const ciphertexts = [];
-    
+
     for (const hop of this.hops) {
       const peerKey = hopPublicKeys.find(k => k.hopIndex === hop.hopIndex);
       if (!peerKey) {
         throw new Error('Missing public key for hop ' + hop.hopIndex);
       }
-      
+
       const result = hop.encapsulateKey(peerKey.publicKey);
       ciphertexts.push(result);
     }
-    
+
     this.isEstablished = true;
     return ciphertexts;
   }
@@ -419,7 +420,7 @@ class NakpakCircuit {
     for (let i = this.hops.length - 1; i >= 0; i--) {
       const hop = this.hops[i];
       const encrypted = hop.encrypt(payload);
-      
+
       payload = {
         type: 'RELAY',
         nextHop: hop.nextHop,
@@ -450,10 +451,10 @@ class NakpakCircuit {
  */
 class NakpakRelay {
   constructor(options = {}) {
-    this.nodeId = options.nodeId || bytesToHex(randomBytes(16));
+    this.nodeId = options.nodeId || bytesToHex(seedStore.squeeze(16, 'NAKPAK-RELAY-ID'));
     this.circuits = new Map();    // circuitId -> local layer info
     this.signKeyPair = null;      // ML-DSA-65 for signing
-    
+
     this.stats = {
       packetsRelayed: 0,
       circuitsHandled: 0,
@@ -465,7 +466,7 @@ class NakpakRelay {
   }
 
   async _initKeys() {
-    const seed = randomBytes(32);
+    const seed = seedStore.squeeze(32, 'NAKPAK-DSA-KEYGEN');
     this.signKeyPair = ml_dsa65.keygen(seed);
   }
 
@@ -479,17 +480,17 @@ class NakpakRelay {
       nextHop: request.nextHop,
       isExit: request.isExit,
     });
-    
+
     await layer.generateKeys();
-    
+
     this.circuits.set(request.circuitId, {
       layer,
       createdAt: Date.now(),
       packetsRelayed: 0,
     });
-    
+
     this.stats.circuitsHandled++;
-    
+
     return {
       circuitId: request.circuitId,
       hopIndex: request.hopIndex,
@@ -505,7 +506,7 @@ class NakpakRelay {
     if (!circuit) {
       return { error: 'Unknown circuit' };
     }
-    
+
     circuit.layer.decapsulateKey(ciphertext);
     return { success: true };
   }
@@ -563,8 +564,12 @@ class NakpakRelay {
    * Add random delay to defeat timing analysis
    */
   async _addTimingDelay() {
-    const delay = NAKPAK_CONFIG.minPaddingMs + 
-      Math.random() * (NAKPAK_CONFIG.maxPaddingMs - NAKPAK_CONFIG.minPaddingMs);
+    // SECURITY: PRAHARI sponge entropy — hardware + GPS + mesh timing sources
+    // prevents attackers from distinguishing real delays from padding
+    const randBytes = seedStore.squeeze(4, 'NAKPAK-TIMING');
+    const fraction = randBytes.readUInt32BE(0) / 0xFFFFFFFF;
+    const delay = NAKPAK_CONFIG.minPaddingMs +
+      fraction * (NAKPAK_CONFIG.maxPaddingMs - NAKPAK_CONFIG.minPaddingMs);
     await new Promise(resolve => setTimeout(resolve, delay));
   }
 
@@ -572,7 +577,9 @@ class NakpakRelay {
    * Maybe inject a decoy packet to mask traffic patterns
    */
   _maybeInjectDecoy(circuitId) {
-    if (Math.random() < NAKPAK_CONFIG.decoyProbability) {
+    // SECURITY: Decoy injection uses PRAHARI sponge for unpredictable thresholds
+    const threshold = Math.floor(NAKPAK_CONFIG.decoyProbability * 256);
+    if (seedStore.squeeze(1, 'NAKPAK-DECOY-INJECT')[0] < threshold) {
       this.stats.decoysInjected++;
       return NakpakPacket.createDecoy(circuitId).serialize();
     }
@@ -615,11 +622,11 @@ class NakpakRelay {
  */
 class NakpakRouter {
   constructor(options = {}) {
-    this.nodeId = options.nodeId || bytesToHex(randomBytes(16));
+    this.nodeId = options.nodeId || bytesToHex(seedStore.squeeze(16, 'NAKPAK-ROUTER-ID'));
     this.relay = new NakpakRelay({ nodeId: this.nodeId });
     this.circuits = new Map();     // circuitId -> NakpakCircuit (for circuits we created)
     this.knownNodes = new Map();   // nodeId -> { publicKey, lastSeen }
-    
+
     this.stats = {
       circuitsCreated: 0,
       messagesSent: 0,
@@ -627,8 +634,8 @@ class NakpakRouter {
     };
 
     // Callbacks
-    this.onMessageReceived = options.onMessageReceived || (() => {});
-    this.onForward = options.onForward || (() => {});
+    this.onMessageReceived = options.onMessageReceived || (() => { });
+    this.onForward = options.onForward || (() => { });
   }
 
   /**
@@ -649,23 +656,23 @@ class NakpakRouter {
       // Auto-select random hops
       const availableNodes = Array.from(this.knownNodes.keys())
         .filter(id => id !== this.nodeId);
-      
+
       if (availableNodes.length < NAKPAK_CONFIG.defaultHopCount) {
         throw new Error('Not enough known nodes for circuit');
       }
-      
-      // Shuffle and pick
+
+      // Shuffle and pick — PRAHARI sponge entropy for unpredictable circuit paths
       for (let i = availableNodes.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
+        const j = seedStore.squeeze(4, 'NAKPAK-CIRCUIT-SHUFFLE').readUInt32BE(0) % (i + 1);
         [availableNodes[i], availableNodes[j]] = [availableNodes[j], availableNodes[i]];
       }
-      
+
       hopNodeIds = availableNodes.slice(0, NAKPAK_CONFIG.defaultHopCount);
     }
 
     const circuit = new NakpakCircuit();
     const buildResult = await circuit.buildCircuit(hopNodeIds);
-    
+
     this.circuits.set(circuit.circuitId, circuit);
     this.stats.circuitsCreated++;
 

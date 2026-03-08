@@ -33,15 +33,15 @@ const DEFAULT_CONFIG = {
   // Certificate validity
   certValidityDays: 365,                    // X.509 cert valid for 1 year
   certRenewalThreshold: 30,                  // Renew 30 days before expiry
-  
+
   // Key settings (for X.509 wrapper - actual auth is via DOKO)
   keyType: 'RSA',                           // RSA for X.509 compatibility
   keySize: 4096,                            // RSA key size
-  
+
   // Pinning
   enablePinning: true,
   pinGracePeriod: 24 * 60 * 60 * 1000,      // 24 hours for key rotation
-  
+
   // TLS options
   minTLSVersion: 'TLSv1.2',
   preferredCipherSuites: [
@@ -66,13 +66,13 @@ export class DOKOCertificateGenerator {
     this.identity = nodeIdentity;
     this.doko = doko;
     this.config = { ...DEFAULT_CONFIG, ...config };
-    
+
     // Generated certificate and key
     this.certificate = null;
     this.privateKey = null;
     this.publicKey = null;
     this.fingerprint = null;
-    
+
     // Certificate metadata
     this.issuedAt = null;
     this.expiresAt = null;
@@ -87,40 +87,39 @@ export class DOKOCertificateGenerator {
     // Generate RSA keypair for X.509 (for compatibility)
     // Note: The actual authentication is via DOKO's ML-DSA signature
     const keys = forge.pki.rsa.generateKeyPair({ bits: this.config.keySize });
-    
+
     // Create certificate
     const cert = forge.pki.createCertificate();
-    
+
     // Set serial number (random)
     cert.serialNumber = bytesToHex(crypto.randomBytes(16));
-    
-    // Set validity
+
+    // Set validity (ms arithmetic avoids DST boundary drift from setDate)
     const now = new Date();
-    const expiry = new Date();
-    expiry.setDate(now.getDate() + this.config.certValidityDays);
-    
+    const expiry = new Date(now.getTime() + this.config.certValidityDays * 24 * 60 * 60 * 1000);
+
     cert.validity.notBefore = now;
     cert.validity.notAfter = expiry;
-    
+
     this.issuedAt = now.getTime();
     this.expiresAt = expiry.getTime();
-    
+
     // Compute DOKO hash for binding
     const dokoHash = this.computeDokoHash();
-    
+
     // Set subject (contains nodeId)
     const attrs = [
       { shortName: 'CN', value: this.doko.nodeId },
       { shortName: 'O', value: 'YAKMESH' },
       { shortName: 'OU', value: 'Node Certificate' },
     ];
-    
+
     cert.setSubject(attrs);
     cert.setIssuer(attrs);  // Self-signed
-    
+
     // Set public key
     cert.publicKey = keys.publicKey;
-    
+
     // Add extensions
     cert.setExtensions([
       {
@@ -147,7 +146,7 @@ export class DOKOCertificateGenerator {
       {
         id: '1.3.6.1.4.1.99999.1.1',  // Custom OID for YAKMESH
         critical: false,
-        value: forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.UTF8, false, 
+        value: forge.asn1.create(forge.asn1.Class.UNIVERSAL, forge.asn1.Type.UTF8, false,
           JSON.stringify({
             dokoHash,
             networkName: this.doko.networkName,
@@ -156,16 +155,16 @@ export class DOKOCertificateGenerator {
         ),
       },
     ]);
-    
+
     // Sign certificate with RSA private key
     cert.sign(keys.privateKey, forge.md.sha384.create());
-    
+
     // Store generated data
     this.certificate = forge.pki.certificateToPem(cert);
     this.privateKey = forge.pki.privateKeyToPem(keys.privateKey);
     this.publicKey = forge.pki.publicKeyToPem(keys.publicKey);
     this.fingerprint = this.computeCertFingerprint(this.certificate);
-    
+
     return {
       certificate: this.certificate,
       privateKey: this.privateKey,
@@ -207,7 +206,7 @@ export class DOKOCertificateGenerator {
    */
   needsRenewal() {
     if (!this.expiresAt) return true;
-    
+
     const renewalTime = this.expiresAt - (this.config.certRenewalThreshold * 24 * 60 * 60 * 1000);
     return Date.now() > renewalTime;
   }
@@ -219,7 +218,7 @@ export class DOKOCertificateGenerator {
     if (!this.certificate || !this.privateKey) {
       throw new Error('Certificate not generated yet');
     }
-    
+
     return {
       key: this.privateKey,
       cert: this.certificate,
@@ -237,7 +236,7 @@ export class DOKOCertificateGenerator {
     if (!this.certificate || !this.privateKey) {
       throw new Error('Certificate not generated yet');
     }
-    
+
     return {
       key: this.privateKey,
       cert: this.certificate,
@@ -274,10 +273,10 @@ export class TLSVerifier extends EventEmitter {
     super();
     this.gateway = namcheGateway;
     this.config = { ...DEFAULT_CONFIG, ...config };
-    
+
     // Pinned certificates (nodeId -> pin data)
     this.pins = new Map();
-    
+
     // Verification stats
     this.stats = {
       verificationsPerformed: 0,
@@ -297,7 +296,7 @@ export class TLSVerifier extends EventEmitter {
    */
   async verify(peerCert, peerDoko) {
     this.stats.verificationsPerformed++;
-    
+
     try {
       // 1. Verify DOKO via NAMCHE gateway
       const dokoResult = await this.gateway.verify(peerDoko);
@@ -309,7 +308,7 @@ export class TLSVerifier extends EventEmitter {
           stage: 'doko-verification',
         };
       }
-      
+
       // 2. Extract nodeId from certificate
       const certNodeId = this.extractNodeId(peerCert);
       if (certNodeId !== peerDoko.nodeId) {
@@ -320,7 +319,7 @@ export class TLSVerifier extends EventEmitter {
           stage: 'nodeid-match',
         };
       }
-      
+
       // 3. Verify DOKO hash binding if present
       const dokoBinding = this.extractDokoBinding(peerCert);
       if (dokoBinding) {
@@ -334,7 +333,7 @@ export class TLSVerifier extends EventEmitter {
           };
         }
       }
-      
+
       // 4. Check certificate fingerprint if specified in DOKO
       if (peerDoko.tls?.certFingerprint) {
         const actualFingerprint = this.computeCertFingerprint(peerCert);
@@ -347,11 +346,11 @@ export class TLSVerifier extends EventEmitter {
           };
         }
       }
-      
+
       // 5. Check certificate validity
       const now = Date.now();
       const certValidity = this.getCertValidity(peerCert);
-      
+
       if (certValidity.notBefore > now) {
         this.stats.verificationsFailed++;
         return {
@@ -360,7 +359,7 @@ export class TLSVerifier extends EventEmitter {
           stage: 'temporal',
         };
       }
-      
+
       if (certValidity.notAfter < now) {
         this.stats.verificationsFailed++;
         return {
@@ -369,7 +368,7 @@ export class TLSVerifier extends EventEmitter {
           stage: 'temporal',
         };
       }
-      
+
       // 6. Check pinning
       const pinResult = this.checkPin(peerDoko.nodeId, peerCert);
       if (!pinResult.ok) {
@@ -380,22 +379,22 @@ export class TLSVerifier extends EventEmitter {
           stage: 'pinning',
         };
       }
-      
+
       // Success!
       this.stats.verificationsPassed++;
-      
+
       this.emit('verification-passed', {
         nodeId: peerDoko.nodeId,
         certFingerprint: this.computeCertFingerprint(peerCert),
       });
-      
+
       return {
         verified: true,
         nodeId: peerDoko.nodeId,
         pinned: pinResult.pinned,
         dokoGates: dokoResult.gatesChecked,
       };
-      
+
     } catch (error) {
       this.stats.verificationsFailed++;
       return {
@@ -416,18 +415,18 @@ export class TLSVerifier extends EventEmitter {
       const cn = parsed.subject.getField('CN');
       return cn ? cn.value : null;
     }
-    
+
     // Node.js TLS socket peer cert format
     if (cert.subject?.CN) {
       return cert.subject.CN;
     }
-    
+
     // Forge certificate format
     if (cert.subject?.getField) {
       const cn = cert.subject.getField('CN');
       return cn ? cn.value : null;
     }
-    
+
     return null;
   }
 
@@ -436,16 +435,16 @@ export class TLSVerifier extends EventEmitter {
    */
   extractDokoBinding(cert) {
     try {
-      const parsed = typeof cert === 'string' 
+      const parsed = typeof cert === 'string'
         ? forge.pki.certificateFromPem(cert)
         : cert;
-      
+
       // Look for our custom OID
       const ext = parsed.extensions?.find(e => e.id === '1.3.6.1.4.1.99999.1.1');
       if (ext && ext.value) {
         return JSON.parse(ext.value);
       }
-      
+
       return null;
     } catch {
       return null;
@@ -481,10 +480,10 @@ export class TLSVerifier extends EventEmitter {
    * Get certificate validity period
    */
   getCertValidity(cert) {
-    const parsed = typeof cert === 'string' 
+    const parsed = typeof cert === 'string'
       ? forge.pki.certificateFromPem(cert)
       : cert;
-    
+
     return {
       notBefore: parsed.validity.notBefore.getTime(),
       notAfter: parsed.validity.notAfter.getTime(),
@@ -501,14 +500,14 @@ export class TLSVerifier extends EventEmitter {
   pin(nodeId, cert, doko) {
     const fingerprint = this.computeCertFingerprint(cert);
     const dokoHash = this.computeDokoHash(doko);
-    
+
     this.pins.set(nodeId, {
       fingerprint,
       dokoHash,
       pinnedAt: Date.now(),
       expiresAt: this.getCertValidity(cert).notAfter,
     });
-    
+
     this.emit('pinned', { nodeId, fingerprint });
   }
 
@@ -519,38 +518,38 @@ export class TLSVerifier extends EventEmitter {
     if (!this.config.enablePinning) {
       return { ok: true, pinned: false };
     }
-    
+
     const pin = this.pins.get(nodeId);
-    
+
     if (!pin) {
       this.stats.pinMisses++;
       // No pin = first contact, allow and pin
       return { ok: true, pinned: false, firstContact: true };
     }
-    
+
     this.stats.pinHits++;
-    
+
     const fingerprint = this.computeCertFingerprint(cert);
-    
+
     if (fingerprint === pin.fingerprint) {
       return { ok: true, pinned: true, since: pin.pinnedAt };
     }
-    
+
     // Fingerprint mismatch - check grace period for key rotation
     // Grace period only applies if the OLD certificate is expired or about to expire
     const now = Date.now();
     const expirationThreshold = pin.expiresAt - this.config.pinGracePeriod;
-    
+
     if (now >= expirationThreshold && now < pin.expiresAt + this.config.pinGracePeriod) {
       // Within grace period (near expiration), allow but warn
-      return { 
-        ok: true, 
-        pinned: true, 
+      return {
+        ok: true,
+        pinned: true,
         gracePeriod: true,
         warning: 'Certificate changed during grace period',
       };
     }
-    
+
     return {
       ok: false,
       pinned: true,
@@ -596,7 +595,7 @@ export class TLSVerifier extends EventEmitter {
   restorePins(data) {
     if (data?.version === 1 && Array.isArray(data.pins)) {
       this.pins = new Map(data.pins);
-      
+
       // Clean expired pins
       const now = Date.now();
       for (const [nodeId, pin] of this.pins.entries()) {
@@ -622,9 +621,9 @@ export class TLSCapabilityAdvertiser {
    * Get TLS capability info for SHERPA beacon
    */
   getBeaconTLSInfo() {
-    const hasValidCert = !!(this.certGenerator.certificate && 
-                            !this.certGenerator.needsRenewal());
-    
+    const hasValidCert = !!(this.certGenerator.certificate &&
+      !this.certGenerator.needsRenewal());
+
     return {
       tlsEnabled: hasValidCert,
       mtlsSupported: hasValidCert,

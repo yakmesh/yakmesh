@@ -24,25 +24,28 @@ import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js';
 // ACCEL: Hardware-accelerated SHA3-256 (OpenSSL/SHA-NI — 4.6x faster)
 import { sha3_256 } from '../utils/accel.js';
 
+// AGUWA: Kuramoto time backbone — heartbeat arrival IS the 4th signal
+import { aguwa } from './aguwa.js';
+
 const PULSE_CONFIG = {
   // Heartbeat timing
   heartbeatIntervalMs: 1000,      // 1 second between heartbeats
   missedBeatsThreshold: 5,        // Node considered dead after 5 missed beats
   suspectThreshold: 2,            // Node suspected after 2 missed beats
-  
+
   // Health monitoring
   healthWindowSize: 60,           // Track last 60 heartbeats
   healthyThreshold: 0.95,         // 95% heartbeat success = healthy
   degradedThreshold: 0.8,         // 80% = degraded
-  
+
   // Partition detection
   partitionDetectionWindow: 10000, // 10s window
   minPartitionNodes: 2,           // Minimum nodes to declare partition
-  
+
   // Leader election
   leaderElectionTimeout: 5000,    // 5s to elect leader
   termDurationMs: 30000,          // Leader term duration
-  
+
   // Chain settings
   maxChainLength: 1000,           // Max heartbeats to keep
   chainPruneInterval: 60000,      // Prune chain every minute
@@ -55,7 +58,7 @@ class Heartbeat {
   constructor(options) {
     this.nodeId = options.nodeId;
     this.sequence = options.sequence || 0;
-    this.timestamp = options.timestamp || Date.now();
+    this.timestamp = options.timestamp || aguwa.now();
     this.prevHash = options.prevHash || '0'.repeat(64);
     this.nonce = options.nonce || bytesToHex(randomBytes(8));
     this.meshState = options.meshState || {};
@@ -71,7 +74,7 @@ class Heartbeat {
       this.nonce,
       JSON.stringify(this.meshState),
     ].join(':');
-    
+
     return bytesToHex(sha3_256(utf8ToBytes(data)));
   }
 
@@ -112,11 +115,11 @@ class Heartbeat {
       nonce: obj.nonce,
       meshState: obj.meshState,
     });
-    
+
     if (hb.hash !== obj.hash) {
       throw new Error('Heartbeat hash verification failed');
     }
-    
+
     return hb;
   }
 }
@@ -142,7 +145,7 @@ class HeartbeatChain {
   /**
    * Add heartbeat to chain with validation
    */
-  addHeartbeat(heartbeat, receivedAt = Date.now()) {
+  addHeartbeat(heartbeat, receivedAt = aguwa.now()) {
     if (heartbeat.nodeId !== this.nodeId) {
       return { success: false, reason: 'Node ID mismatch' };
     }
@@ -187,7 +190,7 @@ class HeartbeatChain {
   /**
    * Check if node has missed heartbeats
    */
-  checkLiveness(currentTime = Date.now()) {
+  checkLiveness(currentTime = aguwa.now()) {
     if (this.lastReceived === 0) {
       return { status: 'unknown', missedBeats: 0 };
     }
@@ -254,7 +257,7 @@ class MeshHealthMonitor {
   /**
    * Process incoming heartbeat
    */
-  processHeartbeat(heartbeat, receivedAt = Date.now()) {
+  processHeartbeat(heartbeat, receivedAt = aguwa.now()) {
     if (!this.nodes.has(heartbeat.nodeId)) {
       this.nodes.set(heartbeat.nodeId, new HeartbeatChain(heartbeat.nodeId));
     }
@@ -266,7 +269,7 @@ class MeshHealthMonitor {
   /**
    * Run liveness check on all nodes
    */
-  runLivenessCheck(currentTime = Date.now()) {
+  runLivenessCheck(currentTime = aguwa.now()) {
     const results = {
       alive: [],
       suspect: [],
@@ -296,8 +299,8 @@ class MeshHealthMonitor {
     const deadCount = livenessResults.dead.length;
     const totalCount = this.nodes.size;
 
-    if (deadCount >= PULSE_CONFIG.minPartitionNodes && 
-        deadCount > totalCount * 0.3) {
+    if (deadCount >= PULSE_CONFIG.minPartitionNodes &&
+      deadCount > totalCount * 0.3) {
       // Possible partition - check if dead nodes have similar last-seen times
       const deadNodes = livenessResults.dead;
       const lastSeenTimes = deadNodes.map(n => n.lastReceived);
@@ -384,7 +387,7 @@ class PulseLeaderElection {
       term: this.currentTerm,
       candidateId: this.nodeId,
       lastHeartbeatSeq: this._getLastHeartbeatSeq(),
-      timestamp: Date.now(),
+      timestamp: aguwa.now(),
     };
   }
 
@@ -440,7 +443,7 @@ class PulseLeaderElection {
     if (voteCount > totalNodes / 2) {
       this.state = 'leader';
       this.currentLeader = this.nodeId;
-      this.leaderSince = Date.now();
+      this.leaderSince = aguwa.now();
       return { elected: true, term: this.currentTerm };
     }
 
@@ -489,7 +492,7 @@ class PulseSync {
     this.healthMonitor = new MeshHealthMonitor();
     this.election = new PulseLeaderElection({ nodeId: this.nodeId });
     this.election.heartbeatChains = this.healthMonitor.nodes;
-    
+
     this.stats = {
       heartbeatsSent: 0,
       heartbeatsReceived: 0,
@@ -498,9 +501,9 @@ class PulseSync {
     };
 
     // Callbacks
-    this.onHeartbeat = options.onHeartbeat || (() => {});
-    this.onLeaderChange = options.onLeaderChange || (() => {});
-    this.onPartitionDetected = options.onPartitionDetected || (() => {});
+    this.onHeartbeat = options.onHeartbeat || (() => { });
+    this.onLeaderChange = options.onLeaderChange || (() => { });
+    this.onPartitionDetected = options.onPartitionDetected || (() => { });
   }
 
   /**
@@ -508,7 +511,7 @@ class PulseSync {
    */
   createHeartbeat(meshState = {}) {
     const prevHash = this.lastHeartbeat ? this.lastHeartbeat.hash : '0'.repeat(64);
-    
+
     const heartbeat = new Heartbeat({
       nodeId: this.nodeId,
       sequence: this.sequence++,
@@ -532,14 +535,17 @@ class PulseSync {
   /**
    * Process received heartbeat
    */
-  receiveHeartbeat(heartbeatData, receivedAt = Date.now()) {
+  receiveHeartbeat(heartbeatData, receivedAt = aguwa.now()) {
     try {
       const heartbeat = Heartbeat.deserialize(heartbeatData);
       const result = this.healthMonitor.processHeartbeat(heartbeat, receivedAt);
-      
+
       if (result.success) {
         this.stats.heartbeatsReceived++;
-        
+
+        // AGUWA 4th signal: heartbeat arrival IS the Kuramoto observation
+        aguwa.onHeartbeat(heartbeat.nodeId, receivedAt);
+
         // Check if this is from the leader
         if (heartbeat.meshState.isLeader) {
           this.election.acknowledgeLeader(heartbeat.nodeId, heartbeat.meshState.term);
@@ -573,7 +579,7 @@ class PulseSync {
   handleVoteResponse(response) {
     const totalNodes = this.healthMonitor.nodes.size;
     const result = this.election.handleVoteResponse(response, totalNodes);
-    
+
     if (result.elected) {
       this.stats.termsAsLeader++;
       this.onLeaderChange({ leader: this.nodeId, term: result.term });

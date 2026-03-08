@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+
+  <!-- Power plug -->
+  <rect x="8" y="3" width="8" height="10" rx="1"/>
+  <line x1="10" y1="13" x2="10" y2="17"/>
+  <line x1="14" y1="13" x2="14" y2="17"/>
+  <rect x="6" y="17" width="12" height="4" rx="2"/>
+</svg>

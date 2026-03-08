@@ -31,6 +31,11 @@ coverage/
 # Build artifacts
 dist/
 build/
+*.tgz
+*.pruned
+
+# Deploy-package local data backups (contain node key material)
+deploy-packages/_local-data-*/
 
 # Public web root build artifacts (copied from sibling projects)
 # The public/ dir itself and public/dashboard/ + public/assets/ are tracked,
