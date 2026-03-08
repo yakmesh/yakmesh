@@ -368,7 +368,7 @@ function Build-Minimal {
     if (Test-Path $zipPath) { Remove-Item $zipPath }
     
     Write-Host "  Creating archive..." -ForegroundColor Yellow
-    Compress-Archive -Path "$minimalDir\*" -DestinationPath $zipPath -CompressionLevel Optimal
+    Compress-Archive -Path $minimalDir -DestinationPath $zipPath -CompressionLevel Optimal
     
     $zipSize = [math]::Round((Get-Item $zipPath).Length / 1MB, 2)
     Write-Host "  [OK] yakmesh-minimal.zip ($zipSize MB, $($stats.Files) files)" -ForegroundColor Green
@@ -402,7 +402,7 @@ function Build-Basic {
     if (Test-Path $zipPath) { Remove-Item $zipPath }
     
     Write-Host "  Creating archive..." -ForegroundColor Yellow
-    Compress-Archive -Path "$basicDir\*" -DestinationPath $zipPath -CompressionLevel Optimal
+    Compress-Archive -Path $basicDir -DestinationPath $zipPath -CompressionLevel Optimal
     
     $zipSize = [math]::Round((Get-Item $zipPath).Length / 1MB, 2)
     Write-Host "  [OK] yakmesh-basic.zip ($zipSize MB, $($stats.Files) files)" -ForegroundColor Green
@@ -493,7 +493,7 @@ function Build-Full {
     if (Test-Path $zipPath) { Remove-Item $zipPath }
     
     Write-Host "  Creating archive..." -ForegroundColor Yellow
-    Compress-Archive -Path "$fullDir\*" -DestinationPath $zipPath -CompressionLevel Optimal
+    Compress-Archive -Path $fullDir -DestinationPath $zipPath -CompressionLevel Optimal
     
     $zipSize = [math]::Round((Get-Item $zipPath).Length / 1MB, 2)
     Write-Host "  [OK] yakmesh-full-win-x64.zip ($zipSize MB, $($stats.Files) files)" -ForegroundColor Green
@@ -561,7 +561,7 @@ function Build-Yakbot {
     if (Test-Path $zipPath) { Remove-Item $zipPath }
     
     Write-Host "  Creating archive..." -ForegroundColor Yellow
-    Compress-Archive -Path "$yakbotDir\*" -DestinationPath $zipPath -CompressionLevel Optimal
+    Compress-Archive -Path $yakbotDir -DestinationPath $zipPath -CompressionLevel Optimal
     
     $zipSize = [math]::Round((Get-Item $zipPath).Length / 1KB, 1)
     Write-Host "  [OK] yakbot.zip ($zipSize KB, $($stats.Files) files)" -ForegroundColor Green
