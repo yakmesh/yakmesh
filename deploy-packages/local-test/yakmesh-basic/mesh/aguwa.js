@@ -113,6 +113,11 @@ class PeerPhaseState {
         this.arrivalDeltas = [];
         this.arrivalDeltaVariance = Infinity;
 
+        // Dynamic period estimation — observed heartbeat interval (ms)
+        // Bootstrapped from first observation, then exponentially smoothed.
+        // Replaces the static `+ 1000` that broke on non-1s heartbeat intervals.
+        this._estimatedPeriodMs = null;
+
         // Propagation delay tracking — minimum residual error after Kuramoto correction
         // Min one-way delay (ms) is a physical distance bound
         this.minErrorMs = Infinity;   // Best-case residual ≈ propagation delay
@@ -162,10 +167,23 @@ class PeerPhaseState {
                 this.arrivalDeltas.shift();
             }
             this._updateVariance();
+
+            // Dynamic period estimation: bootstrap from first delta,
+            // then exponential smoothing (α=0.1) to adapt to environment.
+            // This replaces the static `+ 1000` that only worked for
+            // integer-second heartbeat intervals by coincidence.
+            if (this._estimatedPeriodMs === null) {
+                this._estimatedPeriodMs = delta; // First observation bootstraps
+            } else {
+                this._estimatedPeriodMs = 0.9 * this._estimatedPeriodMs + 0.1 * delta;
+            }
         }
         this.lastArrival = arrivalMs;
-        // Predict next arrival at +1000ms (1-second heartbeat)
-        this.predictedArrival = arrivalMs + 1000;
+
+        // Dynamic prediction: use observed period (null if only 1 heartbeat)
+        this.predictedArrival = this._estimatedPeriodMs !== null
+            ? arrivalMs + this._estimatedPeriodMs
+            : null;
     }
 
     /** Compute variance of arrival deltas → stability score */
@@ -228,6 +246,16 @@ class Aguwa {
 
         // Initialized flag
         this._initialized = false;
+
+        // ── PRAHARI ↔ AGUWA bidirectional link ──
+        // Callback: receives (residualBytes: Uint8Array) after each Kuramoto update
+        // Used by PRAHARI to absorb Kuramoto residuals as sponge entropy
+        this._entropyCallback = null;
+
+        // Network jitter level from PRAHARI mesh arrival source.
+        // Modulates Kuramoto coupling: high jitter → conservative, low → tight.
+        // Range [0, 1] where 0 = perfectly stable, 1 = maximally noisy.
+        this._networkJitter = 0;
     }
 
     // ───────────────────────────────────────────────────────────────────────────
@@ -368,6 +396,31 @@ class Aguwa {
     }
 
     // ───────────────────────────────────────────────────────────────────────────
+    // PRAHARI ↔ AGUWA Bidirectional Link
+    // ───────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Register callback that receives Kuramoto prediction residuals as entropy.
+     * PRAHARI calls this to siphon timing jitter into the sponge.
+     *
+     * @param {(residualBytes: Uint8Array) => void} fn
+     */
+    registerEntropyCallback(fn) {
+        if (typeof fn === 'function') this._entropyCallback = fn;
+    }
+
+    /**
+     * Update network jitter level from PRAHARI mesh arrival statistics.
+     * Modulates Kuramoto coupling strength: high jitter → conservative coupling,
+     * low jitter → tighter coupling (more trust in observations).
+     *
+     * @param {number} jitterLevel — normalized [0, 1]
+     */
+    setNetworkJitter(jitterLevel) {
+        this._networkJitter = Math.max(0, Math.min(1, jitterLevel));
+    }
+
+    // ───────────────────────────────────────────────────────────────────────────
     // Peer Management
     // ───────────────────────────────────────────────────────────────────────────
 
@@ -427,16 +480,20 @@ class Aguwa {
         const peer = this.peers.get(nodeId);
         if (!peer) return; // Unknown peer — skip
 
-        const hadPrediction = peer.predictedArrival !== null;
+        // Capture prediction BEFORE recordArrival() overwrites it
+        const previousPrediction = peer.predictedArrival;
         peer.recordArrival(arrivalMs);
 
-        if (!hadPrediction) return; // First heartbeat — no prediction to compare
+        if (previousPrediction === null) return; // First heartbeat — no prediction to compare
 
-        // Phase error: actual arrival vs predicted
-        const errorMs = arrivalMs - peer.predictedArrival;
+        // Phase error: actual arrival vs predicted (using saved prediction)
+        const errorMs = arrivalMs - previousPrediction;
 
-        // Map error to phase (1 second = 2π radians)
-        const phaseError = (errorMs / 1000) * 2 * Math.PI;
+        // Map error to phase using the OBSERVED period (not hardcoded 1000ms).
+        // One heartbeat period = 2π radians. Dynamic scaling adapts to any
+        // heartbeat interval (1s tests, 30s production, arbitrary future values).
+        const period = peer._estimatedPeriodMs || 1000; // fallback during bootstrap
+        const phaseError = (errorMs / period) * 2 * Math.PI;
 
         // Update peer's phase estimate
         peer.theta += phaseError;
@@ -447,13 +504,19 @@ class Aguwa {
         // Determine coupling strength based on trust pair
         const K = this._couplingForPeer(peer);
 
+        // Modulate coupling by network jitter from PRAHARI mesh source.
+        // High jitter → scale down (be conservative about corrections).
+        // jitter=0 → full K, jitter=1 → K * 0.3 (never zero — always some coupling).
+        const jitterScale = 1 - 0.7 * this._networkJitter;
+        const effectiveK = K * jitterScale;
+
         // Kuramoto update: Δcorrection = K · A_j · sin(θ_j − θ_i)
         // Our θ_i is implicitly 0 (we are our own reference frame)
         const A_j = peer.aguwaScore;
-        const delta = K * A_j * Math.sin(peer.theta);
+        const delta = effectiveK * A_j * Math.sin(peer.theta);
 
-        // Convert radians back to ms (2π = 1000ms)
-        const deltaMs = (delta / (2 * Math.PI)) * 1000;
+        // Convert radians back to ms (2π = one heartbeat period)
+        const deltaMs = (delta / (2 * Math.PI)) * period;
 
         // Clamp to prevent runaway correction
         const clampedMs = Math.max(-AGUWA_CONFIG.maxDriftMs,
@@ -464,6 +527,16 @@ class Aguwa {
 
         // Track propagation delay: absolute error after correction
         peer.recordError(Math.abs(errorMs));
+
+        // ── Feed Kuramoto residual to PRAHARI sponge as entropy ──
+        // The prediction error LSBs contain genuine network jitter that is
+        // unpredictable even to an adversary controlling one endpoint.
+        if (this._entropyCallback) {
+            const buf = new Uint8Array(8);
+            const dv = new DataView(buf.buffer);
+            dv.setFloat64(0, errorMs, false);
+            this._entropyCallback(buf);
+        }
 
         if (Math.abs(clampedMs) > 50) {
             log.debug(`Kuramoto correction`, {
@@ -535,6 +608,8 @@ class Aguwa {
             orderParameter: r,
             health: this.health(),
             peerCount: this.peers.size,
+            networkJitter: this._networkJitter,
+            entropyLinked: this._entropyCallback !== null,
             peers: peerStates,
         };
     }

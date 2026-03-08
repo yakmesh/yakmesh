@@ -24,6 +24,7 @@ import { startPipeServer, getPipePath, upgradePipeAntiCheat, isPipeServerRunning
 import * as prahari from '../security/prahari.js';
 import { registerGPSJitterWithPrahari } from '../security/sources/gps-jitter.js';
 import { registerMeshEntropyWithPrahari, wireCommitReveal } from '../security/prahari-mesh.js';
+import { wireAguwaWithPrahari } from '../security/prahari-aguwa.js';
 
 // Backward compat alias — all internal references now use 'prahari'
 const steadywatch = prahari;
@@ -589,6 +590,11 @@ export class YakmeshNode {
 
     // 3a. Register mesh arrival entropy source with PRAHARI (lazy — needs mesh)
     registerMeshEntropyWithPrahari(prahari, this.mesh);
+
+    // 3a². Wire PRAHARI ↔ AGUWA bidirectional link:
+    //   AGUWA → PRAHARI: Kuramoto residuals as sponge entropy (weight 6)
+    //   PRAHARI → AGUWA: Mesh jitter variance modulates coupling strength
+    this._aguwaEntropyLink = wireAguwaWithPrahari(prahari);
 
     // 3. Initialize replication
     this.replication = new ReplicationEngine(this.mesh, this.config.database.path);
@@ -3294,6 +3300,21 @@ export class YakmeshNode {
       res.json({
         ...prahari.getStatus(),
         commitReveal: this.commitReveal ? this.commitReveal.getStats() : null,
+      });
+    });
+
+    // Domain-separated entropy seed for external consumers (Pondera Next, etc.)
+    app.get('/prahari/seed', (req, res) => {
+      const bytes = Math.max(1, Math.min(256, parseInt(req.query.bytes, 10) || 32));
+      const rawLabel = String(req.query.label || 'GAME').slice(0, 64);
+      const label = rawLabel.replace(/[^a-zA-Z0-9_-]/g, '');
+      const domainLabel = 'PRAHARI-' + label;
+      const seed = prahari.squeeze(bytes, domainLabel);
+      res.json({
+        hex: Buffer.from(seed).toString('hex'),
+        bytes,
+        label,
+        absorbCount: prahari.getStatus().absorbCount,
       });
     });
 

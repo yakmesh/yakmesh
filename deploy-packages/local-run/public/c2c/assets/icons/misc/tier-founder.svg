@@ -1,7 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-
-  <!-- Crown with star -->
-  <path d="M4 24 L4 12 L10 16 L16 8 L22 16 L28 12 L28 24 Z" fill="currentColor" stroke="none" opacity="0.3"/>
-  <path d="M4 24 L4 12 L10 16 L16 8 L22 16 L28 12 L28 24 Z"/>
-  <polygon points="16,14 17.5,17 21,17 18,19 19.5,22 16,20 12.5,22 14,19 11,17 14.5,17" fill="currentColor" stroke="none"/>
-</svg>

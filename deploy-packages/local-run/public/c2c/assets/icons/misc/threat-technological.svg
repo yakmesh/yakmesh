@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-
-  <!-- Malfunctioning gear -->
-  <circle cx="12" cy="12" r="4"/>
-  <circle cx="12" cy="12" r="8" stroke-dasharray="4 2"/>
-  <line x1="14" y1="6" x2="16" y2="2"/>
-  <line x1="16" y1="2" x2="18" y2="4"/>
-</svg>

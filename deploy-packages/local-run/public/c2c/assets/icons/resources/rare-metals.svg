@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-
-  <!-- Iridescent metallic nugget -->
-  <polygon points="6,16 4,10 8,6 16,4 20,8 22,14 18,20 8,20"/>
-  <line x1="8" y1="6" x2="14" y2="12"/>
-  <line x1="16" y1="4" x2="14" y2="12"/>
-  <line x1="20" y1="8" x2="14" y2="12"/>
-  <circle cx="14" cy="12" r="2" fill="currentColor" stroke="none" opacity="0.3"/>
-</svg>
