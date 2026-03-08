@@ -87,6 +87,8 @@ export const SEVA_CONFIG = Object.freeze({
     'behavior-detector',
     // Market predictor
     'market-predictor',
+    // ACT propagation model (numeric delay analysis for coordinated transitions)
+    'act-propagation',
   ]),
 
   // Message types
@@ -457,6 +459,13 @@ export class SevaMeshHandler extends EventEmitter {
       });
     } catch (err) {
       log.debug({ slot: payload.slot, peer: peerId?.slice(0, 8), err: err.message }, 'SEVA verification execution failed');
+      this.network.sendTo(peerId, {
+        type: SEVA_CONFIG.messageTypes.VERIFY_ACK,
+        id: payload.id,
+        match: false,
+        slot: payload.slot,
+        error: 'execution-failed',
+      });
     }
   }
 

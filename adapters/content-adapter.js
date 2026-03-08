@@ -21,16 +21,16 @@ export const CONTENT_CAPABILITIES = {
   SERVE_TEXT: 'serve:text',
   SERVE_AUDIO: 'serve:audio',
   SERVE_VIDEO: 'serve:video',
-  
+
   // Search/lookup capabilities
   SEARCH_FULLTEXT: 'search:fulltext',
   SEARCH_REFERENCE: 'search:reference',  // e.g., John 3:16
-  
+
   // Chat integration capabilities
   CHAT_QUOTE: 'chat:quote',          // Can generate quotes for KATHA
   CHAT_EMBED: 'chat:embed',          // Can embed previews in chat
   CHAT_LOOKUP: 'chat:lookup',        // Can respond to lookup commands
-  
+
   // Network capabilities
   NET_STREAM: 'net:stream',          // Can stream via DARSHAN
   NET_DOWNLOAD: 'net:download',      // Allows downloads (opt-in)
@@ -72,7 +72,7 @@ export class ContentMetadata {
     this.tags = tags;
     this.references = references;
   }
-  
+
   toJSON() {
     return { ...this };
   }
@@ -91,19 +91,19 @@ export class ContentAdapter extends EventEmitter {
    */
   constructor(config = {}) {
     super();
-    
+
     if (new.target === ContentAdapter) {
       throw new Error('ContentAdapter is abstract and cannot be instantiated directly');
     }
-    
+
     this.name = config.name || 'UnnamedContentAdapter';
     this.id = config.id || 'content-adapter-' + Date.now();
     this.capabilities = new Set(config.capabilities || []);
     this.darshan = config.darshan || null;
-    
+
     // Content catalog
     this.catalog = new Map();  // id -> ContentMetadata
-    
+
     // Statistics
     this.stats = {
       contentServed: 0,
@@ -111,11 +111,11 @@ export class ContentAdapter extends EventEmitter {
       chatQuotes: 0,
       errors: [],
     };
-    
+
     // Security: Validate capabilities
     this._validateCapabilities();
   }
-  
+
   /**
    * Initialize the adapter and build content catalog
    * @abstract
@@ -123,7 +123,7 @@ export class ContentAdapter extends EventEmitter {
   async init() {
     throw new Error('init() must be implemented by subclass');
   }
-  
+
   /**
    * Get list of available content
    * @returns {ContentMetadata[]}
@@ -131,7 +131,7 @@ export class ContentAdapter extends EventEmitter {
   listContent() {
     return Array.from(this.catalog.values());
   }
-  
+
   /**
    * Get content metadata by ID
    * @param {string} id - Content ID
@@ -140,7 +140,7 @@ export class ContentAdapter extends EventEmitter {
   getContentMeta(id) {
     return this.catalog.get(id) || null;
   }
-  
+
   /**
    * Search content by query
    * @abstract
@@ -151,7 +151,7 @@ export class ContentAdapter extends EventEmitter {
   async search(query, options = {}) {
     throw new Error('search() must be implemented by subclass');
   }
-  
+
   /**
    * Lookup content by reference (e.g., 'John 3:16')
    * @abstract
@@ -161,7 +161,7 @@ export class ContentAdapter extends EventEmitter {
   async lookupReference(reference) {
     throw new Error('lookupReference() must be implemented by subclass');
   }
-  
+
   /**
    * Get content stream for DARSHAN
    * @abstract
@@ -172,7 +172,7 @@ export class ContentAdapter extends EventEmitter {
   async getContentStream(id, options = {}) {
     throw new Error('getContentStream() must be implemented by subclass');
   }
-  
+
   /**
    * Generate a quotable snippet for KATHA chat
    * @param {string} reference - Content reference
@@ -183,14 +183,14 @@ export class ContentAdapter extends EventEmitter {
     if (!this.capabilities.has(CONTENT_CAPABILITIES.CHAT_QUOTE)) {
       throw new Error('Adapter does not support chat quotes');
     }
-    
+
     const result = await this.lookupReference(reference);
     if (!result) {
       return null;
     }
-    
+
     this.stats.chatQuotes++;
-    
+
     return {
       type: 'content-quote',
       adapter: this.id,
@@ -205,7 +205,7 @@ export class ContentAdapter extends EventEmitter {
       verified: true,
     };
   }
-  
+
   /**
    * Register content with DARSHAN for streaming
    * @param {string} id - Content ID
@@ -215,12 +215,12 @@ export class ContentAdapter extends EventEmitter {
     if (!this.darshan) {
       throw new Error('DARSHAN instance not configured');
     }
-    
+
     const meta = this.catalog.get(id);
     if (!meta) {
       throw new Error('Content not found: ' + id);
     }
-    
+
     // Register as a DARSHAN content source
     await this.darshan.registerContent(id, {
       title: meta.title,
@@ -230,10 +230,10 @@ export class ContentAdapter extends EventEmitter {
       allowDownload: options.allowDownload || false,
       // DARSHAN handles view-not-copy enforcement
     });
-    
+
     this.emit('content-registered', { id, meta });
   }
-  
+
   /**
    * Validate declared capabilities
    * @private
@@ -242,11 +242,11 @@ export class ContentAdapter extends EventEmitter {
     const validCaps = new Set(Object.values(CONTENT_CAPABILITIES));
     for (const cap of this.capabilities) {
       if (!validCaps.has(cap)) {
-        console.warn(\Unknown capability declared: \\);
+        console.warn(`Unknown capability declared: ${cap}`);
       }
     }
   }
-  
+
   /**
    * Check if adapter has a capability
    * @param {string} capability - Capability to check
@@ -255,7 +255,7 @@ export class ContentAdapter extends EventEmitter {
   hasCapability(capability) {
     return this.capabilities.has(capability);
   }
-  
+
   /**
    * Get adapter statistics
    */
