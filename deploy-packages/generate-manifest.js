@@ -126,6 +126,7 @@ const manifest = {
     version: 1,
     generatedAt: new Date().toISOString(),
     codebaseHash: codebaseHash.slice(0, 16) + '...',
+    fullCodebaseHash: codebaseHash,
     buildNonce: bytesToHex(randomBytes(32)),
     fileCount: files.length,
     files,

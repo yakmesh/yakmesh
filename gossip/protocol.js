@@ -217,6 +217,7 @@ export class MantraProtocol extends EventEmitter {
       data,
       origin: this.identity.identity.nodeId,
       ttl: this.config.rumorTTL,
+      originTTL: this.config.rumorTTL,
       timestamp: aguwa.now(),
     };
 
@@ -226,6 +227,7 @@ export class MantraProtocol extends EventEmitter {
       topic: rumor.topic,
       data: rumor.data,
       origin: rumor.origin,
+      originTTL: rumor.originTTL,
       timestamp: rumor.timestamp,
     });
     rumor.signature = this.identity.sign(sigPayload);
@@ -499,6 +501,7 @@ export class MantraProtocol extends EventEmitter {
       topic: rumor.topic,
       data: rumor.data,
       origin: rumor.origin,
+      originTTL: rumor.originTTL,
       timestamp: rumor.timestamp,
     });
     if (!this.identity.verify(sigPayload, rumor.signature, originPubKey)) {

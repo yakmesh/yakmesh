@@ -643,6 +643,36 @@ class Aguwa {
         return delays;
     }
 
+    /**
+     * Compute the optimal ACT epoch buffer from observed propagation delays.
+     * Uses the 95th percentile of all peer delays to estimate worst-case
+     * propagation time, then converts to epochs (minimum 2).
+     *
+     * @returns {number} Recommended epoch buffer N (minimum 2)
+     */
+    getACTEpochBuffer() {
+        const delays = this.getPropagationDelays();
+        if (delays.size === 0) return 2; // No data → conservative default
+
+        const allDelays = [];
+        for (const { delayMs } of delays.values()) {
+            allDelays.push(delayMs);
+        }
+
+        // 95th percentile of propagation delays
+        allDelays.sort((a, b) => a - b);
+        const p95Idx = Math.min(allDelays.length - 1, Math.floor(allDelays.length * 0.95));
+        const worstCaseMs = allDelays[p95Idx];
+
+        // Convert to epoch count: how many epochs does it take for a rumor to reach
+        // the farthest peer with high confidence? Include 3x safety margin.
+        // Import epochHours lazily to avoid circular deps
+        const epochMs = 6 * 60 * 60 * 1000; // default 6h epoch
+        const rumorsNeeded = Math.ceil((worstCaseMs * 3) / epochMs);
+
+        return Math.max(2, rumorsNeeded + 1);
+    }
+
     /** Get our own MANI trust level */
     _getMyTrustLevel() {
         try {
