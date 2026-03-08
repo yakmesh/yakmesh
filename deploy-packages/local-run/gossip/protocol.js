@@ -23,12 +23,19 @@
  * @version 2.6.0
  */
 
+import { EventEmitter } from 'node:events';
 import { sha3_256 as _nobleSha3 } from '@noble/hashes/sha3.js';
 import { bytesToHex } from '@noble/hashes/utils.js';
 import { createLogger } from '../utils/logger.js';
 
+// 144T ternary addressing for message IDs (eliminates hex "666" patterns)
+import { TritAddress } from '../oracle/ternary-routing.js';
+
 // ACCEL: Hardware-accelerated SHA3-256 (OpenSSL/SHA-NI — 4.6x faster)
 import { sha3_256 } from '../utils/accel.js';
+
+// AGUWA — canonical mesh time source
+import { aguwa } from '../mesh/aguwa.js';
 
 const log = createLogger('mantra:protocol');
 
@@ -112,8 +119,9 @@ class BloomFilter {
  * Spreads messages through the mesh like mantras carried by prayer wheels.
  * Each spin (propagation) brings the message closer to enlightenment (full network coverage).
  */
-export class MantraProtocol {
+export class MantraProtocol extends EventEmitter {
   constructor(mesh, identity, options = {}) {
+    super();
     this.mesh = mesh;
     this.identity = identity;
 
@@ -177,7 +185,7 @@ export class MantraProtocol {
     );
 
     // Initial hello
-    setTimeout(() => this._broadcastHello(), 1000);
+    this._helloTimer = setTimeout(() => this._broadcastHello(), 1000);
   }
 
   /**
@@ -186,6 +194,7 @@ export class MantraProtocol {
   stop() {
     this.intervals.forEach(clearInterval);
     this.intervals = [];
+    clearTimeout(this._helloTimer);
     this.mesh.off('gossip', this._handleGossipMessage);
     log.info('MANTRA protocol stopped - prayer wheel at rest');
   }
@@ -208,7 +217,7 @@ export class MantraProtocol {
       data,
       origin: this.identity.identity.nodeId,
       ttl: this.config.rumorTTL,
-      timestamp: Date.now(),
+      timestamp: aguwa.now(),
     };
 
     // Sign the rumor (ML-DSA-65) — excludes TTL since it decrements during propagation
@@ -258,7 +267,7 @@ export class MantraProtocol {
    * Get known peers (for peer discovery)
    */
   getKnownPeers() {
-    const now = Date.now();
+    const now = aguwa.now();
     const peers = [];
 
     for (const [nodeId, info] of this.knownPeers) {
@@ -318,7 +327,7 @@ export class MantraProtocol {
       capabilities: this.identity.identity.capabilities,
       endpoint: this.mesh.getPublicEndpoint?.() || null,
       publicKey: this.identity.identity.publicKey,  // ML-DSA-65 public key for signature verification
-      timestamp: Date.now(),
+      timestamp: aguwa.now(),
     };
 
     // Include relay endpoints we're registered with so peers can discover relay paths
@@ -353,7 +362,7 @@ export class MantraProtocol {
       endpoint: message.endpoint,
       relayEndpoints: message.relayEndpoints || [],
       publicKey: message.publicKey || null,  // Store for gossip signature verification
-      lastSeen: Date.now(),
+      lastSeen: aguwa.now(),
     });
 
     // Store public key in mesh._relayPeerKeys for signature verification
@@ -508,7 +517,8 @@ export class MantraProtocol {
     // Buffer for HTTP API consumers
     this._bufferRumor(rumor);
 
-    // Emit event for application layer
+    // Emit event for application layer (both on self and mesh for backward compat)
+    this.emit('rumor', rumor.topic, rumor.data, rumor.origin);
     this.mesh.emit('rumor', rumor.topic, rumor.data, rumor.origin);
 
     log.debug('Received rumor', { topic: rumor.topic, origin: peerTag(rumor.origin) });
@@ -613,11 +623,16 @@ export class MantraProtocol {
   }
 
   /**
-   * Generate deterministic message ID
+   * Generate deterministic message ID using 144T ternary format
+   * Eliminates hex "666" patterns while maintaining collision resistance
+   * Returns tier 1 (36 trits) as compact string: "TT00TTT00:TTT00TTT0:0TTT00TTT:00TTT00TT"
    */
   _generateMessageId(topic, data) {
-    const payload = JSON.stringify({ topic, data, origin: this.identity.identity.nodeId, ts: Date.now() });
-    return bytesToHex(sha3_256(new TextEncoder().encode(payload))).slice(0, 32);
+    const payload = JSON.stringify({ topic, data, origin: this.identity.identity.nodeId, ts: aguwa.now() });
+    const hex = bytesToHex(sha3_256(new TextEncoder().encode(payload)));
+    // Convert to 144T ternary address, extract tier 1 as compact string
+    const tritAddr = TritAddress.fromHex(hex);
+    return tritAddr.toString().split('.')[0];  // First tier only
   }
 
   /**
@@ -642,11 +657,11 @@ export class MantraProtocol {
       topic: rumor.topic,
       data: rumor.data,
       origin: rumor.origin,
-      timestamp: rumor.timestamp || Date.now(),
+      timestamp: rumor.timestamp || aguwa.now(),
     });
 
     // Evict old entries
-    const cutoff = Date.now() - this.rumorRetentionMs;
+    const cutoff = aguwa.now() - this.rumorRetentionMs;
     while (this.recentRumors.length > this.maxRecentRumors ||
       (this.recentRumors.length > 0 && this.recentRumors[0].timestamp < cutoff)) {
       this.recentRumors.shift();

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+
+  <!-- Faceted crystal cluster -->
+  <polygon points="10,20 7,14 10,4 14,4 17,14 14,20"/>
+  <line x1="10" y1="4" x2="12" y2="8"/>
+  <line x1="14" y1="4" x2="12" y2="8"/>
+  <line x1="7" y1="14" x2="12" y2="8"/>
+  <line x1="17" y1="14" x2="12" y2="8"/>
+  <polygon points="18,18 16,12 19,6 21,12" opacity="0.5"/>
+  <polygon points="3,16 2,12 5,8 6,12" opacity="0.5"/>
+</svg>

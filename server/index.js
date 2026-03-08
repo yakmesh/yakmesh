@@ -24,6 +24,7 @@ import { startPipeServer, getPipePath, upgradePipeAntiCheat, isPipeServerRunning
 import * as prahari from '../security/prahari.js';
 import { registerGPSJitterWithPrahari } from '../security/sources/gps-jitter.js';
 import { registerMeshEntropyWithPrahari, wireCommitReveal } from '../security/prahari-mesh.js';
+import { wireAguwaWithPrahari } from '../security/prahari-aguwa.js';
 
 // Backward compat alias — all internal references now use 'prahari'
 const steadywatch = prahari;
@@ -74,6 +75,7 @@ import {
   detectTimeSources,
 } from '../oracle/time-source.js';
 import { setTimeSourceConfig, getActiveConfig } from '../oracle/phase-epoch.js';
+import { aguwa } from '../mesh/aguwa.js';
 
 // v2.0 Security imports - NAMCHE and DOKO
 import NamcheGateway, {
@@ -419,7 +421,7 @@ export class YakmeshNode {
     log.info('\n🦬 Starting Yakmesh Node...\n');
 
     // Record start time for uptime tracking
-    this._startTime = Date.now();
+    this._startTime = aguwa.now();
 
     // 0. LOCK THE CODEBASE - Prevent any modifications during runtime
     // This is critical for Code Proof Protocol security
@@ -520,8 +522,31 @@ export class YakmeshNode {
     // This MUST happen before identity initialization
     this._initOracle();
 
+    // 1a. Initialize AGUWA with oracle hash — derives Kuramoto natural frequency
+    //     Same codebase hash → same ω → guaranteed phase-lock between nodes
+    if (this.oracle?.selfHash) {
+      aguwa.init(this.oracle.selfHash);
+    }
+
     // 1b. Initialize time source detection (async — MA-902 SNMP init)
     await this._initTimeSource();
+
+    // 1c. Seed AGUWA from GPS time (MA-902) so correctionMs is accurate from the start
+    //     Without this, aguwa.now() = Date.now() + 0, and nodes on different machines
+    //     will have >500ms divergence even when sharing the same GPS time server
+    if (this.timeSource) {
+      const status = this.timeSource.getStatus();
+      if (status.ma902?.available && typeof status.ma902?.clockOffset === 'number') {
+        // clockOffset is signed: GPS_time - system_time (seconds)
+        // Positive = system behind GPS, negative = system ahead
+        const offsetMs = status.ma902.clockOffset * 1000;
+        if (Math.abs(offsetMs) >= 10 && Math.abs(offsetMs) < 60_000) {
+          aguwa.calibrateFromGPS(Math.floor(Date.now() / 1000) + status.ma902.clockOffset);
+        } else if (Math.abs(offsetMs) < 10) {
+          log.debug('AGUWA: System clock within 10ms of GPS — no calibration needed');
+        }
+      }
+    }
 
     // 1c. Register GPS jitter entropy source with PRAHARI (lazy — needs MANI)
     if (this.timeSource) {
@@ -547,11 +572,29 @@ export class YakmeshNode {
       networkFingerprint: this.genesisNetwork?.fingerprint,
       // JHILKE: Pass oracle code hash for deterministic bootstrap key derivation
       codeHash: this.oracle?.selfHash,
+      // JHILKE: Per-build nonce for bootstrap key + dialect strengthening
+      buildNonce: this._buildNonce || null,
     });
     await this.mesh.start();
 
+    // 3a½. Wire JHILKE chirp events to KARMA for peer reputation
+    if (this.mesh.jhilke) {
+      this.mesh.jhilke.on('chirp:failed', ({ peerId, consecutiveFailures }) => {
+        // After 3 consecutive failures, penalize via KARMA
+        if (consecutiveFailures >= 3) {
+          aguwa.updateKarma(peerId, -1);
+          log.warn('JHILKE chirp failure → KARMA penalty', { peer: peerId.slice(0, 16), consecutiveFailures });
+        }
+      });
+    }
+
     // 3a. Register mesh arrival entropy source with PRAHARI (lazy — needs mesh)
     registerMeshEntropyWithPrahari(prahari, this.mesh);
+
+    // 3a². Wire PRAHARI ↔ AGUWA bidirectional link:
+    //   AGUWA → PRAHARI: Kuramoto residuals as sponge entropy (weight 6)
+    //   PRAHARI → AGUWA: Mesh jitter variance modulates coupling strength
+    this._aguwaEntropyLink = wireAguwaWithPrahari(prahari);
 
     // 3. Initialize replication
     this.replication = new ReplicationEngine(this.mesh, this.config.database.path);
@@ -571,7 +614,7 @@ export class YakmeshNode {
       // Relay info callback — gossip includes our relay endpoints in HELLO broadcasts
       getRelayInfo: () => this._getActiveRelayInfo(),
       // Relay connect callback — gossip tells us to register with a discovered relay
-      connectRelay: (endpoint, nodeId) => this._registerWithRelay({ relayEndpoint: endpoint, nodeId: nodeId || `relay-${Date.now()}` }),
+      connectRelay: (endpoint, nodeId) => this._registerWithRelay({ relayEndpoint: endpoint, nodeId: nodeId || `relay-${aguwa.now()}` }),
     });
     this.gossip.start();
 
@@ -691,6 +734,9 @@ export class YakmeshNode {
     // 4b. Start periodic time heartbeat gossip broadcast
     this._startTimeHeartbeat();
 
+    // 4c. Start AGUWA → GeoProof propagation delay feed
+    this._startAguwaGeoFeed();
+
     // Annex messages handled directly in mesh._handleMessage() — no separate routing needed
 
     // 5. Initialize content store for public delivery
@@ -797,7 +843,7 @@ export class YakmeshNode {
     // 5j. Expire stale relay clients (no poll for 5 minutes)
     this._relayExpiryInterval = setInterval(() => {
       if (!this._relayClients || this._relayClients.size === 0) return;
-      const now = Date.now();
+      const now = aguwa.now();
       const RELAY_CLIENT_TTL = 5 * 60 * 1000; // 5 minutes
       for (const [clientNodeId, lastSeen] of this._relayClients) {
         if (now - lastSeen > RELAY_CLIENT_TTL) {
@@ -1034,8 +1080,59 @@ export class YakmeshNode {
     // Note: Raw oracle hash now hidden - use network identity instead
     log.info(`✓ Oracle initialized`);
 
+    // iO Manifest verification — compare deployed file list against current disk state
+    this._verifyDeployManifest();
+
     // Initialize iO-inspired network identity (hash obfuscation)
     this._initGenesisNetwork();
+  }
+
+  /**
+   * Verify the iO deployment manifest (data/manifest.json) if present.
+   * Graceful degradation: no manifest → skip silently.
+   * Stale files are handled per YAKMESH_AUTO_PRUNE / YAKMESH_QUARANTINE env vars.
+   */
+  _verifyDeployManifest() {
+    const manifestPath = join(import.meta.dirname, '..', 'data', 'manifest.json');
+    let manifest = null;
+    try {
+      if (existsSync(manifestPath)) {
+        manifest = JSON.parse(readFileSync(manifestPath, 'utf-8'));
+        log.info(`📋 iO Manifest: loaded (${manifest.fileCount} files, hash=${manifest.codebaseHash})`);
+        // Store buildNonce for JHILKE bootstrap key strengthening
+        if (manifest.buildNonce) {
+          this._buildNonce = manifest.buildNonce;
+        }
+      }
+    } catch (err) {
+      log.warn(`📋 iO Manifest: failed to load — ${err.message}`);
+    }
+
+    const result = this.oracle.verifyManifest(manifest);
+
+    if (result.skipped) {
+      log.info('📋 iO Manifest: not present — running in legacy mode (hash everything found)');
+      return;
+    }
+
+    if (result.valid) {
+      log.info(`📋 iO Manifest: ✓ verified (${result.fileCount} files)`);
+    } else {
+      log.warn(`📋 iO Manifest: ${result.missing.length} missing files detected`);
+    }
+
+    if (result.unexpected.length > 0) {
+      log.info(`📋 iO Manifest: ${result.unexpected.length} files not in manifest`);
+      // Handle stale files (rename/delete/quarantine based on env vars)
+      const staleResult = this.oracle.handleStaleFiles(result.unexpected);
+      if (staleResult.handled > 0) {
+        log.info(`📋 iO Stale files: ${staleResult.handled} handled (mode=${staleResult.mode})`);
+        // Re-verify after pruning to get clean oracle hash
+        if (staleResult.mode !== 'none') {
+          log.info('📋 iO Manifest: re-computing oracle hash after stale file handling...');
+        }
+      }
+    }
   }
 
   /**
@@ -1187,7 +1284,7 @@ export class YakmeshNode {
         // Public NTP endpoint (resolvable from anywhere on the internet)
         publicNtp: locked ? 'time.yakmesh.dev' : null,
         // Timestamp of this heartbeat (local clock)
-        timestamp: Date.now(),
+        timestamp: aguwa.now(),
       };
 
       this.gossip.spreadRumor('time:heartbeat', heartbeat);
@@ -1209,6 +1306,16 @@ export class YakmeshNode {
     // Ignore our own heartbeats
     if (origin === this.identity.identity.nodeId) return;
 
+    // AGUWA Kuramoto coupling: feed heartbeat arrival time so phase correction converges
+    // This is the critical wiring that makes aguwa.now() converge across peers
+    aguwa.onHeartbeat(origin, aguwa.now());
+
+    // Update peer's MANI trust in AGUWA so coupling strength is calculated correctly
+    const aguwaPeer = aguwa.peers.get(origin);
+    if (aguwaPeer && data.trustLevel) {
+      aguwaPeer.capabilities = { ...aguwaPeer.capabilities, maniTrust: data.trustLevel };
+    }
+
     const peerStratum = data.stratum ?? 16;
     const peerLocked = !!data.lock;
     const currentBest = this.meshTimeReference;
@@ -1223,7 +1330,7 @@ export class YakmeshNode {
     if (dominated) {
       this.meshTimeReference = {
         ...data,
-        receivedAt: Date.now(),
+        receivedAt: aguwa.now(),
         fromNodeId: origin,
       };
 
@@ -1235,10 +1342,58 @@ export class YakmeshNode {
       // Same grandmaster, refresh its data
       this.meshTimeReference = {
         ...data,
-        receivedAt: Date.now(),
+        receivedAt: aguwa.now(),
         fromNodeId: origin,
       };
     }
+
+    // AGUWA → GeoProof: auto-register GPS/Atomic peers as landmarks
+    // Locked peers have stratum-1 timing — ideal distance-bound anchors
+    if (peerLocked) {
+      this._ensureGeoProofService();
+      if (this.geoProofService) {
+        const lm = this.geoProofService.landmarkRegistry.get(origin);
+        if (!lm) {
+          this.geoProofService.registerLandmark({
+            nodeId: origin,
+            name: data.nodeName || `GPS-${peerTag(origin)}`,
+            timeSource: data.trustLevel || 'gps',
+          });
+          log.debug(`📍 Auto-registered GPS peer as geo-proof landmark`, { peer: peerTag(origin) });
+        }
+      }
+    }
+  }
+
+  /**
+   * Lazily initialize GeoProofService if it hasn't been created yet.
+   * Requires timeSource and identity to be available.
+   */
+  _ensureGeoProofService() {
+    if (this.geoProofService) return;
+    if (!this.timeSource || !this.identity) return;
+    this.geoProofService = new GeoProofService({
+      nodeId: this.identity.identity.nodeId,
+      timeSourceDetector: this.timeSource,
+    });
+  }
+
+  /**
+   * Start periodic AGUWA → GeoProof measurement feed.
+   * Every 60 s, reads propagation delays from AGUWA and feeds them
+   * into GeoProofService as RTT-equivalent measurements.
+   */
+  _startAguwaGeoFeed() {
+    const FEED_INTERVAL = 60_000; // 60 s
+
+    this._aguwaGeoFeedInterval = setInterval(() => {
+      if (!this.geoProofService) return;
+      const delays = aguwa.getPropagationDelays();
+      if (delays.size === 0) return;
+      this.geoProofService.addAGUWAMeasurements(delays);
+    }, FEED_INTERVAL);
+
+    log.info('📍 AGUWA → GeoProof measurement feed started (every 60 s)');
   }
 
   /**
@@ -1545,6 +1700,17 @@ export class YakmeshNode {
 
     this.mesh.on('peer:disconnected', (peerId) => {
       this.ternaryRouter.removePeer(peerId);
+    });
+
+    // Wire mesh peer connections → ComputeScheduler mesh awareness
+    this.mesh.on('peer:connected', (peerId) => {
+      const peer = this.mesh.peers?.get(peerId);
+      if (peer?.capabilities) {
+        accel.scheduler.addMeshPeer(peerId, peer.capabilities);
+      }
+    });
+    this.mesh.on('peer:disconnected', (peerId) => {
+      accel.scheduler.removeMeshPeer(peerId);
     });
 
     // ── 3. Ternary inference adapter (bridges TRIBHUJ → ONNX) ──
@@ -1983,7 +2149,7 @@ export class YakmeshNode {
           const context = {
             karmaScore: karmaEvidence?.trustScore ? karmaEvidence.trustScore / 100 : 0.5,
             uptimePercent: 0.5,
-            networkAgeDays: karmaEvidence ? (Date.now() - (karmaEvidence.firstSeen || Date.now())) / 86400000 : 0,
+            networkAgeDays: karmaEvidence ? (aguwa.now() - (karmaEvidence.firstSeen || aguwa.now())) / 86400000 : 0,
           };
           const { result } = await this._scheduledAnomalyAssessment(peerId, context);
           if (result && result.anomalyScore > 0.7) {
@@ -2144,7 +2310,7 @@ export class YakmeshNode {
 
     // Broadcast helper — now encrypts per-client via ANNEX
     const broadcastKomm = (type, data) => {
-      const payload = { type, data, ts: Date.now() };
+      const payload = { type, data, ts: aguwa.now() };
       for (const client of kommClients) {
         secureSend(client, payload);
       }
@@ -2157,8 +2323,8 @@ export class YakmeshNode {
      * Returns { node, peers, metrics, gossip, discovered }
      */
     const gatherDashboardSnapshot = () => {
-      const startTime = this._startTime || Date.now();
-      const uptime = Math.floor((Date.now() - startTime) / 1000);
+      const startTime = this._startTime || aguwa.now();
+      const uptime = Math.floor((aguwa.now() - startTime) / 1000);
 
       // Build lightweight metrics (mirrors /metrics endpoint)
       const oracleInfo = this.oracle ? (() => {
@@ -2260,7 +2426,7 @@ export class YakmeshNode {
         _dashPushTimer = null;
         if (dashboardSubscribers.size === 0) return;
         const snapshot = gatherDashboardSnapshot();
-        const payload = { type: 'dashboard:update', data: snapshot, ts: Date.now() };
+        const payload = { type: 'dashboard:update', data: snapshot, ts: aguwa.now() };
         for (const sub of dashboardSubscribers) {
           secureSend(sub, payload);
         }
@@ -2338,7 +2504,7 @@ export class YakmeshNode {
         // Client authentication — store username for this connection
         ws._kathaUser = {
           username: msg.username || data?.username || 'anon',
-          userId: msg.userId || data?.userId || `user_${Date.now()}`,
+          userId: msg.userId || data?.userId || `user_${aguwa.now()}`,
           clientType: msg.clientType || 'web',
         };
         secureSend(ws, {
@@ -2394,7 +2560,7 @@ export class YakmeshNode {
         // Process and broadcast chat message
         const sendData = {
           channelId: data.channelId,
-          messageId: data.messageId || `msg_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+          messageId: data.messageId || `msg_${aguwa.now()}_${Math.random().toString(36).slice(2)}`,
           userId: ws._kathaUser?.userId || data.userId,
           username: ws._kathaUser?.username || data.username,
           content: data.content,
@@ -2508,7 +2674,7 @@ export class YakmeshNode {
           log.debug('📡 Dashboard subscriber registered');
           // Send an immediate full snapshot
           const snapshot = this._gatherDashboardSnapshot();
-          secureSend(ws, { type: 'dashboard:update', data: snapshot, ts: Date.now() });
+          secureSend(ws, { type: 'dashboard:update', data: snapshot, ts: aguwa.now() });
         }
         break;
 
@@ -2520,7 +2686,7 @@ export class YakmeshNode {
         break;
 
       case 'ping':
-        secureSend(ws, { type: 'pong', ts: Date.now() });
+        secureSend(ws, { type: 'pong', ts: aguwa.now() });
         break;
 
       // ══════════════════════════════════════════════════════════════════
@@ -2530,14 +2696,14 @@ export class YakmeshNode {
       case 'servers:query': {
         // Query the C2C server directory
         if (!this.serverDirectory) {
-          secureSend(ws, { type: 'servers:list', servers: [], stats: {}, serverTime: Date.now() });
+          secureSend(ws, { type: 'servers:list', servers: [], stats: {}, serverTime: aguwa.now() });
           break;
         }
         const status = data?.status || null;
         const limit = data?.limit || 100;
         const directory = this.serverDirectory.getDirectory({ status, limit });
         const stats = this.serverDirectory.getStats();
-        secureSend(ws, { type: 'servers:list', servers: directory, stats, serverTime: Date.now() });
+        secureSend(ws, { type: 'servers:list', servers: directory, stats, serverTime: aguwa.now() });
         break;
       }
 
@@ -2672,7 +2838,8 @@ export class YakmeshNode {
     // local node heavily; throttling them degrades the user experience.
     // Remote IPs still get full rate limiting.
     const isLoopback = (req) => {
-      const ip = req.ip || req.socket?.remoteAddress || '';
+      // SECURITY: Use raw socket address only — req.ip trusts X-Forwarded-For
+      const ip = req.socket?.remoteAddress || '';
       return ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1';
     };
 
@@ -2736,7 +2903,7 @@ export class YakmeshNode {
 
       // Use the RAW socket address, immune to X-Forwarded-For spoofing.
       // req.ip respects 'trust proxy' and can be forged — never use it for auth.
-      const rawIP = req.socket?.remoteAddress || req.connection?.remoteAddress;
+      const rawIP = req.socket?.remoteAddress;
       const isLocal = rawIP === '127.0.0.1' || rawIP === '::1' || rawIP === '::ffff:127.0.0.1';
       if (isLocal) {
         return next();
@@ -2751,7 +2918,7 @@ export class YakmeshNode {
       // With TRIBHUJ ratchet and SSE push, nodes maintain tighter time sync.
       // 10s allows for reasonable network latency while preventing replay attacks.
       const MAX_AUTH_DRIFT_MS = 10000;
-      const drift = Math.abs(Date.now() - parseInt(ts, 10));
+      const drift = Math.abs(aguwa.now() - parseInt(ts, 10));
       if (isNaN(drift) || drift > MAX_AUTH_DRIFT_MS) {
         return res.status(401).json({ error: 'Request timestamp too old or invalid' });
       }
@@ -2951,9 +3118,6 @@ export class YakmeshNode {
       }));
 
       const jhilkeStats = jhilke?.getStats() || null;
-      if (jhilkeStats?.activeSessions !== undefined) {
-        // Tag any peer IDs in jhilke session data
-      }
 
       res.json({
         active: true,
@@ -3051,6 +3215,13 @@ export class YakmeshNode {
         prahari: prahari.getStatus(),
         commitReveal: this.commitReveal ? this.commitReveal.getStats() : null,
         timeSource: this.timeSource ? this.timeSource.getStatus() : null,
+        aguwa: {
+          health: aguwa.health(),
+          orderParameter: +aguwa.orderParameter().toFixed(4),
+          peerCount: aguwa.peers.size,
+          correctionMs: aguwa._correctionMs,
+          divergentPeers: aguwa.detectDivergentPeers().length,
+        },
         security: this.mesh.getSecurityStats(),
       });
     });
@@ -3132,6 +3303,21 @@ export class YakmeshNode {
       });
     });
 
+    // Domain-separated entropy seed for external consumers (Pondera Next, etc.)
+    app.get('/prahari/seed', (req, res) => {
+      const bytes = Math.max(1, Math.min(256, parseInt(req.query.bytes, 10) || 32));
+      const rawLabel = String(req.query.label || 'GAME').slice(0, 64);
+      const label = rawLabel.replace(/[^a-zA-Z0-9_-]/g, '');
+      const domainLabel = 'PRAHARI-' + label;
+      const seed = prahari.squeeze(bytes, domainLabel);
+      res.json({
+        hex: Buffer.from(seed).toString('hex'),
+        bytes,
+        label,
+        absorbCount: prahari.getStatus().absorbCount,
+      });
+    });
+
     // =========================================
     // SHERPA HTTP Relay: Mesh messaging over HTTP
     // =========================================
@@ -3153,7 +3339,7 @@ export class YakmeshNode {
         if (!timestamp || typeof timestamp !== 'number') {
           return res.status(400).json({ error: 'timestamp required for registration (replay protection)' });
         }
-        if (Math.abs(Date.now() - timestamp) > 300000) {
+        if (Math.abs(aguwa.now() - timestamp) > 300000) {
           return res.status(403).json({ error: 'Registration timestamp too old (replay protection)' });
         }
 
@@ -3202,7 +3388,7 @@ export class YakmeshNode {
 
         // Track relay clients as Map {nodeId → lastSeen} for expiry
         if (!this._relayClients) this._relayClients = new Map();
-        this._relayClients.set(nodeId, Date.now());
+        this._relayClients.set(nodeId, aguwa.now());
 
         log.info(`HTTP relay peer registered (verified): ${peerTag(nodeId)}`);
         log.info(`  ⚠ Relay peers use HTTP polling (30s cadence) — reduced throughput & latency vs WebSocket`);
@@ -3267,7 +3453,7 @@ export class YakmeshNode {
 
       // Refresh relay client last-seen on poll
       if (this._relayClients && this._relayClients.has(senderNodeId)) {
-        this._relayClients.set(senderNodeId, Date.now());
+        this._relayClients.set(senderNodeId, aguwa.now());
       }
 
       // Return our own pending outbound messages for this sender (bi-directional relay)
@@ -3278,7 +3464,7 @@ export class YakmeshNode {
         outbound,
         nodeId: this.identity.identity.nodeId,
         publicKey: this.identity.identity.publicKey,
-        timestamp: Date.now(),
+        timestamp: aguwa.now(),
       });
     });
 
@@ -3288,7 +3474,7 @@ export class YakmeshNode {
       res.json({
         messages: outbound,
         nodeId: this.identity.identity.nodeId,
-        timestamp: Date.now(),
+        timestamp: aguwa.now(),
       });
     });
 
@@ -3352,7 +3538,7 @@ export class YakmeshNode {
 
       // nodeId is optional — we'll learn it from the registration response
       const candidate = {
-        nodeId: nodeId || `relay-${Date.now()}`,
+        nodeId: nodeId || `relay-${aguwa.now()}`,
         relayEndpoint,
       };
 
@@ -3385,7 +3571,7 @@ export class YakmeshNode {
       }
 
       // Record the change for replication
-      const rowId = data.id || Date.now();
+      const rowId = data.id || aguwa.now();
       this.replication.recordChange(table, rowId, 'INSERT', data);
 
       // Spread via gossip protocol
@@ -3412,7 +3598,7 @@ export class YakmeshNode {
       const limit = parseInt(req.query.limit) || 100;
       const directory = this.serverDirectory.getDirectory({ status, limit });
       const stats = this.serverDirectory.getStats();
-      res.json({ servers: directory, stats, serverTime: Date.now() });
+      res.json({ servers: directory, stats, serverTime: aguwa.now() });
     });
 
     // Single server detail
@@ -3459,7 +3645,7 @@ export class YakmeshNode {
       const since = parseInt(req.query.since) || 0;
       const topic = req.query.topic || null;
       const rumors = this.gossip.getRecentRumors(since, topic);
-      res.json({ rumors, serverTime: Date.now() });
+      res.json({ rumors, serverTime: aguwa.now() });
     });
 
     // SSE endpoint: real-time push of rumors (replaces polling for MeshBridge)
@@ -3486,7 +3672,7 @@ export class YakmeshNode {
       // Listener that forwards matching rumors (origin stripped to prevent topology leak)
       const onRumor = (topic, data, _origin) => {
         if (topicFilter && topic !== topicFilter) return;
-        const event = JSON.stringify({ topic, data, timestamp: Date.now() });
+        const event = JSON.stringify({ topic, data, timestamp: aguwa.now() });
         res.write(`data: ${event}\n\n`);
       };
 
@@ -3829,7 +4015,7 @@ export class YakmeshNode {
           content,
           contentHash: validation.contentHash,
           validatorFingerprint: this.genesisNetwork?.fingerprint || 'local',  // Never expose raw hash
-          timestamp: Date.now(),
+          timestamp: aguwa.now(),
           signature: this.identity.sign(validation.contentHash)
         };
 
@@ -3882,8 +4068,8 @@ export class YakmeshNode {
     // =========================================
 
     app.get('/metrics', (req, res) => {
-      const startTime = this._startTime || Date.now();
-      const uptime = Math.floor((Date.now() - startTime) / 1000);
+      const startTime = this._startTime || aguwa.now();
+      const uptime = Math.floor((aguwa.now() - startTime) / 1000);
 
       // Crypto configuration (imported at top of file)
       let cryptoInfo = null;
@@ -4009,7 +4195,16 @@ export class YakmeshNode {
         return res.status(503).json({ error: 'Time source detector not initialized' });
       }
 
-      res.json(this.timeSource.getStatus());
+      const status = this.timeSource.getStatus();
+      status.aguwa = aguwa.getStatus();
+      res.json(status);
+    });
+
+    // AGUWA Kuramoto oscillator status + Sybil defense
+    app.get('/time/aguwa', (req, res) => {
+      const status = aguwa.getStatus();
+      const divergent = aguwa.detectDivergentPeers();
+      res.json({ ...status, divergentPeers: divergent });
     });
 
     // Force re-detection of time sources
@@ -4075,14 +4270,14 @@ export class YakmeshNode {
     // The landing page at yakmesh.dev/time/ polls these endpoints.
 
     app.get('/api/time', (req, res) => {
-      const now = Date.now();
+      const now = aguwa.now();
       const status = this.timeSource?.getStatus() || {};
       const sats = status.satellites || status.ma902?.satellites || {};
       const locked = status.trustLevel === 'gps' || status.trustLevel === 'atomic';
 
       // Mesh grandmaster reference (received via time:heartbeat gossip)
       const meshRef = this.meshTimeReference;
-      const hasMeshGrandmaster = meshRef && meshRef.lock && (Date.now() - meshRef.receivedAt < 120_000);
+      const hasMeshGrandmaster = meshRef && meshRef.lock && (aguwa.now() - meshRef.receivedAt < 120_000);
 
       // Effective source: local GPS if available, else mesh grandmaster, else system
       const effectiveStratum = locked ? 1 : (hasMeshGrandmaster ? meshRef.stratum : 2);
@@ -4132,7 +4327,7 @@ export class YakmeshNode {
           ma902: meshRef.ma902 || null,
           trustLevel: meshRef.trustLevel,
           publicNtp: meshRef.publicNtp,
-          age_ms: Date.now() - meshRef.receivedAt,
+          age_ms: aguwa.now() - meshRef.receivedAt,
         };
       }
 
@@ -4140,11 +4335,11 @@ export class YakmeshNode {
     });
 
     app.get('/api/time/simple', (req, res) => {
-      const now = Date.now();
+      const now = aguwa.now();
       const status = this.timeSource?.getStatus() || {};
       const locked = status.trustLevel === 'gps' || status.trustLevel === 'atomic';
       const meshRef = this.meshTimeReference;
-      const hasMeshGM = meshRef && meshRef.lock && (Date.now() - meshRef.receivedAt < 120_000);
+      const hasMeshGM = meshRef && meshRef.lock && (aguwa.now() - meshRef.receivedAt < 120_000);
       const eff = locked ? 1 : (hasMeshGM ? meshRef.stratum : 2);
       const q = locked ? 'excellent' : (hasMeshGM ? 'mesh-synced' : 'degraded');
       res.set({ 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' });
@@ -4156,7 +4351,7 @@ export class YakmeshNode {
       const sats = status.satellites || status.ma902?.satellites || {};
       const locked = status.trustLevel === 'gps' || status.trustLevel === 'atomic';
       const meshRef = this.meshTimeReference;
-      const hasMeshGM = meshRef && meshRef.lock && (Date.now() - meshRef.receivedAt < 120_000);
+      const hasMeshGM = meshRef && meshRef.lock && (aguwa.now() - meshRef.receivedAt < 120_000);
       const effectiveStatus = locked ? 'healthy' : (hasMeshGM ? 'mesh-synced' : 'degraded');
 
       res.set({ 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' });
@@ -4175,7 +4370,7 @@ export class YakmeshNode {
           lock: meshRef.lock,
           satellites_used: meshRef.satellites?.used ?? 0,
           publicNtp: meshRef.publicNtp,
-          age_ms: Date.now() - meshRef.receivedAt,
+          age_ms: aguwa.now() - meshRef.receivedAt,
         } : null,
         public_ntp: 'time.yakmesh.dev',
       });
@@ -4343,12 +4538,7 @@ export class YakmeshNode {
       const timeSourceStatus = this.timeSource?.getStatus() || null;
 
       // Initialize geo proof service lazily if needed
-      if (!this.geoProofService && this.timeSource && this.identity) {
-        this.geoProofService = new GeoProofService({
-          nodeId: this.identity.identity.nodeId,
-          timeSourceDetector: this.timeSource,
-        });
-      }
+      this._ensureGeoProofService();
 
       const service = this.geoProofService;
 
@@ -4383,12 +4573,7 @@ export class YakmeshNode {
     // List landmarks
     app.get('/geo/landmarks', (req, res) => {
       // Initialize geo proof service lazily if needed
-      if (!this.geoProofService && this.timeSource && this.identity) {
-        this.geoProofService = new GeoProofService({
-          nodeId: this.identity.identity.nodeId,
-          timeSourceDetector: this.timeSource,
-        });
-      }
+      this._ensureGeoProofService();
 
       const service = this.geoProofService;
       if (!service) {
@@ -4430,19 +4615,14 @@ export class YakmeshNode {
       }
 
       // Initialize geo proof service lazily if needed
-      if (!this.geoProofService && this.timeSource && this.identity) {
-        this.geoProofService = new GeoProofService({
-          nodeId: this.identity.identity.nodeId,
-          timeSourceDetector: this.timeSource,
-        });
-      }
+      this._ensureGeoProofService();
 
       const service = this.geoProofService;
       if (!service) {
         return res.status(503).json({ error: 'Geographic proof service not initialized' });
       }
 
-      const landmarkId = nodeId || `landmark-${Date.now()}`;
+      const landmarkId = nodeId || `landmark-${aguwa.now()}`;
       service.landmarkRegistry.addLandmark(landmarkId, lat, lon, {
         name,
         endpoint,
@@ -4486,12 +4666,7 @@ export class YakmeshNode {
       const { force } = req.body || {};
 
       // Initialize geo proof service lazily if needed
-      if (!this.geoProofService && this.timeSource && this.identity) {
-        this.geoProofService = new GeoProofService({
-          nodeId: this.identity.identity.nodeId,
-          timeSourceDetector: this.timeSource,
-        });
-      }
+      this._ensureGeoProofService();
 
       const service = this.geoProofService;
       if (!service) {
@@ -4524,7 +4699,7 @@ export class YakmeshNode {
             landmarkId: lm.nodeId,
             rttMs,
             minDistanceKm: calculateMinDistance(rttMs),
-            measuredAt: Date.now(),
+            measuredAt: aguwa.now(),
           });
         }
 
@@ -4738,7 +4913,7 @@ export class YakmeshNode {
         }
 
         const candidate = {
-          nodeId: `relay-${Date.now()}`,
+          nodeId: `relay-${aguwa.now()}`,
           relayEndpoint: endpoint,
         };
 
@@ -4884,8 +5059,8 @@ export class YakmeshNode {
 
     for (const peer of this._bootstrapPeers) {
       // Simple backoff: 5s minimum between attempts to same peer
-      if (Date.now() - peer.lastTry < 5000) continue;
-      peer.lastTry = Date.now();
+      if (aguwa.now() - peer.lastTry < 5000) continue;
+      peer.lastTry = aguwa.now();
 
       // Fire-and-forget with 5s timeout
       this._connectWithTimeout(peer.endpoint, 5_000)
@@ -5002,7 +5177,7 @@ export class YakmeshNode {
       nodeId: selfNodeId,
       networkName: this.genesisNetwork?.networkName,
       publicKey: this.identity.identity.publicKey,
-      timestamp: Date.now(),
+      timestamp: aguwa.now(),
     };
     const regSignature = this.identity.sign(JSON.stringify({
       action: regPayload.action,
@@ -5140,7 +5315,7 @@ export class YakmeshNode {
       this._relayOutbox.set(targetNodeId, queue);
     }
 
-    queue.push({ ...message, _relayTs: Date.now() });
+    queue.push({ ...message, _relayTs: aguwa.now() });
 
     // Cap at 500 messages per peer, evict oldest
     if (queue.length > 500) {

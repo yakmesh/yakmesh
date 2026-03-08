@@ -38,12 +38,15 @@ import { sha3_256 as _nobleSha3 } from '@noble/hashes/sha3.js';
 import { sha3_256 } from '../utils/accel.js';
 import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js';
 
+// AGUWA — canonical mesh time source
+import { aguwa } from './aguwa.js';
+
 // YPC-27 quantum-hard checksums for packet integrity
-import { 
-  PROTOCOL_DOMAIN, 
-  checksumToWire, 
-  checksumFromWire, 
-  PacketChecksum 
+import {
+  PROTOCOL_DOMAIN,
+  checksumToWire,
+  checksumFromWire,
+  PacketChecksum
 } from '../oracle/packet-checksum.js';
 
 // STUPA checksum engine (singleton per module)
@@ -60,19 +63,19 @@ const STUPA_CONFIG = {
     CRITICAL: 4,        // Life/safety critical (pinnacle)
     REVOCATION: 5,      // Identity revocation - highest priority (beyond pinnacle)
   },
-  
+
   // Propagation settings
   defaultTTL: 10,               // Default hop count
   maxTTL: 50,                   // Maximum hop count
   revocationTTL: 100,           // Extra hops for revocation messages
   deduplicationWindowMs: 60000, // 1 minute dedup window
   receiptTimeout: 30000,        // 30s to collect receipts
-  
+
   // Redundancy
   minRedundantPaths: 3,         // Minimum paths for critical messages
   maxRetransmissions: 5,        // Max retries per peer
   retransmitDelayMs: 1000,      // Delay between retries
-  
+
   // Rate limiting
   maxMessagesPerSecond: 100,    // Per-node rate limit
   priorityBoost: {              // Rate limit multiplier by priority
@@ -110,12 +113,12 @@ class StupaMessage {
     this.payload = options.payload;
     this.priority = options.priority || STUPA_CONFIG.priorities.ROUTINE;
     this.ttl = options.ttl || STUPA_CONFIG.defaultTTL;
-    this.timestamp = options.timestamp || Date.now();
-    this.expiresAt = options.expiresAt || (Date.now() + 300000); // 5 min default
+    this.timestamp = options.timestamp || aguwa.now();
+    this.expiresAt = options.expiresAt || (aguwa.now() + 300000); // 5 min default
     this.hopPath = options.hopPath || [];
     this.signature = options.signature || null;
     this.hash = this._computeHash();
-    
+
     // YPC-27 quantum-hard checksum (27-trit polynomial in wire format)
     this.ypc27 = options.ypc27 || this._computeYpc27();
   }
@@ -129,7 +132,7 @@ class StupaMessage {
       this.timestamp.toString(),
       this.expiresAt.toString(),
     ].join(':');
-    
+
     return bytesToHex(sha3_256(utf8ToBytes(data)));
   }
 
@@ -181,13 +184,13 @@ class StupaMessage {
   isValid(verifyQuantum = false) {
     const basicValid = (
       this.ttl > 0 &&
-      Date.now() < this.expiresAt &&
+      aguwa.now() < this.expiresAt &&
       this.hash === this._computeHash()
     );
-    
+
     if (!basicValid) return false;
     if (verifyQuantum && !this.verifyYpc27()) return false;
-    
+
     return true;
   }
 
@@ -199,7 +202,7 @@ class StupaMessage {
     if (this.ttl <= 0) {
       return null;
     }
-    
+
     return new StupaMessage({
       id: this.id,
       originNodeId: this.originNodeId,
@@ -253,16 +256,16 @@ class StupaMessage {
       signature: obj.signature,
       ypc27: obj.ypc27,  // Preserve original checksum
     });
-    
+
     if (msg.hash !== obj.hash) {
       throw new Error('Message hash mismatch');
     }
-    
+
     // Verify YPC-27 quantum checksum if present
     if (obj.ypc27 && !msg.verifyYpc27()) {
       throw new Error('YPC-27 checksum mismatch - possible quantum attack or corruption');
     }
-    
+
     return msg;
   }
 }
@@ -274,7 +277,7 @@ class DeliveryReceipt {
   constructor(options) {
     this.messageId = options.messageId;
     this.receiverNodeId = options.receiverNodeId;
-    this.receivedAt = options.receivedAt || Date.now();
+    this.receivedAt = options.receivedAt || aguwa.now();
     this.hopCount = options.hopCount || 0;
     this.signature = options.signature || null;
     this.hash = this._computeHash();
@@ -287,7 +290,7 @@ class DeliveryReceipt {
       this.receivedAt.toString(),
       this.hopCount.toString(),
     ].join(':');
-    
+
     return bytesToHex(sha3_256(utf8ToBytes(data)));
   }
 
@@ -310,11 +313,11 @@ class DeliveryReceipt {
       hopCount: obj.hopCount,
       signature: obj.signature,
     });
-    
+
     if (receipt.hash !== obj.hash) {
       throw new Error('Receipt hash mismatch');
     }
-    
+
     return receipt;
   }
 }
@@ -341,19 +344,19 @@ class DeduplicationTracker {
    */
   markSeen(message) {
     const existing = this.seen.get(message.id);
-    
+
     if (existing) {
       // Track additional path
       existing.hopPaths.push([...message.hopPath]);
       return false;
     }
-    
+
     this.seen.set(message.id, {
-      timestamp: Date.now(),
+      timestamp: aguwa.now(),
       hopPaths: [[...message.hopPath]],
       priority: message.priority,
     });
-    
+
     return true;
   }
 
@@ -363,7 +366,7 @@ class DeduplicationTracker {
   getMessageStats(messageId) {
     const entry = this.seen.get(messageId);
     if (!entry) return null;
-    
+
     return {
       pathCount: entry.hopPaths.length,
       firstSeen: entry.timestamp,
@@ -372,7 +375,7 @@ class DeduplicationTracker {
   }
 
   cleanup() {
-    const cutoff = Date.now() - this.windowMs;
+    const cutoff = aguwa.now() - this.windowMs;
     for (const [id, entry] of this.seen) {
       if (entry.timestamp < cutoff) {
         this.seen.delete(id);
@@ -412,7 +415,7 @@ class ReceiptCollector {
       expectedCount,
       callback,
       timeout,
-      startedAt: Date.now(),
+      startedAt: aguwa.now(),
     });
   }
 
@@ -438,14 +441,14 @@ class ReceiptCollector {
     if (!pending) return;
 
     clearTimeout(pending.timeout);
-    
+
     const result = {
       messageId,
       receipts: pending.receipts,
       receivedCount: pending.receipts.length,
       expectedCount: pending.expectedCount,
       success: pending.receipts.length >= pending.expectedCount,
-      duration: Date.now() - pending.startedAt,
+      duration: aguwa.now() - pending.startedAt,
     };
 
     pending.callback(result);
@@ -465,7 +468,7 @@ class ReceiptCollector {
 class PriorityMessageQueue {
   constructor() {
     this.queues = new Map();
-    
+
     // Create queue for each priority
     for (const priority of Object.values(BEACON_CONFIG.priorities)) {
       this.queues.set(priority, []);
@@ -485,14 +488,14 @@ class PriorityMessageQueue {
   dequeue() {
     // Check from highest to lowest priority
     const priorities = Object.values(BEACON_CONFIG.priorities).sort((a, b) => b - a);
-    
+
     for (const priority of priorities) {
       const queue = this.queues.get(priority);
       if (queue && queue.length > 0) {
         return queue.shift();
       }
     }
-    
+
     return null;
   }
 
@@ -501,14 +504,14 @@ class PriorityMessageQueue {
    */
   peek() {
     const priorities = Object.values(BEACON_CONFIG.priorities).sort((a, b) => b - a);
-    
+
     for (const priority of priorities) {
       const queue = this.queues.get(priority);
       if (queue && queue.length > 0) {
         return queue[0];
       }
     }
-    
+
     return null;
   }
 
@@ -545,7 +548,7 @@ class StupaBroadcast {
     this.receipts = new ReceiptCollector();
     this.outboundQueue = new PriorityMessageQueue();
     this.peers = new Set();
-    
+
     this.stats = {
       messagesOriginated: 0,
       messagesRelayed: 0,
@@ -556,9 +559,9 @@ class StupaBroadcast {
     };
 
     // Callbacks
-    this.onBroadcast = options.onBroadcast || (() => {});
-    this.onReceive = options.onReceive || (() => {});
-    this.onReceipt = options.onReceipt || (() => {});
+    this.onBroadcast = options.onBroadcast || (() => { });
+    this.onReceive = options.onReceive || (() => { });
+    this.onReceipt = options.onReceipt || (() => { });
   }
 
   /**
@@ -698,7 +701,7 @@ class StupaBroadcast {
     try {
       const receipt = DeliveryReceipt.deserialize(receiptData);
       const added = this.receipts.addReceipt(receipt);
-      
+
       if (added) {
         this.onReceipt({ receipt: receipt.serialize() });
       }
@@ -760,7 +763,7 @@ class StupaBroadcast {
       type,
       ...revocationData,
       urgency: 'MAXIMUM',
-      broadcastedAt: Date.now(),
+      broadcastedAt: aguwa.now(),
     };
 
     console.log(`🚨 STUPA Revocation broadcast: ${type}`, {
@@ -774,7 +777,7 @@ class StupaBroadcast {
       ttl: STUPA_CONFIG.revocationTTL,
       confirmDelivery: true,
       // Mark as non-expiring for longer (10 minutes)
-      expiresAt: Date.now() + 10 * 60 * 1000,
+      expiresAt: aguwa.now() + 10 * 60 * 1000,
     });
   }
 

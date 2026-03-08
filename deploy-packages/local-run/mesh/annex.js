@@ -34,8 +34,10 @@ import { createLogger } from '../utils/logger.js';
 // ACCEL: Hardware-accelerated crypto (native SHA3, native KEM via liboqs/AVX-512)
 import { sha3_256, mlKem768Keygen, mlKem768Encapsulate, mlKem768Decapsulate } from '../utils/accel.js';
 
-// STEADYWATCH: Quantum-hardware-validated entropy seeds (Hurwitz quaternion, IBM Quantum)
-import { getHybridSeed, seedStore as steadywatchStore } from '../security/steadywatch.js';
+// PRAHARI: Mesh-Consensus Entropy Engine (replaces STEADYWATCH)
+import { getHybridSeed, seedStore as steadywatchStore } from '../security/prahari.js';
+// Note: `steadywatchStore` alias preserved so existing code checking
+// `steadywatchStore.initialized` continues to work unchanged.
 
 // ═══ TRIBHUJ — Balanced ternary for channel lifecycle ═══
 // POSITIVE: ESTABLISHED (secure channel active)
@@ -60,16 +62,16 @@ const ANNEX_CONFIG = {
   symmetricAlgorithm: 'aes-256-gcm',
   nonceSize: 12,
   authTagLength: 16,
-  
+
   // Key derivation
   keyDerivationSalt: 'YAKMESH-ANNEX-2026',
   contextSeparator: ':',
-  
+
   // Session management
   sessionTimeout: 3600000,       // 1 hour session lifetime
   rekeyInterval: 300000,         // Re-key every 5 minutes for PFS
   maxMessagesPerKey: 10000,      // Force re-key after N messages
-  
+
   // Message types
   messageTypes: {
     KEY_EXCHANGE: 'annex:key_exchange',
@@ -92,20 +94,20 @@ class AnnexEnvelope {
     this.sessionId = options.sessionId;
     this.sequence = options.sequence || 0;
     this.timestamp = options.timestamp || Date.now();
-    
+
     // Encrypted payload components
     this.nonce = options.nonce || null;
     this.ciphertext = options.ciphertext || null;
     this.authTag = options.authTag || null;
-    
+
     // Key exchange components (only for key exchange messages)
     this.kemCiphertext = options.kemCiphertext || null;
     this.kemPublicKey = options.kemPublicKey || null;
-    
+
     // Signature (ML-DSA-65)
     this.signature = options.signature || null;
   }
-  
+
   /**
    * Compute hash for signing
    */
@@ -125,7 +127,7 @@ class AnnexEnvelope {
       kemPublicKey: this.kemPublicKey,
     });
   }
-  
+
   /**
    * Serialize for transport
    */
@@ -146,7 +148,7 @@ class AnnexEnvelope {
       signature: this.signature,
     };
   }
-  
+
   static fromJSON(data) {
     return new AnnexEnvelope(data);
   }
@@ -161,7 +163,7 @@ class AnnexSession {
     this.localNodeId = options.localNodeId;
     this.remoteNodeId = options.remoteNodeId;
     this.initiator = options.initiator || false;
-    
+
     // Key material
     this.kemKeyPair = null;      // Our ephemeral KEM key pair
     this.sharedSecret = null;    // Derived shared secret
@@ -172,7 +174,7 @@ class AnnexSession {
     this.sendSequence = 0;       // Outbound message counter
     this.recvSequence = -1;      // Inbound message counter (-1 so first msg seq 0 passes)
     this.messageCount = 0;       // Total messages with current key
-    
+
     // State
     this.established = false;
     this.channelState = ChannelState.NEGOTIATING;  // TRIBHUJ trit lifecycle
@@ -180,7 +182,7 @@ class AnnexSession {
     this.lastActivity = Date.now();
     this.lastRekey = null;
   }
-  
+
   /**
    * JHILKE deterministic rekey — both nodes derive the same key simultaneously.
    * No KEM round-trip, no pending key, no race condition.
@@ -193,19 +195,19 @@ class AnnexSession {
     this.lastRekey = Date.now();
     this.lastActivity = Date.now();
   }
-  
+
   /**
    * Generate ephemeral KEM key pair for this session.
    * 
    * ACCEL: Routes through mlKem768Keygen() for native liboqs AVX-512 NTT
    * acceleration when available (previously called noble directly — bypassed ACCEL).
    * 
-   * STEADYWATCH: If quantum satellite seeds are loaded, uses hybrid entropy:
-   *   hybridSeed = SHA3(satelliteSeed || EXPAND) ⊕ randomBytes(64)
+   * PRAHARI: If entropy pool is initialized, uses hybrid entropy:
+   *   hybridSeed = SHA3(poolSlot || EXPAND) ⊕ randomBytes(64)
    * Two-source extractor: even if one source is compromised, keys are safe.
    */
   async generateKeyPair() {
-    // STEADYWATCH hybrid seed (quantum + CSPRNG) or pure CSPRNG fallback
+    // PRAHARI hybrid seed (pool + CSPRNG) or pure CSPRNG fallback
     const seed = steadywatchStore.initialized
       ? getHybridSeed()
       : randomBytes(64);
@@ -214,17 +216,17 @@ class AnnexSession {
     this.kemKeyPair = await mlKem768Keygen(seed);
     return bytesToHex(this.kemKeyPair.publicKey);
   }
-  
+
   /**
    * Complete key exchange as initiator (encapsulate with peer's public key)
    */
   encapsulate(peerPublicKey, { defer = false } = {}) {
     const publicKeyBytes = hexToBytes(peerPublicKey);
     const result = mlKem768Encapsulate(publicKeyBytes);
-    
+
     this.sharedSecret = result.sharedSecret;
     const newKey = this._deriveEncryptionKey();
-    
+
     if (defer && this.encryptionKey) {
       // Rekey responder: store new key as pending, keep current active.
       // PFS-safe: we only hold the FUTURE key, never the past key.
@@ -238,10 +240,10 @@ class AnnexSession {
     this.established = true;
     this.channelState = ChannelState.ESTABLISHED;
     this.lastRekey = Date.now();
-    
+
     return bytesToHex(result.cipherText);
   }
-  
+
   /**
    * Complete key exchange as responder (decapsulate received ciphertext)
    */
@@ -249,7 +251,7 @@ class AnnexSession {
     if (!this.kemKeyPair) {
       throw new Error('No key pair generated');
     }
-    
+
     const ciphertextBytes = hexToBytes(ciphertext);
     this.sharedSecret = mlKem768Decapsulate(ciphertextBytes, this.kemKeyPair.secretKey);
 
@@ -280,10 +282,10 @@ class AnnexSession {
     this.established = true;
     this.channelState = ChannelState.ESTABLISHED;
     this.lastRekey = Date.now();
-    
+
     return true;
   }
-  
+
   /**
    * Encrypt a message for this session
    */
@@ -291,7 +293,7 @@ class AnnexSession {
     if (!this.established || !this.encryptionKey) {
       throw new Error('Session not established');
     }
-    
+
     const nonce = randomBytes(ANNEX_CONFIG.nonceSize);
     const cipher = createCipheriv(
       ANNEX_CONFIG.symmetricAlgorithm,
@@ -299,21 +301,21 @@ class AnnexSession {
       nonce,
       { authTagLength: ANNEX_CONFIG.authTagLength }
     );
-    
+
     // Include sequence number in AAD for replay protection
     const aad = Buffer.from(`${this.sessionId}:${this.sendSequence}`);
     cipher.setAAD(aad);
-    
+
     const data = typeof plaintext === 'string' ? plaintext : JSON.stringify(plaintext);
     const encrypted = Buffer.concat([
       cipher.update(data, 'utf8'),
       cipher.final(),
     ]);
-    
+
     this.sendSequence++;
     this.messageCount++;
     this.lastActivity = Date.now();
-    
+
     return {
       nonce: nonce.toString('hex'),
       ciphertext: encrypted.toString('hex'),
@@ -321,7 +323,7 @@ class AnnexSession {
       sequence: this.sendSequence - 1,
     };
   }
-  
+
   /**
    * Decrypt a message for this session
    */
@@ -332,36 +334,36 @@ class AnnexSession {
     const nonce = Buffer.from(encryptedData.nonce, 'hex');
     const ciphertext = Buffer.from(encryptedData.ciphertext, 'hex');
     const authTag = Buffer.from(encryptedData.authTag, 'hex');
-    
+
     const decipher = createDecipheriv(
       ANNEX_CONFIG.symmetricAlgorithm,
       key,
       nonce,
       { authTagLength: ANNEX_CONFIG.authTagLength }
     );
-    
+
     const aad = Buffer.from(`${this.sessionId}:${expectedSequence}`);
     decipher.setAAD(aad);
     decipher.setAuthTag(authTag);
-    
+
     const decrypted = Buffer.concat([
       decipher.update(ciphertext),
       decipher.final(),
     ]);
-    
+
     return decrypted.toString('utf8');
   }
-  
+
   decrypt(encryptedData, expectedSequence) {
     if (!this.established || !this.encryptionKey) {
       throw new Error('Session not established');
     }
-    
+
     // Replay protection: sequence must be greater than last received
     if (typeof expectedSequence !== 'number' || expectedSequence <= this.recvSequence) {
       throw new Error(`Replay detected: sequence ${expectedSequence} <= ${this.recvSequence}`);
     }
-    
+
     try {
       // Try current key first
       const result = this._decryptWithKey(this.encryptionKey, encryptedData, expectedSequence);
@@ -390,7 +392,7 @@ class AnnexSession {
           // pending key also failed — fall through to transition key
         }
       }
-      
+
       // Bootstrap→KEM upgrade bridge: the responder may still send messages
       // encrypted with the bootstrap key between our KEM switch and their
       // implicit-ack promotion. Try the briefly-retained old key.
@@ -404,31 +406,31 @@ class AnnexSession {
         });
         return result;
       }
-      
+
       throw err;
     }
   }
-  
+
   /**
    * Check if session needs re-keying for perfect forward secrecy
    */
   needsRekey() {
     if (!this.established) return false;
-    
+
     const timeSinceRekey = Date.now() - (this.lastRekey || this.createdAt);
     return (
       timeSinceRekey > ANNEX_CONFIG.rekeyInterval ||
       this.messageCount >= ANNEX_CONFIG.maxMessagesPerKey
     );
   }
-  
+
   /**
    * Check if session has expired
    */
   isExpired() {
     return Date.now() - this.lastActivity > ANNEX_CONFIG.sessionTimeout;
   }
-  
+
   /**
    * Derive symmetric encryption key from shared secret
    */
@@ -459,10 +461,10 @@ export class Annex {
     this.sessions = new Map();   // remoteNodeId -> AnnexSession
     this.pendingHandshakes = new Map();
     this.messageHandlers = new Map();
-    
+
     // JHILKE coordinator reference (set by network.js after initialization)
     this.jhilke = null;
-    
+
     // Stats
     this.stats = {
       sessionsCreated: 0,
@@ -471,20 +473,20 @@ export class Annex {
       handshakesFailed: 0,
       replaysBlocked: 0,
     };
-    
+
     // Deferred message queue — buffer ANNEX messages from peers whose
     // public key hasn't arrived yet (HELLO/WELCOME still in flight).
     // Max 10 senders, 1 message per sender, 3s timeout.
     this._deferredMessages = new Map();  // senderId -> { envelope, origin, timer }
     this._maxDeferredSenders = 10;
     this._deferTimeoutMs = 3000;
-    
+
     // Register mesh handler for ANNEX messages
     if (this.mesh) {
       this._registerMeshHandlers();
     }
   }
-  
+
   /**
    * Create a bootstrap session with a deterministic key.
    * JHILKE derives this key from the shared code hash + both node IDs.
@@ -514,7 +516,7 @@ export class Annex {
     session.bootstrapped = true;
     session.channelState = ChannelState.ESTABLISHED;
     session.lastRekey = Date.now();
-    
+
     this.sessions.set(peerId, session);
     log.info('JHILKE bootstrap session created (encrypted from message #1)', {
       peerId: peerTag(peerId),
@@ -522,7 +524,7 @@ export class Annex {
     });
     return session;
   }
-  
+
   /**
    * Initialize or get secure session with a peer (annex territory)
    * 
@@ -533,15 +535,15 @@ export class Annex {
   async openChannel(remoteNodeId) {
     // Check for existing session
     let session = this.sessions.get(remoteNodeId);
-    
+
     // Return existing FULL (non-bootstrap) session
     if (session && session.established && !session.isExpired() && !session.bootstrapped) {
       return session;
     }
-    
+
     // Bootstrap upgrade: reuse existing session, add KEM negotiation
     const isBootstrapUpgrade = session?.bootstrapped;
-    
+
     if (isBootstrapUpgrade) {
       session.initiator = true;
       log.info('JHILKE: upgrading bootstrap → KEM', { peer: peerTag(remoteNodeId) });
@@ -553,13 +555,13 @@ export class Annex {
         initiator: true,
       });
     }
-    
+
     // Generate our key pair (ACCEL: native liboqs/AVX-512, STEADYWATCH: quantum seed)
     const ourPublicKey = await session.generateKeyPair();
-    
+
     // Store pending handshake
     this.pendingHandshakes.set(remoteNodeId, session);
-    
+
     // Send key exchange request
     const envelope = new AnnexEnvelope({
       type: ANNEX_CONFIG.messageTypes.KEY_EXCHANGE,
@@ -568,13 +570,13 @@ export class Annex {
       sessionId: session.sessionId,
       kemPublicKey: ourPublicKey,
     });
-    
+
     // Sign the envelope
     envelope.signature = this.identity.sign(envelope.getSigningPayload());
-    
+
     // JHILKE: Send via secure channel if bootstrap exists, else raw
     await this._sendControlSecure(remoteNodeId, envelope);
-    
+
     // Wait for response (with timeout)
     return new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
@@ -582,12 +584,12 @@ export class Annex {
         this.stats.handshakesFailed++;
         reject(new Error('ANNEX handshake timeout'));
       }, 30000);
-      
+
       session._resolveHandshake = (establishedSession) => {
         clearTimeout(timeout);
         resolve(establishedSession);
       };
-      
+
       session._rejectHandshake = (error) => {
         clearTimeout(timeout);
         this.stats.handshakesFailed++;
@@ -595,7 +597,7 @@ export class Annex {
       };
     });
   }
-  
+
   /**
    * Send an encrypted message through the ANNEX channel
    */
@@ -605,7 +607,7 @@ export class Annex {
     if (!session || !session.established || session.isExpired()) {
       session = await this.openChannel(remoteNodeId);
     }
-    
+
     // Check for re-key need — JHILKE handles all rekeys deterministically.
     // Both sides derive the same key after cricket coordination (no KEM round-trip).
     if (!options._skipRekeyCheck && session.needsRekey()) {
@@ -615,10 +617,10 @@ export class Annex {
       // No fallback — JHILKE is the only rekey path. If unavailable,
       // the session continues until timeout/reconnect.
     }
-    
+
     // Encrypt the payload
     const encrypted = session.encrypt(payload);
-    
+
     // Create envelope
     const envelope = new AnnexEnvelope({
       type: ANNEX_CONFIG.messageTypes.ENCRYPTED,
@@ -630,17 +632,17 @@ export class Annex {
       ciphertext: encrypted.ciphertext,
       authTag: encrypted.authTag,
     });
-    
+
     // Sign
     envelope.signature = this.identity.sign(envelope.getSigningPayload());
-    
+
     // Send
     await this._sendToMesh(remoteNodeId, envelope);
     this.stats.messagesEncrypted++;
-    
+
     return { sent: true, sessionId: session.sessionId, sequence: encrypted.sequence };
   }
-  
+
   /**
    * Register handler for decrypted messages
    */
@@ -649,21 +651,21 @@ export class Annex {
     this.messageHandlers.set(id, handler);
     return id;
   }
-  
+
   /**
    * Remove message handler
    */
   offMessage(handlerId) {
     this.messageHandlers.delete(handlerId);
   }
-  
+
   /**
    * Close ANNEX channel with peer (release territory)
    */
   async closeChannel(remoteNodeId) {
     const session = this.sessions.get(remoteNodeId);
     if (!session) return;
-    
+
     // Send close notification
     const envelope = new AnnexEnvelope({
       type: ANNEX_CONFIG.messageTypes.CLOSE,
@@ -672,11 +674,11 @@ export class Annex {
       sessionId: session.sessionId,
     });
     envelope.signature = this.identity.sign(envelope.getSigningPayload());
-    
+
     await this._sendToMesh(remoteNodeId, envelope);
     session.channelState = ChannelState.CLOSED;
     this.sessions.delete(remoteNodeId);
-    
+
     // Clean up any deferred messages from this peer
     const deferred = this._deferredMessages?.get(remoteNodeId);
     if (deferred) {
@@ -687,14 +689,14 @@ export class Annex {
       this._deferredMessages.delete(remoteNodeId);
     }
   }
-  
+
   /**
    * Get session info
    */
   getSessionInfo(remoteNodeId) {
     const session = this.sessions.get(remoteNodeId);
     if (!session) return null;
-    
+
     return {
       sessionId: session.sessionId,
       established: session.established,
@@ -706,7 +708,7 @@ export class Annex {
       isExpired: session.isExpired(),
     };
   }
-  
+
   /**
    * List all active annexes (sessions)
    */
@@ -726,7 +728,7 @@ export class Annex {
     }
     return annexes;
   }
-  
+
   /**
    * Get stats
    */
@@ -737,22 +739,22 @@ export class Annex {
       pendingHandshakes: this.pendingHandshakes.size,
     };
   }
-  
+
   // === Private Methods ===
-  
+
   _registerMeshHandlers() {
     // Handle incoming ANNEX messages
     this.mesh.on('annex', async (data, origin) => {
       await this._handleAnnexMessage(data, origin);
     });
   }
-  
+
   async _handleAnnexMessage(envelope, origin) {
     try {
       // Verify ML-DSA-65 signature — MANDATORY for all ANNEX messages.
       // "Changes pass through math alone" — no key, no entry.
       const peerPublicKey = this._getPeerPublicKey(envelope.senderId);
-      
+
       if (!peerPublicKey) {
         // Peer's public key isn't registered yet — their HELLO/WELCOME
         // may still be in flight. Defer the message and replay it once
@@ -760,26 +762,26 @@ export class Annex {
         this._deferMessage(envelope, origin);
         return;
       }
-      
+
       const sigPayload = AnnexEnvelope.fromJSON(envelope).getSigningPayload();
       if (!this.identity.verify(sigPayload, envelope.signature, peerPublicKey)) {
         log.warn('Invalid ML-DSA-65 signature from peer', { peerId: peerTag(envelope.senderId) });
         return;
       }
-      
+
       switch (envelope.type) {
         case ANNEX_CONFIG.messageTypes.KEY_EXCHANGE:
           await this._handleKeyExchange(envelope);
           break;
-          
+
         case ANNEX_CONFIG.messageTypes.KEY_RESPONSE:
           await this._handleKeyResponse(envelope);
           break;
-          
+
         case ANNEX_CONFIG.messageTypes.ENCRYPTED:
           await this._handleEncrypted(envelope);
           break;
-          
+
         case ANNEX_CONFIG.messageTypes.CLOSE: {
           const closedSession = this.sessions.get(envelope.senderId);
           if (closedSession) closedSession.channelState = ChannelState.CLOSED;
@@ -792,14 +794,14 @@ export class Annex {
       log.error('Error handling ANNEX message', { error: err.message });
     }
   }
-  
+
   async _handleKeyExchange(envelope) {
     log.info('Key exchange from peer', { peerId: peerTag(envelope.senderId) });
-    
+
     // JHILKE: Check for existing bootstrap session to upgrade
     let session = this.sessions.get(envelope.senderId);
     const isBootstrapUpgrade = session?.bootstrapped;
-    
+
     if (isBootstrapUpgrade) {
       // Upgrade existing bootstrap session — keep bootstrap key as current
       session.sessionId = envelope.sessionId;
@@ -814,21 +816,21 @@ export class Annex {
         initiator: false,
       });
     }
-    
+
     // Generate our key pair and encapsulate with peer's public key
     // ACCEL: native liboqs/AVX-512, STEADYWATCH: quantum seed
     await session.generateKeyPair();
-    
+
     // CRITICAL: For bootstrap upgrades, DEFER the KEM key.
     // Keep bootstrap key active for the KEY_RESPONSE message.
     // The KEM key activates via implicit ack when we receive
     // a message encrypted with it from the initiator.
     const kemCiphertext = session.encapsulate(envelope.kemPublicKey, { defer: isBootstrapUpgrade });
-    
+
     // Store session
     this.sessions.set(envelope.senderId, session);
     if (!isBootstrapUpgrade) this.stats.sessionsCreated++;
-    
+
     // Send response with our public key and the KEM ciphertext
     const response = new AnnexEnvelope({
       type: ANNEX_CONFIG.messageTypes.KEY_RESPONSE,
@@ -838,50 +840,50 @@ export class Annex {
       kemPublicKey: bytesToHex(session.kemKeyPair.publicKey),
       kemCiphertext: kemCiphertext,
     });
-    
+
     response.signature = this.identity.sign(response.getSigningPayload());
-    
+
     // JHILKE: Send via secure channel (encrypted through bootstrap or current key)
     await this._sendControlSecure(envelope.senderId, response);
-    
+
     log.info('Channel established with peer', { peerId: peerTag(envelope.senderId) });
   }
-  
+
   async _handleKeyResponse(envelope) {
     // KEY_RESPONSE is only used during initial handshake or bootstrap→KEM upgrade.
     // All subsequent rekeys are deterministic via JHILKE (no KEM round-trip).
     const session = this.pendingHandshakes.get(envelope.senderId);
-    
+
     if (!session) {
       log.warn('Unexpected key response (no pending handshake)', { peerId: peerTag(envelope.senderId) });
       return;
     }
-    
+
     // Decapsulate to get shared secret
     session.decapsulate(envelope.kemCiphertext);
-    
+
     // JHILKE: Clear bootstrap flag — now KEM-backed with full PFS
     session.bootstrapped = false;
-    
+
     // Move from pending to active
     this.pendingHandshakes.delete(envelope.senderId);
     this.sessions.set(envelope.senderId, session);
     this.stats.sessionsCreated++;
     log.info('Channel established with peer', { peerId: peerTag(envelope.senderId) });
-    
+
     // Resolve the handshake promise
     if (session._resolveHandshake) {
       session._resolveHandshake(session);
     }
   }
-  
+
   async _handleEncrypted(envelope) {
     const session = this.sessions.get(envelope.senderId);
     if (!session || !session.established) {
       log.warn('No session for encrypted message', { peerId: peerTag(envelope.senderId) });
       return;
     }
-    
+
     try {
       // Decrypt
       const plaintext = session.decrypt(
@@ -892,9 +894,9 @@ export class Annex {
         },
         envelope.sequence
       );
-      
+
       this.stats.messagesDecrypted++;
-      
+
       // Parse and dispatch to handlers
       let payload;
       try {
@@ -902,14 +904,14 @@ export class Annex {
       } catch {
         payload = plaintext;
       }
-      
+
       // JHILKE: Intercept secure ANNEX control messages routed through
       // the encrypted channel (bootstrap upgrade, encrypted rekey, etc.)
       if (payload && payload._annexControl) {
         await this._handleAnnexControl(payload._annexControl, envelope.senderId);
         return;
       }
-      
+
       // Dispatch to handlers
       for (const handler of this.messageHandlers.values()) {
         try {
@@ -933,11 +935,11 @@ export class Annex {
     }
   }
 
-  
+
   // KEM-based _handleRekey and _rekey REMOVED — JHILKE handles all rekeys
   // deterministically via deriveRekeyKey(). Both nodes compute the same key
   // after cricket coordination. No encapsulate/decapsulate dance needed.
-  
+
   /**
    * Send an ANNEX control message securely through the existing encrypted channel.
    * When a session exists, wraps the control message inside an encrypted payload.
@@ -957,7 +959,7 @@ export class Annex {
       await this._sendToMesh(remoteNodeId, controlEnvelope);
     }
   }
-  
+
   /**
    * Handle a secure ANNEX control message received through the encrypted channel.
    * The outer AEAD encryption guarantees authenticity — no separate signature
@@ -968,7 +970,7 @@ export class Annex {
       type: controlData.type,
       from: peerTag(senderId),
     });
-    
+
     switch (controlData.type) {
       case ANNEX_CONFIG.messageTypes.KEY_EXCHANGE:
         await this._handleKeyExchange(controlData);
@@ -985,18 +987,18 @@ export class Annex {
       }
     }
   }
-  
+
   async _sendToMesh(remoteNodeId, envelope) {
     if (!this.mesh) {
       throw new Error('No mesh connection');
     }
-    
+
     this.mesh.sendTo(remoteNodeId, {
       type: 'annex',
       annex: envelope.toJSON(),
     });
   }
-  
+
   /**
    * Buffer an ANNEX message whose sender key hasn't arrived yet.
    * Replays automatically when 'peer-registered' fires, or discards
@@ -1004,7 +1006,7 @@ export class Annex {
    */
   _deferMessage(envelope, origin) {
     const senderId = envelope.senderId;
-    
+
     // Already deferring a message from this sender — discard the older one
     if (this._deferredMessages.has(senderId)) {
       const existing = this._deferredMessages.get(senderId);
@@ -1014,7 +1016,7 @@ export class Annex {
       }
       this._deferredMessages.delete(senderId);
     }
-    
+
     // Cap total deferred senders to prevent memory abuse
     if (this._deferredMessages.size >= this._maxDeferredSenders) {
       log.debug('Deferred ANNEX queue full, dropping message from unknown peer', {
@@ -1023,19 +1025,19 @@ export class Annex {
       });
       return;
     }
-    
+
     log.debug('Deferring ANNEX message until peer key arrives', {
       peerId: peerTag(senderId),
       type: envelope.type,
     });
-    
+
     // Event listener: replay when peer registers
     const onRegistered = (registeredNodeId) => {
       if (registeredNodeId === senderId) {
         this._replayDeferred(senderId);
       }
     };
-    
+
     // Safety timeout: if key never arrives, discard silently
     const timer = setTimeout(() => {
       if (this._deferredMessages.has(senderId)) {
@@ -1047,33 +1049,33 @@ export class Annex {
         });
       }
     }, this._deferTimeoutMs);
-    
+
     this._deferredMessages.set(senderId, { envelope, origin, timer, onRegistered });
     this.mesh.on('peer-registered', onRegistered);
   }
-  
+
   /**
    * Replay a deferred ANNEX message now that the sender's key is available.
    */
   _replayDeferred(senderId) {
     const deferred = this._deferredMessages.get(senderId);
     if (!deferred) return;
-    
+
     clearTimeout(deferred.timer);
     this.mesh.off('peer-registered', deferred.onRegistered);
     this._deferredMessages.delete(senderId);
-    
+
     log.debug('Replaying deferred ANNEX message (peer key arrived)', {
       peerId: peerTag(senderId),
       type: deferred.envelope.type,
     });
-    
+
     // Re-enter the handler — this time _getPeerPublicKey should succeed
     this._handleAnnexMessage(deferred.envelope, deferred.origin).catch(err => {
       log.warn('Deferred ANNEX replay failed', { peerId: peerTag(senderId), error: err.message });
     });
   }
-  
+
   _getPeerPublicKey(nodeId) {
     // Get from WS peer info first
     if (this.mesh && this.mesh.peers) {

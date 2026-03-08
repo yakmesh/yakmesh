@@ -101,8 +101,12 @@ export class SubnetDiversity {
 
   getSubnet(ip) {
     if (!ip) return 'unknown';
+    // Normalize IPv4-mapped IPv6 (::ffff:192.168.1.1 → 192.168.1.1)
     if (ip.includes('::ffff:')) ip = ip.split('::ffff:')[1];
+    // IPv4: /24 subnet (first 3 octets)
     if (ip.includes('.')) return ip.split('.').slice(0, 3).join('.');
+    // Pure IPv6: /64 prefix (first 4 hextets) — prevents dual-stack Sybil bypass
+    if (ip.includes(':')) return ip.split(':').slice(0, 4).join(':');
     return 'unknown';
   }
 

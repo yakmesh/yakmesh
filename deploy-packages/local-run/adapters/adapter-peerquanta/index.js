@@ -59,7 +59,7 @@ export const PEERQUANTA_TABLES = {
     ],
     excludeFields: ['management_key', 'key_binding_data', 'anchor_hash'], // Sensitive
   },
-  
+
   // QCoA Certificates
   qcoa: {
     table: 'qcoa_certificates',
@@ -71,7 +71,7 @@ export const PEERQUANTA_TABLES = {
       'metadata'
     ],
   },
-  
+
   // User reputation (public portion only)
   reputation: {
     table: 'p2pq_user_stats',
@@ -97,10 +97,10 @@ export class PeerQuantaBridge {
     this.syncInterval = null;
     this.lastSyncTime = {};
     this.phpbbDb = null;
-    
+
     // ValidationOracle for secure content validation
     this.oracle = null;
-    
+
     // Statistics for oracle validation
     this.validationStats = {
       listingsValidated: 0,
@@ -109,17 +109,17 @@ export class PeerQuantaBridge {
       qcoaRejected: 0,
       totalRejected: 0,
     };
-    
+
     // Track pending changes
     this.pendingChanges = [];
-    
+
     // Track last synced IDs for each table
     this.lastSyncedIds = {
       listings: 0,
       qcoa: 0,
       reputation: 0,
     };
-    
+
     // v2.0 Security Integration (initialized in init())
     this.security = null;
   }
@@ -129,21 +129,21 @@ export class PeerQuantaBridge {
    */
   async init() {
     console.log('🔗 Initializing PeerQuanta Bridge...');
-    
+
     // Initialize ValidationOracle for secure content validation
     this.oracle = getOracle();
     console.log(`✓ ValidationOracle attached: ${this.oracle.selfHash.slice(0, 16)}...`);
-    
+
     // Initialize sql.js
     const SqlJs = await initSQL();
-    
+
     // Try to connect to phpBB database
     if (this.phpbbDbPath && existsSync(this.phpbbDbPath)) {
       try {
         const buffer = readFileSync(this.phpbbDbPath);
         this.phpbbDb = new SqlJs.Database(buffer);
         console.log(`✓ Connected to phpBB database: ${this.phpbbDbPath}`);
-        
+
         // Get initial state
         this._loadLastSyncedIds();
       } catch (error) {
@@ -153,14 +153,14 @@ export class PeerQuantaBridge {
       console.log(`⚠ phpBB database not found at: ${this.phpbbDbPath}`);
       console.log('  Bridge will operate in mesh-only mode');
     }
-    
+
     // Register rumor handler for incoming data
     this.node.mesh.on('rumor', (topic, data, origin) => {
       if (topic.startsWith('pq:')) {
         this._handlePeerQuantaRumor(topic, data, origin);
       }
     });
-    
+
     // Initialize v2.0 Security features
     try {
       this.security = new PeerQuantaSecurity(this);
@@ -168,10 +168,10 @@ export class PeerQuantaBridge {
     } catch (error) {
       console.warn(`⚠ v2.0 Security features unavailable: ${error.message}`);
     }
-    
+
     console.log('✓ PeerQuanta Bridge initialized');
   }
-  
+
   /**
    * Load last synced IDs from replication state
    */
@@ -180,7 +180,7 @@ export class PeerQuantaBridge {
       const result = this.node.replication.db.exec(
         `SELECT * FROM _replication_state WHERE peer_node_id = 'phpbb_sync'`
       );
-      
+
       if (result.length > 0 && result[0].values.length > 0) {
         const clockData = JSON.parse(result[0].values[0][2] || '{}');
         this.lastSyncedIds = {
@@ -194,7 +194,7 @@ export class PeerQuantaBridge {
       // First run, no state yet
     }
   }
-  
+
   /**
    * Save sync state
    */
@@ -216,11 +216,11 @@ export class PeerQuantaBridge {
    */
   startSync(intervalMs = 60000) {
     console.log(`✓ PeerQuanta sync started (every ${intervalMs / 1000}s)`);
-    
+
     this.syncInterval = setInterval(() => {
       this._syncFromPhpBB();
     }, intervalMs);
-    
+
     // Initial sync
     this._syncFromPhpBB();
   }
@@ -244,9 +244,9 @@ export class PeerQuantaBridge {
     if (!this.oracle) {
       return { valid: false, reason: 'ORACLE_NOT_INITIALIZED' };
     }
-    
+
     const result = this.oracle.validateListing(listing);
-    
+
     if (result.valid) {
       this.validationStats.listingsValidated++;
     } else {
@@ -254,7 +254,7 @@ export class PeerQuantaBridge {
       this.validationStats.totalRejected++;
       console.warn(`⚠️ Listing validation failed: ${result.reason}`);
     }
-    
+
     return result;
   }
 
@@ -267,9 +267,9 @@ export class PeerQuantaBridge {
     if (!this.oracle) {
       return { valid: false, reason: 'ORACLE_NOT_INITIALIZED' };
     }
-    
+
     const result = this.oracle.validateQCoA(cert);
-    
+
     if (result.valid) {
       this.validationStats.qcoaValidated++;
     } else {
@@ -277,7 +277,7 @@ export class PeerQuantaBridge {
       this.validationStats.totalRejected++;
       console.warn(`⚠️ QCoA validation failed: ${result.reason}`);
     }
-    
+
     return result;
   }
 
@@ -291,12 +291,12 @@ export class PeerQuantaBridge {
    */
   async pushListing(listing, writeToPhpBB = true) {
     const sanitized = this._sanitizeListing(listing);
-    
+
     // ═══════════════════════════════════════════════════════════
     // ORACLE VALIDATION - All listings must pass validation
     // ═══════════════════════════════════════════════════════════
     const validation = this._validateListing(sanitized);
-    
+
     if (!validation.valid) {
       return {
         success: false,
@@ -305,14 +305,14 @@ export class PeerQuantaBridge {
         listing: sanitized,
       };
     }
-    
+
     // Attach oracle metadata for verification by other nodes
     const oracleMetadata = {
       validatedBy: this.oracle.selfHash,
       contentHash: validation.data?.contentHash || contentHash(sanitized),
       validatedAt: Date.now(),
     };
-    
+
     // Write to phpBB database if connected
     if (writeToPhpBB && this.phpbbDb) {
       try {
@@ -324,14 +324,14 @@ export class PeerQuantaBridge {
         console.error('Failed to write listing to phpBB:', error.message);
       }
     }
-    
+
     // Spread to mesh with oracle metadata
     this.node.gossip.spreadRumor('pq:listing:update', {
       listing: sanitized,
       oracle: oracleMetadata,
       timestamp: Date.now(),
     });
-    
+
     // Also record in replication
     this.node.replication.recordChange(
       'pq_listings',
@@ -339,7 +339,7 @@ export class PeerQuantaBridge {
       'UPSERT',
       { ...sanitized, _oracle: oracleMetadata }
     );
-    
+
     return {
       success: true,
       listingId: sanitized.id || listing.id,
@@ -347,7 +347,7 @@ export class PeerQuantaBridge {
       validatedBy: oracleMetadata.validatedBy,
     };
   }
-  
+
   /**
    * Write a listing to the phpBB database (insert or update)
    */
@@ -355,43 +355,43 @@ export class PeerQuantaBridge {
     if (!this.phpbbDb) {
       throw new Error('phpBB database not connected');
     }
-    
+
     const config = PEERQUANTA_TABLES.listings;
     const now = Math.floor(Date.now() / 1000);
-    
+
     if (listing.id) {
       // Update existing listing
       const updateFields = config.replicateFields
         .filter(f => f !== 'id' && f !== 'created_at' && listing[f] !== undefined)
         .map(f => `${f} = ?`);
-      
+
       const values = config.replicateFields
         .filter(f => f !== 'id' && f !== 'created_at' && listing[f] !== undefined)
         .map(f => listing[f]);
-      
+
       // Always update updated_at
       if (!updateFields.includes('updated_at = ?')) {
         updateFields.push('updated_at = ?');
         values.push(now);
       }
-      
+
       values.push(listing.id);
-      
+
       this.phpbbDb.run(
         `UPDATE ${config.table} SET ${updateFields.join(', ')} WHERE id = ?`,
         values
       );
-      
+
       // Save to disk
       this._savePhpBBDb();
-      
+
       return { id: listing.id, action: 'updated' };
     } else {
       // Insert new listing
-      const insertFields = config.replicateFields.filter(f => 
+      const insertFields = config.replicateFields.filter(f =>
         f !== 'id' && listing[f] !== undefined
       );
-      
+
       // Add timestamps if not present
       if (!insertFields.includes('created_at')) {
         insertFields.push('created_at');
@@ -401,32 +401,32 @@ export class PeerQuantaBridge {
         insertFields.push('updated_at');
         listing.updated_at = now;
       }
-      
+
       const placeholders = insertFields.map(() => '?').join(', ');
       const values = insertFields.map(f => listing[f]);
-      
+
       this.phpbbDb.run(
         `INSERT INTO ${config.table} (${insertFields.join(', ')}) VALUES (${placeholders})`,
         values
       );
-      
+
       // Get the inserted ID
       const result = this.phpbbDb.exec('SELECT last_insert_rowid()');
       const newId = result[0]?.values[0][0];
-      
+
       // Save to disk
       this._savePhpBBDb();
-      
+
       return { id: newId, action: 'inserted' };
     }
   }
-  
+
   /**
    * Save phpBB database to disk
    */
   _savePhpBBDb() {
     if (!this.phpbbDb || !this.phpbbDbPath) return;
-    
+
     try {
       const data = this.phpbbDb.export();
       writeFileSync(this.phpbbDbPath, Buffer.from(data));
@@ -447,7 +447,7 @@ export class PeerQuantaBridge {
     // ORACLE VALIDATION - All certificates must pass validation
     // ═══════════════════════════════════════════════════════════
     const validation = this._validateQCoA(cert);
-    
+
     if (!validation.valid) {
       return {
         success: false,
@@ -455,27 +455,27 @@ export class PeerQuantaBridge {
         reason: validation.reason,
       };
     }
-    
+
     // Attach oracle metadata
     const oracleMetadata = {
       validatedBy: this.oracle.selfHash,
       certHash: validation.data?.certHash || cert.cert_hash,
       validatedAt: Date.now(),
     };
-    
+
     this.node.gossip.spreadRumor('pq:qcoa:new', {
       certificate: cert,
       oracle: oracleMetadata,
       timestamp: Date.now(),
     });
-    
+
     this.node.replication.recordChange(
       'qcoa_certificates',
       cert.id,
       'INSERT',
       { ...cert, _oracle: oracleMetadata }
     );
-    
+
     return {
       success: true,
       certId: cert.id,
@@ -513,23 +513,25 @@ export class PeerQuantaBridge {
       console.log('⚠ No phpBB database connected, skipping sync');
       return;
     }
-    
+
     console.log('📊 Syncing from phpBB database...');
-    
+
     try {
       let totalSynced = 0;
-      
+
       // 1. Sync new/updated listings
       const listingsConfig = PEERQUANTA_TABLES.listings;
+      const listingsSyncId = Number(this.lastSyncedIds.listings) || 0;
+      const listingsSyncTime = Number(this.lastSyncTime.phpbb) || 0;
       const listingsResult = this.phpbbDb.exec(`
         SELECT ${listingsConfig.replicateFields.join(', ')}
         FROM ${listingsConfig.table}
-        WHERE id > ${this.lastSyncedIds.listings}
-           OR updated_at > ${this.lastSyncTime.phpbb || 0}
+        WHERE id > ${listingsSyncId}
+           OR updated_at > ${listingsSyncTime}
         ORDER BY id ASC
         LIMIT 100
       `);
-      
+
       if (listingsResult.length > 0 && listingsResult[0].values.length > 0) {
         const columns = listingsResult[0].columns;
         for (const row of listingsResult[0].values) {
@@ -537,11 +539,11 @@ export class PeerQuantaBridge {
           columns.forEach((col, i) => {
             listing[col] = row[i];
           });
-          
+
           // Push to mesh
           await this.pushListing(listing);
           totalSynced++;
-          
+
           // Update last synced ID
           if (listing.id > this.lastSyncedIds.listings) {
             this.lastSyncedIds.listings = listing.id;
@@ -549,18 +551,19 @@ export class PeerQuantaBridge {
         }
         console.log(`  ✓ Synced ${listingsResult[0].values.length} listings`);
       }
-      
+
       // 2. Sync QCoA certificates
       try {
         const qcoaConfig = PEERQUANTA_TABLES.qcoa;
+        const qcoaSyncId = Number(this.lastSyncedIds.qcoa) || 0;
         const qcoaResult = this.phpbbDb.exec(`
           SELECT ${qcoaConfig.replicateFields.join(', ')}
           FROM ${qcoaConfig.table}
-          WHERE id > ${this.lastSyncedIds.qcoa}
+          WHERE id > ${qcoaSyncId}
           ORDER BY id ASC
           LIMIT 100
         `);
-        
+
         if (qcoaResult.length > 0 && qcoaResult[0].values.length > 0) {
           const columns = qcoaResult[0].columns;
           for (const row of qcoaResult[0].values) {
@@ -568,10 +571,10 @@ export class PeerQuantaBridge {
             columns.forEach((col, i) => {
               cert[col] = row[i];
             });
-            
+
             await this.pushQCoACertificate(cert);
             totalSynced++;
-            
+
             if (cert.id > this.lastSyncedIds.qcoa) {
               this.lastSyncedIds.qcoa = cert.id;
             }
@@ -584,7 +587,7 @@ export class PeerQuantaBridge {
           console.error('  QCoA sync error:', e.message);
         }
       }
-      
+
       // 3. Sync user reputation stats
       try {
         const repConfig = PEERQUANTA_TABLES.reputation;
@@ -595,7 +598,7 @@ export class PeerQuantaBridge {
           ORDER BY user_id ASC
           LIMIT 100
         `);
-        
+
         if (repResult.length > 0 && repResult[0].values.length > 0) {
           const columns = repResult[0].columns;
           for (const row of repResult[0].values) {
@@ -603,14 +606,14 @@ export class PeerQuantaBridge {
             columns.forEach((col, i) => {
               stats[col] = row[i];
             });
-            
+
             this.node.gossip.spreadRumor('pq:reputation:update', {
               userId: stats.user_id,
               stats,
               timestamp: Date.now(),
             });
             totalSynced++;
-            
+
             if (stats.user_id > this.lastSyncedIds.reputation) {
               this.lastSyncedIds.reputation = stats.user_id;
             }
@@ -623,20 +626,20 @@ export class PeerQuantaBridge {
           console.error('  Reputation sync error:', e.message);
         }
       }
-      
+
       // Save sync state
       this.lastSyncTime.phpbb = Date.now();
       this._saveSyncState();
-      
+
       if (totalSynced > 0) {
         console.log(`✓ phpBB sync complete: ${totalSynced} records pushed to mesh`);
       }
-      
+
     } catch (error) {
       console.error('phpBB sync error:', error.message);
     }
   }
-  
+
   /**
    * Refresh phpBB database connection (re-read from disk)
    */
@@ -644,7 +647,7 @@ export class PeerQuantaBridge {
     if (!this.phpbbDbPath || !existsSync(this.phpbbDbPath)) {
       return false;
     }
-    
+
     try {
       const SqlJs = await initSQL();
       const buffer = readFileSync(this.phpbbDbPath);
@@ -656,35 +659,41 @@ export class PeerQuantaBridge {
       return false;
     }
   }
-  
+
   /**
    * Get listings directly from phpBB database
    */
   getListingsFromPhpBB(filters = {}) {
     if (!this.phpbbDb) return [];
-    
+
     try {
       const config = PEERQUANTA_TABLES.listings;
       let query = `SELECT ${config.replicateFields.join(', ')} FROM ${config.table} WHERE status = 'active'`;
-      
+      const params = [];
+
       if (filters.userId) {
-        query += ` AND user_id = ${filters.userId}`;
+        query += ` AND user_id = ?`;
+        params.push(filters.userId);
       }
       if (filters.currency) {
-        query += ` AND currency = '${filters.currency}'`;
+        query += ` AND currency = ?`;
+        params.push(filters.currency);
       }
       if (filters.tradeType) {
-        query += ` AND trade_type = '${filters.tradeType}'`;
+        query += ` AND trade_type = ?`;
+        params.push(filters.tradeType);
       }
-      
+
       query += ' ORDER BY created_at DESC LIMIT 100';
-      
-      const result = this.phpbbDb.exec(query);
-      
+
+      const result = params.length > 0
+        ? this.phpbbDb.exec(query, params)
+        : this.phpbbDb.exec(query);
+
       if (result.length === 0 || result[0].values.length === 0) {
         return [];
       }
-      
+
       const columns = result[0].columns;
       return result[0].values.map(row => {
         const listing = {};
@@ -704,7 +713,7 @@ export class PeerQuantaBridge {
    */
   _handlePeerQuantaRumor(topic, data, origin) {
     console.log(`📨 PeerQuanta rumor [${topic}] from ${origin.slice(0, 16)}...`);
-    
+
     switch (topic) {
       case 'pq:listing:update':
         this._handleListingUpdate(data, origin);
@@ -727,23 +736,23 @@ export class PeerQuantaBridge {
    */
   _handleListingUpdate(data, origin) {
     const { listing, oracle: oracleMetadata, timestamp } = data;
-    
+
     // Verify the listing has required fields
     if (!listing.id || !listing.user_id) {
       console.log('⚠️ Invalid listing received, missing required fields');
       return;
     }
-    
+
     // ═══════════════════════════════════════════════════════════
     // ORACLE VALIDATION - Validate incoming content
     // ═══════════════════════════════════════════════════════════
     const validation = this._validateListing(listing);
-    
+
     if (!validation.valid) {
       console.warn(`⚠️ Rejected listing from ${origin.slice(0, 16)}...: ${validation.reason}`);
       return;
     }
-    
+
     // Verify content hash matches (if provided)
     if (oracleMetadata?.contentHash) {
       const localHash = validation.data?.contentHash || contentHash(listing);
@@ -754,7 +763,7 @@ export class PeerQuantaBridge {
         // Still accept - deterministic validation passed
       }
     }
-    
+
     // Record in local replication with validation metadata
     this.node.replication.recordChange(
       'pq_listings',
@@ -768,7 +777,7 @@ export class PeerQuantaBridge {
         _validatedBy: this.oracle.selfHash,
       }
     );
-    
+
     console.log(`✓ Listing ${listing.id} validated and synced from ${origin.slice(0, 16)}...`);
   }
 
@@ -777,14 +786,14 @@ export class PeerQuantaBridge {
    */
   _handleListingDelete(data, origin) {
     const { listingId, timestamp } = data;
-    
+
     this.node.replication.recordChange(
       'pq_listings',
       listingId,
       'DELETE',
       { id: listingId, status: 'deleted', _origin: origin }
     );
-    
+
     console.log(`✓ Listing ${listingId} marked deleted from ${origin.slice(0, 16)}...`);
   }
 
@@ -794,23 +803,23 @@ export class PeerQuantaBridge {
    */
   _handleQCoACertificate(data, origin) {
     const { certificate, oracle: oracleMetadata, timestamp } = data;
-    
+
     // Verify certificate structure
     if (!certificate.cert_hash || !certificate.origin_signature) {
       console.log('⚠️ Invalid QCoA certificate received, missing required fields');
       return;
     }
-    
+
     // ═══════════════════════════════════════════════════════════
     // ORACLE VALIDATION - Validate incoming certificate
     // ═══════════════════════════════════════════════════════════
     const validation = this._validateQCoA(certificate);
-    
+
     if (!validation.valid) {
       console.warn(`⚠️ Rejected QCoA from ${origin.slice(0, 16)}...: ${validation.reason}`);
       return;
     }
-    
+
     this.node.replication.recordChange(
       'qcoa_certificates',
       certificate.id,
@@ -822,7 +831,7 @@ export class PeerQuantaBridge {
         _validatedBy: this.oracle.selfHash,
       }
     );
-    
+
     console.log(`✓ QCoA ${certificate.cert_hash.slice(0, 16)}... validated and synced`);
   }
 
@@ -831,7 +840,7 @@ export class PeerQuantaBridge {
    */
   _handleReputationUpdate(data, origin) {
     const { userId, stats, timestamp } = data;
-    
+
     this.node.replication.recordChange(
       'pq_user_stats',
       userId,
@@ -846,16 +855,16 @@ export class PeerQuantaBridge {
   _sanitizeListing(listing) {
     const config = PEERQUANTA_TABLES.listings;
     const sanitized = {};
-    
+
     for (const field of config.replicateFields) {
       if (listing[field] !== undefined) {
         sanitized[field] = listing[field];
       }
     }
-    
+
     return sanitized;
   }
-  
+
   /**
    * Get listings from mesh replication log
    */
@@ -869,11 +878,11 @@ export class PeerQuantaBridge {
         ORDER BY created_at DESC
         LIMIT 100
       `);
-      
+
       if (result.length === 0 || result[0].values.length === 0) {
         return [];
       }
-      
+
       // Parse JSON data and dedupe by id
       const listingsMap = new Map();
       for (const row of result[0].values) {
@@ -886,14 +895,14 @@ export class PeerQuantaBridge {
           // Invalid JSON, skip
         }
       }
-      
+
       return Array.from(listingsMap.values());
     } catch (error) {
       console.error('Error getting listings from mesh:', error.message);
       return [];
     }
   }
-  
+
   /**
    * Get a specific listing by ID
    */
@@ -907,7 +916,7 @@ export class PeerQuantaBridge {
           FROM ${config.table}
           WHERE id = ${listingId}
         `);
-        
+
         if (result.length > 0 && result[0].values.length > 0) {
           const columns = result[0].columns;
           const listing = {};
@@ -920,7 +929,7 @@ export class PeerQuantaBridge {
         // Fall through to mesh
       }
     }
-    
+
     // Try mesh replication
     try {
       const result = this.node.replication.db.exec(`
@@ -932,17 +941,17 @@ export class PeerQuantaBridge {
         ORDER BY created_at DESC
         LIMIT 1
       `);
-      
+
       if (result.length > 0 && result[0].values.length > 0) {
         return JSON.parse(result[0].values[0][0]);
       }
     } catch (e) {
       // Not found
     }
-    
+
     return null;
   }
-  
+
   /**
    * Get QCoA certificates from mesh
    */
@@ -956,11 +965,11 @@ export class PeerQuantaBridge {
         ORDER BY created_at DESC
         LIMIT 100
       `);
-      
+
       if (result.length === 0 || result[0].values.length === 0) {
         return [];
       }
-      
+
       const certsMap = new Map();
       for (const row of result[0].values) {
         try {
@@ -972,9 +981,9 @@ export class PeerQuantaBridge {
           // Invalid JSON, skip
         }
       }
-      
+
       let certs = Array.from(certsMap.values());
-      
+
       // Apply filters
       if (filters.userId) {
         certs = certs.filter(c => c.user_id === parseInt(filters.userId));
@@ -982,14 +991,14 @@ export class PeerQuantaBridge {
       if (filters.status) {
         certs = certs.filter(c => c.status === filters.status);
       }
-      
+
       return certs;
     } catch (error) {
       console.error('Error getting QCoA certificates from mesh:', error.message);
       return [];
     }
   }
-  
+
   /**
    * Verify a QCoA certificate by hash
    */
@@ -1003,7 +1012,7 @@ export class PeerQuantaBridge {
              OR content_hash = '${certHash}'
           LIMIT 1
         `);
-        
+
         if (result.length > 0 && result[0].values.length > 0) {
           const columns = result[0].columns;
           const cert = {};
@@ -1016,7 +1025,7 @@ export class PeerQuantaBridge {
         // Fall through to mesh
       }
     }
-    
+
     // Try mesh replication
     try {
       const result = this.node.replication.db.exec(`
@@ -1025,7 +1034,7 @@ export class PeerQuantaBridge {
         WHERE table_name = 'qcoa_certificates' 
         ORDER BY created_at DESC
       `);
-      
+
       if (result.length > 0 && result[0].values.length > 0) {
         for (const row of result[0].values) {
           try {
@@ -1041,7 +1050,7 @@ export class PeerQuantaBridge {
     } catch (e) {
       // Not found
     }
-    
+
     return null;
   }
 }
@@ -1059,7 +1068,7 @@ export function createPeerQuantaEndpoints(app, bridge) {
   app.get('/pq/listings', (req, res) => {
     try {
       // Get from phpBB if available, or from mesh replication
-      const listings = bridge.phpbbDb 
+      const listings = bridge.phpbbDb
         ? bridge.getListingsFromPhpBB(req.query)
         : bridge._getListingsFromMesh();
       res.json({ success: true, listings, source: bridge.phpbbDb ? 'phpbb' : 'mesh' });
@@ -1110,14 +1119,14 @@ export function createPeerQuantaEndpoints(app, bridge) {
         listingId: req.params.id,
         timestamp: Date.now(),
       });
-      
+
       bridge.node.replication.recordChange(
         'pq_listings',
         req.params.id,
         'DELETE',
         { id: req.params.id, status: 'deleted' }
       );
-      
+
       res.json({ success: true, deleted: req.params.id });
     } catch (error) {
       res.status(500).json({ error: error.message });
@@ -1182,7 +1191,7 @@ export function createPeerQuantaEndpoints(app, bridge) {
   // ═══════════════════════════════════════════════════════════════════════════════
   // v2.0 SECURITY API ENDPOINTS
   // ═══════════════════════════════════════════════════════════════════════════════
-  
+
   if (bridge.security) {
     // Security status
     app.get('/pq/security/status', (req, res) => {
@@ -1195,7 +1204,7 @@ export function createPeerQuantaEndpoints(app, bridge) {
     // ─────────────────────────────────────────────────────────────────────────────
     // DOKO TRADER IDENTITY
     // ─────────────────────────────────────────────────────────────────────────────
-    
+
     // Create trader identity
     app.post('/pq/identity/create', (req, res) => {
       try {
@@ -1247,7 +1256,7 @@ export function createPeerQuantaEndpoints(app, bridge) {
     // ─────────────────────────────────────────────────────────────────────────────
     // TRUST-BASED ESCROW
     // ─────────────────────────────────────────────────────────────────────────────
-    
+
     // Get escrow requirements for a trade
     app.post('/pq/escrow/requirements', async (req, res) => {
       try {
@@ -1277,7 +1286,7 @@ export function createPeerQuantaEndpoints(app, bridge) {
     // ─────────────────────────────────────────────────────────────────────────────
     // ANNEX TRADE CHAT
     // ─────────────────────────────────────────────────────────────────────────────
-    
+
     // Initialize trade chat
     app.post('/pq/chat/init', async (req, res) => {
       try {
@@ -1335,7 +1344,7 @@ export function createPeerQuantaEndpoints(app, bridge) {
     // ─────────────────────────────────────────────────────────────────────────────
     // MERCHANT DOMAIN VERIFICATION
     // ─────────────────────────────────────────────────────────────────────────────
-    
+
     // Request domain verification
     app.post('/pq/merchant/verify/request', async (req, res) => {
       try {

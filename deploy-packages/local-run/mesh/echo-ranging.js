@@ -17,7 +17,8 @@
  * @copyright 2026 YAKMESH™ Contributors
  */
 
-import { randomBytes, createHash, createCipheriv, createDecipheriv } from 'crypto';
+import { createHash, createCipheriv, createDecipheriv } from 'crypto';
+import { seedStore } from '../security/prahari.js';
 import { sha3_256 } from '@noble/hashes/sha3.js';
 import { bytesToHex, hexToBytes, utf8ToBytes } from '@noble/hashes/utils.js';
 
@@ -26,16 +27,16 @@ const ECHO_CONFIG = {
   probeIntervalMs: 30000,       // Send probes every 30s
   probeTimeoutMs: 5000,         // Probe timeout
   maxProbesPerPeer: 10,         // Rolling window for RTT averaging
-  
+
   // Coordinate space
   dimensions: 8,                // Virtual coordinate dimensions
   coordinatePrecision: 1000,    // Microsecond precision
   maxCoordinateValue: 1000000,  // Max coordinate value
-  
+
   // Convergence
   convergenceThreshold: 0.01,   // 1% change threshold
   adaptationRate: 0.25,         // How fast coordinates adapt
-  
+
   // Security
   encryptionAlgorithm: 'aes-256-gcm',
   probeNonceSize: 12,
@@ -47,7 +48,7 @@ const ECHO_CONFIG = {
  */
 class EchoProbe {
   constructor(options) {
-    this.probeId = options.probeId || bytesToHex(randomBytes(16));
+    this.probeId = options.probeId || bytesToHex(seedStore.squeeze(16, 'ECHO-PROBE-ID'));
     this.sourceNodeId = options.sourceNodeId;
     this.targetNodeId = options.targetNodeId;
     this.sendTime = options.sendTime || process.hrtime.bigint();
@@ -60,33 +61,33 @@ class EchoProbe {
    * Encrypt probe payload for secure transmission
    */
   encrypt(sharedSecret) {
-    const nonce = randomBytes(ECHO_CONFIG.probeNonceSize);
+    const nonce = seedStore.squeeze(ECHO_CONFIG.probeNonceSize, 'ECHO-NONCE');
     const cipher = createCipheriv(
       ECHO_CONFIG.encryptionAlgorithm,
       this._deriveKey(sharedSecret, 'echo-probe'),
       nonce,
       { authTagLength: ECHO_CONFIG.authTagLength }
     );
-    
+
     const plaintext = JSON.stringify({
       probeId: this.probeId,
       sourceNodeId: this.sourceNodeId,
       sendTime: this.sendTime.toString(),
       sequence: this.sequence,
     });
-    
+
     const encrypted = Buffer.concat([
       cipher.update(plaintext, 'utf8'),
       cipher.final(),
     ]);
-    
+
     this.payload = {
       nonce: nonce.toString('hex'),
       data: encrypted.toString('hex'),
       tag: cipher.getAuthTag().toString('hex'),
     };
     this.encrypted = true;
-    
+
     return this;
   }
 
@@ -97,11 +98,11 @@ class EchoProbe {
     if (!encryptedProbe.payload || !encryptedProbe.encrypted) {
       throw new Error('Probe is not encrypted');
     }
-    
+
     const nonce = Buffer.from(encryptedProbe.payload.nonce, 'hex');
     const data = Buffer.from(encryptedProbe.payload.data, 'hex');
     const tag = Buffer.from(encryptedProbe.payload.tag, 'hex');
-    
+
     const decipher = createDecipheriv(
       ECHO_CONFIG.encryptionAlgorithm,
       EchoProbe.prototype._deriveKey(sharedSecret, 'echo-probe'),
@@ -109,14 +110,14 @@ class EchoProbe {
       { authTagLength: ECHO_CONFIG.authTagLength }
     );
     decipher.setAuthTag(tag);
-    
+
     const decrypted = Buffer.concat([
       decipher.update(data),
       decipher.final(),
     ]);
-    
+
     const parsed = JSON.parse(decrypted.toString('utf8'));
-    
+
     return new EchoProbe({
       probeId: parsed.probeId,
       sourceNodeId: parsed.sourceNodeId,
@@ -187,10 +188,11 @@ class VirtualCoordinates {
     this.coordinates = new Array(dimensions).fill(0);
     this.error = 1.0; // Estimated coordinate error
     this.updateCount = 0;
-    
-    // Initialize with small random values
+
+    // Initialize with small random values (PRAHARI sponge)
     for (let i = 0; i < dimensions; i++) {
-      this.coordinates[i] = (Math.random() - 0.5) * 100;
+      const byte = seedStore.squeeze(4, 'ECHO-COORD-INIT').readUInt32BE(0);
+      this.coordinates[i] = ((byte / 0xFFFFFFFF) - 0.5) * 100;
     }
   }
 
@@ -200,35 +202,35 @@ class VirtualCoordinates {
   update(peerCoordinates, measuredRtt, peerError = 0.5) {
     // Calculate predicted distance
     const predictedDistance = this.distanceTo(peerCoordinates);
-    
+
     // Calculate error (difference between predicted and actual)
     const error = measuredRtt - predictedDistance;
-    
+
     // Relative error for weighting
     const relativeError = Math.abs(error) / measuredRtt;
-    
+
     // Combined error weight (lower is more confident)
     const weight = this.error / (this.error + peerError);
-    
+
     // Adaptive learning rate
     const adaptationRate = ECHO_CONFIG.adaptationRate * weight;
-    
+
     // Update coordinates
     const unitVector = this._unitVector(peerCoordinates);
     for (let i = 0; i < this.dimensions; i++) {
       this.coordinates[i] += adaptationRate * error * unitVector[i];
-      
+
       // Clamp to valid range
       this.coordinates[i] = Math.max(
         -ECHO_CONFIG.maxCoordinateValue,
         Math.min(ECHO_CONFIG.maxCoordinateValue, this.coordinates[i])
       );
     }
-    
+
     // Update local error estimate
     this.error = relativeError * weight + this.error * (1 - weight);
     this.updateCount++;
-    
+
     return {
       predictedDistance,
       measuredRtt,
@@ -245,7 +247,7 @@ class VirtualCoordinates {
     if (!other || other.length !== this.dimensions) {
       return Infinity;
     }
-    
+
     let sum = 0;
     for (let i = 0; i < this.dimensions; i++) {
       const diff = this.coordinates[i] - other[i];
@@ -260,19 +262,22 @@ class VirtualCoordinates {
   _unitVector(peerCoordinates) {
     const direction = [];
     let magnitude = 0;
-    
+
     for (let i = 0; i < this.dimensions; i++) {
       const diff = peerCoordinates[i] - this.coordinates[i];
       direction.push(diff);
       magnitude += diff * diff;
     }
-    
+
     magnitude = Math.sqrt(magnitude);
     if (magnitude === 0) {
-      // Random direction if at same point
-      return new Array(this.dimensions).fill(0).map(() => Math.random() - 0.5);
+      // Random direction if at same point (PRAHARI sponge)
+      return new Array(this.dimensions).fill(0).map(() => {
+        const byte = seedStore.squeeze(4, 'ECHO-DIRECTION').readUInt32BE(0);
+        return (byte / 0xFFFFFFFF) - 0.5;
+      });
     }
-    
+
     return direction.map(d => d / magnitude);
   }
 
@@ -281,12 +286,12 @@ class VirtualCoordinates {
    */
   hasConverged(previousCoordinates) {
     if (!previousCoordinates) return false;
-    
+
     const distance = this.distanceTo(previousCoordinates);
     const magnitude = Math.sqrt(
       this.coordinates.reduce((sum, c) => sum + c * c, 0)
     );
-    
+
     return distance / (magnitude || 1) < ECHO_CONFIG.convergenceThreshold;
   }
 
@@ -322,12 +327,12 @@ class LatencyTracker {
       rtt: rttNs,
       timestamp: Date.now(),
     });
-    
+
     // Keep rolling window
     if (this.samples.length > this.maxSamples) {
       this.samples.shift();
     }
-    
+
     this.lastUpdate = Date.now();
   }
 
@@ -335,17 +340,17 @@ class LatencyTracker {
     if (this.samples.length === 0) {
       return null;
     }
-    
+
     const rtts = this.samples.map(s => s.rtt);
     const sorted = [...rtts].sort((a, b) => Number(a - b));
-    
+
     const sum = rtts.reduce((a, b) => a + b, 0n);
     const mean = sum / BigInt(rtts.length);
-    
+
     const median = sorted[Math.floor(sorted.length / 2)];
     const min = sorted[0];
     const max = sorted[sorted.length - 1];
-    
+
     // Calculate standard deviation
     const squaredDiffs = rtts.map(r => {
       const diff = r - mean;
@@ -353,11 +358,11 @@ class LatencyTracker {
     });
     const avgSquaredDiff = squaredDiffs.reduce((a, b) => a + b, 0n) / BigInt(rtts.length);
     const stdDev = BigInt(Math.floor(Math.sqrt(Number(avgSquaredDiff))));
-    
+
     // P95
     const p95Index = Math.floor(sorted.length * 0.95);
     const p95 = sorted[p95Index] || max;
-    
+
     return {
       mean,
       median,
@@ -382,14 +387,14 @@ class LatencyTracker {
  */
 class EchoRanging {
   constructor(options = {}) {
-    this.nodeId = options.nodeId || bytesToHex(randomBytes(16));
+    this.nodeId = options.nodeId || bytesToHex(seedStore.squeeze(16, 'ECHO-NODE-ID'));
     this.coordinates = new VirtualCoordinates(options.dimensions);
     this.peerLatencies = new Map(); // peerId -> LatencyTracker
     this.peerCoordinates = new Map(); // peerId -> coordinates
     this.pendingProbes = new Map(); // probeId -> { probe, sentAt }
     this.sharedSecrets = new Map(); // peerId -> shared secret
     this.probeSequence = 0;
-    
+
     this.stats = {
       probesSent: 0,
       probesReceived: 0,
@@ -397,10 +402,10 @@ class EchoRanging {
       coordinateUpdates: 0,
       encryptedProbes: 0,
     };
-    
+
     // Callbacks
-    this.onSendProbe = options.onSendProbe || (() => {});
-    this.onCoordinateUpdate = options.onCoordinateUpdate || (() => {});
+    this.onSendProbe = options.onSendProbe || (() => { });
+    this.onCoordinateUpdate = options.onCoordinateUpdate || (() => { });
   }
 
   /**
@@ -419,28 +424,28 @@ class EchoRanging {
       targetNodeId,
       sequence: this.probeSequence++,
     });
-    
+
     // Encrypt if we have a shared secret
     const secret = this.sharedSecrets.get(targetNodeId);
     if (secret) {
       probe.encrypt(secret);
       this.stats.encryptedProbes++;
     }
-    
+
     // Track pending probe
     this.pendingProbes.set(probe.probeId, {
       probe,
       sentAt: process.hrtime.bigint(),
       targetNodeId,
     });
-    
+
     // Set timeout to clean up
     setTimeout(() => {
       this.pendingProbes.delete(probe.probeId);
     }, ECHO_CONFIG.probeTimeoutMs);
-    
+
     this.stats.probesSent++;
-    
+
     return probe.serialize();
   }
 
@@ -450,9 +455,9 @@ class EchoRanging {
   handleProbe(probeData, fromNodeId) {
     const receiveTime = process.hrtime.bigint();
     this.stats.probesReceived++;
-    
+
     let probe;
-    
+
     // Decrypt if encrypted
     if (probeData.encrypted) {
       const secret = this.sharedSecrets.get(fromNodeId);
@@ -467,7 +472,7 @@ class EchoRanging {
     } else {
       probe = new EchoProbe(probeData);
     }
-    
+
     // Create response
     const response = new EchoResponse({
       probeId: probe.probeId,
@@ -477,7 +482,7 @@ class EchoRanging {
       coordinates: this.coordinates.serialize().coordinates,
     });
     response.calculateProcessingDelay();
-    
+
     return response.serialize();
   }
 
@@ -486,16 +491,16 @@ class EchoRanging {
    */
   handleResponse(responseData) {
     const receiveTime = process.hrtime.bigint();
-    
+
     const pending = this.pendingProbes.get(responseData.probeId);
     if (!pending) {
       return { error: 'Unknown probe or timeout' };
     }
-    
+
     // Calculate RTT (accounting for processing delay)
     const processingDelay = BigInt(responseData.processingDelay || '0');
     const rttNs = receiveTime - pending.sentAt - processingDelay;
-    
+
     // Get or create latency tracker
     const peerId = pending.targetNodeId;
     if (!this.peerLatencies.has(peerId)) {
@@ -503,25 +508,25 @@ class EchoRanging {
     }
     const tracker = this.peerLatencies.get(peerId);
     tracker.addSample(rttNs);
-    
+
     // Store peer coordinates
     if (responseData.coordinates) {
       this.peerCoordinates.set(peerId, responseData.coordinates);
-      
+
       // Update our coordinates based on measurement
       const rttMs = Number(rttNs) / 1_000_000;
       const result = this.coordinates.update(
         responseData.coordinates,
         rttMs
       );
-      
+
       this.stats.coordinateUpdates++;
       this.onCoordinateUpdate(result);
     }
-    
+
     this.pendingProbes.delete(responseData.probeId);
     this.stats.responsesReceived++;
-    
+
     return {
       peerId,
       rttNs,
@@ -539,7 +544,7 @@ class EchoRanging {
     if (!peerCoords) {
       return null;
     }
-    
+
     return this.coordinates.distanceTo(peerCoords);
   }
 
@@ -551,7 +556,7 @@ class EchoRanging {
     if (!targetCoords) {
       return null;
     }
-    
+
     const routes = availablePeers
       .filter(p => this.peerCoordinates.has(p))
       .map(peerId => {
@@ -567,7 +572,7 @@ class EchoRanging {
         };
       })
       .sort((a, b) => a.estimatedLatency - b.estimatedLatency);
-    
+
     return routes[0] || null;
   }
 
@@ -585,7 +590,7 @@ class EchoRanging {
         latencyStats: latency ? latency.getStats() : null,
       });
     }
-    
+
     return {
       self: {
         nodeId: this.nodeId,
