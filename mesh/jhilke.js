@@ -44,6 +44,9 @@ import { fibonacciRoot } from '../oracle/sst.js';
 // AGUWA — canonical mesh time source
 import { aguwa } from './aguwa.js';
 
+// Phase epoch — epoch boundaries for ACT coordination
+import { getCurrentEpoch, getEpochStartTime } from '../oracle/phase-epoch.js';
+
 const log = createLogger('mesh:jhilke');
 
 // ═══ JHILKE Configuration ═══
@@ -65,6 +68,10 @@ const JHILKE_CONFIG = {
   // Timing
   chirpInterval: 30000,   // 30 seconds — matches gossip HELLO cadence
   tickTolerance: 1,       // ±1 tick tolerance for chirp verification
+
+  // ACT state machine timing
+  actPrepareMinTicks: 3,  // Minimum ticks in PREPARE before advancing to READY
+  actSwitchDelayTicks: 2, // Ticks in SWITCH before executing
 };
 
 
@@ -237,6 +244,9 @@ export class JhilkeCoordinator extends EventEmitter {
       clearInterval(this._chirpTimer);
       this._chirpTimer = null;
     }
+    this._cleanupACT();
+    this._actState = null;
+    this._actPeerStates = null;
     this.peerState.clear();
     log.info('JHILKE chirp loop stopped');
   }
@@ -333,6 +343,184 @@ export class JhilkeCoordinator extends EventEmitter {
       this.peerState.set(peerId, state);
     }
     state.chirpsSent++;
+  }
+
+  // ══════════════════════════════════════════════════════════════════
+  // ACT State Machine — PREPARE(+1) / READY(0) / SWITCH(-1)
+  //
+  // Documented design: website/docs/jhilke.html lines 1017-1100
+  // PREPARE: node has consented to ACT, waiting for minimum ticks
+  // READY:   minimum ticks elapsed, waiting for all consenting peers
+  // SWITCH:  all peers ready, countdown to execution at epoch boundary
+  //
+  // Transitions driven by internal state only — never external signals.
+  // ══════════════════════════════════════════════════════════════════
+
+  /**
+   * Begin ACT transition. Called after this node consents to an upgrade.
+   * @param {number} targetEpoch - The AGUWA epoch at which to execute
+   * @param {number} epochBufferN - Dynamic epoch buffer from propagation model (minimum 2)
+   */
+  beginACT(targetEpoch, epochBufferN = 2) {
+    if (this._actState) {
+      log.warn('ACT: Already in progress, ignoring duplicate beginACT');
+      return;
+    }
+
+    this._actState = 'PREPARE';
+    this._actTargetEpoch = targetEpoch;
+    this._actEpochBuffer = epochBufferN;
+    this._actPrepareTicks = 0;
+    this._actPeerStates = new Map(); // peerId → 'PREPARE'|'READY'|'SWITCH'
+    this._actTimer = setInterval(() => this._actTick(), JHILKE_CONFIG.chirpInterval);
+
+    log.info('ACT: State machine started → PREPARE(+1)', {
+      targetEpoch,
+      epochBuffer: epochBufferN,
+    });
+
+    this.emit('act:state', { state: 'PREPARE', targetEpoch });
+  }
+
+  /**
+   * Handle incoming ACT state announcement from a peer.
+   * Peers broadcast their state via 'act:state' gossip topic.
+   * @param {string} peerId
+   * @param {Object} data - { state: 'PREPARE'|'READY'|'SWITCH', targetEpoch }
+   */
+  handleACTState(peerId, data) {
+    if (!this._actState) return; // Not participating
+
+    const { state, targetEpoch } = data;
+    if (targetEpoch !== this._actTargetEpoch) return; // Different ACT round
+
+    this._actPeerStates.set(peerId, state);
+
+    log.debug('ACT: Peer state update', {
+      peer: peerId.slice(0, 16),
+      state,
+      targetEpoch,
+    });
+
+    // If we're in READY and peer just went READY, check if all peers ready
+    if (this._actState === 'READY') {
+      this._checkAllReady();
+    }
+  }
+
+  /**
+   * ACT tick — driven by JHILKE chirp timer (30s cadence).
+   * State transitions happen here, driven purely by internal state.
+   */
+  _actTick() {
+    if (!this._actState) return;
+
+    switch (this._actState) {
+      case 'PREPARE':
+        this._actPrepareTicks++;
+        if (this._actPrepareTicks >= JHILKE_CONFIG.actPrepareMinTicks) {
+          // Minimum prepare time elapsed → advance to READY
+          this._actState = 'READY';
+          log.info('ACT: PREPARE → READY(0)', {
+            prepareTicks: this._actPrepareTicks,
+            targetEpoch: this._actTargetEpoch,
+          });
+          this.emit('act:state', { state: 'READY', targetEpoch: this._actTargetEpoch });
+          this._checkAllReady();
+        } else {
+          this.emit('act:state', { state: 'PREPARE', targetEpoch: this._actTargetEpoch });
+        }
+        break;
+
+      case 'READY': {
+        // Broadcast our READY state — waiting for peers
+        this.emit('act:state', { state: 'READY', targetEpoch: this._actTargetEpoch });
+        this._checkAllReady();
+        break;
+      }
+
+      case 'SWITCH':
+        this._actSwitchTicks++;
+        if (this._actSwitchTicks >= JHILKE_CONFIG.actSwitchDelayTicks) {
+          // Check AGUWA order parameter — must be ≥ 0.2 before executing
+          const r = aguwa.orderParameter();
+          if (r >= 0.2) {
+            // Wait for epoch boundary
+            const currentEpoch = getCurrentEpoch();
+            if (currentEpoch >= this._actTargetEpoch) {
+              log.info('ACT: SWITCH terminal — executing coordinated transition', {
+                orderParameter: r.toFixed(3),
+                currentEpoch,
+                targetEpoch: this._actTargetEpoch,
+              });
+              this._actState = 'EXECUTING';
+              this.emit('act:execute', { targetEpoch: this._actTargetEpoch });
+              this._cleanupACT();
+              return;
+            }
+          } else {
+            log.warn('ACT: SWITCH deferred — AGUWA orderParameter too low', {
+              r: r.toFixed(3),
+              required: 0.2,
+            });
+          }
+        }
+        this.emit('act:state', { state: 'SWITCH', targetEpoch: this._actTargetEpoch });
+        break;
+    }
+  }
+
+  /**
+   * Check if all consenting peers have reached READY.
+   * If so, advance to SWITCH.
+   */
+  _checkAllReady() {
+    if (this._actState !== 'READY') return;
+
+    // If no peers tracked yet, stay in READY
+    if (this._actPeerStates.size === 0) return;
+
+    for (const [, peerState] of this._actPeerStates) {
+      // Need all peers in READY or SWITCH (already past READY)
+      if (peerState !== 'READY' && peerState !== 'SWITCH') return;
+    }
+
+    // All peers ready → advance to SWITCH
+    this._actState = 'SWITCH';
+    this._actSwitchTicks = 0;
+
+    log.info('ACT: READY → SWITCH(-1) — all peers ready', {
+      peerCount: this._actPeerStates.size,
+      targetEpoch: this._actTargetEpoch,
+    });
+
+    this.emit('act:state', { state: 'SWITCH', targetEpoch: this._actTargetEpoch });
+  }
+
+  /**
+   * Clean up ACT state machine timers and state.
+   */
+  _cleanupACT() {
+    if (this._actTimer) {
+      clearInterval(this._actTimer);
+      this._actTimer = null;
+    }
+    // State preserved for inspection; cleared on next stop()
+  }
+
+  /**
+   * Get current ACT state (for status/diagnostics).
+   * @returns {Object|null}
+   */
+  getACTState() {
+    if (!this._actState) return null;
+    return {
+      state: this._actState,
+      targetEpoch: this._actTargetEpoch,
+      prepareTicks: this._actPrepareTicks || 0,
+      switchTicks: this._actSwitchTicks || 0,
+      peerStates: Object.fromEntries(this._actPeerStates || new Map()),
+    };
   }
 
   /**

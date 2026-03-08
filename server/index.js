@@ -14,7 +14,7 @@
 import express from 'express';
 import rateLimit from 'express-rate-limit';
 import crypto from 'node:crypto';
-import { existsSync, readFileSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { networkInterfaces } from 'os';
 import { WebSocketServer } from 'ws';
@@ -74,7 +74,7 @@ import {
   createPhaseConfig,
   detectTimeSources,
 } from '../oracle/time-source.js';
-import { setTimeSourceConfig, getActiveConfig } from '../oracle/phase-epoch.js';
+import { setTimeSourceConfig, getActiveConfig, getCurrentEpoch, getEpochStartTime } from '../oracle/phase-epoch.js';
 import { aguwa } from '../mesh/aguwa.js';
 
 // v2.0 Security imports - NAMCHE and DOKO
@@ -729,6 +729,23 @@ export class YakmeshNode {
       if (topic === 'server:heartbeat') {
         this.serverDirectory?.handleHeartbeat(data, origin);
       }
+
+      // ── ACT (AGUWA Coordinated Transition) gossip topics ──
+
+      // Handle ACT proposal from an upgraded node
+      if (topic === 'act:proposal') {
+        this._handleACTProposal(data, origin);
+      }
+
+      // Handle ACT consent from a peer
+      if (topic === 'act:consent') {
+        this._handleACTConsent(data, origin);
+      }
+
+      // Handle ACT state broadcast from a peer (PREPARE/READY/SWITCH)
+      if (topic === 'act:state') {
+        this._handleACTStateGossip(data, origin);
+      }
     });
 
     // 4b. Start periodic time heartbeat gossip broadcast
@@ -736,6 +753,9 @@ export class YakmeshNode {
 
     // 4c. Start AGUWA → GeoProof propagation delay feed
     this._startAguwaGeoFeed();
+
+    // 4d. ACT: Wire JHILKE state machine events + trigger proposal on first peer
+    this._initACT();
 
     // Annex messages handled directly in mesh._handleMessage() — no separate routing needed
 
@@ -1007,6 +1027,206 @@ export class YakmeshNode {
     return this;
   }
 
+  // ═══════════════════════════════════════════════════════════════════════
+  // ACT — AGUWA Coordinated Transition
+  //
+  // Coordinates code upgrades across the mesh using AGUWA epoch boundaries,
+  // JHILKE PREPARE/READY/SWITCH state machine, and MANTRA gossip propagation.
+  // Triggered internally when manifest hash ≠ oracle selfHash on startup.
+  // ═══════════════════════════════════════════════════════════════════════
+
+  /**
+   * Initialize ACT subsystem. Called once after gossip is ready.
+   * Wires JHILKE state events to gossip propagation and listens for
+   * first peer connection to trigger proposal if upgrade detected.
+   */
+  _initACT() {
+    // Wire JHILKE ACT state events → gossip broadcast
+    if (this.mesh?.jhilke) {
+      this.mesh.jhilke.on('act:state', (stateData) => {
+        if (this.gossip) {
+          this.gossip.spreadRumor('act:state', {
+            ...stateData,
+            nodeId: this.identity.identity.nodeId,
+          });
+        }
+      });
+
+      // Wire JHILKE act:execute → graceful restart
+      this.mesh.jhilke.on('act:execute', (data) => {
+        this._executeACT(data);
+      });
+    }
+
+    // If upgrade detected (Phase A), wait for first peer then propose
+    if (this._actUpgradeDetected) {
+      const onFirstPeer = () => {
+        this.mesh.removeListener('peer:connected', onFirstPeer);
+        // Delay slightly to let gossip stabilize
+        setTimeout(() => this._initiateACTProposal(), 5000);
+      };
+
+      // Check if we already have peers
+      if (this.mesh?.peers?.size > 0) {
+        setTimeout(() => this._initiateACTProposal(), 5000);
+      } else {
+        this.mesh.on('peer:connected', onFirstPeer);
+      }
+    }
+  }
+
+  /**
+   * Initiate ACT proposal (this node is the proposer — it detected the upgrade).
+   * Computes target epoch from AGUWA propagation model and gossips proposal.
+   */
+  _initiateACTProposal() {
+    if (!this.genesisNetwork || !this.gossip) return;
+    if (this._actProposed) return; // Already proposed
+    this._actProposed = true;
+
+    // Compute target epoch from AGUWA propagation model (Phase F)
+    const epochBuffer = aguwa.getACTEpochBuffer();
+    const targetEpoch = getCurrentEpoch() + epochBuffer;
+
+    // Create proposal via GenesisNetworkV2
+    const proposal = this.genesisNetwork.proposeACT(targetEpoch);
+
+    // Gossip the proposal
+    this.gossip.spreadRumor('act:proposal', proposal);
+
+    log.info('ACT: Proposal gossipped to mesh', {
+      targetEpoch,
+      epochBuffer,
+      currentEpoch: getCurrentEpoch(),
+    });
+
+    // Auto-consent if env var set (for headless/unattended nodes)
+    if (process.env.YAKMESH_ACT_AUTO_CONSENT === 'true') {
+      this._consentACT(targetEpoch, 'accept');
+    }
+  }
+
+  /**
+   * Handle incoming ACT proposal from another node.
+   * @param {Object} data - Proposal payload from act:proposal gossip
+   * @param {string} origin - Proposer's nodeId
+   */
+  _handleACTProposal(data, origin) {
+    if (origin === this.identity.identity.nodeId) return; // Ignore own proposals
+
+    log.info('ACT: Proposal received from peer', {
+      proposer: peerTag(origin),
+      targetEpoch: data.targetEpoch,
+      proposerNetwork: data.proposerName,
+    });
+
+    this._pendingACTProposal = data;
+
+    // Auto-consent if env var set (headless nodes)
+    if (process.env.YAKMESH_ACT_AUTO_CONSENT === 'true') {
+      this._consentACT(data.targetEpoch, 'accept');
+    }
+    // Otherwise, the operator UI or API should call _consentACT()
+  }
+
+  /**
+   * Consent to an ACT proposal.
+   * @param {number} targetEpoch
+   * @param {'accept'|'abstain'|'reject'} vote - JHILKE ternary vote
+   */
+  _consentACT(targetEpoch, vote) {
+    if (this._actConsented) return;
+    this._actConsented = true;
+
+    const consent = {
+      vote,
+      targetEpoch,
+      nodeId: this.identity.identity.nodeId,
+      fingerprint: this.genesisNetwork?.fingerprint,
+    };
+
+    // Gossip consent
+    this.gossip.spreadRumor('act:consent', consent);
+
+    log.info('ACT: Consent sent', { vote, targetEpoch });
+
+    // If accepted, start JHILKE state machine
+    if (vote === 'accept' && this.mesh?.jhilke) {
+      const epochBuffer = aguwa.getACTEpochBuffer();
+      this.mesh.jhilke.beginACT(targetEpoch, epochBuffer);
+    }
+  }
+
+  /**
+   * Handle ACT consent from a peer.
+   * @param {Object} data - Consent payload
+   * @param {string} origin - Peer's nodeId
+   */
+  _handleACTConsent(data, origin) {
+    if (origin === this.identity.identity.nodeId) return;
+
+    // Register consent in GenesisNetworkV2
+    this.genesisNetwork?.handleACTConsent(origin, data);
+
+    log.info('ACT: Peer consent received', {
+      peer: peerTag(origin),
+      vote: data.vote,
+      targetEpoch: data.targetEpoch,
+    });
+  }
+
+  /**
+   * Handle ACT state gossip from a peer (PREPARE/READY/SWITCH).
+   * Forwards to JHILKE state machine for coordination.
+   * @param {Object} data - { state, targetEpoch, nodeId }
+   * @param {string} origin - Peer's nodeId
+   */
+  _handleACTStateGossip(data, origin) {
+    if (origin === this.identity.identity.nodeId) return;
+
+    // Forward to JHILKE state machine
+    this.mesh?.jhilke?.handleACTState(origin, data);
+  }
+
+  /**
+   * Execute ACT — graceful coordinated restart.
+   * Called by JHILKE state machine when SWITCH terminal state is reached
+   * at the target epoch boundary with sufficient AGUWA orderParameter.
+   *
+   * Sequence: stop JHILKE → close ANNEX → flush PRAHARI → close WS →
+   *           write act-restart.json → process.exit(0)
+   *
+   * NO special WS close codes. Standard 1000/1001 only.
+   * Peers reconnect via existing logic and re-verify via GenesisNetworkV2.
+   * @param {Object} data - { targetEpoch }
+   */
+  async _executeACT(data) {
+    log.warn('ACT: ═══ EXECUTING COORDINATED TRANSITION ═══', {
+      targetEpoch: data.targetEpoch,
+      currentEpoch: getCurrentEpoch(),
+      orderParameter: aguwa.orderParameter().toFixed(3),
+    });
+
+    // Write act-restart marker so the next startup knows this was an ACT restart
+    const restartMarker = {
+      actVersion: 1,
+      targetEpoch: data.targetEpoch,
+      executedAt: new Date().toISOString(),
+      previousHash: this._actManifestHash || null,
+      newHash: this.oracle?.selfHash || null,
+    };
+
+    const markerPath = join(import.meta.dirname, '..', 'data', 'act-restart.json');
+    writeFileSync(markerPath, JSON.stringify(restartMarker, null, 2));
+    log.info('ACT: Restart marker written to data/act-restart.json');
+
+    // Graceful shutdown sequence
+    await this.stop();
+
+    log.info('ACT: ═══ TRANSITION COMPLETE — exiting for restart ═══');
+    process.exit(0);
+  }
+
   async stop() {
     log.info('\n🛑 Stopping Yakmesh Node...');
 
@@ -1102,6 +1322,16 @@ export class YakmeshNode {
         // Store buildNonce for JHILKE bootstrap key strengthening
         if (manifest.buildNonce) {
           this._buildNonce = manifest.buildNonce;
+        }
+        // ACT Phase A: Detect code upgrade by comparing manifest hash to live oracle hash.
+        // manifest.fullCodebaseHash = hash at build time; oracle.selfHash = hash of code on disk now.
+        // If they differ, code was updated since the last build → initiate ACT proposal after mesh connects.
+        if (manifest.fullCodebaseHash && this.oracle?.selfHash) {
+          if (manifest.fullCodebaseHash !== this.oracle.selfHash) {
+            this._actUpgradeDetected = true;
+            this._actManifestHash = manifest.fullCodebaseHash;
+            log.warn('📋 ACT: Code upgrade detected — manifest hash differs from oracle selfHash');
+          }
         }
       }
     } catch (err) {
