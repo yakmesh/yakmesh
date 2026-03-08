@@ -34,7 +34,8 @@ build/
 *.tgz
 *.pruned
 
-# Deploy-package local data backups (contain node key material)
+# Deploy-package build outputs and local data backups
+deploy-packages/_stow/
 deploy-packages/_local-data-*/
 
 # Public web root build artifacts (copied from sibling projects)

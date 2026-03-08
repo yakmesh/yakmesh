@@ -39,11 +39,102 @@
     ║    1. Build the package (this script)                                   ║
     ║    2. Copy source dirs (server/, mesh/, oracle/, etc.) over the         ║
     ║       existing deployment — but DO NOT overwrite data/                  ║
-    ║    3. The existing machine-seed.json, node-key.json, and database       ║
+    ║    3. ALSO copy data/manifest.json from the build output.               ║
+    ║       This is the ONE file in data/ that MUST be updated on upgrades.   ║
+    ║       Without it the oracle sees stale files → renames them →           ║
+    ║       oracle hash changes → JHILKE bootstrap key differs →             ║
+    ║       ANNEX "unable to authenticate" errors between nodes.             ║
+    ║    4. The existing machine-seed.json, node-key.json, and database       ║
     ║       stay intact. The node keeps its identity. nodeId will change      ║
     ║       (new oracle hash = new code proven) but persistentId is stable.   ║
     ║                                                                         ║
     ║  These are DEPLOYMENT packages. Build them, then deploy them elsewhere. ║
+    ╚═══════════════════════════════════════════════════════════════════════════╝
+
+    ╔═══════════════════════════════════════════════════════════════════════════╗
+    ║  AGENT INSTRUCTIONS — MANDATORY FOR ALL AI CODING AGENTS                ║
+    ║                                                                         ║
+    ║  If you are an AI agent (Copilot, Cursor, Cline, Windsurf, etc.)        ║
+    ║  READ AND FOLLOW these rules. Violations cause production failures.     ║
+    ║                                                                         ║
+    ║  ┌─────────────────────────────────────────────────────────────────────┐ ║
+    ║  │  RULE 1: MANIFEST MUST BE REGENERATED AFTER ANY FILE CHANGES       │ ║
+    ║  │                                                                     │ ║
+    ║  │  The iO manifest (data/manifest.json) is the oracle's file list.   │ ║
+    ║  │  It contains a buildNonce that feeds into the JHILKE bootstrap      │ ║
+    ║  │  key derivation. If the manifest does not match the actual files:   │ ║
+    ║  │                                                                     │ ║
+    ║  │    → Oracle detects "files not in manifest"                        │ ║
+    ║  │    → Stale files get renamed to .pruned                            │ ║
+    ║  │    → Oracle hash changes (different files hashed)                  │ ║
+    ║  │    → JHILKE derives a different bootstrap key                      │ ║
+    ║  │    → ANNEX AES-GCM decryption fails between nodes                 │ ║
+    ║  │    → "Unsupported state or unable to authenticate data"            │ ║
+    ║  │                                                                     │ ║
+    ║  │  AFTER modifying, adding, or removing ANY .js file:                │ ║
+    ║  │    1. Run this build script (it regenerates the manifest)           │ ║
+    ║  │    2. Deploy the new manifest WITH the new source files             │ ║
+    ║  │                                                                     │ ║
+    ║  │  The build script calls generate-manifest.js automatically.         │ ║
+    ║  │  You do NOT need to run it manually — just run build-packages.ps1. │ ║
+    ║  └─────────────────────────────────────────────────────────────────────┘ ║
+    ║                                                                         ║
+    ║  ┌─────────────────────────────────────────────────────────────────────┐ ║
+    ║  │  RULE 2: UPGRADE DEPLOYMENTS MUST INCLUDE data/manifest.json       │ ║
+    ║  │                                                                     │ ║
+    ║  │  When upgrading an existing node (copying source dirs over):        │ ║
+    ║  │    - Copy all source directories (server/, mesh/, oracle/, etc.)    │ ║
+    ║  │    - ALSO copy data/manifest.json from the build output             │ ║
+    ║  │    - Do NOT copy data/machine-seed.json (hardware-encrypted)        │ ║
+    ║  │    - Do NOT copy data/node-key.json (derived from seed)             │ ║
+    ║  │    - Do NOT copy data/yakmesh.db (runtime database)                │ ║
+    ║  │    - Do NOT copy data/prahari-sponge-v3.json (entropy state)        │ ║
+    ║  │                                                                     │ ║
+    ║  │  Files to copy on upgrade:                                          │ ║
+    ║  │    source dirs + core files + data/manifest.json                    │ ║
+    ║  │                                                                     │ ║
+    ║  │  Files to NEVER copy on upgrade:                                    │ ║
+    ║  │    data/machine-seed.json, data/node-key.json, data/yakmesh.db,    │ ║
+    ║  │    data/prahari-sponge-v3.json, data/yakmesh.db-wal, logs/         │ ║
+    ║  └─────────────────────────────────────────────────────────────────────┘ ║
+    ║                                                                         ║
+    ║  ┌─────────────────────────────────────────────────────────────────────┐ ║
+    ║  │  RULE 3: PORT DIFFERENTIATION VIA ENV VARS ONLY                    │ ║
+    ║  │                                                                     │ ║
+    ║  │  yakmesh.config.js MUST stay byte-identical across ALL nodes.       │ ║
+    ║  │  The Validation Oracle hashes ALL .js files — changing config       │ ║
+    ║  │  creates a different network, cryptographically isolating nodes.    │ ║
+    ║  │                                                                     │ ║
+    ║  │  Use environment variables for per-node settings:                   │ ║
+    ║  │    YAKMESH_HTTP_PORT  (default 3080)                               │ ║
+    ║  │    YAKMESH_WS_PORT    (default 9080)                               │ ║
+    ║  │    YAKMESH_DATA_DIR   (default ./data)                             │ ║
+    ║  │    YAKMESH_BOOTSTRAP  (comma-separated ws:// URLs)                 │ ║
+    ║  │    YAKMESH_DOMAIN     (for ACME/TLS)                               │ ║
+    ║  │    YAKMESH_ACME_EMAIL (for Let's Encrypt)                          │ ║
+    ║  │    YAKMESH_SELF_ENDPOINT (public-facing URL)                       │ ║
+    ║  │                                                                     │ ║
+    ║  │  NEVER modify yakmesh.config.js per-node. EVER.                    │ ║
+    ║  └─────────────────────────────────────────────────────────────────────┘ ║
+    ║                                                                         ║
+    ║  ┌─────────────────────────────────────────────────────────────────────┐ ║
+    ║  │  RULE 4: NEVER WRITE .js FILES AT RUNTIME                          │ ║
+    ║  │                                                                     │ ║
+    ║  │  Test scripts, config generators, or any code that creates or       │ ║
+    ║  │  modifies .js files at runtime will change the oracle hash and      │ ║
+    ║  │  cryptographically isolate the node from the network.              │ ║
+    ║  └─────────────────────────────────────────────────────────────────────┘ ║
+    ║                                                                         ║
+    ║  ┌─────────────────────────────────────────────────────────────────────┐ ║
+    ║  │  RULE 5: build/ IS OUTPUT ONLY                                     │ ║
+    ║  │                                                                     │ ║
+    ║  │  NEVER run npm install, node server/index.js, or any process       │ ║
+    ║  │  from inside build/. This creates machine-specific runtime files    │ ║
+    ║  │  (machine-seed.json is hardware-encrypted) that contaminate the    │ ║
+    ║  │  build and BREAK deployments to other machines.                     │ ║
+    ║  │                                                                     │ ║
+    ║  │  Build → Copy to target → Run at target. Always.                   │ ║
+    ║  └─────────────────────────────────────────────────────────────────────┘ ║
     ╚═══════════════════════════════════════════════════════════════════════════╝
 #>
 
