@@ -510,10 +510,15 @@ class Aguwa {
         const jitterScale = 1 - 0.7 * this._networkJitter;
         const effectiveK = K * jitterScale;
 
-        // Kuramoto update: Δcorrection = K · A_j · sin(θ_j − θ_i)
-        // Our θ_i is implicitly 0 (we are our own reference frame)
+        // Kuramoto update with e-weighted coupling decay:
+        //   Δcorrection = K · A_j · e^{-|θ|} · sin(θ)
+        // e^{-|θ|} creates non-linear gravitational pull:
+        //   - Near resonance (θ≈0): e^0 = 1, full coupling strength
+        //   - Distant peers (|θ|≫0): coupling decays exponentially
+        // This dampens outlier influence and accelerates convergence
+        // at the mixed-radix optimal economy of e ≈ 2.718.
         const A_j = peer.aguwaScore;
-        const delta = effectiveK * A_j * Math.sin(peer.theta);
+        const delta = effectiveK * A_j * Math.exp(-Math.abs(peer.theta)) * Math.sin(peer.theta);
 
         // Convert radians back to ms (2π = one heartbeat period)
         const deltaMs = (delta / (2 * Math.PI)) * period;
