@@ -1,3 +1,27 @@
+/*
+ * YAKMESH™: Yielding Atomic Kernel Modular Encryption Secured Hub
+ * Copyright (C) 2026 YAKMESH™ / [JGP]
+ *
+ * TRADEMARK NOTICE:
+ * YAKMESH™ is a trademark of PeerQuanta, application pending (Serial No. 99594620).
+ * Unauthorized use of the YAKMESH™ name, logo, or branding is strictly prohibited.
+ *
+ * LICENSE:
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * "The standard is binary. The reality is ternary. The resonance is 432."
+ */
 /**
  * ╔═══════════════════════════════════════════════════════════════════════════════╗
  * ║                    ☯️ KARMA TRUST MODEL - ACTIONS BEAR CONSEQUENCES ☯️         ║
@@ -56,6 +80,8 @@
  */
 
 import { EventEmitter } from 'events';
+import { readFile, writeFile, mkdir } from 'fs/promises';
+import { dirname } from 'path';
 import { sha3_256 } from '@noble/hashes/sha3.js';
 import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js';
 
@@ -129,26 +155,26 @@ const DEFAULT_CONFIG = {
   // Time requirements for trust levels
   minAgeForGold: 0,                              // Immediate if mesh verified
   minAgeForPlatinum: 7 * 24 * 60 * 60 * 1000,    // 7 days for platinum
-  
+
   // Beacon consistency requirements
   minBeaconConsistency: 0.8,                     // 80% uptime for platinum
   beaconCheckWindow: 7 * 24 * 60 * 60 * 1000,    // 7 day window
-  
+
   // SSL requirements for platinum
   requireSSLForPlatinum: true,
   acceptSelfSignedSSL: true,                     // For DOKO-bound self-signed
-  
+
   // Mesh verification requirements
   minQuorumForGold: 3,
   minDiversityForGold: 3,                        // Different subnets
-  
+
   // Domain verification
   requireDomainForPlatinum: true,
-  
+
   // Trust decay
   trustDecayEnabled: true,
   trustDecayPeriod: 30 * 24 * 60 * 60 * 1000,    // Decay after 30 days inactive
-  
+
   // Automatic promotion
   autoPromoteEnabled: true,
   promotionCheckInterval: 60 * 60 * 1000,        // Check every hour
@@ -165,7 +191,7 @@ class KarmaEvidence {
     this.nodeId = nodeId;
     this.createdAt = Date.now();
     this.lastUpdated = Date.now();
-    
+
     // Evidence sources — verified uses balanced ternary trits:
     //   POSITIVE (+1) = verified/passed
     //   NEUTRAL  ( 0) = unchecked (not yet attempted)
@@ -178,7 +204,7 @@ class KarmaEvidence {
         gatesPassedCount: 0,
         dokoHash: null,
       },
-      
+
       // Mesh quorum verification
       meshQuorum: {
         verified: NEUTRAL,
@@ -187,7 +213,7 @@ class KarmaEvidence {
         verifiers: [],
         diversity: null,
       },
-      
+
       // SSL/TLS verification
       ssl: {
         verified: NEUTRAL,
@@ -196,7 +222,7 @@ class KarmaEvidence {
         certFingerprint: null,
         issuer: null,
       },
-      
+
       // Domain ownership
       domain: {
         verified: NEUTRAL,
@@ -204,7 +230,7 @@ class KarmaEvidence {
         domain: null,
         proofCount: 0,
       },
-      
+
       // Beacon consistency
       beaconHistory: {
         firstSeen: null,
@@ -213,7 +239,7 @@ class KarmaEvidence {
         consistency: 0,         // 0-1, percentage of expected beacons seen
       },
     };
-    
+
     // Computed trust level
     this.trustLevel = KarmaLevel.UNTRUSTED;
     this.trustScore = 0;        // 0-100 detailed score
@@ -290,11 +316,11 @@ class KarmaEvidence {
    */
   recordBeaconSighting() {
     const now = Date.now();
-    
+
     if (!this.sources.beaconHistory.firstSeen) {
       this.sources.beaconHistory.firstSeen = now;
     }
-    
+
     this.sources.beaconHistory.lastSeen = now;
     this.sources.beaconHistory.sightings++;
     this.lastUpdated = now;
@@ -307,21 +333,21 @@ class KarmaEvidence {
    */
   calculateBeaconConsistency(windowMs, expectedInterval = 60000) {
     const { firstSeen, sightings } = this.sources.beaconHistory;
-    
+
     if (!firstSeen) {
       this.sources.beaconHistory.consistency = 0;
       return 0;
     }
-    
+
     const timeActive = Date.now() - firstSeen;
     const effectiveWindow = Math.min(timeActive, windowMs);
     const expectedSightings = Math.floor(effectiveWindow / expectedInterval);
-    
+
     if (expectedSightings === 0) {
       this.sources.beaconHistory.consistency = 1;
       return 1;
     }
-    
+
     const consistency = Math.min(1, sightings / expectedSightings);
     this.sources.beaconHistory.consistency = consistency;
     return consistency;
@@ -378,10 +404,10 @@ export class KarmaTrustModel extends EventEmitter {
     this.config = { ...DEFAULT_CONFIG, ...config };
     this._inferenceEngine = config.inferenceEngine || null;
     this._modelName = 'karma-trust';
-    
+
     // Karma evidence per node (spiritual ledger)
     this.evidence = new Map();  // nodeId -> KarmaEvidence
-    
+
     // Stats
     this.stats = {
       assessmentsPerformed: 0,
@@ -394,7 +420,7 @@ export class KarmaTrustModel extends EventEmitter {
         [KarmaLevel.ENLIGHTENED]: 0,
       },
     };
-    
+
     // Promotion check interval (karmic advancement)
     this.promotionInterval = null;
     if (this.config.autoPromoteEnabled) {
@@ -455,16 +481,16 @@ export class KarmaTrustModel extends EventEmitter {
    */
   assessTrust(nodeId) {
     this.stats.assessmentsPerformed++;
-    
+
     const evidence = this.getEvidence(nodeId);
     const previousLevel = evidence.trustLevel;
-    
+
     // Calculate detailed score and level
     const assessment = this.calculateTrustLevel(evidence);
-    
+
     evidence.trustLevel = assessment.level;
     evidence.trustScore = assessment.score;
-    
+
     // Track level changes
     if (assessment.level !== previousLevel) {
       evidence.levelHistory.push({
@@ -473,11 +499,11 @@ export class KarmaTrustModel extends EventEmitter {
         at: Date.now(),
         reason: assessment.reason,
       });
-      
+
       // Update stats
       this.stats.nodesByLevel[previousLevel]--;
       this.stats.nodesByLevel[assessment.level]++;
-      
+
       if (assessment.level > previousLevel) {
         this.stats.promotions++;
         this.emit('promoted', {
@@ -496,7 +522,7 @@ export class KarmaTrustModel extends EventEmitter {
         });
       }
     }
-    
+
     return {
       nodeId,
       level: assessment.level,
@@ -516,11 +542,11 @@ export class KarmaTrustModel extends EventEmitter {
   calculateTrustLevel(evidence) {
     const sources = evidence.sources;
     const age = evidence.getAge();
-    
+
     // ═════════════════════════════════════════════════════════════════════
     // Check for UNTRUSTED conditions first (NEGATIVE karma)
     // ═════════════════════════════════════════════════════════════════════
-    
+
     // If DOKO verification explicitly failed (NEGATIVE trit — not just NEUTRAL/unchecked)
     if (sources.doko.verified === NEGATIVE) {
       return {
@@ -530,16 +556,16 @@ export class KarmaTrustModel extends EventEmitter {
         requirements: { dokoVerification: 'NEGATIVE' },
       };
     }
-    
+
     // SST geometric trust decay (replaces flat 30-day threshold)
     // Uses the 30-60-90 Synergy Triangle: MIDDLE angle = 7-day half-life
     if (this.config.trustDecayEnabled) {
       const elapsedMs = Date.now() - evidence.lastUpdated;
       const currentScore = evidence.trustScore || 0;
-      
+
       if (currentScore > 0 && elapsedMs > 0) {
         const decayedScore = decayTrust(currentScore / 100, elapsedMs, SynergyAngles.MIDDLE);
-        
+
         // Fully decayed: trust has gone below threshold
         if (decayedScore * 100 < 1) {
           return {
@@ -551,26 +577,26 @@ export class KarmaTrustModel extends EventEmitter {
         }
       }
     }
-    
+
     // ═════════════════════════════════════════════════════════════════════
     // Check for ENLIGHTENED level (formerly PLATINUM)
     // ═════════════════════════════════════════════════════════════════════
-    
+
     const enlightenedRequirements = {
       doko: sources.doko.verified === POSITIVE,
-      meshQuorum: sources.meshQuorum.verified === POSITIVE && 
-                  sources.meshQuorum.quorumSize >= this.config.minQuorumForGold,
+      meshQuorum: sources.meshQuorum.verified === POSITIVE &&
+        sources.meshQuorum.quorumSize >= this.config.minQuorumForGold,
       meshDiversity: sources.meshQuorum.diversity?.sufficient || false,
       ssl: !this.config.requireSSLForPlatinum || sources.ssl.verified === POSITIVE,
       age: age >= this.config.minAgeForPlatinum,
       domain: !this.config.requireDomainForPlatinum || sources.domain.verified === POSITIVE,
-      consistency: evidence.calculateBeaconConsistency(this.config.beaconCheckWindow) 
-                   >= this.config.minBeaconConsistency,
+      consistency: evidence.calculateBeaconConsistency(this.config.beaconCheckWindow)
+        >= this.config.minBeaconConsistency,
     };
-    
+
     const enlightenedScore = Object.values(enlightenedRequirements).filter(Boolean).length;
     const enlightenedTotal = Object.keys(enlightenedRequirements).length;
-    
+
     if (enlightenedScore === enlightenedTotal) {
       return {
         level: KarmaLevel.ENLIGHTENED,
@@ -579,25 +605,25 @@ export class KarmaTrustModel extends EventEmitter {
         requirements: enlightenedRequirements,
       };
     }
-    
+
     // ═════════════════════════════════════════════════════════════════════
     // Check for AWAKENED level (formerly GOLD)
     // ═════════════════════════════════════════════════════════════════════
-    
+
     const awakenedRequirements = {
       doko: sources.doko.verified === POSITIVE,
-      meshQuorum: sources.meshQuorum.verified === POSITIVE && 
-                  sources.meshQuorum.quorumSize >= this.config.minQuorumForGold,
+      meshQuorum: sources.meshQuorum.verified === POSITIVE &&
+        sources.meshQuorum.quorumSize >= this.config.minQuorumForGold,
       meshDiversity: sources.meshQuorum.diversity?.sufficient || false,
     };
-    
+
     const awakenedScore = Object.values(awakenedRequirements).filter(Boolean).length;
     const awakenedTotal = Object.keys(awakenedRequirements).length;
-    
+
     if (awakenedScore === awakenedTotal) {
       // Calculate how close to enlightenment
       const progressTowardsEnlightenment = enlightenedScore / enlightenedTotal;
-      
+
       return {
         level: KarmaLevel.AWAKENED,
         score: 50 + (progressTowardsEnlightenment * 40),
@@ -606,17 +632,17 @@ export class KarmaTrustModel extends EventEmitter {
         enlightenedProgress: enlightenedRequirements,
       };
     }
-    
+
     // ═════════════════════════════════════════════════════════════════════
     // Default to SEEKING level (formerly BRONZE)
     // ═════════════════════════════════════════════════════════════════════
-    
+
     const seekingScore = (
       (sources.doko.verified === POSITIVE ? 20 : 0) +
       (sources.beaconHistory.sightings > 0 ? 10 : 0) +
       (awakenedScore / awakenedTotal) * 20
     );
-    
+
     return {
       level: KarmaLevel.SEEKING,
       score: seekingScore,
@@ -742,7 +768,7 @@ export class KarmaTrustModel extends EventEmitter {
         reason: 'Unknown node',
       };
     }
-    
+
     const evidence = this.evidence.get(nodeId);
     return {
       level: evidence.trustLevel,
@@ -812,7 +838,7 @@ export class KarmaTrustModel extends EventEmitter {
    */
   startPromotionChecks() {
     if (this.promotionInterval) return;
-    
+
     this.promotionInterval = setInterval(() => {
       this.checkAllForPromotion();
     }, this.config.promotionCheckInterval);
@@ -849,7 +875,7 @@ export class KarmaTrustModel extends EventEmitter {
     for (const [nodeId, evidence] of this.evidence.entries()) {
       serializedEvidence.push(evidence.serialize());
     }
-    
+
     return {
       version: 1,
       timestamp: Date.now(),
@@ -863,16 +889,50 @@ export class KarmaTrustModel extends EventEmitter {
    */
   restore(data) {
     if (data?.version !== 1) return;
-    
+
     this.evidence.clear();
-    
+
     for (const evidenceData of data.evidence || []) {
       const evidence = KarmaEvidence.deserialize(evidenceData);
       this.evidence.set(evidence.nodeId, evidence);
     }
-    
+
     if (data.stats) {
       this.stats = { ...this.stats, ...data.stats };
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // DISK PERSISTENCE
+  // ═══════════════════════════════════════════════════════════════════════
+
+  /**
+   * Save KARMA state to disk (debounced — max once per 30s).
+   * @param {string} filePath — e.g. './data/karma-store.json'
+   */
+  async saveToDisk(filePath) {
+    const now = Date.now();
+    if (this._lastSaveMs && now - this._lastSaveMs < 30_000) return;
+    this._lastSaveMs = now;
+
+    const data = JSON.stringify(this.serialize());
+    await mkdir(dirname(filePath), { recursive: true });
+    await writeFile(filePath, data, 'utf8');
+  }
+
+  /**
+   * Load KARMA state from disk. Call once at startup.
+   * @param {string} filePath — e.g. './data/karma-store.json'
+   * @returns {boolean} true if restored successfully
+   */
+  async loadFromDisk(filePath) {
+    try {
+      const raw = await readFile(filePath, 'utf8');
+      const data = JSON.parse(raw);
+      this.restore(data);
+      return true;
+    } catch {
+      return false; // File doesn't exist yet or parse error — fresh start
     }
   }
 
@@ -887,11 +947,11 @@ export class KarmaTrustModel extends EventEmitter {
       [KarmaLevel.AWAKENED]: 0,
       [KarmaLevel.ENLIGHTENED]: 0,
     };
-    
+
     for (const evidence of this.evidence.values()) {
       byLevel[evidence.trustLevel]++;
     }
-    
+
     return {
       ...this.stats,
       nodesByLevel: byLevel,
@@ -926,21 +986,21 @@ export class KarmaTrustModel extends EventEmitter {
 export class TrustBasedAccessControl {
   constructor(trustModel) {
     this.trustModel = trustModel;
-    
+
     // Default access requirements (KARMA naming)
     this.accessRequirements = {
       // Content serving/requesting
       'content:request': KarmaLevel.SEEKING,
       'content:serve': KarmaLevel.SEEKING,
-      
+
       // Mesh participation
       'mesh:relay': KarmaLevel.AWAKENED,
       'mesh:route': KarmaLevel.AWAKENED,
-      
+
       // Verification participation
       'verify:domain': KarmaLevel.AWAKENED,
       'verify:quorum': KarmaLevel.AWAKENED,
-      
+
       // Admin functions
       'admin:revoke': KarmaLevel.ENLIGHTENED,
       'admin:announce': KarmaLevel.AWAKENED,
@@ -962,9 +1022,9 @@ export class TrustBasedAccessControl {
     if (required === undefined) {
       return { allowed: true, reason: 'No requirement set' };
     }
-    
+
     const { level, levelInfo } = this.trustModel.getTrustLevel(nodeId);
-    
+
     if (level >= required) {
       return {
         allowed: true,
@@ -973,7 +1033,7 @@ export class TrustBasedAccessControl {
         requiredLevel: required,
       };
     }
-    
+
     return {
       allowed: false,
       reason: `Insufficient trust level`,

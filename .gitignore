@@ -58,3 +58,8 @@ php-timing-test.php
 test-nodes/data-*/
 memory-bank/
 yakmesh.config.js
+
+# Draft/working documents (not for repo)
+yea.md
+*.txt
+"# YAKMESH™ LICENSE & TRADEMARK POLICY.md"

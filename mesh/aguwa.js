@@ -1,3 +1,27 @@
+/*
+ * YAKMESH™: Yielding Atomic Kernel Modular Encryption Secured Hub
+ * Copyright (C) 2026 YAKMESH™ / [JGP]
+ *
+ * TRADEMARK NOTICE:
+ * YAKMESH™ is a trademark of PeerQuanta, application pending (Serial No. 99594620).
+ * Unauthorized use of the YAKMESH™ name, logo, or branding is strictly prohibited.
+ *
+ * LICENSE:
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * "The standard is binary. The reality is ternary. The resonance is 432."
+ */
 /**
  * AGUWA — Adaptive Gyroscopic Universal Waveform Authority
  * अगुवा (aguwa) — "the one who goes first"
@@ -41,6 +65,8 @@ import { sha3_256 as _sha3 } from '@noble/hashes/sha3.js';
 import { utf8ToBytes, hexToBytes } from '@noble/hashes/utils.js';
 import { createLogger } from '../utils/logger.js';
 import { ManiTrustLevel, ManiPhaseTolerance, getManiTimeDetector } from '../oracle/time-source.js';
+import { PeerPhaseBuffer } from './peer-phase-buffer.js';
+import { Worker } from 'worker_threads';
 
 const log = createLogger('AGUWA');
 
@@ -94,34 +120,107 @@ const TRUST_SCORES = {
 // ─────────────────────────────────────────────────────────────────────────────
 
 class PeerPhaseState {
-    constructor(nodeId, capabilities) {
+    /**
+     * @param {string} nodeId
+     * @param {Object} capabilities
+     * @param {PeerPhaseBuffer|null} buffer  — SharedArrayBuffer-backed store (Phase 4)
+     * @param {number} slotIndex             — slot in buffer (-1 if no buffer)
+     */
+    constructor(nodeId, capabilities, buffer = null, slotIndex = -1) {
         this.nodeId = nodeId;
         this.capabilities = capabilities;
 
-        // Kuramoto state
-        this.theta = 0;               // Phase (radians, mapped from tick fraction)
-        this.predictedArrival = null;  // ms — when we expect next heartbeat
-        this.lastArrival = null;       // ms — when last heartbeat actually arrived
+        // SharedArrayBuffer delegation (Phase 4)
+        // When buffer is set, theta/stabilityScore/timeTrust/karmaScore/
+        // hardwareScore/lastArrival are backed by Atomics in the SAB.
+        // When null, plain JS properties (_theta etc.) are used instead.
+        this._buffer = buffer;
+        this._slotIndex = slotIndex;
 
-        // AGUWA confidence score factors
+        // Local fallbacks (used when no buffer)
+        this._theta = 0;
+        this._stabilityScore = 0.5;
+        this._timeTrust = 0;
+        this._karmaScore = 0.5;
+        this._hardwareScore = 0;
+        this._lastArrival = null;
+
+        // Initialize via setters (writes to buffer if available)
+        this.theta = 0;
+        this.predictedArrival = null;
         this.timeTrust = this._scoreTrust(capabilities);
-        this.karmaScore = 0.5;        // Updated externally
+        this.karmaScore = 0.5;
         this.hardwareScore = this._scoreHardware(capabilities);
-        this.stabilityScore = 0.5;    // Computed from arrival variance
+        this.stabilityScore = 0.5;
+        this.lastArrival = null;
 
-        // Stability tracking — circular buffer of arrival deltas (ms)
+        // Non-hot-path state — always plain JS (not in SAB)
         this.arrivalDeltas = [];
         this.arrivalDeltaVariance = Infinity;
-
-        // Dynamic period estimation — observed heartbeat interval (ms)
-        // Bootstrapped from first observation, then exponentially smoothed.
-        // Replaces the static `+ 1000` that broke on non-1s heartbeat intervals.
         this._estimatedPeriodMs = null;
+        this.minErrorMs = Infinity;
+        this.recentErrors = [];
+    }
 
-        // Propagation delay tracking — minimum residual error after Kuramoto correction
-        // Min one-way delay (ms) is a physical distance bound
-        this.minErrorMs = Infinity;   // Best-case residual ≈ propagation delay
-        this.recentErrors = [];       // Last N |errorMs| values for percentile analysis
+    // ── Buffer-delegated property accessors ──
+    // Hot-path fields go through Atomics when buffer exists.
+
+    get theta() {
+        if (this._buffer) return this._buffer.getTheta(this._slotIndex);
+        return this._theta;
+    }
+    set theta(val) {
+        if (this._buffer) { this._buffer.setTheta(this._slotIndex, val); return; }
+        this._theta = val;
+    }
+
+    get stabilityScore() {
+        if (this._buffer) return this._buffer.getStabilityScore(this._slotIndex);
+        return this._stabilityScore;
+    }
+    set stabilityScore(val) {
+        if (this._buffer) { this._buffer.setStabilityScore(this._slotIndex, val); return; }
+        this._stabilityScore = val;
+    }
+
+    get timeTrust() {
+        if (this._buffer) return this._buffer.getTimeTrust(this._slotIndex);
+        return this._timeTrust;
+    }
+    set timeTrust(val) {
+        if (this._buffer) { this._buffer.setTimeTrust(this._slotIndex, val); return; }
+        this._timeTrust = val;
+    }
+
+    get karmaScore() {
+        if (this._buffer) return this._buffer.getKarmaScore(this._slotIndex);
+        return this._karmaScore;
+    }
+    set karmaScore(val) {
+        if (this._buffer) { this._buffer.setKarmaScore(this._slotIndex, val); return; }
+        this._karmaScore = val;
+    }
+
+    get hardwareScore() {
+        if (this._buffer) return this._buffer.getHardwareScore(this._slotIndex);
+        return this._hardwareScore;
+    }
+    set hardwareScore(val) {
+        if (this._buffer) { this._buffer.setHardwareScore(this._slotIndex, val); return; }
+        this._hardwareScore = val;
+    }
+
+    get lastArrival() {
+        if (this._buffer && this._buffer.getLastArrival(this._slotIndex) > 0) {
+            return this._buffer.getLastArrival(this._slotIndex);
+        }
+        return this._lastArrival;
+    }
+    set lastArrival(val) {
+        if (this._buffer && val !== null) {
+            this._buffer.setLastArrival(this._slotIndex, val);
+        }
+        this._lastArrival = val;
     }
 
     /** Numeric trust from MANI level (0–1) */
@@ -256,6 +355,17 @@ class Aguwa {
         // Modulates Kuramoto coupling: high jitter → conservative, low → tight.
         // Range [0, 1] where 0 = perfectly stable, 1 = maximally noisy.
         this._networkJitter = 0;
+
+        /** @type {PeerPhaseBuffer|null} SharedArrayBuffer-backed peer state (Phase 4) */
+        this._buffer = null;
+
+        // ── Worker thread offloading (Phase 5) ──
+        /** @type {Worker|null} Persistent worker for batch Kuramoto updates */
+        this._worker = null;
+        /** True while worker is processing a batch — main thread skips theta writes */
+        this._workerInFlight = false;
+        /** Peer count threshold to offload to Worker (set in initBuffer) */
+        this._workerThreshold = Infinity;
     }
 
     // ───────────────────────────────────────────────────────────────────────────
@@ -289,6 +399,39 @@ class Aguwa {
         this._initialized = true;
         log.info(`AGUWA initialized | ω = ${this._omega.toFixed(6)} rad/s | hash = ${codeHash.slice(0, 16)}...`);
     }
+
+    /**
+     * Initialize the SharedArrayBuffer-backed PeerPhaseBuffer.
+     * Must be called after accel.probe() returns HW telemetry.
+     *
+     * @param {{ threads?: number, totalTops?: number }} hwTelemetry
+     */
+    initBuffer(hwTelemetry) {
+        if (this._buffer) return; // Already initialized
+        this._buffer = new PeerPhaseBuffer(hwTelemetry);
+
+        // Spawn persistent Worker for batch Kuramoto updates
+        this._workerThreshold = Math.max(100, Math.floor(this._buffer.maxPeers * 0.4));
+        this._worker = new Worker(new URL('./aguwa-worker.js', import.meta.url));
+        this._worker.on('message', (result) => {
+            // Apply aggregate correction from batch update
+            this._correctionMs += result.totalDeltaMs * 0.1; // 10% smoothing (matches inline)
+            this._workerInFlight = false;
+        });
+        this._worker.on('error', (err) => {
+            log.warn('AGUWA Worker error', { error: err.message });
+            this._workerInFlight = false; // Unblock, fall back to inline
+        });
+
+        log.info('PeerPhaseBuffer attached', {
+            maxPeers: this._buffer.maxPeers,
+            totalSlots: this._buffer.totalSlots,
+            workerThreshold: this._workerThreshold,
+        });
+    }
+
+    /** @returns {PeerPhaseBuffer|null} */
+    getBuffer() { return this._buffer; }
 
     /**
      * Calibrate AGUWA from a GPS time source.
@@ -432,8 +575,20 @@ class Aguwa {
      */
     addPeer(nodeId, capabilities) {
         if (!this.peers.has(nodeId)) {
-            this.peers.set(nodeId, new PeerPhaseState(nodeId, capabilities));
-            log.debug(`Peer added`, { peer: nodeId.slice(0, 8), aguwa: this.peers.get(nodeId).aguwaScore.toFixed(3) });
+            let slotIndex = -1;
+            if (this._buffer) {
+                slotIndex = this._buffer.allocateSlot(nodeId);
+                if (slotIndex === -1) {
+                    log.warn('PeerPhaseBuffer full — peer added without buffer slot', { peer: nodeId.slice(0, 8) });
+                }
+            }
+            const state = new PeerPhaseState(
+                nodeId, capabilities,
+                slotIndex !== -1 ? this._buffer : null,
+                slotIndex,
+            );
+            this.peers.set(nodeId, state);
+            log.debug(`Peer added`, { peer: nodeId.slice(0, 8), aguwa: state.aguwaScore.toFixed(3), bufferSlot: slotIndex });
         } else {
             // Update capabilities if peer reconnects
             const state = this.peers.get(nodeId);
@@ -449,6 +604,7 @@ class Aguwa {
      */
     removePeer(nodeId) {
         this.peers.delete(nodeId);
+        if (this._buffer) this._buffer.freeSlot(nodeId);
     }
 
     /**
@@ -460,6 +616,89 @@ class Aguwa {
     updateKarma(nodeId, karma) {
         const peer = this.peers.get(nodeId);
         if (peer) peer.karmaScore = Math.max(0, Math.min(1, karma));
+    }
+
+    // ───────────────────────────────────────────────────────────────────────────
+    // Weighted Ternary Admission (Phase 3)
+    // ───────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Compute admission verdict for an incoming peer.
+     *
+     * Uses HELLO payload (capabilities, persistentId) + persisted KARMA
+     * to produce a ternary admission decision:
+     *   AFFIRM (+1) — peerCount < 80% maxPeers
+     *   ABSTAIN (0) — peerCount ∈ [80%, 100%)
+     *   DENY   (-1) — peerCount ≥ maxPeers
+     *
+     * @param {Object} params
+     * @param {Object} params.capabilities — from HELLO payload
+     * @param {string} [params.persistentId] — for KARMA lookup
+     * @param {Object} [params.karmaModel] — KarmaTrustModel instance
+     * @returns {{ verdict: number, priority: number, lowestPeer: string|null }}
+     */
+    admissionVerdict({ capabilities, persistentId, karmaModel } = {}) {
+        const maxPeers = this._buffer ? this._buffer.maxPeers : 128;
+        const count = this.peers.size;
+        const util = count / maxPeers;
+
+        // Compute admission priority score for this incoming peer
+        const priority = this._admissionPriority({ capabilities, persistentId, karmaModel });
+
+        let verdict;
+        if (util < 0.8) {
+            verdict = 1;  // AFFIRM
+        } else if (util < 1.0) {
+            verdict = 0;  // ABSTAIN
+        } else {
+            verdict = -1; // DENY
+        }
+
+        // On DENY, find lowest-priority connected peer for potential eviction
+        let lowestPeer = null;
+        if (verdict === -1) {
+            let lowestScore = Infinity;
+            for (const [peerId, state] of this.peers) {
+                const score = state.aguwaScore;
+                if (score < lowestScore) {
+                    lowestScore = score;
+                    lowestPeer = peerId;
+                }
+            }
+            // If incoming > lowest connected → evict lowest
+            if (lowestPeer && priority > lowestScore) {
+                verdict = 1; // Upgrade to AFFIRM (evict lowest)
+            }
+        }
+
+        return { verdict, priority, lowestPeer, maxPeers, utilization: util };
+    }
+
+    /**
+     * Compute admission priority score from HELLO payload + KARMA.
+     * admissionPriority = 0.3×karmaWeight + 0.3×hardwareWeight + 0.2×returningBonus + 0.2×maniTrust
+     * @private
+     */
+    _admissionPriority({ capabilities, persistentId, karmaModel } = {}) {
+        // KARMA weight: lookup persistentId → trust level
+        let karmaWeight = 0;
+        let returningBonus = 0;
+        if (karmaModel && persistentId) {
+            const { level } = karmaModel.getTrustLevel(persistentId);
+            karmaWeight = [0, 0.25, 0.5, 1.0][level] ?? 0;
+            returningBonus = level > 0 ? 1.0 : 0; // Known node returning
+        }
+
+        // Hardware weight: log-scale TOPS
+        const tops = capabilities?.totalTops || 0;
+        const hardwareWeight = tops > 0 ? Math.min(1, Math.log2(tops + 1) / 7) : 0.1;
+
+        // MANI trust weight
+        const maniTrust = capabilities?.maniTrust || 'UNSYNC';
+        const maniWeights = { QUANTUM: 1.0, ATOMIC: 0.95, GPS: 0.85, PTP: 0.75, NTP: 0.4, UNSYNC: 0.1 };
+        const maniWeight = maniWeights[maniTrust] ?? 0.1;
+
+        return 0.3 * karmaWeight + 0.3 * hardwareWeight + 0.2 * returningBonus + 0.2 * maniWeight;
     }
 
     // ───────────────────────────────────────────────────────────────────────────
@@ -552,6 +791,41 @@ class Aguwa {
                 totalCorrection: this._correctionMs.toFixed(1),
             });
         }
+
+        // Event-driven capacity recalculation (rate-limited to 2s in buffer)
+        if (this._buffer) {
+            this._buffer.recalculateCapacity(this._networkJitter, this.orderParameter());
+        }
+
+        // ── Worker batch dispatch (Phase 5) ──
+        // When peer count exceeds threshold, offload theta computation to Worker.
+        // Worker reads/writes theta via Atomics on the SharedArrayBuffer — zero copy.
+        if (this._worker && this._buffer && this.peers.size > this._workerThreshold && !this._workerInFlight) {
+            const activeSlots = [...this._buffer.activeSlots()];
+            if (activeSlots.length > 0) {
+                this._workerInFlight = true;
+                this._worker.postMessage({
+                    sharedBuffer: this._buffer.getSharedBuffer(),
+                    overflowBuffer: this._buffer.getOverflowBuffer(),
+                    primarySlots: this._buffer.primarySlotCount,
+                    activeSlots,
+                    omega: this._omega,
+                    couplingConfig: {
+                        high: AGUWA_CONFIG.couplingHigh,
+                        mid: AGUWA_CONFIG.couplingMid,
+                        low: AGUWA_CONFIG.couplingLow,
+                        min: AGUWA_CONFIG.couplingMin,
+                    },
+                    weights: {
+                        timeTrust: AGUWA_CONFIG.weightTimeTrust,
+                        karma: AGUWA_CONFIG.weightKarma,
+                        hardware: AGUWA_CONFIG.weightHardware,
+                        stability: AGUWA_CONFIG.weightStability,
+                    },
+                    defaultCoupling: AGUWA_CONFIG.couplingMid, // conservative batch coupling
+                });
+            }
+        }
     }
 
     // ───────────────────────────────────────────────────────────────────────────
@@ -615,6 +889,13 @@ class Aguwa {
             peerCount: this.peers.size,
             networkJitter: this._networkJitter,
             entropyLinked: this._entropyCallback !== null,
+            buffer: this._buffer ? {
+                peerCount: this._buffer.peerCount,
+                maxPeers: this._buffer.maxPeers,
+                totalSlots: this._buffer.totalSlots,
+                utilization: +this._buffer.utilization.toFixed(3),
+                hasOverflow: this._buffer.hasOverflow,
+            } : null,
             peers: peerStates,
         };
     }
@@ -752,6 +1033,18 @@ class Aguwa {
         }
 
         return suspects;
+    }
+
+    /**
+     * Shut down Worker thread and release resources.
+     * Safe to call multiple times.
+     */
+    destroy() {
+        if (this._worker) {
+            this._worker.terminate();
+            this._worker = null;
+            this._workerInFlight = false;
+        }
     }
 }
 
