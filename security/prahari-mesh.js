@@ -23,9 +23,9 @@
  * ⚠️  TIMESTAMP VALIDATION DEPENDS ON AGUWA BEING PROPERLY WIRED
  * ═══════════════════════════════════════════════════════════════════════════════
  * _validateTimestamp() compares aguwa.now() against remote timestamp.
- * GPS tolerance is ±500ms + 2s propagation buffer.
- * If AGUWA is NOT calibrated (init + GPS + onHeartbeat), this means
- * aguwa.now() === Date.now() and commit-reveal WILL reject all peers.
+ * Tolerance = max(MANI precision, |correctionMs| + 2s) + 2s propagation.
+ * MANI precision alone is insufficient — it measures time-source quality,
+ * not inter-node clock drift. correctionMs accounts for actual drift.
  * See mesh/aguwa.js header for the three required wirings.
  * ═══════════════════════════════════════════════════════════════════════════════
  * Combined entropy = XOR of all revealed contributions.
@@ -392,10 +392,17 @@ export class CommitRevealEntropy {
      */
     _validateTimestamp(remoteTimestamp) {
         const now = aguwa.now();
-        const tolerance = this._getTimestampTolerance();
+        const maniToleranceMs = this._getTimestampTolerance();
+
+        // MANI tolerance measures time-source precision (GPS=±500ms),
+        // NOT inter-node clock drift. Two GPS nodes can have system clocks
+        // seconds apart before AGUWA Kuramoto convergence corrects them.
+        // Use the larger of MANI precision and actual clock drift + margin.
+        const driftToleranceMs = Math.abs(aguwa._correctionMs) + 2000;
+        const tolerance = Math.max(maniToleranceMs, driftToleranceMs);
+
         // Add gossip propagation buffer — messages take real time to traverse the mesh
         // (signing, WS send, receive, verify, gossip dispatch, event emission).
-        // Without this, GPS's 500ms tolerance rejects valid messages from LAN peers.
         const propagationBuffer = 2000;
         return Math.abs(now - remoteTimestamp) <= tolerance + propagationBuffer;
     }
