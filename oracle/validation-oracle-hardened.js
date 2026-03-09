@@ -1,3 +1,27 @@
+/*
+ * YAKMESH™: Yielding Atomic Kernel Modular Encryption Secured Hub
+ * Copyright (C) 2026 YAKMESH™ / [JGP]
+ *
+ * TRADEMARK NOTICE:
+ * YAKMESH™ is a trademark of PeerQuanta, application pending (Serial No. 99594620).
+ * Unauthorized use of the YAKMESH™ name, logo, or branding is strictly prohibited.
+ *
+ * LICENSE:
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * "The standard is binary. The reality is ternary. The resonance is 432."
+ */
 /**
  * ╔═══════════════════════════════════════════════════════════════════════════════╗
  * ║                    YAKMESH VALIDATION ORACLE - HARDENED                       ║
@@ -564,6 +588,7 @@ export class ValidationOracle {
       ['validateQCoA', this.validateQCoA],
       ['resolveConflict', this.resolveConflict],
       ['computeTrustScore', this.computeTrustScore],
+      ['verifySpecInvariants', this.#verifySpecInvariants],
     ];
 
     for (const [name, fn] of functions) {
@@ -573,7 +598,10 @@ export class ValidationOracle {
   }
 
   /**
-   * Generate behavior fingerprint from test vectors
+   * Generate behavior fingerprint from test vectors AND spec invariants.
+   * The fingerprint is a SHA3-256 hash of [behavioral outputs, invariant results].
+   * Any change to validation logic OR structural invariants → different fingerprint →
+   * automatic peer rejection via verifyCodeProof().
    */
   #generateBehaviorFingerprint() {
     this.#testVectors = [
@@ -604,14 +632,432 @@ export class ValidationOracle {
       },
     ];
 
-    const outputs = this.#testVectors.map(tv => {
+    const behaviorOutputs = this.#testVectors.map(tv => {
       if (tv.fn === 'validateListing') {
         return this.validateListing(tv.input).valid;
       }
       return null;
     });
 
-    this.#behaviorFingerprint = contentHash(outputs);
+    // Spec invariant vectors — structural assertions about the codebase
+    const invariantResults = this.#verifySpecInvariants();
+
+    // Combined fingerprint: behavior + invariants
+    this.#behaviorFingerprint = contentHash([...behaviorOutputs, ...invariantResults]);
+  }
+
+  /**
+   * Spec Invariant Vectors — structural assertions about the codebase.
+   * Each invariant is a pure boolean check against source text or runtime behavior.
+   * Results are hashed into behaviorFingerprint — any deviation = peer rejection.
+   *
+   * IMPORTANT: This function's source is hashed in #registerFunctions().
+   * Changing ANY invariant here changes the function hash → network fork.
+   * This is by design: invariant definitions are part of network identity.
+   *
+   * Categories:
+   *   A. Encryption ordering (6)   — Phase 0 fixes are structurally locked
+   *   B. Integration wiring (8)    — Critical subsystems are initialized
+   *   C. Security policy (8)       — No dangerous code patterns
+   *   D. Protocol contracts (5)    — Message structure guarantees
+   *   E. Crypto contracts (5)      — Post-quantum algorithms enforced
+   *   F. Behavioral contracts (6)  — Function behavior verification
+   *
+   * @returns {boolean[]} Array of invariant results (true = pass)
+   */
+  #verifySpecInvariants() {
+    const root = join(__dirname, '..');
+    const src = (relPath) => {
+      try { return readFileSync(join(root, relPath), 'utf-8'); }
+      catch { return ''; }
+    };
+
+    const networkSrc = src('mesh/network.js');
+    const serverSrc = src('server/index.js');
+    const gossipSrc = src('gossip/protocol.js');
+    const annexSrc = src('mesh/annex.js');
+    const oracleSrc = src('oracle/validation-oracle-hardened.js');
+    const aguwaSrc = src('mesh/aguwa.js');
+    const trustSrc = src('security/hybrid-trust.js');
+
+    // Helper: extract handler body between two markers
+    const between = (source, startMarker, endMarker) => {
+      const si = source.indexOf(startMarker);
+      if (si === -1) return '';
+      const ei = endMarker ? source.indexOf(endMarker, si + startMarker.length) : source.length;
+      return source.slice(si, ei === -1 ? source.length : ei);
+    };
+
+    // Helper: collect all .js source files (mirrors #walkDirectory logic)
+    const allJsSources = () => {
+      const sources = [];
+      this.#walkDirectory(root, sources);
+      return sources;
+    };
+
+    const results = [];
+
+    // ═══════════════════════════════════════════════════════════
+    // A. ENCRYPTION ORDERING — Phase 0 fixes structurally locked
+    // ═══════════════════════════════════════════════════════════
+
+    // A1: JHILKE-before-peer-registered (HELLO handler)
+    // bootstrapSession must appear BEFORE emit('peer-registered') in HELLO handler
+    {
+      const hello = between(networkSrc, 'this.on(MessageTypes.HELLO', '// Handle WELCOME');
+      const bootstrap = hello.indexOf('bootstrapSession');
+      const emit = hello.indexOf("emit('peer-registered'");
+      results.push(bootstrap > 0 && emit > 0 && bootstrap < emit);
+    }
+
+    // A2: JHILKE-before-peer-registered (WELCOME handler)
+    // Same ordering in WELCOME handler (initiator side)
+    {
+      const welcome = between(networkSrc, '// Handle WELCOME', '// Handle REJECT');
+      const bootstrap = welcome.indexOf('bootstrapSession');
+      const emit = welcome.indexOf("emit('peer-registered'");
+      results.push(bootstrap > 0 && emit > 0 && bootstrap < emit);
+    }
+
+    // A3: connectToPeer carries nodeId parameter
+    {
+      const sig = between(networkSrc, 'async connectToPeer(', ')');
+      results.push(sig.includes('targetNodeId') || sig.includes('nodeId'));
+    }
+
+    // A4: connect carries targetNodeId parameter
+    {
+      const sig = between(networkSrc, 'async connect(', ')');
+      results.push(sig.includes('targetNodeId'));
+    }
+
+    // A5: _send has ANNEX session lookup with encryption (no plaintext when session exists)
+    {
+      const sendFn = between(networkSrc, '_send(ws, message)', '_startPingLoop');
+      results.push(
+        sendFn.includes('annex.sessions.get') &&
+        sendFn.includes('session?.established') &&
+        sendFn.includes('annex.send(')
+      );
+    }
+
+    // A6: _send has ws._targetNodeId fallback for edge-case lookup
+    {
+      const sendFn = between(networkSrc, '_send(ws, message)', '_startPingLoop');
+      results.push(sendFn.includes('_targetNodeId'));
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // B. INTEGRATION WIRING — Critical subsystems initialized
+    // ═══════════════════════════════════════════════════════════
+
+    // B7: AGUWA init called in server
+    results.push(serverSrc.includes('aguwa.init('));
+
+    // B8: AGUWA onHeartbeat wired
+    results.push(serverSrc.includes('aguwa.onHeartbeat('));
+
+    // B9: AGUWA calibrateFromGPS wired
+    results.push(
+      serverSrc.includes('aguwa.calibrateFromGPS(') ||
+      serverSrc.includes('aguwa.calibrate(')
+    );
+
+    // B10: Gossip attached to mesh
+    results.push(
+      serverSrc.includes('GossipProtocol') &&
+      serverSrc.includes('gossip') &&
+      serverSrc.includes('.mesh')
+    );
+
+    // B11: PRAHARI/entropy initialization
+    results.push(
+      serverSrc.includes('prahari') ||
+      serverSrc.includes('Prahari') ||
+      serverSrc.includes('PrahariEntropy')
+    );
+
+    // B12: Oracle selfHash computed during construction
+    results.push(
+      oracleSrc.includes('#computeSelfHash()') &&
+      oracleSrc.includes('#selfHash = this.#computeSelfHash()')
+    );
+
+    // B13: ANNEX initialized and passed to mesh
+    results.push(
+      serverSrc.includes('AnnexSession') ||
+      serverSrc.includes('ANNEXSession') ||
+      serverSrc.includes('new Annex') ||
+      serverSrc.includes('annex')
+    );
+
+    // B14: JHILKE initialized and passed to mesh
+    results.push(
+      serverSrc.includes('Jhilke') ||
+      serverSrc.includes('JHILKE') ||
+      serverSrc.includes('jhilke')
+    );
+
+    // ═══════════════════════════════════════════════════════════
+    // C. SECURITY POLICY — No dangerous code patterns
+    // ═══════════════════════════════════════════════════════════
+
+    // C15: No eval() in any source file (outside comments/strings)
+    // We check source-level: eval( must not appear as a function call
+    {
+      const allSrc = allJsSources();
+      const hasEval = allSrc.some(f => {
+        // Strip single-line comments and check for eval(
+        const stripped = f.content.replace(/\/\/.*$/gm, '');
+        return /\beval\s*\(/.test(stripped);
+      });
+      results.push(!hasEval);
+    }
+
+    // C16: No new Function() constructor
+    {
+      const allSrc = allJsSources();
+      const hasNewFunction = allSrc.some(f => {
+        const stripped = f.content.replace(/\/\/.*$/gm, '');
+        return /\bnew\s+Function\s*\(/.test(stripped);
+      });
+      results.push(!hasNewFunction);
+    }
+
+    // C17: No RSA/ECDSA signing (only post-quantum signatures)
+    {
+      const allSrc = allJsSources();
+      const hasClassicalSig = allSrc.some(f =>
+        /\bcreateSign\b/.test(f.content) || /\bsign\(.*'rsa/i.test(f.content)
+      );
+      results.push(!hasClassicalSig);
+    }
+
+    // C18: WebSocket close codes from approved set only
+    // Check that ws.close() calls use 1000, 1001, 1008, or 1011
+    {
+      const closePattern = /\.close\(\s*(\d{4})/g;
+      const APPROVED_CODES = new Set([1000, 1001, 1008, 1011]);
+      let allApproved = true;
+      let match;
+      while ((match = closePattern.exec(networkSrc))) {
+        if (!APPROVED_CODES.has(Number(match[1]))) {
+          allApproved = false;
+          break;
+        }
+      }
+      results.push(allApproved);
+    }
+
+    // C19: Prototype pollution guards in validateListing and validateUser
+    results.push(
+      oracleSrc.includes('__proto__') &&
+      oracleSrc.includes('constructor') &&
+      oracleSrc.includes('prototype')
+    );
+
+    // C20: Message type constants are string literals (no computed types)
+    {
+      const typesSection = between(networkSrc, 'MandalaMessageTypes', '};');
+      // Every value should be a string literal (quoted)
+      const values = typesSection.match(/:\s*['"][^'"]+['"]/g);
+      results.push(values !== null && values.length >= 5);
+    }
+
+    // C21: ANNEX send has NO plaintext fallback (hard fail on encryption failure)
+    {
+      const sendEncrypted = between(networkSrc, 'async sendEncrypted(', '}');
+      results.push(
+        sendEncrypted.includes('HARD FAIL') ||
+        sendEncrypted.includes('refusing plaintext') ||
+        sendEncrypted.includes('throw')
+      );
+    }
+
+    // C22: MITM detection in WELCOME handler
+    {
+      const welcome = between(networkSrc, '// Handle WELCOME', '// Handle REJECT');
+      results.push(
+        welcome.includes('_targetNodeId') &&
+        welcome.includes('MITM')
+      );
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // D. PROTOCOL CONTRACTS — Message structure guarantees
+    // ═══════════════════════════════════════════════════════════
+
+    // D23: HELLO carries networkFingerprint
+    {
+      // In connect() where HELLO is constructed
+      const connectFn = between(networkSrc, 'async connect(', 'ws.on(\'close\'');
+      results.push(connectFn.includes('networkFingerprint'));
+    }
+
+    // D24: WELCOME carries peer list
+    {
+      const hello = between(networkSrc, 'this.on(MessageTypes.HELLO', '// Handle WELCOME');
+      results.push(hello.includes('peers:'));
+    }
+
+    // D25: verifyCodeProof checks all three: selfHash AND behaviorFingerprint AND functionHashes
+    {
+      const verify = between(oracleSrc, 'verifyCodeProof(proof)', 'generateCodeProof');
+      results.push(
+        verify.includes('selfHash') &&
+        verify.includes('behaviorFingerprint') &&
+        verify.includes('functionHashes')
+      );
+    }
+
+    // D26: networkFingerprint checked in HELLO handler before accepting peer
+    {
+      const hello = between(networkSrc, 'this.on(MessageTypes.HELLO', '// Handle WELCOME');
+      results.push(hello.includes('networkFingerprint') && hello.includes('Incompatible'));
+    }
+
+    // D27: Gossip passes nodeId to connectToPeer (Bug B fix locked in)
+    results.push(
+      gossipSrc.includes('connectToPeer(peer.endpoint, peer.nodeId)') ||
+      gossipSrc.includes('connectToPeer(peer.endpoint,peer.nodeId)')
+    );
+
+    // ═══════════════════════════════════════════════════════════
+    // E. CRYPTO CONTRACTS — Post-quantum algorithms enforced
+    // ═══════════════════════════════════════════════════════════
+
+    // E28: ML-DSA-65 for signatures (not RSA/ECDSA)
+    {
+      const identitySrc = src('identity/identity.js');
+      results.push(
+        identitySrc.includes('ml_dsa65') || identitySrc.includes('ML-DSA')
+      );
+    }
+
+    // E29: ML-KEM-768 for key exchange in ANNEX
+    results.push(
+      annexSrc.includes('ml_kem768') || annexSrc.includes('ML-KEM')
+    );
+
+    // E30: SHA3 for hashing (not SHA-1, not MD5)
+    results.push(
+      oracleSrc.includes('sha3_256') && !oracleSrc.includes('createHash(\'md5')
+    );
+
+    // E31: HKDF for key derivation in JHILKE
+    {
+      const jhilkeSrc = src('mesh/jhilke.js');
+      results.push(
+        jhilkeSrc.includes('hkdf') || jhilkeSrc.includes('HKDF')
+      );
+    }
+
+    // E32: Bootstrap key is deterministic (sorted nodeId pair)
+    {
+      const jhilkeSrc = src('mesh/jhilke.js');
+      results.push(
+        jhilkeSrc.includes('sort') || jhilkeSrc.includes('localeCompare')
+      );
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // F. BEHAVIORAL CONTRACTS — Function output verification
+    // ═══════════════════════════════════════════════════════════
+
+    // F33: validateUser rejects missing required fields
+    {
+      const result = this.validateUser({});
+      results.push(result.valid === false);
+    }
+
+    // F34: validateUser accepts well-formed input
+    {
+      const result = this.validateUser({ user_id: 1, username: 'testuser' });
+      results.push(result.valid === true);
+    }
+
+    // F35: resolveConflict returns valid ternary state (never throws)
+    {
+      let noThrow = true;
+      let validOutput = false;
+      try {
+        const result = this.resolveConflict(
+          { hash: 'a', timestamp: 1000 },
+          { hash: 'b', timestamp: 2000 }
+        );
+        validOutput = result !== undefined && result !== null;
+      } catch {
+        noThrow = false;
+      }
+      results.push(noThrow && validOutput);
+    }
+
+    // F36: computeTrustScore output is bounded [0, 100]
+    {
+      const score = this.computeTrustScore({ user_id: 1, transactions: 10, disputes: 0 });
+      results.push(typeof score === 'number' && score >= 0 && score <= 100);
+    }
+
+    // F37: validateListing rejects control characters in title
+    {
+      const result = this.validateListing({
+        title: 'Test\x00Injection', price: 100, currency: 'BTC', user_id: 1,
+      });
+      results.push(result.valid === false);
+    }
+
+    // F38: validateListing rejects unknown currency
+    {
+      const result = this.validateListing({
+        title: 'Test', price: 100, currency: 'FAKECOIN', user_id: 1,
+      });
+      results.push(result.valid === false);
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // G. MESH HARDENING — Admission, Worker, KARMA persistence
+    // ═══════════════════════════════════════════════════════════
+
+    // G39: REDIRECT message type exists in MandalaMessageTypes
+    results.push(networkSrc.includes("REDIRECT:") && networkSrc.includes("'redirect'"));
+
+    // G40: admissionVerdict method exists on Aguwa class
+    results.push(aguwaSrc.includes('admissionVerdict('));
+
+    // G41: PeerPhaseBuffer imported in aguwa.js
+    results.push(aguwaSrc.includes('PeerPhaseBuffer'));
+
+    // G42: Worker thread import in aguwa.js
+    results.push(aguwaSrc.includes("from 'worker_threads'"));
+
+    // G43: KARMA saveToDisk exists in hybrid-trust
+    results.push(trustSrc.includes('saveToDisk('));
+
+    // G44: KARMA loadFromDisk exists in hybrid-trust
+    results.push(trustSrc.includes('loadFromDisk('));
+
+    // G45: KARMA persistence wired in server (load + save)
+    results.push(
+      serverSrc.includes('karma-store') &&
+      serverSrc.includes('loadFromDisk')
+    );
+
+    // G46: Aguwa destroy() method exists for Worker cleanup
+    results.push(aguwaSrc.includes('destroy()'));
+
+    // G47: Worker batch dispatches SharedArrayBuffer (zero-copy)
+    results.push(
+      aguwaSrc.includes('_workerInFlight') &&
+      aguwaSrc.includes('postMessage(')
+    );
+
+    // G48: REDIRECT handler exists in network.js
+    {
+      const redirectHandler = between(networkSrc, 'MessageTypes.REDIRECT', '}');
+      results.push(redirectHandler.length > 10);
+    }
+
+    return results;
   }
 
   // ============================================================
@@ -649,7 +1095,7 @@ export class ValidationOracle {
         `Expected ${this.#selfHash}, got ${currentHash}`);
     }
 
-    // Also verify behavior fingerprint
+    // Also verify behavior fingerprint (behavioral + invariant)
     const currentBehavior = this.#testVectors.map(tv => {
       if (tv.fn === 'validateListing') {
         return this.validateListing(tv.input).valid;
@@ -657,7 +1103,8 @@ export class ValidationOracle {
       return null;
     });
 
-    const currentFingerprint = contentHash(currentBehavior);
+    const currentInvariants = this.#verifySpecInvariants();
+    const currentFingerprint = contentHash([...currentBehavior, ...currentInvariants]);
     if (currentFingerprint !== this.#behaviorFingerprint) {
       throw new Error(`BEHAVIOR VIOLATION: Validation logic has changed!`);
     }

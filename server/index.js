@@ -1,3 +1,27 @@
+/*
+ * YAKMESH™: Yielding Atomic Kernel Modular Encryption Secured Hub
+ * Copyright (C) 2026 YAKMESH™ / [JGP]
+ *
+ * TRADEMARK NOTICE:
+ * YAKMESH™ is a trademark of PeerQuanta, application pending (Serial No. 99594620).
+ * Unauthorized use of the YAKMESH™ name, logo, or branding is strictly prohibited.
+ *
+ * LICENSE:
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ *
+ * "The standard is binary. The reality is ternary. The resonance is 432."
+ */
 /**
  * Yakmesh Node Server
  * Main entry point for running a Yakmesh node
@@ -527,6 +551,10 @@ export class YakmeshNode {
     if (this.oracle?.selfHash) {
       aguwa.init(this.oracle.selfHash);
     }
+
+    // 1a'. Initialize PeerPhaseBuffer with hardware telemetry from accel.js
+    //      SharedArrayBuffer-backed peer state for zero-copy Worker handoff
+    aguwa.initBuffer({ threads: accel.HW.threads, totalTops: accel.HW.totalTops });
 
     // 1b. Initialize time source detection (async — MA-902 SNMP init)
     await this._initTimeSource();
@@ -1818,6 +1846,21 @@ export class YakmeshNode {
       inferenceEngine: accel.inference,
     });
 
+    // Restore persisted KARMA state from disk (non-blocking, non-fatal)
+    const karmaPath = `${this.config?.node?.dataDir || './data'}/karma-store.json`;
+    this.karmaModel.loadFromDisk(karmaPath).then(ok => {
+      if (ok) log.info(`☯️ KARMA restored from ${karmaPath} (${this.karmaModel.evidence.size} nodes)`);
+    }).catch(() => { });
+
+    // Auto-save KARMA on trust level changes (debounced to max once/30s inside saveToDisk)
+    const saveKarma = () => {
+      this.karmaModel.saveToDisk(karmaPath).catch(err => {
+        log.debug('KARMA save failed (non-fatal)', { err: err.message });
+      });
+    };
+    this.karmaModel.on('promoted', saveKarma);
+    this.karmaModel.on('demoted', saveKarma);
+
     // Wire SAKSHI velocity alerts → KARMA trust adjustments (ternary: NEGATIVE/NEUTRAL/ignored)
     if (this.velocityMonitor) {
       this.velocityMonitor.onAlert((alert) => {
@@ -1891,6 +1934,9 @@ export class YakmeshNode {
     });
 
     log.info('✓ KARMA trust model initialized (SAKSHI → trust assessment pipeline)');
+
+    // Wire KARMA model to mesh for admission decisions
+    if (this.mesh) this.mesh.setKarmaModel(this.karmaModel);
   }
 
   // =========================================================================
@@ -5362,10 +5408,11 @@ export class YakmeshNode {
       if (currentPeers.has(candidate.nodeId)) continue;
 
       // Try WebSocket first (preferred — full duplex)
+      // Pass nodeId for MITM detection in WELCOME handler
       if (candidate.wsEndpoint) {
         try {
           log.info(`SHERPA auto-connect WS → ${candidate.wsEndpoint} (${peerTag(candidate.nodeId)})`);
-          await this.mesh.connect(candidate.wsEndpoint);
+          await this.mesh.connect(candidate.wsEndpoint, candidate.nodeId);
           this.sherpa.markConnected(candidate.nodeId);
           log.info(`SHERPA auto-connect ✓ ${peerTag(candidate.nodeId)} via WS`);
           continue;  // Success — no need for relay fallback
