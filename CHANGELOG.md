@@ -2,6 +2,75 @@
 
 All notable changes to YAKMESH will be documented in this file.
 
+## [3.3.0] - 2026-02-28
+
+### 🏔️ ARCH-RESONANCE: 8-Phase Mesh Hardening + License Migration + Repo Cleanup
+
+*Theme: "Every connection is an interview. Every peer earns its slot. The mesh breathes."*
+
+Comprehensive mesh hardening across 8 phases, AGPLv3 license migration with trademark protections,
+and repository cleanup removing 80+ unnecessary files.
+
+---
+
+#### Phase 0: Bug Fixes (JHILKE, HELLO/WELCOME, _send fallback)
+
+- **JHILKE deterministic ordering** — Chirp key derived from `HKDF(codeHash + buildNonce + sorted(nodeId1, nodeId2))`, guaranteeing both sides compute the same key
+- **targetNodeId in connect/connectToPeer** — Prevents MITM by verifying expected peer identity
+- **_send() fallback** — Graceful plaintext fallback when ANNEX channel not yet established
+- **HELLO handler JHILKE ordering** — Consistent key derivation regardless of which side initiates
+
+#### Phase 0.5: 48 Spec Invariant Vectors
+
+- **7 categories (A–G)** — Crypto, Mesh, Security, Protocol, Identity, Oracle, Mesh Hardening
+- **G39–G48** — REDIRECT message type, admissionVerdict, PeerPhaseBuffer, Worker, KARMA persistence, destroy(), SharedArrayBuffer dispatch, REDIRECT handler
+
+#### Phase 1+2+6: PeerPhaseBuffer (SharedArrayBuffer)
+
+- **Zero-copy peer state** — SharedArrayBuffer with 32 bytes/slot (theta, stability, timeTrust, karma, hardware, lastArrival, flags)
+- **Dynamic capacity** — `floor(64 × (log₂(threads+1) + log₂(totalTops+1)×0.5)) × networkMul × timeMul`
+- **Overflow buffer** — Graceful handling when SAB capacity exhausted
+- **Micro-precision** — MICRO = 1,000,000 for sub-float integer packing
+
+#### Phase 3: Weighted Ternary Admission
+
+- **AFFIRM/ABSTAIN/DENY** — Ternary admission verdict with weighted priority scoring
+- **KARMA persistence** — `saveToDisk()`/`loadFromDisk()` with 30s debounce, auto-restore on startup
+- **REDIRECT eviction** — Lowest-priority peer evicted with suggested alternative peers
+- **Network wiring** — HELLO handler integrates admission verdict, mesh passes KARMA model
+
+#### Phase 4: AGUWA Integration
+
+- **PeerPhaseState → buffer delegation** — Getter/setter pairs delegate to Atomics when buffer available
+- **initBuffer(hwTelemetry)** — Creates PeerPhaseBuffer + Worker, wires capacity from hardware telemetry
+- **Server integration** — `aguwa.initBuffer({ threads, totalTops })` after `aguwa.init()`
+
+#### Phase 5: Worker Thread Batch Kuramoto
+
+- **aguwa-worker.js** — Worker thread computes mean phase + e-weighted Kuramoto delta via Atomics
+- **Batch dispatch** — When `peers.size > threshold && !workerInFlight`, posts SharedArrayBuffer + config to Worker
+- **Threshold** — `max(100, maxPeers × 0.4)` — only offloads when worth the overhead
+- **destroy()** — Clean Worker termination on shutdown
+
+---
+
+#### 🔐 License Migration: MIT → AGPLv3
+
+- **201 source files** — AGPLv3 header prepended to all .js files (excluding yakmesh.config.js and *.min.js)
+- **LICENSE file** — Full GNU AGPL-3.0 text with YAKMESH™ trademark preamble (Serial No. 99594620)
+- **package.json** — `"license": "AGPL-3.0-or-later"`
+
+#### 🧹 Repository Cleanup
+
+- **Removed 80+ files** — Ad-hoc test scripts, backup files, deprecated oracle, marketing/announcements
+- **Root cleanup** — 14 test-*.mjs scripts, 4 test output .txt files, verify-*.js, audit-*.js
+- **Directories removed** — test-nodes/, marketing/, announcements/, security/_legacy/
+- **Backup files removed** — prahari.v2.bak.js, steadywatch-ternary.v2.test.bak.js
+- **Deprecated code removed** — validation-oracle.js (replaced by validation-oracle-hardened.js)
+- **.gitignore hardened** — Comprehensive patterns prevent re-committing junk
+
+---
+
 ## [3.2.0] - 2026-02-25
 
 ### 🔐 SANGHA Security + 3-Node Mesh Live + YakApp Discord Features

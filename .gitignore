@@ -48,14 +48,25 @@ deploy-packages/_local-data-*/
 public/c2c/
 public/yakai/
 
-# Temporary test/debug files
-test-verify-*.mjs
-test-full-hash.mjs
-test-hash-analysis.mjs
+# Ad-hoc test/debug/verify/audit scripts (root level)
+test-*.mjs
+test-*.txt
+audit-*.js
+verify-*.js
 php-timing-test.php
 
+# One-off conversion/utility scripts
+convert-tests.cjs
+train_models.py
+update-nav.ps1
+
+# Backup files
+*.bak
+*.bak.js
+*.backup
+*-backup.*
+
 # Config files with sensitive data
-test-nodes/data-*/
 memory-bank/
 yakmesh.config.js
 

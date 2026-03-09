@@ -3,7 +3,7 @@
 ![YAKMESH](https://img.shields.io/badge/YAKMESH-Sturdy%20%26%20Secure-2D5A27?style=for-the-badge)
 ![Post-Quantum](https://img.shields.io/badge/Security-Quantum--Resistant-blueviolet?style=flat-square)
 ![Timing](https://img.shields.io/badge/Timing-Atomic%20Clock%20Compatible-yellow?style=flat-square)
-![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)
+![License](https://img.shields.io/badge/License-AGPL--3.0-blue?style=flat-square)
 
 Thank you for your interest in contributing to **YAKMESH** — the **Yielding Atomic Kernel Modular Encryption Secured Hub**.
 
