@@ -6,8 +6,8 @@
   <p><strong>Yielding Atomic Kernel Modular Encryption Secured Hub</strong></p>
 
   <p>
-    <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="License: MIT"></a>
-    <a href="https://nodejs.org"><img src="https://img.shields.io/badge/Node.js-18+-green.svg" alt="Node.js"></a>
+    <a href="https://www.gnu.org/licenses/agpl-3.0"><img src="https://img.shields.io/badge/License-AGPL--3.0-blue.svg" alt="License: AGPL-3.0"></a>
+    <a href="https://nodejs.org"><img src="https://img.shields.io/badge/Node.js-24+-green.svg" alt="Node.js"></a>
     <a href="https://csrc.nist.gov/projects/post-quantum-cryptography"><img src="https://img.shields.io/badge/Crypto-Post--Quantum-blue.svg" alt="Post-Quantum"></a>
     <a href="https://www.npmjs.com/package/yakmesh"><img src="https://img.shields.io/npm/v/yakmesh.svg" alt="npm version"></a>
     <img src="https://img.shields.io/badge/version-3.0.0-purple.svg" alt="v3.0.0">
@@ -72,8 +72,17 @@ await node.start();
 - 🛡️ **SANGHA Security** — Community-driven threat circulation and collective defense
 - ⏱️ **Precision Timing** — GPS atomic clocks (MA-902), PTP, NTP with sub-millisecond sync
 - 📡 **DARSHAN Telemetry** — Real-time network visibility and diagnostics
-- �️ **PRAHARI** — Mesh-consensus entropy engine with 5 pluggable sources and NPU-accelerated quality scoring
-- ⚖️ **KARMA Rate Limiter** — Behavior-based reputation rate limiting
+- 🏔️ **PRAHARI** — Mesh-consensus entropy engine with 5 pluggable sources and NPU-accelerated quality scoring
+- ⚖️ **KARMA Rate Limiter** — Behavior-based reputation rate limiting with persistent trust scoring
+
+### Mesh Hardening (v3.0)
+
+- 🔗 **JHILKE Bootstrap** — Deterministic chirp key via HKDF(codeHash + buildNonce + sorted nodeIds), MITM-resistant
+- 🧠 **PeerPhaseBuffer** — SharedArrayBuffer-backed peer state for zero-copy Worker thread handoff
+- 🎯 **AGUWA Ternary Admission** — Weighted AFFIRM/ABSTAIN/DENY with priority scoring, REDIRECT eviction
+- ⚙️ **Worker Thread Batch Kuramoto** — e-weighted phase coupling offloaded to Worker beyond capacity threshold
+- 📐 **48 Spec Invariants** — 7-category structural verification (A–G) in the Validation Oracle
+- 📊 **Dynamic Capacity** — `floor(64 × (log₂(threads+1) + log₂(totalTops+1)×0.5)) × networkMul × timeMul`
 
 > See [yakmesh.dev](https://yakmesh.dev) for the complete 30-layer protocol documentation
 
@@ -96,10 +105,15 @@ yakmesh-node/
 ├── models/           # ONNX ML models for inference
 ├── embedded-docs/    # GRANTH documentation bundle (served at /docs)
 ├── adapters/         # Platform integration plugins (BYOND, etc.)
-├── templates/        # Configuration templates
 ├── launcher/         # Process management and startup
 ├── webserver/        # Static web serving
-└── yakbot/           # Bot integration
+├── yakbot/           # Bot integration
+├── website/          # yakmesh.dev static site
+├── deploy/           # Caddy/systemd deployment configs
+├── deploy-packages/  # Package builder (yakbot, yakmesh basic/full)
+├── reference/        # C++ reference implementations
+├── docs/             # Protocol documentation site
+└── tests/            # Integration tests (node:test runner)
 ```
 
 ## Network Identity
@@ -182,10 +196,9 @@ Full API documentation at [yakmesh.dev/docs/api](https://yakmesh.dev/docs/api)
 
 ## License
 
-- **Community Edition**: MIT License (see [LICENSE](LICENSE))
-- **Pro Edition**: Proprietary License
+Copyright © 2026 PeerQuanta. Licensed under the [GNU Affero General Public License v3.0](LICENSE) (AGPL-3.0-or-later).
 
-See [TRADEMARK.md](TRADEMARK.md) for trademark usage policy.
+YAKMESH™ is a registered trademark of PeerQuanta (Serial No. 99594620). See [TRADEMARK.md](TRADEMARK.md) for trademark usage policy.
 
 ---
 
