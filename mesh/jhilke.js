@@ -203,15 +203,30 @@ export class JhilkeCoordinator extends EventEmitter {
 
   /**
    * Verify an incoming chirp from a peer.
-   * Tick tolerance is DYNAMIC — derived from AGUWA's per-peer MANI tolerance.
-   * Falls back to static tickTolerance (±1) as a minimum floor.
+   * Tick tolerance is DYNAMIC — computed from three sources:
+   *   1. MANI trust-level tolerance (precision of each node's time source)
+   *   2. Clock drift tolerance (our correctionMs = system clock offset from GPS)
+   *   3. Static floor (±1 tick minimum)
+   *
+   * MANI tolerance alone is insufficient: two GPS nodes (±500ms precision each)
+   * can still have system clocks seconds apart. The correctionMs-based term
+   * accounts for actual clock drift that Kuramoto hasn't yet converged.
+   *
    * Trivial for nodes sharing the dialect, impossible without it.
    */
   _verifyChirp(peerId, signalBytes, currentTick) {
     const signalHex = bytesToHex(signalBytes);
 
-    // Dynamic tolerance: ask AGUWA how much drift this peer pair has
-    const toleranceMs = aguwa.getToleranceForPeer(peerId);
+    // Source 1: MANI trust-level tolerance (precision-based)
+    const maniToleranceMs = aguwa.getToleranceForPeer(peerId);
+
+    // Source 2: Clock drift — if our correctionMs is large, our ticks can
+    // diverge from a peer whose correction differs. Add margin for the
+    // peer's potential correction + network propagation.
+    const driftToleranceMs = Math.abs(aguwa._correctionMs) + 2000;
+
+    // Use the larger of MANI precision vs actual drift
+    const toleranceMs = Math.max(maniToleranceMs, driftToleranceMs);
     const dynamicTicks = Math.ceil(toleranceMs / 1000);
     const tolerance = Math.max(JHILKE_CONFIG.tickTolerance, dynamicTicks);
 
