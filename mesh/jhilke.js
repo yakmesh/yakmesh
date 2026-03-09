@@ -203,13 +203,19 @@ export class JhilkeCoordinator extends EventEmitter {
 
   /**
    * Verify an incoming chirp from a peer.
-   * Checks ±1 tick tolerance (3 attempts total).
+   * Tick tolerance is DYNAMIC — derived from AGUWA's per-peer MANI tolerance.
+   * Falls back to static tickTolerance (±1) as a minimum floor.
    * Trivial for nodes sharing the dialect, impossible without it.
    */
   _verifyChirp(peerId, signalBytes, currentTick) {
     const signalHex = bytesToHex(signalBytes);
 
-    for (let offset = -JHILKE_CONFIG.tickTolerance; offset <= JHILKE_CONFIG.tickTolerance; offset++) {
+    // Dynamic tolerance: ask AGUWA how much drift this peer pair has
+    const toleranceMs = aguwa.getToleranceForPeer(peerId);
+    const dynamicTicks = Math.ceil(toleranceMs / 1000);
+    const tolerance = Math.max(JHILKE_CONFIG.tickTolerance, dynamicTicks);
+
+    for (let offset = -tolerance; offset <= tolerance; offset++) {
       const testTick = currentTick + offset;
       if (testTick < 0) continue;
 

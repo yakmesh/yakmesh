@@ -318,11 +318,13 @@ describe('JhilkeCoordinator', () => {
             expect(result2.offset).toBe(1);
         });
 
-        test('verification fails beyond ±1 tick', () => {
+        test('verification fails beyond dynamic AGUWA tolerance', () => {
             const tick = 1000;
             const chirp = jA._generateChirp(NODE_B, tick);
 
-            const result = jB._verifyChirp(NODE_A, chirp, tick + 5);
+            // Unknown peers get UNSYNC tolerance (30s = ±30 ticks)
+            // So tick + 31 must fail
+            const result = jB._verifyChirp(NODE_A, chirp, tick + 31);
             expect(result.valid).toBe(false);
         });
 
