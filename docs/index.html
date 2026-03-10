@@ -1,36 +1,61 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="index">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="favicon.ico" sizes="32x32">
-    <link rel="icon" href="icon.svg" type="image/svg+xml">
-    <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <title>Documentation | YAKMESH</title>
-    <meta name="description" content="YAKMESH documentation - Post-quantum secure P2P mesh networking.">
-    <link rel="stylesheet" href="tailwind.min.css">
-    <link rel="stylesheet" href="prism-tomorrow.min.css" media="print" onload="this.media='all'">
-    <noscript><link rel="stylesheet" href="prism-tomorrow.min.css"></noscript>
-    <link rel="stylesheet" href="docs.css">
-    <style>
-        .theme-accent { color: #34d399; }
-        .theme-accent-hover:hover { color: #6ee7b7; }
-        .theme-badge { background: rgba(16, 185, 129, 0.2); color: #34d399; }
-        .theme-border { border-color: #10b981; }
-        .theme-callout { background: rgba(16, 185, 129, 0.1); border-color: #059669; }
-        .active-link { background: rgba(16, 185, 129, 0.2) !important; color: #34d399 !important; }
-    </style>
 
-    <!-- Open Graph -->
-    <meta property="og:type" content="article">
-    <meta property="og:site_name" content="Yakmesh Documentation">
-    <meta property="og:title" content="Overview — Yakmesh">
-    <meta property="og:description" content="Welcome to the Yakmesh documentation — a post-quantum secure P2P mesh network with 30-layer protocol stack.">
-    <meta property="og:url" content="https://yakmesh.dev/docs/index.html">
-    <link rel="canonical" href="https://yakmesh.dev/docs/index.html">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="favicon.ico" sizes="32x32">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <title>Documentation | YAKMESH</title>
+  <meta name="description" content="YAKMESH documentation - Post-quantum secure P2P mesh networking.">
+  <link rel="stylesheet" href="tailwind.min.css">
+  <link rel="stylesheet" href="prism-tomorrow.min.css" media="print" onload="this.media='all'">
+  <noscript>
+    <link rel="stylesheet" href="prism-tomorrow.min.css">
+  </noscript>
+  <link rel="stylesheet" href="docs.css">
+  <style>
+    .theme-accent {
+      color: #34d399;
+    }
+
+    .theme-accent-hover:hover {
+      color: #6ee7b7;
+    }
+
+    .theme-badge {
+      background: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+    }
+
+    .theme-border {
+      border-color: #10b981;
+    }
+
+    .theme-callout {
+      background: rgba(16, 185, 129, 0.1);
+      border-color: #059669;
+    }
+
+    .active-link {
+      background: rgba(16, 185, 129, 0.2) !important;
+      color: #34d399 !important;
+    }
+  </style>
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Yakmesh Documentation">
+  <meta property="og:title" content="Overview — Yakmesh">
+  <meta property="og:description"
+    content="Welcome to the Yakmesh documentation — a post-quantum secure P2P mesh network with 30-layer protocol stack.">
+  <meta property="og:url" content="https://yakmesh.dev/docs/index.html">
+  <link rel="canonical" href="https://yakmesh.dev/docs/index.html">
 </head>
+
 <body class="bg-mountain-900 text-white min-h-screen">
-<!-- YAKMESH-ICON-SPRITE-START -->
+  <!-- YAKMESH-ICON-SPRITE-START -->
 <svg xmlns="http://www.w3.org/2000/svg" style="display:none">
 <!--
   Yakmesh Docs Icon Sprite Sheet
@@ -620,13 +645,17 @@
 
 </svg>
 <!-- YAKMESH-ICON-SPRITE-END -->
-<a href="#mainContent" class="skip-link">Skip to main content</a>
+  <a href="#mainContent" class="skip-link">Skip to main content</a>
   <nav class="docs-sidebar" id="sidebar">
     <a href="index.html" class="sidebar-logo">
-      <span class="logo-icon"><svg class="doc-icon" aria-hidden="true"><use href="#icon-mountain"/></svg></span>
+      <span class="logo-icon"><svg class="doc-icon" aria-hidden="true">
+          <use href="#icon-mountain" />
+        </svg></span>
       <span class="logo-text">Yakmesh</span>
     </a>
-    <a href="/dashboard" class="sidebar-dashboard-link"><svg class="doc-icon" aria-hidden="true"><use href="#icon-dashboard"/></svg> <span>Dashboard</span></a>
+    <a href="/dashboard" class="sidebar-dashboard-link"><svg class="doc-icon" aria-hidden="true">
+        <use href="#icon-dashboard" />
+      </svg> <span>Dashboard</span></a>
     <ul class="sidebar-nav">
       <li class="sidebar-section"><span><svg class="doc-icon" aria-hidden="true"><use href="#icon-book"/></svg> Guides</span></li>
       <li><a href="index.html" class="active"><svg class="doc-icon" aria-hidden="true"><use href="#icon-home"/></svg> <span>Overview</span></a></li>
@@ -695,233 +724,521 @@
   <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
   <main class="docs-main" id="mainContent">
-        <div class="docs-content max-w-4xl">
+    <div class="docs-content max-w-4xl">
 
-            <!-- ═══ HERO ═══ -->
-            <div class="mb-10">
-                <h1 class="text-4xl font-bold mb-3">YAKMESH Documentation</h1>
-                <p class="text-xl text-mountain-300 mb-6">
-                    Post-quantum secure P2P mesh networking — 30-layer protocol stack, zero external trust.
-                </p>
-                <div class="flex flex-wrap gap-3">
-                    <a href="getting-started.html" class="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-lg transition">
-                        <svg class="doc-icon" aria-hidden="true"><use href="#icon-rocket"/></svg> Get Started
-                    </a>
-                    <a href="quick-reference.html" class="inline-flex items-center gap-2 px-5 py-2.5 border border-mountain-600 hover:border-emerald-500 text-mountain-200 font-semibold rounded-lg transition">
-                        <svg class="doc-icon" aria-hidden="true"><use href="#icon-quickref"/></svg> Quick Reference
-                    </a>
-                </div>
-            </div>
-
-            <!-- ═══ WHAT IS YAKMESH ═══ -->
-            <section class="mb-12">
-                <h2 class="text-2xl font-bold mb-4">What is YAKMESH?</h2>
-                <p class="text-mountain-300 mb-4">
-                    YAKMESH is a post-quantum secure distributed mesh network with a self-verifying validation oracle.
-                    Every node cryptographically proves its own integrity — no certificate authorities, no central servers, no external trust.
-                    The 30-layer protocol stack provides everything from content addressing and identity verification
-                    to encrypted communication, consensus, and hardware-accelerated compute sharing.
-                </p>
-                <div class="grid sm:grid-cols-3 gap-4 mt-6">
-                    <div class="bg-mountain-800 rounded-lg p-4 border border-mountain-700">
-                        <div class="text-emerald-400 font-semibold mb-1">Post-Quantum</div>
-                        <p class="text-mountain-400 text-sm">ML-DSA-65 signatures, ML-KEM-768 key exchange, YPC-27 checksums — no classical crypto.</p>
-                    </div>
-                    <div class="bg-mountain-800 rounded-lg p-4 border border-mountain-700">
-                        <div class="text-emerald-400 font-semibold mb-1">Zero Trust</div>
-                        <p class="text-mountain-400 text-sm">Self-verifying oracle hashes every byte. NAMCHE 7-gate verification replaces CAs.</p>
-                    </div>
-                    <div class="bg-mountain-800 rounded-lg p-4 border border-mountain-700">
-                        <div class="text-emerald-400 font-semibold mb-1">Full Stack</div>
-                        <p class="text-mountain-400 text-sm">Addressing, encryption, routing, identity, chat, voice, video, storage, consensus — all built in.</p>
-                    </div>
-                </div>
-            </section>
-
-            <!-- ═══ PROTOCOL STACK TABLE ═══ -->
-            <section class="mb-12">
-                <h2 class="text-2xl font-bold mb-4">Protocol Stack (v3.0)</h2>
-                <div class="bg-mountain-800 rounded-xl p-6 overflow-x-auto">
-                    <table class="w-full text-sm" id="protocol-stack-table">
-                        <thead>
-                            <tr class="text-left text-mountain-400 border-b border-mountain-700">
-                                <th class="pb-3 pr-4 w-16">Layer</th>
-                                <th class="pb-3 pr-4">Protocol</th>
-                                <th class="pb-3">Purpose</th>
-                            </tr>
-                        </thead>
-                        <tbody class="text-mountain-300">
-                            <tr class="border-b border-mountain-700/50"><td class="py-2 pr-4 text-mountain-500">1</td><td class="py-2 pr-4"><a href="yak-protocol.html" class="hover:text-emerald-400 transition font-medium"><svg class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em"><use href="#icon-yak"/></svg> YAK://</a></td><td class="py-2">Universal resource addressing</td></tr>
-                            <tr class="border-b border-mountain-700/50"><td class="py-2 pr-4 text-mountain-500">2</td><td class="py-2 pr-4"><a href="annex.html" class="hover:text-emerald-400 transition font-medium"><svg class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em"><use href="#icon-annex"/></svg> ANNEX</a></td><td class="py-2">Encrypted P2P (ML-KEM-768)</td></tr>
-                            <tr class="border-b border-mountain-700/50"><td class="py-2 pr-4 text-mountain-500">2.5</td><td class="py-2 pr-4"><a href="jhilke.html" class="hover:text-emerald-400 transition font-medium"><svg class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em"><use href="#icon-jhilke"/></svg> JHILKE</a></td><td class="py-2">Steganographic key lifecycle (bootstrap + rekey)</td></tr>
-                            <tr class="border-b border-mountain-700/50"><td class="py-2 pr-4 text-mountain-500">3</td><td class="py-2 pr-4"><a href="nakpak.html" class="hover:text-emerald-400 transition font-medium"><svg class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em"><use href="#icon-nakpak"/></svg> NAKPAK</a></td><td class="py-2">Onion routing &amp; privacy</td></tr>
-                            <tr class="border-b border-mountain-700/50"><td class="py-2 pr-4 text-mountain-500">4</td><td class="py-2 pr-4"><a href="namche.html" class="hover:text-emerald-400 transition font-medium"><svg class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em"><use href="#icon-namche"/></svg> NAMCHE</a></td><td class="py-2">Gateway &amp; identity verification</td></tr>
-                            <tr class="border-b border-mountain-700/50"><td class="py-2 pr-4 text-mountain-500">5</td><td class="py-2 pr-4"><a href="doko.html" class="hover:text-emerald-400 transition font-medium"><svg class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em"><use href="#icon-doko"/></svg> DOKO</a></td><td class="py-2">Identity certificates</td></tr>
-                            <tr class="border-b border-mountain-700/50"><td class="py-2 pr-4 text-mountain-500">6</td><td class="py-2 pr-4"><a href="sherpa.html" class="hover:text-emerald-400 transition font-medium"><svg class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em"><use href="#icon-sherpa"/></svg> SHERPA</a></td><td class="py-2">Peer discovery &amp; beacons</td></tr>
-                            <tr class="border-b border-mountain-700/50"><td class="py-2 pr-4 text-mountain-500">7</td><td class="py-2 pr-4"><a href="mandala.html" class="hover:text-emerald-400 transition font-medium"><svg class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em"><use href="#icon-mandala"/></svg> MANDALA</a></td><td class="py-2">Mesh network topology</td></tr>
-                            <tr class="border-b border-mountain-700/50"><td class="py-2 pr-4 text-mountain-500">8</td><td class="py-2 pr-4"><a href="mantra.html" class="hover:text-emerald-400 transition font-medium"><svg class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em"><use href="#icon-mantra"/></svg> MANTRA</a></td><td class="py-2">Gossip message propagation</td></tr>
-                            <tr class="border-b border-mountain-700/50"><td class="py-2 pr-4 text-mountain-500">9</td><td class="py-2 pr-4"><a href="gumba.html" class="hover:text-emerald-400 transition font-medium"><svg class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em"><use href="#icon-gumba"/></svg> GUMBA</a></td><td class="py-2">Role-based access control</td></tr>
-                            <tr class="border-b border-mountain-700/50"><td class="py-2 pr-4 text-mountain-500">10</td><td class="py-2 pr-4"><a href="yurt.html" class="hover:text-emerald-400 transition font-medium"><svg class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em"><use href="#icon-yurt"/></svg> YURT</a></td><td class="py-2">Room discovery &amp; management</td></tr>
-                            <tr class="border-b border-mountain-700/50"><td class="py-2 pr-4 text-mountain-500">11</td><td class="py-2 pr-4"><a href="katha.html" class="hover:text-emerald-400 transition font-medium"><svg class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em"><use href="#icon-katha"/></svg> KATHA</a></td><td class="py-2">Rich chat with reactions &amp; threads</td></tr>
-                            <tr class="border-b border-mountain-700/50"><td class="py-2 pr-4 text-mountain-500">12</td><td class="py-2 pr-4"><a href="vani.html" class="hover:text-emerald-400 transition font-medium"><svg class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em"><use href="#icon-vani"/></svg> VANI</a></td><td class="py-2">Voice &amp; video calls</td></tr>
-                            <tr class="border-b border-mountain-700/50"><td class="py-2 pr-4 text-mountain-500">13</td><td class="py-2 pr-4"><a href="darshan.html" class="hover:text-emerald-400 transition font-medium"><svg class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em"><use href="#icon-darshan"/></svg> DARSHAN</a></td><td class="py-2">Content streaming (view-not-copy)</td></tr>
-                            <tr class="border-b border-mountain-700/50"><td class="py-2 pr-4 text-mountain-500">14</td><td class="py-2 pr-4"><a href="stupa.html" class="hover:text-emerald-400 transition font-medium"><svg class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em"><use href="#icon-stupa"/></svg> STUPA</a></td><td class="py-2">Distributed storage</td></tr>
-                            <tr class="border-b border-mountain-700/50"><td class="py-2 pr-4 text-mountain-500">15</td><td class="py-2 pr-4"><a href="lama.html" class="hover:text-emerald-400 transition font-medium"><svg class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em"><use href="#icon-lama"/></svg> LAMA</a></td><td class="py-2">Consensus &amp; agreement</td></tr>
-                            <tr class="border-b border-mountain-700/50"><td class="py-2 pr-4 text-mountain-500">16</td><td class="py-2 pr-4"><a href="mani.html" class="hover:text-emerald-400 transition font-medium"><svg class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em"><use href="#icon-mani"/></svg> MANI</a></td><td class="py-2">Time synchronization</td></tr>
-                            <tr class="border-b border-mountain-700/50"><td class="py-2 pr-4 text-mountain-500">17</td><td class="py-2 pr-4"><a href="karma.html" class="hover:text-emerald-400 transition font-medium"><svg class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em"><use href="#icon-karma"/></svg> KARMA</a></td><td class="py-2">Trust &amp; reputation</td></tr>
-                            <tr class="border-b border-mountain-700/50"><td class="py-2 pr-4 text-mountain-500">18</td><td class="py-2 pr-4"><a href="tattva.html" class="hover:text-emerald-400 transition font-medium"><svg class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em"><use href="#icon-tattva"/></svg> TATTVA</a></td><td class="py-2">State &amp; element management</td></tr>
-                            <tr class="border-b border-mountain-700/50"><td class="py-2 pr-4 text-mountain-500">19</td><td class="py-2 pr-4"><a href="tribhuj.html" class="hover:text-emerald-400 transition font-medium"><svg class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em"><use href="#icon-tribhuj"/></svg> TRIBHUJ</a></td><td class="py-2">Balanced ternary mathematics</td></tr>
-                            <tr class="border-b border-mountain-700/50"><td class="py-2 pr-4 text-mountain-500">20</td><td class="py-2 pr-4"><a href="ypc27.html" class="hover:text-emerald-400 transition font-medium"><svg class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em"><use href="#icon-ypc27"/></svg> YPC-27</a></td><td class="py-2">Quantum-resistant checksums</td></tr>
-                            <tr class="border-b border-mountain-700/50"><td class="py-2 pr-4 text-mountain-500">21</td><td class="py-2 pr-4"><a href="sakshi.html" class="hover:text-emerald-400 transition font-medium"><svg class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em"><use href="#icon-sakshi"/></svg> SAKSHI</a></td><td class="py-2">Observational capability system</td></tr>
-                            <tr class="border-b border-mountain-700/50"><td class="py-2 pr-4 text-mountain-500">22</td><td class="py-2 pr-4"><a href="geo-proof.html" class="hover:text-emerald-400 transition font-medium"><svg class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em"><use href="#icon-pramaan"/></svg> PRAMAAN</a></td><td class="py-2">Geographic proof &amp; attestation</td></tr>
-                            <tr class="border-b border-mountain-700/50"><td class="py-2 pr-4 text-mountain-500">23</td><td class="py-2 pr-4"><a href="trust-security.html" class="hover:text-emerald-400 transition font-medium"><svg class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em"><use href="#icon-suraksha"/></svg> SURAKSHA</a></td><td class="py-2">Security &amp; cryptographic core</td></tr>
-                            <tr class="border-b border-mountain-700/50"><td class="py-2 pr-4 text-mountain-500">24</td><td class="py-2 pr-4"><a href="tivra.html" class="hover:text-emerald-400 transition font-medium"><svg class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em"><use href="#icon-tivra"/></svg> TIVRA</a></td><td class="py-2">SHA3 / PQ crypto / GPU / NPU acceleration</td></tr>
-                            <tr class="border-b border-mountain-700/50"><td class="py-2 pr-4 text-mountain-500">25</td><td class="py-2 pr-4"><a href="prahari.html" class="hover:text-emerald-400 transition font-medium"><svg class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em"><use href="#icon-prahari"/></svg> PRAHARI</a></td><td class="py-2">Ternary-144 quantum seed generation</td></tr>
-                            <tr class="border-b border-mountain-700/50"><td class="py-2 pr-4 text-mountain-500">26</td><td class="py-2 pr-4"><a href="dharma.html" class="hover:text-emerald-400 transition font-medium"><svg class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em"><use href="#icon-dharma"/></svg> DHARMA</a></td><td class="py-2">Universal content moderation</td></tr>
-                            <tr class="border-b border-mountain-700/50"><td class="py-2 pr-4 text-mountain-500">27</td><td class="py-2 pr-4"><a href="seva.html" class="hover:text-emerald-400 transition font-medium"><svg class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em"><use href="#icon-seva"/></svg> SEVA</a></td><td class="py-2">Distributed NPU inference</td></tr>
-                            <tr class="border-b border-mountain-700/50"><td class="py-2 pr-4 text-mountain-500">28</td><td class="py-2 pr-4"><a href="docs-bundle.html" class="hover:text-emerald-400 transition font-medium"><svg class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em"><use href="#icon-granth"/></svg> GRANTH</a></td><td class="py-2">Documentation bundle</td></tr>
-                            <tr class="border-b border-mountain-700/50"><td class="py-2 pr-4 text-mountain-500">29</td><td class="py-2 pr-4"><a href="api.html" class="hover:text-emerald-400 transition font-medium"><svg class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em"><use href="#icon-api"/></svg> API</a></td><td class="py-2">REST interface &amp; endpoints</td></tr>
-                            <tr><td class="py-2 pr-4 text-mountain-500">30</td><td class="py-2 pr-4"><a href="adapters.html" class="hover:text-emerald-400 transition font-medium"><svg class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em"><use href="#icon-adapters"/></svg> Adapters</a></td><td class="py-2">Adapters for transport &amp; discovery</td></tr>
-                        </tbody>
-                    </table>
-                </div>
-            </section>
-
-            <!-- ═══ GUIDES ═══ -->
-            <section class="mb-12">
-                <h2 class="text-2xl font-bold mb-4">Guides</h2>
-                <div class="grid sm:grid-cols-2 gap-4">
-                    <a href="getting-started.html" class="block bg-mountain-800 border border-mountain-700 rounded-xl p-5 hover:border-emerald-500 transition group">
-                        <div class="flex items-center gap-2 mb-2">
-                            <svg class="doc-icon" aria-hidden="true" style="width:1.3em;height:1.3em;color:#34d399"><use href="#icon-rocket"/></svg>
-                            <h3 class="font-semibold group-hover:text-emerald-400">Getting Started</h3>
-                        </div>
-                        <p class="text-mountain-400 text-sm">Install YAKMESH and run your first node in 5 minutes.</p>
-                    </a>
-                    <a href="tutorials.html" class="block bg-mountain-800 border border-mountain-700 rounded-xl p-5 hover:border-emerald-500 transition group">
-                        <div class="flex items-center gap-2 mb-2">
-                            <svg class="doc-icon" aria-hidden="true" style="width:1.3em;height:1.3em;color:#34d399"><use href="#icon-book"/></svg>
-                            <h3 class="font-semibold group-hover:text-emerald-400">Tutorials</h3>
-                        </div>
-                        <p class="text-mountain-400 text-sm">Step-by-step guides for common tasks and workflows.</p>
-                    </a>
-                    <a href="gumba-tutorial.html" class="block bg-mountain-800 border border-mountain-700 rounded-xl p-5 hover:border-emerald-500 transition group">
-                        <div class="flex items-center gap-2 mb-2">
-                            <svg class="doc-icon" aria-hidden="true" style="width:1.3em;height:1.3em;color:#34d399"><use href="#icon-gumba"/></svg>
-                            <h3 class="font-semibold group-hover:text-emerald-400">GUMBA Tutorial</h3>
-                        </div>
-                        <p class="text-mountain-400 text-sm">Hands-on access control — roles, proofs, and permission gates.</p>
-                    </a>
-                </div>
-            </section>
-
-            <!-- ═══ APPLICATIONS ═══ -->
-            <section class="mb-12">
-                <h2 class="text-2xl font-bold mb-4">Applications</h2>
-                <div class="grid sm:grid-cols-2 gap-4">
-                    <a href="yakapp.html" class="block bg-mountain-800 border border-mountain-700 rounded-xl p-5 hover:border-emerald-500 transition group">
-                        <div class="flex items-center gap-2 mb-2">
-                            <svg class="doc-icon" aria-hidden="true" style="width:1.3em;height:1.3em;color:#34d399"><use href="#icon-yakapp"/></svg>
-                            <h3 class="font-semibold group-hover:text-emerald-400">YakApp</h3>
-                        </div>
-                        <p class="text-mountain-400 text-sm">Post-quantum P2P messenger with rooms, voice, and video.</p>
-                    </a>
-                    <a href="c2c.html" class="block bg-mountain-800 border border-mountain-700 rounded-xl p-5 hover:border-emerald-500 transition group">
-                        <div class="flex items-center gap-2 mb-2">
-                            <svg class="doc-icon" aria-hidden="true" style="width:1.3em;height:1.3em;color:#34d399"><use href="#icon-c2c"/></svg>
-                            <h3 class="font-semibold group-hover:text-emerald-400">Core to Cosmos</h3>
-                        </div>
-                        <p class="text-mountain-400 text-sm">3D cooperative game powered by mesh networking and NPU compute.</p>
-                    </a>
-                    <a href="studio.html" class="block bg-mountain-800 border border-mountain-700 rounded-xl p-5 hover:border-emerald-500 transition group">
-                        <div class="flex items-center gap-2 mb-2">
-                            <svg class="doc-icon" aria-hidden="true" style="width:1.3em;height:1.3em;color:#34d399"><use href="#icon-studio"/></svg>
-                            <h3 class="font-semibold group-hover:text-emerald-400">Studio</h3>
-                        </div>
-                        <p class="text-mountain-400 text-sm">YakApp Studio creative suite — draw, compose, and collaborate.</p>
-                    </a>
-                </div>
-            </section>
-
-            <!-- ═══ INFRASTRUCTURE ═══ -->
-            <section class="mb-12">
-                <h2 class="text-2xl font-bold mb-4">Infrastructure</h2>
-                <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <a href="cli.html" class="block bg-mountain-800 border border-mountain-700 rounded-xl p-5 hover:border-emerald-500 transition group">
-                        <div class="flex items-center gap-2 mb-2">
-                            <svg class="doc-icon" aria-hidden="true" style="width:1.3em;height:1.3em;color:#34d399"><use href="#icon-terminal"/></svg>
-                            <h3 class="font-semibold group-hover:text-emerald-400">CLI</h3>
-                        </div>
-                        <p class="text-mountain-400 text-sm">Command-line interface reference.</p>
-                    </a>
-                    <a href="configuration.html" class="block bg-mountain-800 border border-mountain-700 rounded-xl p-5 hover:border-emerald-500 transition group">
-                        <div class="flex items-center gap-2 mb-2">
-                            <svg class="doc-icon" aria-hidden="true" style="width:1.3em;height:1.3em;color:#34d399"><use href="#icon-gear"/></svg>
-                            <h3 class="font-semibold group-hover:text-emerald-400">Configuration</h3>
-                        </div>
-                        <p class="text-mountain-400 text-sm">Node configuration and environment variables.</p>
-                    </a>
-                    <a href="mesh.html" class="block bg-mountain-800 border border-mountain-700 rounded-xl p-5 hover:border-emerald-500 transition group">
-                        <div class="flex items-center gap-2 mb-2">
-                            <svg class="doc-icon" aria-hidden="true" style="width:1.3em;height:1.3em;color:#34d399"><use href="#icon-mandala"/></svg>
-                            <h3 class="font-semibold group-hover:text-emerald-400">Mesh Network</h3>
-                        </div>
-                        <p class="text-mountain-400 text-sm">WebSocket P2P mesh infrastructure.</p>
-                    </a>
-                    <a href="time-sources.html" class="block bg-mountain-800 border border-mountain-700 rounded-xl p-5 hover:border-emerald-500 transition group">
-                        <div class="flex items-center gap-2 mb-2">
-                            <svg class="doc-icon" aria-hidden="true" style="width:1.3em;height:1.3em;color:#34d399"><use href="#icon-mani"/></svg>
-                            <h3 class="font-semibold group-hover:text-emerald-400">Time Sources</h3>
-                        </div>
-                        <p class="text-mountain-400 text-sm">GPS, atomic, PTP, NTP precision timing.</p>
-                    </a>
-                    <a href="webserver.html" class="block bg-mountain-800 border border-mountain-700 rounded-xl p-5 hover:border-emerald-500 transition group">
-                        <div class="flex items-center gap-2 mb-2">
-                            <svg class="doc-icon" aria-hidden="true" style="width:1.3em;height:1.3em;color:#34d399"><use href="#icon-server"/></svg>
-                            <h3 class="font-semibold group-hover:text-emerald-400">Web Server</h3>
-                        </div>
-                        <p class="text-mountain-400 text-sm">HTTP REST API and WebSocket endpoints.</p>
-                    </a>
-                    <a href="advanced-systems.html" class="block bg-mountain-800 border border-mountain-700 rounded-xl p-5 hover:border-emerald-500 transition group">
-                        <div class="flex items-center gap-2 mb-2">
-                            <svg class="doc-icon" aria-hidden="true" style="width:1.3em;height:1.3em;color:#34d399"><use href="#icon-tivra"/></svg>
-                            <h3 class="font-semibold group-hover:text-emerald-400">Advanced Systems</h3>
-                        </div>
-                        <p class="text-mountain-400 text-sm">Gossip protocol, load balancing, and more.</p>
-                    </a>
-                </div>
-            </section>
-
-            <!-- ═══ REFERENCE ═══ -->
-            <section class="mb-12">
-                <h2 class="text-2xl font-bold mb-4">Reference</h2>
-                <div class="grid sm:grid-cols-3 gap-4">
-                    <a href="quick-reference.html" class="block bg-mountain-800 border border-mountain-700 rounded-xl p-5 hover:border-emerald-500 transition group">
-                        <div class="flex items-center gap-2 mb-2">
-                            <svg class="doc-icon" aria-hidden="true" style="width:1.3em;height:1.3em;color:#34d399"><use href="#icon-quickref"/></svg>
-                            <h3 class="font-semibold group-hover:text-emerald-400">Quick Ref</h3>
-                        </div>
-                        <p class="text-mountain-400 text-sm">Cheat sheet — ports, env vars, key commands.</p>
-                    </a>
-                    <a href="api.html" class="block bg-mountain-800 border border-mountain-700 rounded-xl p-5 hover:border-emerald-500 transition group">
-                        <div class="flex items-center gap-2 mb-2">
-                            <svg class="doc-icon" aria-hidden="true" style="width:1.3em;height:1.3em;color:#34d399"><use href="#icon-api"/></svg>
-                            <h3 class="font-semibold group-hover:text-emerald-400">API</h3>
-                        </div>
-                        <p class="text-mountain-400 text-sm">Complete REST API documentation.</p>
-                    </a>
-                    <a href="docs-bundle.html" class="block bg-mountain-800 border border-mountain-700 rounded-xl p-5 hover:border-emerald-500 transition group">
-                        <div class="flex items-center gap-2 mb-2">
-                            <svg class="doc-icon" aria-hidden="true" style="width:1.3em;height:1.3em;color:#34d399"><use href="#icon-granth"/></svg>
-                            <h3 class="font-semibold group-hover:text-emerald-400">GRANTH</h3>
-                        </div>
-                        <p class="text-mountain-400 text-sm">Self-contained documentation bundle.</p>
-                    </a>
-                </div>
-            </section>
-
+      <!-- ═══ HERO ═══ -->
+      <div class="mb-10">
+        <div
+          class="mb-6 p-4 rounded-lg border border-emerald-500 bg-emerald-900/20 text-emerald-100 flex items-start gap-4">
+          <svg class="doc-icon mt-1 text-emerald-400" aria-hidden="true">
+            <use href="#icon-rocket" />
+          </svg>
+          <div>
+            <strong class="font-bold text-emerald-300">v3.3.0 The Hardening Release is live!</strong>
+            <span class="text-emerald-200/80 ml-2">— Featuring AGUWA, SAMUHA, SANGHA, comprehensive ANNEX hardening, and
+              AGPLv3. <a href="trust-security.html" class="underline hover:text-white">Learn more in
+                Security.</a></span>
+          </div>
         </div>
-    </main>
+        <h1 class="text-4xl font-bold mb-3">YAKMESH Documentation</h1>
+        <p class="text-xl text-mountain-300 mb-6">
+          Post-quantum secure P2P mesh networking — 30-layer protocol stack, zero external trust.
+        </p>
+        <div class="flex flex-wrap gap-3">
+          <a href="getting-started.html"
+            class="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-lg transition">
+            <svg class="doc-icon" aria-hidden="true">
+              <use href="#icon-rocket" />
+            </svg> Get Started
+          </a>
+          <a href="quick-reference.html"
+            class="inline-flex items-center gap-2 px-5 py-2.5 border border-mountain-600 hover:border-emerald-500 text-mountain-200 font-semibold rounded-lg transition">
+            <svg class="doc-icon" aria-hidden="true">
+              <use href="#icon-quickref" />
+            </svg> Quick Reference
+          </a>
+        </div>
+      </div>
+
+      <!-- ═══ WHAT IS YAKMESH ═══ -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4">What is YAKMESH?</h2>
+        <p class="text-mountain-300 mb-4">
+          YAKMESH is a post-quantum secure distributed mesh network with a self-verifying validation oracle.
+          Every node cryptographically proves its own integrity — no certificate authorities, no central servers, no
+          external trust.
+          The 30-layer protocol stack provides everything from content addressing and identity verification
+          to encrypted communication, consensus, and hardware-accelerated compute sharing.
+        </p>
+        <div class="grid sm:grid-cols-3 gap-4 mt-6">
+          <div class="bg-mountain-800 rounded-lg p-4 border border-mountain-700">
+            <div class="text-emerald-400 font-semibold mb-1">Post-Quantum</div>
+            <p class="text-mountain-400 text-sm">ML-DSA-65 signatures, ML-KEM-768 key exchange, YPC-27 checksums — no
+              classical crypto.</p>
+          </div>
+          <div class="bg-mountain-800 rounded-lg p-4 border border-mountain-700">
+            <div class="text-emerald-400 font-semibold mb-1">Zero Trust</div>
+            <p class="text-mountain-400 text-sm">Self-verifying oracle hashes every byte. NAMCHE 7-gate verification
+              replaces CAs.</p>
+          </div>
+          <div class="bg-mountain-800 rounded-lg p-4 border border-mountain-700">
+            <div class="text-emerald-400 font-semibold mb-1">Full Stack</div>
+            <p class="text-mountain-400 text-sm">Addressing, encryption, routing, identity, chat, voice, video, storage,
+              consensus — all built in.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══ PROTOCOL STACK TABLE ═══ -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4">Protocol Stack (v3.3.0)</h2>
+        <div class="bg-mountain-800 rounded-xl p-6 overflow-x-auto">
+          <table class="w-full text-sm" id="protocol-stack-table">
+            <thead>
+              <tr class="text-left text-mountain-400 border-b border-mountain-700">
+                <th class="pb-3 pr-4 w-16">Layer</th>
+                <th class="pb-3 pr-4">Protocol</th>
+                <th class="pb-3">Purpose</th>
+              </tr>
+            </thead>
+            <tbody class="text-mountain-300">
+              <tr class="border-b border-mountain-700/50">
+                <td class="py-2 pr-4 text-mountain-500">1</td>
+                <td class="py-2 pr-4"><a href="yak-protocol.html"
+                    class="hover:text-emerald-400 transition font-medium"><svg class="doc-icon" aria-hidden="true"
+                      style="width:1em;height:1em;vertical-align:-0.15em">
+                      <use href="#icon-yak" />
+                    </svg> YAK://</a></td>
+                <td class="py-2">Universal resource addressing</td>
+              </tr>
+              <tr class="border-b border-mountain-700/50">
+                <td class="py-2 pr-4 text-mountain-500">2</td>
+                <td class="py-2 pr-4"><a href="annex.html" class="hover:text-emerald-400 transition font-medium"><svg
+                      class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em">
+                      <use href="#icon-annex" />
+                    </svg> ANNEX</a></td>
+                <td class="py-2">Encrypted P2P (ML-KEM-768)</td>
+              </tr>
+              <tr class="border-b border-mountain-700/50">
+                <td class="py-2 pr-4 text-mountain-500">2.5</td>
+                <td class="py-2 pr-4"><a href="jhilke.html" class="hover:text-emerald-400 transition font-medium"><svg
+                      class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em">
+                      <use href="#icon-jhilke" />
+                    </svg> JHILKE</a></td>
+                <td class="py-2">Steganographic key lifecycle (bootstrap + rekey)</td>
+              </tr>
+              <tr class="border-b border-mountain-700/50">
+                <td class="py-2 pr-4 text-mountain-500">3</td>
+                <td class="py-2 pr-4"><a href="nakpak.html" class="hover:text-emerald-400 transition font-medium"><svg
+                      class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em">
+                      <use href="#icon-nakpak" />
+                    </svg> NAKPAK</a></td>
+                <td class="py-2">Onion routing &amp; privacy</td>
+              </tr>
+              <tr class="border-b border-mountain-700/50">
+                <td class="py-2 pr-4 text-mountain-500">4</td>
+                <td class="py-2 pr-4"><a href="namche.html" class="hover:text-emerald-400 transition font-medium"><svg
+                      class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em">
+                      <use href="#icon-namche" />
+                    </svg> NAMCHE</a></td>
+                <td class="py-2">Gateway &amp; identity verification</td>
+              </tr>
+              <tr class="border-b border-mountain-700/50">
+                <td class="py-2 pr-4 text-mountain-500">5</td>
+                <td class="py-2 pr-4"><a href="doko.html" class="hover:text-emerald-400 transition font-medium"><svg
+                      class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em">
+                      <use href="#icon-doko" />
+                    </svg> DOKO</a></td>
+                <td class="py-2">Identity certificates</td>
+              </tr>
+              <tr class="border-b border-mountain-700/50">
+                <td class="py-2 pr-4 text-mountain-500">6</td>
+                <td class="py-2 pr-4"><a href="sherpa.html" class="hover:text-emerald-400 transition font-medium"><svg
+                      class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em">
+                      <use href="#icon-sherpa" />
+                    </svg> SHERPA</a></td>
+                <td class="py-2">Peer discovery &amp; beacons</td>
+              </tr>
+              <tr class="border-b border-mountain-700/50">
+                <td class="py-2 pr-4 text-mountain-500">7</td>
+                <td class="py-2 pr-4"><a href="mandala.html" class="hover:text-emerald-400 transition font-medium"><svg
+                      class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em">
+                      <use href="#icon-mandala" />
+                    </svg> MANDALA</a></td>
+                <td class="py-2">Mesh network topology</td>
+              </tr>
+              <tr class="border-b border-mountain-700/50">
+                <td class="py-2 pr-4 text-mountain-500">8</td>
+                <td class="py-2 pr-4"><a href="mantra.html" class="hover:text-emerald-400 transition font-medium"><svg
+                      class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em">
+                      <use href="#icon-mantra" />
+                    </svg> MANTRA</a></td>
+                <td class="py-2">Gossip message propagation</td>
+              </tr>
+              <tr class="border-b border-mountain-700/50">
+                <td class="py-2 pr-4 text-mountain-500">9</td>
+                <td class="py-2 pr-4"><a href="gumba.html" class="hover:text-emerald-400 transition font-medium"><svg
+                      class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em">
+                      <use href="#icon-gumba" />
+                    </svg> GUMBA</a></td>
+                <td class="py-2">Role-based access control</td>
+              </tr>
+              <tr class="border-b border-mountain-700/50">
+                <td class="py-2 pr-4 text-mountain-500">10</td>
+                <td class="py-2 pr-4"><a href="yurt.html" class="hover:text-emerald-400 transition font-medium"><svg
+                      class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em">
+                      <use href="#icon-yurt" />
+                    </svg> YURT</a></td>
+                <td class="py-2">Room discovery &amp; management</td>
+              </tr>
+              <tr class="border-b border-mountain-700/50">
+                <td class="py-2 pr-4 text-mountain-500">11</td>
+                <td class="py-2 pr-4"><a href="katha.html" class="hover:text-emerald-400 transition font-medium"><svg
+                      class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em">
+                      <use href="#icon-katha" />
+                    </svg> KATHA</a></td>
+                <td class="py-2">Rich chat with reactions &amp; threads</td>
+              </tr>
+              <tr class="border-b border-mountain-700/50">
+                <td class="py-2 pr-4 text-mountain-500">12</td>
+                <td class="py-2 pr-4"><a href="vani.html" class="hover:text-emerald-400 transition font-medium"><svg
+                      class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em">
+                      <use href="#icon-vani" />
+                    </svg> VANI</a></td>
+                <td class="py-2">Voice &amp; video calls</td>
+              </tr>
+              <tr class="border-b border-mountain-700/50">
+                <td class="py-2 pr-4 text-mountain-500">13</td>
+                <td class="py-2 pr-4"><a href="darshan.html" class="hover:text-emerald-400 transition font-medium"><svg
+                      class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em">
+                      <use href="#icon-darshan" />
+                    </svg> DARSHAN</a></td>
+                <td class="py-2">Content streaming (view-not-copy)</td>
+              </tr>
+              <tr class="border-b border-mountain-700/50">
+                <td class="py-2 pr-4 text-mountain-500">14</td>
+                <td class="py-2 pr-4"><a href="stupa.html" class="hover:text-emerald-400 transition font-medium"><svg
+                      class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em">
+                      <use href="#icon-stupa" />
+                    </svg> STUPA</a></td>
+                <td class="py-2">Distributed storage</td>
+              </tr>
+              <tr class="border-b border-mountain-700/50">
+                <td class="py-2 pr-4 text-mountain-500">15</td>
+                <td class="py-2 pr-4"><a href="lama.html" class="hover:text-emerald-400 transition font-medium"><svg
+                      class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em">
+                      <use href="#icon-lama" />
+                    </svg> LAMA</a></td>
+                <td class="py-2">Consensus &amp; agreement</td>
+              </tr>
+              <tr class="border-b border-mountain-700/50">
+                <td class="py-2 pr-4 text-mountain-500">16</td>
+                <td class="py-2 pr-4"><a href="mani.html" class="hover:text-emerald-400 transition font-medium"><svg
+                      class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em">
+                      <use href="#icon-mani" />
+                    </svg> MANI</a></td>
+                <td class="py-2">Time synchronization</td>
+              </tr>
+              <tr class="border-b border-mountain-700/50">
+                <td class="py-2 pr-4 text-mountain-500">17</td>
+                <td class="py-2 pr-4"><a href="karma.html" class="hover:text-emerald-400 transition font-medium"><svg
+                      class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em">
+                      <use href="#icon-karma" />
+                    </svg> KARMA</a></td>
+                <td class="py-2">Trust &amp; reputation</td>
+              </tr>
+              <tr class="border-b border-mountain-700/50">
+                <td class="py-2 pr-4 text-mountain-500">18</td>
+                <td class="py-2 pr-4"><a href="tattva.html" class="hover:text-emerald-400 transition font-medium"><svg
+                      class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em">
+                      <use href="#icon-tattva" />
+                    </svg> TATTVA</a></td>
+                <td class="py-2">State &amp; element management</td>
+              </tr>
+              <tr class="border-b border-mountain-700/50">
+                <td class="py-2 pr-4 text-mountain-500">19</td>
+                <td class="py-2 pr-4"><a href="tribhuj.html" class="hover:text-emerald-400 transition font-medium"><svg
+                      class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em">
+                      <use href="#icon-tribhuj" />
+                    </svg> TRIBHUJ</a></td>
+                <td class="py-2">Balanced ternary mathematics</td>
+              </tr>
+              <tr class="border-b border-mountain-700/50">
+                <td class="py-2 pr-4 text-mountain-500">20</td>
+                <td class="py-2 pr-4"><a href="ypc27.html" class="hover:text-emerald-400 transition font-medium"><svg
+                      class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em">
+                      <use href="#icon-ypc27" />
+                    </svg> YPC-27</a></td>
+                <td class="py-2">Quantum-resistant checksums</td>
+              </tr>
+              <tr class="border-b border-mountain-700/50">
+                <td class="py-2 pr-4 text-mountain-500">21</td>
+                <td class="py-2 pr-4"><a href="sakshi.html" class="hover:text-emerald-400 transition font-medium"><svg
+                      class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em">
+                      <use href="#icon-sakshi" />
+                    </svg> SAKSHI</a></td>
+                <td class="py-2">Observational capability system</td>
+              </tr>
+              <tr class="border-b border-mountain-700/50">
+                <td class="py-2 pr-4 text-mountain-500">22</td>
+                <td class="py-2 pr-4"><a href="geo-proof.html"
+                    class="hover:text-emerald-400 transition font-medium"><svg class="doc-icon" aria-hidden="true"
+                      style="width:1em;height:1em;vertical-align:-0.15em">
+                      <use href="#icon-pramaan" />
+                    </svg> PRAMAAN</a></td>
+                <td class="py-2">Geographic proof &amp; attestation</td>
+              </tr>
+              <tr class="border-b border-mountain-700/50">
+                <td class="py-2 pr-4 text-mountain-500">23</td>
+                <td class="py-2 pr-4"><a href="trust-security.html"
+                    class="hover:text-emerald-400 transition font-medium"><svg class="doc-icon" aria-hidden="true"
+                      style="width:1em;height:1em;vertical-align:-0.15em">
+                      <use href="#icon-suraksha" />
+                    </svg> SURAKSHA</a></td>
+                <td class="py-2">Security &amp; cryptographic core</td>
+              </tr>
+              <tr class="border-b border-mountain-700/50">
+                <td class="py-2 pr-4 text-mountain-500">24</td>
+                <td class="py-2 pr-4"><a href="tivra.html" class="hover:text-emerald-400 transition font-medium"><svg
+                      class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em">
+                      <use href="#icon-tivra" />
+                    </svg> TIVRA</a></td>
+                <td class="py-2">SHA3 / PQ crypto / GPU / NPU acceleration</td>
+              </tr>
+              <tr class="border-b border-mountain-700/50">
+                <td class="py-2 pr-4 text-mountain-500">25</td>
+                <td class="py-2 pr-4"><a href="prahari.html" class="hover:text-emerald-400 transition font-medium"><svg
+                      class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em">
+                      <use href="#icon-prahari" />
+                    </svg> PRAHARI</a></td>
+                <td class="py-2">Ternary-144 quantum seed generation</td>
+              </tr>
+              <tr class="border-b border-mountain-700/50">
+                <td class="py-2 pr-4 text-mountain-500">26</td>
+                <td class="py-2 pr-4"><a href="dharma.html" class="hover:text-emerald-400 transition font-medium"><svg
+                      class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em">
+                      <use href="#icon-dharma" />
+                    </svg> DHARMA</a></td>
+                <td class="py-2">Universal content moderation</td>
+              </tr>
+              <tr class="border-b border-mountain-700/50">
+                <td class="py-2 pr-4 text-mountain-500">27</td>
+                <td class="py-2 pr-4"><a href="seva.html" class="hover:text-emerald-400 transition font-medium"><svg
+                      class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em">
+                      <use href="#icon-seva" />
+                    </svg> SEVA</a></td>
+                <td class="py-2">Distributed NPU inference</td>
+              </tr>
+              <tr class="border-b border-mountain-700/50">
+                <td class="py-2 pr-4 text-mountain-500">28</td>
+                <td class="py-2 pr-4"><a href="docs-bundle.html"
+                    class="hover:text-emerald-400 transition font-medium"><svg class="doc-icon" aria-hidden="true"
+                      style="width:1em;height:1em;vertical-align:-0.15em">
+                      <use href="#icon-granth" />
+                    </svg> GRANTH</a></td>
+                <td class="py-2">Documentation bundle</td>
+              </tr>
+              <tr class="border-b border-mountain-700/50">
+                <td class="py-2 pr-4 text-mountain-500">29</td>
+                <td class="py-2 pr-4"><a href="api.html" class="hover:text-emerald-400 transition font-medium"><svg
+                      class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em">
+                      <use href="#icon-api" />
+                    </svg> API</a></td>
+                <td class="py-2">REST interface &amp; endpoints</td>
+              </tr>
+              <tr>
+                <td class="py-2 pr-4 text-mountain-500">30</td>
+                <td class="py-2 pr-4"><a href="adapters.html" class="hover:text-emerald-400 transition font-medium"><svg
+                      class="doc-icon" aria-hidden="true" style="width:1em;height:1em;vertical-align:-0.15em">
+                      <use href="#icon-adapters" />
+                    </svg> Adapters</a></td>
+                <td class="py-2">Adapters for transport &amp; discovery</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ═══ GUIDES ═══ -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4">Guides</h2>
+        <div class="grid sm:grid-cols-2 gap-4">
+          <a href="getting-started.html"
+            class="block bg-mountain-800 border border-mountain-700 rounded-xl p-5 hover:border-emerald-500 transition group">
+            <div class="flex items-center gap-2 mb-2">
+              <svg class="doc-icon" aria-hidden="true" style="width:1.3em;height:1.3em;color:#34d399">
+                <use href="#icon-rocket" />
+              </svg>
+              <h3 class="font-semibold group-hover:text-emerald-400">Getting Started</h3>
+            </div>
+            <p class="text-mountain-400 text-sm">Install YAKMESH and run your first node in 5 minutes.</p>
+          </a>
+          <a href="tutorials.html"
+            class="block bg-mountain-800 border border-mountain-700 rounded-xl p-5 hover:border-emerald-500 transition group">
+            <div class="flex items-center gap-2 mb-2">
+              <svg class="doc-icon" aria-hidden="true" style="width:1.3em;height:1.3em;color:#34d399">
+                <use href="#icon-book" />
+              </svg>
+              <h3 class="font-semibold group-hover:text-emerald-400">Tutorials</h3>
+            </div>
+            <p class="text-mountain-400 text-sm">Step-by-step guides for common tasks and workflows.</p>
+          </a>
+          <a href="gumba-tutorial.html"
+            class="block bg-mountain-800 border border-mountain-700 rounded-xl p-5 hover:border-emerald-500 transition group">
+            <div class="flex items-center gap-2 mb-2">
+              <svg class="doc-icon" aria-hidden="true" style="width:1.3em;height:1.3em;color:#34d399">
+                <use href="#icon-gumba" />
+              </svg>
+              <h3 class="font-semibold group-hover:text-emerald-400">GUMBA Tutorial</h3>
+            </div>
+            <p class="text-mountain-400 text-sm">Hands-on access control — roles, proofs, and permission gates.</p>
+          </a>
+        </div>
+      </section>
+
+      <!-- ═══ APPLICATIONS ═══ -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4">Applications</h2>
+        <div class="grid sm:grid-cols-2 gap-4">
+          <a href="yakapp.html"
+            class="block bg-mountain-800 border border-mountain-700 rounded-xl p-5 hover:border-emerald-500 transition group">
+            <div class="flex items-center gap-2 mb-2">
+              <svg class="doc-icon" aria-hidden="true" style="width:1.3em;height:1.3em;color:#34d399">
+                <use href="#icon-yakapp" />
+              </svg>
+              <h3 class="font-semibold group-hover:text-emerald-400">YakApp</h3>
+            </div>
+            <p class="text-mountain-400 text-sm">Post-quantum P2P messenger with rooms, voice, and video.</p>
+          </a>
+          <a href="c2c.html"
+            class="block bg-mountain-800 border border-mountain-700 rounded-xl p-5 hover:border-emerald-500 transition group">
+            <div class="flex items-center gap-2 mb-2">
+              <svg class="doc-icon" aria-hidden="true" style="width:1.3em;height:1.3em;color:#34d399">
+                <use href="#icon-c2c" />
+              </svg>
+              <h3 class="font-semibold group-hover:text-emerald-400">Core to Cosmos</h3>
+            </div>
+            <p class="text-mountain-400 text-sm">3D cooperative game powered by mesh networking and NPU compute.</p>
+          </a>
+          <a href="studio.html"
+            class="block bg-mountain-800 border border-mountain-700 rounded-xl p-5 hover:border-emerald-500 transition group">
+            <div class="flex items-center gap-2 mb-2">
+              <svg class="doc-icon" aria-hidden="true" style="width:1.3em;height:1.3em;color:#34d399">
+                <use href="#icon-studio" />
+              </svg>
+              <h3 class="font-semibold group-hover:text-emerald-400">Studio</h3>
+            </div>
+            <p class="text-mountain-400 text-sm">YakApp Studio creative suite — draw, compose, and collaborate.</p>
+          </a>
+        </div>
+      </section>
+
+      <!-- ═══ INFRASTRUCTURE ═══ -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4">Infrastructure</h2>
+        <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <a href="cli.html"
+            class="block bg-mountain-800 border border-mountain-700 rounded-xl p-5 hover:border-emerald-500 transition group">
+            <div class="flex items-center gap-2 mb-2">
+              <svg class="doc-icon" aria-hidden="true" style="width:1.3em;height:1.3em;color:#34d399">
+                <use href="#icon-terminal" />
+              </svg>
+              <h3 class="font-semibold group-hover:text-emerald-400">CLI</h3>
+            </div>
+            <p class="text-mountain-400 text-sm">Command-line interface reference.</p>
+          </a>
+          <a href="configuration.html"
+            class="block bg-mountain-800 border border-mountain-700 rounded-xl p-5 hover:border-emerald-500 transition group">
+            <div class="flex items-center gap-2 mb-2">
+              <svg class="doc-icon" aria-hidden="true" style="width:1.3em;height:1.3em;color:#34d399">
+                <use href="#icon-gear" />
+              </svg>
+              <h3 class="font-semibold group-hover:text-emerald-400">Configuration</h3>
+            </div>
+            <p class="text-mountain-400 text-sm">Node configuration and environment variables.</p>
+          </a>
+          <a href="mesh.html"
+            class="block bg-mountain-800 border border-mountain-700 rounded-xl p-5 hover:border-emerald-500 transition group">
+            <div class="flex items-center gap-2 mb-2">
+              <svg class="doc-icon" aria-hidden="true" style="width:1.3em;height:1.3em;color:#34d399">
+                <use href="#icon-mandala" />
+              </svg>
+              <h3 class="font-semibold group-hover:text-emerald-400">Mesh Network</h3>
+            </div>
+            <p class="text-mountain-400 text-sm">WebSocket P2P mesh infrastructure.</p>
+          </a>
+          <a href="time-sources.html"
+            class="block bg-mountain-800 border border-mountain-700 rounded-xl p-5 hover:border-emerald-500 transition group">
+            <div class="flex items-center gap-2 mb-2">
+              <svg class="doc-icon" aria-hidden="true" style="width:1.3em;height:1.3em;color:#34d399">
+                <use href="#icon-mani" />
+              </svg>
+              <h3 class="font-semibold group-hover:text-emerald-400">Time Sources</h3>
+            </div>
+            <p class="text-mountain-400 text-sm">GPS, atomic, PTP, NTP precision timing.</p>
+          </a>
+          <a href="webserver.html"
+            class="block bg-mountain-800 border border-mountain-700 rounded-xl p-5 hover:border-emerald-500 transition group">
+            <div class="flex items-center gap-2 mb-2">
+              <svg class="doc-icon" aria-hidden="true" style="width:1.3em;height:1.3em;color:#34d399">
+                <use href="#icon-server" />
+              </svg>
+              <h3 class="font-semibold group-hover:text-emerald-400">Web Server</h3>
+            </div>
+            <p class="text-mountain-400 text-sm">HTTP REST API and WebSocket endpoints.</p>
+          </a>
+          <a href="advanced-systems.html"
+            class="block bg-mountain-800 border border-mountain-700 rounded-xl p-5 hover:border-emerald-500 transition group">
+            <div class="flex items-center gap-2 mb-2">
+              <svg class="doc-icon" aria-hidden="true" style="width:1.3em;height:1.3em;color:#34d399">
+                <use href="#icon-tivra" />
+              </svg>
+              <h3 class="font-semibold group-hover:text-emerald-400">Advanced Systems</h3>
+            </div>
+            <p class="text-mountain-400 text-sm">Gossip protocol, load balancing, and more.</p>
+          </a>
+        </div>
+      </section>
+
+      <!-- ═══ REFERENCE ═══ -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4">Reference</h2>
+        <div class="grid sm:grid-cols-3 gap-4">
+          <a href="quick-reference.html"
+            class="block bg-mountain-800 border border-mountain-700 rounded-xl p-5 hover:border-emerald-500 transition group">
+            <div class="flex items-center gap-2 mb-2">
+              <svg class="doc-icon" aria-hidden="true" style="width:1.3em;height:1.3em;color:#34d399">
+                <use href="#icon-quickref" />
+              </svg>
+              <h3 class="font-semibold group-hover:text-emerald-400">Quick Ref</h3>
+            </div>
+            <p class="text-mountain-400 text-sm">Cheat sheet — ports, env vars, key commands.</p>
+          </a>
+          <a href="api.html"
+            class="block bg-mountain-800 border border-mountain-700 rounded-xl p-5 hover:border-emerald-500 transition group">
+            <div class="flex items-center gap-2 mb-2">
+              <svg class="doc-icon" aria-hidden="true" style="width:1.3em;height:1.3em;color:#34d399">
+                <use href="#icon-api" />
+              </svg>
+              <h3 class="font-semibold group-hover:text-emerald-400">API</h3>
+            </div>
+            <p class="text-mountain-400 text-sm">Complete REST API documentation.</p>
+          </a>
+          <a href="docs-bundle.html"
+            class="block bg-mountain-800 border border-mountain-700 rounded-xl p-5 hover:border-emerald-500 transition group">
+            <div class="flex items-center gap-2 mb-2">
+              <svg class="doc-icon" aria-hidden="true" style="width:1.3em;height:1.3em;color:#34d399">
+                <use href="#icon-granth" />
+              </svg>
+              <h3 class="font-semibold group-hover:text-emerald-400">GRANTH</h3>
+            </div>
+            <p class="text-mountain-400 text-sm">Self-contained documentation bundle.</p>
+          </a>
+        </div>
+      </section>
+
+    </div>
+  </main>
 
   <footer class="docs-footer">
     <p>&copy; 2026 YAKMESH&trade;</p>
@@ -930,23 +1247,5 @@
   <script src="prism-javascript.min.js" defer></script>
   <script src="docs.js" defer></script>
 </body>
+
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
