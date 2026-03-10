@@ -1,52 +1,62 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="doko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="favicon.ico" sizes="32x32">
-    <link rel="icon" href="icon.svg" type="image/svg+xml">
-    <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <title>DOKO - Identity Object | YAKMESH Documentation</title>
-    <meta name="description" content="DOKO: Distributed Ownership & Key Object. Self-sovereign identity certificates for YAKMESH nodes.">
-    
-    <!-- Tailwind CSS -->
-    <link rel="stylesheet" href="tailwind.min.css">
-    
-    <!-- Syntax Highlighting -->
-    <link rel="stylesheet" href="prism-tomorrow.min.css" media="print" onload="this.media='all'">
-    <noscript><link rel="stylesheet" href="prism-tomorrow.min.css"></noscript>
-    
-    <!-- Custom Styles -->
-    <link rel="stylesheet" href="docs.css">
-    <style>
-        /* Page-specific theme overrides - Parchment Brown */
-        .theme-accent { color: #ca8a04; }
-        .theme-accent-hover:hover { color: #eab308; }
-        .theme-badge { background: rgba(161, 98, 7, 0.2); color: #ca8a04; }
-        .theme-border { border-color: #a16207; }
-        .theme-callout { background: rgba(161, 98, 7, 0.1); border-color: #854d0e; }
-        .active-link { background: rgba(161, 98, 7, 0.2) !important; color: #ca8a04 !important; }
-        
-        /* Mobile fixes */
-        @media (max-width: 768px) {
-            .docs-content { padding: 1rem; }
-            .text-4xl { font-size: 1.75rem; }
-            pre { font-size: 0.75rem; max-width: 100%; }
-            .grid { grid-template-columns: 1fr !important; }
-            .flex-col-mobile { flex-direction: column; }
-        }
-    </style>
+<html lang="en" data-theme="samuha">
 
-    <!-- Open Graph -->
-    <meta property="og:type" content="article">
-    <meta property="og:site_name" content="Yakmesh Documentation">
-    <meta property="og:title" content="DOKO — Yakmesh">
-    <meta property="og:description" content="DOKO identity certificates — post-quantum certificate issuance and management.">
-    <meta property="og:url" content="https://yakmesh.dev/docs/doko.html">
-    <link rel="canonical" href="https://yakmesh.dev/docs/doko.html">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="favicon.ico" sizes="32x32">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <title>SAMUHA | YAKMESH Documentation</title>
+  <meta name="description"
+    content="SAMUHA — Ternary peer admission with ADMIT/HOLD/REDIRECT verdicts, priority scoring, and capacity-aware peer management.">
+  <link rel="stylesheet" href="tailwind.min.css">
+  <link rel="stylesheet" href="prism-tomorrow.min.css" media="print" onload="this.media='all'">
+  <noscript>
+    <link rel="stylesheet" href="prism-tomorrow.min.css">
+  </noscript>
+  <link rel="stylesheet" href="docs.css">
+  <style>
+    .theme-accent {
+      color: #fbbf24;
+    }
+
+    .theme-accent-hover:hover {
+      color: #fde68a;
+    }
+
+    .theme-badge {
+      background: rgba(251, 191, 36, 0.2);
+      color: #fbbf24;
+    }
+
+    .theme-border {
+      border-color: #d97706;
+    }
+
+    .theme-callout {
+      background: rgba(251, 191, 36, 0.1);
+      border-color: #b45309;
+    }
+
+    .active-link {
+      background: rgba(251, 191, 36, 0.2) !important;
+      color: #fbbf24 !important;
+    }
+  </style>
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Yakmesh Documentation">
+  <meta property="og:title" content="SAMUHA — Yakmesh">
+  <meta property="og:description"
+    content="SAMUHA — Ternary peer admission with ADMIT/HOLD/REDIRECT verdicts, priority scoring, and capacity-aware management.">
+  <meta property="og:url" content="https://yakmesh.dev/docs/samuha.html">
+  <link rel="canonical" href="https://yakmesh.dev/docs/samuha.html">
 </head>
+
 <body class="bg-mountain-900 text-white min-h-screen">
-<!-- YAKMESH-ICON-SPRITE-START -->
+  <!-- YAKMESH-ICON-SPRITE-START -->
 <svg xmlns="http://www.w3.org/2000/svg" style="display:none">
 <!--
   Yakmesh Docs Icon Sprite Sheet
@@ -636,14 +646,15 @@
 
 </svg>
 <!-- YAKMESH-ICON-SPRITE-END -->
-<a href="#mainContent" class="skip-link">Skip to main content</a>
-    
+  <a href="#mainContent" class="skip-link">Skip to main content</a>
+
   <nav class="docs-sidebar" id="sidebar">
-    <a href="index.html" class="sidebar-logo">
-      <span class="logo-icon"><svg class="doc-icon" aria-hidden="true"><use href="#icon-mountain"/></svg></span>
-      <span class="logo-text">Yakmesh</span>
-    </a>
-    <a href="/dashboard" class="sidebar-dashboard-link"><svg class="doc-icon" aria-hidden="true"><use href="#icon-dashboard"/></svg> <span>Dashboard</span></a>
+    <a href="index.html" class="sidebar-logo"><span class="logo-icon"><svg class="doc-icon" aria-hidden="true">
+          <use href="#icon-mountain" />
+        </svg></span><span class="logo-text">Yakmesh</span></a>
+    <a href="/dashboard" class="sidebar-dashboard-link"><svg class="doc-icon" aria-hidden="true">
+        <use href="#icon-dashboard" />
+      </svg> <span>Dashboard</span></a>
     <ul class="sidebar-nav">
       <li class="sidebar-section"><span><svg class="doc-icon" aria-hidden="true"><use href="#icon-book"/></svg> Guides</span></li>
       <li><a href="index.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-home"/></svg> <span>Overview</span></a></li>
@@ -656,7 +667,7 @@
       <li><a href="jhilke.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-jhilke"/></svg> <span>JHILKE</span></a></li>
       <li><a href="nakpak.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-nakpak"/></svg> <span>NAKPAK</span></a></li>
       <li><a href="namche.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-namche"/></svg> <span>NAMCHE</span></a></li>
-      <li><a href="doko.html" class="active"><svg class="doc-icon" aria-hidden="true"><use href="#icon-doko"/></svg> <span>DOKO</span></a></li>
+      <li><a href="doko.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-doko"/></svg> <span>DOKO</span></a></li>
       <li><a href="sherpa.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-sherpa"/></svg> <span>SHERPA</span></a></li>
       <li><a href="mandala.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-mandala"/></svg> <span>MANDALA</span></a></li>
       <li><a href="mantra.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-mantra"/></svg> <span>MANTRA</span></a></li>
@@ -670,7 +681,7 @@
       <li><a href="mani.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-mani"/></svg> <span>MANI</span></a></li>
       <li><a href="aguwa.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-aguwa"/></svg> <span>AGUWA</span></a></li>
       <li><a href="karma.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-karma"/></svg> <span>KARMA</span></a></li>
-      <li><a href="samuha.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-samuha"/></svg> <span>SAMUHA</span></a></li>
+      <li><a href="samuha.html" class="active"><svg class="doc-icon" aria-hidden="true"><use href="#icon-samuha"/></svg> <span>SAMUHA</span></a></li>
       <li><a href="tattva.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-tattva"/></svg> <span>TATTVA</span></a></li>
       <li><a href="tribhuj.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-tribhuj"/></svg> <span>TRIBHUJ</span></a></li>
       <li><a href="ypc27.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-ypc27"/></svg> <span>YPC-27</span></a></li>
@@ -707,301 +718,303 @@
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
     </svg>
   </button>
-
-  <!-- Mobile overlay for tap-to-close sidebar -->
   <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
   <main class="docs-main" id="mainContent">
+    <div class="docs-content">
+      <div class="flex items-center gap-3 mb-4">
+        <svg class="doc-icon hero-icon" aria-hidden="true">
+          <use href="#icon-samuha" />
+        </svg>
+        <div>
+          <h1 class="text-4xl font-bold">SAMUHA <span class="text-xl text-mountain-400">&#x0938;&#x092E;&#x0942;&#x0939;</span></h1>
+          <p class="theme-accent">Ternary Peer Admission &amp; Capacity Management</p>
+        </div>
+      </div>
+      <p class="text-xl text-mountain-300 mb-4">Three-state peer admission with priority scoring, utilization-aware
+        capacity gating, and graceful REDIRECT eviction.</p>
+      <span class="inline-block text-xs theme-badge px-2 py-1 rounded mb-8">v3.3.0 &bull; Layer 17.5</span>
 
-        <div class="docs-content">
-            <div class="flex items-center gap-3 mb-4">
-                <svg class="doc-icon hero-icon" aria-hidden="true"><use href="#icon-doko"/></svg>
-                <div>
-                    <h1 class="text-4xl font-bold">DOKO</h1>
-                    <p class="theme-accent">Distributed Ownership & Key Object</p>
-                </div>
-            </div>
-            <p class="text-xl text-mountain-300 mb-8">
-                The self-sovereign identity certificate for YAKMESH nodes. Your passport in the mesh.
-            </p>
-            <span class="inline-block text-xs theme-badge px-2 py-1 rounded mb-8">v2.8.2</span>
+      <div class="feature-box">
+        <h2>The Assembly That Governs Entry</h2>
+        <p>A <em>samuha</em> is an assembly or group &mdash; a collective that decides who may join and under
+          what conditions. In yakmesh, SAMUHA replaces the old binary admit/reject gate with a
+          <strong>ternary verdict system</strong>: ADMIT, HOLD, or REDIRECT. Instead of hard rejections
+          that waste resources on both sides, peers that cannot be immediately admitted are either held
+          in a waiting queue (during transient overload) or gracefully redirected to neighbor nodes with
+          spare capacity. No legitimate peer is wasted; no overloaded node is overwhelmed.</p>
+      </div>
 
-            <h2 class="text-2xl font-bold mb-4">Overview</h2>
-            <p class="text-mountain-300 mb-6">
-                A DOKO is a cryptographically signed identity document that proves who you are in the Yakmesh network.
-                Unlike traditional certificates issued by a central authority, a DOKO is self-issued and 
-                verified by the mesh through mathematical proofs.
-            </p>
+      <div class="theme-callout border rounded-xl p-6 mb-8">
+        <h3 class="text-lg font-semibold mb-2"><svg class="doc-icon inline-icon" width="24" height="24"
+            aria-hidden="true">
+            <use href="#icon-karma" />
+          </svg> SAMUHA &amp; KARMA</h3>
+        <p class="text-mountain-300">
+          <a href="karma.html" class="theme-accent theme-accent-hover">KARMA</a> tracks peer reputation
+          over time &mdash; assigning trust scores based on behavior history. SAMUHA consumes KARMA scores
+          as a major input to the priority formula: peers with higher KARMA get preferential admission.
+          Think of KARMA as the credit score; SAMUHA is the admissions committee.
+        </p>
+      </div>
 
-            <div class="bg-mountain-800 rounded-xl p-6 mb-8">
-                <h3 class="text-lg font-semibold mb-3 theme-accent">DOKO Types</h3>
-                <div class="grid md:grid-cols-3 gap-4">
-                    <div class="bg-mountain-900 rounded-lg p-4">
-                        <div class="theme-accent font-semibold mb-2"><svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true"><use href="#icon-gear"/></svg> node-identity</div>
-                        <div class="text-mountain-400 text-sm">Core node identity — proves a node's existence and public key</div>
-                    </div>
-                    <div class="bg-mountain-900 rounded-lg p-4">
-                        <div class="theme-accent font-semibold mb-2"><svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true"><use href="#icon-globe"/></svg> domain-claim</div>
-                        <div class="text-mountain-400 text-sm">Domain ownership — proves a node controls a domain</div>
-                    </div>
-                    <div class="bg-mountain-900 rounded-lg p-4">
-                        <div class="theme-accent font-semibold mb-2"><svg class="doc-icon inline-icon" aria-hidden="true"><use href="#icon-gear"/></svg> service-binding</div>
-                        <div class="text-mountain-400 text-sm">Service binding — links services to node identity</div>
-                    </div>
-                </div>
-            </div>
+      <!-- Ternary Verdicts -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4">Ternary Verdicts</h2>
+        <p class="text-mountain-300 mb-4">
+          Every incoming peer connection receives one of three verdicts:
+        </p>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div class="bg-mountain-800 rounded-xl p-6 border border-green-700 text-center">
+            <div class="text-3xl mb-2 font-mono">+1</div>
+            <h4 class="font-bold text-green-400 text-lg">ADMIT</h4>
+            <p class="text-mountain-400 text-sm mt-2">Capacity available. Peer passes priority threshold.
+              Connection accepted immediately.</p>
+          </div>
+          <div class="bg-mountain-800 rounded-xl p-6 border border-yellow-700 text-center">
+            <div class="text-3xl mb-2 font-mono">0</div>
+            <h4 class="font-bold text-yellow-400 text-lg">HOLD</h4>
+            <p class="text-mountain-400 text-sm mt-2">Temporarily at capacity. Peer queued for 30s.
+              Re-evaluated on next slot opening.</p>
+          </div>
+          <div class="bg-mountain-800 rounded-xl p-6 border border-red-700 text-center">
+            <div class="text-3xl mb-2 font-mono">&minus;1</div>
+            <h4 class="font-bold text-red-400 text-lg">REDIRECT</h4>
+            <p class="text-mountain-400 text-sm mt-2">At hard capacity. Peer given alternative node addresses.
+              Graceful handoff, not rejection.</p>
+          </div>
+        </div>
+      </section>
 
-            <h2 class="text-2xl font-bold mb-4">DOKO Structure</h2>
-            <p class="text-mountain-300 mb-6">
-                Every DOKO contains these core fields, signed with ML-DSA-65 (post-quantum):
-            </p>
+      <!-- Priority Formula -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4">Priority Formula</h2>
+        <p class="text-mountain-300 mb-4">
+          SAMUHA calculates a composite priority score for each incoming peer to determine
+          admission order when capacity is constrained:
+        </p>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700 mb-6">
+          <div class="text-center text-xl font-bold theme-accent mb-4">
+            priority = 0.3&times;karma + 0.3&times;hw + 0.2&times;returning + 0.2&times;mani
+          </div>
+          <table class="w-full mt-4">
+            <thead>
+              <tr class="border-b border-mountain-700">
+                <th class="text-left p-3 text-mountain-300">Factor</th>
+                <th class="text-left p-3 text-mountain-300">Weight</th>
+                <th class="text-left p-3 text-mountain-300">Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3 font-semibold">karma</td>
+                <td class="p-3 theme-accent">0.3</td>
+                <td class="p-3 text-mountain-400">KARMA trust score (0.0&ndash;1.0) from peer history</td>
+              </tr>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3 font-semibold">hw</td>
+                <td class="p-3 theme-accent">0.3</td>
+                <td class="p-3 text-mountain-400">Hardware capability score &mdash; GPU/NPU TOPS normalized</td>
+              </tr>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3 font-semibold">returning</td>
+                <td class="p-3 theme-accent">0.2</td>
+                <td class="p-3 text-mountain-400">1.0 if previously connected, 0.0 if new &mdash; loyalty bonus</td>
+              </tr>
+              <tr>
+                <td class="p-3 font-semibold">mani</td>
+                <td class="p-3 theme-accent">0.2</td>
+                <td class="p-3 text-mountain-400">MANI phase alignment (Kuramoto) &mdash; phase-coherent peers preferred</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
 
-            <div class="bg-mountain-800 rounded-xl p-6 mb-8">
-                <pre class="text-sm overflow-x-auto"><code class="language-javascript">{
-  // Version & Type
-  "version": "1.0",
-  "type": "node-identity",  // or "domain-claim", "service-binding"
-  
-  // Core Identity
-  "nodeId": "node-mobius-rabi-junction-a7f3b2c1",
-  "publicKey": "ML-DSA-65 public key (hex)",
-  
-  // Network Binding
-  "networkName": "mobius-rabi-junction",  // From codebase hash
-  
-  // Temporal
-  "issuedAt": 1737200000000,   // Unix timestamp
-  "expiresAt": 1768736000000,  // 1 year validity
-  
-  // Optional Extensions
-  "domains": [
-    {
-      "domain": "example.com",
-      "proof": "/.well-known/yakmesh/domain-proof.json",
-      "verifiedAt": 1737200000000,
-      "quorumNodes": ["node-xxx", "node-yyy", "node-zzz"]
-    }
-  ],
-  
-  // TLS Binding (optional, for mTLS)
-  "tls": {
-    "certFingerprint": "sha256:a1b2c3...",
-    "validFrom": 1737200000000,
-    "validTo": 1768736000000
-  },
-  
-  // Signature (covers all above fields)
-  "signature": "ML-DSA-65 signature (hex)"
-}
-</code></pre>
-            </div>
+      <!-- Utilization Thresholds -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4">Utilization Thresholds</h2>
+        <p class="text-mountain-300 mb-4">
+          SAMUHA gates admission based on the node&rsquo;s current utilization ratio
+          (active peers / max capacity):
+        </p>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+          <table class="w-full">
+            <thead>
+              <tr class="border-b border-mountain-700">
+                <th class="text-left p-3 text-mountain-300">Utilization</th>
+                <th class="text-left p-3 text-mountain-300">Verdict</th>
+                <th class="text-left p-3 text-mountain-300">Behavior</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3 theme-accent font-mono">&lt; 0.8</td>
+                <td class="p-3"><span class="text-green-400 font-semibold">ADMIT</span></td>
+                <td class="p-3 text-mountain-400">Immediate admission for any peer above minimum priority</td>
+              </tr>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3 theme-accent font-mono">0.8 &ndash; 1.0</td>
+                <td class="p-3"><span class="text-yellow-400 font-semibold">HOLD</span></td>
+                <td class="p-3 text-mountain-400">High-priority peers may bump lowest; others wait in queue</td>
+              </tr>
+              <tr>
+                <td class="p-3 theme-accent font-mono">&ge; 1.0</td>
+                <td class="p-3"><span class="text-red-400 font-semibold">REDIRECT</span></td>
+                <td class="p-3 text-mountain-400">Node at hard limit. Peer given neighbor addresses with capacity</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
 
-            <h2 class="text-2xl font-bold mb-4">Creating a DOKO</h2>
-            <div class="bg-mountain-800 rounded-xl p-6 mb-8">
-                <pre class="text-sm overflow-x-auto"><code class="language-javascript">import { createDoko, signDoko } from 'yakmesh/identity';
+      <!-- REDIRECT Flow -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4">REDIRECT Eviction Flow</h2>
+        <p class="text-mountain-300 mb-4">
+          When a node reaches hard capacity, SAMUHA doesn&rsquo;t simply refuse connections.
+          It performs <strong>graceful redirection</strong>:
+        </p>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+          <ol class="list-decimal list-inside text-mountain-300 space-y-3">
+            <li><strong>Capacity check</strong>: Active peers &ge; max capacity confirmed</li>
+            <li><strong>Neighbor scan</strong>: Query mesh neighbors for their current utilization</li>
+            <li><strong>Best candidate</strong>: Select neighbor with lowest utilization that has capacity</li>
+            <li><strong>REDIRECT response</strong>: Send peer the alternative node&rsquo;s address + signed referral token</li>
+            <li><strong>Verification</strong>: Target node validates referral token (prevents abuse)</li>
+            <li><strong>Telemetry</strong>: REDIRECT event logged for KARMA scoring &mdash; redirected peers that connect successfully boost both nodes&rsquo; scores</li>
+          </ol>
+        </div>
+      </section>
 
-// Generate or load your node key pair
-const { publicKey, privateKey } = await loadNodeKey('./data/node-key.json');
+      <!-- Safety Limits -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4"><svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true">
+            <use href="#icon-shield" />
+          </svg> Safety Limits</h2>
+        <p class="text-mountain-300 mb-4">
+          Hard safety limits prevent resource exhaustion and abuse:
+        </p>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+          <table class="w-full">
+            <thead>
+              <tr class="border-b border-mountain-700">
+                <th class="text-left p-3 text-mountain-300">Limit</th>
+                <th class="text-left p-3 text-mountain-300">Value</th>
+                <th class="text-left p-3 text-mountain-300">Purpose</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3 font-semibold">Burst rate</td>
+                <td class="p-3 theme-accent">30 / min</td>
+                <td class="p-3 text-mountain-400">Max peer connection attempts per minute</td>
+              </tr>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3 font-semibold">Max handshakes</td>
+                <td class="p-3 theme-accent">50</td>
+                <td class="p-3 text-mountain-400">Maximum concurrent handshakes (pending + active)</td>
+              </tr>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3 font-semibold">HOLD timeout</td>
+                <td class="p-3 theme-accent">30s</td>
+                <td class="p-3 text-mountain-400">Max time a peer waits in HOLD queue before auto-REDIRECT</td>
+              </tr>
+              <tr>
+                <td class="p-3 font-semibold">HOLD queue depth</td>
+                <td class="p-3 theme-accent">10</td>
+                <td class="p-3 text-mountain-400">Max peers waiting in HOLD &mdash; overflow gets immediate REDIRECT</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
 
-// Create a node identity DOKO
-const doko = createDoko({
-  type: 'node-identity',
-  nodeId: myNodeId,
-  publicKey: publicKey,
-  networkName: config.networkName,
-  validityDays: 365,
-});
+      <!-- API -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4"><svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true">
+            <use href="#icon-api" />
+          </svg> API Endpoints</h2>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+          <table class="w-full">
+            <thead>
+              <tr class="border-b border-mountain-700">
+                <th class="text-left p-3 text-mountain-300">Endpoint</th>
+                <th class="text-left p-3 text-mountain-300">Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3"><code class="theme-accent">GET /api/samuha</code></td>
+                <td class="p-3 text-mountain-400">SAMUHA status: utilization, active peers, HOLD queue depth, verdicts issued</td>
+              </tr>
+              <tr>
+                <td class="p-3"><code class="theme-accent">GET /api/peers</code></td>
+                <td class="p-3 text-mountain-400">Connected peers with admission verdict, priority score, and connection time</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
 
-// Sign with ML-DSA-65
-const signedDoko = signDoko(doko, privateKey);
+      <!-- Version History -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2"><svg class="doc-icon inline-icon" width="24"
+            height="24" aria-hidden="true">
+            <use href="#icon-hourglass" />
+          </svg> Version History</h2>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+          <table class="w-full">
+            <thead>
+              <tr class="border-b border-mountain-700">
+                <th class="text-left p-3 text-mountain-300">Version</th>
+                <th class="text-left p-3 text-mountain-300">Changes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="p-3"><span class="theme-badge px-2 py-1 rounded">v3.3.0</span></td>
+                <td class="p-3 text-mountain-400">
+                  Initial implementation: ternary ADMIT/HOLD/REDIRECT verdicts, composite priority
+                  formula (karma+hw+returning+mani), utilization-based capacity gating, graceful
+                  REDIRECT with signed referral tokens, HOLD queue with 30s timeout, burst rate limiting.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
 
-console.log('DOKO created:', signedDoko.nodeId);
-console.log('Expires:', new Date(signedDoko.expiresAt));
-</code></pre>
-            </div>
-
-            <h2 class="text-2xl font-bold mb-4">Domain Claims</h2>
-            <p class="text-mountain-300 mb-6">
-                To prove you control a domain, you must pass mesh-based domain verification.
-                This is a quorum-based process that requires multiple independent nodes to verify your claim.
-            </p>
-
-            <div class="bg-mountain-800 rounded-xl p-6 mb-8">
-                <h3 class="text-lg font-semibold mb-3 theme-accent">Verification Process</h3>
-                <ol class="text-mountain-300 space-y-3">
-                    <li class="flex items-start gap-3">
-                        <span class="theme-badge w-6 h-6 rounded-full flex items-center justify-center text-sm flex-shrink-0">1</span>
-                        <span>Place a proof file at <code class="bg-mountain-700 px-2 py-1 rounded text-sm">/.well-known/yakmesh/domain-proof.json</code></span>
-                    </li>
-                    <li class="flex items-start gap-3">
-                        <span class="theme-badge w-6 h-6 rounded-full flex items-center justify-center text-sm flex-shrink-0">2</span>
-                        <span>Request domain verification from the mesh</span>
-                    </li>
-                    <li class="flex items-start gap-3">
-                        <span class="theme-badge w-6 h-6 rounded-full flex items-center justify-center text-sm flex-shrink-0">3</span>
-                        <span>Random verifiers (5+ nodes) check your proof file</span>
-                    </li>
-                    <li class="flex items-start gap-3">
-                        <span class="theme-badge w-6 h-6 rounded-full flex items-center justify-center text-sm flex-shrink-0">4</span>
-                        <span>Quorum (≥3 agreeing) adds domain to your DOKO</span>
-                    </li>
-                </ol>
-            </div>
-
-            <div class="bg-mountain-800 rounded-xl p-6 mb-8">
-                <h3 class="text-lg font-semibold mb-3 theme-accent">Domain Proof File</h3>
-                <pre class="text-sm overflow-x-auto"><code class="language-javascript">// /.well-known/yakmesh/domain-proof.json
-{
-  "nodeId": "node-mobius-rabi-junction-a7f3b2c1",
-  "domain": "example.com",
-  "challenge": "random-challenge-from-mesh",
-  "timestamp": 1737200000000,
-  "signature": "ML-DSA-65 signature of above fields"
-}
-</code></pre>
-            </div>
-
-            <h2 class="text-2xl font-bold mb-4">Trust Levels</h2>
-            <p class="text-mountain-300 mb-6">
-                DOKOs are assigned trust levels based on their verification state:
-            </p>
-
-            <p class="text-mountain-300 mb-4">DOKO trust levels use the KARMA tier system — Nepali expedition team roles:</p>
-            <div class="space-y-3 mb-8">
-                <div class="bg-mountain-800 rounded-xl p-4 flex items-center gap-4">
-                    <div class="w-12 h-12 bg-gradient-to-br from-amber-600 to-amber-800 rounded-lg flex items-center justify-center text-2xl"><svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true"><use href="#icon-mountain"/></svg> </div>
-                    <div>
-                        <div class="font-semibold text-amber-300">SIRDAR (सिरदार) — Expedition Leader</div>
-                        <div class="text-mountain-400 text-sm">Atomic time + hardware attestation + 30 days + endorsements</div>
-                    </div>
-                </div>
-                <div class="bg-mountain-800 rounded-xl p-4 flex items-center gap-4">
-                    <div class="w-12 h-12 bg-purple-600 rounded-lg flex items-center justify-center text-2xl"><svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true"><use href="#icon-gem"/></svg> </div>
-                    <div>
-                        <div class="font-semibold text-purple-300">SATHI (साथी) — Trusted Companion</div>
-                        <div class="text-mountain-400 text-sm">GPS + hardware + 14 days + endorsements</div>
-                    </div>
-                </div>
-                <div class="bg-mountain-800 rounded-xl p-4 flex items-center gap-4">
-                    <div class="w-12 h-12 bg-yellow-600 rounded-lg flex items-center justify-center text-2xl"><svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true"><use href="#icon-target"/></svg> </div>
-                    <div>
-                        <div class="font-semibold text-yellow-300">PATHIK (पथिक) — Traveler on Path</div>
-                        <div class="text-mountain-400 text-sm">PTP time + hardware + 7 days presence</div>
-                    </div>
-                </div>
-                <div class="bg-mountain-800 rounded-xl p-4 flex items-center gap-4">
-                    <div class="w-12 h-12 bg-gray-500 rounded-lg flex items-center justify-center text-2xl"><svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true"><use href="#icon-target"/></svg> </div>
-                    <div>
-                        <div class="font-semibold text-gray-200">YATRI (यात्री) — Pilgrim</div>
-                        <div class="text-mountain-400 text-sm">NTP time + hardware + 1 day presence</div>
-                    </div>
-                </div>
-                <div class="bg-mountain-800 rounded-xl p-4 flex items-center gap-4">
-                    <div class="w-12 h-12 bg-green-700 rounded-lg flex items-center justify-center text-2xl"><svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true"><use href="#icon-leaf"/></svg> </div>
-                    <div>
-                        <div class="font-semibold text-green-300">NAYA (नया) — Newcomer</div>
-                        <div class="text-mountain-400 text-sm">Observer status, building trust</div>
-                    </div>
-                </div>
-            </div>
-
-            <h2 class="text-2xl font-bold mb-4">DOKO Hash</h2>
-            <p class="text-mountain-300 mb-6">
-                Each DOKO has a unique hash that can be used for pinning and verification:
-            </p>
-
-            <div class="bg-mountain-800 rounded-xl p-6 mb-8">
-                <pre class="text-sm overflow-x-auto"><code class="language-javascript">import { computeDokoHash } from 'yakmesh/security';
-
-const hash = computeDokoHash(doko);
-// Returns: "sha3-256:a1b2c3d4e5..."
-
-// The hash covers:
-// - version, type, nodeId, publicKey
-// - networkName, issuedAt, expiresAt
-// - (excludes signature to allow re-signing)
-</code></pre>
-            </div>
-
-            <h2 class="text-2xl font-bold mb-4">DOKO Expiration & Renewal</h2>
-            <div class="bg-mountain-800 rounded-xl p-6 mb-8">
-                <ul class="text-mountain-300 space-y-2">
-                    <li>• <strong>Default validity:</strong> 1 year from issuance</li>
-                    <li>• <strong>Renewal window:</strong> 30 days before expiration</li>
-                    <li>• <strong>Auto-renewal:</strong> Node can re-sign with same key</li>
-                    <li>• <strong>Key rotation:</strong> New DOKO with new key pair</li>
-                </ul>
-            </div>
-
-            <h2 class="text-2xl font-bold mb-4">Security Considerations</h2>
-            <div class="bg-mountain-800 border border-theme-primary rounded-xl p-6 mb-8">
-                <h3 class="text-lg font-semibold mb-3 theme-accent"><svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true"><use href="#icon-lock"/></svg> Identity Protection with iO</h3>
-                <p class="text-mountain-300 mb-4">
-                    Unlike raw cryptocurrency private keys, YAKMESH uses <strong>iO (indistinguishability obfuscation)</strong> 
-                    to derive human-readable identities from cryptographic material. Your identity is never a raw hash.
-                </p>
-                <ul class="text-mountain-300 space-y-2 mb-4">
-                    <li>• <strong>Network Names:</strong> <code class="text-theme-accent bg-mountain-900 px-2 py-1 rounded">qubit-lattice-prism</code> (not <code class="text-red-400">7f3a9b2c...</code>)</li>
-                    <li>• <strong>Node IDs:</strong> <code class="text-theme-accent bg-mountain-900 px-2 py-1 rounded">pq-EqU8</code> (human-memorable)</li>
-                    <li>• <strong>Verification Phrases:</strong> Three-word sequences for identity confirmation</li>
-                </ul>
-                <div class="bg-mountain-900 rounded-lg p-4 mb-4">
-                    <pre class="text-sm"><code class="language-javascript">import { deriveNetworkName, deriveNetworkId } from './oracle/network-identity.js';
-
-// Never expose raw hashes — always use iO derivation
-const name = deriveNetworkName(hash, 3);  // "factor-primitive-bose"
-const id = deriveNetworkId(hash);         // "pq-EqU8"</code></pre>
-                </div>
-                <p class="text-mountain-400 text-sm italic">
-                    "We learned from Bitcoin's mistakes. Human-readable identities that protect the underlying keys."
-                </p>
-            </div>
-
-            <div class="bg-yellow-900/30 border border-yellow-700 rounded-xl p-6 mb-8">
-                <h3 class="text-lg font-semibold mb-3 text-yellow-400"><svg class="doc-icon inline-icon" aria-hidden="true"><use href="#icon-warning"/></svg> Key Storage Best Practices</h3>
-                <ul class="text-mountain-300 space-y-2">
-                    <li>• Your <code>node-key.json</code> contains encrypted key material — back it up securely</li>
-                    <li>• Consider hardware security modules (HSM) for production deployments</li>
-                    <li>• If compromised, revoke immediately via mesh broadcast using your backup key</li>
-                    <li>• Key rotation: Generate a new DOKO and announce the transition to the mesh</li>
-                </ul>
-            </div>
-
-                  <!-- Journey Navigation -->
-                                                                                                                                                                                    <div class="border-t border-mountain-700 mt-12 pt-8">
+      <!-- Journey Navigation -->
+            <div class="border-t border-mountain-700 mt-12 pt-8">
         <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
         <div class="flex flex-col sm:flex-row gap-4">
-          <a href="namche.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">
+          <a href="karma.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">
             <div class="text-xs text-mountain-400 mb-1">← Previous</div>
             <div class="flex items-center gap-2">
-              <svg class="doc-icon journey-icon" aria-hidden="true"><use href="#icon-namche"/></svg>
-              <span class="font-semibold group-hover:text-theme-accent">NAMCHE</span>
+              <svg class="doc-icon journey-icon" aria-hidden="true"><use href="#icon-karma"/></svg>
+              <span class="font-semibold group-hover:text-theme-accent">KARMA</span>
             </div>
-            <p class="text-mountain-400 text-sm mt-1">Identity gateway</p>
+            <p class="text-mountain-400 text-sm mt-1">Reputation system</p>
           </a>
-          <a href="sherpa.html" class="flex-1 block bg-mountain-800 border border-theme-primary rounded-xl p-4 hover:border-theme-accent transition group">
+          <a href="tattva.html" class="flex-1 block bg-mountain-800 border border-theme-primary rounded-xl p-4 hover:border-theme-accent transition group">
             <div class="text-xs text-mountain-400 mb-1">Next →</div>
             <div class="flex items-center gap-2">
-              <svg class="doc-icon journey-icon" aria-hidden="true"><use href="#icon-sherpa"/></svg>
-              <span class="font-semibold group-hover:text-theme-accent">SHERPA</span>
+              <svg class="doc-icon journey-icon" aria-hidden="true"><use href="#icon-tattva"/></svg>
+              <span class="font-semibold group-hover:text-theme-accent">TATTVA</span>
             </div>
-            <p class="text-mountain-400 text-sm mt-1">Peer discovery</p>
+            <p class="text-mountain-400 text-sm mt-1">Core principles</p>
           </a>
         </div>
       </div>
-    </main>
+  </main>
 
   <footer class="docs-footer">
-    <p>© 2026 YAKMESH™</p>
-  </footer><script src="prism.min.js" defer></script>
-    <script src="prism-javascript.min.js" defer></script>
-    <script src="docs.js" defer></script>
-
-  
+    <p>&copy; 2026 YAKMESH&trade;</p>
+  </footer>
+  <script src="prism.min.js" defer></script>
+  <script src="prism-javascript.min.js" defer></script>
+  <script src="docs.js" defer></script>
 </body>
+
 </html>
-
-
-
-
-

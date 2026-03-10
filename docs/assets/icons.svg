@@ -561,4 +561,28 @@
   <circle cx="12" cy="21" r="2"/>
 </symbol>
 
+<!-- AGUWA — sine wave with central circle (phase coupling oscillator) -->
+<symbol id="icon-aguwa" viewBox="0 0 24 24">
+  <path d="M2 12c2-4 4-4 6 0s4 4 6 0 4-4 6 0" fill="none" stroke="currentColor" stroke-width="2"/>
+  <circle cx="12" cy="12" r="2.5" fill="none" stroke="currentColor" stroke-width="2"/>
+</symbol>
+
+<!-- SANGHA — three connected circles in triangle (collective community nodes) -->
+<symbol id="icon-sangha" viewBox="0 0 24 24">
+  <circle cx="12" cy="5" r="2.5" fill="none" stroke="currentColor" stroke-width="2"/>
+  <circle cx="6" cy="17" r="2.5" fill="none" stroke="currentColor" stroke-width="2"/>
+  <circle cx="18" cy="17" r="2.5" fill="none" stroke="currentColor" stroke-width="2"/>
+  <line x1="12" y1="7.5" x2="7.5" y2="15" stroke="currentColor" stroke-width="1.5"/>
+  <line x1="12" y1="7.5" x2="16.5" y2="15" stroke="currentColor" stroke-width="1.5"/>
+  <line x1="8.5" y1="17" x2="15.5" y2="17" stroke="currentColor" stroke-width="1.5"/>
+</symbol>
+
+<!-- SAMUHA — funnel shape with dots at top (weighted admission gateway) -->
+<symbol id="icon-samuha" viewBox="0 0 24 24">
+  <path d="M4 4h16l-5 8v6l-2 2v-8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+  <circle cx="7" cy="2" r="1" fill="currentColor"/>
+  <circle cx="12" cy="2" r="1" fill="currentColor"/>
+  <circle cx="17" cy="2" r="1" fill="currentColor"/>
+</symbol>
+
 </svg>
