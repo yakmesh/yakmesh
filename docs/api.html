@@ -1,38 +1,69 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="api">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="favicon.ico" sizes="32x32">
-    <link rel="icon" href="icon.svg" type="image/svg+xml">
-    <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <title>REST API Reference | YAKMESH Documentation</title>
-    <meta name="description" content="Complete REST API reference for YAKMESH node operations.">
-    <link rel="stylesheet" href="tailwind.min.css">
-    <link rel="stylesheet" href="prism-tomorrow.min.css" media="print" onload="this.media='all'">
-    <noscript><link rel="stylesheet" href="prism-tomorrow.min.css"></noscript>
-    <link rel="stylesheet" href="docs.css">
-    <style>
-        .theme-accent { color: #94a3b8; }
-        .theme-accent-hover:hover { color: #cbd5e1; }
-        .theme-badge { background: rgba(71, 85, 105, 0.3); color: #94a3b8; }
-        .theme-border { border-color: #475569; }
-        .theme-callout { background: rgba(71, 85, 105, 0.1); border-color: #334155; }
-        .active-link { background: rgba(71, 85, 105, 0.3) !important; color: #94a3b8 !important; }
-        .method-get { background: #166534; }
-        .method-post { background: #1d4ed8; }
-    </style>
 
-    <!-- Open Graph -->
-    <meta property="og:type" content="article">
-    <meta property="og:site_name" content="Yakmesh Documentation">
-    <meta property="og:title" content="API — Yakmesh">
-    <meta property="og:description" content="Yakmesh REST API reference — HTTP endpoints for node control and mesh interaction.">
-    <meta property="og:url" content="https://yakmesh.dev/docs/api.html">
-    <link rel="canonical" href="https://yakmesh.dev/docs/api.html">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="favicon.ico" sizes="32x32">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <title>REST API Reference | YAKMESH Documentation</title>
+  <meta name="description" content="Complete REST API reference for YAKMESH node operations.">
+  <link rel="stylesheet" href="tailwind.min.css">
+  <link rel="stylesheet" href="prism-tomorrow.min.css" media="print" onload="this.media='all'">
+  <noscript>
+    <link rel="stylesheet" href="prism-tomorrow.min.css">
+  </noscript>
+  <link rel="stylesheet" href="docs.css">
+  <style>
+    .theme-accent {
+      color: #94a3b8;
+    }
+
+    .theme-accent-hover:hover {
+      color: #cbd5e1;
+    }
+
+    .theme-badge {
+      background: rgba(71, 85, 105, 0.3);
+      color: #94a3b8;
+    }
+
+    .theme-border {
+      border-color: #475569;
+    }
+
+    .theme-callout {
+      background: rgba(71, 85, 105, 0.1);
+      border-color: #334155;
+    }
+
+    .active-link {
+      background: rgba(71, 85, 105, 0.3) !important;
+      color: #94a3b8 !important;
+    }
+
+    .method-get {
+      background: #166534;
+    }
+
+    .method-post {
+      background: #1d4ed8;
+    }
+  </style>
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Yakmesh Documentation">
+  <meta property="og:title" content="API — Yakmesh">
+  <meta property="og:description"
+    content="Yakmesh REST API reference — HTTP endpoints for node control and mesh interaction.">
+  <meta property="og:url" content="https://yakmesh.dev/docs/api.html">
+  <link rel="canonical" href="https://yakmesh.dev/docs/api.html">
 </head>
+
 <body class="bg-mountain-900 text-white min-h-screen">
-<!-- YAKMESH-ICON-SPRITE-START -->
+  <!-- YAKMESH-ICON-SPRITE-START -->
 <svg xmlns="http://www.w3.org/2000/svg" style="display:none">
 <!--
   Yakmesh Docs Icon Sprite Sheet
@@ -622,13 +653,17 @@
 
 </svg>
 <!-- YAKMESH-ICON-SPRITE-END -->
-<a href="#mainContent" class="skip-link">Skip to main content</a>
+  <a href="#mainContent" class="skip-link">Skip to main content</a>
   <nav class="docs-sidebar" id="sidebar">
     <a href="index.html" class="sidebar-logo">
-      <span class="logo-icon"><svg class="doc-icon" aria-hidden="true"><use href="#icon-mountain"/></svg></span>
+      <span class="logo-icon"><svg class="doc-icon" aria-hidden="true">
+          <use href="#icon-mountain" />
+        </svg></span>
       <span class="logo-text">Yakmesh</span>
     </a>
-    <a href="/dashboard" class="sidebar-dashboard-link"><svg class="doc-icon" aria-hidden="true"><use href="#icon-dashboard"/></svg> <span>Dashboard</span></a>
+    <a href="/dashboard" class="sidebar-dashboard-link"><svg class="doc-icon" aria-hidden="true">
+        <use href="#icon-dashboard" />
+      </svg> <span>Dashboard</span></a>
     <ul class="sidebar-nav">
       <li class="sidebar-section"><span><svg class="doc-icon" aria-hidden="true"><use href="#icon-book"/></svg> Guides</span></li>
       <li><a href="index.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-home"/></svg> <span>Overview</span></a></li>
@@ -697,21 +732,21 @@
   <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
   <main class="docs-main" id="mainContent">
-        <div class="docs-content">
-            <h1 class="text-4xl font-bold mb-4">REST API Reference</h1>
-            <p class="text-xl text-mountain-300 mb-8">Complete documentation for all YAKMESH REST endpoints.</p>
+    <div class="docs-content">
+      <h1 class="text-4xl font-bold mb-4">REST API Reference</h1>
+      <p class="text-xl text-mountain-300 mb-8">Complete documentation for all YAKMESH REST endpoints.</p>
 
-            <div class="space-y-8">
-                <!-- Status -->
-                <div class="bg-mountain-800 border border-mountain-700 rounded-xl overflow-hidden">
-                    <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
-                        <span class="method-get px-2 py-1 rounded text-xs font-mono">GET</span>
-                        <code class="text-Yakmesh-300">/health</code>
-                    </div>
-                    <div class="p-4">
-                        <p class="text-mountain-300 mb-4">Returns node health and network status.</p>
-                        <h2 class="font-semibold mb-2">Response</h2>
-                        <pre class="language-json rounded-lg"><code>{
+      <div class="space-y-8">
+        <!-- Status -->
+        <div class="bg-mountain-800 border border-mountain-700 rounded-xl overflow-hidden">
+          <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
+            <span class="method-get px-2 py-1 rounded text-xs font-mono">GET</span>
+            <code class="text-Yakmesh-300">/health</code>
+          </div>
+          <div class="p-4">
+            <p class="text-mountain-300 mb-4">Returns node health and network status.</p>
+            <h2 class="font-semibold mb-2">Response</h2>
+            <pre class="language-json rounded-lg"><code>{
   "status": "ok",
   "nodeId": "a7f3b2c1e8d9...",
   "peers": 3,
@@ -719,20 +754,88 @@
   "network": {
     "name": "mobius-rabi-junction",
     "id": "pq-g1b6"
+  },
+  "sangha": {
+    "state": "HARMONIOUS",
+    "score": 1
   }
 }</code></pre>
-                    </div>
-                </div>
+          </div>
+        </div>
 
-                <!-- Identity -->
-                <div class="bg-mountain-800 border border-mountain-700 rounded-xl overflow-hidden">
-                    <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
-                        <span class="method-get px-2 py-1 rounded text-xs font-mono">GET</span>
-                        <code class="text-Yakmesh-300">/node</code>
-                    </div>
-                    <div class="p-4">
-                        <p class="text-mountain-300 mb-4">Returns node identity information.</p>
-                        <pre class="language-json rounded-lg"><code>{
+        <!-- AGUWA -->
+        <div class="bg-mountain-800 border border-mountain-700 rounded-xl overflow-hidden">
+          <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
+            <span class="method-get px-2 py-1 rounded text-xs font-mono">GET</span>
+            <code class="text-Yakmesh-300">/api/aguwa</code>
+          </div>
+          <div class="p-4">
+            <p class="text-mountain-300 mb-4">Returns AGUWA Kuramoto phase coupling statistics and dynamic capacity.</p>
+            <pre class="language-json rounded-lg"><code>{
+  "timeSync": "calibrated",
+  "coupling": {
+    "omega": 1.05,
+    "orderParameter": 0.98
+  },
+  "capacity": {
+    "maxPeers": 30,
+    "multiplier": 1.2
+  }
+}</code></pre>
+          </div>
+        </div>
+
+        <!-- SAMUHA -->
+        <div class="bg-mountain-800 border border-mountain-700 rounded-xl overflow-hidden">
+          <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
+            <span class="method-get px-2 py-1 rounded text-xs font-mono">GET</span>
+            <code class="text-Yakmesh-300">/api/samuha</code>
+          </div>
+          <div class="p-4">
+            <p class="text-mountain-300 mb-4">Returns SAMUHA admission control state and rate limits.</p>
+            <pre class="language-json rounded-lg"><code>{
+  "utilization": 0.45,
+  "handshakes": 5,
+  "recentEvictions": 0,
+  "thresholds": {
+    "hold": 0.8,
+    "redirect": 1.0
+  }
+}</code></pre>
+          </div>
+        </div>
+
+        <!-- SANGHA -->
+        <div class="bg-mountain-800 border border-mountain-700 rounded-xl overflow-hidden">
+          <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
+            <span class="method-get px-2 py-1 rounded text-xs font-mono">GET</span>
+            <code class="text-Yakmesh-300">/api/sangha</code>
+          </div>
+          <div class="p-4">
+            <p class="text-mountain-300 mb-4">Returns SANGHA collective attestation mesh status.</p>
+            <pre class="language-json rounded-lg"><code>{
+  "globalState": "HARMONIOUS",
+  "components": {
+    "CRYPTO": "HARMONIOUS",
+    "MESH": "HARMONIOUS"
+  },
+  "fileGuardian": {
+    "machineSeed": "valid",
+    "nodeKey": "valid"
+  }
+}</code></pre>
+          </div>
+        </div>
+
+        <!-- Identity -->
+        <div class="bg-mountain-800 border border-mountain-700 rounded-xl overflow-hidden">
+          <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
+            <span class="method-get px-2 py-1 rounded text-xs font-mono">GET</span>
+            <code class="text-Yakmesh-300">/node</code>
+          </div>
+          <div class="p-4">
+            <p class="text-mountain-300 mb-4">Returns node identity information.</p>
+            <pre class="language-json rounded-lg"><code>{
   "nodeId": "a7f3b2c1e8d9...",
   "name": "My YAKMESH Node",
   "region": "local",
@@ -741,18 +844,18 @@
   "publicKey": "3082...",
   "createdAt": "2026-01-17T10:00:00.000Z"
 }</code></pre>
-                    </div>
-                </div>
+          </div>
+        </div>
 
-                <!-- Peers -->
-                <div class="bg-mountain-800 border border-mountain-700 rounded-xl overflow-hidden">
-                    <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
-                        <span class="method-get px-2 py-1 rounded text-xs font-mono">GET</span>
-                        <code class="text-Yakmesh-300">/peers</code>
-                    </div>
-                    <div class="p-4">
-                        <p class="text-mountain-300 mb-4">Lists all connected peers.</p>
-                        <pre class="language-json rounded-lg"><code>[
+        <!-- Peers -->
+        <div class="bg-mountain-800 border border-mountain-700 rounded-xl overflow-hidden">
+          <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
+            <span class="method-get px-2 py-1 rounded text-xs font-mono">GET</span>
+            <code class="text-Yakmesh-300">/peers</code>
+          </div>
+          <div class="p-4">
+            <p class="text-mountain-300 mb-4">Lists all connected peers.</p>
+            <pre class="language-json rounded-lg"><code>[
   {
     "nodeId": "b8e4c3f2a1d7...",
     "name": "Peer Node 1",
@@ -766,35 +869,36 @@
     "lastSeen": 1737100005000
   }
 ]</code></pre>
-                    </div>
-                </div>
+          </div>
+        </div>
 
-                <!-- Time -->
-                <div class="bg-mountain-800 border border-mountain-700 rounded-xl overflow-hidden">
-                    <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
-                        <span class="method-get px-2 py-1 rounded text-xs font-mono">GET</span>
-                        <code class="text-Yakmesh-300">/network/identity</code>
-                    </div>
-                    <div class="p-4">
-                        <p class="text-mountain-300 mb-4">Returns network identity (derived from codebase hash, never exposing the hash).</p>
-                        <pre class="language-json rounded-lg"><code>{
+        <!-- Time -->
+        <div class="bg-mountain-800 border border-mountain-700 rounded-xl overflow-hidden">
+          <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
+            <span class="method-get px-2 py-1 rounded text-xs font-mono">GET</span>
+            <code class="text-Yakmesh-300">/network/identity</code>
+          </div>
+          <div class="p-4">
+            <p class="text-mountain-300 mb-4">Returns network identity (derived from codebase hash, never exposing the
+              hash).</p>
+            <pre class="language-json rounded-lg"><code>{
   "name": "mobius-rabi-junction",
   "id": "pq-g1b6",
   "fingerprint": "8f3a9c2b...",
   "verificationPhrase": "The tier fermion reflects the create public"
 }</code></pre>
-                    </div>
-                </div>
+          </div>
+        </div>
 
-                <!-- Oracle -->
-                <div class="bg-mountain-800 border border-mountain-700 rounded-xl overflow-hidden">
-                    <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
-                        <span class="method-get px-2 py-1 rounded text-xs font-mono">GET</span>
-                        <code class="text-Yakmesh-300">/oracle/status</code>
-                    </div>
-                    <div class="p-4">
-                        <p class="text-mountain-300 mb-4">Returns oracle status and self-integrity verification.</p>
-                        <pre class="language-json rounded-lg"><code>{
+        <!-- Oracle -->
+        <div class="bg-mountain-800 border border-mountain-700 rounded-xl overflow-hidden">
+          <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
+            <span class="method-get px-2 py-1 rounded text-xs font-mono">GET</span>
+            <code class="text-Yakmesh-300">/oracle/status</code>
+          </div>
+          <div class="p-4">
+            <p class="text-mountain-300 mb-4">Returns oracle status and self-integrity verification.</p>
+            <pre class="language-json rounded-lg"><code>{
   "status": "healthy",
   "integrity": { "valid": true },
   "networkFingerprint": "8f3a9c2b...",
@@ -803,39 +907,39 @@
   "validationMethods": ["hashContent", "verify", "seal"],
   "verifiedPeers": []
 }</code></pre>
-                    </div>
-                </div>
+          </div>
+        </div>
 
-                <!-- Gossip -->
-                <div class="bg-mountain-800 border border-mountain-700 rounded-xl overflow-hidden">
-                    <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
-                        <span class="method-post px-2 py-1 rounded text-xs font-mono">POST</span>
-                        <code class="text-Yakmesh-300">/rumor</code>
-                    </div>
-                    <div class="p-4">
-                        <p class="text-mountain-300 mb-4">Spreads a rumor to connected peers via gossip protocol.</p>
-                        <h3 class="font-semibold mb-2">Request Body</h3>
-                        <pre class="language-json rounded-lg mb-4"><code>{
+        <!-- Gossip -->
+        <div class="bg-mountain-800 border border-mountain-700 rounded-xl overflow-hidden">
+          <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
+            <span class="method-post px-2 py-1 rounded text-xs font-mono">POST</span>
+            <code class="text-Yakmesh-300">/rumor</code>
+          </div>
+          <div class="p-4">
+            <p class="text-mountain-300 mb-4">Spreads a rumor to connected peers via gossip protocol.</p>
+            <h3 class="font-semibold mb-2">Request Body</h3>
+            <pre class="language-json rounded-lg mb-4"><code>{
   "topic": "custom_event",
   "data": { "key": "value" }
 }</code></pre>
-                        <h4 class="font-semibold mb-2">Response</h4>
-                        <pre class="language-json rounded-lg"><code>{
+            <h4 class="font-semibold mb-2">Response</h4>
+            <pre class="language-json rounded-lg"><code>{
   "success": true,
   "messageId": "msg_a7f3b2c1"
 }</code></pre>
-                    </div>
-                </div>
+          </div>
+        </div>
 
-                <!-- SHERPA Status -->
-                <div class="bg-mountain-800 border border-mountain-700 rounded-xl overflow-hidden">
-                    <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
-                        <span class="method-get px-2 py-1 rounded text-xs font-mono">GET</span>
-                        <code class="text-Yakmesh-300">/sherpa/status</code>
-                    </div>
-                    <div class="p-4">
-                        <p class="text-mountain-300 mb-4">Returns SHERPA discovery service status and beacon information.</p>
-                        <pre class="language-json rounded-lg"><code>{
+        <!-- SHERPA Status -->
+        <div class="bg-mountain-800 border border-mountain-700 rounded-xl overflow-hidden">
+          <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
+            <span class="method-get px-2 py-1 rounded text-xs font-mono">GET</span>
+            <code class="text-Yakmesh-300">/sherpa/status</code>
+          </div>
+          <div class="p-4">
+            <p class="text-mountain-300 mb-4">Returns SHERPA discovery service status and beacon information.</p>
+            <pre class="language-json rounded-lg"><code>{
   "enabled": true,
   "beacon": {
     "nodeId": "a7f3b2c1e8d9...",
@@ -845,18 +949,18 @@
   "discoveredPeers": 12,
   "beaconAge": "3d 4h 12m"
 }</code></pre>
-                    </div>
-                </div>
+          </div>
+        </div>
 
-                <!-- SHERPA Candidates -->
-                <div class="bg-mountain-800 border border-mountain-700 rounded-xl overflow-hidden">
-                    <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
-                        <span class="method-get px-2 py-1 rounded text-xs font-mono">GET</span>
-                        <code class="text-Yakmesh-300">/sherpa/candidates</code>
-                    </div>
-                    <div class="p-4">
-                        <p class="text-mountain-300 mb-4">Returns list of discovered peer candidates for connection.</p>
-                        <pre class="language-json rounded-lg"><code>[
+        <!-- SHERPA Candidates -->
+        <div class="bg-mountain-800 border border-mountain-700 rounded-xl overflow-hidden">
+          <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
+            <span class="method-get px-2 py-1 rounded text-xs font-mono">GET</span>
+            <code class="text-Yakmesh-300">/sherpa/candidates</code>
+          </div>
+          <div class="p-4">
+            <p class="text-mountain-300 mb-4">Returns list of discovered peer candidates for connection.</p>
+            <pre class="language-json rounded-lg"><code>[
   {
     "nodeId": "b8e4c3f2a1d7...",
     "endpoint": "wss://peer1.example.com:9001",
@@ -864,102 +968,102 @@
     "lastSeen": 1737200000000
   }
 ]</code></pre>
-                    </div>
-                </div>
+          </div>
+        </div>
 
-                <!-- Replication -->
-                <div class="bg-mountain-800 border border-mountain-700 rounded-xl overflow-hidden">
-                    <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
-                        <span class="method-get px-2 py-1 rounded text-xs font-mono">GET</span>
-                        <code class="text-Yakmesh-300">/replication</code>
-                    </div>
-                    <div class="p-4">
-                        <p class="text-mountain-300 mb-4">Returns STUPA replication statistics.</p>
-                        <pre class="language-json rounded-lg"><code>{
+        <!-- Replication -->
+        <div class="bg-mountain-800 border border-mountain-700 rounded-xl overflow-hidden">
+          <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
+            <span class="method-get px-2 py-1 rounded text-xs font-mono">GET</span>
+            <code class="text-Yakmesh-300">/replication</code>
+          </div>
+          <div class="p-4">
+            <p class="text-mountain-300 mb-4">Returns STUPA replication statistics.</p>
+            <pre class="language-json rounded-lg"><code>{
   "status": "healthy",
   "peers": 5,
   "pendingSyncs": 0,
   "lastSync": 1737200000000,
   "replicatedItems": 1247
 }</code></pre>
-                    </div>
-                </div>
+          </div>
+        </div>
 
-                <!-- Data POST -->
-                <div class="bg-mountain-800 border border-mountain-700 rounded-xl overflow-hidden">
-                    <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
-                        <span class="method-post px-2 py-1 rounded text-xs font-mono">POST</span>
-                        <code class="text-Yakmesh-300">/data</code>
-                    </div>
-                    <div class="p-4">
-                        <p class="text-mountain-300 mb-4">Stores data in the local node (rate limited).</p>
-                        <h4 class="font-semibold mb-2">Request Body</h4>
-                        <pre class="language-json rounded-lg mb-4"><code>{
+        <!-- Data POST -->
+        <div class="bg-mountain-800 border border-mountain-700 rounded-xl overflow-hidden">
+          <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
+            <span class="method-post px-2 py-1 rounded text-xs font-mono">POST</span>
+            <code class="text-Yakmesh-300">/data</code>
+          </div>
+          <div class="p-4">
+            <p class="text-mountain-300 mb-4">Stores data in the local node (rate limited).</p>
+            <h4 class="font-semibold mb-2">Request Body</h4>
+            <pre class="language-json rounded-lg mb-4"><code>{
   "key": "my-content-key",
   "value": "content to store",
   "ttl": 86400
 }</code></pre>
-                        <h4 class="font-semibold mb-2">Response</h4>
-                        <pre class="language-json rounded-lg"><code>{
+            <h4 class="font-semibold mb-2">Response</h4>
+            <pre class="language-json rounded-lg"><code>{
   "success": true,
   "hash": "sha3-256-hash..."
 }</code></pre>
-                    </div>
-                </div>
+          </div>
+        </div>
 
-                <!-- Time -->
-                <div class="bg-mountain-800 border border-mountain-700 rounded-xl overflow-hidden">
-                    <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
-                        <span class="method-get px-2 py-1 rounded text-xs font-mono">GET</span>
-                        <code class="text-Yakmesh-300">/time</code>
-                    </div>
-                    <div class="p-4">
-                        <p class="text-mountain-300 mb-4">Returns current MANI time synchronization status.</p>
-                        <pre class="language-json rounded-lg"><code>{
+        <!-- Time -->
+        <div class="bg-mountain-800 border border-mountain-700 rounded-xl overflow-hidden">
+          <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
+            <span class="method-get px-2 py-1 rounded text-xs font-mono">GET</span>
+            <code class="text-Yakmesh-300">/time</code>
+          </div>
+          <div class="p-4">
+            <p class="text-mountain-300 mb-4">Returns current MANI time synchronization status.</p>
+            <pre class="language-json rounded-lg"><code>{
   "source": "ntp",
   "trustLevel": "yatri",
   "offset": 0.003,
   "timestamp": 1737200000000,
   "synced": true
 }</code></pre>
-                    </div>
-                </div>
+          </div>
+        </div>
 
-                <!-- Bookmarks -->
-                <div class="bg-mountain-800 border border-mountain-700 rounded-xl overflow-hidden">
-                    <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
-                        <span class="method-get px-2 py-1 rounded text-xs font-mono">GET</span>
-                        <code class="text-Yakmesh-300">/bookmarks</code>
-                    </div>
-                    <div class="p-4">
-                        <p class="text-mountain-300 mb-4">Returns all saved YAK:// protocol bookmarks.</p>
-                        <pre class="language-json rounded-lg"><code>[
+        <!-- Bookmarks -->
+        <div class="bg-mountain-800 border border-mountain-700 rounded-xl overflow-hidden">
+          <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
+            <span class="method-get px-2 py-1 rounded text-xs font-mono">GET</span>
+            <code class="text-Yakmesh-300">/bookmarks</code>
+          </div>
+          <div class="p-4">
+            <p class="text-mountain-300 mb-4">Returns all saved YAK:// protocol bookmarks.</p>
+            <pre class="language-json rounded-lg"><code>[
   {
     "name": "my-docs",
     "uri": "yak://docs.yakmesh/",
     "createdAt": 1737200000000
   }
 ]</code></pre>
-                    </div>
-                </div>
+          </div>
+        </div>
 
-                <!-- Docs -->
-                <div class="bg-mountain-800 border border-mountain-700 rounded-xl overflow-hidden">
-                    <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
-                        <span class="method-get px-2 py-1 rounded text-xs font-mono">GET</span>
-                        <code class="text-Yakmesh-300">/docs/</code>
-                    </div>
-                    <div class="p-4">
-                        <p class="text-mountain-300 mb-4">Serves embedded documentation bundle (SHA3-256 verified).</p>
-                        <pre class="language-json rounded-lg"><code>// Returns HTML documentation
+        <!-- Docs -->
+        <div class="bg-mountain-800 border border-mountain-700 rounded-xl overflow-hidden">
+          <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
+            <span class="method-get px-2 py-1 rounded text-xs font-mono">GET</span>
+            <code class="text-Yakmesh-300">/docs/</code>
+          </div>
+          <div class="p-4">
+            <p class="text-mountain-300 mb-4">Serves embedded documentation bundle (SHA3-256 verified).</p>
+            <pre class="language-json rounded-lg"><code>// Returns HTML documentation
 // Bundle hash: 17ccf7d033f25b9de...
 // 56 files, ~736 KB total</code></pre>
-                    </div>
-                </div>
-            </div>
+          </div>
+        </div>
+      </div>
 
-                  <!-- Journey Navigation -->
-                                                                                                                                                                                    <div class="border-t border-mountain-700 mt-12 pt-8">
+      <!-- Journey Navigation -->
+            <div class="border-t border-mountain-700 mt-12 pt-8">
         <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
         <div class="flex flex-col sm:flex-row gap-4">
           <a href="docs-bundle.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">
@@ -980,29 +1084,17 @@
           </a>
         </div>
       </div>
-    </main>
+  </main>
 
   <footer class="docs-footer">
     <p>© 2026 YAKMESH™</p>
   </footer>
 
-<script src="prism.min.js" defer></script>
-    <script src="prism-json.min.js" defer></script>
+  <script src="prism.min.js" defer></script>
+  <script src="prism-json.min.js" defer></script>
 
-  
-<script src="docs.js" defer></script></body>
+
+  <script src="docs.js" defer></script>
+</body>
+
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-

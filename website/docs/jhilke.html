@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en" data-theme="jhilke">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,43 +8,72 @@
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <title>JHILKE Protocol | YAKMESH Documentation</title>
-  <meta name="description" content="JHILKE - Just Hidden In-band Legitimate Key Exchange. Steganographic key lifecycle management for the Yakmesh mesh.">
-    <link rel="stylesheet" href="tailwind.min.css">
+  <meta name="description"
+    content="JHILKE - Just Hidden In-band Legitimate Key Exchange. Steganographic key lifecycle management for the Yakmesh mesh.">
+  <link rel="stylesheet" href="tailwind.min.css">
   <link rel="stylesheet" href="prism-tomorrow.min.css" media="print" onload="this.media='all'">
-    <noscript><link rel="stylesheet" href="prism-tomorrow.min.css"></noscript>
+  <noscript>
+    <link rel="stylesheet" href="prism-tomorrow.min.css">
+  </noscript>
   <link rel="stylesheet" href="docs.css">
   <style>
-    .theme-accent { color: #4ade80; }
-    .theme-accent-hover:hover { color: #22c55e; }
-    .theme-badge { background: rgba(34, 197, 94, 0.2); color: #4ade80; }
-    .theme-border { border-color: #22c55e; }
-    .theme-callout { background: rgba(34, 197, 94, 0.1); border-color: #16a34a; }
-    .active-link { background: rgba(34, 197, 94, 0.2) !important; color: #4ade80 !important; }
+    .theme-accent {
+      color: #4ade80;
+    }
+
+    .theme-accent-hover:hover {
+      color: #22c55e;
+    }
+
+    .theme-badge {
+      background: rgba(34, 197, 94, 0.2);
+      color: #4ade80;
+    }
+
+    .theme-border {
+      border-color: #22c55e;
+    }
+
+    .theme-callout {
+      background: rgba(34, 197, 94, 0.1);
+      border-color: #16a34a;
+    }
+
+    .active-link {
+      background: rgba(34, 197, 94, 0.2) !important;
+      color: #4ade80 !important;
+    }
 
     /* Firefly conservation callout */
     .firefly-callout {
-      background: linear-gradient(135deg, rgba(163,230,53,0.08) 0%, rgba(34,197,94,0.05) 100%);
-      border: 1px solid rgba(163,230,53,0.2);
+      background: linear-gradient(135deg, rgba(163, 230, 53, 0.08) 0%, rgba(34, 197, 94, 0.05) 100%);
+      border: 1px solid rgba(163, 230, 53, 0.2);
       border-radius: 12px;
       padding: 1.5rem;
       margin: 2rem 0;
       position: relative;
       overflow: hidden;
     }
+
     .firefly-callout::before {
       content: '';
       position: absolute;
-      top: -50%; right: -20%;
-      width: 200px; height: 200px;
-      background: radial-gradient(circle, rgba(163,230,53,0.06) 0%, transparent 70%);
+      top: -50%;
+      right: -20%;
+      width: 200px;
+      height: 200px;
+      background: radial-gradient(circle, rgba(163, 230, 53, 0.06) 0%, transparent 70%);
       animation: firefly-pulse 4s ease-in-out infinite;
     }
+
     .firefly-callout::after {
       content: '';
       position: absolute;
-      bottom: -30%; left: 10%;
-      width: 150px; height: 150px;
-      background: radial-gradient(circle, rgba(250,204,21,0.04) 0%, transparent 70%);
+      bottom: -30%;
+      left: 10%;
+      width: 150px;
+      height: 150px;
+      background: radial-gradient(circle, rgba(250, 204, 21, 0.04) 0%, transparent 70%);
       animation: firefly-pulse 5.5s ease-in-out infinite;
     }
 
@@ -57,645 +87,793 @@
 
     /* Reduce motion for accessibility */
     @media (prefers-reduced-motion: reduce) {
-      .firefly-callout::before, .firefly-callout::after { animation: none; }
+
+      .firefly-callout::before,
+      .firefly-callout::after {
+        animation: none;
+      }
     }
   </style>
 
-    <!-- Open Graph -->
-    <meta property="og:type" content="article">
-    <meta property="og:site_name" content="Yakmesh Documentation">
-    <meta property="og:title" content="JHILKE — Yakmesh">
-    <meta property="og:description" content="JHILKE steganographic key lifecycle — bootstrap and rekey protocol for Yakmesh nodes.">
-    <meta property="og:url" content="https://yakmesh.dev/docs/jhilke.html">
-    <link rel="canonical" href="https://yakmesh.dev/docs/jhilke.html">
+  <!-- Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Yakmesh Documentation">
+  <meta property="og:title" content="JHILKE — Yakmesh">
+  <meta property="og:description"
+    content="JHILKE deterministic bootstrap and friend-or-foe peer verification for Yakmesh nodes.">
+  <meta property="og:url" content="https://yakmesh.dev/docs/jhilke.html">
+  <link rel="canonical" href="https://yakmesh.dev/docs/jhilke.html">
 </head>
+
 <body class="bg-mountain-900 text-white min-h-screen">
-<!-- YAKMESH-ICON-SPRITE-START -->
-<svg xmlns="http://www.w3.org/2000/svg" style="display:none">
-<!--
+  <!-- YAKMESH-ICON-SPRITE-START -->
+  <svg xmlns="http://www.w3.org/2000/svg" style="display:none">
+    <!--
   Yakmesh Docs Icon Sprite Sheet
   24×24 viewBox — stroke/fill set via .doc-icon CSS
   Usage: <svg class="doc-icon"><use href="#icon-name"/></svg>
 -->
 
-<!-- ═══ GUIDES ═══ -->
-
-<symbol id="icon-home" viewBox="0 0 24 24">
-  <path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z"/>
-  <polyline points="9 22 9 12 15 12 15 22"/>
-</symbol>
-
-<symbol id="icon-rocket" viewBox="0 0 24 24">
-  <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 00-2.91-.09z"/>
-  <path d="M12 15l-3-3a22 22 0 012-3.95A12.88 12.88 0 0122 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 01-4 2z"/>
-  <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/>
-  <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/>
-</symbol>
-
-<symbol id="icon-book" viewBox="0 0 24 24">
-  <path d="M4 19.5A2.5 2.5 0 016.5 17H20"/>
-  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/>
-  <line x1="8" y1="7" x2="16" y2="7"/>
-  <line x1="8" y1="11" x2="13" y2="11"/>
-</symbol>
-
-<!-- ═══ PROTOCOL STACK ═══ -->
-
-<!-- YAK:// — Content addressing (yak horns) -->
-<symbol id="icon-yak" viewBox="0 0 24 24">
-  <path d="M4 4c1 3 3 5 5 6"/>
-  <path d="M20 4c-1 3-3 5-5 6"/>
-  <circle cx="12" cy="14" r="5"/>
-  <circle cx="10" cy="13" r="0.5" fill="currentColor"/>
-  <circle cx="14" cy="13" r="0.5" fill="currentColor"/>
-  <path d="M10 16c1 1 3 1 4 0"/>
-</symbol>
-
-<!-- ANNEX — Encrypted bridge -->
-<symbol id="icon-annex" viewBox="0 0 24 24">
-  <path d="M4 18h3a4 4 0 004-4V8"/>
-  <path d="M20 18h-3a4 4 0 01-4-4V8"/>
-  <circle cx="7" cy="6" r="2"/>
-  <circle cx="17" cy="6" r="2"/>
-  <line x1="7" y1="8" x2="7" y2="18"/>
-  <line x1="17" y1="8" x2="17" y2="18"/>
-</symbol>
-
-<!-- JHILKE — Cricket / steganographic key lifecycle -->
-<symbol id="icon-jhilke" viewBox="0 0 24 24">
-  <ellipse cx="12" cy="14" rx="4" ry="6"/>
-  <path d="M8 10c-2-3-4-6-3-8"/>
-  <path d="M16 10c2-3 4-6 3-8"/>
-  <line x1="10" y1="20" x2="8" y2="23"/>
-  <line x1="14" y1="20" x2="16" y2="23"/>
-  <path d="M9 12l-4 2"/>
-  <path d="M15 12l4 2"/>
-</symbol>
-
-<!-- NAKPAK — Onion layers / backpack -->
-<symbol id="icon-nakpak" viewBox="0 0 24 24">
-  <circle cx="12" cy="12" r="10" opacity="0.3"/>
-  <circle cx="12" cy="12" r="7" opacity="0.5"/>
-  <circle cx="12" cy="12" r="4" opacity="0.8"/>
-  <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
-</symbol>
-
-<!-- NAMCHE — Gateway door -->
-<symbol id="icon-namche" viewBox="0 0 24 24">
-  <rect x="3" y="3" width="18" height="18" rx="2"/>
-  <path d="M9 3v18"/>
-  <path d="M15 3v18"/>
-  <line x1="3" y1="8" x2="9" y2="8"/>
-  <line x1="15" y1="8" x2="21" y2="8"/>
-  <circle cx="12" cy="14" r="1" fill="currentColor"/>
-</symbol>
-
-<!-- DOKO — Basket / certificate -->
-<symbol id="icon-doko" viewBox="0 0 24 24">
-  <path d="M6 8l-2 12h16l-2-12"/>
-  <path d="M6 8c0-3 2.7-5 6-5s6 2 6 5"/>
-  <line x1="8" y1="10" x2="10" y2="18"/>
-  <line x1="16" y1="10" x2="14" y2="18"/>
-  <line x1="12" y1="10" x2="12" y2="18"/>
-</symbol>
-
-<!-- SHERPA — Mountain climber -->
-<symbol id="icon-sherpa" viewBox="0 0 24 24">
-  <path d="M4 20L10 6l3 6 3-4 4 12"/>
-  <line x1="4" y1="20" x2="20" y2="20"/>
-  <circle cx="13" cy="4" r="1.5"/>
-</symbol>
-
-<!-- MANDALA — Network topology web -->
-<symbol id="icon-mandala" viewBox="0 0 24 24">
-  <circle cx="12" cy="12" r="9"/>
-  <circle cx="12" cy="12" r="4.5"/>
-  <line x1="12" y1="3" x2="12" y2="21"/>
-  <line x1="3" y1="12" x2="21" y2="12"/>
-  <line x1="5.6" y1="5.6" x2="18.4" y2="18.4"/>
-  <line x1="18.4" y1="5.6" x2="5.6" y2="18.4"/>
-</symbol>
-
-<!-- MANTRA — Gossip / prayer wheel -->
-<symbol id="icon-mantra" viewBox="0 0 24 24">
-  <circle cx="12" cy="10" r="7"/>
-  <path d="M12 3v14"/>
-  <path d="M8 7c2 1.5 6 1.5 8 0"/>
-  <path d="M8 13c2-1.5 6-1.5 8 0"/>
-  <line x1="12" y1="17" x2="12" y2="22"/>
-  <line x1="9" y1="22" x2="15" y2="22"/>
-</symbol>
-
-<!-- GUMBA — Temple / access control -->
-<symbol id="icon-gumba" viewBox="0 0 24 24">
-  <path d="M12 2L3 9h18z"/>
-  <line x1="5" y1="9" x2="5" y2="19"/>
-  <line x1="9" y1="9" x2="9" y2="19"/>
-  <line x1="15" y1="9" x2="15" y2="19"/>
-  <line x1="19" y1="9" x2="19" y2="19"/>
-  <line x1="3" y1="19" x2="21" y2="19"/>
-  <line x1="3" y1="21" x2="21" y2="21"/>
-</symbol>
-
-<!-- YURT — Camp / room -->
-<symbol id="icon-yurt" viewBox="0 0 24 24">
-  <path d="M3 20L12 4l9 16"/>
-  <line x1="3" y1="20" x2="21" y2="20"/>
-  <path d="M10 20v-5a2 2 0 014 0v5"/>
-  <path d="M6 14h12"/>
-</symbol>
-
-<!-- KATHA — Chat / story scroll -->
-<symbol id="icon-katha" viewBox="0 0 24 24">
-  <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
-  <line x1="8" y1="8" x2="16" y2="8"/>
-  <line x1="8" y1="12" x2="13" y2="12"/>
-</symbol>
-
-<!-- VANI — Voice / microphone -->
-<symbol id="icon-vani" viewBox="0 0 24 24">
-  <rect x="9" y="2" width="6" height="11" rx="3"/>
-  <path d="M5 10a7 7 0 0014 0"/>
-  <line x1="12" y1="17" x2="12" y2="22"/>
-  <line x1="8" y1="22" x2="16" y2="22"/>
-</symbol>
-
-<!-- DARSHAN — Eye / viewing -->
-<symbol id="icon-darshan" viewBox="0 0 24 24">
-  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z"/>
-  <circle cx="12" cy="12" r="3"/>
-</symbol>
-
-<!-- STUPA — Tower / distributed storage -->
-<symbol id="icon-stupa" viewBox="0 0 24 24">
-  <line x1="12" y1="2" x2="12" y2="5"/>
-  <path d="M10 5h4l1 3H9z"/>
-  <ellipse cx="12" cy="11" rx="5" ry="3"/>
-  <ellipse cx="12" cy="15" rx="6" ry="3"/>
-  <ellipse cx="12" cy="19" rx="7" ry="3"/>
-</symbol>
-
-<!-- LAMA — Crystal ball / consensus -->
-<symbol id="icon-lama" viewBox="0 0 24 24">
-  <circle cx="12" cy="10" r="7"/>
-  <path d="M12 3c-1.5 2-2 5 0 7s4.5 2 6 0"/>
-  <path d="M7 19h10"/>
-  <path d="M9 22h6"/>
-  <line x1="9" y1="17" x2="9" y2="19"/>
-  <line x1="15" y1="17" x2="15" y2="19"/>
-</symbol>
-
-<!-- MANI — Prayer stone / time sync -->
-<symbol id="icon-mani" viewBox="0 0 24 24">
-  <circle cx="12" cy="12" r="9"/>
-  <polyline points="12 6 12 12 16 14"/>
-  <circle cx="12" cy="12" r="1" fill="currentColor"/>
-</symbol>
-
-<!-- KARMA — Yin-yang / reputation -->
-<symbol id="icon-karma" viewBox="0 0 24 24">
-  <circle cx="12" cy="12" r="9"/>
-  <path d="M12 3a4.5 4.5 0 010 9 4.5 4.5 0 000 9"/>
-  <circle cx="12" cy="7.5" r="1.5" fill="currentColor"/>
-  <circle cx="12" cy="16.5" r="1.5"/>
-</symbol>
-
-<!-- TATTVA — Quantum elements / atom -->
-<symbol id="icon-tattva" viewBox="0 0 24 24">
-  <circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none"/>
-  <ellipse cx="12" cy="12" rx="10" ry="4"/>
-  <ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(60 12 12)"/>
-  <ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(120 12 12)"/>
-</symbol>
-
-<!-- TRIBHUJ — Triangle / balanced ternary -->
-<symbol id="icon-tribhuj" viewBox="0 0 24 24">
-  <polygon points="12,3 21,20 3,20"/>
-  <line x1="12" y1="3" x2="12" y2="20"/>
-  <line x1="7.5" y1="11.5" x2="16.5" y2="11.5"/>
-  <circle cx="12" cy="14" r="1" fill="currentColor"/>
-</symbol>
-
-<!-- YPC-27 — Lock / cipher -->
-<symbol id="icon-ypc27" viewBox="0 0 24 24">
-  <rect x="5" y="11" width="14" height="10" rx="2"/>
-  <path d="M8 11V7a4 4 0 118 0v4"/>
-  <circle cx="12" cy="16" r="1" fill="currentColor"/>
-  <line x1="12" y1="17" x2="12" y2="19"/>
-</symbol>
-
-<!-- SAKSHI — Witness / aperture eye -->
-<symbol id="icon-sakshi" viewBox="0 0 24 24">
-  <circle cx="12" cy="12" r="9"/>
-  <path d="M12 3l3 9-3 9"/>
-  <path d="M12 3l-3 9 3 9"/>
-  <circle cx="12" cy="12" r="2.5"/>
-  <circle cx="12" cy="12" r="0.8" fill="currentColor"/>
-</symbol>
-
-<!-- PRAMAAN — Globe / geographic proof -->
-<symbol id="icon-pramaan" viewBox="0 0 24 24">
-  <circle cx="12" cy="12" r="9"/>
-  <ellipse cx="12" cy="12" rx="4" ry="9"/>
-  <line x1="3" y1="9" x2="21" y2="9"/>
-  <line x1="3" y1="15" x2="21" y2="15"/>
-  <path d="M18 4l-2 2 1 3"/>
-  <path d="M6 18l2-1 3 1"/>
-</symbol>
-
-<!-- SURAKSHA — Shield / security -->
-<symbol id="icon-suraksha" viewBox="0 0 24 24">
-  <path d="M12 2l8 4v6c0 5.5-3.8 10.7-8 12-4.2-1.3-8-6.5-8-12V6z"/>
-  <polyline points="9 12 11 14 15 10"/>
-</symbol>
-
-<!-- TIVRA — Lightning bolt / acceleration -->
-<symbol id="icon-tivra" viewBox="0 0 24 24">
-  <polygon points="13,2 3,14 12,14 11,22 21,10 12,10"/>
-</symbol>
-
-<!-- PRAHARI — Satellite / sentinel -->
-<symbol id="icon-prahari" viewBox="0 0 24 24">
-  <rect x="9" y="9" width="6" height="6" rx="1" transform="rotate(45 12 12)"/>
-  <line x1="12" y1="5" x2="12" y2="2"/>
-  <line x1="19" y1="12" x2="22" y2="12"/>
-  <line x1="12" y1="19" x2="12" y2="22"/>
-  <line x1="5" y1="12" x2="2" y2="12"/>
-  <path d="M7 7L5 5"/>
-  <path d="M17 7l2-2"/>
-</symbol>
-
-<!-- DHARMA — Balance scale / content moderation -->
-<symbol id="icon-dharma" viewBox="0 0 24 24">
-  <line x1="12" y1="3" x2="12" y2="21"/>
-  <line x1="4" y1="7" x2="20" y2="7"/>
-  <path d="M4 7l2 7h0a3 3 0 006 0h0l2-7"/>
-  <path d="M14 7l2 7h0a3 3 0 006 0h0l2-7"/>
-  <line x1="10" y1="21" x2="14" y2="21"/>
-</symbol>
-
-<!-- SEVA — Helping hands / NPU sharing -->
-<symbol id="icon-seva" viewBox="0 0 24 24">
-  <path d="M12 22c-4 0-8-2-8-6 0-2 1-3 3-4l5-3 5 3c2 1 3 2 3 4 0 4-4 6-8 6z"/>
-  <path d="M12 11V5"/>
-  <path d="M9 8l3-3 3 3"/>
-  <circle cx="12" cy="16" r="2"/>
-</symbol>
-
-<!-- ═══ APPLICATIONS ═══ -->
-
-<!-- YakApp — Messenger -->
-<symbol id="icon-yakapp" viewBox="0 0 24 24">
-  <path d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z"/>
-</symbol>
-
-<!-- C2C — Core to Cosmos -->
-<symbol id="icon-c2c" viewBox="0 0 24 24">
-  <circle cx="12" cy="12" r="3"/>
-  <circle cx="12" cy="12" r="9"/>
-  <path d="M12 3v3"/>
-  <path d="M12 18v3"/>
-  <path d="M3 12h3"/>
-  <path d="M18 12h3"/>
-</symbol>
-
-<!-- Studio — Creative suite -->
-<symbol id="icon-studio" viewBox="0 0 24 24">
-  <circle cx="13.5" cy="6.5" r="2.5"/>
-  <path d="M6 21l4-10 3 5 4-7 4 12"/>
-  <rect x="2" y="2" width="20" height="20" rx="2"/>
-</symbol>
-
-
-<!-- ═══ REFERENCE ═══ -->
-
-<!-- Quick Reference — Clipboard -->
-<symbol id="icon-quickref" viewBox="0 0 24 24">
-  <path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/>
-  <rect x="8" y="2" width="8" height="4" rx="1"/>
-  <line x1="8" y1="10" x2="16" y2="10"/>
-  <line x1="8" y1="14" x2="16" y2="14"/>
-  <line x1="8" y1="18" x2="12" y2="18"/>
-</symbol>
-
-<!-- GRANTH — Docs bundle -->
-<symbol id="icon-granth" viewBox="0 0 24 24">
-  <path d="M4 19.5A2.5 2.5 0 016.5 17H20"/>
-  <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z"/>
-  <path d="M8 7h8"/>
-  <path d="M8 11h5"/>
-  <path d="M8 15h3"/>
-</symbol>
-
-<!-- API — Signal tower -->
-<symbol id="icon-api" viewBox="0 0 24 24">
-  <line x1="12" y1="10" x2="12" y2="22"/>
-  <path d="M8 6a6 6 0 018 0"/>
-  <path d="M5 3a10 10 0 0114 0"/>
-  <circle cx="12" cy="10" r="2"/>
-</symbol>
-
-<!-- Adapters — Plug connector -->
-<symbol id="icon-adapters" viewBox="0 0 24 24">
-  <path d="M6 3v4"/>
-  <path d="M10 3v4"/>
-  <path d="M4 7h8v3a4 4 0 01-8 0V7z"/>
-  <line x1="8" y1="14" x2="8" y2="17"/>
-  <path d="M14 10h4v3a2 2 0 01-4 0v-3z"/>
-  <line x1="16" y1="7" x2="16" y2="10"/>
-  <line x1="16" y1="13" x2="16" y2="17"/>
-  <line x1="8" y1="17" x2="16" y2="17"/>
-  <line x1="12" y1="17" x2="12" y2="21"/>
-</symbol>
-
-<!-- ═══ EXTRA (pages outside nav-order) ═══ -->
-
-<!-- Terminal / CLI -->
-<symbol id="icon-terminal" viewBox="0 0 24 24">
-  <rect x="2" y="3" width="20" height="18" rx="2"/>
-  <polyline points="7 9 10 12 7 15"/>
-  <line x1="13" y1="15" x2="17" y2="15"/>
-</symbol>
-
-<!-- Gear / Configuration -->
-<symbol id="icon-gear" viewBox="0 0 24 24">
-  <circle cx="12" cy="12" r="3"/>
-  <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
-</symbol>
-
-<!-- Server / Web hosting -->
-<symbol id="icon-server" viewBox="0 0 24 24">
-  <rect x="2" y="2" width="20" height="8" rx="2"/>
-  <rect x="2" y="14" width="20" height="8" rx="2"/>
-  <line x1="6" y1="6" x2="6.01" y2="6"/>
-  <line x1="6" y1="18" x2="6.01" y2="18"/>
-</symbol>
-
-<!-- ═══ CHROME / UI ═══ -->
-
-<!-- Mountain peak — logo icon (replaces 🏔️) -->
-<symbol id="icon-mountain" viewBox="0 0 24 24">
-  <path d="M8 21l4.5-9 3 5.5L19 12l3 9H2l6-9z"/>
-  <path d="M12 12l1.5-3L16 14"/>
-</symbol>
-
-<!-- Dashboard / bar chart (replaces 📊) -->
-<symbol id="icon-dashboard" viewBox="0 0 24 24">
-  <line x1="18" y1="20" x2="18" y2="10"/>
-  <line x1="12" y1="20" x2="12" y2="4"/>
-  <line x1="6" y1="20" x2="6" y2="14"/>
-  <rect x="2" y="2" width="20" height="20" rx="2" stroke-opacity="0.4"/>
-</symbol>
-
-<!-- ═══ GENERIC / CONTENT ICONS ═══ -->
-
-<!-- Lock / encrypted (replaces 🔐) -->
-<symbol id="icon-lock" viewBox="0 0 24 24">
-  <rect x="3" y="11" width="18" height="11" rx="2"/>
-  <path d="M7 11V7a5 5 0 0110 0v4"/>
-</symbol>
-
-<!-- Signal / broadcast (replaces 📡) -->
-<symbol id="icon-signal" viewBox="0 0 24 24">
-  <path d="M2 12a10 10 0 0118 0"/>
-  <path d="M5 12a7 7 0 0112 0"/>
-  <path d="M8 12a4 4 0 016 0"/>
-  <circle cx="11" cy="12" r="1"/>
-</symbol>
-
-<!-- Link / chain (replaces 🔗) -->
-<symbol id="icon-link" viewBox="0 0 24 24">
-  <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/>
-  <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/>
-</symbol>
-
-<!-- Globe / network (replaces 🌐) -->
-<symbol id="icon-globe" viewBox="0 0 24 24">
-  <circle cx="12" cy="12" r="10"/>
-  <line x1="2" y1="12" x2="22" y2="12"/>
-  <path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/>
-</symbol>
-
-<!-- Sync / refresh (replaces 🔄) -->
-<symbol id="icon-sync" viewBox="0 0 24 24">
-  <polyline points="23 4 23 10 17 10"/>
-  <polyline points="1 20 1 14 7 14"/>
-  <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/>
-</symbol>
-
-<!-- Users / group (replaces 👥) -->
-<symbol id="icon-users" viewBox="0 0 24 24">
-  <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
-  <circle cx="9" cy="7" r="4"/>
-  <path d="M23 21v-2a4 4 0 00-3-3.87"/>
-  <path d="M16 3.13a4 4 0 010 7.75"/>
-</symbol>
-
-<!-- Shield / protection (replaces 🛡) -->
-<symbol id="icon-shield" viewBox="0 0 24 24">
-  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-</symbol>
-
-<!-- Heartbeat / pulse (replaces 💓) -->
-<symbol id="icon-heartbeat" viewBox="0 0 24 24">
-  <path d="M3 12h4l3-9 4 18 3-9h4"/>
-</symbol>
-
-<!-- Map pin / location (replaces 📍) -->
-<symbol id="icon-pin" viewBox="0 0 24 24">
-  <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/>
-  <circle cx="12" cy="10" r="3"/>
-</symbol>
-
-<!-- Traffic light / status (replaces 🚦) -->
-<symbol id="icon-traffic" viewBox="0 0 24 24">
-  <rect x="7" y="2" width="10" height="20" rx="3"/>
-  <circle cx="12" cy="7" r="1.5"/>
-  <circle cx="12" cy="12" r="1.5"/>
-  <circle cx="12" cy="17" r="1.5"/>
-</symbol>
-
-<!-- Check circle (replaces ✅) -->
-<symbol id="icon-check" viewBox="0 0 24 24">
-  <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
-  <polyline points="22 4 12 14.01 9 11.01"/>
-</symbol>
-
-<!-- Megaphone / broadcast (replaces 📢) -->
-<symbol id="icon-megaphone" viewBox="0 0 24 24">
-  <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
-</symbol>
-
-<!-- Pen / signed (replaces ✍) -->
-<symbol id="icon-pen" viewBox="0 0 24 24">
-  <path d="M12 20h9"/>
-  <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/>
-</symbol>
-
-<!-- Warning / alert (replaces ⚠) -->
-<symbol id="icon-warning" viewBox="0 0 24 24">
-  <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
-  <line x1="12" y1="9" x2="12" y2="13"/>
-  <line x1="12" y1="17" x2="12.01" y2="17"/>
-</symbol>
-
-<!-- Hourglass / timer (replaces ⏳) -->
-<symbol id="icon-hourglass" viewBox="0 0 24 24">
-  <path d="M6 2h12v5l-4 4 4 4v5H6v-5l4-4-4-4V2z"/>
-</symbol>
-
-<!-- Scroll / document (replaces 📜) -->
-<symbol id="icon-scroll" viewBox="0 0 24 24">
-  <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/>
-  <polyline points="14 2 14 8 20 8"/>
-  <line x1="16" y1="13" x2="8" y2="13"/>
-  <line x1="16" y1="17" x2="8" y2="17"/>
-</symbol>
-
-<!-- Bolt / lightning (replaces ⚡) -->
-<symbol id="icon-bolt" viewBox="0 0 24 24">
-  <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
-</symbol>
-
-<!-- Target / crosshair (replaces 🎯) -->
-<symbol id="icon-target" viewBox="0 0 24 24">
-  <circle cx="12" cy="12" r="10"/>
-  <circle cx="12" cy="12" r="6"/>
-  <circle cx="12" cy="12" r="2"/>
-</symbol>
-
-<!-- Handshake / trust (replaces 🤝) -->
-<symbol id="icon-handshake" viewBox="0 0 24 24">
-  <path d="M11 17l-3.5-3.5a2.12 2.12 0 013-3L14 14"/>
-  <path d="M20.88 7.12l-3.17 3.17"/>
-  <path d="M3.12 7.12l3.17 3.17"/>
-  <path d="M2 12h4"/>
-  <path d="M18 12h4"/>
-  <path d="M7.76 4.25L12 2l4.24 2.25"/>
-</symbol>
-
-<!-- Leaf / organic (replaces 🌿) -->
-<symbol id="icon-leaf" viewBox="0 0 24 24">
-  <path d="M17 8C8 10 5.9 16.17 3.82 21.34l1.89.66.95-2.3c.48.17.98.3 1.34.3C19 20 22 3 22 3c-1 0-8 0-10 2"/>
-  <path d="M7 15c2-2 5.5-3 9-3"/>
-</symbol>
-
-<!-- Satellite (replaces 🛰) -->
-<symbol id="icon-satellite" viewBox="0 0 24 24">
-  <path d="M13 7L9 3 5 7l4 4"/>
-  <path d="M17 11l4 4-4 4-4-4"/>
-  <line x1="8" y1="11" x2="13" y2="16"/>
-  <line x1="3" y1="21" x2="3.01" y2="21"/>
-  <path d="M6 18a3 3 0 000 0"/>
-  <path d="M9 15a6 6 0 000 0"/>
-</symbol>
-
-<!-- Phone / mobile (replaces 📱) -->
-<symbol id="icon-phone" viewBox="0 0 24 24">
-  <rect x="5" y="2" width="14" height="20" rx="2"/>
-  <line x1="12" y1="18" x2="12.01" y2="18"/>
-</symbol>
-
-<!-- Masks / theater (replaces 🎭) -->
-<symbol id="icon-masks" viewBox="0 0 24 24">
-  <circle cx="12" cy="12" r="10"/>
-  <path d="M8 14s1.5 2 4 2 4-2 4-2"/>
-  <line x1="9" y1="9" x2="9.01" y2="9"/>
-  <line x1="15" y1="9" x2="15.01" y2="9"/>
-</symbol>
-
-<!-- Stars / cosmos (replaces 🌌) -->
-<symbol id="icon-cosmos" viewBox="0 0 24 24">
-  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-</symbol>
-
-<!-- Gem / diamond (replaces 💎) -->
-<symbol id="icon-gem" viewBox="0 0 24 24">
-  <polygon points="6 3 18 3 22 9 12 22 2 9 6 3"/>
-  <line x1="2" y1="9" x2="22" y2="9"/>
-  <line x1="12" y1="22" x2="8" y2="9"/>
-  <line x1="12" y1="22" x2="16" y2="9"/>
-  <line x1="8" y1="9" x2="10" y2="3"/>
-  <line x1="16" y1="9" x2="14" y2="3"/>
-</symbol>
-
-<!-- Search / magnifying glass (replaces 🔍) -->
-<symbol id="icon-search" viewBox="0 0 24 24">
-  <circle cx="11" cy="11" r="8"/>
-  <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-</symbol>
-
-<!-- DARBAR — scales of justice (declarative API router) -->
-<symbol id="icon-darbar" viewBox="0 0 24 24">
-  <path d="M12 3v18"/>
-  <path d="M5 7l7-4 7 4"/>
-  <path d="M4 9l4 6h-4z"/>
-  <path d="M16 9l4 6h-4z"/>
-  <circle cx="12" cy="21" r="2"/>
-</symbol>
-
-</svg>
-<!-- YAKMESH-ICON-SPRITE-END -->
-<a href="#mainContent" class="skip-link">Skip to main content</a>
+    <!-- ═══ GUIDES ═══ -->
+
+    <symbol id="icon-home" viewBox="0 0 24 24">
+      <path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z" />
+      <polyline points="9 22 9 12 15 12 15 22" />
+    </symbol>
+
+    <symbol id="icon-rocket" viewBox="0 0 24 24">
+      <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 00-2.91-.09z" />
+      <path d="M12 15l-3-3a22 22 0 012-3.95A12.88 12.88 0 0122 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 01-4 2z" />
+      <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" />
+      <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" />
+    </symbol>
+
+    <symbol id="icon-book" viewBox="0 0 24 24">
+      <path d="M4 19.5A2.5 2.5 0 016.5 17H20" />
+      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" />
+      <line x1="8" y1="7" x2="16" y2="7" />
+      <line x1="8" y1="11" x2="13" y2="11" />
+    </symbol>
+
+    <!-- ═══ PROTOCOL STACK ═══ -->
+
+    <!-- YAK:// — Content addressing (yak horns) -->
+    <symbol id="icon-yak" viewBox="0 0 24 24">
+      <path d="M4 4c1 3 3 5 5 6" />
+      <path d="M20 4c-1 3-3 5-5 6" />
+      <circle cx="12" cy="14" r="5" />
+      <circle cx="10" cy="13" r="0.5" fill="currentColor" />
+      <circle cx="14" cy="13" r="0.5" fill="currentColor" />
+      <path d="M10 16c1 1 3 1 4 0" />
+    </symbol>
+
+    <!-- ANNEX — Encrypted bridge -->
+    <symbol id="icon-annex" viewBox="0 0 24 24">
+      <path d="M4 18h3a4 4 0 004-4V8" />
+      <path d="M20 18h-3a4 4 0 01-4-4V8" />
+      <circle cx="7" cy="6" r="2" />
+      <circle cx="17" cy="6" r="2" />
+      <line x1="7" y1="8" x2="7" y2="18" />
+      <line x1="17" y1="8" x2="17" y2="18" />
+    </symbol>
+
+    <!-- JHILKE — Cricket / steganographic key lifecycle -->
+    <symbol id="icon-jhilke" viewBox="0 0 24 24">
+      <ellipse cx="12" cy="14" rx="4" ry="6" />
+      <path d="M8 10c-2-3-4-6-3-8" />
+      <path d="M16 10c2-3 4-6 3-8" />
+      <line x1="10" y1="20" x2="8" y2="23" />
+      <line x1="14" y1="20" x2="16" y2="23" />
+      <path d="M9 12l-4 2" />
+      <path d="M15 12l4 2" />
+    </symbol>
+
+    <!-- NAKPAK — Onion layers / backpack -->
+    <symbol id="icon-nakpak" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="10" opacity="0.3" />
+      <circle cx="12" cy="12" r="7" opacity="0.5" />
+      <circle cx="12" cy="12" r="4" opacity="0.8" />
+      <circle cx="12" cy="12" r="1.5" fill="currentColor" />
+    </symbol>
+
+    <!-- NAMCHE — Gateway door -->
+    <symbol id="icon-namche" viewBox="0 0 24 24">
+      <rect x="3" y="3" width="18" height="18" rx="2" />
+      <path d="M9 3v18" />
+      <path d="M15 3v18" />
+      <line x1="3" y1="8" x2="9" y2="8" />
+      <line x1="15" y1="8" x2="21" y2="8" />
+      <circle cx="12" cy="14" r="1" fill="currentColor" />
+    </symbol>
+
+    <!-- DOKO — Basket / certificate -->
+    <symbol id="icon-doko" viewBox="0 0 24 24">
+      <path d="M6 8l-2 12h16l-2-12" />
+      <path d="M6 8c0-3 2.7-5 6-5s6 2 6 5" />
+      <line x1="8" y1="10" x2="10" y2="18" />
+      <line x1="16" y1="10" x2="14" y2="18" />
+      <line x1="12" y1="10" x2="12" y2="18" />
+    </symbol>
+
+    <!-- SHERPA — Mountain climber -->
+    <symbol id="icon-sherpa" viewBox="0 0 24 24">
+      <path d="M4 20L10 6l3 6 3-4 4 12" />
+      <line x1="4" y1="20" x2="20" y2="20" />
+      <circle cx="13" cy="4" r="1.5" />
+    </symbol>
+
+    <!-- MANDALA — Network topology web -->
+    <symbol id="icon-mandala" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9" />
+      <circle cx="12" cy="12" r="4.5" />
+      <line x1="12" y1="3" x2="12" y2="21" />
+      <line x1="3" y1="12" x2="21" y2="12" />
+      <line x1="5.6" y1="5.6" x2="18.4" y2="18.4" />
+      <line x1="18.4" y1="5.6" x2="5.6" y2="18.4" />
+    </symbol>
+
+    <!-- MANTRA — Gossip / prayer wheel -->
+    <symbol id="icon-mantra" viewBox="0 0 24 24">
+      <circle cx="12" cy="10" r="7" />
+      <path d="M12 3v14" />
+      <path d="M8 7c2 1.5 6 1.5 8 0" />
+      <path d="M8 13c2-1.5 6-1.5 8 0" />
+      <line x1="12" y1="17" x2="12" y2="22" />
+      <line x1="9" y1="22" x2="15" y2="22" />
+    </symbol>
+
+    <!-- GUMBA — Temple / access control -->
+    <symbol id="icon-gumba" viewBox="0 0 24 24">
+      <path d="M12 2L3 9h18z" />
+      <line x1="5" y1="9" x2="5" y2="19" />
+      <line x1="9" y1="9" x2="9" y2="19" />
+      <line x1="15" y1="9" x2="15" y2="19" />
+      <line x1="19" y1="9" x2="19" y2="19" />
+      <line x1="3" y1="19" x2="21" y2="19" />
+      <line x1="3" y1="21" x2="21" y2="21" />
+    </symbol>
+
+    <!-- YURT — Camp / room -->
+    <symbol id="icon-yurt" viewBox="0 0 24 24">
+      <path d="M3 20L12 4l9 16" />
+      <line x1="3" y1="20" x2="21" y2="20" />
+      <path d="M10 20v-5a2 2 0 014 0v5" />
+      <path d="M6 14h12" />
+    </symbol>
+
+    <!-- KATHA — Chat / story scroll -->
+    <symbol id="icon-katha" viewBox="0 0 24 24">
+      <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+      <line x1="8" y1="8" x2="16" y2="8" />
+      <line x1="8" y1="12" x2="13" y2="12" />
+    </symbol>
+
+    <!-- VANI — Voice / microphone -->
+    <symbol id="icon-vani" viewBox="0 0 24 24">
+      <rect x="9" y="2" width="6" height="11" rx="3" />
+      <path d="M5 10a7 7 0 0014 0" />
+      <line x1="12" y1="17" x2="12" y2="22" />
+      <line x1="8" y1="22" x2="16" y2="22" />
+    </symbol>
+
+    <!-- DARSHAN — Eye / viewing -->
+    <symbol id="icon-darshan" viewBox="0 0 24 24">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8S1 12 1 12z" />
+      <circle cx="12" cy="12" r="3" />
+    </symbol>
+
+    <!-- STUPA — Tower / distributed storage -->
+    <symbol id="icon-stupa" viewBox="0 0 24 24">
+      <line x1="12" y1="2" x2="12" y2="5" />
+      <path d="M10 5h4l1 3H9z" />
+      <ellipse cx="12" cy="11" rx="5" ry="3" />
+      <ellipse cx="12" cy="15" rx="6" ry="3" />
+      <ellipse cx="12" cy="19" rx="7" ry="3" />
+    </symbol>
+
+    <!-- LAMA — Crystal ball / consensus -->
+    <symbol id="icon-lama" viewBox="0 0 24 24">
+      <circle cx="12" cy="10" r="7" />
+      <path d="M12 3c-1.5 2-2 5 0 7s4.5 2 6 0" />
+      <path d="M7 19h10" />
+      <path d="M9 22h6" />
+      <line x1="9" y1="17" x2="9" y2="19" />
+      <line x1="15" y1="17" x2="15" y2="19" />
+    </symbol>
+
+    <!-- MANI — Prayer stone / time sync -->
+    <symbol id="icon-mani" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9" />
+      <polyline points="12 6 12 12 16 14" />
+      <circle cx="12" cy="12" r="1" fill="currentColor" />
+    </symbol>
+
+    <!-- KARMA — Yin-yang / reputation -->
+    <symbol id="icon-karma" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 3a4.5 4.5 0 010 9 4.5 4.5 0 000 9" />
+      <circle cx="12" cy="7.5" r="1.5" fill="currentColor" />
+      <circle cx="12" cy="16.5" r="1.5" />
+    </symbol>
+
+    <!-- TATTVA — Quantum elements / atom -->
+    <symbol id="icon-tattva" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none" />
+      <ellipse cx="12" cy="12" rx="10" ry="4" />
+      <ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(60 12 12)" />
+      <ellipse cx="12" cy="12" rx="10" ry="4" transform="rotate(120 12 12)" />
+    </symbol>
+
+    <!-- TRIBHUJ — Triangle / balanced ternary -->
+    <symbol id="icon-tribhuj" viewBox="0 0 24 24">
+      <polygon points="12,3 21,20 3,20" />
+      <line x1="12" y1="3" x2="12" y2="20" />
+      <line x1="7.5" y1="11.5" x2="16.5" y2="11.5" />
+      <circle cx="12" cy="14" r="1" fill="currentColor" />
+    </symbol>
+
+    <!-- YPC-27 — Lock / cipher -->
+    <symbol id="icon-ypc27" viewBox="0 0 24 24">
+      <rect x="5" y="11" width="14" height="10" rx="2" />
+      <path d="M8 11V7a4 4 0 118 0v4" />
+      <circle cx="12" cy="16" r="1" fill="currentColor" />
+      <line x1="12" y1="17" x2="12" y2="19" />
+    </symbol>
+
+    <!-- SAKSHI — Witness / aperture eye -->
+    <symbol id="icon-sakshi" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 3l3 9-3 9" />
+      <path d="M12 3l-3 9 3 9" />
+      <circle cx="12" cy="12" r="2.5" />
+      <circle cx="12" cy="12" r="0.8" fill="currentColor" />
+    </symbol>
+
+    <!-- PRAMAAN — Globe / geographic proof -->
+    <symbol id="icon-pramaan" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9" />
+      <ellipse cx="12" cy="12" rx="4" ry="9" />
+      <line x1="3" y1="9" x2="21" y2="9" />
+      <line x1="3" y1="15" x2="21" y2="15" />
+      <path d="M18 4l-2 2 1 3" />
+      <path d="M6 18l2-1 3 1" />
+    </symbol>
+
+    <!-- SURAKSHA — Shield / security -->
+    <symbol id="icon-suraksha" viewBox="0 0 24 24">
+      <path d="M12 2l8 4v6c0 5.5-3.8 10.7-8 12-4.2-1.3-8-6.5-8-12V6z" />
+      <polyline points="9 12 11 14 15 10" />
+    </symbol>
+
+    <!-- TIVRA — Lightning bolt / acceleration -->
+    <symbol id="icon-tivra" viewBox="0 0 24 24">
+      <polygon points="13,2 3,14 12,14 11,22 21,10 12,10" />
+    </symbol>
+
+    <!-- PRAHARI — Satellite / sentinel -->
+    <symbol id="icon-prahari" viewBox="0 0 24 24">
+      <rect x="9" y="9" width="6" height="6" rx="1" transform="rotate(45 12 12)" />
+      <line x1="12" y1="5" x2="12" y2="2" />
+      <line x1="19" y1="12" x2="22" y2="12" />
+      <line x1="12" y1="19" x2="12" y2="22" />
+      <line x1="5" y1="12" x2="2" y2="12" />
+      <path d="M7 7L5 5" />
+      <path d="M17 7l2-2" />
+    </symbol>
+
+    <!-- DHARMA — Balance scale / content moderation -->
+    <symbol id="icon-dharma" viewBox="0 0 24 24">
+      <line x1="12" y1="3" x2="12" y2="21" />
+      <line x1="4" y1="7" x2="20" y2="7" />
+      <path d="M4 7l2 7h0a3 3 0 006 0h0l2-7" />
+      <path d="M14 7l2 7h0a3 3 0 006 0h0l2-7" />
+      <line x1="10" y1="21" x2="14" y2="21" />
+    </symbol>
+
+    <!-- SEVA — Helping hands / NPU sharing -->
+    <symbol id="icon-seva" viewBox="0 0 24 24">
+      <path d="M12 22c-4 0-8-2-8-6 0-2 1-3 3-4l5-3 5 3c2 1 3 2 3 4 0 4-4 6-8 6z" />
+      <path d="M12 11V5" />
+      <path d="M9 8l3-3 3 3" />
+      <circle cx="12" cy="16" r="2" />
+    </symbol>
+
+    <!-- ═══ APPLICATIONS ═══ -->
+
+    <!-- YakApp — Messenger -->
+    <symbol id="icon-yakapp" viewBox="0 0 24 24">
+      <path
+        d="M21 11.5a8.38 8.38 0 01-.9 3.8 8.5 8.5 0 01-7.6 4.7 8.38 8.38 0 01-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 01-.9-3.8 8.5 8.5 0 014.7-7.6 8.38 8.38 0 013.8-.9h.5a8.48 8.48 0 018 8v.5z" />
+    </symbol>
+
+    <!-- C2C — Core to Cosmos -->
+    <symbol id="icon-c2c" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="3" />
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 3v3" />
+      <path d="M12 18v3" />
+      <path d="M3 12h3" />
+      <path d="M18 12h3" />
+    </symbol>
+
+    <!-- Studio — Creative suite -->
+    <symbol id="icon-studio" viewBox="0 0 24 24">
+      <circle cx="13.5" cy="6.5" r="2.5" />
+      <path d="M6 21l4-10 3 5 4-7 4 12" />
+      <rect x="2" y="2" width="20" height="20" rx="2" />
+    </symbol>
+
+
+    <!-- ═══ REFERENCE ═══ -->
+
+    <!-- Quick Reference — Clipboard -->
+    <symbol id="icon-quickref" viewBox="0 0 24 24">
+      <path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2" />
+      <rect x="8" y="2" width="8" height="4" rx="1" />
+      <line x1="8" y1="10" x2="16" y2="10" />
+      <line x1="8" y1="14" x2="16" y2="14" />
+      <line x1="8" y1="18" x2="12" y2="18" />
+    </symbol>
+
+    <!-- GRANTH — Docs bundle -->
+    <symbol id="icon-granth" viewBox="0 0 24 24">
+      <path d="M4 19.5A2.5 2.5 0 016.5 17H20" />
+      <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" />
+      <path d="M8 7h8" />
+      <path d="M8 11h5" />
+      <path d="M8 15h3" />
+    </symbol>
+
+    <!-- API — Signal tower -->
+    <symbol id="icon-api" viewBox="0 0 24 24">
+      <line x1="12" y1="10" x2="12" y2="22" />
+      <path d="M8 6a6 6 0 018 0" />
+      <path d="M5 3a10 10 0 0114 0" />
+      <circle cx="12" cy="10" r="2" />
+    </symbol>
+
+    <!-- Adapters — Plug connector -->
+    <symbol id="icon-adapters" viewBox="0 0 24 24">
+      <path d="M6 3v4" />
+      <path d="M10 3v4" />
+      <path d="M4 7h8v3a4 4 0 01-8 0V7z" />
+      <line x1="8" y1="14" x2="8" y2="17" />
+      <path d="M14 10h4v3a2 2 0 01-4 0v-3z" />
+      <line x1="16" y1="7" x2="16" y2="10" />
+      <line x1="16" y1="13" x2="16" y2="17" />
+      <line x1="8" y1="17" x2="16" y2="17" />
+      <line x1="12" y1="17" x2="12" y2="21" />
+    </symbol>
+
+    <!-- ═══ EXTRA (pages outside nav-order) ═══ -->
+
+    <!-- Terminal / CLI -->
+    <symbol id="icon-terminal" viewBox="0 0 24 24">
+      <rect x="2" y="3" width="20" height="18" rx="2" />
+      <polyline points="7 9 10 12 7 15" />
+      <line x1="13" y1="15" x2="17" y2="15" />
+    </symbol>
+
+    <!-- Gear / Configuration -->
+    <symbol id="icon-gear" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="3" />
+      <path
+        d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
+    </symbol>
+
+    <!-- Server / Web hosting -->
+    <symbol id="icon-server" viewBox="0 0 24 24">
+      <rect x="2" y="2" width="20" height="8" rx="2" />
+      <rect x="2" y="14" width="20" height="8" rx="2" />
+      <line x1="6" y1="6" x2="6.01" y2="6" />
+      <line x1="6" y1="18" x2="6.01" y2="18" />
+    </symbol>
+
+    <!-- ═══ CHROME / UI ═══ -->
+
+    <!-- Mountain peak — logo icon (replaces 🏔️) -->
+    <symbol id="icon-mountain" viewBox="0 0 24 24">
+      <path d="M8 21l4.5-9 3 5.5L19 12l3 9H2l6-9z" />
+      <path d="M12 12l1.5-3L16 14" />
+    </symbol>
+
+    <!-- Dashboard / bar chart (replaces 📊) -->
+    <symbol id="icon-dashboard" viewBox="0 0 24 24">
+      <line x1="18" y1="20" x2="18" y2="10" />
+      <line x1="12" y1="20" x2="12" y2="4" />
+      <line x1="6" y1="20" x2="6" y2="14" />
+      <rect x="2" y="2" width="20" height="20" rx="2" stroke-opacity="0.4" />
+    </symbol>
+
+    <!-- ═══ GENERIC / CONTENT ICONS ═══ -->
+
+    <!-- Lock / encrypted (replaces 🔐) -->
+    <symbol id="icon-lock" viewBox="0 0 24 24">
+      <rect x="3" y="11" width="18" height="11" rx="2" />
+      <path d="M7 11V7a5 5 0 0110 0v4" />
+    </symbol>
+
+    <!-- Signal / broadcast (replaces 📡) -->
+    <symbol id="icon-signal" viewBox="0 0 24 24">
+      <path d="M2 12a10 10 0 0118 0" />
+      <path d="M5 12a7 7 0 0112 0" />
+      <path d="M8 12a4 4 0 016 0" />
+      <circle cx="11" cy="12" r="1" />
+    </symbol>
+
+    <!-- Link / chain (replaces 🔗) -->
+    <symbol id="icon-link" viewBox="0 0 24 24">
+      <path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71" />
+      <path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71" />
+    </symbol>
+
+    <!-- Globe / network (replaces 🌐) -->
+    <symbol id="icon-globe" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="10" />
+      <line x1="2" y1="12" x2="22" y2="12" />
+      <path d="M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z" />
+    </symbol>
+
+    <!-- Sync / refresh (replaces 🔄) -->
+    <symbol id="icon-sync" viewBox="0 0 24 24">
+      <polyline points="23 4 23 10 17 10" />
+      <polyline points="1 20 1 14 7 14" />
+      <path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15" />
+    </symbol>
+
+    <!-- Users / group (replaces 👥) -->
+    <symbol id="icon-users" viewBox="0 0 24 24">
+      <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 00-3-3.87" />
+      <path d="M16 3.13a4 4 0 010 7.75" />
+    </symbol>
+
+    <!-- Shield / protection (replaces 🛡) -->
+    <symbol id="icon-shield" viewBox="0 0 24 24">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+    </symbol>
+
+    <!-- Heartbeat / pulse (replaces 💓) -->
+    <symbol id="icon-heartbeat" viewBox="0 0 24 24">
+      <path d="M3 12h4l3-9 4 18 3-9h4" />
+    </symbol>
+
+    <!-- Map pin / location (replaces 📍) -->
+    <symbol id="icon-pin" viewBox="0 0 24 24">
+      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" />
+      <circle cx="12" cy="10" r="3" />
+    </symbol>
+
+    <!-- Traffic light / status (replaces 🚦) -->
+    <symbol id="icon-traffic" viewBox="0 0 24 24">
+      <rect x="7" y="2" width="10" height="20" rx="3" />
+      <circle cx="12" cy="7" r="1.5" />
+      <circle cx="12" cy="12" r="1.5" />
+      <circle cx="12" cy="17" r="1.5" />
+    </symbol>
+
+    <!-- Check circle (replaces ✅) -->
+    <symbol id="icon-check" viewBox="0 0 24 24">
+      <path d="M22 11.08V12a10 10 0 11-5.93-9.14" />
+      <polyline points="22 4 12 14.01 9 11.01" />
+    </symbol>
+
+    <!-- Megaphone / broadcast (replaces 📢) -->
+    <symbol id="icon-megaphone" viewBox="0 0 24 24">
+      <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+    </symbol>
+
+    <!-- Pen / signed (replaces ✍) -->
+    <symbol id="icon-pen" viewBox="0 0 24 24">
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
+    </symbol>
+
+    <!-- Warning / alert (replaces ⚠) -->
+    <symbol id="icon-warning" viewBox="0 0 24 24">
+      <path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+      <line x1="12" y1="9" x2="12" y2="13" />
+      <line x1="12" y1="17" x2="12.01" y2="17" />
+    </symbol>
+
+    <!-- Hourglass / timer (replaces ⏳) -->
+    <symbol id="icon-hourglass" viewBox="0 0 24 24">
+      <path d="M6 2h12v5l-4 4 4 4v5H6v-5l4-4-4-4V2z" />
+    </symbol>
+
+    <!-- Scroll / document (replaces 📜) -->
+    <symbol id="icon-scroll" viewBox="0 0 24 24">
+      <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+      <polyline points="14 2 14 8 20 8" />
+      <line x1="16" y1="13" x2="8" y2="13" />
+      <line x1="16" y1="17" x2="8" y2="17" />
+    </symbol>
+
+    <!-- Bolt / lightning (replaces ⚡) -->
+    <symbol id="icon-bolt" viewBox="0 0 24 24">
+      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+    </symbol>
+
+    <!-- Target / crosshair (replaces 🎯) -->
+    <symbol id="icon-target" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="10" />
+      <circle cx="12" cy="12" r="6" />
+      <circle cx="12" cy="12" r="2" />
+    </symbol>
+
+    <!-- Handshake / trust (replaces 🤝) -->
+    <symbol id="icon-handshake" viewBox="0 0 24 24">
+      <path d="M11 17l-3.5-3.5a2.12 2.12 0 013-3L14 14" />
+      <path d="M20.88 7.12l-3.17 3.17" />
+      <path d="M3.12 7.12l3.17 3.17" />
+      <path d="M2 12h4" />
+      <path d="M18 12h4" />
+      <path d="M7.76 4.25L12 2l4.24 2.25" />
+    </symbol>
+
+    <!-- Leaf / organic (replaces 🌿) -->
+    <symbol id="icon-leaf" viewBox="0 0 24 24">
+      <path d="M17 8C8 10 5.9 16.17 3.82 21.34l1.89.66.95-2.3c.48.17.98.3 1.34.3C19 20 22 3 22 3c-1 0-8 0-10 2" />
+      <path d="M7 15c2-2 5.5-3 9-3" />
+    </symbol>
+
+    <!-- Satellite (replaces 🛰) -->
+    <symbol id="icon-satellite" viewBox="0 0 24 24">
+      <path d="M13 7L9 3 5 7l4 4" />
+      <path d="M17 11l4 4-4 4-4-4" />
+      <line x1="8" y1="11" x2="13" y2="16" />
+      <line x1="3" y1="21" x2="3.01" y2="21" />
+      <path d="M6 18a3 3 0 000 0" />
+      <path d="M9 15a6 6 0 000 0" />
+    </symbol>
+
+    <!-- Phone / mobile (replaces 📱) -->
+    <symbol id="icon-phone" viewBox="0 0 24 24">
+      <rect x="5" y="2" width="14" height="20" rx="2" />
+      <line x1="12" y1="18" x2="12.01" y2="18" />
+    </symbol>
+
+    <!-- Masks / theater (replaces 🎭) -->
+    <symbol id="icon-masks" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="10" />
+      <path d="M8 14s1.5 2 4 2 4-2 4-2" />
+      <line x1="9" y1="9" x2="9.01" y2="9" />
+      <line x1="15" y1="9" x2="15.01" y2="9" />
+    </symbol>
+
+    <!-- Stars / cosmos (replaces 🌌) -->
+    <symbol id="icon-cosmos" viewBox="0 0 24 24">
+      <polygon
+        points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+    </symbol>
+
+    <!-- Gem / diamond (replaces 💎) -->
+    <symbol id="icon-gem" viewBox="0 0 24 24">
+      <polygon points="6 3 18 3 22 9 12 22 2 9 6 3" />
+      <line x1="2" y1="9" x2="22" y2="9" />
+      <line x1="12" y1="22" x2="8" y2="9" />
+      <line x1="12" y1="22" x2="16" y2="9" />
+      <line x1="8" y1="9" x2="10" y2="3" />
+      <line x1="16" y1="9" x2="14" y2="3" />
+    </symbol>
+
+    <!-- Search / magnifying glass (replaces 🔍) -->
+    <symbol id="icon-search" viewBox="0 0 24 24">
+      <circle cx="11" cy="11" r="8" />
+      <line x1="21" y1="21" x2="16.65" y2="16.65" />
+    </symbol>
+
+    <!-- DARBAR — scales of justice (declarative API router) -->
+    <symbol id="icon-darbar" viewBox="0 0 24 24">
+      <path d="M12 3v18" />
+      <path d="M5 7l7-4 7 4" />
+      <path d="M4 9l4 6h-4z" />
+      <path d="M16 9l4 6h-4z" />
+      <circle cx="12" cy="21" r="2" />
+    </symbol>
+
+    <!-- AGUWA — sine wave with central circle (phase coupling oscillator) -->
+    <symbol id="icon-aguwa" viewBox="0 0 24 24">
+      <path d="M2 12c2-4 4-4 6 0s4 4 6 0 4-4 6 0" fill="none" stroke="currentColor" stroke-width="2" />
+      <circle cx="12" cy="12" r="2.5" fill="none" stroke="currentColor" stroke-width="2" />
+    </symbol>
+
+    <!-- SANGHA — three connected circles in triangle (collective community nodes) -->
+    <symbol id="icon-sangha" viewBox="0 0 24 24">
+      <circle cx="12" cy="5" r="2.5" fill="none" stroke="currentColor" stroke-width="2" />
+      <circle cx="6" cy="17" r="2.5" fill="none" stroke="currentColor" stroke-width="2" />
+      <circle cx="18" cy="17" r="2.5" fill="none" stroke="currentColor" stroke-width="2" />
+      <line x1="12" y1="7.5" x2="7.5" y2="15" stroke="currentColor" stroke-width="1.5" />
+      <line x1="12" y1="7.5" x2="16.5" y2="15" stroke="currentColor" stroke-width="1.5" />
+      <line x1="8.5" y1="17" x2="15.5" y2="17" stroke="currentColor" stroke-width="1.5" />
+    </symbol>
+
+    <!-- SAMUHA — funnel shape with dots at top (weighted admission gateway) -->
+    <symbol id="icon-samuha" viewBox="0 0 24 24">
+      <path d="M4 4h16l-5 8v6l-2 2v-8z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" />
+      <circle cx="7" cy="2" r="1" fill="currentColor" />
+      <circle cx="12" cy="2" r="1" fill="currentColor" />
+      <circle cx="17" cy="2" r="1" fill="currentColor" />
+    </symbol>
+
+  </svg>
+  <!-- YAKMESH-ICON-SPRITE-END -->
+  <a href="#mainContent" class="skip-link">Skip to main content</a>
 
   <nav class="docs-sidebar" id="sidebar">
     <a href="index.html" class="sidebar-logo">
-      <span class="logo-icon"><svg class="doc-icon" aria-hidden="true"><use href="#icon-mountain"/></svg></span>
+      <span class="logo-icon"><svg class="doc-icon" aria-hidden="true">
+          <use href="#icon-mountain" />
+        </svg></span>
       <span class="logo-text">Yakmesh</span>
     </a>
-    <a href="/dashboard" class="sidebar-dashboard-link"><svg class="doc-icon" aria-hidden="true"><use href="#icon-dashboard"/></svg> <span>Dashboard</span></a>
+    <a href="/dashboard" class="sidebar-dashboard-link"><svg class="doc-icon" aria-hidden="true">
+        <use href="#icon-dashboard" />
+      </svg> <span>Dashboard</span></a>
     <ul class="sidebar-nav">
-      <li class="sidebar-section"><span><svg class="doc-icon" aria-hidden="true"><use href="#icon-book"/></svg> Guides</span></li>
-      <li><a href="index.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-home"/></svg> <span>Overview</span></a></li>
-      <li><a href="getting-started.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-rocket"/></svg> <span>Getting Started</span></a></li>
-      <li><a href="tutorials.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-book"/></svg> <span>Tutorials</span></a></li>
-      <li><a href="gumba-tutorial.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-gumba"/></svg> <span>GUMBA Tutorial</span></a></li>
-      <li class="sidebar-section"><span><svg class="doc-icon" aria-hidden="true"><use href="#icon-yak"/></svg> Protocol Stack</span></li>
-      <li><a href="yak-protocol.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-yak"/></svg> <span>YAK://</span></a></li>
-      <li><a href="annex.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-annex"/></svg> <span>ANNEX</span></a></li>
-      <li><a href="jhilke.html" class="active"><svg class="doc-icon" aria-hidden="true"><use href="#icon-jhilke"/></svg> <span>JHILKE</span></a></li>
-      <li><a href="nakpak.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-nakpak"/></svg> <span>NAKPAK</span></a></li>
-      <li><a href="namche.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-namche"/></svg> <span>NAMCHE</span></a></li>
-      <li><a href="doko.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-doko"/></svg> <span>DOKO</span></a></li>
-      <li><a href="sherpa.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-sherpa"/></svg> <span>SHERPA</span></a></li>
-      <li><a href="mandala.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-mandala"/></svg> <span>MANDALA</span></a></li>
-      <li><a href="mantra.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-mantra"/></svg> <span>MANTRA</span></a></li>
-      <li><a href="gumba.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-gumba"/></svg> <span>GUMBA</span></a></li>
-      <li><a href="yurt.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-yurt"/></svg> <span>YURT</span></a></li>
-      <li><a href="katha.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-katha"/></svg> <span>KATHA</span></a></li>
-      <li><a href="vani.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-vani"/></svg> <span>VANI</span></a></li>
-      <li><a href="darshan.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-darshan"/></svg> <span>DARSHAN</span></a></li>
-      <li><a href="stupa.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-stupa"/></svg> <span>STUPA</span></a></li>
-      <li><a href="lama.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-lama"/></svg> <span>LAMA</span></a></li>
-      <li><a href="mani.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-mani"/></svg> <span>MANI</span></a></li>
-      <li><a href="karma.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-karma"/></svg> <span>KARMA</span></a></li>
-      <li><a href="tattva.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-tattva"/></svg> <span>TATTVA</span></a></li>
-      <li><a href="tribhuj.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-tribhuj"/></svg> <span>TRIBHUJ</span></a></li>
-      <li><a href="ypc27.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-ypc27"/></svg> <span>YPC-27</span></a></li>
-      <li><a href="sakshi.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-sakshi"/></svg> <span>SAKSHI</span></a></li>
-      <li><a href="geo-proof.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-pramaan"/></svg> <span>PRAMAAN</span></a></li>
-      <li><a href="trust-security.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-suraksha"/></svg> <span>SURAKSHA</span></a></li>
-      <li><a href="tivra.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-tivra"/></svg> <span>TIVRA</span></a></li>
-      <li><a href="prahari.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-prahari"/></svg> <span>PRAHARI</span></a></li>
-      <li><a href="dharma.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-dharma"/></svg> <span>DHARMA</span></a></li>
-      <li><a href="seva.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-seva"/></svg> <span>SEVA</span></a></li>
-      <li><a href="darbar.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-darbar"/></svg> <span>DARBAR</span></a></li>
-      <li><a href="docs-bundle.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-granth"/></svg> <span>GRANTH</span></a></li>
-      <li><a href="api.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-api"/></svg> <span>API</span></a></li>
-      <li><a href="adapters.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-adapters"/></svg> <span>Adapters</span></a></li>
-      <li class="sidebar-section"><span><svg class="doc-icon" aria-hidden="true"><use href="#icon-rocket"/></svg> Applications</span></li>
-      <li><a href="yakapp.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-yakapp"/></svg> <span>YakApp</span></a></li>
-      <li><a href="c2c.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-c2c"/></svg> <span>C2C</span></a></li>
-      <li><a href="studio.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-studio"/></svg> <span>Studio</span></a></li>
-      <li class="sidebar-section"><span><svg class="doc-icon" aria-hidden="true"><use href="#icon-gear"/></svg> Infrastructure</span></li>
-      <li><a href="cli.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-terminal"/></svg> <span>CLI</span></a></li>
-      <li><a href="configuration.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-gear"/></svg> <span>Configuration</span></a></li>
-      <li><a href="mesh.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-mandala"/></svg> <span>Mesh Network</span></a></li>
-      <li><a href="time-sources.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-mani"/></svg> <span>Time Sources</span></a></li>
-      <li><a href="webserver.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-server"/></svg> <span>Web Server</span></a></li>
-      <li><a href="advanced-systems.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-tivra"/></svg> <span>Advanced Systems</span></a></li>
-      <li class="sidebar-section"><span><svg class="doc-icon" aria-hidden="true"><use href="#icon-quickref"/></svg> Reference</span></li>
-      <li><a href="quick-reference.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-quickref"/></svg> <span>Quick Ref</span></a></li>
+      <li class="sidebar-section"><span><svg class="doc-icon" aria-hidden="true">
+            <use href="#icon-book" />
+          </svg> Guides</span></li>
+      <li><a href="index.html"><svg class="doc-icon" aria-hidden="true">
+            <use href="#icon-home" />
+          </svg> <span>Overview</span></a></li>
+      <li><a href="getting-started.html"><svg class="doc-icon" aria-hidden="true">
+            <use href="#icon-rocket" />
+          </svg> <span>Getting Started</span></a></li>
+      <li><a href="tutorials.html"><svg class="doc-icon" aria-hidden="true">
+            <use href="#icon-book" />
+          </svg> <span>Tutorials</span></a></li>
+      <li><a href="gumba-tutorial.html"><svg class="doc-icon" aria-hidden="true">
+            <use href="#icon-gumba" />
+          </svg> <span>GUMBA Tutorial</span></a></li>
+      <li class="sidebar-section"><span><svg class="doc-icon" aria-hidden="true">
+            <use href="#icon-yak" />
+          </svg> Protocol Stack</span></li>
+      <li><a href="yak-protocol.html"><svg class="doc-icon" aria-hidden="true">
+            <use href="#icon-yak" />
+          </svg> <span>YAK://</span></a></li>
+      <li><a href="annex.html"><svg class="doc-icon" aria-hidden="true">
+            <use href="#icon-annex" />
+          </svg> <span>ANNEX</span></a></li>
+      <li><a href="jhilke.html" class="active"><svg class="doc-icon" aria-hidden="true">
+            <use href="#icon-jhilke" />
+          </svg> <span>JHILKE</span></a></li>
+      <li><a href="nakpak.html"><svg class="doc-icon" aria-hidden="true">
+            <use href="#icon-nakpak" />
+          </svg> <span>NAKPAK</span></a></li>
+      <li><a href="namche.html"><svg class="doc-icon" aria-hidden="true">
+            <use href="#icon-namche" />
+          </svg> <span>NAMCHE</span></a></li>
+      <li><a href="doko.html"><svg class="doc-icon" aria-hidden="true">
+            <use href="#icon-doko" />
+          </svg> <span>DOKO</span></a></li>
+      <li><a href="sherpa.html"><svg class="doc-icon" aria-hidden="true">
+            <use href="#icon-sherpa" />
+          </svg> <span>SHERPA</span></a></li>
+      <li><a href="mandala.html"><svg class="doc-icon" aria-hidden="true">
+            <use href="#icon-mandala" />
+          </svg> <span>MANDALA</span></a></li>
+      <li><a href="mantra.html"><svg class="doc-icon" aria-hidden="true">
+            <use href="#icon-mantra" />
+          </svg> <span>MANTRA</span></a></li>
+      <li><a href="gumba.html"><svg class="doc-icon" aria-hidden="true">
+            <use href="#icon-gumba" />
+          </svg> <span>GUMBA</span></a></li>
+      <li><a href="yurt.html"><svg class="doc-icon" aria-hidden="true">
+            <use href="#icon-yurt" />
+          </svg> <span>YURT</span></a></li>
+      <li><a href="katha.html"><svg class="doc-icon" aria-hidden="true">
+            <use href="#icon-katha" />
+          </svg> <span>KATHA</span></a></li>
+      <li><a href="vani.html"><svg class="doc-icon" aria-hidden="true">
+            <use href="#icon-vani" />
+          </svg> <span>VANI</span></a></li>
+      <li><a href="darshan.html"><svg class="doc-icon" aria-hidden="true">
+            <use href="#icon-darshan" />
+          </svg> <span>DARSHAN</span></a></li>
+      <li><a href="stupa.html"><svg class="doc-icon" aria-hidden="true">
+            <use href="#icon-stupa" />
+          </svg> <span>STUPA</span></a></li>
+      <li><a href="lama.html"><svg class="doc-icon" aria-hidden="true">
+            <use href="#icon-lama" />
+          </svg> <span>LAMA</span></a></li>
+      <li><a href="mani.html"><svg class="doc-icon" aria-hidden="true">
+            <use href="#icon-mani" />
+          </svg> <span>MANI</span></a></li>
+      <li><a href="aguwa.html"><svg class="doc-icon" aria-hidden="true">
+            <use href="#icon-aguwa" />
+          </svg> <span>AGUWA</span></a></li>
+      <li><a href="karma.html"><svg class="doc-icon" aria-hidden="true">
+            <use href="#icon-karma" />
+          </svg> <span>KARMA</span></a></li>
+      <li><a href="samuha.html"><svg class="doc-icon" aria-hidden="true">
+            <use href="#icon-samuha" />
+          </svg> <span>SAMUHA</span></a></li>
+      <li><a href="tattva.html"><svg class="doc-icon" aria-hidden="true">
+            <use href="#icon-tattva" />
+          </svg> <span>TATTVA</span></a></li>
+      <li><a href="tribhuj.html"><svg class="doc-icon" aria-hidden="true">
+            <use href="#icon-tribhuj" />
+          </svg> <span>TRIBHUJ</span></a></li>
+      <li><a href="ypc27.html"><svg class="doc-icon" aria-hidden="true">
+            <use href="#icon-ypc27" />
+          </svg> <span>YPC-27</span></a></li>
+      <li><a href="sakshi.html"><svg class="doc-icon" aria-hidden="true">
+            <use href="#icon-sakshi" />
+          </svg> <span>SAKSHI</span></a></li>
+      <li><a href="geo-proof.html"><svg class="doc-icon" aria-hidden="true">
+            <use href="#icon-pramaan" />
+          </svg> <span>PRAMAAN</span></a></li>
+      <li><a href="trust-security.html"><svg class="doc-icon" aria-hidden="true">
+            <use href="#icon-suraksha" />
+          </svg> <span>SURAKSHA</span></a></li>
+      <li><a href="sangha.html"><svg class="doc-icon" aria-hidden="true">
+            <use href="#icon-sangha" />
+          </svg> <span>SANGHA</span></a></li>
+      <li><a href="tivra.html"><svg class="doc-icon" aria-hidden="true">
+            <use href="#icon-tivra" />
+          </svg> <span>TIVRA</span></a></li>
+      <li><a href="prahari.html"><svg class="doc-icon" aria-hidden="true">
+            <use href="#icon-prahari" />
+          </svg> <span>PRAHARI</span></a></li>
+      <li><a href="dharma.html"><svg class="doc-icon" aria-hidden="true">
+            <use href="#icon-dharma" />
+          </svg> <span>DHARMA</span></a></li>
+      <li><a href="seva.html"><svg class="doc-icon" aria-hidden="true">
+            <use href="#icon-seva" />
+          </svg> <span>SEVA</span></a></li>
+      <li><a href="darbar.html"><svg class="doc-icon" aria-hidden="true">
+            <use href="#icon-darbar" />
+          </svg> <span>DARBAR</span></a></li>
+      <li><a href="docs-bundle.html"><svg class="doc-icon" aria-hidden="true">
+            <use href="#icon-granth" />
+          </svg> <span>GRANTH</span></a></li>
+      <li><a href="api.html"><svg class="doc-icon" aria-hidden="true">
+            <use href="#icon-api" />
+          </svg> <span>API</span></a></li>
+      <li><a href="adapters.html"><svg class="doc-icon" aria-hidden="true">
+            <use href="#icon-adapters" />
+          </svg> <span>Adapters</span></a></li>
+      <li class="sidebar-section"><span><svg class="doc-icon" aria-hidden="true">
+            <use href="#icon-rocket" />
+          </svg> Applications</span></li>
+      <li><a href="yakapp.html"><svg class="doc-icon" aria-hidden="true">
+            <use href="#icon-yakapp" />
+          </svg> <span>YakApp</span></a></li>
+      <li><a href="c2c.html"><svg class="doc-icon" aria-hidden="true">
+            <use href="#icon-c2c" />
+          </svg> <span>C2C</span></a></li>
+      <li><a href="studio.html"><svg class="doc-icon" aria-hidden="true">
+            <use href="#icon-studio" />
+          </svg> <span>Studio</span></a></li>
+      <li class="sidebar-section"><span><svg class="doc-icon" aria-hidden="true">
+            <use href="#icon-gear" />
+          </svg> Infrastructure</span></li>
+      <li><a href="cli.html"><svg class="doc-icon" aria-hidden="true">
+            <use href="#icon-terminal" />
+          </svg> <span>CLI</span></a></li>
+      <li><a href="configuration.html"><svg class="doc-icon" aria-hidden="true">
+            <use href="#icon-gear" />
+          </svg> <span>Configuration</span></a></li>
+      <li><a href="mesh.html"><svg class="doc-icon" aria-hidden="true">
+            <use href="#icon-mandala" />
+          </svg> <span>Mesh Network</span></a></li>
+      <li><a href="time-sources.html"><svg class="doc-icon" aria-hidden="true">
+            <use href="#icon-mani" />
+          </svg> <span>Time Sources</span></a></li>
+      <li><a href="webserver.html"><svg class="doc-icon" aria-hidden="true">
+            <use href="#icon-server" />
+          </svg> <span>Web Server</span></a></li>
+      <li><a href="advanced-systems.html"><svg class="doc-icon" aria-hidden="true">
+            <use href="#icon-tivra" />
+          </svg> <span>Advanced Systems</span></a></li>
+      <li class="sidebar-section"><span><svg class="doc-icon" aria-hidden="true">
+            <use href="#icon-quickref" />
+          </svg> Reference</span></li>
+      <li><a href="quick-reference.html"><svg class="doc-icon" aria-hidden="true">
+            <use href="#icon-quickref" />
+          </svg> <span>Quick Ref</span></a></li>
     </ul>
   </nav>
 
@@ -707,195 +885,195 @@
 
   <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
+
   <main class="docs-main" id="mainContent">
     <div class="docs-content">
+
+      <!-- HERO -->
       <div class="flex items-center gap-3 mb-4">
-        <svg class="doc-icon hero-icon" aria-hidden="true"><use href="#icon-jhilke"/></svg>
+        <svg class="doc-icon hero-icon" aria-hidden="true">
+          <use href="#icon-jhilke" />
+        </svg>
         <div>
           <h1 class="text-4xl font-bold">JHILKE <span class="text-xl text-mountain-400">झिल्के</span></h1>
           <p class="theme-accent">Just Hidden In-band Legitimate Key Exchange</p>
         </div>
       </div>
-      <p class="text-xl text-mountain-300 mb-4">Steganographic key lifecycle management for the Yakmesh mesh.</p>
-      <span class="inline-block text-xs theme-badge px-2 py-1 rounded mb-8">v1.0.0</span>
+      <p class="text-xl text-mountain-300 mb-4">Deterministic bootstrap key derivation and continuous friend-or-foe peer
+        verification for the Yakmesh mesh.</p>
+      <span class="inline-block text-xs theme-badge px-2 py-1 rounded mb-8">v3.0</span>
 
+      <!-- ETYMOLOGY -->
       <div class="feature-box">
         <h2>The Sound of Crickets</h2>
         <p>
-          In Nepali, <strong>झिल्के (jhilke)</strong> describes the chirping of crickets in the Himalayan 
+          In Nepali, <strong>झिल्के (jhilke)</strong> describes the chirping of crickets in the Himalayan
           night — a chorus only those who belong can hear. Outsiders perceive noise; insiders hear signals.
         </p>
         <p>
-          Like the <strong>D-Day cricket clickers</strong>, where Allied paratroopers used a simple 
-          click-clack pattern to identify friend from foe in darkness. Like the <strong>Navajo 
-          codetalkers</strong> whose language was unbreakable because it was meaningful only to those who grew up with it.
+          Like the <strong>D-Day cricket clickers</strong>, where Allied paratroopers used a simple
+          click-clack pattern to identify friend from foe in darkness. Like the <strong>Navajo
+            codetalkers</strong> whose language was unbreakable because it was meaningful only to those who grew up with
+          it.
         </p>
         <p>
-          JHILKE hides its key management signals inside ordinary mesh entropy traffic. 
-          To an observer, it's noise. To nodes sharing the same codebase — it's a conversation.
+          JHILKE hides its peer verification signals inside ordinary mesh entropy traffic.
+          To an observer, it's noise. To nodes sharing the same codebase and build — it's a conversation.
         </p>
       </div>
 
       <div class="firefly-callout">
-        <h3 class="font-semibold text-lg mb-3" style="color:#a3e635"><svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true"><use href="#icon-bolt"/></svg> Why Fireflies?</h3>
+        <h3 class="font-semibold text-lg mb-3" style="color:#a3e635"><svg class="doc-icon inline-icon" width="24"
+            height="24" aria-hidden="true">
+            <use href="#icon-bolt" />
+          </svg> Why Fireflies?</h3>
         <p class="text-mountain-300 mb-3">
-          Fireflies (<em>Lampyridae</em>) are nature's original steganographers. Each species 
-          flashes a unique pattern — a <strong>species-specific dialect</strong> that only potential mates 
-          of the same species can decode. To every other creature in the meadow, it's just random light. 
+          Fireflies (<em>Lampyridae</em>) are nature's original steganographers. Each species
+          flashes a unique pattern — a <strong>species-specific dialect</strong> that only potential mates
+          of the same species can decode. To every other creature in the meadow, it's just random light.
           Sound familiar?
         </p>
         <p class="text-mountain-300 mb-3">
-          JHILKE nodes do exactly what fireflies do: they embed signals in the noise of the night. The "dialect" is 
-          derived from the shared codebase hash. Same code = same species = you understand the flash pattern.
-          Different code = different species = it's just entropy.
+          JHILKE nodes do exactly what fireflies do: they embed signals in the noise of the night. The "dialect" is
+          derived from the shared codebase hash + per-build nonce. Same code, same build = same species = you understand
+          the flash pattern.
+          Different code or different build = different species = it's just entropy.
         </p>
         <p class="text-mountain-400 text-sm" style="position:relative;z-index:1">
-          <svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true"><use href="#icon-globe"/></svg> <em>Real fireflies are disappearing worldwide due to light pollution, habitat loss, and pesticides. 
-          At least 2,000 species exist, with some already critically endangered. If you see fireflies near your home, 
-          consider yourself lucky — and keep the lights low for them.</em>
+          <svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true">
+            <use href="#icon-globe" />
+          </svg>
+          <em>Real fireflies are disappearing worldwide due to light pollution, habitat loss, and pesticides.
+            At least 2,000 species exist, with some already critically endangered. If you see fireflies near your home,
+            consider yourself lucky — and keep the lights low for them.</em>
         </p>
       </div>
 
       <div class="firefly-divider"></div>
 
-      <h2 class="text-2xl font-bold mt-12 mb-6">Overview</h2>
+      <!-- OVERVIEW -->
+      <h2 class="text-2xl font-bold mt-12 mb-6" id="overview">Overview</h2>
 
       <p class="text-mountain-300 mb-6">
-        JHILKE provides two critical functions that together eliminate all plaintext 
-        cryptographic exchange on the Yakmesh network:
+        JHILKE provides two critical functions for the Yakmesh mesh:
       </p>
 
       <div class="grid md:grid-cols-2 gap-4 mb-8">
         <div class="p-4 bg-mountain-800 rounded-lg border border-mountain-700">
-          <div class="text-2xl mb-2"><svg class="doc-icon card-icon" width="24" height="24" aria-hidden="true"><use href="#icon-lock"/></svg></div>
+          <div class="text-2xl mb-2"><svg class="doc-icon card-icon" width="24" height="24" aria-hidden="true">
+              <use href="#icon-lock" />
+            </svg></div>
           <h3 class="font-semibold mb-1">Deterministic Bootstrap</h3>
-          <p class="text-mountain-400 text-sm">Both nodes independently derive the same initial encryption key from 
-          the shared code hash. Traffic is encrypted from message #1 — no plaintext KEM exchange ever occurs.</p>
+          <p class="text-mountain-400 text-sm">Both nodes independently derive the same initial symmetric key
+            from <code>SHA3(codeHash + buildNonce)</code> via HKDF. Traffic is encrypted from message #1 —
+            ANNEX has a key before any wire traffic flows.</p>
         </div>
         <div class="p-4 bg-mountain-800 rounded-lg border border-mountain-700">
-          <div class="text-2xl mb-2"><svg class="doc-icon card-icon" width="24" height="24" aria-hidden="true"><use href="#icon-leaf"/></svg></div>
-          <h4 class="font-semibold mb-1">Steganographic Rekey</h4>
-          <p class="text-mountain-400 text-sm">Ongoing key rotations are coordinated via hidden signals embedded in 
-          mesh_entropy messages. No explicit REKEY messages — an observer sees only noise.</p>
+          <div class="text-2xl mb-2"><svg class="doc-icon card-icon" width="24" height="24" aria-hidden="true">
+              <use href="#icon-signal" />
+            </svg></div>
+          <h3 class="font-semibold mb-1">Friend-or-Foe Verification</h3>
+          <p class="text-mountain-400 text-sm">Continuous 8-byte peer integrity chirps every 30 seconds, hidden in
+            <code>mesh_entropy</code> messages. Only nodes with the same codebase AND build nonce can produce
+            or verify chirps. JHILKE emits events; <strong>KARMA</strong> handles consequences.
+          </p>
         </div>
         <div class="p-4 bg-mountain-800 rounded-lg border border-mountain-700">
-          <div class="text-2xl mb-2"><svg class="doc-icon card-icon" width="24" height="24" aria-hidden="true"><use href="#icon-tribhuj"/></svg></div>
-          <h4 class="font-semibold mb-1">Ternary State Machine</h4>
-          <p class="text-mountain-400 text-sm">Three-phase coordination using TRIBHUJ trits: PREPARE (+1), 
-          READY (0), SWITCH (-1). Both sides must agree before any key change occurs.</p>
+          <div class="text-2xl mb-2"><svg class="doc-icon card-icon" width="24" height="24" aria-hidden="true">
+              <use href="#icon-tribhuj" />
+            </svg></div>
+          <h3 class="font-semibold mb-1">ACT State Machine</h3>
+          <p class="text-mountain-400 text-sm">AGUWA Coordinated Transition using TRIBHUJ trits:
+            PREPARE (+1) → READY (0) → SWITCH (−1). Execution waits for AGUWA epoch boundary
+            with order parameter <em>r</em> ≥ 0.2 before any transition fires.</p>
         </div>
         <div class="p-4 bg-mountain-800 rounded-lg border border-mountain-700">
-          <div class="text-2xl mb-2"><svg class="doc-icon card-icon" width="24" height="24" aria-hidden="true"><use href="#icon-sync"/></svg></div>
-          <h4 class="font-semibold mb-1">SST Modulation</h4>
-          <p class="text-mountain-400 text-sm">Signal encoding is modulated by the Fibonacci 24-cycle (Sacred 
-          Sequence Theory), adding rotational variety that makes pattern analysis impossible.</p>
+          <div class="text-2xl mb-2"><svg class="doc-icon card-icon" width="24" height="24" aria-hidden="true">
+              <use href="#icon-sync" />
+            </svg></div>
+          <h3 class="font-semibold mb-1">SST Modulation</h3>
+          <p class="text-mountain-400 text-sm">Every chirp's HKDF context includes a Fibonacci 24-cycle
+            digital root (<code>fibonacciRoot(tick % 24)</code>), adding rotational variety that
+            prevents pattern analysis across tick boundaries.</p>
         </div>
       </div>
 
       <div class="firefly-divider"></div>
 
-      <h2 class="text-2xl font-bold mt-12 mb-6" id="problem">The Problem JHILKE Solves</h2>
+      <!-- CONSTRUCTOR -->
+      <h2 class="text-2xl font-bold mt-12 mb-6" id="constructor">Initialization</h2>
 
       <p class="text-mountain-300 mb-4">
-        Traditional key exchange protocols expose critical metadata to passive observers:
+        JHILKE is initialized from <code>mesh/network.js</code> with four parameters:
       </p>
 
-      <div class="overflow-x-auto mb-8">
-        <table class="w-full text-sm">
-          <thead class="bg-mountain-800">
-            <tr>
-              <th class="px-4 py-2 text-left">Leaked Information</th>
-              <th class="px-4 py-2 text-left">Before JHILKE</th>
-              <th class="px-4 py-2 text-left">After JHILKE</th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-mountain-700">
-            <tr>
-              <td class="px-4 py-2">KEM public keys</td>
-              <td class="px-4 py-2 text-red-400">Plaintext on wire</td>
-              <td class="px-4 py-2 text-green-400">Encrypted (bootstrap channel)</td>
-            </tr>
-            <tr>
-              <td class="px-4 py-2">KEM ciphertext</td>
-              <td class="px-4 py-2 text-red-400">Plaintext on wire</td>
-              <td class="px-4 py-2 text-green-400">Encrypted (bootstrap channel)</td>
-            </tr>
-            <tr>
-              <td class="px-4 py-2">Rekey timing</td>
-              <td class="px-4 py-2 text-red-400">Visible REKEY messages</td>
-              <td class="px-4 py-2 text-green-400">Hidden in entropy traffic</td>
-            </tr>
-            <tr>
-              <td class="px-4 py-2">Key rotation frequency</td>
-              <td class="px-4 py-2 text-red-400">Countable</td>
-              <td class="px-4 py-2 text-green-400">Indistinguishable from noise</td>
-            </tr>
-            <tr>
-              <td class="px-4 py-2">First message encryption</td>
-              <td class="px-4 py-2 text-red-400">Delayed until KEM completes</td>
-              <td class="px-4 py-2 text-green-400">Immediate (deterministic key)</td>
-            </tr>
-          </tbody>
-        </table>
+      <pre class="code-block mb-6"><code class="language-javascript">import { JhilkeCoordinator } from './mesh/jhilke.js';
+
+const jhilke = new JhilkeCoordinator({
+  codeHash:   oracle.selfHash,    // Validation Oracle code hash (hex string)
+  nodeId:     identity.nodeId,    // This node's identity
+  mesh:       meshInstance,       // MeshNetwork (provides sendTo + peers Map)
+  buildNonce: manifest.nonce,     // Per-build secret from manifest.json
+});
+
+jhilke.start();  // Begin 30-second chirp loop</code></pre>
+
+      <div class="theme-callout p-4 rounded-lg border mb-6">
+        <strong>Build Nonce:</strong> The <code>buildNonce</code> comes from <code>manifest.json</code>,
+        generated at build time. It makes both the bootstrap key and the chirp dialect
+        <em>per-build secrets</em> — an attacker with only the source code cannot derive them.
+        They need the manifest from a specific build.
       </div>
 
       <div class="firefly-divider"></div>
 
+      <!-- BOOTSTRAP -->
       <h2 class="text-2xl font-bold mt-12 mb-6" id="bootstrap">Deterministic Bootstrap</h2>
 
       <p class="text-mountain-300 mb-4">
-        When two nodes connect, they both independently compute the same initial symmetric key:
+        When two nodes connect, they both independently compute the same initial 256-bit
+        symmetric key. No KEM exchange needed — traffic is encrypted from the very first message:
       </p>
 
-      <pre class="code-block mb-6"><code class="language-javascript">// Both nodes independently derive the same bootstrap key
-// Key = HKDF(SHA3-256, codeHash, sortedNodeIds, bootstrapInfo, 32)
+      <pre class="code-block mb-6"><code class="language-javascript">deriveBootstrapKey(peerId) {
+  // Step 1: Input Key Material — per-build secret
+  const ikm = sha3_256.create()
+    .update(hexToBytes(this.codeHash))
+    .update(utf8ToBytes(this.buildNonce || ''))
+    .digest();
 
-import { JhilkeCoordinator } from './mesh/jhilke.js';
+  // Step 2: Sort node IDs for order-independence
+  const [first, second] = [this.nodeId, peerId].sort();
 
-const jhilke = new JhilkeCoordinator({
-  codeHash: oracle.selfHash,   // Validation Oracle code hash
-  nodeId: myNodeId,
-  annex: annexInstance,
-  mesh: meshInstance,
-});
+  // Step 3: HKDF derivation
+  const salt = `YAKMESH-JHILKE-BOOTSTRAP-2026:${first}:${second}`;
+  const info = 'yakmesh-jhilke-bootstrap-key-v1';
+  const key  = hkdf(sha3_256, ikm, salt, info, 32);
 
-// Derive bootstrap key for a peer (deterministic — both nodes get same key)
-const bootstrapKey = jhilke.deriveBootstrapKey(peerNodeId);
+  return Buffer.from(key);  // 32-byte (256-bit) symmetric key
+}</code></pre>
 
-// Create ANNEX session using bootstrap key (no KEM exchange needed!)
-annex.bootstrapSession(peerNodeId, bootstrapKey);
-
-// Traffic is now encrypted from the very first message.
-// KEM upgrade happens automatically through the encrypted channel.</code></pre>
-
-      <div class="theme-callout p-4 rounded-lg border mb-6">
-        <strong>Security Note:</strong> The bootstrap key is derived from the code hash + node IDs. 
-        Anyone with the source code and both node IDs could theoretically compute it. This is by design — 
-        the bootstrap key is a <em>temporary bridge</em> that protects the KEM exchange itself. 
-        It's replaced by a proper ML-KEM-768 key within seconds.
+      <div class="bg-mountain-800 rounded-xl p-6 mb-8">
+        <h3 class="font-semibold mb-3 theme-accent">Bootstrap Key Properties</h3>
+        <ul class="space-y-2 text-mountain-300 text-sm">
+          <li><strong>Order-independent:</strong> Node IDs are sorted before hashing — A→B and B→A produce the same key.
+          </li>
+          <li><strong>Per-build secret:</strong> IKM = <code>SHA3(codeHash + buildNonce)</code> — not derivable from
+            source code alone.</li>
+          <li><strong>Deterministic:</strong> Same code hash + same build nonce + same node pair = identical key on both
+            sides.</li>
+          <li><strong>JHILKE's only key:</strong> This is the one key JHILKE derives. What ANNEX does with it after (KEM
+            upgrade, rekey) is ANNEX's business — JHILKE doesn't know or care.</li>
+        </ul>
       </div>
-
-      <h3 class="text-lg font-bold mt-8 mb-4">Key Derivation</h3>
-
-      <pre class="code-block mb-6"><code class="language-javascript">// Salt includes both node IDs (sorted for order-independence)
-const [first, second] = [nodeA, nodeB].sort();
-const salt = `YAKMESH-JHILKE-BOOTSTRAP-2026:${first}:${second}`;
-
-// HKDF derivation
-const key = HKDF(
-  SHA3-256,                              // Hash function
-  codeHash,                              // Input key material (oracle hash)
-  salt,                                  // Salt (sorted node IDs)
-  'yakmesh-jhilke-bootstrap-key-v1',     // Info string (versioned)
-  32                                     // Output: 256-bit key
-);</code></pre>
 
       <div class="firefly-divider"></div>
 
-      <h2 class="text-2xl font-bold mt-12 mb-6" id="lifecycle">Encryption Lifecycle</h2>
+      <!-- WHAT JHILKE PROVIDES -->
+      <h2 class="text-2xl font-bold mt-12 mb-6" id="lifecycle">What JHILKE Provides</h2>
 
       <p class="text-mountain-300 mb-4">
-        JHILKE manages the complete ANNEX encryption lifecycle:
+        JHILKE touches exactly three things in the connection lifecycle. Everything else is ANNEX's job:
       </p>
 
       <div class="bg-mountain-800 border theme-border rounded-xl p-6 mb-8">
@@ -903,29 +1081,28 @@ const key = HKDF(
           <li class="flex items-start gap-3">
             <span class="theme-accent font-bold text-xl">1</span>
             <div>
-              <strong class="text-white">Bootstrap</strong> — Both nodes derive deterministic key from shared code hash. 
-              ANNEX session created with immediate encryption capability.
+              <strong class="text-white">Bootstrap Key</strong> <span class="text-mountain-500">(on connect)</span> —
+              JHILKE derives a deterministic 256-bit key from <code>SHA3(codeHash + buildNonce)</code>
+              and hands it to ANNEX. This is the <em>only</em> key JHILKE ever produces.
+              What ANNEX does with it — encrypt, KEM upgrade, whatever — is not JHILKE's concern.
             </div>
           </li>
           <li class="flex items-start gap-3">
             <span class="theme-accent font-bold text-xl">2</span>
             <div>
-              <strong class="text-white">KEM Upgrade</strong> — ML-KEM-768 key exchange happens <em>inside</em> the 
-              bootstrap-encrypted channel. KEM public key + ciphertext never appear in plaintext.
+              <strong class="text-white">Continuous Chirps</strong> <span class="text-mountain-500">(every 30s)</span> —
+              Friend-or-foe verification via <code>mesh_entropy</code> messages.
+              JHILKE emits <code>chirp:verified</code> or <code>chirp:failed</code> events.
+              It does not act on failures — KARMA handles consequences.
             </div>
           </li>
           <li class="flex items-start gap-3">
             <span class="theme-accent font-bold text-xl">3</span>
             <div>
-              <strong class="text-white">Steady State</strong> — ANNEX uses the KEM-derived key. JHILKE tick loop 
-              monitors for rekey needs (every 5 minutes or 10,000 messages).
-            </div>
-          </li>
-          <li class="flex items-start gap-3">
-            <span class="theme-accent font-bold text-xl">4</span>
-            <div>
-              <strong class="text-white">Cricket Rekey</strong> — When rekey is needed, JHILKE coordinates both sides 
-              via steganographic signals. Only after mutual confirmation does the actual KEM rekey occur.
+              <strong class="text-white">ACT Coordination</strong> <span class="text-mountain-500">(on demand)</span> —
+              When a coordinated transition is needed, JHILKE's ACT state machine coordinates
+              timing across peers. Execution fires at an AGUWA epoch boundary with <em>r</em> ≥ 0.2.
+              What happens at execution is up to the caller — JHILKE just emits <code>act:execute</code>.
             </div>
           </li>
         </ol>
@@ -933,95 +1110,186 @@ const key = HKDF(
 
       <div class="firefly-divider"></div>
 
-      <h2 class="text-2xl font-bold mt-12 mb-6" id="steganography">Steganographic Signals</h2>
-
-      <div class="firefly-callout">
-        <p class="text-mountain-300">
-          <strong style="color:#a3e635"><svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true"><use href="#icon-bolt"/></svg> The Firefly Flash Pattern:</strong> 
-          Just as <em>Photinus pyralis</em> uses a specific J-shaped flash lasting exactly 0.5 seconds 
-          followed by a 2-second pause, JHILKE nodes embed precisely-timed signals in the constant 
-          stream of mesh entropy. The pattern is meaningful only to nodes sharing the same "species" — 
-          the same codebase hash. Every other observer sees random light in the darkness.
-        </p>
-      </div>
+      <!-- CHIRPS -->
+      <h2 class="text-2xl font-bold mt-12 mb-6" id="chirps">Cricket Chirps — Friend-or-Foe</h2>
 
       <p class="text-mountain-300 mb-4">
-        JHILKE signals are hidden inside <code class="theme-accent">mesh_entropy</code> messages — 
-        a normal part of mesh communication used for entropy exchange between peers:
+        Every 30 seconds (matching the gossip HELLO cadence), each node sends a friend-or-foe
+        chirp to every connected peer. Chirps are hidden inside normal <code class="theme-accent">mesh_entropy</code>
+        messages:
       </p>
 
       <pre class="code-block mb-6"><code class="language-javascript">// What an observer sees on the wire:
 {
   type: 'mesh_entropy',
-  entropy: 'a7f3b2c1...',   // 32 bytes of genuine entropy
-  jhilke: '8e4d1f2a...',    // 8 bytes — cricket signal or random noise?
-  pad: 'c3d2e1f0...',       // 16-64 bytes random padding (varying size)
-  t: 1740100000000           // Timestamp
+  entropy: 'a7f3b2c1...',   // 32 bytes genuine PRAHARI sponge entropy
+  jhilke: '8e4d1f2a...',    // 8-byte friend-or-foe chirp
+  pad:    'c3d2e1f0...',    // 16–64 bytes PRAHARI random padding
+  t:      1741564800000     // AGUWA-synchronized timestamp
 }
-
-// To an observer: just entropy exchange, nothing unusual.
-// To nodes sharing the dialect: a coordinated key rotation.</code></pre>
+// To an observer: routine entropy exchange. Nothing unusual.
+// To nodes sharing the dialect: continuous peer verification.</code></pre>
 
       <h3 class="text-lg font-bold mt-8 mb-4">Dialect Derivation</h3>
 
       <p class="text-mountain-300 mb-4">
-        The "dialect" is the shared secret that allows signal encoding/decoding. 
-        It's derived from the code hash — only nodes running identical code share the dialect:
+        The "dialect" is the shared secret that makes chirp encoding/verification possible.
+        It's derived from the same <code>SHA3(codeHash + buildNonce)</code> IKM as the bootstrap
+        key, but with different salt and info strings — producing a completely independent seed:
       </p>
 
-      <pre class="code-block mb-6"><code class="language-javascript">// Dialect seed — same for all nodes with identical codebase
-const dialectSeed = HKDF(
-  SHA3-256,
-  codeHash,                             // Input key material
-  'jhilke-cricket-salt-2026',           // Salt
-  'yakmesh-jhilke-dialect-v1',          // Info
-  32                                    // 256-bit seed
-);
+      <pre class="code-block mb-6"><code class="language-javascript">_deriveDialectSeed() {
+  const ikm = sha3_256.create()
+    .update(hexToBytes(this.codeHash))
+    .update(utf8ToBytes(this.buildNonce || ''))
+    .digest();
 
-// Signal generation — encodes intent + context
-const signal = HKDF(
-  SHA3-256,
-  dialectSeed,                          // Key = dialect
-  `${nodeA}:${nodeB}:${tick}:${fibPos}:${fibRoot}:${intent}`,
-  'jhilke-signal-v1',
-  8                                     // 8-byte signal
-);</code></pre>
+  return hkdf(sha3_256, ikm,
+    'jhilke-cricket-salt-2026',    // Salt (different from bootstrap)
+    'yakmesh-jhilke-dialect-v1',   // Info (different from bootstrap)
+    32);                           // 256-bit dialect seed
+}</code></pre>
 
-      <h3 class="text-lg font-bold mt-8 mb-4">Signal Decoding</h3>
+      <h3 class="text-lg font-bold mt-8 mb-4">Chirp Generation</h3>
 
       <p class="text-mountain-300 mb-4">
-        Decoding is brute-force over a tiny search space — trivial for nodes sharing the dialect, 
-        impossible without it:
+        Each chirp is an 8-byte HKDF output encoding both node IDs, the current AGUWA tick,
+        and the SST Fibonacci 24-cycle position for rotational variety:
       </p>
 
-      <pre class="code-block mb-6"><code class="language-javascript">// 3 intents × 3 tick offsets (±1 tolerance) = 9 attempts
-const intents = [PREPARE, READY, SWITCH];  // +1, 0, -1
-const offsets = [-1, 0, +1];               // tick tolerance
+      <pre class="code-block mb-6"><code class="language-javascript">_generateChirp(peerId, tick) {
+  const [first, second] = [this.nodeId, peerId].sort();
 
-for (const offset of offsets) {
-  for (const intent of intents) {
-    const expected = generateSignal(peerId, tick + offset, intent);
-    if (expected === receivedSignal) {
-      // Decoded! We know the intent and approximate timing.
-      return { intent, tick: tick + offset };
+  // SST modulation — Fibonacci digital root at this tick position
+  const fibPos  = tick % 24;
+  const fibRoot = fibonacciRoot(fibPos);
+
+  const context = `${first}:${second}:${tick}:${fibPos}:${fibRoot}`;
+
+  return hkdf(sha3_256, this.dialectSeed, context,
+    'jhilke-signal-v1', 8);  // 8-byte chirp
+}</code></pre>
+
+      <h3 class="text-lg font-bold mt-8 mb-4">Chirp Verification</h3>
+
+      <p class="text-mountain-300 mb-4">
+        Verification uses <strong>dynamic tick tolerance</strong> computed from three sources.
+        This accounts for GPS precision differences AND actual system clock drift:
+      </p>
+
+      <pre class="code-block mb-6"><code class="language-javascript">_verifyChirp(peerId, signalBytes, currentTick) {
+  // Source 1: MANI trust-level tolerance (peer's time source precision)
+  const maniToleranceMs = aguwa.getToleranceForPeer(peerId);
+
+  // Source 2: Clock drift — our correctionMs + peer margin + propagation
+  const driftToleranceMs = Math.abs(aguwa._correctionMs) + 2000;
+
+  // Use the larger of MANI precision vs actual drift
+  const toleranceMs  = Math.max(maniToleranceMs, driftToleranceMs);
+  const dynamicTicks = Math.ceil(toleranceMs / 1000);
+  const tolerance    = Math.max(1, dynamicTicks); // ±1 tick floor
+
+  for (let offset = -tolerance; offset &lt;= tolerance; offset++) {
+    const testTick = currentTick + offset;
+    if (testTick &lt; 0) continue;
+    const expected = this._generateChirp(peerId, testTick);
+    if (bytesToHex(expected) === bytesToHex(signalBytes)) {
+      return { valid: true, tick: testTick, offset };
     }
   }
-}
-// No match → genuine entropy, not a cricket signal</code></pre>
+  return { valid: false };
+}</code></pre>
+
+      <div class="theme-callout p-4 rounded-lg border mb-6">
+        <strong>Why three tolerance sources?</strong> MANI tolerance alone is insufficient: two GPS nodes
+        (each ±500ms precision) can still have system clocks seconds apart if Kuramoto hasn't fully
+        converged. The <code>correctionMs</code>-based drift term accounts for the actual clock offset
+        that the oscillator is still correcting. The ±1 static floor provides a minimum safety margin.
+      </div>
 
       <div class="firefly-divider"></div>
 
-      <h2 class="text-2xl font-bold mt-12 mb-6" id="state-machine">Ternary State Machine</h2>
+      <!-- WIRE FORMAT -->
+      <h2 class="text-2xl font-bold mt-12 mb-6" id="wire">Wire Format</h2>
 
       <p class="text-mountain-300 mb-4">
-        The rekey coordination uses a ternary state machine with TRIBHUJ trits:
+        Chirps are transmitted via <code>_sendChirp()</code>, which constructs a complete
+        <code>mesh_entropy</code> message with genuine entropy, the hidden chirp, and variable
+        camouflage padding:
+      </p>
+
+      <pre class="code-block mb-6"><code class="language-javascript">_sendChirp(peerId) {
+  const chirp = this._generateChirp(peerId, this._sharedTick());
+
+  // Variable padding from PRAHARI sponge (16–64 bytes)
+  const paddingSize = 16 + (seedStore.squeeze(4, 'JHILKE-PADDING-SIZE')
+    .readUInt32BE(0) % 48);
+  const padding = seedStore.squeeze(paddingSize, 'JHILKE-PADDING');
+
+  this.mesh.sendTo(peerId, {
+    type:    'mesh_entropy',
+    entropy: bytesToHex(seedStore.squeeze(32, 'JHILKE-ENTROPY')),
+    jhilke:  bytesToHex(chirp),
+    pad:     bytesToHex(padding),
+    t:       aguwa.now(),
+  });
+}</code></pre>
+
+      <div class="overflow-x-auto mb-8">
+        <table class="w-full text-sm">
+          <thead class="bg-mountain-800">
+            <tr>
+              <th class="px-4 py-2 text-left">Field</th>
+              <th class="px-4 py-2 text-left">Size</th>
+              <th class="px-4 py-2 text-left">Source</th>
+              <th class="px-4 py-2 text-left">Purpose</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-mountain-700">
+            <tr>
+              <td class="px-4 py-2 font-mono theme-accent">entropy</td>
+              <td class="px-4 py-2">32 bytes</td>
+              <td class="px-4 py-2">PRAHARI sponge</td>
+              <td class="px-4 py-2 text-mountain-400">Genuine entropy contribution to mesh pool</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-mono theme-accent">jhilke</td>
+              <td class="px-4 py-2">8 bytes</td>
+              <td class="px-4 py-2">HKDF(dialect + context)</td>
+              <td class="px-4 py-2 text-mountain-400">Friend-or-foe verification chirp</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-mono theme-accent">pad</td>
+              <td class="px-4 py-2">16–64 bytes</td>
+              <td class="px-4 py-2">PRAHARI sponge</td>
+              <td class="px-4 py-2 text-mountain-400">Variable camouflage (prevents size fingerprinting)</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-mono theme-accent">t</td>
+              <td class="px-4 py-2">number</td>
+              <td class="px-4 py-2">AGUWA</td>
+              <td class="px-4 py-2 text-mountain-400">GPS-synchronized timestamp</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="firefly-divider"></div>
+
+      <!-- ACT STATE MACHINE -->
+      <h2 class="text-2xl font-bold mt-12 mb-6" id="act">ACT — AGUWA Coordinated Transition</h2>
+
+      <p class="text-mountain-300 mb-4">
+        When a coordinated transition is needed, JHILKE runs the ACT state machine.
+        ACT uses TRIBHUJ trits and is driven on the same 30-second chirp cadence.
+        <strong>All transitions are driven by internal state only — never external signals.</strong>
       </p>
 
       <div class="overflow-x-auto mb-8">
         <table class="w-full text-sm">
           <thead class="bg-mountain-800">
             <tr>
-              <th class="px-4 py-2 text-left">Signal</th>
+              <th class="px-4 py-2 text-left">State</th>
               <th class="px-4 py-2 text-left">Trit</th>
               <th class="px-4 py-2 text-left">Meaning</th>
               <th class="px-4 py-2 text-left">Duration</th>
@@ -1031,130 +1299,238 @@ for (const offset of offsets) {
             <tr>
               <td class="px-4 py-2 font-semibold theme-accent">PREPARE</td>
               <td class="px-4 py-2 text-yellow-300">+1 (POSITIVE)</td>
-              <td class="px-4 py-2">"I'm preparing new key material"</td>
-              <td class="px-4 py-2 text-mountain-400">3 ticks</td>
+              <td class="px-4 py-2">Node has consented. Waiting for <code>actPrepareMinTicks</code>.</td>
+              <td class="px-4 py-2 text-mountain-400">≥ 3 ticks (≥ 90s)</td>
             </tr>
             <tr>
               <td class="px-4 py-2 font-semibold theme-accent">READY</td>
               <td class="px-4 py-2 text-blue-300">0 (NEUTRAL)</td>
-              <td class="px-4 py-2">"My new key is ready, waiting for you"</td>
-              <td class="px-4 py-2 text-mountain-400">Until peer ready</td>
+              <td class="px-4 py-2">Minimum prepare elapsed. Waiting for all peers to reach READY.</td>
+              <td class="px-4 py-2 text-mountain-400">Until all peers READY</td>
             </tr>
             <tr>
               <td class="px-4 py-2 font-semibold theme-accent">SWITCH</td>
-              <td class="px-4 py-2 text-red-300">-1 (NEGATIVE)</td>
-              <td class="px-4 py-2">"Switching to new key NOW"</td>
-              <td class="px-4 py-2 text-mountain-400">2 ticks then execute</td>
+              <td class="px-4 py-2 text-red-300">−1 (NEGATIVE)</td>
+              <td class="px-4 py-2">All peers ready. Counting down to epoch boundary execution.</td>
+              <td class="px-4 py-2 text-mountain-400">≥ 2 ticks (≥ 60s), then <em>r</em> ≥ 0.2</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-semibold text-green-400">EXECUTING</td>
+              <td class="px-4 py-2 text-mountain-500">terminal</td>
+              <td class="px-4 py-2">Epoch boundary reached. <code>act:execute</code> event emitted.</td>
+              <td class="px-4 py-2 text-mountain-400">Instant (cleanup follows)</td>
             </tr>
           </tbody>
         </table>
       </div>
 
       <div class="bg-mountain-800 border theme-border rounded-xl p-6 mb-8">
-        <h3 class="font-semibold mb-4 theme-accent">State Flow</h3>
+        <h3 class="font-semibold mb-4 theme-accent">ACT State Flow (30-second cadence)</h3>
         <pre class="text-sm text-mountain-300 font-mono">
-  Initiator                         Responder
-  ─────────                         ─────────
-  idle                              idle
-    │                                 │
-    ├── needsRekey() ─────────────────┤
-    │                                 │
-  prepare ──── PREPARE (+1) ────▶   prepare
-    │                                 │
-    │     (3 ticks generating keys)   │
-    │                                 │
-  ready   ──── READY (0) ──────▶   ready
-    │     ◀──── READY (0) ──────     │
-    │                                 │
-    │     (both confirmed ready)      │
-    │                                 │
-  switch  ──── SWITCH (-1) ────▶   switch
-    │     ◀──── SWITCH (-1) ────     │
-    │                                 │
-  exchanging ── KEM rekey ──────▶  exchanging
-    │     ◀── KEM response ─────     │
-    │                                 │
-  idle    (new KEM key active)     idle
-        </pre>
+  Node A                              Node B
+  ──────                              ──────
+  idle                                idle
+    │                                   │
+    ├── beginACT(targetEpoch) ──────── ┤
+    │                                   │
+  PREPARE (+1)                        PREPARE (+1)
+    │       (broadcast via gossip)      │
+    │   ≥ 3 ticks (≥ 90 seconds)        │
+    │                                   │
+  READY (0)                           READY (0)
+    │   ◀── peer state check ──▶        │
+    │                                   │
+    │       (all peers in READY)        │
+    │                                   │
+  SWITCH (−1)                         SWITCH (−1)
+    │   ≥ 2 ticks, AGUWA r ≥ 0.2       │
+    │   wait for epoch boundary         │
+    │                                   │
+  EXECUTING ── act:execute ──────▶    EXECUTING
+    │                                   │
+  idle   (transition complete)        idle</pre>
+      </div>
+
+      <div class="theme-callout p-4 rounded-lg border mb-6">
+        <strong>AGUWA Gate:</strong> The SWITCH → EXECUTING transition checks two conditions:
+        (1) AGUWA order parameter <em>r</em> ≥ 0.2 — meaning nodes are sufficiently phase-synchronized,
+        and (2) <code>getCurrentEpoch() >= targetEpoch</code> — the target epoch boundary has arrived.
+        If either condition fails, execution is deferred to the next 30-second tick.
       </div>
 
       <div class="firefly-divider"></div>
 
-      <h2 class="text-2xl font-bold mt-12 mb-6" id="timing">Timing &amp; Retry</h2>
+      <!-- DEPENDENCIES -->
+      <h2 class="text-2xl font-bold mt-12 mb-6" id="dependencies">Dependencies</h2>
 
       <div class="grid md:grid-cols-2 gap-4 mb-8">
         <div class="p-4 bg-mountain-800 rounded-lg border border-mountain-700">
-          <h3 class="font-semibold mb-2 theme-accent">Tick Loop</h3>
-          <ul class="text-mountain-400 text-sm space-y-1">
-            <li>• 1-second heartbeat interval</li>
-            <li>• Sends cricket chirps to active peers</li>
-            <li>• Drives state machine transitions</li>
-            <li>• Scans ANNEX sessions every 30 ticks</li>
-          </ul>
+          <h3 class="font-semibold mb-2 theme-accent"><svg class="doc-icon inline-icon" width="20" height="20"
+              aria-hidden="true">
+              <use href="#icon-aguwa" />
+            </svg> AGUWA</h3>
+          <p class="text-mountain-400 text-sm"><code>aguwa.tick()</code> provides the GPS-synchronized wall-clock
+            second used for chirp encoding. <code>aguwa.orderParameter()</code> gates ACT execution.
+            <code>aguwa.getToleranceForPeer()</code> provides MANI precision for dynamic verification tolerance.
+          </p>
         </div>
         <div class="p-4 bg-mountain-800 rounded-lg border border-mountain-700">
-          <h4 class="font-semibold mb-2 theme-accent">Retry Logic</h4>
-          <ul class="text-mountain-400 text-sm space-y-1">
-            <li>• Retry after 24 ticks (24 seconds)</li>
-            <li>• Maximum 3 retry cycles per rekey</li>
-            <li>• Abort after 72 ticks total (72 seconds)</li>
-            <li>• ±1 tick tolerance for network jitter</li>
-          </ul>
+          <h3 class="font-semibold mb-2 theme-accent"><svg class="doc-icon inline-icon" width="20" height="20"
+              aria-hidden="true">
+              <use href="#icon-prahari" />
+            </svg> PRAHARI</h3>
+          <p class="text-mountain-400 text-sm"><code>seedStore.squeeze()</code> provides genuine sponge entropy
+            for the <code>entropy</code> field (32 bytes), variable padding (16–64 bytes),
+            and padding size selection. All entropy is real, not filler.</p>
+        </div>
+        <div class="p-4 bg-mountain-800 rounded-lg border border-mountain-700">
+          <h3 class="font-semibold mb-2 theme-accent"><svg class="doc-icon inline-icon" width="20" height="20"
+              aria-hidden="true">
+              <use href="#icon-tattva" />
+            </svg> SST</h3>
+          <p class="text-mountain-400 text-sm"><code>fibonacciRoot(tick % 24)</code> from <code>oracle/sst.js</code>
+            provides the 24-cycle digital root that modulates chirp context, preventing pattern repetition
+            across tick boundaries.</p>
+        </div>
+        <div class="p-4 bg-mountain-800 rounded-lg border border-mountain-700">
+          <h3 class="font-semibold mb-2 theme-accent"><svg class="doc-icon inline-icon" width="20" height="20"
+              aria-hidden="true">
+              <use href="#icon-karma" />
+            </svg> KARMA</h3>
+          <p class="text-mountain-400 text-sm">JHILKE emits <code>chirp:verified</code> and <code>chirp:failed</code>
+            events but takes <strong>no punitive action</strong>. KARMA evaluates
+            <code>consecutiveFailures</code> and manages peer reputation consequences.
+          </p>
         </div>
       </div>
 
       <div class="firefly-divider"></div>
 
+      <!-- CONFIGURATION -->
+      <h2 class="text-2xl font-bold mt-12 mb-6" id="config">Configuration Constants</h2>
+
+      <p class="text-mountain-300 mb-4">
+        All constants live in <code>JHILKE_CONFIG</code> (exported for testing):
+      </p>
+
+      <div class="overflow-x-auto mb-8">
+        <table class="w-full text-sm">
+          <thead class="bg-mountain-800">
+            <tr>
+              <th class="px-4 py-2 text-left">Constant</th>
+              <th class="px-4 py-2 text-left">Value</th>
+              <th class="px-4 py-2 text-left">Purpose</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-mountain-700">
+            <tr>
+              <td class="px-4 py-2 font-mono theme-accent">bootstrapSalt</td>
+              <td class="px-4 py-2 text-mountain-400"><code>'YAKMESH-JHILKE-BOOTSTRAP-2026'</code></td>
+              <td class="px-4 py-2">HKDF salt prefix for bootstrap key derivation</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-mono theme-accent">bootstrapInfo</td>
+              <td class="px-4 py-2 text-mountain-400"><code>'yakmesh-jhilke-bootstrap-key-v1'</code></td>
+              <td class="px-4 py-2">HKDF info for bootstrap key derivation</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-mono theme-accent">dialectSalt</td>
+              <td class="px-4 py-2 text-mountain-400"><code>'jhilke-cricket-salt-2026'</code></td>
+              <td class="px-4 py-2">HKDF salt for dialect seed derivation</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-mono theme-accent">dialectInfo</td>
+              <td class="px-4 py-2 text-mountain-400"><code>'yakmesh-jhilke-dialect-v1'</code></td>
+              <td class="px-4 py-2">HKDF info for dialect seed derivation</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-mono theme-accent">signalInfo</td>
+              <td class="px-4 py-2 text-mountain-400"><code>'jhilke-signal-v1'</code></td>
+              <td class="px-4 py-2">HKDF info for individual chirp generation</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-mono theme-accent">signalSize</td>
+              <td class="px-4 py-2">8 bytes</td>
+              <td class="px-4 py-2">HKDF output length per chirp</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-mono theme-accent">paddingMin / paddingMax</td>
+              <td class="px-4 py-2">16 / 64 bytes</td>
+              <td class="px-4 py-2">Variable camouflage padding range</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-mono theme-accent">chirpInterval</td>
+              <td class="px-4 py-2">30,000 ms</td>
+              <td class="px-4 py-2">Chirp transmission cadence (matches gossip HELLO)</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-mono theme-accent">tickTolerance</td>
+              <td class="px-4 py-2">±1 tick</td>
+              <td class="px-4 py-2">Static floor for chirp verification tolerance</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-mono theme-accent">actPrepareMinTicks</td>
+              <td class="px-4 py-2">3 (≥ 90s)</td>
+              <td class="px-4 py-2">Minimum ticks in PREPARE before advancing to READY</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-mono theme-accent">actSwitchDelayTicks</td>
+              <td class="px-4 py-2">2 (≥ 60s)</td>
+              <td class="px-4 py-2">Minimum ticks in SWITCH before executing</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="firefly-divider"></div>
+
+      <!-- API REFERENCE -->
       <h2 class="text-2xl font-bold mt-12 mb-6" id="api">API Reference</h2>
 
       <div class="space-y-6">
+
+        <!-- deriveBootstrapKey -->
         <div class="bg-mountain-800 border theme-border rounded-xl overflow-hidden">
-          <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
-            <code class="theme-accent">jhilke.deriveBootstrapKey(peerId)</code>
+          <div class="p-4 border-b border-mountain-700">
+            <code class="theme-accent font-semibold">jhilke.deriveBootstrapKey(peerId) → Buffer</code>
           </div>
           <div class="p-4">
-            <p class="text-mountain-300 mb-4">Derives a deterministic bootstrap encryption key for a peer. 
-            Both nodes compute the same key independently.</p>
-            <h3 class="font-semibold mb-2">Parameters</h3>
-            <table class="w-full text-sm mb-4">
+            <p class="text-mountain-300 mb-3">Derives a deterministic 32-byte bootstrap encryption key for a peer.
+              Both nodes compute the same key independently from <code>SHA3(codeHash + buildNonce)</code>.</p>
+            <table class="w-full text-sm">
               <tr class="border-b border-mountain-700">
                 <td class="py-2 theme-accent font-mono">peerId</td>
                 <td class="py-2 text-mountain-400">string</td>
                 <td class="py-2 text-mountain-300">The remote peer's node ID</td>
               </tr>
             </table>
-            <h4 class="font-semibold mb-2">Returns</h4>
-            <pre class="language-javascript rounded-lg text-sm"><code>Buffer  // 32-byte (256-bit) symmetric key</code></pre>
           </div>
         </div>
 
+        <!-- start / stop -->
         <div class="bg-mountain-800 border theme-border rounded-xl overflow-hidden">
-          <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
-            <code class="theme-accent">jhilke.initiateRekey(peerId)</code>
+          <div class="p-4 border-b border-mountain-700">
+            <code class="theme-accent font-semibold">jhilke.start()</code> /
+            <code class="theme-accent font-semibold">jhilke.stop()</code>
           </div>
           <div class="p-4">
-            <p class="text-mountain-300 mb-4">Begins a steganographic rekey coordination for a peer. 
-            Called by ANNEX when <code>needsRekey()</code> returns true. Starts the cricket chirp sequence.</p>
-            <h4 class="font-semibold mb-2">Parameters</h4>
-            <table class="w-full text-sm mb-4">
-              <tr class="border-b border-mountain-700">
-                <td class="py-2 theme-accent font-mono">peerId</td>
-                <td class="py-2 text-mountain-400">string</td>
-                <td class="py-2 text-mountain-300">The peer to coordinate rekey with</td>
-              </tr>
-            </table>
+            <p class="text-mountain-300"><code>start()</code> begins the 30-second chirp loop, sending
+              friend-or-foe verification chirps to all connected peers. <code>stop()</code> halts the loop,
+              cleans up ACT timers, and clears all peer state.</p>
           </div>
         </div>
 
+        <!-- handleIncoming -->
         <div class="bg-mountain-800 border theme-border rounded-xl overflow-hidden">
-          <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
-            <code class="theme-accent">jhilke.handleIncoming(fromPeerId, message)</code>
+          <div class="p-4 border-b border-mountain-700">
+            <code class="theme-accent font-semibold">jhilke.handleIncoming(fromPeerId, message)</code>
           </div>
           <div class="p-4">
-            <p class="text-mountain-300 mb-4">Processes incoming <code>mesh_entropy</code> messages, checking 
-            for hidden cricket signals. Genuine entropy passes through unchanged.</p>
-            <h4 class="font-semibold mb-2">Parameters</h4>
-            <table class="w-full text-sm mb-4">
+            <p class="text-mountain-300 mb-3">Processes an incoming <code>mesh_entropy</code> message.
+              If the message contains a <code>jhilke</code> field, it verifies the chirp and emits
+              <code>chirp:verified</code> or <code>chirp:failed</code>. Messages without chirps are ignored.
+            </p>
+            <table class="w-full text-sm">
               <tr class="border-b border-mountain-700">
                 <td class="py-2 theme-accent font-mono">fromPeerId</td>
                 <td class="py-2 text-mountain-400">string</td>
@@ -1163,85 +1539,207 @@ for (const offset of offsets) {
               <tr class="border-b border-mountain-700">
                 <td class="py-2 theme-accent font-mono">message</td>
                 <td class="py-2 text-mountain-400">object</td>
-                <td class="py-2 text-mountain-300">The mesh_entropy message (may contain <code>jhilke</code> field)</td>
+                <td class="py-2 text-mountain-300">The <code>mesh_entropy</code> message object</td>
               </tr>
             </table>
           </div>
         </div>
 
+        <!-- beginACT -->
         <div class="bg-mountain-800 border theme-border rounded-xl overflow-hidden">
-          <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
-            <code class="theme-accent">jhilke.start()</code> / <code class="theme-accent">jhilke.stop()</code>
+          <div class="p-4 border-b border-mountain-700">
+            <code class="theme-accent font-semibold">jhilke.beginACT(targetEpoch, epochBufferN = 2)</code>
           </div>
           <div class="p-4">
-            <p class="text-mountain-300 mb-4">Starts or stops the 1-second tick loop. The tick loop drives 
-            state machine transitions and sends cricket chirps to peers in active rekey coordination.</p>
+            <p class="text-mountain-300 mb-3">Initiates the ACT state machine for a coordinated transition.
+              Enters PREPARE phase with a 30-second tick cadence. Ignored if ACT is already in progress.</p>
+            <table class="w-full text-sm">
+              <tr class="border-b border-mountain-700">
+                <td class="py-2 theme-accent font-mono">targetEpoch</td>
+                <td class="py-2 text-mountain-400">number</td>
+                <td class="py-2 text-mountain-300">The AGUWA epoch at which to execute</td>
+              </tr>
+              <tr class="border-b border-mountain-700">
+                <td class="py-2 theme-accent font-mono">epochBufferN</td>
+                <td class="py-2 text-mountain-400">number</td>
+                <td class="py-2 text-mountain-300">Dynamic epoch buffer from propagation model (default: 2)</td>
+              </tr>
+            </table>
           </div>
         </div>
 
+        <!-- handleACTState -->
         <div class="bg-mountain-800 border theme-border rounded-xl overflow-hidden">
-          <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
-            <code class="theme-accent">jhilke.getStats()</code>
+          <div class="p-4 border-b border-mountain-700">
+            <code class="theme-accent font-semibold">jhilke.handleACTState(peerId, data)</code>
           </div>
           <div class="p-4">
-            <p class="text-mountain-300 mb-4">Returns operational statistics.</p>
+            <p class="text-mountain-300 mb-3">Receives a peer's ACT state announcement (broadcast via gossip).
+              Ignored if this node is not participating in ACT or if <code>targetEpoch</code> doesn't match.
+              Triggers <code>_checkAllReady()</code> when in READY state.</p>
+            <table class="w-full text-sm">
+              <tr class="border-b border-mountain-700">
+                <td class="py-2 theme-accent font-mono">peerId</td>
+                <td class="py-2 text-mountain-400">string</td>
+                <td class="py-2 text-mountain-300">Sender's node ID</td>
+              </tr>
+              <tr class="border-b border-mountain-700">
+                <td class="py-2 theme-accent font-mono">data</td>
+                <td class="py-2 text-mountain-400">object</td>
+                <td class="py-2 text-mountain-300"><code>{ state: 'PREPARE'|'READY'|'SWITCH', targetEpoch }</code></td>
+              </tr>
+            </table>
+          </div>
+        </div>
+
+        <!-- getACTState -->
+        <div class="bg-mountain-800 border theme-border rounded-xl overflow-hidden">
+          <div class="p-4 border-b border-mountain-700">
+            <code class="theme-accent font-semibold">jhilke.getACTState() → Object | null</code>
+          </div>
+          <div class="p-4">
+            <p class="text-mountain-300 mb-3">Returns current ACT state machine status for diagnostics.
+              Returns <code>null</code> if no ACT is in progress.</p>
             <pre class="language-javascript rounded-lg text-sm"><code>{
-  bootstrapKeysDerived: 3,      // Bootstrap keys computed
-  signalsSent: 142,             // Cricket chirps sent
-  signalsReceived: 138,         // Chirps received
-  signalsDecoded: 47,           // Successfully decoded (rest were genuine entropy)
-  rekeyCoordinations: 12,       // Rekey coordinations started
-  rekeySuccesses: 11,           // Successful key rotations
-  rekeyAborts: 1,               // Timed-out coordinations
-  activeSessions: 2,            // Peers tracked
-  activeCoordinations: 1,       // Rekeys in progress
-  globalTick: 3847              // Ticks since start
+  state: 'READY',               // Current phase
+  targetEpoch: 42,              // Target epoch
+  prepareTicks: 3,              // Ticks spent in PREPARE
+  switchTicks: 0,               // Ticks spent in SWITCH
+  peerStates: {                 // Tracked peer states
+    'abc123...': 'READY',
+    'def456...': 'PREPARE'
+  }
 }</code></pre>
           </div>
         </div>
+
+        <!-- getStats -->
+        <div class="bg-mountain-800 border theme-border rounded-xl overflow-hidden">
+          <div class="p-4 border-b border-mountain-700">
+            <code class="theme-accent font-semibold">jhilke.getStats() → Object</code>
+          </div>
+          <div class="p-4">
+            <p class="text-mountain-300 mb-3">Returns operational statistics.</p>
+            <pre class="language-javascript rounded-lg text-sm"><code>{
+  bootstrapKeysDerived: 3,
+  chirpsSent: 142,
+  chirpsReceived: 138,
+  chirpsVerified: 135,
+  chirpsFailed: 3,
+  peerCount: 2
+}</code></pre>
+          </div>
+        </div>
+
+        <!-- cleanupPeer -->
+        <div class="bg-mountain-800 border theme-border rounded-xl overflow-hidden">
+          <div class="p-4 border-b border-mountain-700">
+            <code class="theme-accent font-semibold">jhilke.cleanupPeer(peerId)</code>
+          </div>
+          <div class="p-4">
+            <p class="text-mountain-300">Removes all tracked state for a disconnected peer.
+              Called by the mesh when a peer connection is lost.</p>
+          </div>
+        </div>
+
       </div>
 
       <div class="firefly-divider"></div>
 
+      <!-- EVENTS -->
+      <h2 class="text-2xl font-bold mt-12 mb-6" id="events">Event Emissions</h2>
+
+      <p class="text-mountain-300 mb-4">
+        <code>JhilkeCoordinator</code> extends <code>EventEmitter</code>. It emits soft intelligence
+        signals — it does <strong>NOT</strong> take punitive action. KARMA handles consequences:
+      </p>
+
+      <div class="overflow-x-auto mb-8">
+        <table class="w-full text-sm">
+          <thead class="bg-mountain-800">
+            <tr>
+              <th class="px-4 py-2 text-left">Event</th>
+              <th class="px-4 py-2 text-left">Trigger</th>
+              <th class="px-4 py-2 text-left">Payload</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-mountain-700">
+            <tr>
+              <td class="px-4 py-2 font-mono theme-accent">chirp:verified</td>
+              <td class="px-4 py-2">Incoming chirp validates (friend)</td>
+              <td class="px-4 py-2 text-mountain-400"><code>{ peerId, tick, offset }</code></td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-mono theme-accent">chirp:failed</td>
+              <td class="px-4 py-2">Incoming chirp fails verification (foe?)</td>
+              <td class="px-4 py-2 text-mountain-400"><code>{ peerId, consecutiveFailures }</code></td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-mono theme-accent">act:state</td>
+              <td class="px-4 py-2">ACT state transition or broadcast tick</td>
+              <td class="px-4 py-2 text-mountain-400"><code>{ state, targetEpoch }</code></td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2 font-mono theme-accent">act:execute</td>
+              <td class="px-4 py-2">Epoch boundary reached + <em>r</em> ≥ 0.2</td>
+              <td class="px-4 py-2 text-mountain-400"><code>{ targetEpoch }</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="firefly-divider"></div>
+
+      <!-- SECURITY PROPERTIES -->
       <h2 class="text-2xl font-bold mt-12 mb-6" id="security">Security Properties</h2>
 
       <div class="bg-mountain-800 rounded-xl p-6 mb-8">
         <ul class="space-y-3 text-mountain-300">
           <li class="flex items-start gap-3">
             <span class="theme-accent">•</span>
-            <span><strong>Zero plaintext key exchange</strong> — Bootstrap key encrypts the KEM exchange. 
-            All subsequent rekeys flow through the encrypted channel.</span>
+            <span><strong>Zero plaintext first message</strong> — The bootstrap key (derived from code hash + build
+              nonce)
+              gives ANNEX a symmetric key before any traffic flows. The very first message on the wire is
+              encrypted.</span>
           </li>
           <li class="flex items-start gap-3">
             <span class="theme-accent">•</span>
-            <span><strong>Perfect Forward Secrecy</strong> — No old key material is stored. Bootstrap keys are 
-            ephemeral (replaced by KEM within seconds). Rekeys generate fresh ML-KEM-768 keypairs.</span>
+            <span><strong>Build isolation</strong> — The <code>buildNonce</code> from <code>manifest.json</code>
+              makes both the bootstrap key and the chirp dialect per-build secrets. Source code alone is
+              insufficient to derive either one.</span>
           </li>
           <li class="flex items-start gap-3">
             <span class="theme-accent">•</span>
-            <span><strong>Codebase-bound dialect</strong> — Only nodes with identical code (verified by the 
-            Validation Oracle) can encode or decode cricket signals. Fork the code → different dialect.</span>
+            <span><strong>Codebase-bound dialect</strong> — Only nodes with identical code hash + identical build nonce
+              (verified by the Validation Oracle) can produce or verify chirps. Fork the code → different
+              dialect.</span>
           </li>
           <li class="flex items-start gap-3">
             <span class="theme-accent">•</span>
-            <span><strong>Race condition elimination</strong> — The ternary state machine ensures both sides 
-            agree before any key switch. No more "Unsupported state" errors during rekey.</span>
+            <span><strong>Internal-state-driven transitions</strong> — ACT state transitions are driven purely by
+              internal state and timers; never by external signals. This prevents remote reset attacks.</span>
           </li>
           <li class="flex items-start gap-3">
             <span class="theme-accent">•</span>
-            <span><strong>Traffic analysis resistance</strong> — Cricket chirps are indistinguishable from 
-            regular mesh_entropy messages. Variable padding adds further camouflage.</span>
+            <span><strong>Traffic analysis resistance</strong> — Chirps blend into normal <code>mesh_entropy</code>
+              traffic at the same 30-second gossip cadence. PRAHARI-sourced variable padding (16–64 bytes)
+              prevents size fingerprinting.</span>
+          </li>
+          <li class="flex items-start gap-3">
+            <span class="theme-accent">•</span>
+            <span><strong>AGUWA epoch synchronization</strong> — ACT executes only at GPS-synchronized epoch
+              boundaries with order parameter <em>r</em> ≥ 0.2. No node acts unilaterally.</span>
           </li>
         </ul>
       </div>
 
       <div class="firefly-divider"></div>
 
-      <h2 class="text-2xl font-bold mt-12 mb-6" id="relationship">Relationship to ANNEX</h2>
+      <!-- RELATIONSHIP TO ANNEX -->
+      <h2 class="text-2xl font-bold mt-12 mb-6" id="annex">Relationship to ANNEX</h2>
 
       <p class="text-mountain-300 mb-4">
-        JHILKE is ANNEX's companion protocol — it manages the cryptographic lifecycle while ANNEX 
-        handles the actual encryption/decryption:
+        JHILKE and ANNEX are deliberately separate modules with clean separation of concerns:
       </p>
 
       <div class="overflow-x-auto mb-8">
@@ -1260,19 +1758,24 @@ for (const offset of offsets) {
               <td class="px-4 py-2 text-mountain-500">—</td>
             </tr>
             <tr>
-              <td class="px-4 py-2">Initial key</td>
-              <td class="px-4 py-2 text-mountain-500">Receives from JHILKE</td>
-              <td class="px-4 py-2 theme-accent">Derives deterministic bootstrap</td>
+              <td class="px-4 py-2">Initial key derivation</td>
+              <td class="px-4 py-2 text-mountain-500">Uses key from JHILKE</td>
+              <td class="px-4 py-2 theme-accent">HKDF(SHA3(codeHash + buildNonce))</td>
             </tr>
             <tr>
               <td class="px-4 py-2">KEM exchange</td>
-              <td class="px-4 py-2 theme-accent">ML-KEM-768 encapsulate/decapsulate</td>
-              <td class="px-4 py-2 theme-accent">Routes through encrypted channel</td>
+              <td class="px-4 py-2 theme-accent">ML-KEM-768 encap/decap</td>
+              <td class="px-4 py-2 text-mountain-500">—</td>
             </tr>
             <tr>
-              <td class="px-4 py-2">Rekey trigger</td>
-              <td class="px-4 py-2 theme-accent">Detects needsRekey()</td>
-              <td class="px-4 py-2 theme-accent">Coordinates timing via chirps</td>
+              <td class="px-4 py-2">Transition coordination</td>
+              <td class="px-4 py-2 text-mountain-500">—</td>
+              <td class="px-4 py-2 theme-accent">ACT state machine (AGUWA-gated)</td>
+            </tr>
+            <tr>
+              <td class="px-4 py-2">Peer verification</td>
+              <td class="px-4 py-2 text-mountain-500">—</td>
+              <td class="px-4 py-2 theme-accent">Friend-or-foe chirps (30s)</td>
             </tr>
             <tr>
               <td class="px-4 py-2">Message signing</td>
@@ -1284,40 +1787,87 @@ for (const offset of offsets) {
       </div>
 
       <div class="theme-callout p-4 rounded-lg border mb-6">
-        <strong>Design Philosophy:</strong> JHILKE and ANNEX are deliberately separate modules. 
-        ANNEX doesn't know <em>how</em> its keys are derived or when rekeys happen — it just encrypts. 
-        JHILKE doesn't know <em>how</em> encryption works — it just manages the key lifecycle.
+        <strong>Design Philosophy:</strong> ANNEX doesn't know <em>how</em> its initial key is derived
+        or when transitions should happen — it just encrypts and decrypts. JHILKE doesn't know <em>how</em>
+        encryption works — it derives keys, verifies peers, and coordinates transition timing.
         Separation of concerns, Himalayan style.
       </div>
 
-                  <!-- Journey Navigation -->
-                                                                                                            <div class="border-t border-mountain-700 mt-12 pt-8">
+      <div class="firefly-divider"></div>
+
+      <!-- WHAT JHILKE IS NOT -->
+      <h2 class="text-2xl font-bold mt-12 mb-6" id="not">What JHILKE Is NOT</h2>
+
+      <div class="bg-mountain-800 rounded-xl p-6 mb-8">
+        <ul class="space-y-3 text-mountain-300">
+          <li class="flex items-start gap-3">
+            <span class="text-red-400">✕</span>
+            <span><strong>Not a key exchange protocol.</strong> It's deterministic bootstrap + coordination.
+              ANNEX handles actual ML-KEM-768 key exchange.</span>
+          </li>
+          <li class="flex items-start gap-3">
+            <span class="text-red-400">✕</span>
+            <span><strong>Not a trust model.</strong> KARMA evaluates chirp failures and manages
+              peer reputation. JHILKE just emits events.</span>
+          </li>
+          <li class="flex items-start gap-3">
+            <span class="text-red-400">✕</span>
+            <span><strong>Not an encryption cipher.</strong> ANNEX handles AES-256-GCM encryption.
+              JHILKE coordinates transition timing and verifies peer identity — KARMA handles trust.</span>
+          </li>
+          <li class="flex items-start gap-3">
+            <span class="text-red-400">✕</span>
+            <span><strong>Not a failover handler.</strong> Lost or failed chirps increment
+              <code>consecutiveFailures</code> — KARMA decides the consequences.</span>
+          </li>
+        </ul>
+        <p class="text-mountain-400 text-sm mt-4 border-t border-mountain-700 pt-4">
+          JHILKE is the <strong class="text-white">cricket chorus conductor</strong> — it orchestrates when and how
+          all nodes synchronize to the same cryptographic state, continuously verifies that peers
+          belong to the same swarm, and provides ANNEX with the foundation for encrypted communication
+          from the very first message.
+        </p>
+      </div>
+
+      <!-- JOURNEY NAV -->
+      <div class="border-t border-mountain-700 mt-12 pt-8">
         <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
         <div class="flex flex-col sm:flex-row gap-4">
-          <a href="annex.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">
+          <a href="annex.html"
+            class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">
             <div class="text-xs text-mountain-400 mb-1">← Previous</div>
             <div class="flex items-center gap-2">
-              <svg class="doc-icon journey-icon" aria-hidden="true"><use href="#icon-annex"/></svg>
+              <svg class="doc-icon journey-icon" aria-hidden="true">
+                <use href="#icon-annex" />
+              </svg>
               <span class="font-semibold group-hover:text-theme-accent">ANNEX</span>
             </div>
             <p class="text-mountain-400 text-sm mt-1">Encrypted P2P</p>
           </a>
-          <a href="nakpak.html" class="flex-1 block bg-mountain-800 border border-theme-primary rounded-xl p-4 hover:border-theme-accent transition group">
+          <a href="nakpak.html"
+            class="flex-1 block bg-mountain-800 border border-theme-primary rounded-xl p-4 hover:border-theme-accent transition group">
             <div class="text-xs text-mountain-400 mb-1">Next →</div>
             <div class="flex items-center gap-2">
-              <svg class="doc-icon journey-icon" aria-hidden="true"><use href="#icon-nakpak"/></svg>
+              <svg class="doc-icon journey-icon" aria-hidden="true">
+                <use href="#icon-nakpak" />
+              </svg>
               <span class="font-semibold group-hover:text-theme-accent">NAKPAK</span>
             </div>
             <p class="text-mountain-400 text-sm mt-1">Onion routing</p>
           </a>
         </div>
       </div>
+
+    </div>
   </main>
 
-  <footer class="docs-footer"><p>© 2026 YAKMESH™</p></footer>
+  <footer class="docs-footer">
+    <p>© 2026 YAKMESH™</p>
+  </footer>
 
   <script src="prism.min.js" defer></script>
   <script src="prism-javascript.min.js" defer></script>
   <script src="docs.js" defer></script>
 </body>
+
 </html>
