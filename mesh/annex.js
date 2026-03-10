@@ -45,8 +45,8 @@
  * - Direct peer-to-peer secure messaging
  * 
  * @module mesh/annex
- * @license MIT
- * @copyright 2026 YAKMESH™ Contributors
+ * @license AGPL-3.0-or-later
+ * @copyright 2026 YAKMESH™ / [JGP]
  */
 
 import { randomBytes, createCipheriv, createDecipheriv, createHash } from 'crypto';
@@ -639,18 +639,38 @@ export class Annex {
     const session = this.sessions.get(remoteNodeId);
     if (!session) return;
 
-    // Send close notification
-    const envelope = new AnnexEnvelope({
-      type: ANNEX_CONFIG.messageTypes.CLOSE,
-      senderId: this.identity.identity.nodeId,
-      recipientId: remoteNodeId,
-      sessionId: session.sessionId,
-    });
-    envelope.signature = this.identity.sign(envelope.getSigningPayload());
+    // Capture the sessionId BEFORE any async work — if a reconnect races
+    // us and installs a new session, we must NOT delete the replacement.
+    const capturedSessionId = session.sessionId;
 
-    await this._sendToMesh(remoteNodeId, envelope);
-    session.channelState = ChannelState.CLOSED;
-    this.sessions.delete(remoteNodeId);
+    // Only send CLOSE if the peer's WS is still alive — sending to a
+    // disconnected peer wastes signing effort and always fails silently.
+    const peer = this.mesh?.peers?.get(remoteNodeId);
+    if (peer?.ws?.readyState === 1 /* WebSocket.OPEN */) {
+      const envelope = new AnnexEnvelope({
+        type: ANNEX_CONFIG.messageTypes.CLOSE,
+        senderId: this.identity.identity.nodeId,
+        recipientId: remoteNodeId,
+        sessionId: session.sessionId,
+      });
+      envelope.signature = this.identity.sign(envelope.getSigningPayload());
+      await this._sendToMesh(remoteNodeId, envelope);
+    }
+
+    // Check AGAIN after the await: if a reconnect replaced the session,
+    // the current session will have a different sessionId. Only delete
+    // if the session is still the one WE captured.
+    const currentSession = this.sessions.get(remoteNodeId);
+    if (currentSession && currentSession.sessionId === capturedSessionId) {
+      currentSession.channelState = ChannelState.CLOSED;
+      this.sessions.delete(remoteNodeId);
+    } else if (currentSession) {
+      log.debug('closeChannel: session replaced by reconnect — keeping new session', {
+        peer: peerTag(remoteNodeId),
+        oldSession: capturedSessionId.slice(0, 8),
+        newSession: currentSession.sessionId.slice(0, 8),
+      });
+    }
 
     // Clean up any deferred messages from this peer
     const deferred = this._deferredMessages?.get(remoteNodeId);
@@ -715,10 +735,12 @@ export class Annex {
   // === Private Methods ===
 
   _registerMeshHandlers() {
-    // Handle incoming ANNEX messages
-    this.mesh.on('annex', async (data, origin) => {
-      await this._handleAnnexMessage(data, origin);
-    });
+    // ANNEX messages are routed directly by network.js _handleMessage()
+    // via this.annex._handleAnnexMessage(msg.annex, senderNodeId).
+    // No mesh.on('annex') registration needed — that caused double-dispatch
+    // where the handler received the full signed wrapper instead of the
+    // annex envelope, resulting in failed signature checks and wasted
+    // deferred message slots.
   }
 
   async _handleAnnexMessage(envelope, origin) {
@@ -763,7 +785,24 @@ export class Annex {
         }
       }
     } catch (err) {
-      log.error('Error handling ANNEX message', { error: err.message });
+      // Classify the error for actionable diagnostics
+      const isAuthFailure = err.message.includes('authenticate data') || err.message.includes('Unsupported state');
+      if (isAuthFailure) {
+        // AES-GCM decryption failure — key mismatch, corrupted data, or stale session.
+        // Log peer + session info to help diagnose which side has wrong key material.
+        const session = this.sessions.get(envelope.senderId);
+        log.warn('ANNEX decryption failed (key mismatch or corrupted)', {
+          peer: peerTag(envelope.senderId),
+          type: envelope.type,
+          sessionId: session?.sessionId?.slice(0, 8),
+          bootstrapped: session?.bootstrapped,
+          sessionAge: session ? Date.now() - session.createdAt : null,
+          recvSeq: session?.recvSequence,
+          envelopeSeq: envelope.sequence,
+        });
+      } else {
+        log.error('Error handling ANNEX message', { error: err.message, type: envelope.type });
+      }
     }
   }
 

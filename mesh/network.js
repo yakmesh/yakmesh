@@ -60,7 +60,7 @@ import { createLogger } from '../utils/logger.js';
 
 // ANNEX - Autonomous Network Negotiated Encrypted eXchange
 // PQ-encrypted point-to-point communication between mesh peers
-import { Annex } from './annex.js';
+import { Annex, ChannelState } from './annex.js';
 
 // JHILKE — Just Hidden In-band Legitimate Key Exchange (झिल्के — cricket chirps)
 // Deterministic bootstrap + steganographic rekey coordination
@@ -1193,9 +1193,15 @@ export class MandalaNetwork {
     for (const [nodeId, peer] of this.peers) {
       if (peer.ws === ws) {
         log.info('Peer disconnected', { name: peer.identity.name });
-        // Close ANNEX channel for departing peer
+        // Sync ANNEX cleanup — peer is gone, no CLOSE notification needed.
+        // Using async closeChannel here caused a race: if a reconnect
+        // created a new bootstrap session before closeChannel's microtask
+        // ran, it would delete the NEW session. Sync delete avoids this.
         if (this.annex) {
-          this.annex.closeChannel(nodeId).catch(() => { });
+          const session = this.annex.sessions.get(nodeId);
+          if (session) session.channelState = ChannelState.CLOSED;
+          this.annex.sessions.delete(nodeId);
+          this.annex.pendingHandshakes.delete(nodeId);
         }
         // Clean up JHILKE state for departing peer
         if (this.jhilke) {

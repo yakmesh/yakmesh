@@ -603,6 +603,16 @@ export class YakmeshNode {
       // JHILKE: Per-build nonce for bootstrap key + dialect strengthening
       buildNonce: this._buildNonce || null,
     });
+
+    // Defensive: warn if buildNonce is missing — JHILKE bootstrap keys will
+    // use empty string fallback, which STILL works (both sides derive from '')
+    // but makes the key publicly derivable from source code alone.
+    if (!this._buildNonce) {
+      log.warn('⚠️  JHILKE: No buildNonce (data/manifest.json missing or has no buildNonce). Bootstrap keys are weakened.');
+    } else {
+      log.info(`🔑 JHILKE: buildNonce loaded (${this._buildNonce.slice(0, 12)}...)`);
+    }
+
     await this.mesh.start();
 
     // 3a½. Wire JHILKE chirp events to KARMA for peer reputation
