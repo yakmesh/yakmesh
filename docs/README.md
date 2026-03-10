@@ -21,7 +21,7 @@
 | YAK:// Protocol | [yakmesh.dev/docs/yak-protocol](https://yakmesh.dev/docs/yak-protocol) | — |
 | Geographic Proof | [yakmesh.dev/docs/geo-proof](https://yakmesh.dev/docs/geo-proof) | — |
 
-## Protocols (v2.5.0)
+## Protocols (v3.3.0)
 
 | Protocol | Purpose | Docs |
 |----------|---------|------|
@@ -48,6 +48,7 @@ These documents provide deep technical details for implementers:
 
 | Version | Status |
 |---------|--------|
+| [ROADMAP-3.3.0.md](ROADMAP-3.3.0.md) | ✅ Released |
 | [ROADMAP-2.5.0.md](ROADMAP-2.5.0.md) | ✅ Released |
 | [ROADMAP-2.4.0.md](ROADMAP-2.4.0.md) | ✅ Released |
 

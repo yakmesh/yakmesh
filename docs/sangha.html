@@ -1,52 +1,62 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="doko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" href="favicon.ico" sizes="32x32">
-    <link rel="icon" href="icon.svg" type="image/svg+xml">
-    <link rel="apple-touch-icon" href="apple-touch-icon.png">
-    <title>DOKO - Identity Object | YAKMESH Documentation</title>
-    <meta name="description" content="DOKO: Distributed Ownership & Key Object. Self-sovereign identity certificates for YAKMESH nodes.">
-    
-    <!-- Tailwind CSS -->
-    <link rel="stylesheet" href="tailwind.min.css">
-    
-    <!-- Syntax Highlighting -->
-    <link rel="stylesheet" href="prism-tomorrow.min.css" media="print" onload="this.media='all'">
-    <noscript><link rel="stylesheet" href="prism-tomorrow.min.css"></noscript>
-    
-    <!-- Custom Styles -->
-    <link rel="stylesheet" href="docs.css">
-    <style>
-        /* Page-specific theme overrides - Parchment Brown */
-        .theme-accent { color: #ca8a04; }
-        .theme-accent-hover:hover { color: #eab308; }
-        .theme-badge { background: rgba(161, 98, 7, 0.2); color: #ca8a04; }
-        .theme-border { border-color: #a16207; }
-        .theme-callout { background: rgba(161, 98, 7, 0.1); border-color: #854d0e; }
-        .active-link { background: rgba(161, 98, 7, 0.2) !important; color: #ca8a04 !important; }
-        
-        /* Mobile fixes */
-        @media (max-width: 768px) {
-            .docs-content { padding: 1rem; }
-            .text-4xl { font-size: 1.75rem; }
-            pre { font-size: 0.75rem; max-width: 100%; }
-            .grid { grid-template-columns: 1fr !important; }
-            .flex-col-mobile { flex-direction: column; }
-        }
-    </style>
+<html lang="en" data-theme="sangha">
 
-    <!-- Open Graph -->
-    <meta property="og:type" content="article">
-    <meta property="og:site_name" content="Yakmesh Documentation">
-    <meta property="og:title" content="DOKO — Yakmesh">
-    <meta property="og:description" content="DOKO identity certificates — post-quantum certificate issuance and management.">
-    <meta property="og:url" content="https://yakmesh.dev/docs/doko.html">
-    <link rel="canonical" href="https://yakmesh.dev/docs/doko.html">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="favicon.ico" sizes="32x32">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <title>SANGHA | YAKMESH Documentation</title>
+  <meta name="description"
+    content="SANGHA — Collective component attestation with synapse mesh, antibody circulation, and filesystem hardening.">
+  <link rel="stylesheet" href="tailwind.min.css">
+  <link rel="stylesheet" href="prism-tomorrow.min.css" media="print" onload="this.media='all'">
+  <noscript>
+    <link rel="stylesheet" href="prism-tomorrow.min.css">
+  </noscript>
+  <link rel="stylesheet" href="docs.css">
+  <style>
+    .theme-accent {
+      color: #f87171;
+    }
+
+    .theme-accent-hover:hover {
+      color: #fca5a5;
+    }
+
+    .theme-badge {
+      background: rgba(248, 113, 113, 0.2);
+      color: #f87171;
+    }
+
+    .theme-border {
+      border-color: #dc2626;
+    }
+
+    .theme-callout {
+      background: rgba(248, 113, 113, 0.1);
+      border-color: #b91c1c;
+    }
+
+    .active-link {
+      background: rgba(248, 113, 113, 0.2) !important;
+      color: #f87171 !important;
+    }
+  </style>
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Yakmesh Documentation">
+  <meta property="og:title" content="SANGHA — Yakmesh">
+  <meta property="og:description"
+    content="SANGHA — Collective component attestation. Synapse mesh, antibody circulation, FileGuardian, memory canaries.">
+  <meta property="og:url" content="https://yakmesh.dev/docs/sangha.html">
+  <link rel="canonical" href="https://yakmesh.dev/docs/sangha.html">
 </head>
+
 <body class="bg-mountain-900 text-white min-h-screen">
-<!-- YAKMESH-ICON-SPRITE-START -->
+  <!-- YAKMESH-ICON-SPRITE-START -->
 <svg xmlns="http://www.w3.org/2000/svg" style="display:none">
 <!--
   Yakmesh Docs Icon Sprite Sheet
@@ -636,14 +646,15 @@
 
 </svg>
 <!-- YAKMESH-ICON-SPRITE-END -->
-<a href="#mainContent" class="skip-link">Skip to main content</a>
-    
+  <a href="#mainContent" class="skip-link">Skip to main content</a>
+
   <nav class="docs-sidebar" id="sidebar">
-    <a href="index.html" class="sidebar-logo">
-      <span class="logo-icon"><svg class="doc-icon" aria-hidden="true"><use href="#icon-mountain"/></svg></span>
-      <span class="logo-text">Yakmesh</span>
-    </a>
-    <a href="/dashboard" class="sidebar-dashboard-link"><svg class="doc-icon" aria-hidden="true"><use href="#icon-dashboard"/></svg> <span>Dashboard</span></a>
+    <a href="index.html" class="sidebar-logo"><span class="logo-icon"><svg class="doc-icon" aria-hidden="true">
+          <use href="#icon-mountain" />
+        </svg></span><span class="logo-text">Yakmesh</span></a>
+    <a href="/dashboard" class="sidebar-dashboard-link"><svg class="doc-icon" aria-hidden="true">
+        <use href="#icon-dashboard" />
+      </svg> <span>Dashboard</span></a>
     <ul class="sidebar-nav">
       <li class="sidebar-section"><span><svg class="doc-icon" aria-hidden="true"><use href="#icon-book"/></svg> Guides</span></li>
       <li><a href="index.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-home"/></svg> <span>Overview</span></a></li>
@@ -656,7 +667,7 @@
       <li><a href="jhilke.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-jhilke"/></svg> <span>JHILKE</span></a></li>
       <li><a href="nakpak.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-nakpak"/></svg> <span>NAKPAK</span></a></li>
       <li><a href="namche.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-namche"/></svg> <span>NAMCHE</span></a></li>
-      <li><a href="doko.html" class="active"><svg class="doc-icon" aria-hidden="true"><use href="#icon-doko"/></svg> <span>DOKO</span></a></li>
+      <li><a href="doko.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-doko"/></svg> <span>DOKO</span></a></li>
       <li><a href="sherpa.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-sherpa"/></svg> <span>SHERPA</span></a></li>
       <li><a href="mandala.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-mandala"/></svg> <span>MANDALA</span></a></li>
       <li><a href="mantra.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-mantra"/></svg> <span>MANTRA</span></a></li>
@@ -677,7 +688,7 @@
       <li><a href="sakshi.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-sakshi"/></svg> <span>SAKSHI</span></a></li>
       <li><a href="geo-proof.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-pramaan"/></svg> <span>PRAMAAN</span></a></li>
       <li><a href="trust-security.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-suraksha"/></svg> <span>SURAKSHA</span></a></li>
-      <li><a href="sangha.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-sangha"/></svg> <span>SANGHA</span></a></li>
+      <li><a href="sangha.html" class="active"><svg class="doc-icon" aria-hidden="true"><use href="#icon-sangha"/></svg> <span>SANGHA</span></a></li>
       <li><a href="tivra.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-tivra"/></svg> <span>TIVRA</span></a></li>
       <li><a href="prahari.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-prahari"/></svg> <span>PRAHARI</span></a></li>
       <li><a href="dharma.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-dharma"/></svg> <span>DHARMA</span></a></li>
@@ -707,301 +718,366 @@
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
     </svg>
   </button>
-
-  <!-- Mobile overlay for tap-to-close sidebar -->
   <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
   <main class="docs-main" id="mainContent">
+    <div class="docs-content">
+      <div class="flex items-center gap-3 mb-4">
+        <svg class="doc-icon hero-icon" aria-hidden="true">
+          <use href="#icon-sangha" />
+        </svg>
+        <div>
+          <h1 class="text-4xl font-bold">SANGHA <span class="text-xl text-mountain-400">&#x0938;&#x0902;&#x0918;</span></h1>
+          <p class="theme-accent">Unified Component Attestation &amp; Collective Security</p>
+        </div>
+      </div>
+      <p class="text-xl text-mountain-300 mb-4">Community-driven collective attestation with synapse mesh,
+        antibody circulation, filesystem hardening, and memory canaries.</p>
+      <span class="inline-block text-xs theme-badge px-2 py-1 rounded mb-8">v3.3.0 &bull; Layer 23.5</span>
 
-        <div class="docs-content">
-            <div class="flex items-center gap-3 mb-4">
-                <svg class="doc-icon hero-icon" aria-hidden="true"><use href="#icon-doko"/></svg>
-                <div>
-                    <h1 class="text-4xl font-bold">DOKO</h1>
-                    <p class="theme-accent">Distributed Ownership & Key Object</p>
-                </div>
-            </div>
-            <p class="text-xl text-mountain-300 mb-8">
-                The self-sovereign identity certificate for YAKMESH nodes. Your passport in the mesh.
-            </p>
-            <span class="inline-block text-xs theme-badge px-2 py-1 rounded mb-8">v2.8.2</span>
+      <div class="feature-box">
+        <h2>The Community That Guards Itself</h2>
+        <p>A <em>sangha</em> is a community &mdash; in Buddhist tradition, a gathering of practitioners who
+          hold each other accountable, maintain collective discipline, and defend the integrity of the whole
+          through mutual vigilance. In yakmesh, SANGHA is the protocol that makes components <strong>vouch for
+          each other</strong>: every subsystem registers with the collective, forms bidirectional synapses
+          with its peers, and participates in continuous antibody circulation. If one component falls silent
+          or reports anomalous state, the entire sangha responds. No component stands alone; no failure goes
+          unwitnessed.</p>
+      </div>
 
-            <h2 class="text-2xl font-bold mb-4">Overview</h2>
-            <p class="text-mountain-300 mb-6">
-                A DOKO is a cryptographically signed identity document that proves who you are in the Yakmesh network.
-                Unlike traditional certificates issued by a central authority, a DOKO is self-issued and 
-                verified by the mesh through mathematical proofs.
-            </p>
+      <div class="theme-callout border rounded-xl p-6 mb-8">
+        <h3 class="text-lg font-semibold mb-2"><svg class="doc-icon inline-icon" width="24" height="24"
+            aria-hidden="true">
+            <use href="#icon-suraksha" />
+          </svg> SANGHA &amp; SURAKSHA</h3>
+        <p class="text-mountain-300">
+          <a href="trust-security.html" class="theme-accent theme-accent-hover">SURAKSHA</a> defines the
+          cryptographic security model &mdash; ML-DSA-65 signatures, ML-KEM-768 key encapsulation, threat
+          classification. SANGHA sits above SURAKSHA at Layer 23.5, providing the <strong>collective</strong>
+          enforcement: component attestation, filesystem integrity, and coordinated anomaly response.
+          Think of SURAKSHA as the locks on each door; SANGHA is the neighborhood watch.
+        </p>
+      </div>
 
-            <div class="bg-mountain-800 rounded-xl p-6 mb-8">
-                <h3 class="text-lg font-semibold mb-3 theme-accent">DOKO Types</h3>
-                <div class="grid md:grid-cols-3 gap-4">
-                    <div class="bg-mountain-900 rounded-lg p-4">
-                        <div class="theme-accent font-semibold mb-2"><svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true"><use href="#icon-gear"/></svg> node-identity</div>
-                        <div class="text-mountain-400 text-sm">Core node identity — proves a node's existence and public key</div>
-                    </div>
-                    <div class="bg-mountain-900 rounded-lg p-4">
-                        <div class="theme-accent font-semibold mb-2"><svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true"><use href="#icon-globe"/></svg> domain-claim</div>
-                        <div class="text-mountain-400 text-sm">Domain ownership — proves a node controls a domain</div>
-                    </div>
-                    <div class="bg-mountain-900 rounded-lg p-4">
-                        <div class="theme-accent font-semibold mb-2"><svg class="doc-icon inline-icon" aria-hidden="true"><use href="#icon-gear"/></svg> service-binding</div>
-                        <div class="text-mountain-400 text-sm">Service binding — links services to node identity</div>
-                    </div>
-                </div>
-            </div>
+      <!-- Component Registration -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4">Component Registration</h2>
+        <p class="text-mountain-300 mb-4">
+          Six core components register with SANGHA at startup, each providing a state getter function
+          that returns its current health snapshot:
+        </p>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700 mb-6">
+          <pre><code class="language-javascript">// Register a component with SANGHA
+sangha.register(componentId, componentRef, stateGetter);
 
-            <h2 class="text-2xl font-bold mb-4">DOKO Structure</h2>
-            <p class="text-mountain-300 mb-6">
-                Every DOKO contains these core fields, signed with ML-DSA-65 (post-quantum):
-            </p>
+// Example: Registering the CRYPTO component
+sangha.register('CRYPTO', accel, () => ({
+    initialized: accel.initialized,
+    nativeSha3: accel.HW.nativeSha3,
+    available: accel.ready,
+    shaRuns: accel.stats?.shaRuns || 0,
+}));</code></pre>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div class="bg-mountain-800 rounded-xl p-4 border border-mountain-700 text-center">
+            <svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true"><use href="#icon-lock"/></svg>
+            <p class="font-semibold mt-2">CRYPTO</p>
+            <p class="text-mountain-400 text-sm">Cryptographic ops</p>
+          </div>
+          <div class="bg-mountain-800 rounded-xl p-4 border border-mountain-700 text-center">
+            <svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true"><use href="#icon-mandala"/></svg>
+            <p class="font-semibold mt-2">MESH</p>
+            <p class="text-mountain-400 text-sm">Network layer</p>
+          </div>
+          <div class="bg-mountain-800 rounded-xl p-4 border border-mountain-700 text-center">
+            <svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true"><use href="#icon-tattva"/></svg>
+            <p class="font-semibold mt-2">ORACLE</p>
+            <p class="text-mountain-400 text-sm">Consensus &amp; time</p>
+          </div>
+          <div class="bg-mountain-800 rounded-xl p-4 border border-mountain-700 text-center">
+            <svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true"><use href="#icon-tivra"/></svg>
+            <p class="font-semibold mt-2">ACCEL</p>
+            <p class="text-mountain-400 text-sm">GPU/NPU hardware</p>
+          </div>
+          <div class="bg-mountain-800 rounded-xl p-4 border border-mountain-700 text-center">
+            <svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true"><use href="#icon-server"/></svg>
+            <p class="font-semibold mt-2">HTTP</p>
+            <p class="text-mountain-400 text-sm">API server</p>
+          </div>
+          <div class="bg-mountain-800 rounded-xl p-4 border border-mountain-700 text-center">
+            <svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true"><use href="#icon-doko"/></svg>
+            <p class="font-semibold mt-2">IDENTITY</p>
+            <p class="text-mountain-400 text-sm">Key management</p>
+          </div>
+        </div>
+      </section>
 
-            <div class="bg-mountain-800 rounded-xl p-6 mb-8">
-                <pre class="text-sm overflow-x-auto"><code class="language-javascript">{
-  // Version & Type
-  "version": "1.0",
-  "type": "node-identity",  // or "domain-claim", "service-binding"
-  
-  // Core Identity
-  "nodeId": "node-mobius-rabi-junction-a7f3b2c1",
-  "publicKey": "ML-DSA-65 public key (hex)",
-  
-  // Network Binding
-  "networkName": "mobius-rabi-junction",  // From codebase hash
-  
-  // Temporal
-  "issuedAt": 1737200000000,   // Unix timestamp
-  "expiresAt": 1768736000000,  // 1 year validity
-  
-  // Optional Extensions
-  "domains": [
-    {
-      "domain": "example.com",
-      "proof": "/.well-known/yakmesh/domain-proof.json",
-      "verifiedAt": 1737200000000,
-      "quorumNodes": ["node-xxx", "node-yyy", "node-zzz"]
-    }
-  ],
-  
-  // TLS Binding (optional, for mTLS)
-  "tls": {
-    "certFingerprint": "sha256:a1b2c3...",
-    "validFrom": 1737200000000,
-    "validTo": 1768736000000
-  },
-  
-  // Signature (covers all above fields)
-  "signature": "ML-DSA-65 signature (hex)"
-}
-</code></pre>
-            </div>
+      <!-- Synapse Mesh -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4">Synapse Mesh</h2>
+        <p class="text-mountain-300 mb-4">
+          When a component registers, SANGHA creates bidirectional synapses to all existing components.
+          For N registered components, the total synapse count is:
+        </p>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700 mb-6">
+          <div class="text-center text-2xl font-bold theme-accent mb-4">
+            synapses = N(N&minus;1) / 2
+          </div>
+          <p class="text-mountain-400 text-sm text-center mb-4">
+            6 components &rarr; 15 synapses &bull; Synapse ID: <code class="theme-accent">componentA&lt;-&gt;componentB</code> (lexicographic)
+          </p>
+          <pre><code class="language-javascript">// Each synapse is a bidirectional cryptographic channel
+// with message chaining for attestation verification
+//
+// CRYPTO &lt;-&gt; MESH     CRYPTO &lt;-&gt; ORACLE   CRYPTO &lt;-&gt; ACCEL
+// CRYPTO &lt;-&gt; HTTP     CRYPTO &lt;-&gt; IDENTITY  MESH &lt;-&gt; ORACLE
+// MESH &lt;-&gt; ACCEL      MESH &lt;-&gt; HTTP        MESH &lt;-&gt; IDENTITY
+// ORACLE &lt;-&gt; ACCEL    ORACLE &lt;-&gt; HTTP      ORACLE &lt;-&gt; IDENTITY
+// ACCEL &lt;-&gt; HTTP      ACCEL &lt;-&gt; IDENTITY   HTTP &lt;-&gt; IDENTITY</code></pre>
+        </div>
+      </section>
 
-            <h2 class="text-2xl font-bold mb-4">Creating a DOKO</h2>
-            <div class="bg-mountain-800 rounded-xl p-6 mb-8">
-                <pre class="text-sm overflow-x-auto"><code class="language-javascript">import { createDoko, signDoko } from 'yakmesh/identity';
+      <!-- State Machine -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4">State Machine</h2>
+        <p class="text-mountain-300 mb-4">
+          SANGHA tracks collective health with a three-state machine:
+        </p>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div class="bg-mountain-800 rounded-xl p-6 border border-green-700 text-center">
+            <div class="text-3xl mb-2">+1</div>
+            <h4 class="font-bold text-green-400 text-lg">HARMONIOUS</h4>
+            <p class="text-mountain-400 text-sm mt-2">All components attested. Clean circulation cycle completed.
+              Normal operations.</p>
+          </div>
+          <div class="bg-mountain-800 rounded-xl p-6 border border-yellow-700 text-center">
+            <div class="text-3xl mb-2">0</div>
+            <h4 class="font-bold text-yellow-400 text-lg">CONVERGING</h4>
+            <p class="text-mountain-400 text-sm mt-2">Circulation in progress. Working toward consensus.
+              Startup or recovery state.</p>
+          </div>
+          <div class="bg-mountain-800 rounded-xl p-6 border border-red-700 text-center">
+            <div class="text-3xl mb-2">&minus;1</div>
+            <h4 class="font-bold text-red-400 text-lg">DISRUPTED</h4>
+            <p class="text-mountain-400 text-sm mt-2">Attestation chain broken. Anomaly detected.
+              Collective response triggered.</p>
+          </div>
+        </div>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+          <h3 class="text-lg font-semibold mb-3">Transitions</h3>
+          <ul class="list-disc list-inside text-mountain-300 space-y-2">
+            <li><strong>Circuit breaker</strong>: Any anomaly detection immediately transitions to DISRUPTED regardless of previous state</li>
+            <li><strong>Recovery</strong>: After a clean circulation cycle with all components attesting within their validity windows, state returns to HARMONIOUS</li>
+            <li><strong>Startup</strong>: Node begins in CONVERGING and transitions to HARMONIOUS after first successful full circulation</li>
+          </ul>
+        </div>
+      </section>
 
-// Generate or load your node key pair
-const { publicKey, privateKey } = await loadNodeKey('./data/node-key.json');
+      <!-- Attestation Windows -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4">Attestation Validity Windows</h2>
+        <p class="text-mountain-300 mb-4">
+          Each component has a maximum time window within which it must respond to attestation requests.
+          Windows are tuned to each component&rsquo;s operational characteristics:
+        </p>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+          <table class="w-full">
+            <thead>
+              <tr class="border-b border-mountain-700">
+                <th class="text-left p-3 text-mountain-300">Component</th>
+                <th class="text-left p-3 text-mountain-300">Window</th>
+                <th class="text-left p-3 text-mountain-300">Rationale</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3 font-semibold">CRYPTO</td>
+                <td class="p-3 theme-accent">100ms</td>
+                <td class="p-3 text-mountain-400">Real-time crypto must respond immediately</td>
+              </tr>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3 font-semibold">IDENTITY</td>
+                <td class="p-3 theme-accent">100ms</td>
+                <td class="p-3 text-mountain-400">Identity is security-critical</td>
+              </tr>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3 font-semibold">ORACLE</td>
+                <td class="p-3 theme-accent">200ms</td>
+                <td class="p-3 text-mountain-400">Consensus needs tight time bounds</td>
+              </tr>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3 font-semibold">MESH</td>
+                <td class="p-3 theme-accent">500ms</td>
+                <td class="p-3 text-mountain-400">Network operations have inherent latency</td>
+              </tr>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3 font-semibold">ACCEL</td>
+                <td class="p-3 theme-accent">1000ms</td>
+                <td class="p-3 text-mountain-400">GPU/NPU operations can be slow</td>
+              </tr>
+              <tr>
+                <td class="p-3 font-semibold">HTTP</td>
+                <td class="p-3 theme-accent">2000ms</td>
+                <td class="p-3 text-mountain-400">User-facing server has widest tolerance</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
 
-// Create a node identity DOKO
-const doko = createDoko({
-  type: 'node-identity',
-  nodeId: myNodeId,
-  publicKey: publicKey,
-  networkName: config.networkName,
-  validityDays: 365,
-});
+      <!-- FileGuardian -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4"><svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true">
+            <use href="#icon-shield" />
+          </svg> FileGuardian</h2>
+        <p class="text-mountain-300 mb-4">
+          SANGHA&rsquo;s filesystem hardening extension monitors critical identity and data files for tampering.
+          SHA3-256 hash baselines are taken at startup and continuously verified:
+        </p>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700 mb-6">
+          <table class="w-full">
+            <thead>
+              <tr class="border-b border-mountain-700">
+                <th class="text-left p-3 text-mountain-300">File</th>
+                <th class="text-left p-3 text-mountain-300">Level</th>
+                <th class="text-left p-3 text-mountain-300">Policy</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3"><code class="theme-accent">data/machine-seed.json</code></td>
+                <td class="p-3"><span class="theme-badge px-2 py-1 rounded">CRITICAL</span></td>
+                <td class="p-3 text-mountain-400">Immutable after grace period (POSIX 0o400). Hash + size verified.</td>
+              </tr>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3"><code class="theme-accent">data/node-key.json</code></td>
+                <td class="p-3"><span class="theme-badge px-2 py-1 rounded">HIGH</span></td>
+                <td class="p-3 text-mountain-400">Locked after startup (0o600). No post-init changes.</td>
+              </tr>
+              <tr>
+                <td class="p-3"><code class="theme-accent">data/yakmesh.db</code></td>
+                <td class="p-3"><span class="inline-block text-xs bg-mountain-700 text-mountain-300 px-2 py-1 rounded">NORMAL</span></td>
+                <td class="p-3 text-mountain-400">Monitored for existence/deletion. Mutable by design (0o644).</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+          <h3 class="text-lg font-semibold mb-3">Detection Mechanisms</h3>
+          <ul class="list-disc list-inside text-mountain-300 space-y-2">
+            <li><strong>Real-time file watcher</strong> on CRITICAL and HIGH files &mdash; instant notification on modification</li>
+            <li><strong>SHA3-256 hash verification</strong>: baseline hash taken at startup, compared on each verification cycle</li>
+            <li><strong>Size verification</strong>: baseline size vs. current &mdash; detects truncation or append attacks</li>
+            <li><strong>Stale detection</strong>: heartbeat &gt;10s old marks peer as stale in PeerPhaseBuffer</li>
+            <li><strong>Detection timeline</strong>: tamper detected within 5 seconds (one circulation cycle)</li>
+          </ul>
+        </div>
+      </section>
 
-// Sign with ML-DSA-65
-const signedDoko = signDoko(doko, privateKey);
+      <!-- Memory Canaries -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4">Memory Safety Canaries</h2>
+        <p class="text-mountain-300 mb-4">
+          SANGHA plants runtime memory canaries to detect data structure corruption &mdash;
+          a defense against buffer overflows, use-after-free, and heap spraying that might bypass
+          JavaScript&rsquo;s type safety via native addons or SharedArrayBuffer manipulation.
+        </p>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+          <p class="text-mountain-400 text-sm">
+            Canaries are checked during each antibody circulation cycle. A corrupted canary
+            immediately triggers DISRUPTED state and collective response, halting operations
+            until integrity is restored.
+          </p>
+        </div>
+      </section>
 
-console.log('DOKO created:', signedDoko.nodeId);
-console.log('Expires:', new Date(signedDoko.expiresAt));
-</code></pre>
-            </div>
+      <!-- API -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4"><svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true">
+            <use href="#icon-api" />
+          </svg> API Endpoints</h2>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+          <table class="w-full">
+            <thead>
+              <tr class="border-b border-mountain-700">
+                <th class="text-left p-3 text-mountain-300">Endpoint</th>
+                <th class="text-left p-3 text-mountain-300">Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3"><code class="theme-accent">GET /api/sangha</code></td>
+                <td class="p-3 text-mountain-400">Full SANGHA status: state, components, synapses, anomaly count, FileGuardian status</td>
+              </tr>
+              <tr>
+                <td class="p-3"><code class="theme-accent">GET /health</code></td>
+                <td class="p-3 text-mountain-400">Includes SANGHA state in overall node health response</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
 
-            <h2 class="text-2xl font-bold mb-4">Domain Claims</h2>
-            <p class="text-mountain-300 mb-6">
-                To prove you control a domain, you must pass mesh-based domain verification.
-                This is a quorum-based process that requires multiple independent nodes to verify your claim.
-            </p>
+      <!-- Version History -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2"><svg class="doc-icon inline-icon" width="24"
+            height="24" aria-hidden="true">
+            <use href="#icon-hourglass" />
+          </svg> Version History</h2>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+          <table class="w-full">
+            <thead>
+              <tr class="border-b border-mountain-700">
+                <th class="text-left p-3 text-mountain-300">Version</th>
+                <th class="text-left p-3 text-mountain-300">Changes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="p-3"><span class="theme-badge px-2 py-1 rounded">v3.3.0</span></td>
+                <td class="p-3 text-mountain-400">
+                  Initial implementation: component registration, synapse mesh (N(N&minus;1)/2),
+                  antibody circulation, HARMONIOUS/CONVERGING/DISRUPTED state machine,
+                  FileGuardian (CRITICAL/HIGH/NORMAL), memory safety canaries,
+                  component-specific attestation validity windows.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
 
-            <div class="bg-mountain-800 rounded-xl p-6 mb-8">
-                <h3 class="text-lg font-semibold mb-3 theme-accent">Verification Process</h3>
-                <ol class="text-mountain-300 space-y-3">
-                    <li class="flex items-start gap-3">
-                        <span class="theme-badge w-6 h-6 rounded-full flex items-center justify-center text-sm flex-shrink-0">1</span>
-                        <span>Place a proof file at <code class="bg-mountain-700 px-2 py-1 rounded text-sm">/.well-known/yakmesh/domain-proof.json</code></span>
-                    </li>
-                    <li class="flex items-start gap-3">
-                        <span class="theme-badge w-6 h-6 rounded-full flex items-center justify-center text-sm flex-shrink-0">2</span>
-                        <span>Request domain verification from the mesh</span>
-                    </li>
-                    <li class="flex items-start gap-3">
-                        <span class="theme-badge w-6 h-6 rounded-full flex items-center justify-center text-sm flex-shrink-0">3</span>
-                        <span>Random verifiers (5+ nodes) check your proof file</span>
-                    </li>
-                    <li class="flex items-start gap-3">
-                        <span class="theme-badge w-6 h-6 rounded-full flex items-center justify-center text-sm flex-shrink-0">4</span>
-                        <span>Quorum (≥3 agreeing) adds domain to your DOKO</span>
-                    </li>
-                </ol>
-            </div>
-
-            <div class="bg-mountain-800 rounded-xl p-6 mb-8">
-                <h3 class="text-lg font-semibold mb-3 theme-accent">Domain Proof File</h3>
-                <pre class="text-sm overflow-x-auto"><code class="language-javascript">// /.well-known/yakmesh/domain-proof.json
-{
-  "nodeId": "node-mobius-rabi-junction-a7f3b2c1",
-  "domain": "example.com",
-  "challenge": "random-challenge-from-mesh",
-  "timestamp": 1737200000000,
-  "signature": "ML-DSA-65 signature of above fields"
-}
-</code></pre>
-            </div>
-
-            <h2 class="text-2xl font-bold mb-4">Trust Levels</h2>
-            <p class="text-mountain-300 mb-6">
-                DOKOs are assigned trust levels based on their verification state:
-            </p>
-
-            <p class="text-mountain-300 mb-4">DOKO trust levels use the KARMA tier system — Nepali expedition team roles:</p>
-            <div class="space-y-3 mb-8">
-                <div class="bg-mountain-800 rounded-xl p-4 flex items-center gap-4">
-                    <div class="w-12 h-12 bg-gradient-to-br from-amber-600 to-amber-800 rounded-lg flex items-center justify-center text-2xl"><svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true"><use href="#icon-mountain"/></svg> </div>
-                    <div>
-                        <div class="font-semibold text-amber-300">SIRDAR (सिरदार) — Expedition Leader</div>
-                        <div class="text-mountain-400 text-sm">Atomic time + hardware attestation + 30 days + endorsements</div>
-                    </div>
-                </div>
-                <div class="bg-mountain-800 rounded-xl p-4 flex items-center gap-4">
-                    <div class="w-12 h-12 bg-purple-600 rounded-lg flex items-center justify-center text-2xl"><svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true"><use href="#icon-gem"/></svg> </div>
-                    <div>
-                        <div class="font-semibold text-purple-300">SATHI (साथी) — Trusted Companion</div>
-                        <div class="text-mountain-400 text-sm">GPS + hardware + 14 days + endorsements</div>
-                    </div>
-                </div>
-                <div class="bg-mountain-800 rounded-xl p-4 flex items-center gap-4">
-                    <div class="w-12 h-12 bg-yellow-600 rounded-lg flex items-center justify-center text-2xl"><svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true"><use href="#icon-target"/></svg> </div>
-                    <div>
-                        <div class="font-semibold text-yellow-300">PATHIK (पथिक) — Traveler on Path</div>
-                        <div class="text-mountain-400 text-sm">PTP time + hardware + 7 days presence</div>
-                    </div>
-                </div>
-                <div class="bg-mountain-800 rounded-xl p-4 flex items-center gap-4">
-                    <div class="w-12 h-12 bg-gray-500 rounded-lg flex items-center justify-center text-2xl"><svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true"><use href="#icon-target"/></svg> </div>
-                    <div>
-                        <div class="font-semibold text-gray-200">YATRI (यात्री) — Pilgrim</div>
-                        <div class="text-mountain-400 text-sm">NTP time + hardware + 1 day presence</div>
-                    </div>
-                </div>
-                <div class="bg-mountain-800 rounded-xl p-4 flex items-center gap-4">
-                    <div class="w-12 h-12 bg-green-700 rounded-lg flex items-center justify-center text-2xl"><svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true"><use href="#icon-leaf"/></svg> </div>
-                    <div>
-                        <div class="font-semibold text-green-300">NAYA (नया) — Newcomer</div>
-                        <div class="text-mountain-400 text-sm">Observer status, building trust</div>
-                    </div>
-                </div>
-            </div>
-
-            <h2 class="text-2xl font-bold mb-4">DOKO Hash</h2>
-            <p class="text-mountain-300 mb-6">
-                Each DOKO has a unique hash that can be used for pinning and verification:
-            </p>
-
-            <div class="bg-mountain-800 rounded-xl p-6 mb-8">
-                <pre class="text-sm overflow-x-auto"><code class="language-javascript">import { computeDokoHash } from 'yakmesh/security';
-
-const hash = computeDokoHash(doko);
-// Returns: "sha3-256:a1b2c3d4e5..."
-
-// The hash covers:
-// - version, type, nodeId, publicKey
-// - networkName, issuedAt, expiresAt
-// - (excludes signature to allow re-signing)
-</code></pre>
-            </div>
-
-            <h2 class="text-2xl font-bold mb-4">DOKO Expiration & Renewal</h2>
-            <div class="bg-mountain-800 rounded-xl p-6 mb-8">
-                <ul class="text-mountain-300 space-y-2">
-                    <li>• <strong>Default validity:</strong> 1 year from issuance</li>
-                    <li>• <strong>Renewal window:</strong> 30 days before expiration</li>
-                    <li>• <strong>Auto-renewal:</strong> Node can re-sign with same key</li>
-                    <li>• <strong>Key rotation:</strong> New DOKO with new key pair</li>
-                </ul>
-            </div>
-
-            <h2 class="text-2xl font-bold mb-4">Security Considerations</h2>
-            <div class="bg-mountain-800 border border-theme-primary rounded-xl p-6 mb-8">
-                <h3 class="text-lg font-semibold mb-3 theme-accent"><svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true"><use href="#icon-lock"/></svg> Identity Protection with iO</h3>
-                <p class="text-mountain-300 mb-4">
-                    Unlike raw cryptocurrency private keys, YAKMESH uses <strong>iO (indistinguishability obfuscation)</strong> 
-                    to derive human-readable identities from cryptographic material. Your identity is never a raw hash.
-                </p>
-                <ul class="text-mountain-300 space-y-2 mb-4">
-                    <li>• <strong>Network Names:</strong> <code class="text-theme-accent bg-mountain-900 px-2 py-1 rounded">qubit-lattice-prism</code> (not <code class="text-red-400">7f3a9b2c...</code>)</li>
-                    <li>• <strong>Node IDs:</strong> <code class="text-theme-accent bg-mountain-900 px-2 py-1 rounded">pq-EqU8</code> (human-memorable)</li>
-                    <li>• <strong>Verification Phrases:</strong> Three-word sequences for identity confirmation</li>
-                </ul>
-                <div class="bg-mountain-900 rounded-lg p-4 mb-4">
-                    <pre class="text-sm"><code class="language-javascript">import { deriveNetworkName, deriveNetworkId } from './oracle/network-identity.js';
-
-// Never expose raw hashes — always use iO derivation
-const name = deriveNetworkName(hash, 3);  // "factor-primitive-bose"
-const id = deriveNetworkId(hash);         // "pq-EqU8"</code></pre>
-                </div>
-                <p class="text-mountain-400 text-sm italic">
-                    "We learned from Bitcoin's mistakes. Human-readable identities that protect the underlying keys."
-                </p>
-            </div>
-
-            <div class="bg-yellow-900/30 border border-yellow-700 rounded-xl p-6 mb-8">
-                <h3 class="text-lg font-semibold mb-3 text-yellow-400"><svg class="doc-icon inline-icon" aria-hidden="true"><use href="#icon-warning"/></svg> Key Storage Best Practices</h3>
-                <ul class="text-mountain-300 space-y-2">
-                    <li>• Your <code>node-key.json</code> contains encrypted key material — back it up securely</li>
-                    <li>• Consider hardware security modules (HSM) for production deployments</li>
-                    <li>• If compromised, revoke immediately via mesh broadcast using your backup key</li>
-                    <li>• Key rotation: Generate a new DOKO and announce the transition to the mesh</li>
-                </ul>
-            </div>
-
-                  <!-- Journey Navigation -->
-                                                                                                                                                                                    <div class="border-t border-mountain-700 mt-12 pt-8">
+      <!-- Journey Navigation -->
+            <div class="border-t border-mountain-700 mt-12 pt-8">
         <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
         <div class="flex flex-col sm:flex-row gap-4">
-          <a href="namche.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">
+          <a href="trust-security.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">
             <div class="text-xs text-mountain-400 mb-1">← Previous</div>
             <div class="flex items-center gap-2">
-              <svg class="doc-icon journey-icon" aria-hidden="true"><use href="#icon-namche"/></svg>
-              <span class="font-semibold group-hover:text-theme-accent">NAMCHE</span>
+              <svg class="doc-icon journey-icon" aria-hidden="true"><use href="#icon-suraksha"/></svg>
+              <span class="font-semibold group-hover:text-theme-accent">SURAKSHA</span>
             </div>
-            <p class="text-mountain-400 text-sm mt-1">Identity gateway</p>
+            <p class="text-mountain-400 text-sm mt-1">Security model</p>
           </a>
-          <a href="sherpa.html" class="flex-1 block bg-mountain-800 border border-theme-primary rounded-xl p-4 hover:border-theme-accent transition group">
+          <a href="tivra.html" class="flex-1 block bg-mountain-800 border border-theme-primary rounded-xl p-4 hover:border-theme-accent transition group">
             <div class="text-xs text-mountain-400 mb-1">Next →</div>
             <div class="flex items-center gap-2">
-              <svg class="doc-icon journey-icon" aria-hidden="true"><use href="#icon-sherpa"/></svg>
-              <span class="font-semibold group-hover:text-theme-accent">SHERPA</span>
+              <svg class="doc-icon journey-icon" aria-hidden="true"><use href="#icon-tivra"/></svg>
+              <span class="font-semibold group-hover:text-theme-accent">TIVRA</span>
             </div>
-            <p class="text-mountain-400 text-sm mt-1">Peer discovery</p>
+            <p class="text-mountain-400 text-sm mt-1">Hardware acceleration</p>
           </a>
         </div>
       </div>
-    </main>
+  </main>
 
   <footer class="docs-footer">
-    <p>© 2026 YAKMESH™</p>
-  </footer><script src="prism.min.js" defer></script>
-    <script src="prism-javascript.min.js" defer></script>
-    <script src="docs.js" defer></script>
-
-  
+    <p>&copy; 2026 YAKMESH&trade;</p>
+  </footer>
+  <script src="prism.min.js" defer></script>
+  <script src="prism-javascript.min.js" defer></script>
+  <script src="docs.js" defer></script>
 </body>
+
 </html>
-
-
-
-
-

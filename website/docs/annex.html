@@ -909,6 +909,22 @@ await annex.closeChannel(peerNodeId);</code></pre>
                 </div>
             </div>
 
+            <!-- v3.3.0 Session Hardening -->
+            <section class="mb-12">
+              <h2 class="text-2xl font-bold mb-4" id="hardening">v3.3.0 Session Hardening</h2>
+              <p class="text-mountain-300 mb-4">Six targeted fixes from the v3.3.0 ANNEX security audit:</p>
+              <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+                <ol class="list-decimal list-inside text-mountain-300 space-y-4">
+                  <li><strong>Strict enum validation</strong> — <code class="text-purple-400">ANNEX_ABORT</code> added; unknown message types now trigger immediate session teardown instead of silent discard.</li>
+                  <li><strong>Counter-window replay guard</strong> — Sliding window tracks last 64 sequence numbers. Replayed or out-of-window packets are dropped and logged.</li>
+                  <li><strong>Fixed key-derivation salt</strong> — <code class="text-purple-400">deriveSessionKey()</code> now uses both parties&rsquo; ephemeral public keys + shared secret, preventing key-collision across sessions.</li>
+                  <li><strong>Timeout cascade</strong> — Handshake timeout (10s) &rarr; idle timeout (120s) &rarr; max lifetime (3600s). Each independently enforced.</li>
+                  <li><strong>Side-channel timing fix</strong> — All MAC comparisons use constant-time <code class="text-purple-400">timingSafeEqual()</code> to prevent timing attacks on HMAC verification.</li>
+                  <li><strong>Proper <code>zeroize()</code> on teardown</strong> — Ephemeral keys, derived secrets, and session state are cryptographically zeroed when a session ends, preventing memory-scraping attacks.</li>
+                </ol>
+              </div>
+            </section>
+
             <!-- Security Section -->
             <h2 class="text-2xl font-bold mb-4 mt-8">Security Properties</h2>
             <div class="bg-mountain-800 rounded-xl p-6 mb-8">

@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="samuha">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="favicon.ico" sizes="32x32">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <title>SAMUHA | YAKMESH Documentation</title>
+  <meta name="description"
+    content="SAMUHA — Ternary peer admission with ADMIT/HOLD/REDIRECT verdicts, priority scoring, and capacity-aware peer management.">
+  <link rel="stylesheet" href="tailwind.min.css">
+  <link rel="stylesheet" href="prism-tomorrow.min.css" media="print" onload="this.media='all'">
+  <noscript>
+    <link rel="stylesheet" href="prism-tomorrow.min.css">
+  </noscript>
+  <link rel="stylesheet" href="docs.css">
+  <style>
+    .theme-accent {
+      color: #fbbf24;
+    }
+
+    .theme-accent-hover:hover {
+      color: #fde68a;
+    }
+
+    .theme-badge {
+      background: rgba(251, 191, 36, 0.2);
+      color: #fbbf24;
+    }
+
+    .theme-border {
+      border-color: #d97706;
+    }
+
+    .theme-callout {
+      background: rgba(251, 191, 36, 0.1);
+      border-color: #b45309;
+    }
+
+    .active-link {
+      background: rgba(251, 191, 36, 0.2) !important;
+      color: #fbbf24 !important;
+    }
+  </style>
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Yakmesh Documentation">
+  <meta property="og:title" content="SAMUHA — Yakmesh">
+  <meta property="og:description"
+    content="SAMUHA — Ternary peer admission with ADMIT/HOLD/REDIRECT verdicts, priority scoring, and capacity-aware management.">
+  <meta property="og:url" content="https://yakmesh.dev/docs/samuha.html">
+  <link rel="canonical" href="https://yakmesh.dev/docs/samuha.html">
+</head>
+
+<body class="bg-mountain-900 text-white min-h-screen">
+  <!-- YAKMESH-ICON-SPRITE-START -->
+  <!-- YAKMESH-ICON-SPRITE-END -->
+  <a href="#mainContent" class="skip-link">Skip to main content</a>
+
+  <nav class="docs-sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-logo"><span class="logo-icon"><svg class="doc-icon" aria-hidden="true">
+          <use href="#icon-mountain" />
+        </svg></span><span class="logo-text">Yakmesh</span></a>
+    <a href="/dashboard" class="sidebar-dashboard-link"><svg class="doc-icon" aria-hidden="true">
+        <use href="#icon-dashboard" />
+      </svg> <span>Dashboard</span></a>
+    <ul class="sidebar-nav">
+    </ul>
+  </nav>
+
+  <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+    </svg>
+  </button>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="docs-main" id="mainContent">
+    <div class="docs-content">
+      <div class="flex items-center gap-3 mb-4">
+        <svg class="doc-icon hero-icon" aria-hidden="true">
+          <use href="#icon-samuha" />
+        </svg>
+        <div>
+          <h1 class="text-4xl font-bold">SAMUHA <span class="text-xl text-mountain-400">&#x0938;&#x092E;&#x0942;&#x0939;</span></h1>
+          <p class="theme-accent">Ternary Peer Admission &amp; Capacity Management</p>
+        </div>
+      </div>
+      <p class="text-xl text-mountain-300 mb-4">Three-state peer admission with priority scoring, utilization-aware
+        capacity gating, and graceful REDIRECT eviction.</p>
+      <span class="inline-block text-xs theme-badge px-2 py-1 rounded mb-8">v3.3.0 &bull; Layer 17.5</span>
+
+      <div class="feature-box">
+        <h2>The Assembly That Governs Entry</h2>
+        <p>A <em>samuha</em> is an assembly or group &mdash; a collective that decides who may join and under
+          what conditions. In yakmesh, SAMUHA replaces the old binary admit/reject gate with a
+          <strong>ternary verdict system</strong>: ADMIT, HOLD, or REDIRECT. Instead of hard rejections
+          that waste resources on both sides, peers that cannot be immediately admitted are either held
+          in a waiting queue (during transient overload) or gracefully redirected to neighbor nodes with
+          spare capacity. No legitimate peer is wasted; no overloaded node is overwhelmed.</p>
+      </div>
+
+      <div class="theme-callout border rounded-xl p-6 mb-8">
+        <h3 class="text-lg font-semibold mb-2"><svg class="doc-icon inline-icon" width="24" height="24"
+            aria-hidden="true">
+            <use href="#icon-karma" />
+          </svg> SAMUHA &amp; KARMA</h3>
+        <p class="text-mountain-300">
+          <a href="karma.html" class="theme-accent theme-accent-hover">KARMA</a> tracks peer reputation
+          over time &mdash; assigning trust scores based on behavior history. SAMUHA consumes KARMA scores
+          as a major input to the priority formula: peers with higher KARMA get preferential admission.
+          Think of KARMA as the credit score; SAMUHA is the admissions committee.
+        </p>
+      </div>
+
+      <!-- Ternary Verdicts -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4">Ternary Verdicts</h2>
+        <p class="text-mountain-300 mb-4">
+          Every incoming peer connection receives one of three verdicts:
+        </p>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div class="bg-mountain-800 rounded-xl p-6 border border-green-700 text-center">
+            <div class="text-3xl mb-2 font-mono">+1</div>
+            <h4 class="font-bold text-green-400 text-lg">ADMIT</h4>
+            <p class="text-mountain-400 text-sm mt-2">Capacity available. Peer passes priority threshold.
+              Connection accepted immediately.</p>
+          </div>
+          <div class="bg-mountain-800 rounded-xl p-6 border border-yellow-700 text-center">
+            <div class="text-3xl mb-2 font-mono">0</div>
+            <h4 class="font-bold text-yellow-400 text-lg">HOLD</h4>
+            <p class="text-mountain-400 text-sm mt-2">Temporarily at capacity. Peer queued for 30s.
+              Re-evaluated on next slot opening.</p>
+          </div>
+          <div class="bg-mountain-800 rounded-xl p-6 border border-red-700 text-center">
+            <div class="text-3xl mb-2 font-mono">&minus;1</div>
+            <h4 class="font-bold text-red-400 text-lg">REDIRECT</h4>
+            <p class="text-mountain-400 text-sm mt-2">At hard capacity. Peer given alternative node addresses.
+              Graceful handoff, not rejection.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Priority Formula -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4">Priority Formula</h2>
+        <p class="text-mountain-300 mb-4">
+          SAMUHA calculates a composite priority score for each incoming peer to determine
+          admission order when capacity is constrained:
+        </p>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700 mb-6">
+          <div class="text-center text-xl font-bold theme-accent mb-4">
+            priority = 0.3&times;karma + 0.3&times;hw + 0.2&times;returning + 0.2&times;mani
+          </div>
+          <table class="w-full mt-4">
+            <thead>
+              <tr class="border-b border-mountain-700">
+                <th class="text-left p-3 text-mountain-300">Factor</th>
+                <th class="text-left p-3 text-mountain-300">Weight</th>
+                <th class="text-left p-3 text-mountain-300">Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3 font-semibold">karma</td>
+                <td class="p-3 theme-accent">0.3</td>
+                <td class="p-3 text-mountain-400">KARMA trust score (0.0&ndash;1.0) from peer history</td>
+              </tr>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3 font-semibold">hw</td>
+                <td class="p-3 theme-accent">0.3</td>
+                <td class="p-3 text-mountain-400">Hardware capability score &mdash; GPU/NPU TOPS normalized</td>
+              </tr>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3 font-semibold">returning</td>
+                <td class="p-3 theme-accent">0.2</td>
+                <td class="p-3 text-mountain-400">1.0 if previously connected, 0.0 if new &mdash; loyalty bonus</td>
+              </tr>
+              <tr>
+                <td class="p-3 font-semibold">mani</td>
+                <td class="p-3 theme-accent">0.2</td>
+                <td class="p-3 text-mountain-400">MANI phase alignment (Kuramoto) &mdash; phase-coherent peers preferred</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Utilization Thresholds -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4">Utilization Thresholds</h2>
+        <p class="text-mountain-300 mb-4">
+          SAMUHA gates admission based on the node&rsquo;s current utilization ratio
+          (active peers / max capacity):
+        </p>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+          <table class="w-full">
+            <thead>
+              <tr class="border-b border-mountain-700">
+                <th class="text-left p-3 text-mountain-300">Utilization</th>
+                <th class="text-left p-3 text-mountain-300">Verdict</th>
+                <th class="text-left p-3 text-mountain-300">Behavior</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3 theme-accent font-mono">&lt; 0.8</td>
+                <td class="p-3"><span class="text-green-400 font-semibold">ADMIT</span></td>
+                <td class="p-3 text-mountain-400">Immediate admission for any peer above minimum priority</td>
+              </tr>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3 theme-accent font-mono">0.8 &ndash; 1.0</td>
+                <td class="p-3"><span class="text-yellow-400 font-semibold">HOLD</span></td>
+                <td class="p-3 text-mountain-400">High-priority peers may bump lowest; others wait in queue</td>
+              </tr>
+              <tr>
+                <td class="p-3 theme-accent font-mono">&ge; 1.0</td>
+                <td class="p-3"><span class="text-red-400 font-semibold">REDIRECT</span></td>
+                <td class="p-3 text-mountain-400">Node at hard limit. Peer given neighbor addresses with capacity</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- REDIRECT Flow -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4">REDIRECT Eviction Flow</h2>
+        <p class="text-mountain-300 mb-4">
+          When a node reaches hard capacity, SAMUHA doesn&rsquo;t simply refuse connections.
+          It performs <strong>graceful redirection</strong>:
+        </p>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+          <ol class="list-decimal list-inside text-mountain-300 space-y-3">
+            <li><strong>Capacity check</strong>: Active peers &ge; max capacity confirmed</li>
+            <li><strong>Neighbor scan</strong>: Query mesh neighbors for their current utilization</li>
+            <li><strong>Best candidate</strong>: Select neighbor with lowest utilization that has capacity</li>
+            <li><strong>REDIRECT response</strong>: Send peer the alternative node&rsquo;s address + signed referral token</li>
+            <li><strong>Verification</strong>: Target node validates referral token (prevents abuse)</li>
+            <li><strong>Telemetry</strong>: REDIRECT event logged for KARMA scoring &mdash; redirected peers that connect successfully boost both nodes&rsquo; scores</li>
+          </ol>
+        </div>
+      </section>
+
+      <!-- Safety Limits -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4"><svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true">
+            <use href="#icon-shield" />
+          </svg> Safety Limits</h2>
+        <p class="text-mountain-300 mb-4">
+          Hard safety limits prevent resource exhaustion and abuse:
+        </p>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+          <table class="w-full">
+            <thead>
+              <tr class="border-b border-mountain-700">
+                <th class="text-left p-3 text-mountain-300">Limit</th>
+                <th class="text-left p-3 text-mountain-300">Value</th>
+                <th class="text-left p-3 text-mountain-300">Purpose</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3 font-semibold">Burst rate</td>
+                <td class="p-3 theme-accent">30 / min</td>
+                <td class="p-3 text-mountain-400">Max peer connection attempts per minute</td>
+              </tr>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3 font-semibold">Max handshakes</td>
+                <td class="p-3 theme-accent">50</td>
+                <td class="p-3 text-mountain-400">Maximum concurrent handshakes (pending + active)</td>
+              </tr>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3 font-semibold">HOLD timeout</td>
+                <td class="p-3 theme-accent">30s</td>
+                <td class="p-3 text-mountain-400">Max time a peer waits in HOLD queue before auto-REDIRECT</td>
+              </tr>
+              <tr>
+                <td class="p-3 font-semibold">HOLD queue depth</td>
+                <td class="p-3 theme-accent">10</td>
+                <td class="p-3 text-mountain-400">Max peers waiting in HOLD &mdash; overflow gets immediate REDIRECT</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- API -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4"><svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true">
+            <use href="#icon-api" />
+          </svg> API Endpoints</h2>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+          <table class="w-full">
+            <thead>
+              <tr class="border-b border-mountain-700">
+                <th class="text-left p-3 text-mountain-300">Endpoint</th>
+                <th class="text-left p-3 text-mountain-300">Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3"><code class="theme-accent">GET /api/samuha</code></td>
+                <td class="p-3 text-mountain-400">SAMUHA status: utilization, active peers, HOLD queue depth, verdicts issued</td>
+              </tr>
+              <tr>
+                <td class="p-3"><code class="theme-accent">GET /api/peers</code></td>
+                <td class="p-3 text-mountain-400">Connected peers with admission verdict, priority score, and connection time</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Version History -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2"><svg class="doc-icon inline-icon" width="24"
+            height="24" aria-hidden="true">
+            <use href="#icon-hourglass" />
+          </svg> Version History</h2>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+          <table class="w-full">
+            <thead>
+              <tr class="border-b border-mountain-700">
+                <th class="text-left p-3 text-mountain-300">Version</th>
+                <th class="text-left p-3 text-mountain-300">Changes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="p-3"><span class="theme-badge px-2 py-1 rounded">v3.3.0</span></td>
+                <td class="p-3 text-mountain-400">
+                  Initial implementation: ternary ADMIT/HOLD/REDIRECT verdicts, composite priority
+                  formula (karma+hw+returning+mani), utilization-based capacity gating, graceful
+                  REDIRECT with signed referral tokens, HOLD queue with 30s timeout, burst rate limiting.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Journey Navigation -->
+      <div class="border-t border-mountain-700 mt-12 pt-8">
+        <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
+        <div class="flex flex-col sm:flex-row gap-4">
+          <a href="karma.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">
+            <div class="text-xs text-mountain-400 mb-1">&larr; Previous</div>
+            <div class="flex items-center gap-2">
+              <svg class="doc-icon journey-icon" aria-hidden="true"><use href="#icon-karma"/></svg>
+              <span class="font-semibold group-hover:text-theme-accent">KARMA</span>
+            </div>
+            <p class="text-mountain-400 text-sm mt-1">Peer reputation</p>
+          </a>
+          <a href="tattva.html" class="flex-1 block bg-mountain-800 border border-theme-primary rounded-xl p-4 hover:border-theme-accent transition group">
+            <div class="text-xs text-mountain-400 mb-1">Next &rarr;</div>
+            <div class="flex items-center gap-2">
+              <svg class="doc-icon journey-icon" aria-hidden="true"><use href="#icon-tattva"/></svg>
+              <span class="font-semibold group-hover:text-theme-accent">TATTVA</span>
+            </div>
+            <p class="text-mountain-400 text-sm mt-1">Consensus principles</p>
+          </a>
+        </div>
+      </div>
+  </main>
+
+  <footer class="docs-footer">
+    <p>&copy; 2026 YAKMESH&trade;</p>
+  </footer>
+  <script src="prism.min.js" defer></script>
+  <script src="prism-javascript.min.js" defer></script>
+  <script src="docs.js" defer></script>
+</body>
+
+</html>

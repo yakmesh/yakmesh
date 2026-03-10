@@ -1,7 +1,7 @@
 <div align="center">
   <img src="https://yakmesh.dev/assets/yakmesh-logo2.png" alt="YAKMESH" width="200">
 
-  <h1>🏔️ YAKMESH™ v3.0.0 — The Summit Release</h1>
+  <h1>🏔️ YAKMESH™ v3.3.0 — The Hardening Release</h1>
 
   <p><strong>Yielding Atomic Kernel Modular Encryption Secured Hub</strong></p>
 
@@ -10,7 +10,7 @@
     <a href="https://nodejs.org"><img src="https://img.shields.io/badge/Node.js-24+-green.svg" alt="Node.js"></a>
     <a href="https://csrc.nist.gov/projects/post-quantum-cryptography"><img src="https://img.shields.io/badge/Crypto-Post--Quantum-blue.svg" alt="Post-Quantum"></a>
     <a href="https://www.npmjs.com/package/yakmesh"><img src="https://img.shields.io/npm/v/yakmesh.svg" alt="npm version"></a>
-    <img src="https://img.shields.io/badge/version-3.0.0-purple.svg" alt="v3.0.0">
+    <img src="https://img.shields.io/badge/version-3.3.0-purple.svg" alt="v3.3.0">
     <img src="https://img.shields.io/badge/Protocol_Layers-30-orange.svg" alt="30-Layer Stack">
   </p>
 </div>

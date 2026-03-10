@@ -1,27 +1,3 @@
-/*
- * YAKMESH™: Yielding Atomic Kernel Modular Encryption Secured Hub
- * Copyright (C) 2026 YAKMESH™ / [JGP]
- *
- * TRADEMARK NOTICE:
- * YAKMESH™ is a trademark of PeerQuanta, application pending (Serial No. 99594620).
- * Unauthorized use of the YAKMESH™ name, logo, or branding is strictly prohibited.
- *
- * LICENSE:
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <https://www.gnu.org/licenses/>.
- *
- * "The standard is binary. The reality is ternary. The resonance is 432."
- */
 /**
  * YAKMESH Embedded Documentation Bundle
  * 
@@ -30,7 +6,7 @@
  * Regenerate with: npm run build:docs
  * Source: website/docs/
  * 
- * @generated 2026-03-07T03:53:46.313Z
+ * @generated 2026-03-10T07:23:03.241Z
  * @module embedded-docs/bundle
  */
 
@@ -38,18 +14,18 @@
  * Master hash of the entire documentation bundle.
  * Computed as: SHA3-256(sorted individual file hashes joined)
  */
-export const BUNDLE_HASH = 'e04f057b6819070e405d0c381a79bb6ddcc0b24801d33651bc54d021e79407fa';
+export const BUNDLE_HASH = 'd80ee96ddf9d06b9bdd8dba6c66254f48983bc2611fabca403c960e5cf44949e';
 
 /**
  * Version of the documentation bundle.
  * Matches the npm package version at build time.
  */
-export const BUNDLE_VERSION = '3.0.0';
+export const BUNDLE_VERSION = '3.3.0';
 
 /**
  * Build timestamp (ISO 8601)
  */
-export const BUNDLE_BUILT_AT = '2026-03-07T03:53:46.313Z';
+export const BUNDLE_BUILT_AT = '2026-03-10T07:23:03.241Z';
 
 /**
  * Index of all files in the documentation bundle.
@@ -72,9 +48,14 @@ export const FILE_INDEX = {
     "size": 48648,
     "contentType": "text/html; charset=utf-8"
   },
+  "aguwa.html": {
+    "hash": "fd194667b8955123a7cee7a9e83d6b235451c0a742c9bd3bf75f54298a566a30",
+    "size": 21847,
+    "contentType": "text/html; charset=utf-8"
+  },
   "annex.html": {
-    "hash": "8431180ddddd12c6cf9de5df4dcfca14cd3801a18eb059e3953230fb90f424bc",
-    "size": 53181,
+    "hash": "0e0f5ee226607c7f844c5a645549ed6b5ce6f3b3f6bdbf0135963469d820269a",
+    "size": 55054,
     "contentType": "text/html; charset=utf-8"
   },
   "api.html": {
@@ -88,8 +69,8 @@ export const FILE_INDEX = {
     "contentType": "image/png"
   },
   "assets/icons.svg": {
-    "hash": "249f0f78b5ce21fae1bedc1c21e62c6e1bc3d74380f045690341b045ee16678f",
-    "size": 19834,
+    "hash": "d84f57a5afc01e75fa4a78cc0c3e93fda9cabce3be043713a35bfaf9d72670f2",
+    "size": 21242,
     "contentType": "image/svg+xml"
   },
   "assets/silhouettes/adapters.svg": {
@@ -453,8 +434,8 @@ export const FILE_INDEX = {
     "contentType": "text/html; charset=utf-8"
   },
   "mesh.html": {
-    "hash": "3c56c5e07daaf31d14caef9bbb9580efc198298ed0341b6ee595e41691fcbb95",
-    "size": 72606,
+    "hash": "6ce322f4fbc0dc7800c4e65e6a68a330f5892973da08bbf84a233489286138fe",
+    "size": 74741,
     "contentType": "text/html; charset=utf-8"
   },
   "MTLS-RESEARCH.md": {
@@ -478,8 +459,8 @@ export const FILE_INDEX = {
     "contentType": "text/html; charset=utf-8"
   },
   "nav-order.json": {
-    "hash": "49e73e56259614c01b46d687374ecccb3cc8f8d9f022beb610dcf0b44c7c45ce",
-    "size": 8251,
+    "hash": "7e57192d40f01cb44d7c28c162d2e53bc79741dbc92401b3b1eae94d5f3878ae",
+    "size": 8822,
     "contentType": "application/json"
   },
   "PEERQUANTA-YAKMESH-INTEGRATION.md": {
@@ -533,8 +514,8 @@ export const FILE_INDEX = {
     "contentType": "text/html; charset=utf-8"
   },
   "README.md": {
-    "hash": "2be7cbaf44a61c1fb1322e42c3162d7c0f88f9edd8703d886d8f2bff79c1ef5f",
-    "size": 3646,
+    "hash": "dd24f85f84b727ac6021e62b9193dcc498724cedbe04336e52071a35976f56fd",
+    "size": 3702,
     "contentType": "application/octet-stream"
   },
   "ROADMAP-2.4.0.md": {
@@ -547,15 +528,30 @@ export const FILE_INDEX = {
     "size": 6408,
     "contentType": "application/octet-stream"
   },
+  "ROADMAP-3.3.0.md": {
+    "hash": "b608d8fc3125b18e8781ee32203ff625e4c9abed554e962563ab1c767451f327",
+    "size": 3706,
+    "contentType": "application/octet-stream"
+  },
   "sakshi.html": {
     "hash": "248ea044e54c1d94cf20b17073a7747576b9c65bd882ace9da1a74319d3da7a7",
     "size": 64247,
+    "contentType": "text/html; charset=utf-8"
+  },
+  "samuha.html": {
+    "hash": "8b1f6300eb7583524a8e0bc5d394df779b72a6175d9ec378b32c7ed1533d2f28",
+    "size": 18701,
     "contentType": "text/html; charset=utf-8"
   },
   "sandboxing.md": {
     "hash": "445fe9730f270e9346b5b8c59c4f177254040fcdef941b8ea16ed130165c7755",
     "size": 8558,
     "contentType": "application/octet-stream"
+  },
+  "sangha.html": {
+    "hash": "02779b7049489842bc33392ff2b6134d7a58cd254f6bf5a46fcbad7a9445c09f",
+    "size": 23087,
+    "contentType": "text/html; charset=utf-8"
   },
   "SECURITY-AUDIT-REPORT.md": {
     "hash": "eff5b6673d60d6785eafedad078133ab564a3a68e806c242e7f7877484b44df5",
@@ -573,8 +569,8 @@ export const FILE_INDEX = {
     "contentType": "text/html; charset=utf-8"
   },
   "sitemap.xml": {
-    "hash": "4eaa87e00587db274a05de0fe244b24946715c92a076a4b5eb10b98367a584d1",
-    "size": 8452,
+    "hash": "66e6b42100cc000c3b8bcc71a7359c771388415c8ae91eb19f4cf7e928735fc3",
+    "size": 9273,
     "contentType": "application/octet-stream"
   },
   "SST-INTEGRATION.md": {
@@ -648,8 +644,8 @@ export const FILE_INDEX = {
     "contentType": "text/html; charset=utf-8"
   },
   "trust-security.html": {
-    "hash": "da7d9db9c14a97ae691d546cf8fba064c1490e89a5a9579e1292336a5a277c06",
-    "size": 58505,
+    "hash": "41a7b17574f33ab2fb65724fe3120b146cce85c7e768953a9cd7b02a2e6d2c18",
+    "size": 60186,
     "contentType": "text/html; charset=utf-8"
   },
   "tutorials/backup-recovery.html": {
@@ -733,8 +729,8 @@ export const FILE_INDEX = {
     "contentType": "text/html; charset=utf-8"
   },
   "WHITEPAPER.md": {
-    "hash": "e5e7471cda3b4bb5f46ebab3a49944c221461b29018b8a46691539a15462fa7c",
-    "size": 23836,
+    "hash": "f714aacc072581296ea57dc484aef9d0dacbffcbbce3c951173eeeb9b7b4115f",
+    "size": 25450,
     "contentType": "application/octet-stream"
   },
   "yak-icon.png": {

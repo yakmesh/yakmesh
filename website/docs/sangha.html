@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="sangha">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="favicon.ico" sizes="32x32">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <title>SANGHA | YAKMESH Documentation</title>
+  <meta name="description"
+    content="SANGHA — Collective component attestation with synapse mesh, antibody circulation, and filesystem hardening.">
+  <link rel="stylesheet" href="tailwind.min.css">
+  <link rel="stylesheet" href="prism-tomorrow.min.css" media="print" onload="this.media='all'">
+  <noscript>
+    <link rel="stylesheet" href="prism-tomorrow.min.css">
+  </noscript>
+  <link rel="stylesheet" href="docs.css">
+  <style>
+    .theme-accent {
+      color: #f87171;
+    }
+
+    .theme-accent-hover:hover {
+      color: #fca5a5;
+    }
+
+    .theme-badge {
+      background: rgba(248, 113, 113, 0.2);
+      color: #f87171;
+    }
+
+    .theme-border {
+      border-color: #dc2626;
+    }
+
+    .theme-callout {
+      background: rgba(248, 113, 113, 0.1);
+      border-color: #b91c1c;
+    }
+
+    .active-link {
+      background: rgba(248, 113, 113, 0.2) !important;
+      color: #f87171 !important;
+    }
+  </style>
+
+  <!-- Open Graph -->
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Yakmesh Documentation">
+  <meta property="og:title" content="SANGHA — Yakmesh">
+  <meta property="og:description"
+    content="SANGHA — Collective component attestation. Synapse mesh, antibody circulation, FileGuardian, memory canaries.">
+  <meta property="og:url" content="https://yakmesh.dev/docs/sangha.html">
+  <link rel="canonical" href="https://yakmesh.dev/docs/sangha.html">
+</head>
+
+<body class="bg-mountain-900 text-white min-h-screen">
+  <!-- YAKMESH-ICON-SPRITE-START -->
+  <!-- YAKMESH-ICON-SPRITE-END -->
+  <a href="#mainContent" class="skip-link">Skip to main content</a>
+
+  <nav class="docs-sidebar" id="sidebar">
+    <a href="index.html" class="sidebar-logo"><span class="logo-icon"><svg class="doc-icon" aria-hidden="true">
+          <use href="#icon-mountain" />
+        </svg></span><span class="logo-text">Yakmesh</span></a>
+    <a href="/dashboard" class="sidebar-dashboard-link"><svg class="doc-icon" aria-hidden="true">
+        <use href="#icon-dashboard" />
+      </svg> <span>Dashboard</span></a>
+    <ul class="sidebar-nav">
+    </ul>
+  </nav>
+
+  <button class="sidebar-toggle" id="sidebarToggle" title="Toggle sidebar">
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+    </svg>
+  </button>
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <main class="docs-main" id="mainContent">
+    <div class="docs-content">
+      <div class="flex items-center gap-3 mb-4">
+        <svg class="doc-icon hero-icon" aria-hidden="true">
+          <use href="#icon-sangha" />
+        </svg>
+        <div>
+          <h1 class="text-4xl font-bold">SANGHA <span class="text-xl text-mountain-400">&#x0938;&#x0902;&#x0918;</span></h1>
+          <p class="theme-accent">Unified Component Attestation &amp; Collective Security</p>
+        </div>
+      </div>
+      <p class="text-xl text-mountain-300 mb-4">Community-driven collective attestation with synapse mesh,
+        antibody circulation, filesystem hardening, and memory canaries.</p>
+      <span class="inline-block text-xs theme-badge px-2 py-1 rounded mb-8">v3.3.0 &bull; Layer 23.5</span>
+
+      <div class="feature-box">
+        <h2>The Community That Guards Itself</h2>
+        <p>A <em>sangha</em> is a community &mdash; in Buddhist tradition, a gathering of practitioners who
+          hold each other accountable, maintain collective discipline, and defend the integrity of the whole
+          through mutual vigilance. In yakmesh, SANGHA is the protocol that makes components <strong>vouch for
+          each other</strong>: every subsystem registers with the collective, forms bidirectional synapses
+          with its peers, and participates in continuous antibody circulation. If one component falls silent
+          or reports anomalous state, the entire sangha responds. No component stands alone; no failure goes
+          unwitnessed.</p>
+      </div>
+
+      <div class="theme-callout border rounded-xl p-6 mb-8">
+        <h3 class="text-lg font-semibold mb-2"><svg class="doc-icon inline-icon" width="24" height="24"
+            aria-hidden="true">
+            <use href="#icon-suraksha" />
+          </svg> SANGHA &amp; SURAKSHA</h3>
+        <p class="text-mountain-300">
+          <a href="trust-security.html" class="theme-accent theme-accent-hover">SURAKSHA</a> defines the
+          cryptographic security model &mdash; ML-DSA-65 signatures, ML-KEM-768 key encapsulation, threat
+          classification. SANGHA sits above SURAKSHA at Layer 23.5, providing the <strong>collective</strong>
+          enforcement: component attestation, filesystem integrity, and coordinated anomaly response.
+          Think of SURAKSHA as the locks on each door; SANGHA is the neighborhood watch.
+        </p>
+      </div>
+
+      <!-- Component Registration -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4">Component Registration</h2>
+        <p class="text-mountain-300 mb-4">
+          Six core components register with SANGHA at startup, each providing a state getter function
+          that returns its current health snapshot:
+        </p>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700 mb-6">
+          <pre><code class="language-javascript">// Register a component with SANGHA
+sangha.register(componentId, componentRef, stateGetter);
+
+// Example: Registering the CRYPTO component
+sangha.register('CRYPTO', accel, () => ({
+    initialized: accel.initialized,
+    nativeSha3: accel.HW.nativeSha3,
+    available: accel.ready,
+    shaRuns: accel.stats?.shaRuns || 0,
+}));</code></pre>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
+          <div class="bg-mountain-800 rounded-xl p-4 border border-mountain-700 text-center">
+            <svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true"><use href="#icon-lock"/></svg>
+            <p class="font-semibold mt-2">CRYPTO</p>
+            <p class="text-mountain-400 text-sm">Cryptographic ops</p>
+          </div>
+          <div class="bg-mountain-800 rounded-xl p-4 border border-mountain-700 text-center">
+            <svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true"><use href="#icon-mandala"/></svg>
+            <p class="font-semibold mt-2">MESH</p>
+            <p class="text-mountain-400 text-sm">Network layer</p>
+          </div>
+          <div class="bg-mountain-800 rounded-xl p-4 border border-mountain-700 text-center">
+            <svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true"><use href="#icon-tattva"/></svg>
+            <p class="font-semibold mt-2">ORACLE</p>
+            <p class="text-mountain-400 text-sm">Consensus &amp; time</p>
+          </div>
+          <div class="bg-mountain-800 rounded-xl p-4 border border-mountain-700 text-center">
+            <svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true"><use href="#icon-tivra"/></svg>
+            <p class="font-semibold mt-2">ACCEL</p>
+            <p class="text-mountain-400 text-sm">GPU/NPU hardware</p>
+          </div>
+          <div class="bg-mountain-800 rounded-xl p-4 border border-mountain-700 text-center">
+            <svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true"><use href="#icon-server"/></svg>
+            <p class="font-semibold mt-2">HTTP</p>
+            <p class="text-mountain-400 text-sm">API server</p>
+          </div>
+          <div class="bg-mountain-800 rounded-xl p-4 border border-mountain-700 text-center">
+            <svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true"><use href="#icon-doko"/></svg>
+            <p class="font-semibold mt-2">IDENTITY</p>
+            <p class="text-mountain-400 text-sm">Key management</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Synapse Mesh -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4">Synapse Mesh</h2>
+        <p class="text-mountain-300 mb-4">
+          When a component registers, SANGHA creates bidirectional synapses to all existing components.
+          For N registered components, the total synapse count is:
+        </p>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700 mb-6">
+          <div class="text-center text-2xl font-bold theme-accent mb-4">
+            synapses = N(N&minus;1) / 2
+          </div>
+          <p class="text-mountain-400 text-sm text-center mb-4">
+            6 components &rarr; 15 synapses &bull; Synapse ID: <code class="theme-accent">componentA&lt;-&gt;componentB</code> (lexicographic)
+          </p>
+          <pre><code class="language-javascript">// Each synapse is a bidirectional cryptographic channel
+// with message chaining for attestation verification
+//
+// CRYPTO &lt;-&gt; MESH     CRYPTO &lt;-&gt; ORACLE   CRYPTO &lt;-&gt; ACCEL
+// CRYPTO &lt;-&gt; HTTP     CRYPTO &lt;-&gt; IDENTITY  MESH &lt;-&gt; ORACLE
+// MESH &lt;-&gt; ACCEL      MESH &lt;-&gt; HTTP        MESH &lt;-&gt; IDENTITY
+// ORACLE &lt;-&gt; ACCEL    ORACLE &lt;-&gt; HTTP      ORACLE &lt;-&gt; IDENTITY
+// ACCEL &lt;-&gt; HTTP      ACCEL &lt;-&gt; IDENTITY   HTTP &lt;-&gt; IDENTITY</code></pre>
+        </div>
+      </section>
+
+      <!-- State Machine -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4">State Machine</h2>
+        <p class="text-mountain-300 mb-4">
+          SANGHA tracks collective health with a three-state machine:
+        </p>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+          <div class="bg-mountain-800 rounded-xl p-6 border border-green-700 text-center">
+            <div class="text-3xl mb-2">+1</div>
+            <h4 class="font-bold text-green-400 text-lg">HARMONIOUS</h4>
+            <p class="text-mountain-400 text-sm mt-2">All components attested. Clean circulation cycle completed.
+              Normal operations.</p>
+          </div>
+          <div class="bg-mountain-800 rounded-xl p-6 border border-yellow-700 text-center">
+            <div class="text-3xl mb-2">0</div>
+            <h4 class="font-bold text-yellow-400 text-lg">CONVERGING</h4>
+            <p class="text-mountain-400 text-sm mt-2">Circulation in progress. Working toward consensus.
+              Startup or recovery state.</p>
+          </div>
+          <div class="bg-mountain-800 rounded-xl p-6 border border-red-700 text-center">
+            <div class="text-3xl mb-2">&minus;1</div>
+            <h4 class="font-bold text-red-400 text-lg">DISRUPTED</h4>
+            <p class="text-mountain-400 text-sm mt-2">Attestation chain broken. Anomaly detected.
+              Collective response triggered.</p>
+          </div>
+        </div>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+          <h3 class="text-lg font-semibold mb-3">Transitions</h3>
+          <ul class="list-disc list-inside text-mountain-300 space-y-2">
+            <li><strong>Circuit breaker</strong>: Any anomaly detection immediately transitions to DISRUPTED regardless of previous state</li>
+            <li><strong>Recovery</strong>: After a clean circulation cycle with all components attesting within their validity windows, state returns to HARMONIOUS</li>
+            <li><strong>Startup</strong>: Node begins in CONVERGING and transitions to HARMONIOUS after first successful full circulation</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Attestation Windows -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4">Attestation Validity Windows</h2>
+        <p class="text-mountain-300 mb-4">
+          Each component has a maximum time window within which it must respond to attestation requests.
+          Windows are tuned to each component&rsquo;s operational characteristics:
+        </p>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+          <table class="w-full">
+            <thead>
+              <tr class="border-b border-mountain-700">
+                <th class="text-left p-3 text-mountain-300">Component</th>
+                <th class="text-left p-3 text-mountain-300">Window</th>
+                <th class="text-left p-3 text-mountain-300">Rationale</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3 font-semibold">CRYPTO</td>
+                <td class="p-3 theme-accent">100ms</td>
+                <td class="p-3 text-mountain-400">Real-time crypto must respond immediately</td>
+              </tr>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3 font-semibold">IDENTITY</td>
+                <td class="p-3 theme-accent">100ms</td>
+                <td class="p-3 text-mountain-400">Identity is security-critical</td>
+              </tr>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3 font-semibold">ORACLE</td>
+                <td class="p-3 theme-accent">200ms</td>
+                <td class="p-3 text-mountain-400">Consensus needs tight time bounds</td>
+              </tr>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3 font-semibold">MESH</td>
+                <td class="p-3 theme-accent">500ms</td>
+                <td class="p-3 text-mountain-400">Network operations have inherent latency</td>
+              </tr>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3 font-semibold">ACCEL</td>
+                <td class="p-3 theme-accent">1000ms</td>
+                <td class="p-3 text-mountain-400">GPU/NPU operations can be slow</td>
+              </tr>
+              <tr>
+                <td class="p-3 font-semibold">HTTP</td>
+                <td class="p-3 theme-accent">2000ms</td>
+                <td class="p-3 text-mountain-400">User-facing server has widest tolerance</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- FileGuardian -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4"><svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true">
+            <use href="#icon-shield" />
+          </svg> FileGuardian</h2>
+        <p class="text-mountain-300 mb-4">
+          SANGHA&rsquo;s filesystem hardening extension monitors critical identity and data files for tampering.
+          SHA3-256 hash baselines are taken at startup and continuously verified:
+        </p>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700 mb-6">
+          <table class="w-full">
+            <thead>
+              <tr class="border-b border-mountain-700">
+                <th class="text-left p-3 text-mountain-300">File</th>
+                <th class="text-left p-3 text-mountain-300">Level</th>
+                <th class="text-left p-3 text-mountain-300">Policy</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3"><code class="theme-accent">data/machine-seed.json</code></td>
+                <td class="p-3"><span class="theme-badge px-2 py-1 rounded">CRITICAL</span></td>
+                <td class="p-3 text-mountain-400">Immutable after grace period (POSIX 0o400). Hash + size verified.</td>
+              </tr>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3"><code class="theme-accent">data/node-key.json</code></td>
+                <td class="p-3"><span class="theme-badge px-2 py-1 rounded">HIGH</span></td>
+                <td class="p-3 text-mountain-400">Locked after startup (0o600). No post-init changes.</td>
+              </tr>
+              <tr>
+                <td class="p-3"><code class="theme-accent">data/yakmesh.db</code></td>
+                <td class="p-3"><span class="inline-block text-xs bg-mountain-700 text-mountain-300 px-2 py-1 rounded">NORMAL</span></td>
+                <td class="p-3 text-mountain-400">Monitored for existence/deletion. Mutable by design (0o644).</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+          <h3 class="text-lg font-semibold mb-3">Detection Mechanisms</h3>
+          <ul class="list-disc list-inside text-mountain-300 space-y-2">
+            <li><strong>Real-time file watcher</strong> on CRITICAL and HIGH files &mdash; instant notification on modification</li>
+            <li><strong>SHA3-256 hash verification</strong>: baseline hash taken at startup, compared on each verification cycle</li>
+            <li><strong>Size verification</strong>: baseline size vs. current &mdash; detects truncation or append attacks</li>
+            <li><strong>Stale detection</strong>: heartbeat &gt;10s old marks peer as stale in PeerPhaseBuffer</li>
+            <li><strong>Detection timeline</strong>: tamper detected within 5 seconds (one circulation cycle)</li>
+          </ul>
+        </div>
+      </section>
+
+      <!-- Memory Canaries -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4">Memory Safety Canaries</h2>
+        <p class="text-mountain-300 mb-4">
+          SANGHA plants runtime memory canaries to detect data structure corruption &mdash;
+          a defense against buffer overflows, use-after-free, and heap spraying that might bypass
+          JavaScript&rsquo;s type safety via native addons or SharedArrayBuffer manipulation.
+        </p>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+          <p class="text-mountain-400 text-sm">
+            Canaries are checked during each antibody circulation cycle. A corrupted canary
+            immediately triggers DISRUPTED state and collective response, halting operations
+            until integrity is restored.
+          </p>
+        </div>
+      </section>
+
+      <!-- API -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4"><svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true">
+            <use href="#icon-api" />
+          </svg> API Endpoints</h2>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+          <table class="w-full">
+            <thead>
+              <tr class="border-b border-mountain-700">
+                <th class="text-left p-3 text-mountain-300">Endpoint</th>
+                <th class="text-left p-3 text-mountain-300">Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="border-b border-mountain-700">
+                <td class="p-3"><code class="theme-accent">GET /api/sangha</code></td>
+                <td class="p-3 text-mountain-400">Full SANGHA status: state, components, synapses, anomaly count, FileGuardian status</td>
+              </tr>
+              <tr>
+                <td class="p-3"><code class="theme-accent">GET /health</code></td>
+                <td class="p-3 text-mountain-400">Includes SANGHA state in overall node health response</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Version History -->
+      <section class="mb-12">
+        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2"><svg class="doc-icon inline-icon" width="24"
+            height="24" aria-hidden="true">
+            <use href="#icon-hourglass" />
+          </svg> Version History</h2>
+        <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
+          <table class="w-full">
+            <thead>
+              <tr class="border-b border-mountain-700">
+                <th class="text-left p-3 text-mountain-300">Version</th>
+                <th class="text-left p-3 text-mountain-300">Changes</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="p-3"><span class="theme-badge px-2 py-1 rounded">v3.3.0</span></td>
+                <td class="p-3 text-mountain-400">
+                  Initial implementation: component registration, synapse mesh (N(N&minus;1)/2),
+                  antibody circulation, HARMONIOUS/CONVERGING/DISRUPTED state machine,
+                  FileGuardian (CRITICAL/HIGH/NORMAL), memory safety canaries,
+                  component-specific attestation validity windows.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Journey Navigation -->
+      <div class="border-t border-mountain-700 mt-12 pt-8">
+        <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
+        <div class="flex flex-col sm:flex-row gap-4">
+          <a href="trust-security.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">
+            <div class="text-xs text-mountain-400 mb-1">&larr; Previous</div>
+            <div class="flex items-center gap-2">
+              <svg class="doc-icon journey-icon" aria-hidden="true"><use href="#icon-suraksha"/></svg>
+              <span class="font-semibold group-hover:text-theme-accent">SURAKSHA</span>
+            </div>
+            <p class="text-mountain-400 text-sm mt-1">Security model</p>
+          </a>
+          <a href="tivra.html" class="flex-1 block bg-mountain-800 border border-theme-primary rounded-xl p-4 hover:border-theme-accent transition group">
+            <div class="text-xs text-mountain-400 mb-1">Next &rarr;</div>
+            <div class="flex items-center gap-2">
+              <svg class="doc-icon journey-icon" aria-hidden="true"><use href="#icon-tivra"/></svg>
+              <span class="font-semibold group-hover:text-theme-accent">TIVRA</span>
+            </div>
+            <p class="text-mountain-400 text-sm mt-1">Hardware acceleration</p>
+          </a>
+        </div>
+      </div>
+  </main>
+
+  <footer class="docs-footer">
+    <p>&copy; 2026 YAKMESH&trade;</p>
+  </footer>
+  <script src="prism.min.js" defer></script>
+  <script src="prism-javascript.min.js" defer></script>
+  <script src="docs.js" defer></script>
+</body>
+
+</html>

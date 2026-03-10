@@ -5,7 +5,7 @@
 **Author:** yakmesh.dev  
 **Date:** January 2026  
 **USPTO Serial No:** 99594620  
-**Version:** 1.5.0  
+**Version:** 1.6.0  
 
 ---
 
@@ -598,6 +598,29 @@ YAKMESH provides:
 4. **Atomic Precision:** Hardware-based timing enables new paradigms
 
 The Yielding Atomic Kernel is not just an incremental improvement—it is a fundamental rethinking of how mesh networks achieve resilience.
+
+---
+
+## v3.3.0 Addendum — The Hardening Release
+
+### AGUWA: Adaptive Phase Coupling (Layer 16.5)
+
+Kuramoto oscillator model for mesh clock synchronization. Peers maintain phase buffers in SharedArrayBuffers, with exponential-decay weighted coupling. Dynamic capacity formula adjusts maxPeers based on real-time network and temporal multipliers. Worker thread offloading keeps coupling calculations off the main event loop.
+
+### SAMUHA: Weighted Ternary Admission (Layer 17.5)
+
+Replaces binary accept/reject with three-way ADMIT/HOLD/REDIRECT verdicts. Priority scoring (0.3×karma + 0.3×hw + 0.2×returning + 0.2×mani) determines admission under load. REDIRECT eviction gracefully displaces low-priority peers when high-priority peers arrive at capacity.
+
+### SANGHA: Collective Component Attestation (Layer 23.5)
+
+Six core components (CRYPTO, MESH, ORACLE, ACCEL, HTTP, IDENTITY) form a synapse mesh of 15 bidirectional channels. Continuous antibody circulation verifies component health through state getters. Three-state machine (HARMONIOUS/CONVERGING/DISRUPTED) tracks collective integrity. FileGuardian monitors critical identity files with SHA3-256 hash baselines.
+
+### Additional Hardening
+
+- **ANNEX session hardening**: 6 bugs fixed (session ID entropy, replay timing, GCM nonce rotation, handshake timeout, error sanitization, sequence overflow)
+- **48 spec invariants**: Machine-verifiable tests across ANNEX, TRIBHUJ, SANGHA, SAMUHA
+- **Worker thread offloading**: Phase coupling, batch verification, bulk hashing
+- **AGPL-3.0 license migration**: Network-accessible derivatives must share source
 
 ---
 
