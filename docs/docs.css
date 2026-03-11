@@ -555,7 +555,9 @@ pre[class*="language-"] {
 
 [data-theme="mandala"] body::after {
   background-image: url('assets/silhouettes/mandala-network.svg');
-    background-position: center center;
+  background-position: center center;
+}
+
 /* DOCS BUNDLE - Package amber/gold, bundled shipment */
 [data-theme="docs-bundle"] {
   --theme-primary: #f59e0b;
