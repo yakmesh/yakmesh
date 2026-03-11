@@ -321,8 +321,8 @@ describe('AGUWA + JHILKE Integration', () => {
 
             // MA-902 says system is 4.7s behind GPS
             const systemNow = Date.now();
-            const gpsTime = (systemNow + 4700) / 1000;
-            a.calibrateFromGPS(gpsTime);
+            const hardwareTime = (systemNow + 4700) / 1000;
+            a.calibrateFromHardware(hardwareTime);
 
             expect(Math.abs(a._correctionMs - 4700)).toBeLessThan(100);
         });
@@ -432,10 +432,12 @@ describe('AGUWA + JHILKE Integration', () => {
                 wallTime += 1000;
             }
 
-            // 4. GPS corrections are set by calibrateFromGPS; Kuramoto fine-tunes
+            // 4. Hardware corrections are set by calibrateFromHardware; Kuramoto fine-tunes
             // Both still have GPS-based corrections, plus Kuramoto adjustments from jitter
             expect(aguwaA._correctionMs).not.toBe(-4700); // Kuramoto shifted it
             expect(aguwaB._correctionMs).not.toBe(-1200); // Kuramoto shifted it
         });
     });
 });
+
+

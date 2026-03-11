@@ -132,40 +132,40 @@ describe('Aguwa', () => {
     // ═══════════════════════════════════════════════════════════════════════════
 
     describe('GPS Calibration', () => {
-        test('calibrateFromGPS sets correction offset', () => {
+        test('calibrateFromHardware sets correction offset', () => {
             const systemNow = Date.now();
             // Simulate GPS ahead by 500ms
-            const gpsUnix = (systemNow + 500) / 1000;
-            aguwa.calibrateFromGPS(gpsUnix);
+            const hardwareUnix = (systemNow + 500) / 1000;
+            aguwa.calibrateFromHardware(hardwareUnix);
             // correction should be ~500ms (±jitter)
             expect(Math.abs(aguwa._correctionMs - 500)).toBeLessThan(50);
         });
 
-        test('calibrateFromGPS skips tiny offsets (<10ms)', () => {
+        test('calibrateFromHardware skips tiny offsets (<10ms)', () => {
             const systemNow = Date.now();
-            const gpsUnix = (systemNow + 5) / 1000; // only 5ms ahead
-            aguwa.calibrateFromGPS(gpsUnix);
+            const hardwareUnix = (systemNow + 5) / 1000; // only 5ms ahead
+            aguwa.calibrateFromHardware(hardwareUnix);
             expect(aguwa._correctionMs).toBe(0); // Should not have changed
         });
 
-        test('calibrateFromGPS rejects insane offsets (>60s)', () => {
+        test('calibrateFromHardware rejects insane offsets (>60s)', () => {
             const systemNow = Date.now();
-            const gpsUnix = (systemNow + 120_000) / 1000; // 120s ahead
-            aguwa.calibrateFromGPS(gpsUnix);
+            const hardwareUnix = (systemNow + 120_000) / 1000; // 120s ahead
+            aguwa.calibrateFromHardware(hardwareUnix);
             expect(aguwa._correctionMs).toBe(0);
         });
 
-        test('calibrateFromGPS handles negative offset (GPS behind)', () => {
+        test('calibrateFromHardware handles negative offset (GPS behind)', () => {
             const systemNow = Date.now();
-            const gpsUnix = (systemNow - 1000) / 1000; // 1s behind
-            aguwa.calibrateFromGPS(gpsUnix);
+            const hardwareUnix = (systemNow - 1000) / 1000; // 1s behind
+            aguwa.calibrateFromHardware(hardwareUnix);
             expect(Math.abs(aguwa._correctionMs + 1000)).toBeLessThan(50);
         });
 
-        test('calibrateFromGPS ignores null/invalid input', () => {
-            aguwa.calibrateFromGPS(null);
+        test('calibrateFromHardware ignores null/invalid input', () => {
+            aguwa.calibrateFromHardware(null);
             expect(aguwa._correctionMs).toBe(0);
-            aguwa.calibrateFromGPS('not a number');
+            aguwa.calibrateFromHardware('not a number');
             expect(aguwa._correctionMs).toBe(0);
         });
     });
@@ -914,3 +914,5 @@ describe('Aguwa', () => {
         });
     });
 });
+
+

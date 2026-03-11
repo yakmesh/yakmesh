@@ -757,9 +757,9 @@ export class ValidationOracle {
     // B8: AGUWA onHeartbeat wired
     results.push(serverSrc.includes('aguwa.onHeartbeat('));
 
-    // B9: AGUWA calibrateFromGPS wired
+    // B9: AGUWA calibrateFromHardware wired
     results.push(
-      serverSrc.includes('aguwa.calibrateFromGPS(') ||
+      serverSrc.includes('aguwa.calibrateFromHardware(') ||
       serverSrc.includes('aguwa.calibrate(')
     );
 
@@ -1648,3 +1648,4 @@ export function createOracle() {
 
 // Export for testing
 export { MODULE_SEAL, deepFreeze, safeGet, createSafeObject };
+
