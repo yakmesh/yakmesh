@@ -1169,10 +1169,8 @@ body:has(.docs-sidebar.icon-only) .docs-footer {
 /* Narrow screens - hide sidebar, show hamburger menu */
 @media (max-width: 900px) {
   /* Silhouette spans full viewport when sidebar is hidden */
-  body::after {
-    left: 0;
-  }
-
+    body::after,
+    .ym-particles-container {
   .docs-sidebar {
     display: none !important;
     position: fixed;
@@ -2311,9 +2309,26 @@ body:has(.docs-sidebar.icon-only) .docs-footer {
    Spawned dynamically by docs.js initParticles().
    ============================================ */
 
-/* --- Base Particle --- */
-.ym-particle {
-  position: fixed;
+/* --- Particle Container --- */
+  .ym-particles-container {
+    position: fixed;
+    top: 0;
+    left: var(--sidebar-width);
+    right: 0;
+    bottom: 0;
+    pointer-events: none;
+    z-index: 1;
+    overflow: hidden;
+    transition: left 0.3s ease;
+  }
+
+  body.sidebar-narrow .ym-particles-container {
+    left: var(--sidebar-collapsed-width);
+  }
+
+  /* --- Base Particle --- */
+  .ym-particle {
+    position: absolute;
   pointer-events: none;
   z-index: 1;
   border-radius: 50%;
