@@ -566,12 +566,12 @@ export class YakmeshNode {
       const status = this.timeSource.getStatus();
       if (status.ma902?.available && typeof status.ma902?.clockOffset === 'number') {
         // clockOffset is signed: GPS_time - system_time (seconds)
-        // Positive = system behind GPS, negative = system ahead
+        // Positive = system behind hardware, negative = system ahead
         const offsetMs = status.ma902.clockOffset * 1000;
         if (Math.abs(offsetMs) >= 10 && Math.abs(offsetMs) < 60_000) {
-          aguwa.calibrateFromGPS(Math.floor(Date.now() / 1000) + status.ma902.clockOffset);
+          aguwa.calibrateFromHardware(Math.floor(Date.now() / 1000) + status.ma902.clockOffset);
         } else if (Math.abs(offsetMs) < 10) {
-          log.debug('AGUWA: System clock within 10ms of GPS — no calibration needed');
+          log.debug('AGUWA: System clock within 10ms of hardware — no calibration needed');
         }
       }
     }
@@ -5856,6 +5856,8 @@ if (isMainModule) {
 }
 
 export default YakmeshNode;
+
+
 
 
 

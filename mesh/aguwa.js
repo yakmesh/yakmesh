@@ -48,7 +48,7 @@
  * This module is USELESS without three critical wirings in server/index.js:
  *
  *  1. aguwa.init(oracle.selfHash)     — Derives Kuramoto ω from codebase hash
- *  2. aguwa.calibrateFromGPS(gpsUnix) — Seeds _correctionMs from MA-902 GPS
+ *  2. aguwa.calibrateFromHardware(hardwareUnix) — Seeds _correctionMs from hardware source
  *  3. aguwa.onHeartbeat(origin, now)  — Called from _handleTimeHeartbeat
  *
  * Without ALL THREE, aguwa.now() === Date.now() and commit-reveal WILL fail.
@@ -438,26 +438,26 @@ class Aguwa {
      * Sets _correctionMs so that aguwa.now() ≈ GPS Unix ms.
      * Should be called once at startup when MA-902 telemetry is available.
      *
-     * @param {number} gpsTimeUnix - GPS time in Unix seconds from MA-902
+     * @param {number} hardwareTimeUnix - Hardware time (Atomic/GPS) in Unix seconds
      */
-    calibrateFromGPS(gpsTimeUnix) {
-        if (!gpsTimeUnix || typeof gpsTimeUnix !== 'number') return;
-        const gpsMs = gpsTimeUnix * 1000;
+    calibrateFromHardware(hardwareTimeUnix) {
+        if (!hardwareTimeUnix || typeof hardwareTimeUnix !== 'number') return;
+        const hardwareMs = hardwareTimeUnix * 1000;
         const systemMs = Date.now();
-        const deltaMs = gpsMs - systemMs;
+        const deltaMs = hardwareMs - systemMs;
 
         // Only apply if the delta is meaningful (>10ms) and not insane (>60s)
         if (Math.abs(deltaMs) < 10) {
-            log.debug('AGUWA GPS calibration: system clock already within 10ms of GPS');
+            log.debug('AGUWA hardware calibration: system clock already within 10ms of hardware clock');
             return;
         }
         if (Math.abs(deltaMs) > 60_000) {
-            log.warn(`AGUWA GPS calibration: delta ${deltaMs}ms too large (>60s), skipping — check system clock`);
+            log.warn(`AGUWA hardware calibration: delta ${deltaMs}ms too large (>60s), skipping — check system clock`);
             return;
         }
 
         this._correctionMs = deltaMs;
-        log.info(`AGUWA GPS calibrated | offset = ${deltaMs > 0 ? '+' : ''}${deltaMs.toFixed(1)}ms`);
+        log.info(`AGUWA hardware calibrated | offset = ${deltaMs > 0 ? '+' : ''}${deltaMs.toFixed(1)}ms`);
     }
 
     // ───────────────────────────────────────────────────────────────────────────
@@ -1069,3 +1069,6 @@ export const aguwa = getAguwa();
 
 export { AGUWA_CONFIG, PeerPhaseState, Aguwa };
 export default aguwa;
+
+
+
