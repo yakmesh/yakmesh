@@ -717,7 +717,7 @@ export class WebsiteAdapter extends BaseAdapter {
         return res.status(404).json({ error: 'No website configured' });
       }
       
-      const result = this.serveFile(websiteId, path);
+      const websiteIdFinal = path.startsWith(websiteId + "/") ? websiteId : (path.split("/")[0].length === 64 ? path.split("/")[0] : websiteId); const filePathFinal = path.startsWith(websiteIdFinal + "/") ? path.slice(websiteIdFinal.length + 1) : path; const result = this.serveFile(websiteIdFinal, filePathFinal);
       
       if (!result) {
         return res.status(404).send('File not found');

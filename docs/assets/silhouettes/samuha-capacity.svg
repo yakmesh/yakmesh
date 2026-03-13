@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -60 1920 1080" preserveAspectRatio="xMidYMax slice">
+  <defs>
+    <radialGradient id="samuhaGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#fbbf24" stop-opacity="0.3"/>
+      <stop offset="60%" stop-color="#d97706" stop-opacity="0.1"/>
+      <stop offset="100%" stop-color="#101a16" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="admitGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#4ade80" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#101a16" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="holdGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#fef08a" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#101a16" stop-opacity="0"/>
+    </radialGradient>
+     <radialGradient id="redirectGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#f87171" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#101a16" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- BACKGROUND MOUNTAINS -->
+  <polygon points="0,650 250,350 500,600 500,1080 0,1080" fill="#1a2a22" opacity="0.5"/>
+  <polygon points="400,600 700,300 1000,550 1000,1080 400,1080" fill="#15201a" opacity="0.6"/>
+  <polygon points="900,550 1200,280 1500,620 1500,1080 900,1080" fill="#1a2a22" opacity="0.5"/>
+  <polygon points="1400,600 1700,350 1920,500 1920,1080 1400,1080" fill="#15201a" opacity="0.6"/>
+
+  <!-- CENTRAL TRIAGE HUB RADIANCE -->
+  <circle cx="960" cy="700" r="400" fill="url(#samuhaGlow)"/>
+
+  <!-- INCOMING PATH / BRIDGE -->
+  <path d="M700,1080 L920,800 L1000,800 L1220,1080 Z" fill="#203328" opacity="0.8"/>
+  <!-- INCOMING PARTICLES -->
+  <circle cx="960" cy="950" r="10" fill="#fbbf24" opacity="0.4"/>
+  <circle cx="960" cy="880" r="15" fill="#fbbf24" opacity="0.6"/>
+
+  <!-- MAIN STRUCTURE (The Gate) -->
+  <polygon points="860,820 1060,820 1020,680 900,680" fill="#101a16"/>
+  <polygon points="850,680 1070,680 1040,640 880,640" fill="#203328"/>
+  <polygon points="920,640 1000,640 960,540" fill="#2d4235"/>
+
+  <!-- THE THREE PATHS (Ternary Branching) -->
+  <!-- LEFT: Admit (Green) -->
+  <path d="M860,780 L600,650 L620,630 L880,750 Z" fill="#15201a"/>
+  <!-- MIDDLE: Hold (Yellow) -->
+  <path d="M960,680 L960,400 L980,400 L980,680 Z" fill="#15201a"/>
+  <!-- RIGHT: Redirect (Red) -->
+  <path d="M1060,780 L1320,650 L1300,630 L1040,750 Z" fill="#15201a"/>
+
+  <!-- TERNARY GLOW ELEMENTS -->
+  <circle cx="600" cy="640" r="120" fill="url(#admitGlow)"/>
+  <polygon points="580,640 600,610 620,640 600,670" fill="#4ade80"/>
+  <polyline points="650,660 700,690 750,720" stroke="#4ade80" stroke-width="2" opacity="0.5" fill="none" stroke-dasharray="10,10"/>
+
+  <circle cx="970" cy="400" r="120" fill="url(#holdGlow)"/>
+  <polygon points="950,400 970,370 990,400 970,430" fill="#fef08a"/>
+  <polyline points="970,500 970,550 970,600" stroke="#fef08a" stroke-width="2" opacity="0.5" fill="none" stroke-dasharray="10,10"/>
+
+  <circle cx="1320" cy="640" r="120" fill="url(#redirectGlow)"/>
+  <polygon points="1300,640 1320,610 1340,640 1320,670" fill="#f87171"/>
+  <polyline points="1270,660 1220,690 1170,720" stroke="#f87171" stroke-width="2" opacity="0.5" fill="none" stroke-dasharray="10,10"/>
+
+  <!-- SAKSHI & KARMA MONUMENTS ON PATHS -->
+  <rect x="580" y="600" width="40" height="20" fill="#101a16"/>
+  <rect x="950" y="360" width="40" height="20" fill="#101a16"/>
+  <rect x="1300" y="600" width="40" height="20" fill="#101a16"/>
+
+  <!-- STARS -->
+  <circle cx="200" cy="150" r="1" fill="#fff" opacity="0.3"/>
+  <circle cx="450" cy="200" r="2" fill="#fff" opacity="0.6"/>
+  <circle cx="800" cy="100" r="1" fill="#fff" opacity="0.2"/>
+  <circle cx="1600" cy="180" r="1.5" fill="#fff" opacity="0.5"/>
+  <circle cx="1800" cy="250" r="1" fill="#fff" opacity="0.4"/>
+</svg>

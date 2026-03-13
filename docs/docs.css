@@ -3253,3 +3253,27 @@ body.sidebar-narrow .ym-particles-container {
     display: none;
   }
 }
+[data-theme="aguwa"] {
+  --theme-primary: #10b981;
+  --theme-secondary: #059669;
+}
+
+[data-theme="aguwa"] body::after {
+  background-image: url('assets/silhouettes/aguwa-oscillator.svg');
+  background-position: center bottom;
+}
+
+[data-theme="sangha"] {
+  --theme-primary: #f97316;
+  --theme-secondary: #ea580c;
+}
+
+[data-theme="sangha"] body::after {
+  background-image: url('assets/silhouettes/sangha-assembly.svg');
+  background-position: center bottom;
+}
+
+
+[data-theme="samuha"] body::after {
+    background-image: url('assets/silhouettes/samuha-capacity.svg');
+}

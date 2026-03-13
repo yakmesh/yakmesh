@@ -779,7 +779,7 @@
           <p class="text-mountain-300 mb-3">The natural frequency &omega;<sub>i</sub> is derived from
             the peer&rsquo;s available time sources, in priority order:</p>
           <ol class="list-decimal list-inside text-mountain-300 space-y-2">
-            <li><strong>GPS</strong> &mdash; MA-902 stratum-1 time server (highest confidence)</li>
+            <li><strong>Hardware / Atomic</strong> &mdash; Local high-precision receivers (e.g., Atomic clock, GPS, Stratum-1) (highest confidence)</li>
             <li><strong>NTP</strong> &mdash; Network Time Protocol sources</li>
             <li><strong>Peer consensus</strong> &mdash; Median of connected peer clocks</li>
             <li><strong>Local monotonic</strong> &mdash; Fallback to system monotonic clock</li>
@@ -986,12 +986,12 @@ if (peerCount &gt; WORKER_THRESHOLD) {
 
       <!-- GPS & Order Parameter -->
       <section class="mb-12">
-        <h2 class="text-2xl font-bold mb-4">GPS Calibration &amp; Order Parameter</h2>
+        <h2 class="text-2xl font-bold mb-4">Hardware Calibration &amp; Order Parameter</h2>
         <div class="grid md:grid-cols-2 gap-4">
           <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
-            <h3 class="text-lg font-semibold mb-3">GPS Calibration</h3>
+            <h3 class="text-lg font-semibold mb-3">Hardware Calibration</h3>
             <p class="text-mountain-300 text-sm">
-              Peers with GPS time sources (MA-902 Stratum 1) receive the GPS-calibrated flag
+              Peers with high-precision time sources (atomic/GPS receivers) receive the hardware-calibrated flag
               in PeerPhaseBuffer. Their natural frequencies are treated as ground truth, and their
               coupling constants are reduced (0.04) because they&rsquo;re already accurate.
             </p>
@@ -1099,3 +1099,5 @@ if (peerCount &gt; WORKER_THRESHOLD) {
 </body>
 
 </html>
+
+

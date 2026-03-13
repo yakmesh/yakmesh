@@ -179,6 +179,18 @@ document.querySelectorAll('a[href^="#"]').forEach(function(anchor) {
  * max: max opacity (0-1)
  */
 var PARTICLE_THEMES = {
+    'sangha': {
+      shape: 'ym-hex', count: 15,
+      colors: ['#f97316', '#fb923c', '#fed7aa', '#ea580c'],
+      glows: ['rgba(249,115,22,0.3)', 'rgba(251,146,60,0.3)', 'rgba(254,215,170,0.3)', 'rgba(234,88,12,0.3)'],
+      sizes: [4, 9], pulse: [2.5, 4.5], drift: 'drift', max: 0.8
+    },
+    'aguwa': {
+      shape: 'ym-ring', count: 12,
+      colors: ['#10b981', '#34d399', '#6ee7b7'],
+      glows: ['rgba(16,185,129,0.3)', 'rgba(52,211,153,0.3)', 'rgba(110,231,183,0.3)'],
+      sizes: [4, 8], pulse: [2, 4], drift: 'drift', max: 0.8
+    },
   // ─── Protocol Stack ────────────────────────────────────
 
   'jhilke': {
@@ -614,3 +626,5 @@ function initTabs() {
     activate(0);
   });
 }
+
+

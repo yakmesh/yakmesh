@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 -60 1920 1080" preserveAspectRatio="xMidYMax slice">
+  <defs>
+    <radialGradient id="phaseGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#10b981" stop-opacity="0.4"/>
+      <stop offset="60%" stop-color="#059669" stop-opacity="0.1"/>
+      <stop offset="100%" stop-color="#101a16" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="nodeGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#34d399" stop-opacity="0.8"/>
+      <stop offset="100%" stop-color="#101a16" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  
+  <!-- MOUNTAIN BACKDROP -->
+  <polygon points="0,650 200,350 400,600 400,1080 0,1080" fill="#1a2a22" opacity="0.4"/>
+  <polygon points="300,680 500,380 700,620 700,1080 300,1080" fill="#1a2a22" opacity="0.5"/>
+  <polygon points="1200,660 1450,320 1700,600 1700,1080 1200,1080" fill="#1a2a22" opacity="0.5"/>
+  <polygon points="1500,680 1800,400 1920,650 1920,1080 1500,1080" fill="#1a2a22" opacity="0.4"/>
+
+  <!-- AGUWA PHASE SYNC / KURAMOTO MODEL -->
+  <!-- Massive Background Glow -->
+  <circle cx="960" cy="540" r="500" fill="url(#phaseGlow)"/>
+
+  <!-- Orbital Rings -->
+  <circle cx="960" cy="540" r="400" fill="none" stroke="#065f46" stroke-width="2" opacity="0.3" stroke-dasharray="10 15"/>
+  <circle cx="960" cy="540" r="300" fill="none" stroke="#059669" stroke-width="1.5" opacity="0.4"/>
+  <circle cx="960" cy="540" r="200" fill="none" stroke="#10b981" stroke-width="1" opacity="0.6" stroke-dasharray="5 10"/>
+  <circle cx="960" cy="540" r="100" fill="none" stroke="#34d399" stroke-width="1.5" opacity="0.8"/>
+
+  <!-- Center Hub / Time Alpha -->
+  <circle cx="960" cy="540" r="40" fill="#047857" opacity="0.6"/>
+  <circle cx="960" cy="540" r="25" fill="#10b981" opacity="0.8"/>
+  <circle cx="960" cy="540" r="10" fill="#6ee7b7"/>
+
+  <!-- Coupling lines (curves connecting nodes towards center) -->
+  <path d="M960,140 Q 1100,300 960,440" fill="none" stroke="#10b981" stroke-width="2" opacity="0.4"/>
+  <path d="M660,540 Q 800,380 860,540" fill="none" stroke="#059669" stroke-width="2" opacity="0.3"/>
+  <path d="M1260,540 Q 1100,700 1060,540" fill="none" stroke="#34d399" stroke-width="2" opacity="0.5"/>
+  <path d="M960,940 Q 800,780 960,640" fill="none" stroke="#10b981" stroke-width="2" opacity="0.4"/>
+
+  <!-- Oscillators (Nodes in sync) -->
+  <circle cx="960" cy="140" r="12" fill="#34d399" opacity="0.9"/>
+  <circle cx="960" cy="140" r="30" fill="url(#nodeGlow)"/>
+  
+  <circle cx="660" cy="540" r="10" fill="#10b981" opacity="0.8"/>
+  <circle cx="660" cy="540" r="25" fill="url(#nodeGlow)"/>
+  
+  <circle cx="1260" cy="540" r="15" fill="#6ee7b7" opacity="0.9"/>
+  <circle cx="1260" cy="540" r="35" fill="url(#nodeGlow)"/>
+  
+  <circle cx="960" cy="940" r="10" fill="#34d399" opacity="0.7"/>
+  <circle cx="960" cy="940" r="20" fill="url(#nodeGlow)"/>
+
+  <!-- Sine wave motif (representing pulse) -->
+  <path d="M560,540 Q 660,460 760,540 T 960,540 T 1160,540 T 1360,540" fill="none" stroke="#6ee7b7" stroke-width="3" opacity="0.6"/>
+
+</svg>

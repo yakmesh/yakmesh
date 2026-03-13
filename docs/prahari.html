@@ -734,7 +734,7 @@
       </div>
       <p class="text-xl text-mountain-300 mb-4">SHA3-256 sponge engine absorbing 5 hardware entropy sources for
         post-quantum key generation.</p>
-      <span class="inline-block text-xs theme-badge px-2 py-1 rounded mb-8">v3.0.0</span>
+      <span class="inline-block text-xs theme-badge px-2 py-1 rounded mb-8">v3.3.0</span>
 
       <div class="feature-box">
         <h2>The Sentinel at the Mountain Pass</h2>
@@ -837,7 +837,7 @@ const seed = getHybridSeed();
                   </svg> RDRAND/RDSEED</td>
                 <td class="p-3"><code class="theme-accent">rdrand</code></td>
                 <td class="p-3"><span class="theme-badge px-2 py-1 rounded">8</span></td>
-                <td class="p-3 text-mountain-400">CPU hardware RNG (AMD Ryzen 7 8700F VAES)</td>
+                <td class="p-3 text-mountain-400">CPU hardware RNG (via VAES/AVX-512 extensions)</td>
               </tr>
               <tr class="border-b border-mountain-700">
                 <td class="p-3"><svg class="doc-icon inline-icon" aria-hidden="true">
@@ -845,7 +845,7 @@ const seed = getHybridSeed();
                   </svg> GPS Jitter</td>
                 <td class="p-3"><code class="theme-accent">gps-jitter</code></td>
                 <td class="p-3"><span class="theme-badge px-2 py-1 rounded">5</span></td>
-                <td class="p-3 text-mountain-400">MA-902 SNMP timing residuals via <a href="time-sources.html"
+                <td class="p-3 text-mountain-400">Hardware GPS timing residuals via <a href="time-sources.html"
                     class="theme-accent theme-accent-hover">MANI</a></td>
               </tr>
               <tr class="border-b border-mountain-700">
@@ -1093,7 +1093,7 @@ const result = await scoreEntropy(seedBytes);
             </thead>
             <tbody>
               <tr class="border-b border-mountain-700">
-                <td class="p-3"><span class="theme-badge px-2 py-1 rounded">v3.0.0</span></td>
+                <td class="p-3"><span class="theme-badge px-2 py-1 rounded">v3.3.0</span></td>
                 <td class="p-3 text-mountain-400">
                   Complete rewrite: SHA3-256 sponge engine replaces 144-slot array.
                   5 hardware entropy sources, two-source extractor, pluggable registry,
@@ -1147,3 +1147,4 @@ const result = await scoreEntropy(seedBytes);
 </body>
 
 </html>
+
