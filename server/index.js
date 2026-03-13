@@ -1444,9 +1444,10 @@ export class YakmeshNode {
       checkNtp: true,
       refreshInterval: 60000,  // Re-check every minute
       verbose: false,
-      ma902: {
+      ma902: this.config.mani?.ma902 || {
         host: '192.168.1.30',   // MA-902/S-C1 Gigabit PTP Time Server
         pollInterval: 10000,     // Poll SNMP telemetry every 10s
+        enabled: process.env.MA902_ENABLED === 'true' // Disable by default for non-LAN users
       },
     });
 
