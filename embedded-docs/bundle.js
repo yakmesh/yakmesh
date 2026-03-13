@@ -6,7 +6,7 @@
  * Regenerate with: npm run build:docs
  * Source: website/docs/
  * 
- * @generated 2026-03-12T18:33:00.292Z
+ * @generated 2026-03-13T05:37:24.670Z
  * @module embedded-docs/bundle
  */
 
@@ -25,7 +25,7 @@ export const BUNDLE_VERSION = '3.3.0';
 /**
  * Build timestamp (ISO 8601)
  */
-export const BUNDLE_BUILT_AT = '2026-03-12T18:33:00.292Z';
+export const BUNDLE_BUILT_AT = '2026-03-13T05:37:24.670Z';
 
 /**
  * Index of all files in the documentation bundle.
