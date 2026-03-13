@@ -188,7 +188,7 @@ const DEVICE_PATHS = {
 export class ManiTimeDetector extends EventEmitter {
   constructor(options = {}) {
     super();
-    
+
     this.options = {
       // Enable hardware detection
       detectHardware: options.detectHardware ?? true,
@@ -208,21 +208,21 @@ export class ManiTimeDetector extends EventEmitter {
         ...options.ma902
       },
     };
-    
+
     this.platform = platform();
     this.detectedSources = new Map();
     this.primarySource = null;
     this.trustLevel = ManiTrustLevel.UNSYNC;
     this.lastCheck = null;
     this.refreshTimer = null;
-    
+
     // MA-902 SNMP monitor instance
     this.ma902Monitor = null;
 
     // Generic Serial GPS monitor (u-blox, NMEA, etc.)
     this.genericGpsMonitor = null;
   }
-  
+
   /**
    * Start continuous monitoring of time sources
    */
@@ -231,10 +231,10 @@ export class ManiTimeDetector extends EventEmitter {
     // We only initialize if the host is reachable to avoid "assinine" timeouts on other nodes.
     try {
       const ma902Host = this.options.ma902?.host || '192.168.1.30';
-      
+
       // Fast probe (ping/port check) before committing to a heavy monitor loop
-      const isReachable = this.platform === 'win32' 
-        ? execSilent(`ping -n 1 -w 500 ${ma902Host}`) 
+      const isReachable = this.platform === 'win32'
+        ? execSilent(`ping -n 1 -w 500 ${ma902Host}`)
         : execSilent(`ping -c 1 -W 1 ${ma902Host}`);
 
       if (isReachable) {
@@ -243,7 +243,7 @@ export class ManiTimeDetector extends EventEmitter {
           verbose: this.options.verbose,
           ...this.options.ma902,
         });
-        
+
         // Forward MA-902 events
         this.ma902Monitor.on('telemetry', (data) => {
           this.emit('ma902:telemetry', data);
@@ -266,7 +266,7 @@ export class ManiTimeDetector extends EventEmitter {
           this.emit('ma902:trustChanged', data);
           this.detect();
         });
-        
+
         await this.ma902Monitor.start();
       } else {
         if (this.options.verbose) {
@@ -280,14 +280,14 @@ export class ManiTimeDetector extends EventEmitter {
 
     // 2. Start Generic Serial/USB GPS Hardware Monitor
     if (this.options.detectHardware) {
-      const probePaths = this.platform === 'linux' ? DEVICE_PATHS.linux.gps : 
-                        (this.platform === 'darwin' ? DEVICE_PATHS.darwin.gps : []);
-      
+      const probePaths = this.platform === 'linux' ? DEVICE_PATHS.linux.gps :
+        (this.platform === 'darwin' ? DEVICE_PATHS.darwin.gps : []);
+
       for (const gpsPath of probePaths) {
         if (existsSync(gpsPath)) {
           log.info(`📡 Universal GPS Scanner: Found candidate peripheral at ${gpsPath}`);
           this.genericGpsMonitor = new SerialGpsMonitor({ device: gpsPath });
-          
+
           this.genericGpsMonitor.on('telemetry', (data) => {
             this.emit('genericGps:telemetry', data);
             this.detect();
@@ -300,24 +300,24 @@ export class ManiTimeDetector extends EventEmitter {
             this.emit('genericGps:lockLost', data);
             this.detect();
           });
-          
+
           this.genericGpsMonitor.start();
           break; // Use the first available serial device
         }
       }
     }
-    
+
     this.detect();
-    
+
     if (this.options.refreshInterval > 0) {
       this.refreshTimer = setInterval(() => {
         this.detect();
       }, this.options.refreshInterval);
     }
-    
+
     return this;
   }
-  
+
   /**
    * Stop monitoring
    */
@@ -335,7 +335,7 @@ export class ManiTimeDetector extends EventEmitter {
       this.genericGpsMonitor = null;
     }
   }
-  
+
   /**
    * Detect all available time sources
    * @returns {Object} Detection results
@@ -349,7 +349,7 @@ export class ManiTimeDetector extends EventEmitter {
       trustLevel: TimeTrustLevel.UNSYNC,
       phaseTolerance: PhaseTolerance[TimeTrustLevel.UNSYNC],
     };
-    
+
     try {
       // Check for atomic clock (highest priority)
       const atomicResult = this.detectAtomicClock();
@@ -357,10 +357,10 @@ export class ManiTimeDetector extends EventEmitter {
         results.sources.atomic = atomicResult;
         this.detectedSources.set('atomic', atomicResult);
       }
-      
+
       // Check for GPS/PPS (enriched with MA-902 SNMP telemetry)
       const gpsResult = this.detectGPS();
-      
+
       // Enrich GPS result with Generic Serial/USB GPS telemetry if available
       if (this.genericGpsMonitor) {
         const telemetry = this.genericGpsMonitor.getTelemetry();
@@ -402,19 +402,19 @@ export class ManiTimeDetector extends EventEmitter {
           };
         }
       }
-      
+
       if (gpsResult.detected) {
         results.sources.gps = gpsResult;
         this.detectedSources.set('gps', gpsResult);
       }
-      
+
       // Check for PTP
       const ptpResult = this.detectPTP();
       if (ptpResult.detected) {
         results.sources.ptp = ptpResult;
         this.detectedSources.set('ptp', ptpResult);
       }
-      
+
       // Check NTP status — if MA-902 is the NTP source, note that
       const ntpResult = this.detectNTP();
       if (ntpResult.server && this.ma902Monitor?.isAvailable()) {
@@ -425,7 +425,7 @@ export class ManiTimeDetector extends EventEmitter {
       }
       results.sources.ntp = ntpResult;
       this.detectedSources.set('ntp', ntpResult);
-      
+
       // Determine primary source and trust level
       if (atomicResult.detected && atomicResult.synchronized) {
         results.primarySource = 'atomic';
@@ -440,35 +440,35 @@ export class ManiTimeDetector extends EventEmitter {
         results.primarySource = 'ntp';
         results.trustLevel = TimeTrustLevel.NTP;
       }
-      
+
       // MA-902 data enrichment for results
       if (this.ma902Monitor) {
         results.ma902 = this.ma902Monitor.getStatus();
       }
-      
+
       results.phaseTolerance = PhaseTolerance[results.trustLevel];
-      
+
     } catch (error) {
       if (this.options.verbose) {
         log.error('Time source detection error', { error: error.message });
       }
     }
-    
+
     // Update state
     this.primarySource = results.primarySource;
     this.trustLevel = results.trustLevel;
     this.lastCheck = results.timestamp;
-    
+
     // Emit event
     this.emit('detected', results);
-    
+
     if (this.options.verbose) {
       this.logDetectionResults(results);
     }
-    
+
     return results;
   }
-  
+
   /**
    * Detect PCIe atomic clock
    */
@@ -481,14 +481,14 @@ export class ManiTimeDetector extends EventEmitter {
       precision: null,
       stratum: null,
     };
-    
+
     if (this.platform === 'linux') {
       // Check for common atomic clock indicators
-      
+
       // 1. Check chrony sources for atomic reference
       try {
         const chronyOutput = execSilent('chronyc sources 2>/dev/null', { encoding: 'utf8', timeout: 5000 });
-        
+
         // Look for PPS or atomic sources (marked with * for selected, # for preferred)
         if (chronyOutput.includes('PPS') || chronyOutput.includes('ATOM')) {
           const lines = chronyOutput.split('\n');
@@ -505,7 +505,7 @@ export class ManiTimeDetector extends EventEmitter {
       } catch (e) {
         // chrony not available
       }
-      
+
       // 2. Check for PPS devices that might be atomic
       for (const ppsPath of DEVICE_PATHS.linux.pps) {
         if (existsSync(ppsPath)) {
@@ -513,10 +513,10 @@ export class ManiTimeDetector extends EventEmitter {
             // Read PPS device info
             const ppsNum = ppsPath.match(/pps(\d+)/)?.[1];
             const ppsInfoPath = `/sys/class/pps/pps${ppsNum}/`;
-            
+
             if (existsSync(ppsInfoPath)) {
               const name = readFileSync(`${ppsInfoPath}name`, 'utf8').trim();
-              
+
               // Known atomic clock identifiers
               const atomicIndicators = ['atomic', 'csac', 'rubidium', 'caesium', 'cesium', 'sa.45'];
               if (atomicIndicators.some(ind => name.toLowerCase().includes(ind))) {
@@ -531,7 +531,7 @@ export class ManiTimeDetector extends EventEmitter {
           }
         }
       }
-      
+
       // 3. Check for known PCIe atomic clock devices
       try {
         const lspciOutput = execSilent('lspci 2>/dev/null | grep -i "time\\|clock\\|atomic"', { encoding: 'utf8', timeout: 5000 });
@@ -544,7 +544,7 @@ export class ManiTimeDetector extends EventEmitter {
         // lspci not available or no match
       }
     }
-    
+
     if (this.platform === 'win32') {
       // Windows: Check for vendor-specific atomic clock software
       try {
@@ -558,10 +558,10 @@ export class ManiTimeDetector extends EventEmitter {
         // Not found
       }
     }
-    
+
     return result;
   }
-  
+
   /**
    * Detect GPS receiver with PPS (Universal Hardware Probe)
    */
@@ -576,10 +576,10 @@ export class ManiTimeDetector extends EventEmitter {
       latitude: null,
       longitude: null,
     };
-    
+
     // 1. Probe Serial/USB GPS Hardware (Linux/macOS/Windows)
-    const probePaths = this.platform === 'linux' ? DEVICE_PATHS.linux.gps : 
-                      (this.platform === 'darwin' ? DEVICE_PATHS.darwin.gps : []);
+    const probePaths = this.platform === 'linux' ? DEVICE_PATHS.linux.gps :
+      (this.platform === 'darwin' ? DEVICE_PATHS.darwin.gps : []);
 
     for (const gpsPath of probePaths) {
       if (existsSync(gpsPath)) {
@@ -597,7 +597,7 @@ export class ManiTimeDetector extends EventEmitter {
         if (gpsdStatus) {
           result.detected = true;
           result.type = 'gpsd Managed Receiver';
-          
+
           // Try to get GPS info from gpsd
           const gpsInfo = execSilent('gpspipe -w -n 5 2>/dev/null | head -1');
           if (gpsInfo) {
@@ -608,11 +608,11 @@ export class ManiTimeDetector extends EventEmitter {
                 result.latitude = data.lat;
                 result.longitude = data.lon;
               }
-            } catch (e) {}
+            } catch (e) { }
           }
         }
-      } catch (e) {}
-      
+      } catch (e) { }
+
       // 3. Check for associated PPS hardware pin
       for (const ppsPath of DEVICE_PATHS.linux.pps) {
         if (existsSync(ppsPath)) {
@@ -630,362 +630,362 @@ export class ManiTimeDetector extends EventEmitter {
           result.detected = true;
           result.type = 'Windows Serial GPS Candidate';
         }
-      } catch (e) {}
+      } catch (e) { }
     }
-    
+
     return result;
   }
           result.detected = true;
           result.synchronized = chronyOutput.includes('*');
-        }
+}
       } catch (e) {
-        // chrony not available
+  // chrony not available
+}
+    }
+
+return result;
+  }
+
+/**
+ * Detect PTP (IEEE 1588) time synchronization
+ */
+detectPTP() {
+  const result = {
+    detected: false,
+    synchronized: false,
+    device: null,
+    master: null,
+    offset: null,
+  };
+
+  if (this.platform === 'linux') {
+    // 1. Check for PTP devices
+    for (const ptpPath of DEVICE_PATHS.linux.ptp) {
+      if (existsSync(ptpPath)) {
+        result.detected = true;
+        result.device = ptpPath;
+        break;
       }
     }
-    
-    return result;
-  }
-  
-  /**
-   * Detect PTP (IEEE 1588) time synchronization
-   */
-  detectPTP() {
-    const result = {
-      detected: false,
-      synchronized: false,
-      device: null,
-      master: null,
-      offset: null,
-    };
-    
-    if (this.platform === 'linux') {
-      // 1. Check for PTP devices
-      for (const ptpPath of DEVICE_PATHS.linux.ptp) {
-        if (existsSync(ptpPath)) {
-          result.detected = true;
-          result.device = ptpPath;
-          break;
-        }
-      }
-      
-      // 2. Check if ptp4l is running
-      {
-        const ptp4lStatus = execSilent('systemctl is-active ptp4l 2>/dev/null || pgrep ptp4l');
-        if (ptp4lStatus && ptp4lStatus.trim()) {
-          result.detected = true;
-          
-          // Try to get PTP status
-          const pmcOutput = execSilent('pmc -u -b 0 "GET CURRENT_DATA_SET" 2>/dev/null');
-          if (pmcOutput && pmcOutput.includes('offsetFromMaster')) {
-            const match = pmcOutput.match(/offsetFromMaster\s+(-?\d+)/);
-            if (match) {
-              result.offset = parseInt(match[1]);
-              result.synchronized = Math.abs(result.offset) < 1000000; // < 1ms
-            }
+
+    // 2. Check if ptp4l is running
+    {
+      const ptp4lStatus = execSilent('systemctl is-active ptp4l 2>/dev/null || pgrep ptp4l');
+      if (ptp4lStatus && ptp4lStatus.trim()) {
+        result.detected = true;
+
+        // Try to get PTP status
+        const pmcOutput = execSilent('pmc -u -b 0 "GET CURRENT_DATA_SET" 2>/dev/null');
+        if (pmcOutput && pmcOutput.includes('offsetFromMaster')) {
+          const match = pmcOutput.match(/offsetFromMaster\s+(-?\d+)/);
+          if (match) {
+            result.offset = parseInt(match[1]);
+            result.synchronized = Math.abs(result.offset) < 1000000; // < 1ms
           }
         }
       }
-      
-      // 3. Check phc2sys (syncs PTP to system clock)
-      {
-        const phc2sysStatus = execSilent('pgrep phc2sys');
-        if (phc2sysStatus && phc2sysStatus.trim()) {
+    }
+
+    // 3. Check phc2sys (syncs PTP to system clock)
+    {
+      const phc2sysStatus = execSilent('pgrep phc2sys');
+      if (phc2sysStatus && phc2sysStatus.trim()) {
+        result.synchronized = true;
+      }
+    }
+  }
+  // 4. Check for Meinberg PTP hardware (PTP270PEX, etc.)
+  try {
+    // Check for Meinberg driver/software via lspci
+    const meinbergCheck = execSilent('lspci 2>/dev/null | grep -i meinberg', { encoding: 'utf8', timeout: 5000 });
+    if (meinbergCheck.trim()) {
+      result.detected = true;
+      result.device = 'Meinberg PTP';
+      result.type = meinbergCheck.includes('270') ? 'PTP270PEX' : 'Meinberg PTP Card';
+
+      // Try to get sync status from mbgstatus if available
+      try {
+        const mbgStatus = execSilent('mbgstatus 2>/dev/null | head -20', { encoding: 'utf8', timeout: 5000 });
+        if (mbgStatus.includes('SYNC') || mbgStatus.includes('synchronized')) {
           result.synchronized = true;
         }
-      }
-    }
-      // 4. Check for Meinberg PTP hardware (PTP270PEX, etc.)
-      try {
-        // Check for Meinberg driver/software via lspci
-        const meinbergCheck = execSilent('lspci 2>/dev/null | grep -i meinberg', { encoding: 'utf8', timeout: 5000 });
-        if (meinbergCheck.trim()) {
-          result.detected = true;
-          result.device = 'Meinberg PTP';
-          result.type = meinbergCheck.includes('270') ? 'PTP270PEX' : 'Meinberg PTP Card';
-          
-          // Try to get sync status from mbgstatus if available
-          try {
-            const mbgStatus = execSilent('mbgstatus 2>/dev/null | head -20', { encoding: 'utf8', timeout: 5000 });
-            if (mbgStatus.includes('SYNC') || mbgStatus.includes('synchronized')) {
-              result.synchronized = true;
-            }
-            // Extract offset if available
-            const offsetMatch = mbgStatus.match(/offset[:\s]+(-?\d+)/i);
-            if (offsetMatch) {
-              result.offset = parseInt(offsetMatch[1]);
-            }
-          } catch (e) {
-            // mbgstatus not available, check via standard PTP
-          }
+        // Extract offset if available
+        const offsetMatch = mbgStatus.match(/offset[:\s]+(-?\d+)/i);
+        if (offsetMatch) {
+          result.offset = parseInt(offsetMatch[1]);
         }
       } catch (e) {
-        // Meinberg not found via lspci
+        // mbgstatus not available, check via standard PTP
       }
-      
-      // 5. Windows: Check for Meinberg driver + MbgAdjTm service
-      if (this.platform === 'win32') {
-        try {
-          const driverCheck = execSilent('driverquery /v 2>nul | findstr /i meinberg', { encoding: 'utf8', timeout: 5000 });
-          if (driverCheck.trim()) {
-            result.detected = true;
-            result.type = 'Meinberg PTP270PEX (Windows)';
-            
-            // Check if MbgAdjTm service is running (disciplines system clock from PTP card)
-            const svcCheck = execSilent('sc query MbgAdjTm 2>nul', { encoding: 'utf8', timeout: 3000 });
-            if (svcCheck && /RUNNING/i.test(svcCheck)) {
-              result.serviceRunning = true;
-              
-              // Cross-reference with MA-902 SNMP: if MA-902 is GPS-locked and serving PTP,
-              // and MbgAdjTm is running, the PTP card is receiving disciplined time
-              if (this.ma902Monitor?.isAvailable() && this.ma902Monitor.isLocked()) {
-                result.synchronized = true;
-                result.source = 'ma902-ptp';
-                result.device = 'PTP270PEX ← MA-902/S-C1';
-              }
-            }
-          }
-        } catch (e) {
-          // Meinberg driver not found
-        }
-      }
-    
-    return result;
+    }
+  } catch (e) {
+    // Meinberg not found via lspci
   }
-  
-  /**
-   * Detect NTP synchronization status
-   */
-  detectNTP() {
-    const result = {
-      detected: true, // NTP is always "available" conceptually
-      synchronized: false,
-      stratum: 16,
-      offset: null,
-      server: null,
-      method: null,
-    };
-    
-    if (this.platform === 'linux') {
-      // 1. Check chrony
-      try {
-        const chronyTracking = execSilent('chronyc tracking 2>/dev/null', { encoding: 'utf8', timeout: 5000 });
-        
-        if (chronyTracking.includes('Reference ID')) {
-          result.method = 'chrony';
-          
-          // Parse stratum
-          const stratumMatch = chronyTracking.match(/Stratum\s+:\s+(\d+)/);
-          if (stratumMatch) {
-            result.stratum = parseInt(stratumMatch[1]);
-            result.synchronized = result.stratum < 16;
-          }
-          
-          // Parse offset
-          const offsetMatch = chronyTracking.match(/System time\s+:\s+([\d.]+)\s+seconds\s+(slow|fast)/);
-          if (offsetMatch) {
-            result.offset = parseFloat(offsetMatch[1]) * (offsetMatch[2] === 'slow' ? -1 : 1);
-          }
-          
-          // Parse reference
-          const refMatch = chronyTracking.match(/Reference ID\s+:\s+([^\s]+)\s+\(([^)]+)\)/);
-          if (refMatch) {
-            result.server = refMatch[2];
-          }
-        }
-      } catch (e) {
-        // chrony not available
-      }
-      
-      // 2. Check systemd-timesyncd
-      if (!result.synchronized) {
-        try {
-          const timedatectl = execSilent('timedatectl show 2>/dev/null', { encoding: 'utf8', timeout: 5000 });
-          
-          if (timedatectl.includes('NTPSynchronized=yes')) {
+
+  // 5. Windows: Check for Meinberg driver + MbgAdjTm service
+  if (this.platform === 'win32') {
+    try {
+      const driverCheck = execSilent('driverquery /v 2>nul | findstr /i meinberg', { encoding: 'utf8', timeout: 5000 });
+      if (driverCheck.trim()) {
+        result.detected = true;
+        result.type = 'Meinberg PTP270PEX (Windows)';
+
+        // Check if MbgAdjTm service is running (disciplines system clock from PTP card)
+        const svcCheck = execSilent('sc query MbgAdjTm 2>nul', { encoding: 'utf8', timeout: 3000 });
+        if (svcCheck && /RUNNING/i.test(svcCheck)) {
+          result.serviceRunning = true;
+
+          // Cross-reference with MA-902 SNMP: if MA-902 is GPS-locked and serving PTP,
+          // and MbgAdjTm is running, the PTP card is receiving disciplined time
+          if (this.ma902Monitor?.isAvailable() && this.ma902Monitor.isLocked()) {
             result.synchronized = true;
-            result.method = 'systemd-timesyncd';
-            result.stratum = 3; // Assume stratum 3 for systemd-timesyncd
+            result.source = 'ma902-ptp';
+            result.device = 'PTP270PEX ← MA-902/S-C1';
           }
-        } catch (e) {
-          // timedatectl not available
         }
       }
-      
-      // 3. Check ntpd
-      if (!result.synchronized) {
-        try {
-          const ntpq = execSilent('ntpq -p 2>/dev/null | grep "^\\*"', { encoding: 'utf8', timeout: 5000 });
-          if (ntpq.trim()) {
-            result.synchronized = true;
-            result.method = 'ntpd';
-            const parts = ntpq.trim().split(/\s+/);
-            result.server = parts[0]?.replace('*', '');
-            result.stratum = parseInt(parts[2]) || 3;
-          }
-        } catch (e) {
-          // ntpd not available
-        }
-      }
+    } catch (e) {
+      // Meinberg driver not found
     }
-    
-    if (this.platform === 'win32') {
-      const w32tm = execSilent('w32tm /query /status');
-      
-      if (w32tm && w32tm.includes('Source:') && !w32tm.includes('Free-running')) {
-        result.synchronized = true;
-        result.method = 'w32tm';
-        
-        const sourceMatch = w32tm.match(/Source:\s+(.+)/);
-        if (sourceMatch) {
-          result.server = sourceMatch[1].trim();
-        }
-        
-        const stratumMatch = w32tm.match(/Stratum:\s+(\d+)/);
+  }
+
+  return result;
+}
+
+/**
+ * Detect NTP synchronization status
+ */
+detectNTP() {
+  const result = {
+    detected: true, // NTP is always "available" conceptually
+    synchronized: false,
+    stratum: 16,
+    offset: null,
+    server: null,
+    method: null,
+  };
+
+  if (this.platform === 'linux') {
+    // 1. Check chrony
+    try {
+      const chronyTracking = execSilent('chronyc tracking 2>/dev/null', { encoding: 'utf8', timeout: 5000 });
+
+      if (chronyTracking.includes('Reference ID')) {
+        result.method = 'chrony';
+
+        // Parse stratum
+        const stratumMatch = chronyTracking.match(/Stratum\s+:\s+(\d+)/);
         if (stratumMatch) {
           result.stratum = parseInt(stratumMatch[1]);
+          result.synchronized = result.stratum < 16;
+        }
+
+        // Parse offset
+        const offsetMatch = chronyTracking.match(/System time\s+:\s+([\d.]+)\s+seconds\s+(slow|fast)/);
+        if (offsetMatch) {
+          result.offset = parseFloat(offsetMatch[1]) * (offsetMatch[2] === 'slow' ? -1 : 1);
+        }
+
+        // Parse reference
+        const refMatch = chronyTracking.match(/Reference ID\s+:\s+([^\s]+)\s+\(([^)]+)\)/);
+        if (refMatch) {
+          result.server = refMatch[2];
         }
       }
+    } catch (e) {
+      // chrony not available
     }
-    
-    if (this.platform === 'darwin') {
+
+    // 2. Check systemd-timesyncd
+    if (!result.synchronized) {
       try {
-        const sntp = execSilent('sntp -d time.apple.com 2>&1 | head -5', { encoding: 'utf8', timeout: 10000 });
-        if (sntp.includes('offset')) {
+        const timedatectl = execSilent('timedatectl show 2>/dev/null', { encoding: 'utf8', timeout: 5000 });
+
+        if (timedatectl.includes('NTPSynchronized=yes')) {
           result.synchronized = true;
-          result.method = 'sntp';
-          result.server = 'time.apple.com';
+          result.method = 'systemd-timesyncd';
+          result.stratum = 3; // Assume stratum 3 for systemd-timesyncd
         }
       } catch (e) {
-        // sntp failed
+        // timedatectl not available
       }
     }
-    
-    return result;
+
+    // 3. Check ntpd
+    if (!result.synchronized) {
+      try {
+        const ntpq = execSilent('ntpq -p 2>/dev/null | grep "^\\*"', { encoding: 'utf8', timeout: 5000 });
+        if (ntpq.trim()) {
+          result.synchronized = true;
+          result.method = 'ntpd';
+          const parts = ntpq.trim().split(/\s+/);
+          result.server = parts[0]?.replace('*', '');
+          result.stratum = parseInt(parts[2]) || 3;
+        }
+      } catch (e) {
+        // ntpd not available
+      }
+    }
   }
-  
-  /**
-   * Log detection results
-   */
-  logDetectionResults(results) {
-    log.info('Time Source Detection Results', {
-      platform: results.platform,
-      trustLevel: results.trustLevel.toUpperCase(),
-      phaseTolerance: results.phaseTolerance,
-      primarySource: results.primarySource || 'none',
+
+  if (this.platform === 'win32') {
+    const w32tm = execSilent('w32tm /query /status');
+
+    if (w32tm && w32tm.includes('Source:') && !w32tm.includes('Free-running')) {
+      result.synchronized = true;
+      result.method = 'w32tm';
+
+      const sourceMatch = w32tm.match(/Source:\s+(.+)/);
+      if (sourceMatch) {
+        result.server = sourceMatch[1].trim();
+      }
+
+      const stratumMatch = w32tm.match(/Stratum:\s+(\d+)/);
+      if (stratumMatch) {
+        result.stratum = parseInt(stratumMatch[1]);
+      }
+    }
+  }
+
+  if (this.platform === 'darwin') {
+    try {
+      const sntp = execSilent('sntp -d time.apple.com 2>&1 | head -5', { encoding: 'utf8', timeout: 10000 });
+      if (sntp.includes('offset')) {
+        result.synchronized = true;
+        result.method = 'sntp';
+        result.server = 'time.apple.com';
+      }
+    } catch (e) {
+      // sntp failed
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Log detection results
+ */
+logDetectionResults(results) {
+  log.info('Time Source Detection Results', {
+    platform: results.platform,
+    trustLevel: results.trustLevel.toUpperCase(),
+    phaseTolerance: results.phaseTolerance,
+    primarySource: results.primarySource || 'none',
+  });
+
+  if (results.sources.atomic?.detected) {
+    log.info('Atomic clock detected', {
+      type: results.sources.atomic.type || 'detected',
+      device: results.sources.atomic.device || 'unknown',
+      synchronized: results.sources.atomic.synchronized,
     });
-    
-    if (results.sources.atomic?.detected) {
-      log.info('Atomic clock detected', {
-        type: results.sources.atomic.type || 'detected',
-        device: results.sources.atomic.device || 'unknown',
-        synchronized: results.sources.atomic.synchronized,
-      });
-    }
-    
-    if (results.sources.gps?.detected) {
-      const gpsLog = {
-        device: results.sources.gps.device || 'detected',
-        hasPPS: results.sources.gps.hasPPS,
-        synchronized: results.sources.gps.synchronized,
-      };
-      // Enrich log with MA-902 SNMP data if available
-      if (results.sources.gps.ma902) {
-        const ma = results.sources.gps.ma902;
-        gpsLog.ma902 = true;
-        gpsLog.satellites = `${ma.satellites.used}/${ma.satellites.tracking}/${ma.satellites.visible}`;
-        gpsLog.constellations = ma.constellations.join('+');
-        gpsLog.locked = ma.locked;
-        gpsLog.trust = ma.trust.level;
-      }
-      log.info('GPS detected', gpsLog);
-    }
-    
-    if (results.sources.ptp?.detected) {
-      log.info('PTP detected', {
-        device: results.sources.ptp.device || 'detected',
-        offset: results.sources.ptp.offset ?? 'unknown',
-        synchronized: results.sources.ptp.synchronized,
-      });
-    }
-    
-    if (results.sources.ntp) {
-      log.info('NTP detected', {
-        method: results.sources.ntp.method || 'not configured',
-        server: results.sources.ntp.server || 'unknown',
-        stratum: results.sources.ntp.stratum,
-        synchronized: results.sources.ntp.synchronized,
-      });
-    }
   }
-  
-  /**
-   * Get current trust level
-   */
-  getTrustLevel() {
-    return this.trustLevel;
-  }
-  
-  /**
-   * Get phase tolerance for current trust level
-   */
-  getPhaseTolerance() {
-    return PhaseTolerance[this.trustLevel];
-  }
-  
-  /**
-   * Get stratum level for current trust level
-   */
-  getStratum() {
-    return StratumLevel[this.trustLevel];
-  }
-  
-  /**
-   * Check if atomic-tier time source is available
-   */
-  hasAtomicTime() {
-    return this.trustLevel === TimeTrustLevel.ATOMIC;
-  }
-  
-  /**
-   * Check if high-precision time source is available (atomic or GPS)
-   */
-  hasHighPrecisionTime() {
-    return [TimeTrustLevel.ATOMIC, TimeTrustLevel.GPS, TimeTrustLevel.PTP].includes(this.trustLevel);
-  }
-  
-  /**
-   * Get status object for API responses
-   */
-  getStatus() {
-    const status = {
-      trustLevel: this.trustLevel,
-      phaseTolerance: this.getPhaseTolerance(),
-      stratum: this.getStratum(),
-      primarySource: this.primarySource,
-      sources: Object.fromEntries(this.detectedSources),
-      lastCheck: this.lastCheck,
-      capabilities: {
-        atomicTime: this.hasAtomicTime(),
-        highPrecisionTime: this.hasHighPrecisionTime(),
-        tightPhaseWindow: this.trustLevel !== TimeTrustLevel.UNSYNC,
-      },
+
+  if (results.sources.gps?.detected) {
+    const gpsLog = {
+      device: results.sources.gps.device || 'detected',
+      hasPPS: results.sources.gps.hasPPS,
+      synchronized: results.sources.gps.synchronized,
     };
-    
-    // Include MA-902 SNMP status if monitor is active
-    if (this.ma902Monitor) {
-      status.ma902 = this.ma902Monitor.getStatus();
+    // Enrich log with MA-902 SNMP data if available
+    if (results.sources.gps.ma902) {
+      const ma = results.sources.gps.ma902;
+      gpsLog.ma902 = true;
+      gpsLog.satellites = `${ma.satellites.used}/${ma.satellites.tracking}/${ma.satellites.visible}`;
+      gpsLog.constellations = ma.constellations.join('+');
+      gpsLog.locked = ma.locked;
+      gpsLog.trust = ma.trust.level;
     }
-    
-    return status;
+    log.info('GPS detected', gpsLog);
   }
-  
-  /**
-   * Get the MA-902 monitor instance (if configured)
-   * @returns {MA902Monitor|null}
-   */
-  getMA902Monitor() {
-    return this.ma902Monitor;
+
+  if (results.sources.ptp?.detected) {
+    log.info('PTP detected', {
+      device: results.sources.ptp.device || 'detected',
+      offset: results.sources.ptp.offset ?? 'unknown',
+      synchronized: results.sources.ptp.synchronized,
+    });
   }
+
+  if (results.sources.ntp) {
+    log.info('NTP detected', {
+      method: results.sources.ntp.method || 'not configured',
+      server: results.sources.ntp.server || 'unknown',
+      stratum: results.sources.ntp.stratum,
+      synchronized: results.sources.ntp.synchronized,
+    });
+  }
+}
+
+/**
+ * Get current trust level
+ */
+getTrustLevel() {
+  return this.trustLevel;
+}
+
+/**
+ * Get phase tolerance for current trust level
+ */
+getPhaseTolerance() {
+  return PhaseTolerance[this.trustLevel];
+}
+
+/**
+ * Get stratum level for current trust level
+ */
+getStratum() {
+  return StratumLevel[this.trustLevel];
+}
+
+/**
+ * Check if atomic-tier time source is available
+ */
+hasAtomicTime() {
+  return this.trustLevel === TimeTrustLevel.ATOMIC;
+}
+
+/**
+ * Check if high-precision time source is available (atomic or GPS)
+ */
+hasHighPrecisionTime() {
+  return [TimeTrustLevel.ATOMIC, TimeTrustLevel.GPS, TimeTrustLevel.PTP].includes(this.trustLevel);
+}
+
+/**
+ * Get status object for API responses
+ */
+getStatus() {
+  const status = {
+    trustLevel: this.trustLevel,
+    phaseTolerance: this.getPhaseTolerance(),
+    stratum: this.getStratum(),
+    primarySource: this.primarySource,
+    sources: Object.fromEntries(this.detectedSources),
+    lastCheck: this.lastCheck,
+    capabilities: {
+      atomicTime: this.hasAtomicTime(),
+      highPrecisionTime: this.hasHighPrecisionTime(),
+      tightPhaseWindow: this.trustLevel !== TimeTrustLevel.UNSYNC,
+    },
+  };
+
+  // Include MA-902 SNMP status if monitor is active
+  if (this.ma902Monitor) {
+    status.ma902 = this.ma902Monitor.getStatus();
+  }
+
+  return status;
+}
+
+/**
+ * Get the MA-902 monitor instance (if configured)
+ * @returns {MA902Monitor|null}
+ */
+getMA902Monitor() {
+  return this.ma902Monitor;
+}
 }
 
 // ============================================================
@@ -1000,12 +1000,12 @@ export class ManiTimeDetector extends EventEmitter {
 export function createPhaseConfig(detector) {
   const trustLevel = detector.getTrustLevel();
   const tolerance = detector.getPhaseTolerance();
-  
+
   // Tighter phase windows for higher-quality time sources
   const phaseConfig = {
     trustLevel,
     toleranceMs: tolerance,
-    
+
     // Epoch duration based on trust level
     epochDurationHours: {
       [TimeTrustLevel.ATOMIC]: 1,    // 1-hour epochs for atomic
@@ -1014,7 +1014,7 @@ export function createPhaseConfig(detector) {
       [TimeTrustLevel.NTP]: 6,       // 6-hour epochs for NTP (default)
       [TimeTrustLevel.UNSYNC]: 12,   // 12-hour epochs for unsync
     }[trustLevel],
-    
+
     // Grace period based on trust level
     gracePeriodMinutes: {
       [TimeTrustLevel.ATOMIC]: 1,    // 1 minute grace for atomic
@@ -1023,7 +1023,7 @@ export function createPhaseConfig(detector) {
       [TimeTrustLevel.NTP]: 15,      // 15 minutes for NTP
       [TimeTrustLevel.UNSYNC]: 30,   // 30 minutes for unsync
     }[trustLevel],
-    
+
     // Whether this node can participate in time-critical operations
     capabilities: {
       canBeTimeOracle: trustLevel === TimeTrustLevel.ATOMIC,
@@ -1031,7 +1031,7 @@ export function createPhaseConfig(detector) {
       canParticipateInConsensus: trustLevel !== TimeTrustLevel.UNSYNC,
     },
   };
-  
+
   return phaseConfig;
 }
 
