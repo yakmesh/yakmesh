@@ -220,7 +220,7 @@ export class ManiTimeDetector extends EventEmitter {
    */
   async start() {
     // Start MA-902 SNMP monitor if configured
-    if (this.options.ma902) {
+    if (this.options.ma902 && (this.options.ma902.enabled !== false)) {
       try {
         this.ma902Monitor = new MA902Monitor({
           verbose: this.options.verbose,
