@@ -60,6 +60,7 @@ const log = createLogger('server:main');
 const peerTag = (id) => id?.split('-pq-').pop() || id?.slice?.(-8) || String(id);
 import { NodeIdentity } from '../identity/node-key.js';
 import { MeshNetwork } from '../mesh/network.js';
+import { YakTun } from '../mesh/tun.js';
 import { ReplicationEngine } from '../database/replication.js';
 import { GossipProtocol } from '../gossip/protocol.js';
 
@@ -820,8 +821,7 @@ export class YakmeshNode {
 
     // 5g. Initialize KARMA trust model (fed by SAKSHI)
     this._initKarma();
-
-    // 5h. Initialize ternary harmonization stack (SST × YPC-27 × 162T × ML)
+      await this._initYakTun();
     await this._initTernaryHarmonization();
 
     // 5i. Initialize SHERPA for decentralized peer discovery
@@ -1843,6 +1843,26 @@ export class YakmeshNode {
       }
     }
     return map;
+  }
+
+  /**
+   * Initialize YAK-TUN: The OS-to-Mesh native bridge
+   */
+  async _initYakTun() {
+    log.info('🌐 Initializing YAK-TUN Native Interface...');
+    this.yakTun = new YakTun('yak0', this.mesh, this.karmaModel);
+    await this.yakTun.init();
+    
+    // Route incoming TUN_PACKET messages from the mesh directly back into OS
+    this.mesh.messageHandlers.get('TUN_PACKET')?.push?.((msg, ws, senderNodeId) => {
+      if (this.yakTun && this.yakTun.active) {
+        this.yakTun.onReceive(msg, senderNodeId);
+      }
+    }) || this.mesh.messageHandlers.set('TUN_PACKET', [(msg, ws, senderNodeId) => {
+      if (this.yakTun && this.yakTun.active) {
+        this.yakTun.onReceive(msg, senderNodeId);
+      }
+    }]);
   }
 
   /**
