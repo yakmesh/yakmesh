@@ -68,6 +68,7 @@ import { platform } from 'os';
 import { EventEmitter } from 'events';
 import { createLogger } from '../utils/logger.js';
 import { MA902Monitor, getMA902Monitor } from './ma902-snmp.js';
+import { SerialGpsMonitor } from './gps-serial.js';
 
 const log = createLogger('mani:time-source');
 
@@ -217,47 +218,78 @@ export class ManiTimeDetector extends EventEmitter {
     
     // MA-902 SNMP monitor instance
     this.ma902Monitor = null;
+
+    // Generic Serial GPS monitor (u-blox, NMEA, etc.)
+    this.genericGpsMonitor = null;
   }
   
   /**
    * Start continuous monitoring of time sources
    */
   async start() {
-    // Start MA-902 SNMP monitor - ALWAYS active for telemetry synthesis
+    // 1. Start MA-902 SNMP monitor - ALWAYS active for telemetry synthesis
     try {
       this.ma902Monitor = new MA902Monitor({
         verbose: this.options.verbose,
         ...this.options.ma902,
       });
         
-        // Forward MA-902 events
-        this.ma902Monitor.on('telemetry', (data) => {
-          this.emit('ma902:telemetry', data);
-        });
-        this.ma902Monitor.on('lockLost', (data) => {
-          log.warn('MA-902 satellite lock lost — GPS trust degraded');
-          this.emit('ma902:lockLost', data);
-          // Re-detect to update trust level
-          this.detect();
-        });
-        this.ma902Monitor.on('lockAcquired', (data) => {
-          log.info('MA-902 satellite lock acquired — GPS trust restored');
-          this.emit('ma902:lockAcquired', data);
-          this.detect();
-        });
-        this.ma902Monitor.on('alarm', (data) => {
-          this.emit('ma902:alarm', data);
-          this.detect();
-        });
-        this.ma902Monitor.on('trustChanged', (data) => {
-          this.emit('ma902:trustChanged', data);
-          this.detect();
-        });
-        
-        await this.ma902Monitor.start();
-      } catch (err) {
-        log.warn('MA-902 SNMP monitor failed to start', { error: err.message });
-        this.ma902Monitor = null;
+      // Forward MA-902 events
+      this.ma902Monitor.on('telemetry', (data) => {
+        this.emit('ma902:telemetry', data);
+      });
+      this.ma902Monitor.on('lockLost', (data) => {
+        log.warn('MA-902 satellite lock lost — GPS trust degraded');
+        this.emit('ma902:lockLost', data);
+        // Re-detect to update trust level
+        this.detect();
+      });
+      this.ma902Monitor.on('lockAcquired', (data) => {
+        log.info('MA-902 satellite lock acquired — GPS trust restored');
+        this.emit('ma902:lockAcquired', data);
+        this.detect();
+      });
+      this.ma902Monitor.on('alarm', (data) => {
+        this.emit('ma902:alarm', data);
+        this.detect();
+      });
+      this.ma902Monitor.on('trustChanged', (data) => {
+        this.emit('ma902:trustChanged', data);
+        this.detect();
+      });
+      
+      await this.ma902Monitor.start();
+    } catch (err) {
+      log.warn('MA-902 SNMP monitor failed to start', { error: err.message });
+      this.ma902Monitor = null;
+    }
+
+    // 2. Start Generic Serial/USB GPS Hardware Monitor
+    if (this.options.detectHardware) {
+      const probePaths = this.platform === 'linux' ? DEVICE_PATHS.linux.gps : 
+                        (this.platform === 'darwin' ? DEVICE_PATHS.darwin.gps : []);
+      
+      for (const gpsPath of probePaths) {
+        if (existsSync(gpsPath)) {
+          log.info(`📡 Universal GPS Scanner: Found candidate peripheral at ${gpsPath}`);
+          this.genericGpsMonitor = new SerialGpsMonitor({ device: gpsPath });
+          
+          this.genericGpsMonitor.on('telemetry', (data) => {
+            this.emit('genericGps:telemetry', data);
+            this.detect();
+          });
+          this.genericGpsMonitor.on('lockAcquired', (data) => {
+            this.emit('genericGps:lockAcquired', data);
+            this.detect();
+          });
+          this.genericGpsMonitor.on('lockLost', (data) => {
+            this.emit('genericGps:lockLost', data);
+            this.detect();
+          });
+          
+          this.genericGpsMonitor.start();
+          break; // Use the first available serial device
+        }
       }
     }
     
@@ -283,6 +315,10 @@ export class ManiTimeDetector extends EventEmitter {
     if (this.ma902Monitor) {
       this.ma902Monitor.stop();
       this.ma902Monitor = null;
+    }
+    if (this.genericGpsMonitor) {
+      this.genericGpsMonitor.stop();
+      this.genericGpsMonitor = null;
     }
   }
   
@@ -311,6 +347,26 @@ export class ManiTimeDetector extends EventEmitter {
       // Check for GPS/PPS (enriched with MA-902 SNMP telemetry)
       const gpsResult = this.detectGPS();
       
+      // Enrich GPS result with Generic Serial/USB GPS telemetry if available
+      if (this.genericGpsMonitor) {
+        const telemetry = this.genericGpsMonitor.getTelemetry();
+        if (telemetry) {
+          gpsResult.detected = true;
+          gpsResult.device = gpsResult.device || this.genericGpsMonitor.device;
+          gpsResult.synchronized = gpsResult.synchronized || telemetry.locked;
+          gpsResult.satellites = gpsResult.satellites || telemetry.satellites;
+          gpsResult.latitude = gpsResult.latitude || telemetry.latitude;
+          gpsResult.longitude = gpsResult.longitude || telemetry.longitude;
+          gpsResult.serialGps = {
+            device: this.genericGpsMonitor.device,
+            locked: telemetry.locked,
+            satellites: telemetry.satellites,
+            gpsTime: new Date(telemetry.timestamp).toISOString(),
+            valid: telemetry.valid
+          };
+        }
+      }
+
       // Enrich GPS result with MA-902 SNMP data if available
       if (this.ma902Monitor && this.ma902Monitor.isAvailable()) {
         const telemetry = this.ma902Monitor.getTelemetry();
