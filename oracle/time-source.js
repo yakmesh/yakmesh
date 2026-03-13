@@ -227,38 +227,52 @@ export class ManiTimeDetector extends EventEmitter {
    * Start continuous monitoring of time sources
    */
   async start() {
-    // 1. Start MA-902 SNMP monitor - ALWAYS active for telemetry synthesis
+    // 1. Start MA-902 SNMP monitor
+    // We only initialize if the host is reachable to avoid "assinine" timeouts on other nodes.
     try {
-      this.ma902Monitor = new MA902Monitor({
-        verbose: this.options.verbose,
-        ...this.options.ma902,
-      });
-        
-      // Forward MA-902 events
-      this.ma902Monitor.on('telemetry', (data) => {
-        this.emit('ma902:telemetry', data);
-      });
-      this.ma902Monitor.on('lockLost', (data) => {
-        log.warn('MA-902 satellite lock lost — GPS trust degraded');
-        this.emit('ma902:lockLost', data);
-        // Re-detect to update trust level
-        this.detect();
-      });
-      this.ma902Monitor.on('lockAcquired', (data) => {
-        log.info('MA-902 satellite lock acquired — GPS trust restored');
-        this.emit('ma902:lockAcquired', data);
-        this.detect();
-      });
-      this.ma902Monitor.on('alarm', (data) => {
-        this.emit('ma902:alarm', data);
-        this.detect();
-      });
-      this.ma902Monitor.on('trustChanged', (data) => {
-        this.emit('ma902:trustChanged', data);
-        this.detect();
-      });
+      const ma902Host = this.options.ma902?.host || '192.168.1.30';
       
-      await this.ma902Monitor.start();
+      // Fast probe (ping/port check) before committing to a heavy monitor loop
+      const isReachable = this.platform === 'win32' 
+        ? execSilent(`ping -n 1 -w 500 ${ma902Host}`) 
+        : execSilent(`ping -c 1 -W 1 ${ma902Host}`);
+
+      if (isReachable) {
+        log.info(`📡 MA-902 Hardware detected at ${ma902Host}. Engaging SNMP telemetry...`);
+        this.ma902Monitor = new MA902Monitor({
+          verbose: this.options.verbose,
+          ...this.options.ma902,
+        });
+        
+        // Forward MA-902 events
+        this.ma902Monitor.on('telemetry', (data) => {
+          this.emit('ma902:telemetry', data);
+        });
+        this.ma902Monitor.on('lockLost', (data) => {
+          log.warn('MA-902 satellite lock lost — GPS trust degraded');
+          this.emit('ma902:lockLost', data);
+          this.detect();
+        });
+        this.ma902Monitor.on('lockAcquired', (data) => {
+          log.info('MA-902 satellite lock acquired — GPS trust restored');
+          this.emit('ma902:lockAcquired', data);
+          this.detect();
+        });
+        this.ma902Monitor.on('alarm', (data) => {
+          this.emit('ma902:alarm', data);
+          this.detect();
+        });
+        this.ma902Monitor.on('trustChanged', (data) => {
+          this.emit('ma902:trustChanged', data);
+          this.detect();
+        });
+        
+        await this.ma902Monitor.start();
+      } else {
+        if (this.options.verbose) {
+          log.debug(`MA-902 host ${ma902Host} not found on this local network. skipping.`);
+        }
+      }
     } catch (err) {
       log.warn('MA-902 SNMP monitor failed to start', { error: err.message });
       this.ma902Monitor = null;
