@@ -277,8 +277,23 @@ function Copy-PackageSource {
     }
 
     # Create empty runtime directories
-    @("data", "data/content", "logs") | ForEach-Object {
+    @("data", "data/content", "logs", "htdocs") | ForEach-Object {
         New-Item -ItemType Directory -Path (Join-Path $DestDir $_) -Force | Out-Null
+    }
+
+    # If it's a basic or full package, copy website/time/ to public and htdocs
+    if ($DestDir -match "basic" -or $DestDir -match "full") {
+        $timeSource = Join-Path $SourceDir "..\website\time\index.html"
+        if (Test-Path $timeSource) {
+            # 1. To public/time/ so it's accessible via yakmesh.dev/time/
+            $publicTimeDir = Join-Path $DestDir "public\time"
+            New-Item -ItemType Directory -Path $publicTimeDir -Force | Out-Null
+            Copy-Item $timeSource -Destination (Join-Path $publicTimeDir "index.html") -Force
+            
+            # 2. To htdocs/ so it's accessible at the root of time.yakmesh.dev via Caddy
+            Copy-Item $timeSource -Destination (Join-Path $DestDir "htdocs\index.html") -Force
+            Write-Host "    [COPY] website/time -> public/time & htdocs" -ForegroundColor Gray
+        }
     }
 
     # Clean runtime-generated files that must NOT ship in packages
