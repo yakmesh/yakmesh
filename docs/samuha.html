@@ -9,7 +9,7 @@
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <title>SAMUHA | YAKMESH Documentation</title>
   <meta name="description"
-    content="SAMUHA — Ternary peer admission with ADMIT/HOLD/REDIRECT verdicts, priority scoring, and capacity-aware peer management.">
+    content="SAMUHA (Scalably-Aware Mesh-Unified Heterogeneous Architect) — Ternary peer admission with ADMIT/HOLD/REDIRECT verdicts, priority scoring, and capacity-aware peer management.">
   <link rel="stylesheet" href="tailwind.min.css">
   <link rel="stylesheet" href="prism-tomorrow.min.css" media="print" onload="this.media='all'">
   <noscript>
@@ -50,7 +50,7 @@
   <meta property="og:site_name" content="Yakmesh Documentation">
   <meta property="og:title" content="SAMUHA — Yakmesh">
   <meta property="og:description"
-    content="SAMUHA — Ternary peer admission with ADMIT/HOLD/REDIRECT verdicts, priority scoring, and capacity-aware management.">
+    content="SAMUHA (Scalably-Aware Mesh-Unified Heterogeneous Architect) — Ternary peer admission with ADMIT/HOLD/REDIRECT verdicts, priority scoring, and capacity-aware management.">
   <meta property="og:url" content="https://yakmesh.dev/docs/samuha.html">
   <link rel="canonical" href="https://yakmesh.dev/docs/samuha.html">
 </head>
@@ -727,8 +727,9 @@
           <use href="#icon-samuha" />
         </svg>
         <div>
-          <h1 class="text-4xl font-bold">SAMUHA <span class="text-xl text-mountain-400">&#x0938;&#x092E;&#x0942;&#x0939;</span></h1>
-          <p class="theme-accent">Ternary Peer Admission &amp; Capacity Management</p>
+          <h1 class="text-4xl font-bold">SAMUHA <span
+              class="text-xl text-mountain-400">&#x0938;&#x092E;&#x0942;&#x0939;</span></h1>
+          <p class="theme-accent">Scalably-Aware Mesh-Unified Heterogeneous Architect</p>
         </div>
       </div>
       <p class="text-xl text-mountain-300 mb-4">Three-state peer admission with priority scoring, utilization-aware
@@ -742,7 +743,8 @@
           <strong>ternary verdict system</strong>: ADMIT, HOLD, or REDIRECT. Instead of hard rejections
           that waste resources on both sides, peers that cannot be immediately admitted are either held
           in a waiting queue (during transient overload) or gracefully redirected to neighbor nodes with
-          spare capacity. No legitimate peer is wasted; no overloaded node is overwhelmed.</p>
+          spare capacity. No legitimate peer is wasted; no overloaded node is overwhelmed.
+        </p>
       </div>
 
       <div class="theme-callout border rounded-xl p-6 mb-8">
@@ -824,7 +826,8 @@
               <tr>
                 <td class="p-3 font-semibold">mani</td>
                 <td class="p-3 theme-accent">0.2</td>
-                <td class="p-3 text-mountain-400">MANI phase alignment (Kuramoto) &mdash; phase-coherent peers preferred</td>
+                <td class="p-3 text-mountain-400">MANI phase alignment (Kuramoto) &mdash; phase-coherent peers preferred
+                </td>
               </tr>
             </tbody>
           </table>
@@ -880,9 +883,11 @@
             <li><strong>Capacity check</strong>: Active peers &ge; max capacity confirmed</li>
             <li><strong>Neighbor scan</strong>: Query mesh neighbors for their current utilization</li>
             <li><strong>Best candidate</strong>: Select neighbor with lowest utilization that has capacity</li>
-            <li><strong>REDIRECT response</strong>: Send peer the alternative node&rsquo;s address + signed referral token</li>
+            <li><strong>REDIRECT response</strong>: Send peer the alternative node&rsquo;s address + signed referral
+              token</li>
             <li><strong>Verification</strong>: Target node validates referral token (prevents abuse)</li>
-            <li><strong>Telemetry</strong>: REDIRECT event logged for KARMA scoring &mdash; redirected peers that connect successfully boost both nodes&rsquo; scores</li>
+            <li><strong>Telemetry</strong>: REDIRECT event logged for KARMA scoring &mdash; redirected peers that
+              connect successfully boost both nodes&rsquo; scores</li>
           </ol>
         </div>
       </section>
@@ -923,7 +928,8 @@
               <tr>
                 <td class="p-3 font-semibold">HOLD queue depth</td>
                 <td class="p-3 theme-accent">10</td>
-                <td class="p-3 text-mountain-400">Max peers waiting in HOLD &mdash; overflow gets immediate REDIRECT</td>
+                <td class="p-3 text-mountain-400">Max peers waiting in HOLD &mdash; overflow gets immediate REDIRECT
+                </td>
               </tr>
             </tbody>
           </table>
@@ -946,11 +952,13 @@
             <tbody>
               <tr class="border-b border-mountain-700">
                 <td class="p-3"><code class="theme-accent">GET /api/samuha</code></td>
-                <td class="p-3 text-mountain-400">SAMUHA status: utilization, active peers, HOLD queue depth, verdicts issued</td>
+                <td class="p-3 text-mountain-400">SAMUHA status: utilization, active peers, HOLD queue depth, verdicts
+                  issued</td>
               </tr>
               <tr>
                 <td class="p-3"><code class="theme-accent">GET /api/peers</code></td>
-                <td class="p-3 text-mountain-400">Connected peers with admission verdict, priority score, and connection time</td>
+                <td class="p-3 text-mountain-400">Connected peers with admission verdict, priority score, and connection
+                  time</td>
               </tr>
             </tbody>
           </table>
@@ -986,7 +994,7 @@
       </section>
 
       <!-- Journey Navigation -->
-                  <div class="border-t border-mountain-700 mt-12 pt-8">
+            <div class="border-t border-mountain-700 mt-12 pt-8">
         <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
         <div class="flex flex-col sm:flex-row gap-4">
           <a href="karma.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">

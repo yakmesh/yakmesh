@@ -23,7 +23,7 @@
  * "The standard is binary. The reality is ternary. The resonance is 432."
  */
 /**
- * YAKMESH Comprehensive Knowledge Base v3.0.0
+ * YAKMESH Comprehensive Knowledge Base v3.3.0
  * 
  * This file contains ALL technical information about YAKMESH
  * for use by YakBot (Discord) and YakAI (Web Assistant).
@@ -34,7 +34,7 @@
  */
 
 export const YAKMESH_KNOWLEDGE_BASE = `
-# YAKMESH v3.0.0 Complete Technical Reference
+# YAKMESH v3.3.0 Complete Technical Reference
 
 ## Overview
 YAKMESH (Yielding Atomic Kernel Modular Encryption Secured Hub) is a post-quantum secure P2P mesh network built for the 2026 threat landscape. It combines quantum-resistant cryptography with physics-based verification to create trustless distributed systems.
@@ -705,7 +705,7 @@ YAKMESH honors mountain peoples with Nepali/Tibetan naming:
 ---
 
 ## VERSION HISTORY
-- v3.0.0: TRIBHUJ key ratchet, Gateway Attestation, SSE real-time push, ANNEX hardening, MeshBridge completion, comprehensive security audit (~90 findings addressed)
+- v3.3.0: TRIBHUJ key ratchet, Gateway Attestation, SSE real-time push, ANNEX hardening, MeshBridge completion, comprehensive security audit (~90 findings addressed)
 - v2.6.6: Philosophy page, Himalayan tribute, favicon fixes
 - v2.6.5: Production Tailwind build, CDN removal
 - v2.6.4: Win10 icon fix, sidebar toggle fix
@@ -717,3 +717,4 @@ YAKMESH honors mountain peoples with Nepali/Tibetan naming:
 `;
 
 export default YAKMESH_KNOWLEDGE_BASE;
+
