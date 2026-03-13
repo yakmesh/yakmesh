@@ -200,8 +200,12 @@ export class ManiTimeDetector extends EventEmitter {
       // Verbose logging
       verbose: options.verbose || false,
       // MA-902 SNMP monitoring configuration
-      ma902: options.ma902 || null,
-      // Example: { host: '192.168.1.30', pollInterval: 10000 }
+      ma902: {
+        enabled: true, // ALWAYS ENABLED - never opt-in
+        host: options.ma902?.host || '192.168.1.30',
+        pollInterval: options.ma902?.pollInterval || 10000,
+        ...options.ma902
+      },
     };
     
     this.platform = platform();
@@ -219,13 +223,12 @@ export class ManiTimeDetector extends EventEmitter {
    * Start continuous monitoring of time sources
    */
   async start() {
-    // Start MA-902 SNMP monitor if configured
-    if (this.options.ma902 && (this.options.ma902.enabled !== false)) {
-      try {
-        this.ma902Monitor = new MA902Monitor({
-          verbose: this.options.verbose,
-          ...this.options.ma902,
-        });
+    // Start MA-902 SNMP monitor - ALWAYS active for telemetry synthesis
+    try {
+      this.ma902Monitor = new MA902Monitor({
+        verbose: this.options.verbose,
+        ...this.options.ma902,
+      });
         
         // Forward MA-902 events
         this.ma902Monitor.on('telemetry', (data) => {
@@ -490,64 +493,78 @@ export class ManiTimeDetector extends EventEmitter {
   }
   
   /**
-   * Detect GPS receiver with PPS
+   * Detect GPS receiver with PPS (Universal Hardware Probe)
    */
   detectGPS() {
     const result = {
       detected: false,
       synchronized: false,
       device: null,
+      type: 'Generic GPS',
       hasPPS: false,
       satellites: null,
       latitude: null,
       longitude: null,
     };
     
+    // 1. Probe Serial/USB GPS Hardware (Linux/macOS/Windows)
+    const probePaths = this.platform === 'linux' ? DEVICE_PATHS.linux.gps : 
+                      (this.platform === 'darwin' ? DEVICE_PATHS.darwin.gps : []);
+
+    for (const gpsPath of probePaths) {
+      if (existsSync(gpsPath)) {
+        result.detected = true;
+        result.device = gpsPath;
+        result.type = 'NMEA Serial GPS';
+        break;
+      }
+    }
+
     if (this.platform === 'linux') {
-      // 1. Check if gpsd is running
+      // 2. Check if gpsd is running (shrapnel/ublox/etc)
       try {
-        const gpsdStatus = execSilent('systemctl is-active gpsd 2>/dev/null || pgrep gpsd', { encoding: 'utf8', timeout: 5000 });
-        if (gpsdStatus.trim()) {
+        const gpsdStatus = execSilent('systemctl is-active gpsd 2>/dev/null || pgrep gpsd');
+        if (gpsdStatus) {
           result.detected = true;
+          result.type = 'gpsd Managed Receiver';
           
           // Try to get GPS info from gpsd
-          try {
-            const gpsInfo = execSilent('gpspipe -w -n 5 2>/dev/null | head -1', { encoding: 'utf8', timeout: 10000 });
-            const data = JSON.parse(gpsInfo);
-            if (data.class === 'TPV') {
-              result.synchronized = data.mode >= 2;
-              result.latitude = data.lat;
-              result.longitude = data.lon;
-            }
-          } catch (e) {
-            // gpspipe not available
+          const gpsInfo = execSilent('gpspipe -w -n 5 2>/dev/null | head -1');
+          if (gpsInfo) {
+            try {
+              const data = JSON.parse(gpsInfo);
+              if (data.class === 'TPV') {
+                result.synchronized = data.mode >= 2;
+                result.latitude = data.lat;
+                result.longitude = data.lon;
+              }
+            } catch (e) {}
           }
         }
-      } catch (e) {
-        // gpsd not running
-      }
+      } catch (e) {}
       
-      // 2. Check for GPS serial devices
-      for (const gpsPath of DEVICE_PATHS.linux.gps) {
-        if (existsSync(gpsPath)) {
-          result.detected = true;
-          result.device = gpsPath;
-          break;
-        }
-      }
-      
-      // 3. Check for associated PPS
+      // 3. Check for associated PPS hardware pin
       for (const ppsPath of DEVICE_PATHS.linux.pps) {
         if (existsSync(ppsPath)) {
           result.hasPPS = true;
           break;
         }
       }
-      
-      // 4. Check chrony for GPS source
+    }
+
+    // 4. Windows Generic Hardware Probe (COM ports)
+    if (this.platform === 'win32') {
       try {
-        const chronyOutput = execSilent('chronyc sources 2>/dev/null | grep -i gps', { encoding: 'utf8', timeout: 5000 });
-        if (chronyOutput.trim()) {
+        const comPorts = execSilent('wmic path Win32_SerialPort get DeviceID');
+        if (comPorts && comPorts.includes('COM')) {
+          result.detected = true;
+          result.type = 'Windows Serial GPS Candidate';
+        }
+      } catch (e) {}
+    }
+    
+    return result;
+  }
           result.detected = true;
           result.synchronized = chronyOutput.includes('*');
         }
