@@ -43,7 +43,7 @@ await node.start();
 ### Cryptography & Identity
 
 - 🔒 **Post-Quantum Secure** — ML-DSA-65 (FIPS 204) signatures, ML-KEM-768 (FIPS 203) key encapsulation
-- 🧬 **144-Trit Identity** — Ternary identity system with balanced-ternary encoding (YPC-27)
+- 🧬 **162-Trit Identity** — Ternary identity system with balanced-ternary encoding (YPC-27)
 - 🔐 **ANNEX Channels** — ML-KEM-768 encrypted P2P sessions with forward secrecy (TRIBHUJ ratchet)
 - 🧭 **NAMCHE Gateway** — 7-gate mathematical identity verification
 
