@@ -2,6 +2,39 @@
 
 All notable changes to YAKMESH will be documented in this file.
 
+## [Unreleased]
+
+### 📡 Public Entropy Beacon API
+
+*Theme: "The mesh breathes entropy. Anyone can watch."*
+
+External builders can now consume PRAHARI commit-reveal consensus entropy as a public REST API — signed, chained, and verifiable without trusting the operator.
+
+**New Endpoints** (`server/index.js`):
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/public/latest` | GET | Latest signed pulse (round, randomness, timestamp, signature, previous_signature) |
+| `/public/:round` | GET | Retrieve any historical pulse by round number (O(1) Map lookup) |
+| `/public` | GET | Paginated pulse history (`?limit=&offset=`) |
+| `/info` | GET | Beacon metadata: `public_key`, `period`, `threshold`, `next_expected`, `node_id` |
+| `/public/verify` | POST | Client-side verification helper: submits pulse JSON, returns `valid: true/false` |
+
+**Security properties**:
+- **Open CORS** — `Access-Control-Allow-Origin: *` on all `/public/*` and `/info` routes
+- **Generous rate limits** — 300 req/min per IP (remote), loopback exempt
+- **ML-DSA-65 signed pulses** — Every pulse is signed by the node's identity key; clients verify against `public_key` from `/info`
+- **Hash chain** — Each pulse carries `previous_signature`, linking rounds into an auditable sequence
+- **Bounded history** — `pulseHistory` Map retains last 1,000 pulses; old rounds pruned automatically
+
+**Implementation** (`security/prahari-mesh.js`):
+- `CommitRevealEntropy` now stores every combined round as a signed `Pulse` object
+- New methods: `getLatestPulse()`, `getPulse(round)`, `getPulseHistory(limit, offset)`, `getGenesisInfo()`
+- Constructor accepts `signFn` and `publicKey` for pulse signing
+- `wireCommitReveal` passes `this.identity.sign` and `this.identity.publicKey` from `server/index.js`
+
+---
+
 ## [3.3.0] - 2026-02-28
 
 ### 🏔️ ARCH-RESONANCE: 8-Phase Mesh Hardening + License Migration + Repo Cleanup

@@ -43,7 +43,7 @@ await node.start();
 ### Cryptography & Identity
 
 - 🔒 **Post-Quantum Secure** — ML-DSA-65 (FIPS 204) signatures, ML-KEM-768 (FIPS 203) key encapsulation
-- 🧬 **144-Trit Identity** — Ternary identity system with balanced-ternary encoding (YPC-27)
+- 🧬 **NodeIdentity** — Two-part deterministic identity: network name (from codebase hash) + instance ID (from public key hash). No UUIDs, no central registry
 - 🔐 **ANNEX Channels** — ML-KEM-768 encrypted P2P sessions with forward secrecy (TRIBHUJ ratchet)
 - 🧭 **NAMCHE Gateway** — 7-gate mathematical identity verification
 
@@ -187,6 +187,16 @@ Full API documentation at [yakmesh.dev/docs/api](https://yakmesh.dev/docs/api)
 | `GET /accel/telemetry` | GPU/NPU telemetry |
 | `GET /scheduler` | ComputeScheduler state |
 | `GET /steadywatch` | Uptime monitoring |
+
+### Public Entropy Beacon
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /public/latest` | Latest signed entropy pulse |
+| `GET /public/:round` | Specific round pulse |
+| `GET /public` | Pulse history (paginated) |
+| `GET /info` | Beacon metadata (public key, period, threshold) |
+| `POST /public/verify` | Verify a pulse signature |
 
 ### Security
 

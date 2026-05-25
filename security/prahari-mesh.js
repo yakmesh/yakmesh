@@ -280,11 +280,16 @@ export class CommitRevealEntropy {
      * @param {number} [options.commitTimeoutMs=15000] — Max wait for commits
      * @param {number} [options.revealTimeoutMs=10000] — Max wait for reveals after committing
      * @param {number} [options.entropyBytes=32] — Bytes of local entropy per round
+     * @param {Function} [options.signFn] — Function(message) -> hex signature for pulse signing
+     * @param {string} [options.publicKey] — Hex public key for signature verification
+     * @param {number} [options.maxHistory=1000] — Max completed pulses to retain
      */
     constructor(options = {}) {
         this.gossip = options.gossip;
         this.prahari = options.prahari;
         this.nodeId = options.nodeId;
+        this.signFn = options.signFn || null;
+        this.publicKey = options.publicKey || null;
 
         // MANI time-sync: Derive timing from trust level if detector available
         this.maniDetector = options.maniDetector || null;
@@ -315,6 +320,12 @@ export class CommitRevealEntropy {
         this.reveals = new Map();          // nodeId → { entropy (hex), nonce (hex), valid }
         this.localEntropy = null;          // Our E_i for current round
         this.localNonce = null;            // Our nonce_i for current round
+
+        // Public beacon state
+        this.pulseHistory = new Map();       // round -> signed Pulse
+        this.maxHistory = options.maxHistory || 1000;
+        this._lastSignature = null;
+        this._genesisHash = null;
 
         // Timers
         this._roundTimer = null;
@@ -690,6 +701,33 @@ export class CommitRevealEntropy {
             output.set(conditioned, 0);
             output.set(extended, 32);
 
+            // ─── Build and sign public pulse ───
+            const timestamp = Math.floor(aguwa.now() / 1000);
+            const pulse = {
+                round: this.roundId,
+                randomness: Buffer.from(output).toString('hex'),
+                timestamp,
+                previous_signature: this._lastSignature || null,
+            };
+
+            if (this.signFn) {
+                const signPayload = JSON.stringify({
+                    round: pulse.round,
+                    randomness: pulse.randomness,
+                    timestamp: pulse.timestamp,
+                    previous_signature: pulse.previous_signature,
+                });
+                pulse.signature = this.signFn(signPayload);
+                this._lastSignature = pulse.signature;
+            }
+
+            this.pulseHistory.set(this.roundId, pulse);
+            // Prune oldest if over capacity
+            if (this.pulseHistory.size > this.maxHistory) {
+                const oldest = Math.min(...this.pulseHistory.keys());
+                this.pulseHistory.delete(oldest);
+            }
+
             // Feed into PRAHARI via the entropy source buffer
             this._entropySource._buffer = output;
 
@@ -842,10 +880,66 @@ export class CommitRevealEntropy {
         ]));
     }
 
+    // ───────────────────────────────────────────────────────────────
+    // PUBLIC BEACON API
+    // ───────────────────────────────────────────────────────────────
+
+    /**
+     * Get the most recent signed pulse.
+     * @returns {Object|null}
+     */
+    getLatestPulse() {
+        if (this.pulseHistory.size === 0) return null;
+        const maxRound = Math.max(...this.pulseHistory.keys());
+        return this.pulseHistory.get(maxRound);
+    }
+
+    /**
+     * Get a specific pulse by round number.
+     * @param {number} round
+     * @returns {Object|null}
+     */
+    getPulse(round) {
+        return this.pulseHistory.get(round) || null;
+    }
+
+    /**
+     * Get a slice of pulse history (newest first).
+     * @param {number} [limit=100]
+     * @param {number} [offset=0]
+     * @returns {Object[]}
+     */
+    getPulseHistory(limit = 100, offset = 0) {
+        const rounds = Array.from(this.pulseHistory.keys()).sort((a, b) => b - a);
+        const slice = rounds.slice(offset, offset + limit);
+        return slice.map(r => this.pulseHistory.get(r));
+    }
+
+    /**
+     * Get beacon genesis / root-of-trust info.
+     * @returns {Object}
+     */
+    getGenesisInfo() {
+        const latest = this.getLatestPulse();
+        return {
+            public_key: this.publicKey || null,
+            period: Math.round(this.roundIntervalMs / 1000),
+            threshold: 2, // minimum valid contributors for a pulse
+            node_id: this.nodeId,
+            next_expected: latest
+                ? latest.timestamp + Math.round(this.roundIntervalMs / 1000)
+                : Math.floor(aguwa.now() / 1000) + Math.round(this.roundIntervalMs / 1000),
+            total_pulses: this.pulseHistory.size,
+            first_round: this.pulseHistory.size > 0 ? Math.min(...this.pulseHistory.keys()) : null,
+            latest_round: latest ? latest.round : null,
+        };
+    }
+
     /**
      * Get protocol statistics.
      */
     getStats() {
+        const latest = this.getLatestPulse();
         return {
             ...this.stats,
             roundId: this.roundId,
@@ -853,6 +947,8 @@ export class CommitRevealEntropy {
             pendingCommits: this.pendingCommits.size,
             reveals: this.reveals.size,
             active: this.active,
+            pulseHistory: this.pulseHistory.size,
+            latestPulse: latest ? { round: latest.round, timestamp: latest.timestamp } : null,
         };
     }
 }
@@ -869,9 +965,11 @@ export class CommitRevealEntropy {
  * @param {Object} [options.maniDetector] — ManiTimeDetector (for epoch-aligned rounds)
  * @param {Object} [options.sakshiMonitor] — BehaviorVelocityMonitor (for witness tracking)
  * @param {Map}    [options.witnessMap] — nodeId → NodeWitness (for quality weighting)
+ * @param {Function} [options.signFn] — Function(message) -> hex signature for pulse signing
+ * @param {string} [options.publicKey] — Hex public key for signature verification
  * @returns {CommitRevealEntropy}
  */
-export function wireCommitReveal({ gossip, prahari, mesh, nodeId, maniDetector, sakshiMonitor, witnessMap }) {
+export function wireCommitReveal({ gossip, prahari, mesh, nodeId, maniDetector, sakshiMonitor, witnessMap, signFn, publicKey }) {
     // Use global MANI detector as fallback if not explicitly provided
     const detector = maniDetector || (() => { try { return getManiTimeDetector(); } catch { return null; } })();
 
@@ -882,6 +980,8 @@ export function wireCommitReveal({ gossip, prahari, mesh, nodeId, maniDetector, 
         maniDetector: detector,
         sakshiMonitor: sakshiMonitor || null,
         witnessMap: witnessMap || new Map(),
+        signFn: signFn || null,
+        publicKey: publicKey || null,
     });
 
     // Subscribe to prahari:entropy:* rumor topics on the mesh
