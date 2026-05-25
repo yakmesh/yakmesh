@@ -258,6 +258,38 @@ async function checkNodeHealth(nodeUrl) {
 
 // Command handlers
 const commands = {
+    // /timesync - Check Kuramoto phase variance
+    async timesync(interaction) {
+      await interaction.deferReply();
+      try {
+        const response = await fetch('https://time.yakmesh.dev/api/mesh-health');
+        if (!response.ok) throw new Error('API down');
+        const data = await response.json();
+        
+        let nodesStr = '';
+        if (data.peers && data.peers.length > 0) {
+          nodesStr = data.peers.map(p => `**${p.nodeId}** • phase: ${p.theta} • trust: ${p.timeTrust}`).join('\n');
+        } else {
+          nodesStr = '*No other synchronized peers currently in view.*';
+        }
+
+        const embed = createEmbed({
+          title: '⏱️ AGUWA Mesh Sync Telemetry',
+          description: 'Live Kuramoto Phase Coupling Data',
+          fields: [
+            { name: 'Health', value: String(data.health).toUpperCase(), inline: true },
+            { name: 'Coupling (r)', value: `${data.r}`, inline: true },
+            { name: 'Connected Peers', value: `${data.peers ? data.peers.length : 0}`, inline: true },
+            { name: 'Drift Rate (ω)', value: `${data.omega}`, inline: true },
+            { name: 'Peer Topology', value: nodesStr, inline: false },
+          ]
+        });
+        await interaction.editReply({ embeds: [embed] });
+      } catch (err) {
+        console.error(err);
+        await interaction.editReply({ content: '⚠️ Could not fetch AGUWA telemetry data.' });
+      }
+    },
   // /status - Show current status
   async status(interaction) {
     await interaction.deferReply();

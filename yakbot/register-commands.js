@@ -39,11 +39,11 @@ const commands = [
   new SlashCommandBuilder()
     .setName('status')
     .setDescription('Show YAKMESH current version and stats'),
-    
+
   new SlashCommandBuilder()
     .setName('nodes')
     .setDescription('Check health status of official YAKMESH nodes'),
-    
+
   new SlashCommandBuilder()
     .setName('docs')
     .setDescription('Get documentation links')
@@ -62,15 +62,15 @@ const commands = [
           { name: '💬 Gossip Protocol', value: 'gossip' },
           { name: '🔮 Oracle System', value: 'oracle' },
         )),
-        
+
   new SlashCommandBuilder()
     .setName('changelog')
     .setDescription('Show recent YAKMESH changes'),
-    
+
   new SlashCommandBuilder()
     .setName('install')
     .setDescription('Get quick installation instructions'),
-    
+
   new SlashCommandBuilder()
     .setName('ask')
     .setDescription('Ask YakBot a question about YAKMESH')
@@ -78,23 +78,27 @@ const commands = [
       option.setName('question')
         .setDescription('Your question about YAKMESH')
         .setRequired(true)),
-        
+
   new SlashCommandBuilder()
     .setName('ping')
     .setDescription('Check bot latency'),
-    
+
   new SlashCommandBuilder()
     .setName('links')
     .setDescription('Get all YAKMESH social and resource links'),
-    
+
   new SlashCommandBuilder()
     .setName('help')
     .setDescription('Show all available YakBot commands'),
-    
+
   new SlashCommandBuilder()
     .setName('faq')
     .setDescription('Frequently asked questions about YAKMESH'),
-    
+
+  new SlashCommandBuilder()
+    .setName('timesync')
+    .setDescription('View live AGUWA Kuramoto time-sync telemetry from the mesh'),
+
   new SlashCommandBuilder()
     .setName('botstats')
     .setDescription('View YakBot performance metrics and statistics'),
@@ -114,13 +118,13 @@ const rest = new REST().setToken(token);
 (async () => {
   try {
     log.info('Registering slash commands...');
-    
+
     // Register globally (takes up to 1 hour to propagate)
     await rest.put(
       Routes.applicationCommands(clientId),
       { body: commands.map(cmd => cmd.toJSON()) },
     );
-    
+
     log.info('Successfully registered commands', { commands: commands.map(cmd => cmd.name) });
     log.info('Global commands may take up to 1 hour to appear. For instant testing, use guild-specific commands.');
   } catch (error) {
