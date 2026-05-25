@@ -32,7 +32,18 @@ coverage/
 dist/
 build/
 *.tgz
-*.pruned
+/data/stale-files/
+/data/quarantine/
+
+# Archived temp scripts and binaries
+archive/
+
+# Wintun driver binaries
+wintun.zip
+wintun_extract/
+
+# Deployment artifacts
+yakbot-deploy.zip
 
 # Deploy-package build outputs, test deployments, and local data backups
 deploy-packages/_stow/

@@ -670,6 +670,8 @@ export class YakmeshNode {
       maniDetector: this.timeSource || null,
       sakshiMonitor: this.velocityMonitor || null,
       witnessMap: this._getWitnessMap?.() || new Map(),
+      signFn: (data) => this.identity.sign(data),
+      publicKey: this.identity.identity.publicKey,
     });
 
     // 4b. Wire profile gossip — handles 'profile:update' rumors
@@ -821,7 +823,7 @@ export class YakmeshNode {
 
     // 5g. Initialize KARMA trust model (fed by SAKSHI)
     this._initKarma();
-      await this._initYakTun();
+    await this._initYakTun();
     await this._initTernaryHarmonization();
 
     // 5i. Initialize SHERPA for decentralized peer discovery
@@ -1852,7 +1854,7 @@ export class YakmeshNode {
     log.info('🌐 Initializing YAK-TUN Native Interface...');
     this.yakTun = new YakTun('yak0', this.mesh, this.karmaModel);
     await this.yakTun.init();
-    
+
     // Route incoming TUN_PACKET messages from the mesh directly back into OS
     this.mesh.messageHandlers.get('TUN_PACKET')?.push?.((msg, ws, senderNodeId) => {
       if (this.yakTun && this.yakTun.active) {
@@ -3626,6 +3628,95 @@ export class YakmeshNode {
     });
 
     // =========================================
+    // PUBLIC ENTROPY BEACON API (Paranoid Entropy Beacon)
+    // Open CORS + generous rate limits for external entropy consumers
+    // =========================================
+    const publicBeaconLimiter = rateLimit({
+      windowMs: 60 * 1000,
+      max: 300,
+      skip: isLoopback,
+      standardHeaders: true,
+      legacyHeaders: false,
+      message: { error: 'Rate limit exceeded. Try again in a minute.' },
+    });
+
+    const openCors = (req, res, next) => {
+      res.header('Access-Control-Allow-Origin', '*');
+      res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+      res.header('Access-Control-Allow-Headers', 'Content-Type');
+      if (req.method === 'OPTIONS') return res.sendStatus(200);
+      next();
+    };
+
+    app.get('/public/latest', publicBeaconLimiter, openCors, (req, res) => {
+      if (!this.commitReveal) {
+        return res.status(503).json({ error: 'Commit-reveal beacon not initialized' });
+      }
+      const pulse = this.commitReveal.getLatestPulse();
+      if (!pulse) {
+        return res.status(503).json({ error: 'No pulse available yet. Wait for the first round to complete.' });
+      }
+      res.json(pulse);
+    });
+
+    app.get('/public/:round', publicBeaconLimiter, openCors, (req, res) => {
+      if (!this.commitReveal) {
+        return res.status(503).json({ error: 'Commit-reveal beacon not initialized' });
+      }
+      const round = parseInt(req.params.round, 10);
+      if (isNaN(round) || round < 1) {
+        return res.status(400).json({ error: 'Invalid round number' });
+      }
+      const pulse = this.commitReveal.getPulse(round);
+      if (!pulse) {
+        return res.status(404).json({ error: 'Pulse not found for this round' });
+      }
+      res.json(pulse);
+    });
+
+    app.get('/public', publicBeaconLimiter, openCors, (req, res) => {
+      if (!this.commitReveal) {
+        return res.status(503).json({ error: 'Commit-reveal beacon not initialized' });
+      }
+      const limit = Math.min(1000, Math.max(1, parseInt(req.query.limit, 10) || 100));
+      const offset = Math.max(0, parseInt(req.query.offset, 10) || 0);
+      res.json({
+        pulses: this.commitReveal.getPulseHistory(limit, offset),
+        limit,
+        offset,
+      });
+    });
+
+    app.get('/info', publicBeaconLimiter, openCors, (req, res) => {
+      if (!this.commitReveal) {
+        return res.status(503).json({ error: 'Commit-reveal beacon not initialized' });
+      }
+      res.json(this.commitReveal.getGenesisInfo());
+    });
+
+    app.post('/public/verify', publicBeaconLimiter, openCors, (req, res) => {
+      if (!this.commitReveal || !this.identity) {
+        return res.status(503).json({ error: 'Beacon not initialized' });
+      }
+      const { round, randomness, timestamp, previous_signature, signature } = req.body;
+      if (!signature || !randomness) {
+        return res.status(400).json({ error: 'Missing signature or randomness in request body' });
+      }
+      const payload = JSON.stringify({
+        round: round ?? null,
+        randomness,
+        timestamp: timestamp ?? null,
+        previous_signature: previous_signature ?? null,
+      });
+      const valid = this.identity.verify(payload, signature, this.identity.identity.publicKey);
+      res.json({
+        valid,
+        round: round ?? null,
+        verifiedAgainst: this.identity.identity.publicKey.slice(0, 32) + '...',
+      });
+    });
+
+    // =========================================
     // SHERPA HTTP Relay: Mesh messaging over HTTP
     // =========================================
     // Allows nodes behind firewalls to exchange mesh messages via HTTP POST
@@ -4592,6 +4683,7 @@ export class YakmeshNode {
         (hasMeshGrandmaster ? `mesh/${meshRef.nodeName || peerTag(meshRef.fromNodeId)}` : 'system');
       const effectiveAccuracy = locked ? 1 : (hasMeshGrandmaster ? (meshRef.accuracy_ms ?? 5) : 50);
       const effectiveQuality = locked ? 'excellent' : (hasMeshGrandmaster ? 'mesh-synced' : 'degraded');
+      const effectiveLock = locked || (hasMeshGrandmaster && meshRef.lock);
 
       res.set({
         'Access-Control-Allow-Origin': '*',
@@ -4610,12 +4702,12 @@ export class YakmeshNode {
         accuracy_ms: effectiveAccuracy,
         leap_indicator: 0,
         satellites: {
-          visible: sats.visible ?? 0,
-          used: sats.used ?? 0,
-          tracking: sats.tracking ?? 0,
-          constellations: sats.constellations ?? [],
+          visible: locked ? (sats.visible ?? 0) : (hasMeshGrandmaster ? (meshRef.satellites?.visible ?? 0) : 0),
+          used: locked ? (sats.used ?? 0) : (hasMeshGrandmaster ? (meshRef.satellites?.used ?? 0) : 0),
+          tracking: locked ? (sats.tracking ?? 0) : (hasMeshGrandmaster ? (meshRef.satellites?.tracking ?? 0) : 0),
+          constellations: locked ? (sats.constellations ?? []) : (hasMeshGrandmaster ? (meshRef.satellites?.constellations ?? []) : []),
         },
-        lock: locked,
+        lock: effectiveLock,
         quality: effectiveQuality,
         offset_ns: status.offset ?? 0,
         reference_id: locked ? 'GPS' : (hasMeshGrandmaster ? 'MESH' : 'SYS'),
@@ -4639,6 +4731,11 @@ export class YakmeshNode {
       }
 
       res.json(body);
+    });
+
+    app.get('/api/mesh-health', (req, res) => {
+      res.set({ 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store' });
+      res.json(aguwa.getStatus());
     });
 
     app.get('/api/time/simple', (req, res) => {
