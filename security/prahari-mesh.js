@@ -325,7 +325,6 @@ export class CommitRevealEntropy {
         this.pulseHistory = new Map();       // round -> signed Pulse
         this.maxHistory = options.maxHistory || 1000;
         this._lastSignature = null;
-        this._genesisHash = null;
 
         // Timers
         this._roundTimer = null;
@@ -708,6 +707,8 @@ export class CommitRevealEntropy {
                 randomness: Buffer.from(output).toString('hex'),
                 timestamp,
                 previous_signature: this._lastSignature || null,
+                public_key: this.publicKey || null,
+                node_id: this.nodeId,
             };
 
             if (this.signFn) {
@@ -912,7 +913,7 @@ export class CommitRevealEntropy {
     getPulseHistory(limit = 100, offset = 0) {
         const rounds = Array.from(this.pulseHistory.keys()).sort((a, b) => b - a);
         const slice = rounds.slice(offset, offset + limit);
-        return slice.map(r => this.pulseHistory.get(r));
+        return slice.map(r => ({ ...this.pulseHistory.get(r) }));
     }
 
     /**
@@ -921,14 +922,20 @@ export class CommitRevealEntropy {
      */
     getGenesisInfo() {
         const latest = this.getLatestPulse();
+        const nowSec = Math.floor(aguwa.now() / 1000);
+        const intervalSec = Math.round(this.roundIntervalMs / 1000);
+        // next_expected: if we have pulses, project from latest; if rounds are
+        // failing, still project from latest (clients can detect staleness).
+        // If no pulses yet, project from now.
+        const nextExpected = latest
+            ? latest.timestamp + intervalSec
+            : nowSec + intervalSec;
         return {
             public_key: this.publicKey || null,
-            period: Math.round(this.roundIntervalMs / 1000),
+            period: intervalSec,
             threshold: 2, // minimum valid contributors for a pulse
             node_id: this.nodeId,
-            next_expected: latest
-                ? latest.timestamp + Math.round(this.roundIntervalMs / 1000)
-                : Math.floor(aguwa.now() / 1000) + Math.round(this.roundIntervalMs / 1000),
+            next_expected: nextExpected,
             total_pulses: this.pulseHistory.size,
             first_round: this.pulseHistory.size > 0 ? Math.min(...this.pulseHistory.keys()) : null,
             latest_round: latest ? latest.round : null,
