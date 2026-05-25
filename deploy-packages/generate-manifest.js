@@ -116,6 +116,20 @@ for (const f of files) {
 }
 const codebaseHash = bytesToHex(sha3_256(utf8ToBytes(contentParts.join('\n'))));
 
+// Try to reuse the master buildNonce if this script is being run for different packages
+let buildNonce = bytesToHex(randomBytes(32));
+try {
+    const masterManifestPath = join(__dirname, '..', 'data', 'manifest.json');
+    if (existsSync(masterManifestPath)) {
+        const masterManifest = JSON.parse(readFileSync(masterManifestPath, 'utf8'));
+        if (masterManifest.buildNonce) {
+            buildNonce = masterManifest.buildNonce;
+        }
+    }
+} catch (err) {
+    // silently fallback to random
+}
+
 // Build mnemonic manifest
 const mnemonics = files.map(f => ({
     path: f,
@@ -127,7 +141,7 @@ const manifest = {
     generatedAt: new Date().toISOString(),
     codebaseHash: codebaseHash.slice(0, 16) + '...',
     fullCodebaseHash: codebaseHash,
-    buildNonce: bytesToHex(randomBytes(32)),
+    buildNonce: buildNonce,
     fileCount: files.length,
     files,
     mnemonics,

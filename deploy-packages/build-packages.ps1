@@ -65,7 +65,7 @@
     ║  │  key derivation. If the manifest does not match the actual files:   │ ║
     ║  │                                                                     │ ║
     ║  │    → Oracle detects "files not in manifest"                        │ ║
-    ║  │    → Stale files get renamed to .pruned                            │ ║
+    ║  │    → Stale files get moved to quarantine                           │ ║
     ║  │    → Oracle hash changes (different files hashed)                  │ ║
     ║  │    → JHILKE derives a different bootstrap key                      │ ║
     ║  │    → ANNEX AES-GCM decryption fails between nodes                 │ ║
@@ -139,9 +139,11 @@
 #>
 
 param(
-    [ValidateSet('minimal', 'basic', 'full', 'yakbot', 'all')]
+    [ValidateSet('minimal', 'basic', 'full', 'yakbot', 'lan-time-yakmesh-dev', 'all')]
     [string]$Target = 'all'
 )
+
+$DateStamp = Get-Date -Format "yyyyMMdd"
 
 $ErrorActionPreference = "Stop"
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -281,8 +283,8 @@ function Copy-PackageSource {
         New-Item -ItemType Directory -Path (Join-Path $DestDir $_) -Force | Out-Null
     }
 
-    # If it's a basic or full package, copy website/time/ to public and htdocs
-    if ($DestDir -match "basic" -or $DestDir -match "full") {
+    # If it's a lan-time-yakmesh-dev package, copy website/time/ to public and htdocs
+    if ($DestDir -match "lan-time-yakmesh-dev") {
         $timeSource = Join-Path $SourceDir "..\website\time\index.html"
         if (Test-Path $timeSource) {
             # 1. To public/time/ so it's accessible via yakmesh.dev/time/
@@ -292,7 +294,7 @@ function Copy-PackageSource {
             
             # 2. To htdocs/ so it's accessible at the root of time.yakmesh.dev via Caddy
             Copy-Item $timeSource -Destination (Join-Path $DestDir "htdocs\index.html") -Force
-            Write-Host "    [COPY] website/time -> public/time & htdocs" -ForegroundColor Gray
+            Write-Host "    [COPY] website/time -> public/time & htdocs (DEV WORKSPACE ONLY)" -ForegroundColor Gray
         }
     }
 
@@ -379,14 +381,16 @@ function Build-Minimal {
     $stats = Get-PackageStats -Dir $minimalDir
     
     # Create zip
-    $zipPath = Join-Path $BuildDir "yakmesh-minimal.zip"
+    $zipPath = Join-Path $BuildDir "yakmesh-minimal_prod-$DateStamp.zip"
     if (Test-Path $zipPath) { Remove-Item $zipPath }
     
-    Write-Host "  Creating archive..." -ForegroundColor Yellow
-    Compress-Archive -Path $minimalDir -DestinationPath $zipPath -CompressionLevel Optimal
+    Write-Host "  Creating archive using robust tar.exe..." -ForegroundColor Yellow
+    Push-Location $BuildDir
+    tar.exe -a -c -f (Split-Path -Leaf $zipPath) (Split-Path -Leaf $minimalDir)
+    Pop-Location
     
     $zipSize = [math]::Round((Get-Item $zipPath).Length / 1MB, 2)
-    Write-Host "  [OK] yakmesh-minimal.zip ($zipSize MB, $($stats.Files) files)" -ForegroundColor Green
+    Write-Host "  [OK] yakmesh-minimal_prod-$DateStamp.zip ($zipSize MB, $($stats.Files) files)" -ForegroundColor Green
     
     return $minimalDir
 }
@@ -413,14 +417,16 @@ function Build-Basic {
     $stats = Get-PackageStats -Dir $basicDir
     
     # Create zip
-    $zipPath = Join-Path $BuildDir "yakmesh-basic.zip"
+    $zipPath = Join-Path $BuildDir "yakmesh-basic_prod-$DateStamp.zip"
     if (Test-Path $zipPath) { Remove-Item $zipPath }
     
-    Write-Host "  Creating archive..." -ForegroundColor Yellow
-    Compress-Archive -Path $basicDir -DestinationPath $zipPath -CompressionLevel Optimal
+    Write-Host "  Creating archive using robust tar.exe..." -ForegroundColor Yellow
+    Push-Location $BuildDir
+    tar.exe -a -c -f (Split-Path -Leaf $zipPath) (Split-Path -Leaf $basicDir)
+    Pop-Location
     
     $zipSize = [math]::Round((Get-Item $zipPath).Length / 1MB, 2)
-    Write-Host "  [OK] yakmesh-basic.zip ($zipSize MB, $($stats.Files) files)" -ForegroundColor Green
+    Write-Host "  [OK] yakmesh-basic_prod-$DateStamp.zip ($zipSize MB, $($stats.Files) files)" -ForegroundColor Green
     
     return $basicDir
 }
@@ -504,16 +510,100 @@ function Build-Full {
     $stats = Get-PackageStats -Dir $fullDir
     
     # Create zip
-    $zipPath = Join-Path $BuildDir "yakmesh-full-win-x64.zip"
+    $zipPath = Join-Path $BuildDir "yakmesh-full_prod-$DateStamp-win-x64.zip"
     if (Test-Path $zipPath) { Remove-Item $zipPath }
     
-    Write-Host "  Creating archive..." -ForegroundColor Yellow
-    Compress-Archive -Path $fullDir -DestinationPath $zipPath -CompressionLevel Optimal
+    Write-Host "  Creating archive using robust tar.exe..." -ForegroundColor Yellow
+    Push-Location $BuildDir
+    tar.exe -a -c -f (Split-Path -Leaf $zipPath) (Split-Path -Leaf $fullDir)
+    Pop-Location
     
     $zipSize = [math]::Round((Get-Item $zipPath).Length / 1MB, 2)
-    Write-Host "  [OK] yakmesh-full-win-x64.zip ($zipSize MB, $($stats.Files) files)" -ForegroundColor Green
+    Write-Host "  [OK] yakmesh-full_prod-$DateStamp-win-x64.zip ($zipSize MB, $($stats.Files) files)" -ForegroundColor Green
     
     return $fullDir
+}
+
+function Build-LanTimeYakmeshDev {
+    Write-Host ""
+    Write-Host "Building LAN DEV WORKSPACE package (time.yakmesh.dev)..." -ForegroundColor Green
+    Write-Host "  Includes: full + time UI + dev configs" -ForegroundColor Gray
+    
+    $lanDir = Join-Path $BuildDir "yakmesh-lan-time-yakmesh-dev"
+    
+    # Clean and create
+    if (Test-Path $lanDir) { Remove-Item $lanDir -Recurse -Force }
+    New-Item -ItemType Directory -Path $lanDir -Force | Out-Null
+    
+    # Create download directory
+    New-Item -ItemType Directory -Path $DownloadDir -Force | Out-Null
+    
+    # Download binaries
+    Write-Host "  Downloading binaries..." -ForegroundColor Yellow
+    
+    $caddyZip = Join-Path $DownloadDir "caddy.zip"
+    Download-File -Url $Downloads.Caddy -OutFile $caddyZip
+    
+    $phpZip = Join-Path $DownloadDir "php.zip"
+    Download-File -Url $Downloads.PHP -OutFile $phpZip
+    
+    $nodeZip = Join-Path $DownloadDir "node.zip"
+    Download-File -Url $Downloads.Node -OutFile $nodeZip
+    
+    # Copy yakmesh source
+    Write-Host "  Copying source files..." -ForegroundColor Yellow
+    Copy-PackageSource -DestDir $lanDir -Directories $FullDirs
+    
+    # Create bin directory
+    $binDir = Join-Path $lanDir "bin"
+    New-Item -ItemType Directory -Path $binDir -Force | Out-Null
+    
+    # Extract Caddy
+    Write-Host "  Extracting Caddy..." -ForegroundColor Yellow
+    Expand-Archive -Path $caddyZip -DestinationPath $binDir -Force
+    Remove-Item (Join-Path $binDir "LICENSE") -Force -ErrorAction SilentlyContinue
+    Remove-Item (Join-Path $binDir "README.md") -Force -ErrorAction SilentlyContinue
+    
+    # Extract PHP
+    Write-Host "  Extracting PHP..." -ForegroundColor Yellow
+    $phpDir = Join-Path $binDir "php"
+    Expand-Archive -Path $phpZip -DestinationPath $phpDir -Force
+    Copy-Item (Join-Path $phpDir "php.ini-production") (Join-Path $phpDir "php.ini") -Force
+    
+    # Extract Node.js
+    Write-Host "  Extracting Node.js..." -ForegroundColor Yellow
+    $nodeTmpDir = Join-Path $binDir "node_tmp"
+    Expand-Archive -Path $nodeZip -DestinationPath $nodeTmpDir -Force
+    $nodeExtracted = Get-ChildItem $nodeTmpDir | Select-Object -First 1
+    $nodeDir = Join-Path $binDir "node"
+    Move-Item $nodeExtracted.FullName $nodeDir -Force
+    Remove-Item $nodeTmpDir -Recurse -Force
+    
+    # Ensure public/ web root exists (Caddy serves from here)
+    $publicDir = Join-Path $lanDir "public"
+    if (-not (Test-Path $publicDir)) {
+        New-Item -ItemType Directory -Path $publicDir -Force | Out-Null
+    }
+    
+    # Generate iO manifest (this uses the same .js files so the hash connects identically to prod!)
+    Generate-Manifest -PackageDir $lanDir
+
+    # Get stats
+    $stats = Get-PackageStats -Dir $lanDir
+    
+    # Create zip
+    $zipPath = Join-Path $BuildDir "yakmesh-lan-time-yakmesh-dev.zip"
+    if (Test-Path $zipPath) { Remove-Item $zipPath }
+    
+    Write-Host "  Creating archive using robust tar.exe..." -ForegroundColor Yellow
+    Push-Location $BuildDir
+    tar.exe -a -c -f (Split-Path -Leaf $zipPath) (Split-Path -Leaf $lanDir)
+    Pop-Location
+    
+    $zipSize = [math]::Round((Get-Item $zipPath).Length / 1MB, 2)
+    Write-Host "  [OK] yakmesh-lan-time-yakmesh-dev.zip ($zipSize MB, $($stats.Files) files)" -ForegroundColor Green
+    
+    return $lanDir
 }
 
 function Build-Yakbot {
@@ -575,8 +665,10 @@ function Build-Yakbot {
     $zipPath = Join-Path $BuildDir "yakbot.zip"
     if (Test-Path $zipPath) { Remove-Item $zipPath }
     
-    Write-Host "  Creating archive..." -ForegroundColor Yellow
-    Compress-Archive -Path $yakbotDir -DestinationPath $zipPath -CompressionLevel Optimal
+    Write-Host "  Creating archive using robust tar.exe..." -ForegroundColor Yellow
+    Push-Location $BuildDir
+    tar.exe -a -c -f (Split-Path -Leaf $zipPath) (Split-Path -Leaf $yakbotDir)
+    Pop-Location
     
     $zipSize = [math]::Round((Get-Item $zipPath).Length / 1KB, 1)
     Write-Host "  [OK] yakbot.zip ($zipSize KB, $($stats.Files) files)" -ForegroundColor Green
@@ -611,10 +703,12 @@ switch ($Target) {
     'basic' { Build-Basic }
     'full' { Build-Full }
     'yakbot' { Build-Yakbot }
+    'lan-time-yakmesh-dev' { Build-LanTimeYakmeshDev }
     'all' {
         Build-Minimal
         Build-Basic
         Build-Full
+        Build-LanTimeYakmeshDev
         Build-Yakbot
     }
 }
