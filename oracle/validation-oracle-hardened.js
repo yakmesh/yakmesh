@@ -68,7 +68,7 @@ import { ml_dsa65 } from '@noble/post-quantum/ml-dsa.js';
 import { sha3_256, mlDsa65Verify } from '../utils/accel.js';
 import { readFileSync, readdirSync, statSync, renameSync, unlinkSync, mkdirSync, existsSync } from 'fs';
 import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import { dirname, join, basename } from 'path';
 import { createLogger } from '../utils/logger.js';
 import { Trit, TritState, POSITIVE, NEUTRAL, NEGATIVE } from './tribhuj.js';
 
@@ -1221,14 +1221,14 @@ export class ValidationOracle {
 
     const rootDir = join(__dirname, '..');
     const autoPrune = process.env.YAKMESH_AUTO_PRUNE === 'true';
-    const quarantine = process.env.YAKMESH_QUARANTINE === 'true';
-    const mode = autoPrune ? 'delete' : quarantine ? 'quarantine' : 'rename';
+    const legacyRename = process.env.YAKMESH_PRUNE_IN_PLACE === 'true';
+    const mode = autoPrune ? 'delete' : legacyRename ? 'rename' : 'quarantine';
     const errors = [];
     let handled = 0;
 
-    // Quarantine target
-    const quarantineDir = join(rootDir, 'data', 'stale-files');
-    if (quarantine && !existsSync(quarantineDir)) {
+    // Quarantine target (data/quarantine) – keeps backups safe without cluttering the project root
+    const quarantineDir = join(rootDir, 'data', 'quarantine');
+    if (mode === 'quarantine' && !existsSync(quarantineDir)) {
       mkdirSync(quarantineDir, { recursive: true });
     }
 
@@ -1238,12 +1238,23 @@ export class ValidationOracle {
         if (autoPrune) {
           unlinkSync(fullPath);
           log.warn(`iO Stale: DELETED ${filePath}`);
-        } else if (quarantine) {
-          const dest = join(quarantineDir, filePath.replace(/\//g, '__'));
+        } else if (mode === 'quarantine') {
+          // Recreate subdirectory structure inside quarantine folder
+          const fileDir = dirname(filePath);
+          const targetDir = join(quarantineDir, fileDir);
+          if (!existsSync(targetDir)) {
+            mkdirSync(targetDir, { recursive: true });
+          }
+
+          let dest = join(targetDir, basename(filePath));
+          // If file already exists in quarantine, append timestamp so we don't overwrite
+          if (existsSync(dest)) {
+            dest = dest + '.' + Date.now();
+          }
           renameSync(fullPath, dest);
-          log.warn(`iO Stale: QUARANTINED ${filePath}`);
+          log.warn(`iO Stale: QUARANTINED ${filePath} → data/quarantine/${fileDir}`);
         } else {
-          // Default: rename to .pruned (extension mismatch → excluded from hash)
+          // Legacy: rename to .pruned (extension mismatch → excluded from hash)
           renameSync(fullPath, fullPath + '.pruned');
           log.warn(`iO Stale: RENAMED ${filePath} → ${filePath}.pruned`);
         }
