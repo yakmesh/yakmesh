@@ -85,6 +85,7 @@
     "test:security": "npx vitest run",
     "test:byond": "node --test adapters/adapter-byond/tests/*.test.js",
     "test:all": "npm run test:oracle && npm run test:protocol && npm run test:multinode && npm run test:byond && npm run test:security",
+    "sync:docs": "node scripts/sync-docs.mjs",
     "verify:beacon": "node scripts/verify-beacon.mjs",
     "audit": "node scripts/security-audit.mjs",
     "audit:fix": "node scripts/security-audit.mjs --fix",
