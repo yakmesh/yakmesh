@@ -635,16 +635,6 @@ export class ManiTimeDetector extends EventEmitter {
 
     return result;
   }
-          result.detected = true;
-          result.synchronized = chronyOutput.includes('*');
-}
-      } catch (e) {
-  // chrony not available
-}
-    }
-
-return result;
-  }
 
 /**
  * Detect PTP (IEEE 1588) time synchronization
