@@ -3698,7 +3698,7 @@ export class YakmeshNode {
       if (!this.commitReveal || !this.identity) {
         return res.status(503).json({ error: 'Beacon not initialized' });
       }
-      const { round, randomness, timestamp, previous_signature, signature } = req.body;
+      const { round, randomness, timestamp, previous_signature, signature, public_key } = req.body;
       if (!signature || !randomness) {
         return res.status(400).json({ error: 'Missing signature or randomness in request body' });
       }
@@ -3708,11 +3708,12 @@ export class YakmeshNode {
         timestamp: timestamp ?? null,
         previous_signature: previous_signature ?? null,
       });
-      const valid = this.identity.verify(payload, signature, this.identity.identity.publicKey);
+      const pk = public_key || this.identity.identity.publicKey;
+      const valid = this.identity.verify(payload, signature, pk);
       res.json({
         valid,
         round: round ?? null,
-        verifiedAgainst: this.identity.identity.publicKey.slice(0, 32) + '...',
+        verifiedAgainst: pk.slice(0, 32) + '...',
       });
     });
 
