@@ -6,7 +6,7 @@
  * Regenerate with: npm run build:docs
  * Source: website/docs/
  * 
- * @generated 2026-03-13T05:37:24.670Z
+ * @generated 2026-05-25T21:19:48.864Z
  * @module embedded-docs/bundle
  */
 
@@ -14,7 +14,7 @@
  * Master hash of the entire documentation bundle.
  * Computed as: SHA3-256(sorted individual file hashes joined)
  */
-export const BUNDLE_HASH = 'd7279de59f9a2f2a089d3edc584ec43024661a99e4e4ddecaa7831bd0c247669';
+export const BUNDLE_HASH = 'ee935e7358cc3c8b490cfb118cad8273a2ea1a7b5935207cdf3d34af80a7e0cc';
 
 /**
  * Version of the documentation bundle.
@@ -25,7 +25,7 @@ export const BUNDLE_VERSION = '3.3.0';
 /**
  * Build timestamp (ISO 8601)
  */
-export const BUNDLE_BUILT_AT = '2026-03-13T05:37:24.670Z';
+export const BUNDLE_BUILT_AT = '2026-05-25T21:19:48.864Z';
 
 /**
  * Index of all files in the documentation bundle.
@@ -484,8 +484,8 @@ export const FILE_INDEX = {
     "contentType": "application/octet-stream"
   },
   "prahari.html": {
-    "hash": "f80cbb3beb00d84b493d584b406501091321ca5be79040f076e9c0543d72792c",
-    "size": 55505,
+    "hash": "8654124c6a1021821a8398dcd57e83960354010bf00f7fa98611df76efd28bc6",
+    "size": 68432,
     "contentType": "text/html; charset=utf-8"
   },
   "PRECISION-DISCLOSURE.md": {
