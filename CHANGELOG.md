@@ -4,6 +4,8 @@ All notable changes to YAKMESH will be documented in this file.
 
 ## [Unreleased]
 
+## [3.4.0] - 2026-05-28
+
 ### 📡 Public Entropy Beacon API
 
 *Theme: "The mesh breathes entropy. Anyone can watch."*
@@ -32,6 +34,24 @@ External builders can now consume PRAHARI commit-reveal consensus entropy as a p
 - New methods: `getLatestPulse()`, `getPulse(round)`, `getPulseHistory(limit, offset)`, `getGenesisInfo()`
 - Constructor accepts `signFn` and `publicKey` for pulse signing
 - `wireCommitReveal` passes `this.identity.sign` and `this.identity.publicKey` from `server/index.js`
+- Fixed `next_expected` drift in `getGenesisInfo()` (now uses aligned `nextPhaseTime`)
+- Fixed pulse object mutation leak in `getPulseHistory()` (deep clone before return)
+- Fixed missing `public_key` and `node_id` fields in pulse objects
+
+### 🔍 Client Verification
+
+**Scripts** (`scripts/verify-beacon.mjs`, `scripts/verify_beacon.py`):
+- Node.js and Python client verification scripts exercising all public endpoints
+- Signature verification, chain-link validation, freshness checks
+- Server-side `/public/verify` cross-check
+- `npm run verify:beacon` — one-command verification
+
+### 📝 Documentation & Deploy
+
+- **`website/docs/prahari.html`** — Full Public Entropy Beacon API documentation with pulse format, endpoints, client verification checklist, and edge cases (first boot, genesis pulse, clock skew)
+- **`scripts/sync-docs.mjs`** — Unified docs sync workflow: `npm run sync:docs` updates nav, mirrors to `yakmesh-node/docs/`, and rebuilds bundle + public
+- **`scripts/deploy-hostinger.cjs`** — Rewritten with correct two-way sync (`website/docs/` is source of truth), 6-stage pipeline (nav → mirror → bundle → public → SEO → sitemap/robots)
+- **`scripts/deploy-hostinger-ssh.ps1`** — Atomic tar+SCP deploy to Hostinger shared hosting
 
 ---
 
