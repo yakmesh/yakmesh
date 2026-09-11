@@ -42,3 +42,15 @@ YakForge daemon (port 9998) provides HTTP endpoints for file operations that byp
 - **Clean Shell Exec** (POST /api/exec): Run shell commands → clean JSON with ANSI stripped, UTF-8 enforced. No noise pollution.
 - **Drift Detector** (POST /api/drift/check): Check AGENTS.md instructions against actual repo state. Catches package manager mismatches, stale file references, test command conflicts.
 - **Model Refusal Auto-Rerouting**: If a model fails, queries automatically fall back to alternative models.
+
+## FIRST STEP FOR ANY AGENT
+**Call GET http://localhost:9998/api/capabilities to discover all available YakForge tools.**
+**Call GET http://localhost:9998/api/mind?path=<this-repo-path> to discover full workspace context.**
+
+## YakForge v2.1.0 — Agent Capability Discovery & Safety Tools
+
+- **Checkpoint API** (/api/checkpoint/*): Snapshot workspace state before risky changes. Diff and restore.
+- **Verification Gate** (/api/verify/*): Run commands and get the REAL exit code + output. Kill verification theater.
+- **Clean Shell Exec** (POST /api/exec): Run shell commands → clean JSON with ANSI stripped, UTF-8 enforced.
+- **Drift Detector** (POST /api/drift/check): Check AGENTS.md vs actual repo state.
+- **Model Refusal Auto-Rerouting**: If a model fails, queries automatically fall back.
