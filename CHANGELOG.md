@@ -2,7 +2,36 @@
 
 All notable changes to YAKMESH will be documented in this file.
 
-## [Unreleased]
+## [3.5.0] - 2026-05-29
+
+### 🛡️ Security Hardening — All Critical Audit Findings Resolved
+
+*Theme: "The gate now checks keys, not claims."*
+
+All seven critical findings from the security audit are resolved:
+
+- **Path traversal closed** in embedded docs (`embedded-docs/serve.js`) and content
+  store (`content/store.js`) — resolved-path containment + strict hash validation
+- **Tribhuj auth bypass closed** — unknown keys no longer verify via the
+  self-carried 'external' fallback; verification requires handshake-pinned keys
+- **Gateway attestation hardened** — attestations verify against pinned
+  Tribhuj keys, fail closed for unknown keys
+- **Handshake proof-of-possession** — HELLO/WELCOME carry signatures binding
+  nodeId + timestamp + Tribhuj public key; nodeId must derive from the claimed
+  key; 5-minute freshness window rejects replays
+- **Peer ratchet-key pinning** — authenticated handshake pins current/previous
+  Tribhuj keys; rotation via `_tribhujCert` signed by the pinned identity key
+- **Mnemonic export fixed** — password-protected export returns only the
+  AES-256-GCM blob; plaintext words no longer leak
+- **Regex DoS fixed** — pathological-backtracking pattern replaced with linear
+  string checks in `mesh/message-validator.js`
+- **ANNEX forward secrecy enabled** — JHILKE bootstrap sessions now upgrade to
+  ephemeral ML-KEM sessions; node-ID tie-break prevents crossing handshakes
+- **YPC-27²** — power-magnified checksum with 27×27 F₃ matrix twist +
+  multivariate-quadratic cross terms; ~0.07ms cached per checksum
+- **YPC-27 v2.0** — degenerate x²⁷−1 ring replaced with verified irreducible
+  polynomial → real F_{3²⁷} field arithmetic (7.6T states, 24/24 SST seeds)
+- Regression suite: `tests/security-audit-regression.mjs` (27 checks)
 
 ### 📜 License Migration: AGPLv3 → YakMesh-NE-1.0
 

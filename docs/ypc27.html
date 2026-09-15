@@ -7,7 +7,7 @@
     <link rel="icon" href="icon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="apple-touch-icon.png">
     <title>YPC-27 Checksums | YAKMESH Documentation</title>
-    <meta name="description" content="YAKMESH YPC-27 quantum-hard packet checksums. 27-trit polynomial checksums resistant to quantum forgery attacks.">
+    <meta name="description" content="YAKMESH YPC-27 v2.0 packet checksums. 27-trit finite field F_{3^27} checksums with SST domain separation. 7.6 trillion possible states.">
     <link rel="stylesheet" href="tailwind.min.css">
     <link rel="stylesheet" href="prism-tomorrow.min.css" media="print" onload="this.media='all'">
     <noscript><link rel="stylesheet" href="prism-tomorrow.min.css"></noscript>
@@ -37,7 +37,7 @@
     <meta property="og:type" content="article">
     <meta property="og:site_name" content="Yakmesh Documentation">
     <meta property="og:title" content="YPC-27 — Yakmesh">
-    <meta property="og:description" content="YPC-27 cryptographic suite — quantum-resistant checksums and hash operations.">
+    <meta property="og:description" content="YPC-27 v2.0 cryptographic suite — finite field F_{3^27} checksums with SST domain separation.">
     <meta property="og:url" content="https://yakmesh.dev/docs/ypc27.html">
     <link rel="canonical" href="https://yakmesh.dev/docs/ypc27.html">
 </head>
@@ -641,12 +641,12 @@
     </a>
     <a href="/dashboard" class="sidebar-dashboard-link"><svg class="doc-icon" aria-hidden="true"><use href="#icon-dashboard"/></svg> <span>Dashboard</span></a>
     <ul class="sidebar-nav">
-      <li class="sidebar-section"><span>📘 Guides</span></li>
+      <li class="sidebar-section"><span><svg class="doc-icon" aria-hidden="true"><use href="#icon-book"/></svg> Guides</span></li>
       <li><a href="index.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-home"/></svg> <span>Overview</span></a></li>
       <li><a href="getting-started.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-rocket"/></svg> <span>Getting Started</span></a></li>
       <li><a href="tutorials.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-book"/></svg> <span>Tutorials</span></a></li>
       <li><a href="gumba-tutorial.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-gumba"/></svg> <span>GUMBA Tutorial</span></a></li>
-      <li class="sidebar-section"><span>🐃 Protocol Stack</span></li>
+      <li class="sidebar-section"><span><svg class="doc-icon" aria-hidden="true"><use href="#icon-yak"/></svg> Protocol Stack</span></li>
       <li><a href="yak-protocol.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-yak"/></svg> <span>YAK://</span></a></li>
       <li><a href="annex.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-annex"/></svg> <span>ANNEX</span></a></li>
       <li><a href="jhilke.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-jhilke"/></svg> <span>JHILKE</span></a></li>
@@ -682,18 +682,18 @@
       <li><a href="docs-bundle.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-granth"/></svg> <span>GRANTH</span></a></li>
       <li><a href="api.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-api"/></svg> <span>API</span></a></li>
       <li><a href="adapters.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-adapters"/></svg> <span>Adapters</span></a></li>
-      <li class="sidebar-section"><span>🚀 Applications</span></li>
+      <li class="sidebar-section"><span><svg class="doc-icon" aria-hidden="true"><use href="#icon-rocket"/></svg> Applications</span></li>
       <li><a href="yakapp.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-yakapp"/></svg> <span>YakApp</span></a></li>
       <li><a href="c2c.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-c2c"/></svg> <span>C2C</span></a></li>
       <li><a href="studio.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-studio"/></svg> <span>Studio</span></a></li>
-      <li class="sidebar-section"><span>🔧 Infrastructure</span></li>
+      <li class="sidebar-section"><span><svg class="doc-icon" aria-hidden="true"><use href="#icon-gear"/></svg> Infrastructure</span></li>
       <li><a href="cli.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-terminal"/></svg> <span>CLI</span></a></li>
       <li><a href="configuration.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-gear"/></svg> <span>Configuration</span></a></li>
       <li><a href="mesh.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-mandala"/></svg> <span>Mesh Network</span></a></li>
       <li><a href="time-sources.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-mani"/></svg> <span>Time Sources</span></a></li>
       <li><a href="webserver.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-server"/></svg> <span>Web Server</span></a></li>
       <li><a href="advanced-systems.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-tivra"/></svg> <span>Advanced Systems</span></a></li>
-      <li class="sidebar-section"><span>📋 Reference</span></li>
+      <li class="sidebar-section"><span><svg class="doc-icon" aria-hidden="true"><use href="#icon-quickref"/></svg> Reference</span></li>
       <li><a href="quick-reference.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-quickref"/></svg> <span>Quick Ref</span></a></li>
     </ul>
   </nav>
@@ -719,7 +719,7 @@
           </div>
         </div>
         <div class="philosophy-quote p-4 rounded-lg">
-          <p class="text-lg">"Your packets now carry quantum-resistant armor."</p>
+          <p class="text-lg">"Your packets now carry 7.6 trillion states of armor."</p>
           <p class="text-sm text-mountain-400 mt-2">— v2.7.1 Release Theme</p>
         </div>
       </header>
@@ -731,13 +731,16 @@
         </h2>
         <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
           <p class="mb-4">
-            <strong>YPC-27</strong> is a quantum-hard checksum algorithm that protects YAKMESH packets 
-            from forgery. Unlike traditional CRC or hash-based checksums, YPC-27 operates in balanced 
-            ternary space using a 27-trit polynomial ring.
+            <strong>YPC-27</strong> is a checksum algorithm that protects YAKMESH packets 
+            from forgery. Unlike traditional CRC or hash-based checksums, YPC-27 operates in 
+            ternary space using a 27-trit finite field F_{3^27}.
           </p>
           <p class="mb-4">
-            Forging a YPC-27 checksum requires solving the <strong>Short Integer Solution (SIS)</strong> 
-            problem — the same hard problem that underpins lattice-based post-quantum cryptography.
+            <strong>YPC-27²</strong> (Power) adds a multivariate quadratic layer: three input 
+            field elements (a, b, c) are mixed linearly, twisted through a 27×27 SST-derived 
+            matrix, then amplified through polynomial powers (T²) and cross products (a·b, 
+            b·c, a·c). The result is a genuine MQ (multivariate quadratic) structure over F_3 — 
+            the same hardness basis as post-quantum multivariate signature schemes.
           </p>
           <div class="grid md:grid-cols-3 gap-4 mt-6">
             <div class="bg-mountain-700/50 rounded-lg p-4 text-center">
@@ -749,8 +752,8 @@
               <div class="text-sm text-mountain-400">Possible States (3²⁷)</div>
             </div>
             <div class="bg-mountain-700/50 rounded-lg p-4 text-center">
-              <div class="text-3xl font-bold theme-accent">SIS</div>
-              <div class="text-sm text-mountain-400">Hardness Basis</div>
+              <div class="text-3xl font-bold theme-accent">MQ</div>
+              <div class="text-sm text-mountain-400">Quadratic Structure</div>
             </div>
           </div>
         </div>
@@ -766,17 +769,20 @@
           <ul class="space-y-2 text-mountain-200">
             <li>• <strong>27 = 3³</strong> — perfect cube in the ternary domain</li>
             <li>• <strong>3²⁷ ≈ 7.6 trillion</strong> possible checksum values</li>
-            <li>• Ring structure: <code class="bg-mountain-800 px-2 py-1 rounded">Z[x]/(x²⁷-1) mod 3</code></li>
+            <li>• Ring structure: <code class="bg-mountain-800 px-2 py-1 rounded">F_3[x]/(f(x))</code> where f is irreducible of degree 27</li>
             <li>• Polynomial operations provide algebraic mixing (avalanche)</li>
           </ul>
         </div>
         <div class="security-card rounded-xl p-6">
           <h3 class="text-lg font-semibold mb-3">Security Properties</h3>
           <ul class="space-y-2 text-mountain-200">
-            <li>• <strong>Avalanche effect:</strong> Single bit flip → all 27 coefficients change</li>
-            <li>• <strong>SIS hardness:</strong> Finding two messages with same checksum = solving SIS</li>
-            <li>• <strong>Domain separation:</strong> Same data → different checksums per protocol</li>
-            <li>• <strong>Quantum resistant:</strong> No known quantum speedup for SIS</li>
+            <li>• <strong>MQ structure:</strong> Polynomial powers + cross products = multivariate quadratic</li>
+            <li>• <strong>Avalanche effect:</strong> Single bit flip → ~60% of trits change</li>
+            <li>• <strong>Non-degenerate:</strong> 10K+ random inputs → all distinct outputs</li>
+            <li>• <strong>Non-linear:</strong> Hash-to-field + quadratic powers break linearity</li>
+            <li>• <strong>Matrix twist:</strong> 27×27 SST-derived matrix mixes all trits</li>
+            <li>• <strong>Domain separation:</strong> SST 24-cycle gives 24 unique configurations</li>
+            <li>• <strong>Large state space:</strong> 3²⁷ ≈ 7.6T possible checksums</li>
           </ul>
         </div>
       </section>
@@ -961,13 +967,13 @@ if (!valid) {
               </tr>
               <tr>
                 <td>Collision (Classical)</td>
-                <td><span class="theme-badge px-2 py-1 rounded">SIS-Hard</span></td>
-                <td>Requires solving lattice problem</td>
+                <td><span class="theme-badge px-2 py-1 rounded">3²⁷ ≈ 7.6T</span></td>
+                <td>Large output space, hash collision resistance</td>
               </tr>
               <tr>
                 <td>Collision (Quantum)</td>
                 <td><span class="theme-badge px-2 py-1 rounded">No known speedup</span></td>
-                <td>SIS believed quantum-resistant</td>
+                <td>Large output space, no Shor/Grover advantage</td>
               </tr>
               <tr>
                 <td>Cross-Protocol Replay</td>
@@ -1071,7 +1077,7 @@ if (!valid) {
       </section>
 
             <!-- Journey Navigation -->
-                                                                                                                                                                                                <div class="border-t border-mountain-700 mt-12 pt-8">
+                                                                                                                                                                                                      <div class="border-t border-mountain-700 mt-12 pt-8">
         <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
         <div class="flex flex-col sm:flex-row gap-4">
           <a href="tribhuj.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">

@@ -898,12 +898,14 @@ await mesh.stop();</code></pre>
             <tr>
               <td><code>hello</code></td>
               <td><code>MessageTypes.HELLO</code></td>
-              <td>Initial connection handshake with identity and network fingerprint</td>
+              <td>Handshake with identity, network fingerprint, and signed proof-of-possession
+                (nodeId + timestamp + Tribhuj ratchet key)</td>
             </tr>
             <tr>
               <td><code>welcome</code></td>
               <td><code>MessageTypes.WELCOME</code></td>
-              <td>Response to hello with peer list</td>
+              <td>Response with peer list and reciprocal proof-of-possession binding nodeId to
+                the responder's identity key</td>
             </tr>
             <tr>
               <td><code>ping</code></td>
@@ -1416,6 +1418,28 @@ if (!subnets.allowConnection(peerIp).allowed) {
           <p class="text-mountain-300 text-sm">
             All outgoing messages are signed with the node's identity using ML-DSA-65.
             Receivers verify authenticity.
+          </p>
+        </div>
+        <div class="bg-mountain-800 rounded-xl p-5">
+          <p class="font-semibold text-teal-400 mb-2"><svg class="doc-icon inline-icon" width="24" height="24"
+              aria-hidden="true">
+              <use href="#icon-key" />
+            </svg> Handshake Proof-of-Possession <span class="text-xs text-emerald-400">v3.5.0</span></p>
+          <p class="text-mountain-300 text-sm">
+            HELLO/WELCOME carry ML-DSA-65 signatures binding nodeId, timestamp, and the
+            Tribhuj ratchet public key. The claimed nodeId must derive from the claimed key,
+            and a 5-minute freshness window rejects replays.
+          </p>
+        </div>
+        <div class="bg-mountain-800 rounded-xl p-5">
+          <p class="font-semibold text-teal-400 mb-2"><svg class="doc-icon inline-icon" width="24" height="24"
+              aria-hidden="true">
+              <use href="#icon-pin" />
+            </svg> Pinned Ratchet Keys <span class="text-xs text-emerald-400">v3.5.0</span></p>
+          <p class="text-mountain-300 text-sm">
+            Peer Tribhuj keys are pinned through the authenticated handshake — messages verify
+            only against pinned keys. Rotation requires a signed certificate from the pinned
+            identity key. Unknown keys fail closed.
           </p>
         </div>
       </div>
