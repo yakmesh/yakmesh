@@ -1,6 +1,6 @@
 /**
  * YAK-TUN: Adaptive Distributed Mesh Tunneling Protocol
- * (c) 2026 Yakmesh — AGPL-3.0
+ * (c) 2026 Yakmesh — YakMesh-NE-1.0
  * 
  * Provides L2/L3 orchestration between the OS network adapter and the encrypted
  * Yakmesh gossip protocol. Enabling distributed NPU-as-a-Service (NaaS).

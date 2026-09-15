@@ -23,14 +23,14 @@ The following are trademarks of PeerQuanta:
 
 ## License Separation
 
-The YAKMESH™ software is released under the **GNU Affero General Public License v3.0** (AGPL-3.0-or-later), which grants rights to use, modify, and distribute the source code under copyleft terms.
+The YAKMESH™ software is released under the **YAKMESH NETWORK ENGINE LICENSE AGREEMENT v1.0** (YakMesh-NE-1.0), which grants rights to use, modify, and distribute the source code within the YakMesh field of use (improving the YakMesh network and ecosystem).
 
-**However**, the AGPL-3.0 License does **not** grant any rights to use the YAKMESH™ 
+**However**, the YakMesh-NE-1.0 License does **not** grant any rights to use the YAKMESH™ 
 trademarks. The code and the brand are separate:
 
 | Asset | License | Rights Granted |
 |-------|---------|----------------|
-| Source code | AGPL-3.0 | Use, modify, distribute (copyleft) |
+| Source code | YakMesh-NE-1.0 | Use, modify, distribute (within Field) |
 | YAKMESH™ name | Trademark | None (requires permission) |
 | Logo/branding | Trademark | None (requires permission) |
 

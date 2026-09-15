@@ -7,18 +7,13 @@
  * Unauthorized use of the YAKMESH™ name, logo, or branding is strictly prohibited.
  *
  * LICENSE:
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * This Source Code Form is subject to the terms of the YAKMESH
+ * NETWORK ENGINE LICENSE AGREEMENT, v. 1.0. If a copy of that
+ * license agreement was not distributed with this file, You can
+ * find a link to the license at https://yakmesh.dev/license
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU Affero General Public License for more details.
- *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program. If not, see <https://www.gnu.org/licenses/>.
+ * This Source Code Form is "Incompatible With Secondary Licenses",
+ * as defined by the YAKMESH NETWORK ENGINE LICENSE AGREEMENT, v. 1.0.
  *
  * "The standard is binary. The reality is ternary. The resonance is 432."
  */
@@ -45,7 +40,7 @@
  * - Direct peer-to-peer secure messaging
  * 
  * @module mesh/annex
- * @license AGPL-3.0-or-later
+ * @license YakMesh-NE-1.0 (YAKMESH NETWORK ENGINE LICENSE AGREEMENT v1.0)
  * @copyright 2026 YAKMESH™ / [JGP]
  */
 

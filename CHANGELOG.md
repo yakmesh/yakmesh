@@ -4,6 +4,22 @@ All notable changes to YAKMESH will be documented in this file.
 
 ## [Unreleased]
 
+### 📜 License Migration: AGPLv3 → YakMesh-NE-1.0
+
+- **LICENSE file** — Replaced AGPLv3 with the YAKMESH NETWORK ENGINE LICENSE
+  AGREEMENT v1.0, a field-of-use-restricted MPL 2.0 derivative adapted (with
+  permission) from the Mochimo Cryptocurrency Engine License Agreement v1.0
+  (Adequate Systems, LLC). PeerQuanta is licensor and license steward;
+  governing law is Texas.
+- **789 source headers** — AGPLv3 grant block replaced with the Exhibit A /
+  Exhibit B notices ("Incompatible With Secondary Licenses").
+- **package.json** — `"license": "SEE LICENSE IN LICENSE"`.
+- **TRADEMARK.md / README.md / CONTRIBUTING.md** — license references updated.
+- **Field of use** — use/modification limited to improving the YakMesh network
+  and ecosystem; ASIC/FPGA farming deployments prohibited (consistent with
+  the one-hardware-one-client admission model); mandatory grant-back applies
+  to sublicensed modifications and larger works.
+
 ## [3.4.0] - 2026-05-28
 
 ### 📡 Public Entropy Beacon API

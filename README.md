@@ -6,7 +6,7 @@
   <p><strong>Yielding Atomic Kernel Modular Encryption Secured Hub</strong></p>
 
   <p>
-    <a href="https://www.gnu.org/licenses/agpl-3.0"><img src="https://img.shields.io/badge/License-AGPL--3.0-blue.svg" alt="License: AGPL-3.0"></a>
+    <a href="LICENSE"><img src="https://img.shields.io/badge/License-YakMesh--NE--1.0-blue.svg" alt="License: YakMesh-NE-1.0"></a>
     <a href="https://nodejs.org"><img src="https://img.shields.io/badge/Node.js-24+-green.svg" alt="Node.js"></a>
     <a href="https://csrc.nist.gov/projects/post-quantum-cryptography"><img src="https://img.shields.io/badge/Crypto-Post--Quantum-blue.svg" alt="Post-Quantum"></a>
     <a href="https://www.npmjs.com/package/yakmesh"><img src="https://img.shields.io/npm/v/yakmesh.svg" alt="npm version"></a>
@@ -206,7 +206,7 @@ Full API documentation at [yakmesh.dev/docs/api](https://yakmesh.dev/docs/api)
 
 ## License
 
-Copyright © 2026 PeerQuanta. Licensed under the [GNU Affero General Public License v3.0](LICENSE) (AGPL-3.0-or-later).
+Copyright © 2026 PeerQuanta. Licensed under the [YAKMESH NETWORK ENGINE LICENSE AGREEMENT v1.0](LICENSE) (YakMesh-NE-1.0).
 
 YAKMESH™ is a registered trademark of PeerQuanta (Serial No. 99594620). See [TRADEMARK.md](TRADEMARK.md) for trademark usage policy.
 
