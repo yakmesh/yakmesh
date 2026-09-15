@@ -43,10 +43,11 @@
  * from machine-specific hardware markers (hostname, platform, dataDir).
  * An attacker who copies the seed file to another machine cannot decrypt it.
  * 
- * Additionally, a YPC-27 polynomial checksum seals the seed. SIS-hardness
- * (Short Integer Solution in Z[x]/(x^27-1) mod 3) makes it computationally
- * infeasible to craft a different seed that produces the same checksum.
- * This detects both accidental corruption AND deliberate seed injection.
+ * Additionally, a YPC-27 polynomial checksum seals the seed. The checksum
+ * is computed over F₃²⁷ (the finite field of order 3²⁷ ≈ 7.6 trillion).
+ * Forging a checksum requires breaking SHA3-256, which is the hash function
+ * that maps input into the field. This detects both accidental corruption
+ * AND deliberate seed injection.
  * 
  * ═══════════════════════════════════════════════════════════════════════════════
  * MIGRATION CHAIN — REPUTATION CONTINUITY
@@ -191,8 +192,11 @@ function decryptSeed(enc, dataDir) {
 
 /**
  * Compute YPC-27 polynomial checksum of the seed.
- * SIS-hard: an attacker cannot craft a different seed with the same checksum.
- * 
+ * SHA3-hard: forging requires breaking SHA3-256, which maps input into F₃²⁷.
+ * Collision resistance is ~2²¹·⁴ (birthday bound on 3²⁷ ≈ 2⁴²·⁸).
+ * This is checksum-grade integrity, not cryptographic-grade — use ML-DSA
+ * for signature-grade security.
+ *
  * @param {Uint8Array} seed - Raw 32-byte seed
  * @returns {string} Hex-encoded YPC-27 checksum
  */
@@ -572,7 +576,7 @@ export class MachineSeed {
     // Cryptographically random 32-byte seed
     const seed = new Uint8Array(randomBytes(SEED_BYTES));
 
-    // Compute YPC-27 integrity checksum (SIS-hard polynomial seal)
+    // Compute YPC-27 integrity checksum (SHA3-hard polynomial seal)
     const ypc27Checksum = computeSeedChecksum(seed);
 
     // Compute persistent 162T identity (constant across all upgrades)

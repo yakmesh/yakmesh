@@ -199,34 +199,23 @@ export class Poly27 {
       }
     }
 
-    // Step 2: Reduce mod the irreducible polynomial
-    // Since f is monic (leading coeff = 1), we can reduce by subtracting
-    // shifted copies of f from the high coefficients down.
-    const result = new Uint8Array(N);
-    // Copy low-degree coefficients
-    for (let i = 0; i < N; i++) {
-      result[i] = product[i];
-    }
-    // Reduce high-degree coefficients (degree N to 2N-2)
+    // Step 2: Reduce mod the irreducible polynomial f(x) of degree N.
+    // f is monic (IRREDUCIBLE_POLY[N] = 1), so x^N ≡ -(f[0] + f[1]*x + ... + f[N-1]*x^(N-1)).
+    // For each high coefficient from degree 2N-2 down to N:
+    //   subtract lead * x^(i-N) * f(x) from product, which zeroes product[i]
+    //   (because f[N]=1) and adjusts product[i-N .. i-1].
     for (let i = 2 * N - 2; i >= N; i--) {
-      if (result[i - N + N] === undefined) continue;
       const lead = product[i];
       if (lead === 0) continue;
-      // Subtract lead * x^(i-N) * f(x) from the product
-      // f is monic of degree N, so x^i = lead * x^(i-N) * f(x) - (lower terms)
-      const shift = i - N;
       for (let j = 0; j <= N; j++) {
-        const idx = shift + j;
-        if (idx < N) {
-          result[idx] = mod3(result[idx] - lead * IRREDUCIBLE_POLY[j]);
-        } else {
-          // This shouldn't happen if we reduce from high to low
-          product[idx] = mod3(product[idx] - lead * IRREDUCIBLE_POLY[j]);
-        }
+        const idx = i - N + j;
+        product[idx] = mod3(product[idx] - lead * IRREDUCIBLE_POLY[j]);
       }
+      // product[i] is now 0 (subtracted lead * IRREDUCIBLE_POLY[N] = lead * 1)
     }
 
-    return new Poly27(result);
+    // The reduced result is in product[0..N-1]
+    return new Poly27(product.slice(0, N));
   }
 
   /**

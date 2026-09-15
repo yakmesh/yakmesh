@@ -346,7 +346,7 @@ export class NamcheGateway extends EventEmitter {
       // ─────────────────────────────────────────────────────────────────────
       // The 144T commitment provides a second cryptographic layer independent
       // of NIST. Both ML-DSA-65 (Gate 2) AND 144T must verify for full trust.
-      // This means an attacker must break BOTH NIST and lattice-hard SIS.
+      // This means an attacker must break BOTH NIST and SHA3-hard YPC-27.
       if (doko.tritCommitment) {
         const tritResult = this.checkTritCommitment(doko);
         if (!tritResult.valid) {
@@ -610,14 +610,15 @@ export class NamcheGateway extends EventEmitter {
    * GATE 8: Check 144T commitment (backbone verification)
    * 
    * This gate provides DEFENSE-IN-DEPTH alongside NIST (Gate 2).
-   * The 144T commitment uses YPC-27 (lattice-hard SIS problem) and
+   * The 144T commitment uses YPC-27 (SHA3-hard checksum over F₃²⁷) and
    * polynomial binding to ensure the payload is tied to the sender's
    * 144T mesh address.
    * 
    * Security properties:
-   * - YPC-27 operates in ring Z[x]/(x^27-1) mod 3
-   * - Forging requires solving the Shortest Vector Problem
+   * - YPC-27 operates in the finite field F₃²⁷ (order 3²⁷ ≈ 7.6 trillion)
+   * - Forging requires breaking SHA3-256 (the hash-to-field function)
    * - Independent of NIST — if NIST is backdoored, 144T still holds
+   * - Note: YPC-27 is checksum-grade (~2²¹·⁴ collision resistance), not signature-grade
    * - Both layers must be broken to compromise a message
    * 
    * @param {Object} doko — DOKO with tritCommitment field

@@ -27,13 +27,15 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  * ⚠️  SECURITY: This is the ternary backbone, not a replacement for NIST.
  *     Both layers must be broken to compromise a message.
- *     162T provides quantum-hard SIS-based integrity independent of NIST.
+ *     162T provides SHA3-hard integrity independent of NIST.
  * ═══════════════════════════════════════════════════════════════════════════════
  * 
  * The math:
- * - YPC-27 operates in ring Z[x]/(x^27 - 1) mod 3
- * - Forging a YPC-27 checksum requires solving the Shortest Vector Problem (SIS)
- * - 162T provides 3^162 ≈ 10^77 address space (~256-bit post-quantum)
+ * - YPC-27 operates in the finite field F₃²⁷ (order 3²⁷ ≈ 7.6 trillion)
+ * - Forging a YPC-27 checksum requires breaking SHA3-256 (the hash-to-field function)
+ * - 162T provides 3^162 ≈ 10^77 address space (large, but address space ≠ security level)
+ * - Collision resistance of YPC-27 is ~2²¹·⁴ (birthday bound on 3²⁷ ≈ 2⁴²·⁸)
+ * - YPC-27 is checksum-grade integrity, not cryptographic-grade — use ML-DSA for signatures
  * - Combined binding uses polynomial multiplication for non-separability
  * 
  * Commitment Structure:
@@ -45,7 +47,7 @@
  * 
  * The binding ensures:
  * 1. Address cannot be separated from payload (polynomial non-commutativity)
- * 2. YPC-27 provides lattice-hard integrity independent of SHA/NIST
+ * 2. YPC-27 provides SHA3-hard integrity independent of NIST
  * 3. 162T address pins the commitment to a specific mesh location
  * 
  * @module security/trit-commitment
