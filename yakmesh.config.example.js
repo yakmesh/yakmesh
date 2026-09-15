@@ -31,8 +31,8 @@ export default {
   
   // Network settings
   network: {
-    httpPort: 3000,
-    wsPort: 9001,
+    httpPort: 3080,
+    wsPort: 9080,
     publicHost: 'localhost',
     // Custom identity salt - creates a unique network
     // Different salts = different networks (cannot interoperate)

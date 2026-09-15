@@ -282,8 +282,8 @@ lsof -i :3000</code></pre>
           <p class="solution mb-3">→ DNS or hosts file issue</p>
           <p class="text-mountain-300 mb-3">Some systems have localhost mapped differently. Try both:</p>
           <ul class="list-disc list-inside text-mountain-300 space-y-1">
-            <li><code class="bg-mountain-800 px-2 py-1 rounded">http://localhost:3000/dashboard</code></li>
-            <li><code class="bg-mountain-800 px-2 py-1 rounded">http://127.0.0.1:3000/dashboard</code></li>
+            <li><code class="bg-mountain-800 px-2 py-1 rounded">http://localhost:3080/dashboard</code></li>
+            <li><code class="bg-mountain-800 px-2 py-1 rounded">http://127.0.0.1:3080/dashboard</code></li>
           </ul>
         </div>
 
@@ -307,7 +307,7 @@ lsof -i :3000</code></pre>
 yakmesh start --host 0.0.0.0 --port 3000
 
 # Then access from other device using your computer's IP:
-# http://192.168.1.100:3000/dashboard</code></pre>
+# http://192.168.1.100:3080/dashboard</code></pre>
         </div>
       </div>
 
@@ -339,7 +339,7 @@ yakmesh register-protocol
           
           <h4 class="font-semibold mb-2">Checklist:</h4>
           <ul class="list-disc list-inside text-mountain-300 space-y-2">
-            <li><strong>Is your node running?</strong> Check the dashboard at <code class="bg-mountain-800 px-1 rounded">localhost:3000</code></li>
+            <li><strong>Is your node running?</strong> Check the dashboard at <code class="bg-mountain-800 px-1 rounded">localhost:3080</code></li>
             <li><strong>Are you connected to peers?</strong> You need peers to find content</li>
             <li><strong>Is the content still available?</strong> Content may have expired or been removed</li>
             <li><strong>Check content hash:</strong> Verify the hash in the URL is correct</li>

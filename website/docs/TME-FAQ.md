@@ -179,7 +179,7 @@ YAKMESH™ itself has USPTO Serial No. 99594620.
 
 ### Q11: Can I use TME in my project?
 
-TME is available in the `yakmesh` npm package under MIT license:
+TME is available in the `yakmesh` npm package under the YAKMESH NETWORK ENGINE LICENSE AGREEMENT v1.0 (field-of-use restricted — see LICENSE):
 
 ```bash
 npm install yakmesh

@@ -751,7 +751,7 @@
 <svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true"><use href="#icon-check"/></svg> Yakmesh Node is running!
    Network: example-network-name
    Network ID: pq-XXXX
-   Dashboard: http://localhost:3000/dashboard</code></pre>
+   Dashboard: http://localhost:3080/dashboard</code></pre>
             <p class="text-mountain-400 text-sm italic mb-8">
                 * Network name and ID are derived from your codebase hash and will vary by version.
             </p>
@@ -778,7 +778,7 @@
             
             <h3 class="text-xl font-bold mb-3">Option 1: Direct Connection</h3>
             <p class="text-mountain-300 mb-4">Connect to a peer you know about via the REST API:</p>
-            <pre class="language-bash mb-6"><code>curl -X POST http://localhost:3000/connect \
+            <pre class="language-bash mb-6"><code>curl -X POST http://localhost:3080/connect \
   -H "Content-Type: application/json" \
   -d '{"address": "wss://peer-node.example.com:9001"}'</code></pre>
             
@@ -796,14 +796,14 @@
             <!-- Verify -->
             <h2 class="text-2xl font-bold mb-4">Verify Your Node</h2>
             <p class="text-mountain-300 mb-4">Check your node's status:</p>
-            <pre class="language-bash mb-4"><code>curl http://localhost:3000/health</code></pre>
+            <pre class="language-bash mb-4"><code>curl http://localhost:3080/health</code></pre>
             <pre class="language-json mb-8"><code>{
   "status": "healthy",
   "network": "factor-primitive-bose",
   "networkId": "pq-XXXX",
   "algorithm": "ML-DSA-65",
   "peers": 2,
-  "version": "2.6.x"
+  "version": "3.5.x"
 }</code></pre>
             <p class="text-mountain-400 text-sm italic mb-4">
                 * Values shown are examples; actual output reflects your installed version.
@@ -837,7 +837,7 @@
             </div>
 
                   <!-- Journey Navigation -->
-                                                                                                                                                                                                      <div class="border-t border-mountain-700 mt-12 pt-8">
+                                                                                                                                                                                                            <div class="border-t border-mountain-700 mt-12 pt-8">
         <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
         <div class="flex flex-col sm:flex-row gap-4">
           <a href="index.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">

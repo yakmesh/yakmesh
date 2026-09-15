@@ -208,7 +208,7 @@ Full API documentation at [yakmesh.dev/docs/api](https://yakmesh.dev/docs/api)
 
 Copyright © 2026 PeerQuanta. Licensed under the [YAKMESH NETWORK ENGINE LICENSE AGREEMENT v1.0](LICENSE) (YakMesh-NE-1.0).
 
-YAKMESH™ is a registered trademark of PeerQuanta (Serial No. 99594620). See [TRADEMARK.md](TRADEMARK.md) for trademark usage policy.
+YAKMESH™ is a trademark of PeerQuanta (application pending, Serial No. 99594620). See [TRADEMARK.md](TRADEMARK.md) for trademark usage policy.
 
 ---
 

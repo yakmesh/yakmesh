@@ -817,7 +817,7 @@
         <div>
           <div class="flex items-center gap-3">
             <h1 class="text-4xl font-bold">Mesh Network</h1>
-            <span class="theme-badge text-xs px-2 py-1 rounded-full font-mono">v3.3.0</span>
+            <span class="theme-badge text-xs px-2 py-1 rounded-full font-mono">v3.5.0</span>
           </div>
           <p class="theme-accent">WebSocket-based peer-to-peer mesh infrastructure</p>
         </div>
@@ -847,7 +847,7 @@
 
 // Create mesh network with your node identity
 const mesh = new MeshNetwork(identity, {
-  wsPort: 9001,           // WebSocket port (auto-fallback if in use)
+  wsPort: 9080,           // WebSocket port (auto-fallback if in use)
   maxPeers: 10,           // Maximum concurrent peer connections
   pingInterval: 30000,    // Keep-alive ping interval (ms)
   portRetries: 10,        // Try up to 10 sequential ports
@@ -970,7 +970,7 @@ await mesh.stop();</code></pre>
           </p>
           <pre class="language-javascript mb-3"><code>import { MeshNetwork, MessageTypes } from './mesh/network.js';
 
-const mesh = new MeshNetwork(identity, { wsPort: 9001 });
+const mesh = new MeshNetwork(identity, { wsPort: 9080 });
 await mesh.start();
 mesh.broadcast({ type: 'announce', data: myData });</code></pre>
           <div class="flex flex-wrap gap-2">
@@ -1612,7 +1612,7 @@ if (!subnets.allowConnection(peerIp).allowed) {
       </div>
 
       <!-- Journey Navigation -->
-                        <div class="border-t border-mountain-700 mt-12 pt-8">
+                              <div class="border-t border-mountain-700 mt-12 pt-8">
         <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
         <div class="flex flex-col sm:flex-row gap-4">
           <a href="configuration.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">

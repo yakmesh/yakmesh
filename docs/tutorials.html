@@ -779,7 +779,7 @@ echo '&lt;!DOCTYPE html&gt;
           <pre class="language-javascript"><code>// yakmesh.config.js
 module.exports = {
   // Server settings
-  port: 3000,
+  port: 3080,
   host: '0.0.0.0',  // Listen on all interfaces (LAN accessible)
   
   // Website folder
@@ -810,12 +810,12 @@ yakmesh start
 # If installed locally
 npx yakmesh start</code></pre>
           <p class="text-mountain-300 mt-4">You should see output like:</p>
-          <pre class="language-bash"><code>🏔️ YAKMESH v3.3.0 starting...
+          <pre class="language-bash"><code>🏔️ YAKMESH v3.5.0 starting...
 ✓ Codebase locked: 65 files protected
 ✓ Oracle System initialized
 ✓ Webserver ready
-🌐 Server running at http://localhost:3000
-📊 Dashboard at http://localhost:3000/dashboard</code></pre>
+🌐 Server running at http://localhost:3080
+📊 Dashboard at http://localhost:3080/dashboard</code></pre>
         </div>
 
         <!-- Step 5 -->
@@ -823,9 +823,9 @@ npx yakmesh start</code></pre>
           <h3 class="text-xl font-bold mb-3"><span class="step-number">5</span> Access Your Site</h3>
           <p class="text-mountain-300 mb-4">Your website is now accessible:</p>
           <ul class="list-disc list-inside text-mountain-300 space-y-2">
-            <li><strong>Local:</strong> <code>http://localhost:3000</code></li>
+            <li><strong>Local:</strong> <code>http://localhost:3080</code></li>
             <li><strong>LAN:</strong> <code>http://192.168.x.x:3000</code> (your computer's IP)</li>
-            <li><strong>Dashboard:</strong> <code>http://localhost:3000/dashboard</code></li>
+            <li><strong>Dashboard:</strong> <code>http://localhost:3080/dashboard</code></li>
           </ul>
         </div>
 
@@ -847,7 +847,7 @@ npx yakmesh start</code></pre>
 npm install -g cloudflared
 
 # Create a tunnel
-cloudflared tunnel --url http://localhost:3000</code></pre>
+cloudflared tunnel --url http://localhost:3080</code></pre>
           <p class="text-mountain-300 mt-2">This gives you a free HTTPS URL without port forwarding.</p>
           
           <h4 class="font-bold mt-4 mb-2">Option C: VPS Hosting</h4>
@@ -966,7 +966,7 @@ yakmesh doko list</code></pre>
 yakmesh peers
 
 # Or via API
-curl http://localhost:3000/api/mesh/peers</code></pre>
+curl http://localhost:3080/api/mesh/peers</code></pre>
           <p class="text-mountain-300 mt-4">Output shows connected nodes, their trust levels, and latency.</p>
         </div>
 
@@ -1032,12 +1032,12 @@ curl http://localhost:3000/api/mesh/peers</code></pre>
 
       <!-- Version Badge -->
       <div class="mt-12 pt-6 border-t border-mountain-700">
-        <span class="inline-block text-xs theme-badge px-2 py-1 rounded">v3.3.0</span>
+        <span class="inline-block text-xs theme-badge px-2 py-1 rounded">v3.5.0</span>
         <span class="text-mountain-500 text-sm ml-2">Last updated: February 2026</span>
       </div>
 
             <!-- Journey Navigation -->
-                                                                                                                                                      <div class="border-t border-mountain-700 mt-12 pt-8">
+                                                                                                                                                            <div class="border-t border-mountain-700 mt-12 pt-8">
         <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
         <div class="flex flex-col sm:flex-row gap-4">
           <a href="getting-started.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">

@@ -734,7 +734,7 @@
       </div>
       <p class="text-xl text-mountain-300 mb-4">SHA3-256 sponge engine absorbing 5 hardware entropy sources for
         post-quantum key generation.</p>
-      <span class="inline-block text-xs theme-badge px-2 py-1 rounded mb-8">v3.3.0</span>
+      <span class="inline-block text-xs theme-badge px-2 py-1 rounded mb-8">v3.5.0</span>
 
       <div class="feature-box">
         <h2>The Sentinel at the Mountain Pass</h2>
@@ -1023,9 +1023,10 @@ const result = await scoreEntropy(seedBytes);
               quality verdicts (POSITIVE, NEUTRAL, NEGATIVE).</p>
           </div>
           <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
-            <h3 class="font-semibold theme-accent mb-2">YPC-27</h3>
-            <p class="text-sm text-mountain-400">Polynomial ring Z[x]/(x<sup>27</sup>&minus;1) mod 3. SIS-hard checksums
-              used by <a href="trust-security.html" class="theme-accent theme-accent-hover">trit-commitment</a> for 162T
+            <h3 class="font-semibold theme-accent mb-2">YPC-27²</h3>
+            <p class="text-sm text-mountain-400">Multivariate-quadratic checksums over the F<sub>3<sup>27</sup></sub>
+              field (irreducible degree-27 polynomial). Matrix-twist + cross-product terms give genuine non-linear
+              structure, used by <a href="trust-security.html" class="theme-accent theme-accent-hover">trit-commitment</a> for 162T
               integrity.</p>
           </div>
           <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
@@ -1263,7 +1264,7 @@ python3 scripts/verify_beacon.py https://time.yakmesh.dev</code></pre>
       </section>
 
       <!-- Journey Navigation -->
-                  <div class="border-t border-mountain-700 mt-12 pt-8">
+                        <div class="border-t border-mountain-700 mt-12 pt-8">
         <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
         <div class="flex flex-col sm:flex-row gap-4">
           <a href="tivra.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">

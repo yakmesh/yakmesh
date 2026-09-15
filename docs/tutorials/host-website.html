@@ -170,10 +170,10 @@ yakmesh init</code></pre>
         <div class="bg-mountain-800 rounded-lg p-4 mb-4">
           <p class="text-sm text-mountain-400 mb-2">How URLs map to files:</p>
           <ul class="text-mountain-300 text-sm space-y-1 font-mono">
-            <li>http://localhost:3000/ → htdocs/index.html</li>
-            <li>http://localhost:3000/about → htdocs/about.html</li>
-            <li>http://localhost:3000/css/style.css → htdocs/css/style.css</li>
-            <li>http://localhost:3000/images/logo.png → htdocs/images/logo.png</li>
+            <li>http://localhost:3080/ → htdocs/index.html</li>
+            <li>http://localhost:3080/about → htdocs/about.html</li>
+            <li>http://localhost:3080/css/style.css → htdocs/css/style.css</li>
+            <li>http://localhost:3080/images/logo.png → htdocs/images/logo.png</li>
           </ul>
         </div>
         <p class="text-mountain-400 text-sm">
@@ -237,7 +237,7 @@ touch htdocs/index.html</code></pre>
         <pre class="language-javascript"><code>// yakmesh.config.js
 module.exports = {
   // Server settings
-  port: 3000,                    // Web server port
+  port: 3080,                    // Web server port
   host: '0.0.0.0',               // Listen on all interfaces
   
   // Web hosting settings
@@ -278,10 +278,10 @@ module.exports = {
 🔐 Securing codebase...
 ✓ Codebase locked: 65 files protected
 🌐 Starting web server...
-✓ Web server running at http://localhost:3000
+✓ Web server running at http://localhost:3080
 ✓ htdocs/ folder mounted as web root
 ✓ Yakmesh Node is running!
-   Dashboard: http://localhost:3000/dashboard</code></pre>
+   Dashboard: http://localhost:3080/dashboard</code></pre>
       </div>
 
       <!-- Step 7: Access Your Site -->
@@ -294,16 +294,16 @@ module.exports = {
           Open your browser and navigate to:
         </p>
         <div class="bg-mountain-800 rounded-lg p-4 mb-4 text-center">
-          <a href="http://localhost:3000" class="theme-accent text-xl font-mono hover:underline" target="_blank">
-            http://localhost:3000
+          <a href="http://localhost:3080" class="theme-accent text-xl font-mono hover:underline" target="_blank">
+            http://localhost:3080
           </a>
         </div>
         <p class="text-mountain-300 mb-4">
           You should see your website! The dashboard is available at:
         </p>
         <div class="bg-mountain-800 rounded-lg p-4 text-center">
-          <a href="http://localhost:3000/dashboard" class="theme-accent text-xl font-mono hover:underline" target="_blank">
-            http://localhost:3000/dashboard
+          <a href="http://localhost:3080/dashboard" class="theme-accent text-xl font-mono hover:underline" target="_blank">
+            http://localhost:3080/dashboard
           </a>
         </div>
       </div>
@@ -363,7 +363,7 @@ yakmesh yak register ./htdocs
 async function startWebsite() {
   // Create and configure the node
   const node = await createNode({
-    port: 3000,
+    port: 3080,
     webRoot: './htdocs',
     enableMesh: true,
     enableAnnex: true
@@ -372,8 +372,8 @@ async function startWebsite() {
   // Start the server
   await node.start();
   
-  console.log('Website running at http://localhost:3000');
-  console.log('Dashboard at http://localhost:3000/dashboard');
+  console.log('Website running at http://localhost:3080');
+  console.log('Dashboard at http://localhost:3080/dashboard');
   
   // Get your public URL (if ANNEX is enabled)
   const publicUrl = await node.getPublicUrl();

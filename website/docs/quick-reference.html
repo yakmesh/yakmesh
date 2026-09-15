@@ -882,9 +882,9 @@
                 <td>Balanced ternary {−1, 0, +1} primitives</td>
               </tr>
               <tr>
-                <td><code>YPC-27</code></td>
+                <td><code>YPC-27²</code></td>
                 <td>Checksums</td>
-                <td>27-trit polynomial, SIS-hard quantum-resistant</td>
+                <td>27-trit MQ checksum over F<sub>3<sup>27</sup></sub>, non-linear</td>
               </tr>
               <tr>
                 <td><code>SAKSHI</code></td>
@@ -1136,13 +1136,13 @@ import {
         </h2>
         <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
           <pre class="bg-black/30 rounded-lg p-4 mb-4 overflow-x-auto"><code class="language-bash">npm install yakmesh
-npx yakmesh init --name "My Node" --port 3000
+npx yakmesh init --name "My Node" --port 3080
 npx yakmesh start</code></pre>
           <pre class="bg-black/30 rounded-lg p-4 overflow-x-auto"><code class="language-javascript">import { YakmeshNode } from 'yakmesh';
 
 const node = new YakmeshNode({
   node: { name: 'My Node', region: 'local' },
-  network: { httpPort: 3000, wsPort: 9001 },
+  network: { httpPort: 3080, wsPort: 9080 },
 });
 
 await node.start();</code></pre>
