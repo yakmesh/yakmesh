@@ -79,7 +79,12 @@ WITHOUT LIMITATION, WITH RESPECT TO:
     DUE TO A CONFLICTING STATUTE OR REGULATION; AND
 
 * **(G)** A CHOICE OF TEXAS LAW FOR GOVERNING LAW AND TEXAS VENUE FOR ANY
-    LITIGATION IN WHICH PEERQUANTA IS A NAMED PARTY.
+    LITIGATION IN WHICH PEERQUANTA IS A NAMED PARTY; AND
+
+* **(H)** AN EXPRESS PROHIBITION ON UNLAWFUL USE OF THE SOFTWARE, SOLE
+    RESPONSIBILITY OF THE USER FOR LEGAL COMPLIANCE, AND A DISCLAIMER OF
+    ALL RESPONSIBILITY AND LIABILITY FOR UNLAWFUL OR UNAUTHORIZED USE BY
+    ANY PARTY.
 
 ## 1. Definitions
 
@@ -245,15 +250,30 @@ first creates such Contribution.
     Works that circumvent that model are outside the Field and are
     prohibited.
 
-* **(c)** The licenses granted in this Section 2 are the only rights
+* **(c)** You shall not use Covered Software or Original Software for
+    any purpose that is unlawful under applicable law, including but
+    not limited to: unauthorized access to or disruption of computer
+    systems or networks; interception of communications without lawful
+    authority; fraud; distribution of malware; violation of export
+    control or sanctions laws (including U.S. EAR, OFAC, or equivalent
+    regimes); or infringement of third-party rights. Any such use is
+    outside the Field, constitutes a material breach of this License,
+    and terminates Your rights under Section 5.1. You are solely
+    responsible for determining whether Your use of the software is
+    lawful in Your jurisdiction and for complying with all applicable
+    laws. PeerQuanta does not authorize, endorse, or assume any
+    responsibility for any unlawful use of the software by You or any
+    third party.
+
+* **(d)** The licenses granted in this Section 2 are the only rights
     granted to You under this License. No additional rights or licenses
     to You will be implied from the distribution or licensing of
     Covered Software or Original Software under this License.
 
-* **(d)** No rights or licenses are granted in or to the Original
+* **(e)** No rights or licenses are granted in or to the Original
     Software with respect to any field of use other than the Field.
 
-* **(e)** Notwithstanding Section 2.1(b) above, no patent license is
+* **(f)** Notwithstanding Section 2.1(b) above, no patent license is
     granted by PeerQuanta:
 
     * **(i)** for any code that PeerQuanta has removed from the Original
@@ -265,7 +285,7 @@ first creates such Contribution.
     * **(iii)** under Patent Claims infringed by Covered Software in the
         absence of its Original Software.
 
-* **(f)** Notwithstanding Section 2.2(b) above, no patent license is
+* **(g)** Notwithstanding Section 2.2(b) above, no patent license is
     granted by a Contributor:
 
     * **(i)** for any code that a Contributor has removed from Covered
@@ -282,7 +302,7 @@ first creates such Contribution.
     * **(iii)** under Patent Claims infringed by Covered Software in the
         absence of its Contributions.
 
-* **(g)** This License does not grant any rights in the trademarks,
+* **(h)** This License does not grant any rights in the trademarks,
     service marks, or logos of PeerQuanta or any Contributor, including
     without limitation the YAKMESH mark (except as may be necessary to
     comply with the notice requirements in Section 3.4).
@@ -507,6 +527,15 @@ use the Covered Software or Original Software for any purpose.
 > Some jurisdictions do not allow the exclusion or limitation of
 > incidental or consequential damages, so this exclusion and
 > limitation may not apply to You.
+>
+> WITHOUT LIMITING THE FOREGOING, PEERQUANTA AND EACH CONTRIBUTOR
+> EXPRESSLY DISCLAIM ANY AND ALL RESPONSIBILITY AND LIABILITY ARISING
+> FROM OR RELATING TO ANY USE OF THE ORIGINAL SOFTWARE OR COVERED
+> SOFTWARE THAT IS UNLAWFUL, PROHIBITED BY THIS LICENSE, OR OTHERWISE
+> UNAUTHORIZED — INCLUDING, WITHOUT LIMITATION, USE IN VIOLATION OF
+> SECTION 2.4. YOU ALONE ARE RESPONSIBLE FOR YOUR USE OF THE SOFTWARE
+> AND FOR ENSURING SUCH USE COMPLIES WITH ALL APPLICABLE LAWS IN YOUR
+> JURISDICTION.
 
 ## 8. Choice of Law and Litigation
 
@@ -514,7 +543,7 @@ This License shall be governed by and construed in accordance with the
 laws of the State of Texas, USA, without reference to its
 conflict-of-law provisions.  Any litigation relating to this License in
 which PeerQuanta is named as a party must be brought in the state or
-federal courts located in the State of Texas.  Any litigation relating
+federal courts located in Tom Green County, Texas.  Any litigation relating
 to this License in which PeerQuanta is not a party may be brought only
 in the courts of a jurisdiction where the defendant maintains its
 principal place of business.  Nothing in this Section shall prevent a
