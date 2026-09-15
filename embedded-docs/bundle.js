@@ -6,7 +6,7 @@
  * Regenerate with: npm run build:docs
  * Source: website/docs/
  * 
- * @generated 2026-09-15T06:36:37.177Z
+ * @generated 2026-09-15T06:57:48.417Z
  * @module embedded-docs/bundle
  */
 
@@ -14,7 +14,7 @@
  * Master hash of the entire documentation bundle.
  * Computed as: SHA3-256(sorted individual file hashes joined)
  */
-export const BUNDLE_HASH = '1c03eae19d82cd8110672c172c78dc1c718b1bba88e6d28885d65e6861bdff82';
+export const BUNDLE_HASH = '9a5bd528c6c31647ffac15687411de733424d1db93b3dfa74ec0357393d04e9e';
 
 /**
  * Version of the documentation bundle.
@@ -25,7 +25,7 @@ export const BUNDLE_VERSION = '3.5.0';
 /**
  * Build timestamp (ISO 8601)
  */
-export const BUNDLE_BUILT_AT = '2026-09-15T06:36:37.177Z';
+export const BUNDLE_BUILT_AT = '2026-09-15T06:57:48.417Z';
 
 /**
  * Index of all files in the documentation bundle.
@@ -629,8 +629,8 @@ export const FILE_INDEX = {
     "contentType": "text/html; charset=utf-8"
   },
   "terms.html": {
-    "hash": "734057bc175b506d6afe97324ea947db4ec7b8614d4a46e1f5a5bfa13d14a1f9",
-    "size": 29934,
+    "hash": "169d5b8a7f84eb03e8eae5d527146c3230e5b117baa07f4ce23cccbdecda11e4",
+    "size": 30140,
     "contentType": "text/html; charset=utf-8"
   },
   "time-server-deployment.md": {
