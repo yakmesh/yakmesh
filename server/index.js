@@ -4158,10 +4158,10 @@ export class YakmeshNode {
         const { password } = req.body || {};
         const result = this.identity.machineSeed.exportMnemonic(password || undefined);
         res.json({
-          words: result.words,
+          words: result.words || null,
           encrypted: result.encrypted || null,
           persistentId: this.identity.machineSeed.getPersistentId(),
-          wordCount: result.words.length,
+          wordCount: result.words ? result.words.length : 0,
           warning: 'WRITE THESE WORDS DOWN OFFLINE. This is the ONLY way to recover your identity on new hardware.',
         });
       } catch (e) {
@@ -5897,14 +5897,17 @@ if (isMainModule) {
     console.log('║ This is the ONLY way to recover your identity.              ║');
     console.log('╚═══════════════════════════════════════════════════════════════╝\n');
     console.log(`Persistent ID: ${ms.getPersistentId()}`);
-    console.log(`Words (${result.words.length}):\n`);
-    result.words.forEach((w, i) => {
-      const num = String(i + 1).padStart(2, ' ');
-      process.stdout.write(`  ${num}. ${w.padEnd(16)}`);
-      if ((i + 1) % 4 === 0) process.stdout.write('\n');
-    });
+    if (result.words) {
+      console.log(`Words (${result.words.length}):\n`);
+      result.words.forEach((w, i) => {
+        const num = String(i + 1).padStart(2, ' ');
+        process.stdout.write(`  ${num}. ${w.padEnd(16)}`);
+        if ((i + 1) % 4 === 0) process.stdout.write('\n');
+      });
+    }
     if (result.encrypted) {
       console.log(`\nEncrypted backup (password-protected):\n${result.encrypted}`);
+      console.log('Recover with: yakmesh identity restore --decrypt <blob> <password>');
     }
     console.log('\n');
     process.exit(0);

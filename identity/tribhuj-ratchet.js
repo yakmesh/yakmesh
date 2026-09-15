@@ -354,15 +354,12 @@ export class TribhujRatchet {
       } catch (e) { /* fall through */ }
     }
     
-    // Unknown key — verify against the provided public key directly
-    // (for messages from peers whose ratchet state we don't track)
-    try {
-      if (mlDsa65Verify(signature, messageBytes, publicKey)) {
-        return { valid: true, keyState: 'external' };
-      }
-    } catch (e) { /* fall through */ }
-    
-    return { valid: false, keyState: 'invalid' };
+    // Unknown key — do NOT verify against attacker-supplied key.
+    // The caller's job is to check that the sender's key is already
+    // pinned (current or previous). 'external' means "we don't know
+    // this key" — the signature is mathematically valid but the
+    // identity is NOT authenticated. Return invalid.
+    return { valid: false, keyState: 'external' };
   }
   
   /**
@@ -494,36 +491,54 @@ export class GatewayAttestation {
   /**
    * Verify an attestation from a trusted gateway.
    * Much cheaper than full ML-DSA-65 verify (~0.01ms vs ~2-5ms).
-   * 
+   *
+   * SECURITY: the attestation's pubKey is self-referential — it comes from
+   * the same untrusted message. The gateway's ratchet key must be pinned
+   * out-of-band (via the authenticated HELLO/WELCOME handshake). Pass the
+   * pinned key set as `pinnedKeys`; without it, attestations fail closed.
+   *
    * @param {Object} attestation - The _gwAttest object
-   * @param {TribhujRatchet} [gatewayRatchet] - Gateway's ratchet (optional, uses our own if same gateway)
+   * @param {Object} [pinnedKeys] - { current, previous } pinned ratchet keys for the gateway
    * @returns {{ valid: boolean, reason: string }}
    */
-  verifyAttestation(attestation, gatewayRatchet = null) {
+  verifyAttestation(attestation, pinnedKeys = null) {
     if (!attestation?.hash || !attestation?.sig || !attestation?.gateway) {
       return { valid: false, reason: 'malformed' };
     }
-    
+
     // Check TTL
     if (Date.now() - attestation.timestamp > this.attestationTTL) {
       return { valid: false, reason: 'expired' };
     }
-    
+
     // Reconstruct expected hash
     const input = `${attestation.messageId}:${attestation.signer}:${attestation.gateway}:${attestation.timestamp}`;
     const expectedHash = bytesToHex(sha3_256(new TextEncoder().encode(input)));
-    
+
     if (expectedHash !== attestation.hash) {
       return { valid: false, reason: 'hash_mismatch' };
     }
-    
-    // Verify the gateway's TRIBHUJ signature on the hash
-    const ratchet = gatewayRatchet || this.ratchet;
-    const result = ratchet.verify(attestation.hash, attestation.sig, attestation.pubKey);
-    
-    return result.valid
-      ? { valid: true, reason: `verified_via_${result.keyState}` }
-      : { valid: false, reason: 'bad_gateway_signature' };
+
+    // The attestation key must be pinned — never trust the self-carried pubKey
+    if (!pinnedKeys ||
+        (attestation.pubKey !== pinnedKeys.current &&
+         attestation.pubKey !== pinnedKeys.previous)) {
+      return { valid: false, reason: 'gateway_key_not_pinned' };
+    }
+
+    // Verify the signature under the pinned key
+    try {
+      const ok = mlDsa65Verify(
+        hexToBytes(attestation.sig),
+        new TextEncoder().encode(attestation.hash),
+        hexToBytes(attestation.pubKey),
+      );
+      return ok
+        ? { valid: true, reason: 'verified_via_pinned' }
+        : { valid: false, reason: 'bad_gateway_signature' };
+    } catch (e) {
+      return { valid: false, reason: 'bad_gateway_signature' };
+    }
   }
 }
 

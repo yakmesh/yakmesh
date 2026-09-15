@@ -155,6 +155,21 @@ export function isTritAddress(s) {
 }
 
 /**
+ * Validate that a content hash is safe for filesystem use.
+ * Rejects path traversal sequences and unexpected characters.
+ * @param {string} hash
+ * @returns {boolean}
+ */
+export function isValidContentHash(hash) {
+  if (!hash || typeof hash !== 'string') return false;
+  // Hex: 64 chars, 0-9a-f
+  if (/^[0-9a-f]{64}$/i.test(hash)) return true;
+  // 144T trit address: T/0/1 with optional . or : separators
+  if (isTritAddress(hash)) return true;
+  return false;
+}
+
+/**
  * Derive human-readable iO name from content hash
  * Uses 3-word quantum wordlist for memorable, shareable names
  * 
@@ -313,6 +328,10 @@ export class ContentStore {
    * For hex (legacy), uses first 2 chars as prefix.
    */
   _getContentPath(hash) {
+    // Reject path traversal — hash must be valid hex or 144T trit address
+    if (!isValidContentHash(hash)) {
+      throw new Error(`Invalid content hash format: ${hash.slice(0, 20)}...`);
+    }
     // Check if this is a 144T address (contains T, 0, 1 and dots/colons)
     if (isTritAddress(hash)) {
       // Use first 9 trits (first sub-block) as directory prefix
@@ -331,6 +350,10 @@ export class ContentStore {
    * Get metadata path for a hash (supports both hex and 144T)
    */
   _getMetaPath(hash) {
+    // Reject path traversal — hash must be valid hex or 144T trit address
+    if (!isValidContentHash(hash)) {
+      throw new Error(`Invalid content hash format: ${hash.slice(0, 20)}...`);
+    }
     // Normalize 144T to filename-safe format (remove separators)
     const safeHash = hash.replace(/[.:]/g, '');
     return join(this.metaDir, `${safeHash}.json`);

@@ -663,8 +663,53 @@ export class YPC27_SST extends YPC27Checksum {
 // =============================================================================
 
 /**
+ * Precomputed SST parameters for all 24 positions.
+ * Cached at module load — the matrix and seeds are deterministic per position,
+ * so we generate them once instead of per-checksum (was the 1.5ms bottleneck).
+ */
+const SST_CACHE = (() => {
+  const cache = [];
+  for (let pos = 0; pos < 24; pos++) {
+    const fibRoot = FIBONACCI_CYCLE_24[pos];
+    const family = getFamily(fibRoot);
+    const rotateAmount = fibRoot % N;
+
+    // Rotate base seed
+    let rotated;
+    if (family === SSTFamily.A) {
+      rotated = [...DEFAULT_SEED.slice(rotateAmount), ...DEFAULT_SEED.slice(0, rotateAmount)];
+    } else if (family === SSTFamily.B) {
+      rotated = [...DEFAULT_SEED.slice(-rotateAmount), ...DEFAULT_SEED.slice(0, -rotateAmount)];
+    } else {
+      rotated = [...DEFAULT_SEED];
+    }
+
+    // Hash-based domain separation
+    const posSalt = Poly27.hashToField(
+      `YPC27-SST-${pos}`,
+      new TextEncoder().encode('YPC-27-v2')
+    ).toArray();
+    const sstSeed = rotated.map((r, i) => mod3(r + posSalt[i]));
+
+    // Derive 10 seeds
+    const seeds = [];
+    for (let i = 0; i < 10; i++) {
+      seeds.push(Poly27.hashToField(`YPC27-SEED-${i}`, new Uint8Array(sstSeed)).toArray());
+    }
+
+    // Generate invertible matrix
+    const matrix = sstMatrix(new Uint8Array(sstSeed));
+
+    // 3-6-9 tier: fibRoot determines the algebraic strength
+    const tier = fibRoot <= 3 ? 1 : fibRoot <= 6 ? 2 : 3;
+
+    cache.push({ sstSeed, seeds, matrix, tier, fibRoot });
+  }
+  return cache;
+})();
+
+/**
  * Generate an invertible 27×27 matrix over F_3 from a hash seed.
- * Uses rejection sampling: generates random matrices until one has full rank.
  * @param {Uint8Array} seedBytes - seed for matrix generation
  * @returns {number[][]} 27×27 invertible matrix over F_3
  */
@@ -673,14 +718,12 @@ function sstMatrix(seedBytes) {
   hash.update(seedBytes);
   const digest = hash.digest();
 
-  // Use the digest to seed a simple deterministic PRNG
   let rngState = BigInt(0);
   for (let i = 0; i < 16; i++) {
     rngState |= BigInt(digest[i]) << BigInt(i * 8);
   }
 
   function nextTrit() {
-    // xorshift-style PRNG
     rngState ^= rngState << 13n;
     rngState ^= rngState >> 7n;
     rngState ^= rngState << 17n;
@@ -688,7 +731,6 @@ function sstMatrix(seedBytes) {
     return Number(rngState % 3n);
   }
 
-  // Generate matrices until we find an invertible one
   for (let attempt = 0; attempt < 100; attempt++) {
     const M = [];
     for (let i = 0; i < N; i++) {
@@ -697,11 +739,9 @@ function sstMatrix(seedBytes) {
     if (matrixRank(M) === N) {
       return M;
     }
-    // Perturb for next attempt
     rngState += BigInt(attempt + 1);
   }
 
-  // Fallback: identity matrix (always invertible)
   const I = Array.from({ length: N }, (_, i) =>
     Array.from({ length: N }, (_, j) => (i === j ? 1 : 0))
   );
@@ -710,7 +750,7 @@ function sstMatrix(seedBytes) {
 
 /**
  * Compute the rank of a matrix over F_3 via Gaussian elimination.
- * @param {number[][]} M - matrix
+ * @param {number[][]} M
  * @returns {number} rank
  */
 function matrixRank(M) {
@@ -720,26 +760,16 @@ function matrixRank(M) {
   let rank = 0;
 
   for (let col = 0; col < cols && rank < rows; col++) {
-    // Find pivot
     let pivot = -1;
     for (let row = rank; row < rows; row++) {
-      if (m[row][col] !== 0) {
-        pivot = row;
-        break;
-      }
+      if (m[row][col] !== 0) { pivot = row; break; }
     }
     if (pivot === -1) continue;
-
-    // Swap rows
     [m[rank], m[pivot]] = [m[pivot], m[rank]];
-
-    // Scale pivot row to make pivot = 1
-    const inv = m[rank][col] === 1 ? 1 : 2; // 1→1, 2→2 (2*2=4≡1 mod 3)
+    const inv = m[rank][col] === 1 ? 1 : 2;
     for (let j = 0; j < cols; j++) {
       m[rank][j] = (m[rank][j] * inv) % 3;
     }
-
-    // Eliminate column
     for (let row = 0; row < rows; row++) {
       if (row !== rank && m[row][col] !== 0) {
         const factor = m[row][col];
@@ -755,9 +785,9 @@ function matrixRank(M) {
 
 /**
  * Multiply a matrix by a vector over F_3.
- * @param {number[][]} M - 27×27 matrix
- * @param {number[]} v - 27-element vector
- * @returns {number[]} 27-element result
+ * @param {number[][]} M
+ * @param {number[]} v
+ * @returns {number[]}
  */
 function matVecMul(M, v) {
   const result = new Array(N).fill(0);
@@ -773,105 +803,65 @@ function matVecMul(M, v) {
 
 /**
  * Derive multiple independent seeds from a base seed via hash domain separation.
- * @param {number[]} baseSeed - 27-element base seed
- * @param {number} count - number of seeds to derive
- * @returns {number[][]} array of seed coefficient arrays
+ * @param {number[]} baseSeed
+ * @param {number} count
+ * @returns {number[][]}
  */
 function deriveSeeds(baseSeed, count) {
   const seeds = [];
   for (let i = 0; i < count; i++) {
-    seeds.push(Poly27.hashToField(
-      `YPC27-SEED-${i}`,
-      new Uint8Array(baseSeed)
-    ).toArray());
+    seeds.push(Poly27.hashToField(`YPC27-SEED-${i}`, new Uint8Array(baseSeed)).toArray());
   }
   return seeds;
 }
 
 /**
- * YPC-27² — Power-Magnified Checksum.
+ * YPC-27² — Power-Magnified Checksum with 3-6-9 Tier Structure.
  *
- * A multivariate quadratic checksum over F_{3^27} that uses:
- * - Three input field elements (a, b, c) for cross-product structure
- * - A 27×27 invertible F_3 matrix (SST-derived) for trit mixing
- * - Polynomial powers (T²) and cross products (a·b, b·c, a·c)
- * - Ten SST-derived seeds for domain separation
+ * A multivariate quadratic checksum over F_{3^27} with tiered algebraic
+ * strength based on the SST Fibonacci digital root:
  *
- * The quadratic structure makes forgery require solving a system of
- * multivariate quadratic equations over F_3 — the MQ problem.
+ *   Tier 1 (roots 1-3): T² + 3 cross products (a·b, b·c, a·c)
+ *   Tier 2 (roots 4-6): T² + 6 cross products (add T·a, T·b, T·c)
+ *   Tier 3 (roots 7-9): T² + 9 terms (add a², b², c² self-powers)
  *
- * Architecture:
- *   Input → SHA3-256 → (a, b, c) field elements
- *   → Linear: L = s₁·a + s₂·b + s₃·c
- *   → Matrix twist: T = M · L
- *   → Power: P = s₄·T² + s₅·a·b + s₆·b·c + s₇·a·c
- *   → Output: C = s₈·P + s₉·T + s₁₀
+ * The 3-6-9 governing positions (roots 7, 8, 9) get the strongest
+ * algebraic structure — matching their governing role in SST.
  *
- * Properties:
- * - 3^27 ≈ 7.6T output states
- * - Genuine multivariate quadratic (MQ) structure
- * - 24 unique SST configurations
- * - Non-linear, non-degenerate, avalanche
+ * All SST parameters (matrix, seeds) are precomputed at module load.
+ * Per-checksum cost: ~10-14 field multiplications + 1 matrix-vector
+ * multiply + 1 SHA3-256 ≈ 0.5ms in JS, ~0.1ms in Rust.
+ *
+ * @extends YPC27Checksum
  */
 export class YPC27Power extends YPC27Checksum {
-  /** @type {number} SST position */
+  /** @type {number} SST position (0-23) */
   _position;
 
-  /** @type {number[]} Base seed coefficients */
-  _baseSeed;
+  /** @type {number} 3-6-9 tier (1, 2, or 3) */
+  _tier;
 
   /**
    * Create a power-magnified checksum engine.
-   * @param {Poly27 | number[]} [seed] - base seed
    * @param {number} [position] - SST position (0-23)
    */
-  constructor(seed = DEFAULT_SEED, position = 0) {
-    const baseArr = seed instanceof Poly27 ? seed.toArray() : Array.from(seed);
-    super(baseArr);
-    this._baseSeed = baseArr;
+  constructor(position = 0) {
+    super(DEFAULT_SEED);
     this._position = position % 24;
-  }
-
-  /**
-   * Compute SST seed for the power layer (reuses YPC27_SST logic).
-   * @private
-   */
-  _getSstSeed() {
-    // Reuse the SST seed computation from YPC27_SST
-    const fibRoot = FIBONACCI_CYCLE_24[this._position];
-    const family = getFamily(fibRoot);
-    const rotateAmount = fibRoot % N;
-
-    let rotated;
-    if (family === SSTFamily.A) {
-      rotated = [...this._baseSeed.slice(rotateAmount), ...this._baseSeed.slice(0, rotateAmount)];
-    } else if (family === SSTFamily.B) {
-      rotated = [...this._baseSeed.slice(-rotateAmount), ...this._baseSeed.slice(0, -rotateAmount)];
-    } else {
-      rotated = [...this._baseSeed];
-    }
-
-    const posSalt = Poly27.hashToField(
-      `YPC27-SST-${this._position}`,
-      new TextEncoder().encode('YPC-27-v2')
-    ).toArray();
-
-    return rotated.map((r, i) => mod3(r + posSalt[i]));
+    this._tier = SST_CACHE[this._position].tier;
   }
 
   /**
    * Compute the power-magnified checksum.
    * @param {Uint8Array | string} data
-   * @returns {Poly27}
    */
   update(data) {
     const bytes = typeof data === 'string'
       ? new TextEncoder().encode(data)
       : data;
 
-    // Get SST-derived seeds (10 total for all layers)
-    const sstSeed = this._getSstSeed();
-    const seeds = deriveSeeds(sstSeed, 10);
+    const cache = SST_CACHE[this._position];
+    const { seeds, matrix, tier } = cache;
 
     // Input → three field elements via SHA3-256
     const h = createHash('sha3-256');
@@ -895,19 +885,38 @@ export class YPC27Power extends YPC27Checksum {
       .add(new Poly27(seeds[2]).multiply(c));
 
     // Layer 2: Matrix twist — T = M · L
-    const M = sstMatrix(new Uint8Array(sstSeed));
-    const T = new Poly27(matVecMul(M, L.toArray()));
+    const T = new Poly27(matVecMul(matrix, L.toArray()));
 
-    // Layer 3: Power layer — P = s₄·T² + s₅·a·b + s₆·b·c + s₇·a·c
+    // Layer 3: Power layer — tiered by 3-6-9
     const T2 = T.multiply(T);
     const ab = a.multiply(b);
     const bc = b.multiply(c);
     const ac = a.multiply(c);
 
-    const P = new Poly27(seeds[3]).multiply(T2)
+    let P = new Poly27(seeds[3]).multiply(T2)
       .add(new Poly27(seeds[4]).multiply(ab))
       .add(new Poly27(seeds[5]).multiply(bc))
       .add(new Poly27(seeds[6]).multiply(ac));
+
+    if (tier >= 2) {
+      // Add T·a, T·b, T·c cross terms
+      const Ta = T.multiply(a);
+      const Tb = T.multiply(b);
+      const Tc = T.multiply(c);
+      P = P.add(new Poly27(seeds[7]).multiply(Ta))
+           .add(new Poly27(seeds[8]).multiply(Tb))
+           .add(new Poly27(seeds[9]).multiply(Tc));
+    }
+
+    if (tier >= 3) {
+      // Add a², b², c² self-power terms
+      const a2 = a.multiply(a);
+      const b2 = b.multiply(b);
+      const c2 = c.multiply(c);
+      P = P.add(new Poly27(seeds[0]).multiply(a2))
+           .add(new Poly27(seeds[1]).multiply(b2))
+           .add(new Poly27(seeds[2]).multiply(c2));
+    }
 
     // Layer 4: Output — C = s₈·P + s₉·T + s₁₀
     this._state = new Poly27(seeds[7]).multiply(P)
@@ -919,11 +928,10 @@ export class YPC27Power extends YPC27Checksum {
    * Compute power-magnified checksum in one call.
    * @param {Uint8Array | string} data
    * @param {number} [position] - SST position (0-23)
-   * @param {Poly27 | number[]} [seed]
    * @returns {Poly27}
    */
-  static compute(data, position = 0, seed = DEFAULT_SEED) {
-    const hasher = new YPC27Power(seed, position);
+  static compute(data, position = 0) {
+    const hasher = new YPC27Power(position);
     hasher.update(data);
     return hasher.digest();
   }
@@ -933,11 +941,10 @@ export class YPC27Power extends YPC27Checksum {
    * @param {Uint8Array | string} data
    * @param {Poly27} expected
    * @param {number} [position]
-   * @param {Poly27 | number[]} [seed]
    * @returns {boolean}
    */
-  static verify(data, expected, position = 0, seed = DEFAULT_SEED) {
-    const computed = YPC27Power.compute(data, position, seed);
+  static verify(data, expected, position = 0) {
+    const computed = YPC27Power.compute(data, position);
     return computed.equals(expected);
   }
 }
@@ -954,6 +961,16 @@ export class YPC27Power extends YPC27Checksum {
  */
 export function ypc27(data, seed = DEFAULT_SEED) {
   return YPC27Checksum.compute(data, seed);
+}
+
+/**
+ * Derive a Poly27 seed element from a peer ID string.
+ * Domain-separated so peer-derived seeds can't collide with message hashes.
+ * @param {string} peerId - peer node ID
+ * @returns {Poly27}
+ */
+export function seedFromPeerId(peerId) {
+  return Poly27.hashToField(peerId, new TextEncoder().encode('YPC27-PEER-SEED'));
 }
 
 /**

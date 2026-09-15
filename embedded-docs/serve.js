@@ -32,7 +32,7 @@
  */
 
 import { readFileSync, existsSync } from 'fs';
-import { join, dirname } from 'path';
+import { join, dirname, resolve } from 'path';
 import { fileURLToPath } from 'url';
 import { FILE_INDEX, BUNDLE_HASH, BUNDLE_VERSION, hasFile, getFileMeta } from './bundle.js';
 import { getContentType } from './index.js';
@@ -61,19 +61,39 @@ const ASSETS_DIR = existsSync(join(__dirname, '../website/assets'))
 export function getDocsFile(path) {
   // Normalize path - remove leading slash if present
   const normalizedPath = path.startsWith('/') ? path.substring(1) : path;
-  
+
+  // Reject path traversal — only allow relative paths within docs/
+  if (normalizedPath.includes('..') || normalizedPath.startsWith('/') || /^[a-zA-Z]:/.test(normalizedPath)) {
+    console.warn(`[embedded-docs] Blocked path traversal attempt: ${normalizedPath}`);
+    return null;
+  }
+
   // Check if file is in bundle
   const meta = getFileMeta(normalizedPath);
-  
+
   // Try to read from disk
   // First try docs directory, then assets for silhouettes etc.
   let fullPath = join(DOCS_DIR, normalizedPath);
-  
+
+  // Verify resolved path stays within DOCS_DIR
+  const resolved = resolve(fullPath);
+  const docsRoot = resolve(DOCS_DIR);
+  if (!resolved.startsWith(docsRoot)) {
+    console.warn(`[embedded-docs] Blocked path escape: ${normalizedPath} -> ${resolved}`);
+    return null;
+  }
+
   if (!existsSync(fullPath)) {
     // Try assets directory (for silhouettes, etc.)
     fullPath = join(ASSETS_DIR, normalizedPath.replace('assets/', ''));
+    const resolvedAssets = resolve(fullPath);
+    const assetsRoot = resolve(ASSETS_DIR);
+    if (!resolvedAssets.startsWith(assetsRoot)) {
+      console.warn(`[embedded-docs] Blocked path escape: ${normalizedPath} -> ${resolvedAssets}`);
+      return null;
+    }
   }
-  
+
   if (!existsSync(fullPath)) {
     return null;
   }

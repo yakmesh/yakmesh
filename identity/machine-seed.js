@@ -736,12 +736,15 @@ export class MachineSeed {
       ]);
       const tag = cipher.getAuthTag();
 
+      // When password is provided, return ONLY the encrypted blob — not the raw words.
+      // The password protects the mnemonic; returning both would defeat the purpose.
       result.encrypted = [
         salt.toString('hex'),
         nonce.toString('hex'),
         tag.toString('hex'),
         encrypted.toString('hex'),
       ].join(':');
+      delete result.words;
     }
 
     log.info('Mnemonic exported', {

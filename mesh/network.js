@@ -80,6 +80,8 @@ import { aguwa } from './aguwa.js';
 
 // TRIBHUJ Key Ratchet — trinary rotating keypairs with gateway attestation
 import { TribhujRatchet, GatewayAttestation } from '../identity/tribhuj-ratchet.js';
+import { generateNodeId } from '../identity/node-key.js';
+import { hexToBytes, bytesToHex } from '@noble/hashes/utils.js';
 
 /** Extract unique peer suffix from nodeId (e.g. 'node-net-name-pq-kEEU' → 'kEEU') */
 const peerTag = (id) => id?.split('-pq-').pop() || id?.slice?.(-8) || String(id);
@@ -337,16 +339,31 @@ export class MandalaNetwork {
       ws.on('open', () => {
         // Send HELLO with our identity AND network fingerprint for code proof verification
         // Include our advertised endpoint so inbound peers know how to reach us
+        // Include proof-of-possession: sign "YAKMESH:HELLO:{nodeId}:{timestamp}:{tribhujPubKey}"
+        // The ratchet pubkey is bound INSIDE the proof so it can't be swapped in transit.
+        const timestamp = Date.now();
+        const nodeId = this.identity.identity.nodeId;
+        const tribhujPubKey = this.ratchet?._current?.publicKey
+          ? bytesToHex(this.ratchet._current.publicKey) : null;
+        const tribhujPrevPubKey = this.ratchet?._previous?.publicKey
+          ? bytesToHex(this.ratchet._previous.publicKey) : null;
+        const proofPayload = `YAKMESH:HELLO:${nodeId}:${timestamp}:${tribhujPubKey || ''}`;
+        if (!this._announcedRatchetKeys) this._announcedRatchetKeys = new Set();
+        if (tribhujPubKey) this._announcedRatchetKeys.add(tribhujPubKey);
+        if (tribhujPrevPubKey) this._announcedRatchetKeys.add(tribhujPrevPubKey);
         this._send(ws, {
           type: MessageTypes.HELLO,
           identity: {
             ...this.identity.getPublicIdentity(),
+            tribhujPubKey,
+            tribhujPrevPubKey,
             networkId: this.networkId,
             networkFingerprint: this.networkFingerprint,
           },
           advertisedEndpoint: this._getAdvertisedEndpoint(),
           capabilities: getCapabilities(),
-          timestamp: Date.now(),
+          timestamp,
+          proof: this.identity.sign(proofPayload),
         });
       });
 
@@ -422,7 +439,7 @@ export class MandalaNetwork {
 
     // Sign the message — prefer TRIBHUJ ratchet for forward secrecy, fall back to identity
     const signed = this.ratchet
-      ? this.ratchet.signObject(gossipMsg)
+      ? this._attachTribhujCert(this.ratchet.signObject(gossipMsg))
       : this.identity.signObject(gossipMsg);
 
     this.seenMessages.add(msgId);
@@ -441,7 +458,7 @@ export class MandalaNetwork {
    */
   sendTo(nodeId, message) {
     const signed = this.ratchet
-      ? this.ratchet.signObject({ ...message, timestamp: Date.now() })
+      ? this._attachTribhujCert(this.ratchet.signObject({ ...message, timestamp: Date.now() }))
       : this.identity.signObject({ ...message, timestamp: Date.now() });
 
     const peer = this.peers.get(nodeId);
@@ -452,6 +469,25 @@ export class MandalaNetwork {
 
     // Not a WS peer — try relay fallback (server layer hooks this)
     this.emit('outbound-relay', nodeId, signed);
+  }
+
+  /**
+   * Attach a TRIBHUJ rotation certificate to a ratchet-signed message when our
+   * current ratchet key hasn't been announced in a handshake. The cert is a
+   * signature by our permanent identity key over
+   * "YAKMESH:TRIBHUJ-KEY:{nodeId}:{newKey}:{epoch}" — receivers verify it
+   * against the pinned identity key and advance their pinned ratchet set.
+   */
+  _attachTribhujCert(signed) {
+    const cur = this.ratchet?._current?.publicKey;
+    if (!cur) return signed;
+    const curHex = bytesToHex(cur);
+    if (!this._announcedRatchetKeys) this._announcedRatchetKeys = new Set();
+    if (this._announcedRatchetKeys.has(curHex)) return signed;
+    const certPayload = `YAKMESH:TRIBHUJ-KEY:${this.identity.identity.nodeId}:${curHex}:${this.ratchet._epoch}`;
+    signed._tribhujCert = this.identity.sign(certPayload);
+    this._announcedRatchetKeys.add(curHex);
+    return signed;
   }
 
   /**
@@ -634,6 +670,60 @@ export class MandalaNetwork {
         }
       }
 
+      // REPLAY PROTECTION: timestamp must be within a 5-minute window
+      if (!msg.timestamp || Math.abs(Date.now() - msg.timestamp) > 5 * 60 * 1000) {
+        log.warn('Rejected HELLO — stale or missing timestamp', { peer: peerTag(nodeId) });
+        ws.close(1008, 'Stale handshake timestamp');
+        return;
+      }
+
+      // PROOF OF POSSESSION: Verify the sender controls the claimed private key.
+      // The HELLO must include a signature of
+      // "YAKMESH:HELLO:{nodeId}:{timestamp}:{tribhujPubKey}" under the claimed
+      // publicKey. The ratchet key is bound inside the proof so it can't be
+      // swapped by a relay.
+      const claimedPubKey = msg.identity?.publicKey;
+      const claimedTribhuj = msg.identity?.tribhujPubKey || '';
+      const proofPayload = `YAKMESH:HELLO:${nodeId}:${msg.timestamp}:${claimedTribhuj}`;
+      if (!claimedPubKey || !msg.proof || !this.identity.verify(proofPayload, msg.proof, claimedPubKey)) {
+        log.warn('Rejected HELLO — invalid proof of possession', {
+          peer: peerTag(nodeId),
+          hasPubKey: !!claimedPubKey,
+          hasProof: !!msg.proof,
+        });
+        this._send(ws, {
+          type: 'REJECT',
+          reason: 'PROOF_OF_POSSESSION_FAILED',
+          message: 'HELLO must include a valid proof signature',
+        });
+        ws.close(1008, 'Proof of possession failed');
+        return;
+      }
+
+      // IDENTITY BINDING: nodeId must be derived from the claimed publicKey.
+      // Otherwise an attacker could claim a victim's nodeId while presenting
+      // their own publicKey + a valid signature under their own key.
+      try {
+        const derivedNodeId = generateNodeId(hexToBytes(claimedPubKey));
+        if (derivedNodeId !== nodeId) {
+          log.warn('Rejected HELLO — nodeId not bound to publicKey', {
+            claimed: peerTag(nodeId),
+            derived: peerTag(derivedNodeId),
+          });
+          this._send(ws, {
+            type: 'REJECT',
+            reason: 'IDENTITY_BINDING_FAILED',
+            message: 'nodeId does not match the claimed public key',
+          });
+          ws.close(1008, 'Identity binding failed');
+          return;
+        }
+      } catch (err) {
+        log.warn('Rejected HELLO — could not verify identity binding', { error: err.message });
+        ws.close(1008, 'Identity binding failed');
+        return;
+      }
+
       // DUPLICATE / RECONNECT DETECTION: If this peer is already connected
       // with a different WebSocket, decide which connection to keep.
       const existingPeer = this.peers.get(nodeId);
@@ -716,6 +806,12 @@ export class MandalaNetwork {
         endpoint: peerEndpoint,
         capabilities: msg.capabilities || null,
         lastSeen: Date.now(),
+        // Pinned ratchet keys from the verified handshake — used to verify
+        // _tribhujSig messages. Only keys bound inside the PoP proof are trusted.
+        tribhujKeys: {
+          current: msg.identity.tribhujPubKey || null,
+          previous: msg.identity.tribhujPrevPubKey || null,
+        },
       });
 
       // AGUWA: register peer for Kuramoto phase tracking
@@ -735,29 +831,48 @@ export class MandalaNetwork {
       // Send WELCOME back — this is a handshake message, always plaintext.
       // Like TLS ServerHello: the identity exchange MUST be unencrypted because
       // the initiator hasn't learned our nodeId yet and can't derive JHILKE.
+      // Include proof-of-possession: sign "YAKMESH:WELCOME:{nodeId}:{timestamp}:{tribhujPubKey}"
+      const welcomeTimestamp = Date.now();
+      const ourNodeId = this.identity.identity.nodeId;
+      const ourTribhuj = this.ratchet?._current?.publicKey
+        ? bytesToHex(this.ratchet._current.publicKey) : null;
+      const ourTribhujPrev = this.ratchet?._previous?.publicKey
+        ? bytesToHex(this.ratchet._previous.publicKey) : null;
+      const welcomeProof = this.identity.sign(`YAKMESH:WELCOME:${ourNodeId}:${welcomeTimestamp}:${ourTribhuj || ''}`);
+      if (!this._announcedRatchetKeys) this._announcedRatchetKeys = new Set();
+      if (ourTribhuj) this._announcedRatchetKeys.add(ourTribhuj);
+      if (ourTribhujPrev) this._announcedRatchetKeys.add(ourTribhujPrev);
       this._send(ws, {
         type: MessageTypes.WELCOME,
         identity: {
           ...this.identity.getPublicIdentity(),
+          tribhujPubKey: ourTribhuj,
+          tribhujPrevPubKey: ourTribhujPrev,
           networkId: this.networkId,
           networkFingerprint: this.networkFingerprint,
         },
         advertisedEndpoint: this._getAdvertisedEndpoint(),
         capabilities: getCapabilities(),
         peers: this.getPeers().filter(p => p.nodeId !== nodeId),
+        timestamp: welcomeTimestamp,
+        proof: welcomeProof,
       });
 
       // JHILKE: Bootstrap ANNEX session IMMEDIATELY after WELCOME send.
       // Both nodes derive the same key from codeHash + buildNonce + sorted(nodeId1, nodeId2).
-      // The bootstrap session IS the channel — no KEM upgrade needed.
+      // The bootstrap session provides the initial channel — then upgrades to
+      // KEM for forward secrecy (the lower nodeId initiates the upgrade).
       // This MUST happen BEFORE emit('peer-registered') so any messages triggered
       // by that event are encrypted via ANNEX — zero plaintext gap.
-      const ourNodeId = this.identity.identity.nodeId;
       if (this.annex && !this.annex.sessions.get(nodeId)) {
         if (this.jhilke) {
           const bootstrapKey = this.jhilke.deriveBootstrapKey(nodeId);
           this.annex.bootstrapSession(nodeId, bootstrapKey);
           log.info('ANNEX channel established via JHILKE bootstrap', { peerId: peerTag(nodeId) });
+          // Kick off KEM upgrade for forward secrecy (tie-break inside openChannel)
+          this.annex.openChannel(nodeId).catch(err => {
+            log.debug('ANNEX KEM upgrade deferred/failed', { peerId: peerTag(nodeId), error: err.message });
+          });
         } else {
           // No JHILKE — fall back to KEM handshake (lower nodeId initiates)
           if (ourNodeId < nodeId) {
@@ -796,6 +911,59 @@ export class MandalaNetwork {
           ws._pendingWelcome({ rejected: true, reason: 'MITM_NODEID_MISMATCH' });
           delete ws._pendingWelcome;
         }
+        return;
+      }
+
+      // REPLAY PROTECTION: timestamp must be within a 5-minute window
+      if (!msg.timestamp || Math.abs(Date.now() - msg.timestamp) > 5 * 60 * 1000) {
+        log.warn('Rejected WELCOME — stale or missing timestamp', { peer: peerTag(nodeId) });
+        ws.close(1008, 'Stale handshake timestamp');
+        if (ws._pendingWelcome) {
+          ws._pendingWelcome({ rejected: true, reason: 'STALE_TIMESTAMP' });
+          delete ws._pendingWelcome;
+        }
+        return;
+      }
+
+      // PROOF OF POSSESSION: Verify the responder controls the claimed private key.
+      // The WELCOME must include a signature of
+      // "YAKMESH:WELCOME:{nodeId}:{timestamp}:{tribhujPubKey}" under the claimed
+      // publicKey. The ratchet key is bound inside the proof.
+      const welcomePubKey = msg.identity?.publicKey;
+      const claimedTribhujW = msg.identity?.tribhujPubKey || '';
+      const welcomeProofPayload = `YAKMESH:WELCOME:${nodeId}:${msg.timestamp}:${claimedTribhujW}`;
+      if (!welcomePubKey || !msg.proof || !this.identity.verify(welcomeProofPayload, msg.proof, welcomePubKey)) {
+        log.warn('Rejected WELCOME — invalid proof of possession', {
+          peer: peerTag(nodeId),
+          hasPubKey: !!welcomePubKey,
+          hasProof: !!msg.proof,
+        });
+        ws.close(1008, 'Proof of possession failed');
+        if (ws._pendingWelcome) {
+          ws._pendingWelcome({ rejected: true, reason: 'PROOF_OF_POSSESSION_FAILED' });
+          delete ws._pendingWelcome;
+        }
+        return;
+      }
+
+      // IDENTITY BINDING: nodeId must be derived from the claimed publicKey.
+      try {
+        const derivedWelcomeId = generateNodeId(hexToBytes(welcomePubKey));
+        if (derivedWelcomeId !== nodeId) {
+          log.warn('Rejected WELCOME — nodeId not bound to publicKey', {
+            claimed: peerTag(nodeId),
+            derived: peerTag(derivedWelcomeId),
+          });
+          ws.close(1008, 'Identity binding failed');
+          if (ws._pendingWelcome) {
+            ws._pendingWelcome({ rejected: true, reason: 'IDENTITY_BINDING_FAILED' });
+            delete ws._pendingWelcome;
+          }
+          return;
+        }
+      } catch (err) {
+        log.warn('Rejected WELCOME — could not verify identity binding', { error: err.message });
+        ws.close(1008, 'Identity binding failed');
         return;
       }
 
@@ -871,6 +1039,12 @@ export class MandalaNetwork {
         endpoint: peerEndpoint,
         capabilities: msg.capabilities || null,
         lastSeen: Date.now(),
+        // Pinned ratchet keys from the verified handshake — used to verify
+        // _tribhujSig messages. Only keys bound inside the PoP proof are trusted.
+        tribhujKeys: {
+          current: msg.identity.tribhujPubKey || null,
+          previous: msg.identity.tribhujPrevPubKey || null,
+        },
       });
 
       // AGUWA: register peer for Kuramoto phase tracking
@@ -882,7 +1056,8 @@ export class MandalaNetwork {
 
       // JHILKE: Bootstrap ANNEX session IMMEDIATELY after storing peer.
       // Both sides now know each other's nodeId — derive the same deterministic key.
-      // The bootstrap session IS the channel — no KEM upgrade needed.
+      // The bootstrap session provides the initial channel — then upgrades to
+      // KEM for forward secrecy (the lower nodeId initiates the upgrade).
       // This MUST happen BEFORE the pending-welcome callback and 'peer-registered'
       // event so any messages triggered by those are encrypted — zero plaintext gap.
       const ourNodeId = this.identity.identity.nodeId;
@@ -891,6 +1066,10 @@ export class MandalaNetwork {
           const bootstrapKey = this.jhilke.deriveBootstrapKey(nodeId);
           this.annex.bootstrapSession(nodeId, bootstrapKey);
           log.info('ANNEX channel established via JHILKE bootstrap (WELCOME)', { peerId: peerTag(nodeId) });
+          // Kick off KEM upgrade for forward secrecy (tie-break inside openChannel)
+          this.annex.openChannel(nodeId).catch(err => {
+            log.debug('ANNEX KEM upgrade deferred/failed', { peerId: peerTag(nodeId), error: err.message });
+          });
         } else {
           // No JHILKE — fall back to KEM handshake (lower nodeId initiates)
           if (ourNodeId < nodeId) {
@@ -1097,7 +1276,10 @@ export class MandalaNetwork {
 
       // Check for gateway attestation first — "verify once, trust the stamp"
       if (msg._gwAttest && this.gateway) {
-        const attestResult = this.gateway.verifyAttestation(msg._gwAttest);
+        // Pin check: the attesting gateway must be a connected peer whose
+        // ratchet key was bound in the verified handshake.
+        const gwPeer = this.peers.get(msg._gwAttest.gateway);
+        const attestResult = this.gateway.verifyAttestation(msg._gwAttest, gwPeer?.tribhujKeys || null);
         if (attestResult.valid) {
           // Attestation valid — skip expensive ML-DSA-65 verify (~0.01ms vs ~2-5ms)
           log.debug('Accepted via gateway attestation', {
@@ -1115,14 +1297,49 @@ export class MandalaNetwork {
 
       // TRIBHUJ ratchet verification (rotating keys)
       if (msg._tribhujSig && !msg._gwAttest?.hash) {
-        const payload = { ...msg };
-        delete payload._tribhujSig;
-        delete payload._tribhujEpoch;
-        delete payload._tribhujPubKey;
+        const peer = senderNodeId ? this.peers.get(senderNodeId) : null;
+        const pinned = peer?.tribhujKeys;
+        const claimedKey = msg._tribhujPubKey;
 
-        const result = this.ratchet
-          ? this.ratchet.verifyObject(msg, msg._tribhujPubKey)
-          : { valid: false, keyState: 'no_ratchet' };
+        // The message's ratchet key MUST be one of the keys pinned during the
+        // authenticated handshake — OR be certified by the peer's pinned
+        // identity key (rotation certificate).
+        let ratchetKeyValid = false;
+        if (pinned && claimedKey &&
+            (claimedKey === pinned.current || claimedKey === pinned.previous)) {
+          ratchetKeyValid = true;
+        } else if (msg._tribhujCert && claimedKey && peer?.identity?.publicKey) {
+          // Rotation cert: identity key signs "YAKMESH:TRIBHUJ-KEY:{nodeId}:{newKey}:{epoch}"
+          const certPayload = `YAKMESH:TRIBHUJ-KEY:${senderNodeId}:${claimedKey}:${msg._tribhujEpoch}`;
+          if (this.identity.verify(certPayload, msg._tribhujCert, peer.identity.publicKey)) {
+            ratchetKeyValid = true;
+            // Advance the pinned set — chain moved forward
+            peer.tribhujKeys = { current: claimedKey, previous: pinned?.current || null };
+            log.debug('TRIBHUJ rotation certified by identity key', { peer: peerTag(senderNodeId) });
+          }
+        }
+
+        if (!ratchetKeyValid) {
+          log.warn('Rejected message — ratchet key not pinned or certified', {
+            type: msg.type,
+            sender: peerTag(senderNodeId),
+            hasPinned: !!pinned,
+          });
+          return; // Drop forged message
+        }
+
+        // Verify signature under the pinned/certified ratchet key.
+        // Payload excludes the sig fields + the cert (cert is added post-signing).
+        const { _tribhujSig, _tribhujEpoch, _tribhujPubKey, _tribhujCert, ...rest } = msg;
+        const result = {
+          valid: false,
+          keyState: 'invalid',
+        };
+        try {
+          const ok = this.identity.verify(JSON.stringify(rest), _tribhujSig, claimedKey);
+          result.valid = ok;
+          result.keyState = ok ? 'pinned' : 'invalid';
+        } catch (e) { /* result stays invalid */ }
 
         if (!result.valid) {
           log.warn('Rejected message with invalid TRIBHUJ signature', {
@@ -1141,6 +1358,16 @@ export class MandalaNetwork {
       }
       // Legacy identity verification (permanent key, no ratchet)
       else if (msg._signature && senderPublicKey && !msg._gwAttest?.hash) {
+        // _signer is inside the signed payload — it must match the connection
+        // peer, otherwise a peer could attribute their messages to another node.
+        if (msg._signer && msg._signer !== senderNodeId) {
+          log.warn('Rejected message — _signer does not match connection peer', {
+            type: msg.type,
+            claimed: peerTag(msg._signer),
+            actual: peerTag(senderNodeId),
+          });
+          return;
+        }
         const verified = this.identity.verifyObject(msg, senderPublicKey);
         if (!verified) {
           log.warn('Rejected message with invalid signature', {

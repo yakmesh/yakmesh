@@ -110,7 +110,11 @@ export class SafeJsonParser {
   parse(json) {
     if (typeof json !== 'string') return { success: false, error: 'Input must be a string' };
     if (json.length > this.maxSize) return { success: false, error: 'JSON too large' };
-    if (/__proto__|constructor.*prototype/i.test(json)) return { success: false, error: 'Suspicious content detected' };
+    // Use simple string checks instead of regex — regex backtracking can DoS
+    const lower = json.toLowerCase();
+    if (lower.includes('__proto__') || lower.includes('constructor') && lower.includes('prototype')) {
+      return { success: false, error: 'Suspicious content detected' };
+    }
     try { return { success: true, data: JSON.parse(json) }; }
     catch (e) { return { success: false, error: 'JSON parse error: ' + e.message }; }
   }

@@ -518,19 +518,37 @@ export class Annex {
 
   /**
    * Initialize or get secure session with a peer (annex territory)
-   * 
-   * JHILKE integration: If a bootstrap session exists, it IS the channel.
-   * The deterministic bootstrap key (HKDF from code hash + buildNonce + nodeIDs)
-   * provides authenticated encryption from message #1. No KEM upgrade needed.
+   *
+   * JHILKE integration: a bootstrap session provides the initial encrypted
+   * channel, but the bootstrap key is a static group key (derived from code
+   * hash + buildNonce + nodeIDs) — NO forward secrecy. We must upgrade to
+   * a proper KEM-backed session as soon as possible.
    */
   async openChannel(remoteNodeId) {
     // Check for existing session (bootstrap or KEM — both are valid)
     let session = this.sessions.get(remoteNodeId);
 
-    // Return existing established session — bootstrap sessions ARE full sessions.
-    // JHILKE deterministic key provides the encryption, no KEM upgrade needed.
-    if (session && session.established && !session.isExpired()) {
+    // Return existing KEM-backed session — it has forward secrecy
+    if (session && session.established && !session.bootstrapped && !session.isExpired()) {
       return session;
+    }
+
+    // Bootstrap session exists but hasn't been upgraded — trigger KEM upgrade.
+    // Tie-break: only the lexicographically smaller nodeId initiates, so both
+    // sides don't fire crossing KEY_EXCHANGEs. The larger side waits for the
+    // exchange to arrive and responds.
+    if (session && session.bootstrapped) {
+      const localId = this.identity.identity.nodeId;
+      if (localId > remoteNodeId) {
+        log.debug('Bootstrap session exists — waiting for peer-initiated KEM upgrade', {
+          peerId: peerTag(remoteNodeId),
+        });
+        return session;
+      }
+      log.debug('Bootstrap session exists — upgrading to KEM for forward secrecy', {
+        peerId: peerTag(remoteNodeId),
+      });
+      // Fall through to create KEM session
     }
 
     // No session exists — create new KEM-based session (non-JHILKE fallback)
@@ -809,15 +827,19 @@ export class Annex {
   async _handleKeyExchange(envelope) {
     log.info('Key exchange from peer (KEM)', { peerId: peerTag(envelope.senderId) });
 
-    // KEM key exchange — only used when JHILKE is not available.
-    // With JHILKE, bootstrap sessions handle encryption. No KEM needed.
     let session = this.sessions.get(envelope.senderId);
 
-    if (session?.bootstrapped) {
-      // Bootstrap session exists — this shouldn't happen (JHILKE handles keys).
-      // Ignore the KEM exchange, bootstrap key is sufficient.
-      log.warn('Ignoring KEM exchange — JHILKE bootstrap session active', { peerId: peerTag(envelope.senderId) });
+    if (session && session.established && !session.bootstrapped && !session.isExpired()) {
+      // Already have a proper KEM session — no upgrade needed
+      log.debug('KEM session already established — ignoring duplicate exchange', { peerId: peerTag(envelope.senderId) });
       return;
+    }
+
+    if (session?.bootstrapped) {
+      // Bootstrap→KEM upgrade: the bootstrap key is a static group key with
+      // NO forward secrecy. Complete the KEM exchange — the new session
+      // replaces the bootstrap session below.
+      log.info('Upgrading bootstrap session to KEM (forward secrecy)', { peerId: peerTag(envelope.senderId) });
     }
 
     // Create responding session (non-JHILKE path)
