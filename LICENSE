@@ -619,3 +619,26 @@ You may add additional accurate notices of copyright ownership.
 
     This Source Code Form is "Incompatible With Secondary Licenses", as
     defined by the YAKMESH NETWORK ENGINE LICENSE AGREEMENT, v. 1.0.
+
+# Exhibit C - Cryptographic Primitives Prior Art Disclosure
+
+The HELIX cryptographic construction ("A Four-Family Sponge Construction
+with NP-Hard Multivariate Floor") is disclosed as prior art by YAKMESH,
+effective 2026-09-16. The construction combines four independent
+cryptographic families (code-based diffusion, lattice rotation, hash
+permutation, and multivariate-quadratic S-box) over GF(4)/GF(16) in a
+sponge paradigm. Full specification: docs/HLX-SPEC.md.
+
+No patent applications have been or will be filed by PeerQuanta or
+YAKMESH for the HELIX construction, its round function, its parameter
+sets, or its signature scheme. The mathematical construction is free
+for all to implement.
+
+The optimized implementations — including AVX512/GFNI SIMD acceleration,
+CUDA unified memory state pools, and NPU/IRON dot-matrix kernels — are
+proprietary to YakOS and are NOT covered by this prior art disclosure.
+These optimizations are the commercial differentiator of the YakOS
+platform.
+
+This disclosure is made defensively to establish prior art and prevent
+third-party patenting of the HELIX construction.
