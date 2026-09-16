@@ -622,15 +622,19 @@ You may add additional accurate notices of copyright ownership.
 
 # Exhibit C - Cryptographic Primitives Prior Art Disclosure
 
-The HELIX cryptographic construction ("A Four-Family Sponge Construction
+The AVOTH cryptographic construction ("A Four-Family Sponge Construction
 with NP-Hard Multivariate Floor") is disclosed as prior art by YAKMESH,
-effective 2026-09-16. The construction combines four independent
-cryptographic families (code-based diffusion, lattice rotation, hash
-permutation, and multivariate-quadratic S-box) over GF(4)/GF(16) in a
-sponge paradigm. Full specification: docs/HLX-SPEC.md.
+effective 2026-09-16. The name AVOTH derives from Hebrew עֲבֹת ("braided,
+woven") — the braided gold cords of Exodus 28:22. The construction combines
+four independent cryptographic families (code-based diffusion, lattice
+rotation, hash permutation, and multivariate-quadratic S-box) over
+GF(4)/GF(16) in a sponge paradigm. Full specification: docs/AVOTH-SPEC.md.
+
+Parameter levels: AVT-128 (fast, YakMesh), AVT-256 (standard, YakOS),
+AVT-384 (heavy, YakOS max). Signature scheme: Avoth Hourglass.
 
 No patent applications have been or will be filed by PeerQuanta or
-YAKMESH for the HELIX construction, its round function, its parameter
+YAKMESH for the AVOTH construction, its round function, its parameter
 sets, or its signature scheme. The mathematical construction is free
 for all to implement.
 
@@ -641,4 +645,4 @@ These optimizations are the commercial differentiator of the YakOS
 platform.
 
 This disclosure is made defensively to establish prior art and prevent
-third-party patenting of the HELIX construction.
+third-party patenting of the AVOTH construction.
