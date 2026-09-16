@@ -3,7 +3,7 @@
   "description": "Defensive disclosure (prior art) of the AVOTH cryptographic construction: a 1536-bit sponge over GF(4)/GF(16) composing code-based diffusion, non-commutative 24-cell quaternion rotation, stride permutation, and a multivariate-quadratic S-box. Includes parameter levels AVT-128/256/384, an optional public wormhole seal channel, honest security bounds, and empirical validation. See docs/AVOTH-SPEC.md.",
   "creators": [
     {
-      "name": "YAKMESH",
+      "name": "James Gordon Padier",
       "affiliation": "YakMesh"
     }
   ],
