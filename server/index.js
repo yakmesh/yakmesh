@@ -98,6 +98,7 @@ import { setTimeSourceConfig, getActiveConfig, getCurrentEpoch, getEpochStartTim
 import { aguwa } from '../mesh/aguwa.js';
 import { PulseSync, PULSE_CONFIG } from '../mesh/pulse-sync.js';
 import { withContribution } from '../mesh/contribution.js';
+import { ClaimLedger } from '../mesh/claim-ledger.js';
 
 // v2.0 Security imports - NAMCHE and DOKO
 import NamcheGateway, {
@@ -798,6 +799,9 @@ export class YakmeshNode {
     // 4b½. PULSE consensus-ready heartbeat chain (1 s cadence) — the
     // transport for yakcoin contribution claims via meshState
     this.pulseSync = new PulseSync({ nodeId: this.identity.identity.nodeId });
+    this.claimLedger = new ClaimLedger({ nodeId: this.identity.identity.nodeId });
+    this.claimLedger.on('fork', (ev) =>
+      log.error('PULSE fork evidence', { node: ev.nodeId.slice(0, 16), seq: ev.sequence }));
     this._startPulseHeartbeat();
 
     // 4c. Start AGUWA → GeoProof propagation delay feed
@@ -1610,6 +1614,9 @@ export class YakmeshNode {
   _handlePulseHeartbeat(data, origin) {
     if (data?.nodeId === this.identity.identity.nodeId) return;
     this.pulseSync?.receiveHeartbeat(data);
+    // Witness side of yakcoin transport — fork detection + epoch claims.
+    // Observe every beat (even unverifiable ones — they're evidence).
+    this.claimLedger?.observe(data);
   }
 
   /**
