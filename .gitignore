@@ -85,3 +85,4 @@ yakmesh.config.js
 yea.md
 *.txt
 "# YAKMESH™ LICENSE & TRADEMARK POLICY.md"
+__pycache__/

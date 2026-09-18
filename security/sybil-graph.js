@@ -378,12 +378,17 @@ export function detectSybilClusters(graph, options = {}) {
     const subgraph = graph.subgraph(component);
     const clusterCoeff = globalClusteringCoefficient(subgraph);
     const density = graphDensity(subgraph);
-    const cutRatio = edgeCutRatio(graph, component);
-    
+    // FIX (v3.5.3): edge-cut is meaningless when the component spans the
+    // WHOLE graph — no outside exists to cut to, so cut is trivially 0
+    // and every honest single-component network scored "insular" (+0.4).
+    // Only score edge-cut for proper-subset components.
+    const isWholeGraph = component.length === graph.adjacency.size;
+    const cutRatio = isWholeGraph ? 1.0 : edgeCutRatio(graph, component);
+
     // Calculate suspicion score
     let suspicionScore = 0;
     const reasons = [];
-    
+
     // High clustering = suspicious
     if (clusterCoeff >= thresholds.CLUSTER_COEFFICIENT_SYBIL) {
       suspicionScore += 0.4;
@@ -392,12 +397,12 @@ export function detectSybilClusters(graph, options = {}) {
       suspicionScore += 0.2;
       reasons.push(`Suspicious clustering: ${(clusterCoeff * 100).toFixed(1)}%`);
     }
-    
+
     // Low edge cut = insular = suspicious
-    if (cutRatio <= thresholds.EDGE_CUT_SYBIL) {
+    if (!isWholeGraph && cutRatio <= thresholds.EDGE_CUT_SYBIL) {
       suspicionScore += 0.4;
       reasons.push(`Insular cluster: ${(cutRatio * 100).toFixed(1)}% external edges`);
-    } else if (cutRatio <= thresholds.EDGE_CUT_SUSPICIOUS) {
+    } else if (!isWholeGraph && cutRatio <= thresholds.EDGE_CUT_SUSPICIOUS) {
       suspicionScore += 0.2;
       reasons.push(`Low external connectivity: ${(cutRatio * 100).toFixed(1)}%`);
     }

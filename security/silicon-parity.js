@@ -53,8 +53,8 @@ export const SILICON_CONFIG = {
   
   // Bitslice sampling (epoch verification)
   SAMPLE_OPS: 125,                 // 1/8th of full fingerprint
-  SAMPLE_SLICE_SIZE: 8,            // 32 bits (8 hex chars)
-  SAMPLE_MAX_DRIFT: 4,             // Hamming distance tolerance
+  EPOCH_DRIFT_TOLERANCE: 0.25,     // median timing drift for epoch verify
+  MAX_SPIKE_DENSITY: 0.10,         // fraction of ops >2x median allowed
   
   // Verification schedule
   FULL_VERIFY_INTERVAL: 8,         // Full fingerprint every 8 epochs
@@ -85,6 +85,8 @@ export class SiliconIdentity {
     this.aesFingerprint = data.aesFingerprint;
     this.timingHistogram = data.timingHistogram;
     this.jitterRatio = data.jitterRatio;
+    this.p50Ns = data.p50Ns;
+    this.meanNs = data.meanNs;
     this.socketCount = data.socketCount;
     this.coreCount = data.coreCount;
     this.isRealSilicon = data.isRealSilicon;
@@ -149,17 +151,23 @@ export async function collectTimingHistogram(options = {}) {
   const data = randomBytes(dataSize);
   
   const timings = [];
-  
-  for (let i = 0; i < ops; i++) {
+
+  // Warmup (v3.5.3): first ops run on a cold engine — JIT not yet
+  // compiled, caches cold, GC settling. Under Node this made early ops
+  // 10-100x slower and poisoned the fingerprint (jitter >400%). Run
+  // extra ops and discard the first ~10% before analysis.
+  const warmup = Math.ceil(ops * 0.1);
+
+  for (let i = 0; i < ops + warmup; i++) {
     const start = process.hrtime.bigint();
-    
+
     const cipher = createCipheriv('aes-256-gcm', key, iv);
     cipher.update(data);
     cipher.final();
     cipher.getAuthTag();
-    
+
     const end = process.hrtime.bigint();
-    timings.push(Number(end - start));
+    if (i >= warmup) timings.push(Number(end - start));
   }
   
   // Calculate statistics
@@ -392,24 +400,37 @@ export function analyzeJitter(timings) {
   );
   const jitterRatio = stddev / mean;
   
-  // Calculate spike ratio (p99 vs median)
+  // Calculate spike ratio (p99 vs median) — diagnostic only
   const spikeRatio = (p99 - p50) / p50;
-  
-  // VM characteristics:
-  // - High jitter ratio (>15%)
-  // - Occasional spikes (high p99/p50 ratio)
-  // - Irregular timing distribution
-  
-  const isRealSilicon = jitterRatio < SILICON_CONFIG.VM_JITTER_THRESHOLD &&
-                        spikeRatio < 0.5;
-  
+
+  // MAD (median absolute deviation) / p50 — the load-invariant baseline.
+  // Real silicon under NPU/scheduler load has SPARSE outliers (MAD ~0.5%);
+  // a VM has STRUCTURAL per-op jitter (MAD stays high). stddev/mean can't
+  // tell them apart — one descheduling burst pushed it past the VM
+  // threshold, which flagged honest loaded nodes as VMs.
+  const devs = sorted.map(t => Math.abs(t - p50)).sort((a, b) => a - b);
+  const mad = devs[Math.floor(devs.length / 2)];
+  const madRatio = mad / p50;
+
+  // Fraction of ops >2x median — loaded host ~0, VM/emulation elevated.
+  const spikeDensity = timings.filter(t => t > 2 * p50).length / timings.length;
+
+  // VM characteristics (MAD + density, not stddev/mean):
+  // - High structural jitter (MAD >15%)
+  // - Dense spikes (>10% of ops >2x median)
+
+  const isRealSilicon = madRatio < SILICON_CONFIG.VM_JITTER_THRESHOLD &&
+                        spikeDensity < SILICON_CONFIG.MAX_SPIKE_DENSITY;
+
   const confidence = isRealSilicon
-    ? Math.max(0, 1 - (jitterRatio / SILICON_CONFIG.VM_JITTER_THRESHOLD))
-    : Math.max(0, 1 - (SILICON_CONFIG.VM_JITTER_THRESHOLD / jitterRatio));
-  
+    ? Math.max(0, 1 - (madRatio / SILICON_CONFIG.VM_JITTER_THRESHOLD))
+    : Math.max(0, 1 - (SILICON_CONFIG.VM_JITTER_THRESHOLD / madRatio));
+
   return {
     jitterRatio,
     spikeRatio,
+    madRatio,
+    spikeDensity,
     mean,
     stddev,
     p1,
@@ -470,6 +491,8 @@ export class SiliconParityManager {
       aesFingerprint,
       timingHistogram: histogramData.histogram,
       jitterRatio: jitterAnalysis.jitterRatio,
+      p50Ns: jitterAnalysis.p50,
+      meanNs: jitterAnalysis.mean,
       socketCount: topology.socketCount,
       coreCount: topology.coreCount,
       isRealSilicon: jitterAnalysis.isRealSilicon,
@@ -519,37 +542,38 @@ export class SiliconParityManager {
     if (!identity) {
       throw new Error(`No identity found for ${dokoId}`);
     }
-    
+
     // Collect partial histogram (1/8th of full)
     const partialData = await collectTimingHistogram({
       ops: SILICON_CONFIG.SAMPLE_OPS,
     });
-    
-    const partialFingerprint = createFingerprint(partialData.histogram);
-    
-    // Pick random slice position
-    const sliceIndex = Math.floor(Math.random() * (64 - SILICON_CONFIG.SAMPLE_SLICE_SIZE));
-    
-    // Compare slices
-    const storedSlice = identity.aesFingerprint.slice(sliceIndex, sliceIndex + SILICON_CONFIG.SAMPLE_SLICE_SIZE);
-    const currentSlice = partialFingerprint.slice(sliceIndex, sliceIndex + SILICON_CONFIG.SAMPLE_SLICE_SIZE);
-    
-    // Calculate Hamming distance
-    const distance = this.hammingDistance(storedSlice, currentSlice);
-    const match = distance <= SILICON_CONFIG.SAMPLE_MAX_DRIFT;
-    
+
+    // FIX (v3.5.3): this used to compare random SLICES of the stored vs
+    // fresh SHA3 fingerprint hex. Cryptographic avalanche makes that
+    // meaningless — ANY histogram drift scrambles all 64 hex chars
+    // uniformly, so the Hamming "distance" was pure noise and verified
+    // nothing physical (identical silicon would score ~random).
+    // Now mirrors fullVerify: median timing drift + jitter class.
+    // Median (not mean) — sparse scheduler spikes shift the mean far
+    // more than the p50, which only moves if half the ops change.
+    const jitterAnalysis = analyzeJitter(partialData.timings);
+    const drift = Math.abs(jitterAnalysis.p50 - identity.p50Ns) / identity.p50Ns;
+    const sameClass = jitterAnalysis.isRealSilicon === identity.isRealSilicon;
+    const match = drift <= SILICON_CONFIG.EPOCH_DRIFT_TOLERANCE && sameClass;
+
     if (match) {
       identity.lastVerified = Date.now();
       identity.verificationCount++;
     }
-    
+
     return {
       match,
-      distance,
-      threshold: SILICON_CONFIG.SAMPLE_MAX_DRIFT,
-      sliceIndex,
-      storedSlice,
-      currentSlice,
+      drift,
+      threshold: SILICON_CONFIG.EPOCH_DRIFT_TOLERANCE,
+      p50: jitterAnalysis.p50,
+      storedP50: identity.p50Ns,
+      sameClass,
+      jitterAnalysis,
     };
   }
   

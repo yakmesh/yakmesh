@@ -2,6 +2,34 @@
 
 All notable changes to YAKMESH will be documented in this file.
 
+## [3.5.3] - 2026-09-19
+
+### 🐛 Attestation Correctness — Timing & Graph Analysis Fixes
+
+*Theme: "Measure the physics, not the hash."*
+
+- **silicon-parity `bitsliceVerify` rewritten** — the epoch check compared
+  random slices of stored vs fresh SHA3 fingerprint hex; avalanche makes
+  every hex char change on any drift, so the Hamming "distance" was noise
+  and verified nothing physical. Now compares median timing drift +
+  jitter class (same approach as `fullVerify` and the Rust port).
+- **VM detection is load-invariant** — `isRealSilicon` now uses MAD/p50
+  + spike density instead of stddev/mean. Under real NPU/scheduler load
+  stddev/mean hits 15%+ on sparse spikes and flagged honest loaded nodes
+  as VMs; MAD/p50 holds ~0.5% on real silicon.
+- **Timing warmup discard** — first ~10% of ops dropped (JIT/GC cold-start
+  poisoned fingerprints: 400%+ apparent jitter on first collect).
+- **`SiliconIdentity` stores `p50Ns`/`meanNs`** — epoch verification
+  baselines.
+- **sybil-graph whole-graph edge-cut fixed** — a component spanning the
+  entire graph has no outside to cut TO, so cut was trivially 0 and every
+  single-component network scored "insular" (+0.4 false suspicion).
+  Edge-cut now only scores proper-subset components.
+
+All fixes ported from the verified yakcoin Rust port (`yakcoin-crypto`,
+`yakcoin-consensus`) where the same bugs were found and proven under
+live NPU load.
+
 ## [3.5.0] - 2026-05-29
 
 ### 🛡️ Security Hardening — All Critical Audit Findings Resolved

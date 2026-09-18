@@ -417,9 +417,9 @@ describe('Silicon Parity', () => {
       const result = await manager.bitsliceVerify('doko:node1');
       
       expect(result).toHaveProperty('match');
-      expect(result).toHaveProperty('distance');
+      expect(result).toHaveProperty('drift');
       expect(result).toHaveProperty('threshold');
-      expect(result.threshold).toBe(SILICON_CONFIG.SAMPLE_MAX_DRIFT);
+      expect(result.threshold).toBe(SILICON_CONFIG.EPOCH_DRIFT_TOLERANCE);
     });
     
     it('should perform full verification', async () => {
