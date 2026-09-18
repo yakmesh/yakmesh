@@ -1,7 +1,7 @@
 <div align="center">
   <img src="https://yakmesh.dev/assets/yakmesh-logo2.png" alt="YAKMESH" width="200">
 
-  <h1>🏔️ YAKMESH™ v3.3.0 — The Hardening Release</h1>
+  <h1>🏔️ YAKMESH™ v3.5.0 — The Fortress Release</h1>
 
   <p><strong>Yielding Atomic Kernel Modular Encryption Secured Hub</strong></p>
 
@@ -10,7 +10,7 @@
     <a href="https://nodejs.org"><img src="https://img.shields.io/badge/Node.js-24+-green.svg" alt="Node.js"></a>
     <a href="https://csrc.nist.gov/projects/post-quantum-cryptography"><img src="https://img.shields.io/badge/Crypto-Post--Quantum-blue.svg" alt="Post-Quantum"></a>
     <a href="https://www.npmjs.com/package/yakmesh"><img src="https://img.shields.io/npm/v/yakmesh.svg" alt="npm version"></a>
-    <img src="https://img.shields.io/badge/version-3.3.0-purple.svg" alt="v3.3.0">
+    <img src="https://img.shields.io/badge/version-3.5.0-purple.svg" alt="v3.5.0">
     <img src="https://img.shields.io/badge/Protocol_Layers-30-orange.svg" alt="30-Layer Stack">
   </p>
 </div>
@@ -83,6 +83,14 @@ await node.start();
 - ⚙️ **Worker Thread Batch Kuramoto** — e-weighted phase coupling offloaded to Worker beyond capacity threshold
 - 📐 **48 Spec Invariants** — 7-category structural verification (A–G) in the Validation Oracle
 - 📊 **Dynamic Capacity** — `floor(64 × (log₂(threads+1) + log₂(totalTops+1)×0.5)) × networkMul × timeMul`
+
+### Fortress Hardening (v3.5)
+
+- 🚪 **Path traversal closed** — resolved-path containment + strict hash validation in embedded docs and content store
+- 🔑 **Handshake proof-of-possession** — HELLO/WELCOME signatures bind nodeId + Tribhuj key; 5-minute replay window
+- 🧷 **Peer ratchet-key pinning** — rotation only via `_tribhujCert` signed by the pinned identity key; unknown keys fail closed
+- 🤐 **Mnemonic export sealed** — password-protected export returns only the AES-256-GCM blob
+- 🧮 **YPC-27 v2.0 / YPC-27²** — verified irreducible F_{3²⁷} field arithmetic + 27×27 matrix-twist checksum
 
 > See [yakmesh.dev](https://yakmesh.dev) for the complete 30-layer protocol documentation
 
