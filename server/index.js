@@ -96,6 +96,8 @@ import {
 } from '../oracle/time-source.js';
 import { setTimeSourceConfig, getActiveConfig, getCurrentEpoch, getEpochStartTime } from '../oracle/phase-epoch.js';
 import { aguwa } from '../mesh/aguwa.js';
+import { PulseSync, PULSE_CONFIG } from '../mesh/pulse-sync.js';
+import { withContribution } from '../mesh/contribution.js';
 
 // v2.0 Security imports - NAMCHE and DOKO
 import NamcheGateway, {
@@ -366,6 +368,7 @@ export class YakmeshNode {
     this.mesh = null;
     this.replication = null;
     this.gossip = null;
+    this.pulseSync = null;
     this.adapter = null;
     this.http = null;
     this.boundHttpPort = null;  // Actual bound port (may differ if fallback used)
@@ -761,6 +764,11 @@ export class YakmeshNode {
         this._handleTimeHeartbeat(data, origin);
       }
 
+      // Handle pulse heartbeats (consensus-ready chain + yakcoin claims)
+      if (topic === 'pulse:heartbeat') {
+        this._handlePulseHeartbeat(data, origin);
+      }
+
       // Handle C2C server heartbeats (Lighthouse directory)
       if (topic === 'server:heartbeat') {
         this.serverDirectory?.handleHeartbeat(data, origin);
@@ -786,6 +794,11 @@ export class YakmeshNode {
 
     // 4b. Start periodic time heartbeat gossip broadcast
     this._startTimeHeartbeat();
+
+    // 4b½. PULSE consensus-ready heartbeat chain (1 s cadence) — the
+    // transport for yakcoin contribution claims via meshState
+    this.pulseSync = new PulseSync({ nodeId: this.identity.identity.nodeId });
+    this._startPulseHeartbeat();
 
     // 4c. Start AGUWA → GeoProof propagation delay feed
     this._startAguwaGeoFeed();
@@ -1283,6 +1296,7 @@ export class YakmeshNode {
     if (this._entropyCheckTimer) clearInterval(this._entropyCheckTimer);
     if (this._peerAssessTimer) clearInterval(this._peerAssessTimer);
     if (this._timeHeartbeatInterval) clearInterval(this._timeHeartbeatInterval);
+    if (this._pulseHeartbeatInterval) clearInterval(this._pulseHeartbeatInterval);
     if (this._messageCountInterval) clearInterval(this._messageCountInterval);
     if (this._relayExpiryInterval) clearInterval(this._relayExpiryInterval);
     await accel.scheduler.shutdown();  // Drain compute scheduler queues
@@ -1562,6 +1576,40 @@ export class YakmeshNode {
     this._timeHeartbeatInterval = setInterval(broadcast, HEARTBEAT_INTERVAL);
 
     log.info('⏰ MANI time heartbeat gossip started (every 30 s)');
+  }
+
+  /**
+   * Start the PULSE heartbeat emit loop — 1 s cadence per PULSE_CONFIG.
+   * Each heartbeat's meshState carries the yakcoin contribution claim
+   * (wormhole-sealed nodeId+epoch from pq-bridge) when the node is
+   * attested; unattested nodes emit heartbeats without the field.
+   */
+  _startPulseHeartbeat() {
+    const emit = async () => {
+      if (!this.gossip || !this.pulseSync) return;
+      try {
+        const meshState = await withContribution({});
+        const heartbeat = this.pulseSync.createHeartbeat(meshState);
+        this.gossip.spreadRumor('pulse:heartbeat', heartbeat);
+      } catch (err) {
+        log.warn('pulse heartbeat emit failed', { error: err.message });
+      }
+    };
+
+    // First beat after a short delay (let gossip warm up), then 1 s cadence
+    setTimeout(emit, 3_000);
+    this._pulseHeartbeatInterval = setInterval(emit, PULSE_CONFIG.heartbeatIntervalMs);
+
+    log.info('💓 PULSE heartbeat chain started (every 1 s, yakcoin claims in meshState)');
+  }
+
+  /**
+   * Handle an incoming pulse:heartbeat rumor — feeds HeartbeatChain
+   * health monitoring and AGUWA's Kuramoto observation.
+   */
+  _handlePulseHeartbeat(data, origin) {
+    if (data?.nodeId === this.identity.identity.nodeId) return;
+    this.pulseSync?.receiveHeartbeat(data);
   }
 
   /**
