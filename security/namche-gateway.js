@@ -77,11 +77,12 @@ function canonicalize(obj) {
 /**
  * DOKO (Distributed Ownership & Key Object) types
  */
-export const DOKO_TYPES = {
-  NODE_IDENTITY: 'node-identity',
-  DOMAIN_CLAIM: 'domain-claim',
-  SERVICE_BINDING: 'service-binding',
-};
+// Canonical DOKO types come from doko-identity.js — re-exported here for
+// backward compatibility with consumers that imported them from this module.
+// (A stale local enum with 'node-identity'/'domain-claim'/'service-binding'
+// previously diverged from the real DOKO schema and rejected every valid type.)
+import { DOKO_TYPES } from './doko-identity.js';
+export { DOKO_TYPES };
 
 /**
  * Verification result codes
@@ -254,8 +255,20 @@ export class NamcheGateway extends EventEmitter {
    * @returns {string} Canonicalized JSON without signature
    */
   getDokoPayload(doko) {
-    const { signature, ...rest } = doko;
-    return canonicalize(rest);
+    // Must produce byte-identical output to DOKODocument.getSignableBytes():
+    // fixed field list only — endorsements, signature, and any extra fields
+    // (nodeId, etc.) are NOT part of the signed content.
+    const canonical = {
+      version: doko.version,
+      type: doko.type,
+      dokoId: doko.dokoId,
+      publicKey: doko.publicKey,
+      created: doko.created,
+      expires: doko.expires,
+      claims: doko.claims,
+      extensions: doko.extensions,
+    };
+    return canonicalize(canonical);
   }
 
   /**
@@ -329,8 +342,10 @@ export class NamcheGateway extends EventEmitter {
       // ─────────────────────────────────────────────────────────────────────
       // GATE 7: DOMAIN PROOFS (if applicable)
       // ─────────────────────────────────────────────────────────────────────
-      if (doko.domains && doko.domains.length > 0) {
-        const domainsResult = await this.checkDomains(doko);
+      // Domain claims live in doko.claims.domains (per lookupByDomain).
+      const domainClaims = doko.claims?.domains || doko.domains;
+      if (domainClaims && domainClaims.length > 0) {
+        const domainsResult = await this.checkDomains(domainClaims);
         if (!domainsResult.valid) {
           return this.fail(
             VERIFY_RESULT.DOMAIN_VERIFICATION_FAILED,
@@ -408,7 +423,8 @@ export class NamcheGateway extends EventEmitter {
    * GATE 1: Check DOKO structure
    */
   checkStructure(doko) {
-    const required = ['version', 'type', 'nodeId', 'publicKey', 'issuedAt', 'expiresAt', 'signature'];
+    // Field names match DOKODocument: created/expires (not issuedAt/expiresAt)
+    const required = ['version', 'type', 'dokoId', 'nodeId', 'publicKey', 'created', 'expires', 'signature'];
 
     for (const field of required) {
       if (!(field in doko)) {
@@ -420,12 +436,12 @@ export class NamcheGateway extends EventEmitter {
       return { valid: false, detail: `Invalid DOKO type: ${doko.type}` };
     }
 
-    if (typeof doko.issuedAt !== 'number' || typeof doko.expiresAt !== 'number') {
+    if (typeof doko.created !== 'number' || typeof doko.expires !== 'number') {
       return { valid: false, detail: 'Timestamps must be numbers' };
     }
 
-    if (doko.expiresAt <= doko.issuedAt) {
-      return { valid: false, detail: 'expiresAt must be after issuedAt' };
+    if (doko.expires <= doko.created) {
+      return { valid: false, detail: 'expires must be after created' };
     }
 
     return { valid: true };
@@ -537,21 +553,34 @@ export class NamcheGateway extends EventEmitter {
     const now = Date.now();
     const maxSkew = this.config.maxClockSkew;
 
+    // DOKODocument uses `created`/`expires`; accept legacy `issuedAt`/`expiresAt`
+    // but fail closed when both are absent.
+    const created = doko.created ?? doko.issuedAt;
+    const expires = doko.expires ?? doko.expiresAt;
+
+    if (!Number.isFinite(created) || !Number.isFinite(expires)) {
+      return {
+        valid: false,
+        reason: VERIFY_RESULT.EXPIRED,
+        detail: 'DOKO missing temporal fields (created/expires)'
+      };
+    }
+
     // Check not issued in the future (with clock skew allowance)
-    if (doko.issuedAt > now + maxSkew) {
+    if (created > now + maxSkew) {
       return {
         valid: false,
         reason: VERIFY_RESULT.ISSUED_IN_FUTURE,
-        detail: `DOKO issued in future: ${new Date(doko.issuedAt).toISOString()}`
+        detail: `DOKO issued in future: ${new Date(created).toISOString()}`
       };
     }
 
     // Check not expired
-    if (doko.expiresAt < now) {
+    if (expires < now) {
       return {
         valid: false,
         reason: VERIFY_RESULT.EXPIRED,
-        detail: `DOKO expired at: ${new Date(doko.expiresAt).toISOString()}`
+        detail: `DOKO expired at: ${new Date(expires).toISOString()}`
       };
     }
 
@@ -588,17 +617,18 @@ export class NamcheGateway extends EventEmitter {
   /**
    * GATE 7: Check domain proofs
    */
-  async checkDomains(doko) {
+  async checkDomains(domainClaims) {
     const quorum = this.config.domainVerificationQuorum;
 
-    for (const domain of doko.domains) {
+    for (const domain of domainClaims) {
       const validProofs = await this.verifyDomainProofs(domain);
 
       if (validProofs < quorum) {
+        const domainName = domain.domain ?? domain.name;
         return {
           valid: false,
-          domain: domain.name,
-          detail: `Insufficient quorum for ${domain.name}: have ${validProofs}, need ${quorum}`
+          domain: domainName,
+          detail: `Insufficient quorum for ${domainName}: have ${validProofs}, need ${quorum}`
         };
       }
     }
@@ -677,7 +707,7 @@ export class NamcheGateway extends EventEmitter {
       try {
         // Verify the verifier's signature on the beacon hash
         const proofPayload = canonicalize({
-          domain: domainClaim.name,
+          domain: domainClaim.domain ?? domainClaim.name,
           beaconHash: proof.beaconHash,
           timestamp: proof.timestamp,
         });
@@ -711,13 +741,13 @@ export class NamcheGateway extends EventEmitter {
       const agreement = checkMathematicalAgreement(observations);
       if (agreement.isAgreed) {
         log.debug('SAKSHI: Domain proofs agree mathematically', {
-          domain: domainClaim.name,
+          domain: domainClaim.domain ?? domainClaim.name,
           proofCount: validProofs,
           confidence: agreement.confidence,
         });
       } else if (agreement.isDisagreed) {
         log.warn('SAKSHI: Domain proof disagreement — flagging for recomputation', {
-          domain: domainClaim.name,
+          domain: domainClaim.domain ?? domainClaim.name,
           reason: agreement.reason,
           action: agreement.data?.action,
         });

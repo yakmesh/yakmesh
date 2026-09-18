@@ -45,6 +45,11 @@ import {
   VERIFY_RESULT 
 } from '../namche-gateway.js';
 
+import {
+  DOKODocument,
+  DOKO_TYPES as DOKOTypes,
+} from '../doko-identity.js';
+
 import { 
   generateKeyPair, 
   signMessage, 
@@ -72,31 +77,22 @@ function canonicalize(obj) {
 }
 
 /**
- * Create a valid DOKO for testing
+ * Create a valid DOKO for testing — a real DOKODocument signed over
+ * getSignableBytes() (version/type/dokoId/publicKey/created/expires/
+ * claims/extensions). Extra fields like networkName are unsigned metadata.
  */
 function createValidDoko(keyPair, nodeId, overrides = {}) {
-  const now = Date.now();
-  
-  const doko = {
-    version: '1.0',
-    type: DOKO_TYPES.NODE_IDENTITY,
-    nodeId: nodeId,
+  const doko = new DOKODocument({
+    type: DOKOTypes.NODE,
     publicKey: keyPair.publicKey,
-    issuedAt: now,
-    expiresAt: now + 86400000, // 24 hours
-    networkName: 'yakmesh-mainnet',
-    capabilities: {
-      canVerifyDomains: true,
-      canRouteNakpak: true,
-      supportsKhata: true,
-    },
-    ...overrides,
-  };
+  });
+  doko.nodeId = nodeId;
+  doko.dokoId = DOKODocument.computeDokoId(hexToBytes(keyPair.publicKey), DOKOTypes.NODE);
+  doko.networkName = 'yakmesh-mainnet';
+  Object.assign(doko, overrides);
 
-  // Sign the DOKO
-  const payload = canonicalize(doko);
-  const signature = signMessage(payload, keyPair.secretKey);
-  doko.signature = signature;
+  // Sign the canonical signable bytes (excludes endorsements + signature)
+  doko.signature = signMessage(doko.getSignableBytes(), keyPair.secretKey);
 
   return doko;
 }
@@ -202,7 +198,7 @@ describe('NAMCHE Gateway - 7-Gate Verification', () => {
     });
 
     test('non-numeric timestamps fail structure check', async () => {
-      const doko = createValidDoko(testKeyPair, testNodeId, { issuedAt: 'not-a-number' });
+      const doko = createValidDoko(testKeyPair, testNodeId, { created: 'not-a-number' });
       
       const result = await gateway.verify(doko);
       
@@ -210,11 +206,11 @@ describe('NAMCHE Gateway - 7-Gate Verification', () => {
       assert.strictEqual(result.reason, VERIFY_RESULT.MALFORMED_STRUCTURE);
     });
 
-    test('expiresAt before issuedAt fails structure check', async () => {
+    test('expires before created fails structure check', async () => {
       const now = Date.now();
       const doko = createValidDoko(testKeyPair, testNodeId, { 
-        issuedAt: now,
-        expiresAt: now - 1000,
+        created: now,
+        expires: now - 1000,
       });
       
       const result = await gateway.verify(doko);
@@ -239,8 +235,8 @@ describe('NAMCHE Gateway - 7-Gate Verification', () => {
 
     test('tampered payload fails signature check', async () => {
       const doko = createValidDoko(testKeyPair, testNodeId);
-      // Tamper with the payload AFTER signing
-      doko.capabilities.canRouteNakpak = false;
+      // Tamper with a SIGNED field AFTER signing (claims is in signable bytes)
+      doko.claims = { canVerifyDomains: false };
       
       const result = await gateway.verify(doko);
       
@@ -252,8 +248,7 @@ describe('NAMCHE Gateway - 7-Gate Verification', () => {
       const doko = createValidDoko(testKeyPair, testNodeId);
       // Create a different signature
       const otherKeyPair = generateKeyPair();
-      const payload = canonicalize({ ...doko, signature: undefined });
-      doko.signature = signMessage(payload, otherKeyPair.secretKey);
+      doko.signature = signMessage(doko.getSignableBytes(), otherKeyPair.secretKey);
       
       const result = await gateway.verify(doko);
       
@@ -331,8 +326,8 @@ describe('NAMCHE Gateway - 7-Gate Verification', () => {
     test('expired DOKO fails', async () => {
       const past = Date.now() - 86400000; // 24 hours ago
       const doko = createValidDoko(testKeyPair, testNodeId, {
-        issuedAt: past - 86400000,
-        expiresAt: past,
+        created: past - 86400000,
+        expires: past,
       });
       
       const result = await gateway.verify(doko);
@@ -344,8 +339,8 @@ describe('NAMCHE Gateway - 7-Gate Verification', () => {
     test('DOKO issued far in future fails', async () => {
       const future = Date.now() + 3600000; // 1 hour from now (beyond clock skew)
       const doko = createValidDoko(testKeyPair, testNodeId, {
-        issuedAt: future,
-        expiresAt: future + 86400000,
+        created: future,
+        expires: future + 86400000,
       });
       
       const result = await gateway.verify(doko);
@@ -358,8 +353,8 @@ describe('NAMCHE Gateway - 7-Gate Verification', () => {
       // 30 seconds in future (within 60s tolerance)
       const slightly_future = Date.now() + 30000;
       const doko = createValidDoko(testKeyPair, testNodeId, {
-        issuedAt: slightly_future,
-        expiresAt: slightly_future + 86400000,
+        created: slightly_future,
+        expires: slightly_future + 86400000,
       });
       
       const result = await gateway.verify(doko);
@@ -398,10 +393,8 @@ describe('NAMCHE Gateway - 7-Gate Verification', () => {
     test('missing networkName is allowed (optional field)', async () => {
       const doko = createValidDoko(testKeyPair, testNodeId);
       delete doko.networkName;
-      // Re-sign without networkName
-      const { signature, ...dokoWithoutSig } = doko;
-      const payload = canonicalize(dokoWithoutSig);
-      doko.signature = signMessage(payload, testKeyPair.secretKey);
+      // Re-sign (networkName is unsigned metadata — signature unchanged)
+      doko.signature = signMessage(doko.getSignableBytes(), testKeyPair.secretKey);
       
       const result = await gateway.verify(doko);
       
@@ -540,8 +533,8 @@ describe('NAMCHE Gateway - 7-Gate Verification', () => {
     test('replay attack with expired DOKO fails', async () => {
       const past = Date.now() - 86400000;
       const doko = createValidDoko(testKeyPair, testNodeId, {
-        issuedAt: past - 86400000,
-        expiresAt: past,
+        created: past - 86400000,
+        expires: past,
       });
       
       const result = await gateway.verify(doko);
@@ -556,10 +549,8 @@ describe('NAMCHE Gateway - 7-Gate Verification', () => {
       // Attacker generates their own keypair
       const attackerKeyPair = generateKeyPair();
       
-      // Attacker tries to forge signature
-      const { signature, ...dokoWithoutSig } = doko;
-      const payload = canonicalize(dokoWithoutSig);
-      doko.signature = signMessage(payload, attackerKeyPair.secretKey);
+      // Attacker tries to forge signature over the canonical signable bytes
+      doko.signature = signMessage(doko.getSignableBytes(), attackerKeyPair.secretKey);
       
       const result = await gateway.verify(doko);
       
@@ -623,7 +614,9 @@ describe('NAMCHE Gateway - Utility Functions', () => {
     const payload = gateway.getDokoPayload(doko);
     
     assert.ok(!payload.includes('signature'));
-    assert.ok(payload.includes('nodeId'));
+    // nodeId is not part of the signed payload — Gate 3 binds it via derivation
+    assert.ok(!payload.includes('nodeId'));
     assert.ok(payload.includes('publicKey'));
+    assert.ok(payload.includes('dokoId'));
   });
 });
