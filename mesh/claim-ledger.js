@@ -81,7 +81,12 @@ export class ClaimLedger extends EventEmitter {
    * Observe a received heartbeat. Call for every pulse:heartbeat rumor.
    * @param {object} hb - serialized heartbeat (post-deserialize)
    */
-  observe(hb) {
+  /**
+   * Observe a received heartbeat. `opts.verified` — 'verified' (ML-DSA
+   * signature checks out), 'unsigned' (legacy), or 'forged' (bad sig).
+   * Unverified claims are recorded as evidence but NEVER attested.
+   */
+  observe(hb, opts = {}) {
     if (!hb || !hb.nodeId || hb.nodeId === this.nodeId) return;
 
     this._checkFork(hb);
@@ -111,6 +116,7 @@ export class ClaimLedger extends EventEmitter {
         yakmeshNodeId: hb.nodeId,
         firstSeenSeq: hb.sequence,
         witnessedAt: hb.timestamp,
+        verified: opts.verified || 'unsigned',
       });
       this.emit('claim', bucket.get(hb.nodeId));
     }

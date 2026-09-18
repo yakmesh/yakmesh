@@ -227,6 +227,11 @@ export class ManiTimeDetector extends EventEmitter {
     try {
       const ma902Host = this.options.ma902?.host || '192.168.1.30';
 
+      // Validate before shell interpolation — config is operator-trusted
+      // but a malformed host should never reach execSilent's shell (v3.5.3).
+      if (!/^[a-zA-Z0-9.\-_:]+$/.test(ma902Host)) {
+        log.warn(`MA-902 host ${JSON.stringify(ma902Host)} failed hostname validation — skipping probe.`);
+      } else {
       // Fast probe (ping/port check) before committing to a heavy monitor loop
       const isReachable = this.platform === 'win32'
         ? execSilent(`ping -n 1 -w 500 ${ma902Host}`)
@@ -267,6 +272,7 @@ export class ManiTimeDetector extends EventEmitter {
         if (this.options.verbose) {
           log.debug(`MA-902 host ${ma902Host} not found on this local network. skipping.`);
         }
+      }
       }
     } catch (err) {
       log.warn('MA-902 SNMP monitor failed to start', { error: err.message });

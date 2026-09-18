@@ -63,6 +63,7 @@
  * @copyright 2026 YAKMESH™ Contributors
  */
 
+import { randomInt } from 'node:crypto';
 import { Trit, TritArray, POSITIVE, NEUTRAL, NEGATIVE } from './tribhuj.js';
 import { digitalRoot, getFamilyOf, SSTFamily, FIBONACCI_CYCLE_24 } from './sst.js';
 import { Poly27, YPC27Checksum, N as YPC27_N, DEFAULT_SEED, bytesToTrits } from './ypc27.js';
@@ -397,9 +398,11 @@ export class TritAddress {
    * @returns {TritAddress}
    */
   static random() {
+    // crypto RNG — Math.random leaks state and makes addresses
+    // predictable (v3.5.3). Even "for testing" helpers get real entropy.
     const trits = new Int8Array(TOTAL_TRITS);
     for (let i = 0; i < TOTAL_TRITS; i++) {
-      trits[i] = Math.floor(Math.random() * 3) - 1;
+      trits[i] = randomInt(3) - 1;
     }
     return new TritAddress(trits);
   }

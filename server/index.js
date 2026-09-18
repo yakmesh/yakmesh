@@ -804,7 +804,10 @@ export class YakmeshNode {
 
     // 4b½. PULSE consensus-ready heartbeat chain (1 s cadence) — the
     // transport for yakcoin contribution claims via meshState
-    this.pulseSync = new PulseSync({ nodeId: this.identity.identity.nodeId });
+    this.pulseSync = new PulseSync({
+      nodeId: this.identity.identity.nodeId,
+      signFn: (data) => this.identity.sign(data),
+    });
     this.claimLedger = new ClaimLedger({ nodeId: this.identity.identity.nodeId });
     this.claimLedger.on('fork', (ev) =>
       log.error('PULSE fork evidence', { node: ev.nodeId.slice(0, 16), seq: ev.sequence }));
@@ -1629,8 +1632,26 @@ export class YakmeshNode {
     if (data?.nodeId === this.identity.identity.nodeId) return;
     this.pulseSync?.receiveHeartbeat(data);
     // Witness side of yakcoin transport — fork detection + epoch claims.
-    // Observe every beat (even unverifiable ones — they're evidence).
-    this.claimLedger?.observe(data);
+    // Verify the beat's ML-DSA signature before its claim can be
+    // attested: unsigned/forged beats are evidence, not attestable.
+    let verified = 'unsigned';
+    if (data?.signature) {
+      const pubKey = this._resolvePeerPublicKey(data.nodeId);
+      if (!pubKey) {
+        verified = 'unsigned'; // can't resolve key — treat as unverified
+      } else {
+        try {
+          verified = this.identity.verify(data.hash, data.signature, pubKey)
+            ? 'verified' : 'forged';
+        } catch {
+          verified = 'forged';
+        }
+      }
+      if (verified === 'forged') {
+        log.error('PULSE forged heartbeat signature', { node: data.nodeId?.slice(0, 16), seq: data.sequence });
+      }
+    }
+    this.claimLedger?.observe(data, { verified });
   }
 
   /**

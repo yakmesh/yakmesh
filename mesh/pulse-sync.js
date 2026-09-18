@@ -81,6 +81,7 @@ class Heartbeat {
     this.prevHash = options.prevHash || '0'.repeat(64);
     this.nonce = options.nonce || bytesToHex(randomBytes(8));
     this.meshState = options.meshState || {};
+    this.signature = options.signature || null; // ML-DSA-65 over this.hash
     this.hash = this._computeHash();
   }
 
@@ -122,6 +123,7 @@ class Heartbeat {
       nonce: this.nonce,
       meshState: this.meshState,
       hash: this.hash,
+      signature: this.signature,
     };
   }
 
@@ -133,6 +135,7 @@ class Heartbeat {
       prevHash: obj.prevHash,
       nonce: obj.nonce,
       meshState: obj.meshState,
+      signature: obj.signature || null,
     });
 
     if (hb.hash !== obj.hash) {
@@ -140,6 +143,20 @@ class Heartbeat {
     }
 
     return hb;
+  }
+
+  /**
+   * Verify this heartbeat's ML-DSA signature against the claimed
+   * nodeId's public key. Unsigned beats return 'unsigned' — callers
+   * decide policy (evidence vs attestation material).
+   */
+  verifySignature(publicKey, verifyFn) {
+    if (!this.signature) return 'unsigned';
+    try {
+      return verifyFn(this.hash, this.signature, publicKey) ? 'verified' : 'forged';
+    } catch {
+      return 'forged';
+    }
   }
 }
 
@@ -506,6 +523,9 @@ class PulseLeaderElection {
 class PulseSync {
   constructor(options = {}) {
     this.nodeId = options.nodeId || bytesToHex(randomBytes(16));
+    // ML-DSA signing hooks (v3.5.3): heartbeats are signed over their
+    // hash — an unsigned or forged beat is evidence, not liveness.
+    this.signFn = options.signFn || null;
     this.sequence = 0;
     this.lastHeartbeat = null;
     this.healthMonitor = new MeshHealthMonitor();
@@ -541,6 +561,7 @@ class PulseSync {
         term: this.election.currentTerm,
       },
     });
+    if (this.signFn) heartbeat.signature = this.signFn(heartbeat.hash);
 
     this.lastHeartbeat = heartbeat;
     this.stats.heartbeatsSent++;
