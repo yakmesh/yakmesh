@@ -1,6 +1,6 @@
 {
   "name": "yakmesh",
-  "version": "3.5.1",
+  "version": "3.5.2",
   "description": "YAKMESH: Yielding Atomic Kernel Modular Encryption Secured Hub - Post-quantum secure P2P mesh network for the 2026 threat landscape",
   "type": "module",
   "main": "server/index.js",
@@ -148,5 +148,33 @@
   },
   "bugs": {
     "url": "https://github.com/peerquanta/yakmesh/issues"
-  }
+  },
+  "files": [
+    "adapters",
+    "cli",
+    "content",
+    "dashboard",
+    "database",
+    "embedded-docs",
+    "gossip",
+    "identity",
+    "launcher",
+    "mesh",
+    "models",
+    "oracle",
+    "protocol",
+    "public/assets",
+    "public/dashboard",
+    "public/servers.html",
+    "security",
+    "server",
+    "types",
+    "utils",
+    "webserver",
+    "knowledge-base.js",
+    "yakmesh.config.example.js",
+    "!**/tests/**",
+    "!server/data/**",
+    "!adapters/adapter-peerquanta/**"
+  ]
 }
