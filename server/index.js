@@ -99,6 +99,7 @@ import { aguwa } from '../mesh/aguwa.js';
 import { PulseSync, PULSE_CONFIG } from '../mesh/pulse-sync.js';
 import { withContribution } from '../mesh/contribution.js';
 import { ClaimLedger } from '../mesh/claim-ledger.js';
+import { AttestationGossip } from '../mesh/attestation-gossip.js';
 
 // v2.0 Security imports - NAMCHE and DOKO
 import NamcheGateway, {
@@ -770,6 +771,11 @@ export class YakmeshNode {
         this._handlePulseHeartbeat(data, origin);
       }
 
+      // Handle claim attestations (k-of-m witness quorum)
+      if (topic === 'claim:attest') {
+        this.attestationGossip?.receive(data, origin);
+      }
+
       // Handle C2C server heartbeats (Lighthouse directory)
       if (topic === 'server:heartbeat') {
         this.serverDirectory?.handleHeartbeat(data, origin);
@@ -802,7 +808,14 @@ export class YakmeshNode {
     this.claimLedger = new ClaimLedger({ nodeId: this.identity.identity.nodeId });
     this.claimLedger.on('fork', (ev) =>
       log.error('PULSE fork evidence', { node: ev.nodeId.slice(0, 16), seq: ev.sequence }));
+    this.attestationGossip = new AttestationGossip({
+      nodeId: this.identity.identity.nodeId,
+      publicKey: this.identity.identity.publicKey,
+      sign: (data) => this.identity.sign(data),
+      claimLedger: this.claimLedger,
+    });
     this._startPulseHeartbeat();
+    this._startAttestationLoop();
 
     // 4c. Start AGUWA → GeoProof propagation delay feed
     this._startAguwaGeoFeed();
@@ -1301,6 +1314,7 @@ export class YakmeshNode {
     if (this._peerAssessTimer) clearInterval(this._peerAssessTimer);
     if (this._timeHeartbeatInterval) clearInterval(this._timeHeartbeatInterval);
     if (this._pulseHeartbeatInterval) clearInterval(this._pulseHeartbeatInterval);
+    if (this._attestationInterval) clearInterval(this._attestationInterval);
     if (this._messageCountInterval) clearInterval(this._messageCountInterval);
     if (this._relayExpiryInterval) clearInterval(this._relayExpiryInterval);
     await accel.scheduler.shutdown();  // Drain compute scheduler queues
@@ -1617,6 +1631,26 @@ export class YakmeshNode {
     // Witness side of yakcoin transport — fork detection + epoch claims.
     // Observe every beat (even unverifiable ones — they're evidence).
     this.claimLedger?.observe(data);
+  }
+
+  /**
+   * Attestation emit loop — at each 30s epoch close, sign and gossip a
+   * batch attesting every claim witnessed in the just-closed epoch.
+   * Attestations are witness statements, never claim re-broadcasts.
+   */
+  _startAttestationLoop() {
+    let lastClosed = -1;
+    this._attestationInterval = setInterval(() => {
+      const closedEpoch = Math.floor(Date.now() / 30000) - 1;
+      if (closedEpoch <= lastClosed || !this.attestationGossip) return;
+      lastClosed = closedEpoch;
+      const batch = this.attestationGossip.buildBatch(closedEpoch);
+      if (batch) {
+        this.gossip.spreadRumor('claim:attest', batch);
+        log.debug('claim attestations gossiped', { epoch: closedEpoch, items: batch.items.length });
+      }
+    }, 30_000);
+    log.info('🖊️ Attestation gossip loop started (epoch-close batches)');
   }
 
   /**
