@@ -306,6 +306,7 @@ const API = {
   ReleaseEnv: 92, ReleaseStatus: 93, ReleaseMemoryInfo: 94,
   ReleaseSession: 95, ReleaseValue: 96, ReleaseSessionOptions: 100,
   SessionOptionsAppendExecutionProvider: 216,
+  AppendEpVitis: 276, // dedicated VitisAI append — exists since API v23
 };
 // Prototypes are registered lazily — koffi may be absent (js-cpu tier).
 const P = {};
@@ -324,6 +325,9 @@ function initProtos() {
   P.GetErrorMessage = koffi.proto('const char *OrtGetErrorMessage(void *st)');
   P.ReleaseObj = koffi.proto('void OrtReleaseObj(void *o)');
   P.SetLogSev = koffi.proto('void *OrtSetLogSev(void *so, int32 sev)');
+  P.GetApi = koffi.proto('void *OrtGetApiFn(uint32 v)');
+  P.GetVersionStr = koffi.proto('void *OrtVersionStrFn(void)');
+  P.AppendEpVitis = koffi.proto('void *OrtAppendEpVitisFn(void *so, void *keys, void *vals, uint64 n)');
 }
 
 class Ort {
@@ -333,10 +337,13 @@ class Ort {
     const getApiBase = this.lib.func('void *OrtGetApiBase(void)');
     const base = getApiBase();
     const [getApi, getVer] = koffi.decode(base, 'void *', 2);
-    this.api = koffi.decode(
-      koffi.call(getApi, koffi.proto('void *F(uint32 v)'), ORT_API_VERSION),
-      'void *', API_SIZE);
-    try { this.version = readCStr(koffi.call(getVer, koffi.proto('void *OrtVersionStr(void)'))); } catch {}
+    // OrtApi is append-only — request v24, fall back to v23 (RyzenAI's
+    // bundled onnxruntime.dll is 1.23.2; all indices we use are stable).
+    let apiPtr = koffi.call(getApi, P.GetApi, ORT_API_VERSION);
+    if (!apiPtr) apiPtr = koffi.call(getApi, P.GetApi, 23);
+    if (!apiPtr) throw new Error('OrtGetApi returned null for API v24 and v23');
+    this.api = koffi.decode(apiPtr, 'void *', API_SIZE);
+    try { this.version = readCStr(koffi.call(getVer, P.GetVersionStr)); } catch {}
     const envCell = cell();
     this.chk(koffi.call(this.api[API.CreateEnv], P.CreateEnv, 3, 'yakmesh-npu-prover', envCell), 'CreateEnv');
     this.env = cellVal(envCell);
@@ -367,9 +374,16 @@ class Ort {
       if (providerName) {
         const keys = ptrTable(Object.keys(providerOpts).map(cstr));
         const vals = ptrTable(Object.values(providerOpts).map(cstr));
-        this.chk(koffi.call(this.api[API.SessionOptionsAppendExecutionProvider], P.AppendEp,
-          so, providerName, keys, vals, Object.keys(providerOpts).length),
-          `AppendEP ${providerName} ${JSON.stringify(providerOpts)}`);
+        let st = koffi.call(this.api[API.SessionOptionsAppendExecutionProvider], P.AppendEp,
+          so, providerName, keys, vals, Object.keys(providerOpts).length);
+        // Older ORT builds (e.g. RyzenAI's 1.23.2) may not register 'VitisAI'
+        // under the generic name — fall back to the dedicated entry point.
+        if (st && providerName === 'VitisAI' && this.api[API.AppendEpVitis]) {
+          koffi.call(this.api[API.ReleaseStatus], P.ReleaseObj, st);
+          st = koffi.call(this.api[API.AppendEpVitis], P.AppendEpVitis,
+            so, keys, vals, Object.keys(providerOpts).length);
+        }
+        this.chk(st, `AppendEP ${providerName} ${JSON.stringify(providerOpts)}`);
       }
       const sCell = cell();
       this.chk(koffi.call(this.api[API.CreateSessionFromArray], P.CreateSessionFromArray,
