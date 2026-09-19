@@ -32,7 +32,16 @@ import { execSync } from 'node:child_process';
 import { existsSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import koffi from 'koffi';
+
+// koffi is dynamic — if the native module can't load, we still serve
+// honest js-cpu proofs rather than dying at import time.
+let koffi = null;
+let koffiError = null;
+try {
+  koffi = (await import('koffi')).default;
+} catch (e) { koffiError = String(e.message || e); }
+const log = (m) => console.log(`[npu-prover] ${m}`);
+log(`init: koffi ${koffi ? 'loaded' : 'FAILED: ' + koffiError}`);
 
 // Embedded 64x64 MatMul models — fp16 first (matches the XRT bf16 tier),
 // fp32 as a fallback for drivers that reject fp16 on GENERIC_ML.
@@ -192,6 +201,7 @@ const IID = {
 
 function enumDxCore() {
   const adapters = [];
+  if (!koffi) return adapters;
   let dx;
   try { dx = koffi.load('dxcore.dll'); } catch { return adapters; }
   try {
@@ -293,22 +303,24 @@ const API = {
   ReleaseSession: 95, ReleaseValue: 96, ReleaseSessionOptions: 100,
   SessionOptionsAppendExecutionProvider: 216,
 };
-const P = {
-  CreateEnv: koffi.proto('void *OrtCreateEnv(int32 level, const char *id, void **out)'),
-  CreateSessionOptions: koffi.proto('void *OrtCreateSessionOptions(void **out)'),
-  AppendEp: koffi.proto('void *OrtAppendEp(void *so, const char *name, void *keys, void *vals, uint64 n)'),
-  CreateSessionFromArray: koffi.proto('void *OrtCreateSessionFromArray(void *env, const void *data, uint64 len, void *so, void **out)'),
-  Run: koffi.proto('void *OrtRun(void *s, void *ro, void *in_names, void *inputs, uint64 in_cnt, void *out_names, uint64 out_cnt, void *outputs)'),
-  GetIOCount: koffi.proto('void *OrtGetIOCount(void *s, uint64 *out)'),
-  GetIOName: koffi.proto('void *OrtGetIOName(void *s, uint64 i, void *alloc, void **out)'),
-  CreateCpuMemoryInfo: koffi.proto('void *OrtCreateCpuMemoryInfo(int32 mt, int32 at, void **out)'),
-  CreateTensor: koffi.proto('void *OrtCreateTensor(void *mi, void *data, uint64 len, void *shape, uint64 dims, int32 type, void **out)'),
-  GetTensorData: koffi.proto('void *OrtGetTensorData(void *v, void **out)'),
-  GetAlloc: koffi.proto('void *OrtGetAlloc(void **out)'),
-  GetErrorMessage: koffi.proto('const char *OrtGetErrorMessage(void *st)'),
-  ReleaseObj: koffi.proto('void OrtReleaseObj(void *o)'),
-  SetLogSev: koffi.proto('void *OrtSetLogSev(void *so, int32 sev)'),
-};
+// Prototypes are registered lazily — koffi may be absent (js-cpu tier).
+const P = {};
+function initProtos() {
+  P.CreateEnv = koffi.proto('void *OrtCreateEnv(int32 level, const char *id, void **out)');
+  P.CreateSessionOptions = koffi.proto('void *OrtCreateSessionOptions(void **out)');
+  P.AppendEp = koffi.proto('void *OrtAppendEp(void *so, const char *name, void *keys, void *vals, uint64 n)');
+  P.CreateSessionFromArray = koffi.proto('void *OrtCreateSessionFromArray(void *env, const void *data, uint64 len, void *so, void **out)');
+  P.Run = koffi.proto('void *OrtRun(void *s, void *ro, void *in_names, void *inputs, uint64 in_cnt, void *out_names, uint64 out_cnt, void *outputs)');
+  P.GetIOCount = koffi.proto('void *OrtGetIOCount(void *s, uint64 *out)');
+  P.GetIOName = koffi.proto('void *OrtGetIOName(void *s, uint64 i, void *alloc, void **out)');
+  P.CreateCpuMemoryInfo = koffi.proto('void *OrtCreateCpuMemoryInfo(int32 mt, int32 at, void **out)');
+  P.CreateTensor = koffi.proto('void *OrtCreateTensor(void *mi, void *data, uint64 len, void *shape, uint64 dims, int32 type, void **out)');
+  P.GetTensorData = koffi.proto('void *OrtGetTensorData(void *v, void **out)');
+  P.GetAlloc = koffi.proto('void *OrtGetAlloc(void **out)');
+  P.GetErrorMessage = koffi.proto('const char *OrtGetErrorMessage(void *st)');
+  P.ReleaseObj = koffi.proto('void OrtReleaseObj(void *o)');
+  P.SetLogSev = koffi.proto('void *OrtSetLogSev(void *so, int32 sev)');
+}
 
 class Ort {
   constructor(dllPath) {
@@ -504,6 +516,8 @@ function ortFor(dll) {
 }
 
 async function initBackend() {
+  if (!koffi) { backend = 'js-cpu'; ortError = `koffi unavailable: ${koffiError}`; return; }
+  initProtos();
   const dll = findOrtDll();
   const errs = [];
   if (!dll) errs.push('onnxruntime.dll not found (searched ORT_DLL, tools/npu-prover, node_modules)');
@@ -537,6 +551,7 @@ async function initBackend() {
   for (const [label, d, ep, opts, model, otype] of attempts) {
     const dllPath = d || dll;
     if (!dllPath) continue;
+    log(`init: trying ${label} (dll=${dllPath} ep=${ep || 'cpu'} type=${otype})`);
     try {
       const o = ortFor(dllPath);
       sess = o.createSession(model, ep, opts, otype);
@@ -558,9 +573,12 @@ async function initBackend() {
 
 // ─── proof ───────────────────────────────────────────────────────────────────
 
+log('init: probing pnp');
 const device = probeDevice();
+log('init: enumerating dxcore');
 const dxAdapters = enumDxCore();
 const npuAdapter = dxAdapters.find((a) => a.is_npu) || null;
+log(`init: probes done (${dxAdapters.length} dxcore adapters)`);
 
 async function runProof(n, nonce) {
   const rng = xorshift64star(seedFromNonce(nonce));
@@ -664,18 +682,20 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
-initBackend().then(() => {
+// A failed init still serves honest js-cpu proofs — never die before listen.
+initBackend().catch((e) => {
+  ortError = `init: ${e.message || e}`;
+  backend = 'js-cpu';
+  console.error('[npu-prover] init failed (js-cpu fallback):', e);
+}).then(() => {
   server.listen(PORT, '127.0.0.1', () => {
-    console.log(`[npu-prover] backend=${backend}${onnxType === 1 ? ' (fp32)' : ''} — listening on http://127.0.0.1:${PORT}/npu/proof`);
-    console.log(`[npu-prover] ort=${ort?.version || 'unavailable'}${ortError ? ' err=' + ortError : ''}`);
-    console.log(`[npu-prover] pnp: ${device.name || 'unidentified'} (${device.pnp || 'no pnp id'})`);
+    log(`backend=${backend}${onnxType === 1 ? ' (fp32)' : ''} — listening on http://127.0.0.1:${PORT}/npu/proof`);
+    log(`ort=${ort?.version || 'unavailable'}${ortError ? ' err=' + ortError : ''}`);
+    log(`pnp: ${device.name || 'unidentified'} (${device.pnp || 'no pnp id'})`);
     if (npuAdapter) {
-      console.log(`[npu-prover] npu adapter: ${npuAdapter.desc} luid=${npuAdapter.luid} drv=${npuAdapter.driver_version}`);
+      log(`npu adapter: ${npuAdapter.desc} luid=${npuAdapter.luid} drv=${npuAdapter.driver_version}`);
     } else {
-      console.log(`[npu-prover] npu adapter: none in DXCore list (${dxAdapters.length} adapters)`);
+      log(`npu adapter: none in DXCore list (${dxAdapters.length} adapters)`);
     }
   });
-}).catch(e => {
-  console.error('[npu-prover] init failed:', e);
-  process.exit(1);
 });
