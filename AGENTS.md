@@ -12,5 +12,13 @@ YakMesh is the networking and identity layer for the YakMesh suite. This is the 
 - This is the ONLY sub-project under `C:\Users\ABL\Desktop\Yakmesh\` that has a GitHub remote
 - All other Yakmesh sub-projects are proprietary and local-only
 
+## CONFIDENTIAL/ — The ONLY Place Research Lives (HARD RULE)
+- ALL research documents, specs, audit reports, experiments, designs, and internal
+  artifacts MUST be created inside `CONFIDENTIAL/` at the repo root — never anywhere else.
+- `CONFIDENTIAL/` is gitignored. Its contents must NEVER be committed, published,
+  pushed to any remote, or copied into tracked paths.
+- This repo is PUBLIC. Treat every tracked path as published to the world.
+- If `CONFIDENTIAL/` does not exist when you need to produce research, create it.
+
 ## Full Details
 YakForge file I/O, model manager, and v2.1.0 feature details are in **mind.md**.

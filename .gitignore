@@ -87,51 +87,6 @@ yea.md
 "# YAKMESH™ LICENSE & TRADEMARK POLICY.md"
 __pycache__/
 
-# Internal agent working docs — not for public repo
-mind.md
-grokreport.md
-
-# Research & internal docs — keep OUT of the public repo
-docs/DNA-SPIRAL-*.md
-
-# Research & internal docs — never public
-mind.md
-grokreport.md
-RELEASE_CHECKLIST.md
-SECURITY_AUDIT.md
-audit-trisula.js
-test-identity-audit.mjs
-reference/cpp/
-docs/YAK-PRISM-*.md
-docs/DNA-SPIRAL-*.md
-docs/AVOTH-SPEC.md
-docs/HLX-SPEC.md
-docs/NAMCHE-SPEC.md
-docs/SST-INTEGRATION.md
-docs/CRYPTO-AGILITY.md
-docs/MTLS-RESEARCH.md
-docs/TERNARY-AUDIT-REPORT.md
-docs/SECURITY-AUDIT-REPORT.md
-docs/PEERQUANTA-YAKMESH-INTEGRATION.md
-docs/PRECISION-DISCLOSURE.md
-docs/ROADMAP-*.md
-docs/business/
-docs/sandboxing.md
-docs/time-server-deployment.md
-docs/yak-timeserver-design.md
-oracle/dna-spiral-*.py
-website/docs/AVOTH-SPEC.md
-website/docs/HLX-SPEC.md
-website/docs/NAMCHE-SPEC.md
-website/docs/SST-INTEGRATION.md
-website/docs/CRYPTO-AGILITY.md
-website/docs/MTLS-RESEARCH.md
-website/docs/TERNARY-AUDIT-REPORT.md
-website/docs/SECURITY-AUDIT-REPORT.md
-website/docs/PEERQUANTA-YAKMESH-INTEGRATION.md
-website/docs/PRECISION-DISCLOSURE.md
-website/docs/ROADMAP-*.md
-website/docs/business/
-website/docs/sandboxing.md
-website/docs/time-server-deployment.md
-website/docs/yak-timeserver-design.md
+# CONFIDENTIAL — ALL research, specs, audits, and internal artifacts
+# live ONLY in this directory. NEVER commit it. See AGENTS.md.
+CONFIDENTIAL/
