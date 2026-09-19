@@ -101,6 +101,56 @@ async function getJson(path) {
   return res.json();
 }
 
+/** Bridge signing key — fetched once, the keystore identity doesn't rotate. */
+let bridgeSigningKey = null;
+
+async function getBridgeSigningKey() {
+  if (!bridgeSigningKey) {
+    const { signing_key } = await getJson('/public-keys');
+    bridgeSigningKey = { keyId: signing_key.key_id, publicKey: signing_key.public_key };
+  }
+  return bridgeSigningKey;
+}
+
+/**
+ * Canonical serialization of an execution-proof claim — the exact bytes
+ * the ML-DSA-65 signature covers. Pipe-separated (device IDs contain
+ * colons, so the YAKMESH: referral convention can't be reused). A verifier
+ * must reconstruct this string from the proof fields and compare before
+ * verifying — the signature binds the fields, not the string alone.
+ */
+export function npuProofClaim(epoch, nodeId, p) {
+  const t = p.timingNs || {};
+  return [
+    'YAKMESH|NPU-PROOF|v1', epoch, nodeId,
+    p.device ?? '', p.kernel ?? '', p.nonce ?? '',
+    p.n ?? '', p.consistent ? 1 : 0,
+    p.digests?.input ?? '', p.digests?.output ?? '',
+    t.p50 ?? '', t.p95 ?? '', t.mean ?? '', t.min ?? '', t.max ?? '', t.wall ?? '',
+  ].join('|');
+}
+
+/**
+ * Turn an execution proof into a signed attestation: canonical claim →
+ * pq-bridge /sign (yakos-keystore ML-DSA-65). The FNV digests stay
+ * checksum-grade evidence — the signature is what binds them to this
+ * node's hardware identity. Throws on bridge failure; callers decide
+ * whether an unsigned proof still rides.
+ */
+async function signNpuProof(epoch, nodeId, proof) {
+  const claim = npuProofClaim(epoch, nodeId, proof);
+  const key = await getBridgeSigningKey();
+  const res = await fetch(`${BRIDGE_URL}/sign`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message: claim }),
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  });
+  if (!res.ok) throw new Error(`bridge /sign: ${res.status}`);
+  const { signature, algorithm } = await res.json();
+  return { claim, algorithm, keyId: key.keyId, publicKey: key.publicKey, signature };
+}
+
 /**
  * Current MANI-aligned epoch (30s — matches yakcoind EPOCH_SECS and
  * pq-bridge's default).
@@ -127,6 +177,12 @@ export async function contributionMeshState(nowMs) {
     // Execution proof is fetched once per epoch — the provider binds the
     // nonce to this epoch so the digest can't be replayed across epochs.
     const npuProof = proofProvider ? await proofProvider(epoch).catch(() => null) : null;
+    if (npuProof) {
+      // Attestation failure omits the signature only — the unsigned proof
+      // is still real execution evidence, just unattributed.
+      const attestation = await signNpuProof(epoch, node_id, npuProof).catch(() => null);
+      if (attestation) npuProof.attestation = attestation;
+    }
     const payload = {
       version: 1,
       epoch,

@@ -33,6 +33,7 @@ import {
   setTimeTrustProvider,
   setProofProvider,
   currentEpoch,
+  npuProofClaim,
 } from '../contribution.js';
 
 const SEAL_OK = {
@@ -45,8 +46,24 @@ const SEAL_OK = {
   weight_1to1: 0.125,
 };
 
-function stubBridge(body = SEAL_OK) {
-  return vi.fn(async () => ({ ok: true, json: async () => body }));
+const KEYS_OK = {
+  signing_key: { key_id: 'k'.repeat(32), public_key: 'pkB64', algorithm: 'ML-DSA-65' },
+};
+
+const SIGN_OK = { signature: 'sigB64', algorithm: 'ML-DSA-65', key_id: 'k'.repeat(32) };
+
+function stubBridge(body = SEAL_OK, { signFails = false } = {}) {
+  return vi.fn(async (url) => {
+    if (String(url).includes('/public-keys')) {
+      return { ok: true, json: async () => KEYS_OK };
+    }
+    if (String(url).includes('/sign')) {
+      return signFails
+        ? { ok: false, status: 500, json: async () => ({}) }
+        : { ok: true, json: async () => SIGN_OK };
+    }
+    return { ok: true, json: async () => body };
+  });
 }
 
 afterEach(() => {
@@ -117,7 +134,37 @@ describe('contributionMeshState', () => {
     };
     setProofProvider(async () => proof);
     const c = await contributionMeshState(1_000_180_000_000);
-    expect(c.npuProof).toEqual(proof);
+    expect(c.npuProof).toMatchObject(proof);
+    expect(c.npuProof.attestation).toMatchObject({
+      algorithm: 'ML-DSA-65',
+      signature: 'sigB64',
+      publicKey: 'pkB64',
+    });
+    expect(c.npuProof.attestation.claim).toContain('YAKMESH|NPU-PROOF|v1|');
+  });
+
+  test('sign failure → unsigned proof still rides, attestation omitted', async () => {
+    vi.stubGlobal('fetch', stubBridge(SEAL_OK, { signFails: true }));
+    const proof = {
+      nonce: 'yakmesh-eX', device: '1022:1502', consistent: true,
+      digests: { input: 'aa', output: 'bb' }, timingNs: { p50: 1 },
+    };
+    setProofProvider(async () => proof);
+    const c = await contributionMeshState(1_000_270_000_000);
+    expect(c.npuProof).toMatchObject(proof);
+    expect(c.npuProof.attestation).toBeUndefined();
+  });
+
+  test('npuProofClaim — canonical serialization is deterministic and complete', () => {
+    const p = {
+      nonce: 'n1', device: '1022:1502', kernel: 'k', n: 8, consistent: true,
+      digests: { input: 'i', output: 'o' },
+      timingNs: { p50: 1, p95: 2, mean: 3, min: 4, max: 5, wall: 6 },
+    };
+    const claim = npuProofClaim(42, 'node1', p);
+    expect(claim).toBe('YAKMESH|NPU-PROOF|v1|42|node1|1022:1502|k|n1|8|1|i|o|1|2|3|4|5|6');
+    expect(npuProofClaim(42, 'node1', p)).toBe(claim);
+    expect(npuProofClaim(43, 'node1', p)).not.toBe(claim); // epoch-bound
   });
 
   test('proof provider throws → claim still emitted without npuProof', async () => {
