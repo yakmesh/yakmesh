@@ -240,16 +240,26 @@ export class MantraProtocol extends EventEmitter {
       timestamp: aguwa.now(),
     };
 
-    // Sign the rumor (ML-DSA-65) — excludes TTL since it decrements during propagation
-    const sigPayload = JSON.stringify({
-      messageId: rumor.messageId,
-      topic: rumor.topic,
-      data: rumor.data,
-      origin: rumor.origin,
-      originTTL: rumor.originTTL,
-      timestamp: rumor.timestamp,
-    });
-    rumor.signature = this.identity.sign(sigPayload);
+    // Sign the rumor (ML-DSA-65) — excludes TTL since it decrements during propagation.
+    // Skip when the data is already self-signed by this node (e.g. pulse:heartbeat
+    // beats carry their own ML-DSA signature bound to the same nodeId): a second
+    // signature by the same key over the same content is redundant — ~6.6KB of
+    // hex per message with zero added security. Receivers verify data.signature
+    // against data.hash instead.
+    const selfSigned = !!(data && data.signature && data.hash && data.nodeId === this.identity.identity.nodeId);
+    if (selfSigned) {
+      rumor.selfSigned = true;
+    } else {
+      const sigPayload = JSON.stringify({
+        messageId: rumor.messageId,
+        topic: rumor.topic,
+        data: rumor.data,
+        origin: rumor.origin,
+        originTTL: rumor.originTTL,
+        timestamp: rumor.timestamp,
+      });
+      rumor.signature = this.identity.sign(sigPayload);
+    }
 
     this.seenMessages.add(messageId);
     this._bufferRumor(rumor);
@@ -505,27 +515,39 @@ export class MantraProtocol extends EventEmitter {
       return;
     }
 
-    // Verify origin's ML-DSA-65 signature before trusting the rumor
-    if (!rumor.signature) {
-      log.warn('Dropping unsigned rumor', { origin: peerTag(rumor.origin), messageId });
-      return;
-    }
     const originPubKey = this._getPeerPublicKey(rumor.origin);
     if (!originPubKey) {
       log.warn('Dropping rumor from unknown origin (no public key)', { origin: peerTag(rumor.origin), messageId });
       return;
     }
-    const sigPayload = JSON.stringify({
-      messageId: rumor.messageId,
-      topic: rumor.topic,
-      data: rumor.data,
-      origin: rumor.origin,
-      originTTL: rumor.originTTL,
-      timestamp: rumor.timestamp,
-    });
-    if (!this.identity.verify(sigPayload, rumor.signature, originPubKey)) {
-      log.warn('Dropping rumor with invalid signature', { origin: peerTag(rumor.origin), messageId });
-      return;
+
+    if (rumor.selfSigned) {
+      // Self-signed data path: the payload carries its own signature bound to
+      // origin — verify data.signature over data.hash with origin's key.
+      // data.hash is content-bound by the topic handler's deserialize check.
+      if (rumor.data?.nodeId !== rumor.origin || !rumor.data?.hash || !rumor.data?.signature ||
+          !this.identity.verify(rumor.data.hash, rumor.data.signature, originPubKey)) {
+        log.warn('Dropping self-signed rumor with invalid data signature', { origin: peerTag(rumor.origin), messageId });
+        return;
+      }
+    } else {
+      // Verify origin's ML-DSA-65 signature before trusting the rumor
+      if (!rumor.signature) {
+        log.warn('Dropping unsigned rumor', { origin: peerTag(rumor.origin), messageId });
+        return;
+      }
+      const sigPayload = JSON.stringify({
+        messageId: rumor.messageId,
+        topic: rumor.topic,
+        data: rumor.data,
+        origin: rumor.origin,
+        originTTL: rumor.originTTL,
+        timestamp: rumor.timestamp,
+      });
+      if (!this.identity.verify(sigPayload, rumor.signature, originPubKey)) {
+        log.warn('Dropping rumor with invalid signature', { origin: peerTag(rumor.origin), messageId });
+        return;
+      }
     }
 
     // Mark as seen

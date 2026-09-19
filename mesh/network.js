@@ -432,7 +432,9 @@ export class MandalaNetwork {
       timestamp: Date.now(),
     };
 
-    // Sign the message — prefer TRIBHUJ ratchet for forward secrecy, fall back to identity
+    // Sign the message — prefer TRIBHUJ ratchet for forward secrecy, fall back
+    // to identity. Broadcast payloads are app-level (seva, beacon, …) where
+    // this signature is the only hop authentication, so it stays.
     const signed = this.ratchet
       ? this.ratchet.signObject(gossipMsg)
       : this.identity.signObject(gossipMsg);
@@ -454,13 +456,23 @@ export class MandalaNetwork {
    * Send message to specific peer (WS or relay fallback)
    */
   sendTo(nodeId, message) {
-    const signed = this.ratchet
-      ? this.ratchet.signObject({ ...message, timestamp: Date.now() })
-      : this.identity.signObject({ ...message, timestamp: Date.now() });
+    const outbound = { ...message, timestamp: Date.now() };
+    // Rumor-carrying gossip wrappers carry their own end-to-end authentication
+    // (rumor.signature or data.signature for self-signed payloads), and the
+    // ANNEX session already authenticates the sending hop — a third signature
+    // here is pure redundancy (~10.5KB hex + cert machinery per message).
+    // Other message types keep ratchet/identity signing as their hop auth.
+    const isRumorWrapper = outbound.type === MessageTypes.GOSSIP &&
+      outbound.payload?.gossip?.type === 'GOSSIP_RUMOR';
+    const signed = isRumorWrapper
+      ? outbound
+      : this.ratchet
+        ? this.ratchet.signObject(outbound)
+        : this.identity.signObject(outbound);
 
     const peer = this.peers.get(nodeId);
     if (peer) {
-      this._send(peer.ws, this._attachTribhujCert(signed, peer));
+      this._send(peer.ws, signed._tribhujSig ? this._attachTribhujCert(signed, peer) : signed);
       return;
     }
 
@@ -470,31 +482,41 @@ export class MandalaNetwork {
   }
 
   /**
-   * Attach a TRIBHUJ rotation certificate to a ratchet-signed message when the
-   * recipient hasn't pinned our current ratchet key. The cert is a signature
-   * by our permanent identity key over
+   * Attach a TRIBHUJ rotation certificate to a ratchet-signed message while
+   * the current ratchet key is inside its announce window. The cert is a
+   * signature by our permanent identity key over
    * "YAKMESH:TRIBHUJ-KEY:{nodeId}:{newKey}:{epoch}" — receivers verify it
    * against the pinned identity key and advance their pinned ratchet set.
    *
-   * Announcement is tracked PER-PEER: marking a key "announced" globally after
-   * a single send meant any peer that missed that one message could never
-   * certify the key and rejected all subsequent ratchet-signed gossip until
-   * the next rotation. The cert signature is computed once per key and cached.
+   * Announce window: peers pin current+previous at handshake, so only peers
+   * connected BEFORE a rotation can be stale. The previous design attached
+   * the cert to a single message after rotation — any peer that missed it
+   * could never certify the key and rejected all signed traffic until the
+   * next rotation. Attaching for a window after each rotation guarantees
+   * every connected peer sees it many times. The cert signature is computed
+   * once per key and cached.
    */
   _attachTribhujCert(signed, peer = null) {
     const cur = this.ratchet?._current?.publicKey;
-    if (!cur) return signed;
+    if (!cur || signed._tribhujCert) return signed;
+    const epoch = this.ratchet._epoch;
+    const now = Date.now();
+    if (this._ratchetEpochSeen === undefined) {
+      // First observation — genesis keys are pinned via handshake, not a rotation.
+      this._ratchetEpochSeen = epoch;
+      this._ratchetEpochAnnouncedAt = 0;
+    } else if (this._ratchetEpochSeen !== epoch) {
+      this._ratchetEpochSeen = epoch;
+      this._ratchetEpochAnnouncedAt = now;
+    }
+    if (now - this._ratchetEpochAnnouncedAt > 90_000) return signed;
     const curHex = bytesToHex(cur);
-    // Peers that already pin our current key get the lean message.
-    if (peer && peer.tribhujKeys?.current === curHex) return signed;
-    if (signed._tribhujCert) return signed;
     if (!this._ratchetKeyCerts) this._ratchetKeyCerts = new Map();
     let cert = this._ratchetKeyCerts.get(curHex);
     if (!cert) {
-      const certPayload = `YAKMESH:TRIBHUJ-KEY:${this.identity.identity.nodeId}:${curHex}:${this.ratchet._epoch}`;
+      const certPayload = `YAKMESH:TRIBHUJ-KEY:${this.identity.identity.nodeId}:${curHex}:${epoch}`;
       cert = this.identity.sign(certPayload);
       this._ratchetKeyCerts.set(curHex, cert);
-      // Bound the cache — a stale key's cert is never needed again.
       if (this._ratchetKeyCerts.size > 8) {
         const oldest = this._ratchetKeyCerts.keys().next().value;
         this._ratchetKeyCerts.delete(oldest);
@@ -1401,10 +1423,15 @@ export class MandalaNetwork {
         // Allow through since the handshake handler validates identity
         log.debug('Signed message from unregistered peer, passing through', { type: msg.type });
       } else if (!msg._gwAttest && !msg._tribhujSig && !msg._signature) {
-        // UNSIGNED message — only allow handshake types (HELLO/WELCOME/REJECT)
-        // All other message types from known peers MUST be signed
+        // UNSIGNED message — allow handshake types (HELLO/WELCOME/REJECT) and
+        // rumor-carrying gossip wrappers. Rumors are authenticated end-to-end
+        // at the gossip layer (rumor.signature, or data.signature on the
+        // self-signed path); the ANNEX session authenticates the hop. All
+        // other message types from known peers MUST be signed.
+        const isRumorWrapper = msg.type === MessageTypes.GOSSIP &&
+          msg.payload?.gossip?.type === 'GOSSIP_RUMOR';
         const HANDSHAKE_TYPES = new Set([MessageTypes.HELLO, MessageTypes.WELCOME, MessageTypes.REDIRECT, 'REJECT']);
-        if (!HANDSHAKE_TYPES.has(msg.type)) {
+        if (!HANDSHAKE_TYPES.has(msg.type) && !isRumorWrapper) {
           log.warn('Rejected unsigned message from peer', {
             type: msg.type,
             sender: peerTag(senderNodeId) || 'unknown',
