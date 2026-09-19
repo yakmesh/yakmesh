@@ -462,25 +462,29 @@ function findOrtDll() {
 // provider dll (onnxruntime_providers_vitisai.dll) is version-locked to the
 // onnxruntime.dll it shipped with, so the Vitis attempt must run under
 // RyzenAI's own ort library. LoadLibrary finds provider dlls via PATH.
-// Version-agnostic: scan C:\Program Files\RyzenAI\<ver>\ for the pieces.
+// Version-agnostic: scan C:\Program Files\RyzenAI\<ver>\ for the pieces,
+// then fall back to a bundled copy staged at tools/npu-prover/ryzenai/
+// (for machines with the IPU driver but no RyzenAI install).
 function findRyzenAI() {
-  const root = 'C:\\Program Files\\RyzenAI';
-  try {
-    for (const ver of readdirSync(root).sort().reverse()) {
-      const base = join(root, ver);
-      const dll = join(base, 'deployment', 'onnxruntime.dll');
-      if (!existsSync(dll)) continue;
-      let cfg = null;
-      try {
-        for (const sub of readdirSync(base)) {
-          const c = join(base, sub, 'vaip_config.json');
-          if (existsSync(c)) { cfg = c; break; }
-        }
-      } catch { /* keep looking */ }
-      return { dir: base, deployDir: join(base, 'deployment'), dll, cfg };
-    }
-  } catch { /* no RyzenAI install */ }
-  return null;
+  const scan = (root) => {
+    try {
+      for (const ver of readdirSync(root).sort().reverse()) {
+        const base = join(root, ver);
+        const dll = join(base, 'deployment', 'onnxruntime.dll');
+        if (!existsSync(dll)) continue;
+        let cfg = null;
+        try {
+          for (const sub of readdirSync(base)) {
+            const c = join(base, sub, 'vaip_config.json');
+            if (existsSync(c)) { cfg = c; break; }
+          }
+        } catch { /* keep looking */ }
+        return { dir: base, deployDir: join(base, 'deployment'), dll, cfg };
+      }
+    } catch { /* no install here */ }
+    return null;
+  };
+  return scan('C:\\Program Files\\RyzenAI') || scan(join(HERE, 'ryzenai'));
 }
 const ryzenai = findRyzenAI();
 
