@@ -86,3 +86,7 @@ yea.md
 *.txt
 "# YAKMESH™ LICENSE & TRADEMARK POLICY.md"
 __pycache__/
+
+# Internal agent working docs — not for public repo
+mind.md
+grokreport.md
