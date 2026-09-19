@@ -480,6 +480,19 @@ export class MachineSeed {
   }
 
   /**
+   * Write the seed file, tolerating read-only modes left by file guardians.
+   * Guardians lock identity files to 0400 between restarts; restore write
+   * permission before overwriting, then re-secure to 0600.
+   */
+  _writeSeedFile(seedFile) {
+    if (platform() !== 'win32' && existsSync(this.seedPath)) {
+      try { chmodSync(this.seedPath, 0o600); } catch { /* ignore */ }
+    }
+    writeFileSync(this.seedPath, JSON.stringify(seedFile, null, 2));
+    this._secureFile();
+  }
+
+  /**
    * Initialize the machine seed.
    * 
    * - If seed file exists: decrypt, verify YPC-27 checksum, load migration chain
@@ -599,8 +612,7 @@ export class MachineSeed {
       createdAt: new Date().toISOString(),
     };
 
-    writeFileSync(this.seedPath, JSON.stringify(seedFile, null, 2));
-    this._secureFile();
+    this._writeSeedFile(seedFile);
 
     this.seed = seed;
     this.persistentId = persistentId;
@@ -696,8 +708,7 @@ export class MachineSeed {
       updatedAt: new Date().toISOString(),
     };
 
-    writeFileSync(this.seedPath, JSON.stringify(seedFile, null, 2));
-    this._secureFile();
+    this._writeSeedFile(seedFile);
   }
 
   /**

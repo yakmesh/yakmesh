@@ -270,6 +270,19 @@ export class NodeIdentity {
   }
 
   /**
+   * Write the identity file, tolerating read-only modes left by file guardians.
+   * Guardians lock identity files to 0400 between restarts; restore write
+   * permission before overwriting, then re-secure to 0600.
+   */
+  _writeKeyFile(toStore) {
+    if (platform() !== 'win32' && existsSync(this.keyPath)) {
+      try { chmodSync(this.keyPath, 0o600); } catch { /* ignore */ }
+    }
+    writeFileSync(this.keyPath, JSON.stringify(toStore, null, 2));
+    this._secureKeyFile();
+  }
+
+  /**
    * Initialize or load node identity using two-layer deterministic derivation.
    * 
    * Flow:
@@ -382,8 +395,7 @@ export class NodeIdentity {
       migrationEntries: this.machineSeed.getMigrationChain().length,
       createdAt: Date.now(),
     };
-    writeFileSync(this.keyPath, JSON.stringify(toStore, null, 2));
-    this._secureKeyFile();
+    this._writeKeyFile(toStore);
 
     // ─── Log identity info ───
     const migrationChain = this.machineSeed.getMigrationChain();
