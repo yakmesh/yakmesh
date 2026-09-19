@@ -3657,9 +3657,25 @@ export class YakmeshNode {
       res.json(this.identity.getPublicIdentity());
     });
 
-    // Peers list
+    // Peers list — includes SAMUHA admission verdict + priority + connect time
     app.get('/peers', (req, res) => {
       res.json(this.mesh.getPeers());
+    });
+    app.get('/api/peers', (req, res) => {
+      res.json(this.mesh.getPeers());
+    });
+
+    // SAMUHA admission-control status — utilization, verdict tallies,
+    // live HOLD queue depth/waiters
+    app.get('/api/samuha', (req, res) => {
+      res.json(this.mesh.getSamuhaStatus());
+    });
+
+    // AGUWA Kuramoto status — canonical /api surface (same payload as /time/aguwa)
+    app.get('/api/aguwa', (req, res) => {
+      const status = aguwa.getStatus();
+      const divergent = aguwa.detectDivergentPeers();
+      res.json({ ...status, divergentPeers: divergent });
     });
 
     // =========================================
@@ -4026,7 +4042,8 @@ export class YakmeshNode {
     // Connect to a peer dynamically
     // SECURITY: Rate limited + URL validation
     app.post('/connect', writeLimiter, requirePeerAuth, async (req, res) => {
-      const { address } = req.body;
+      // CLI sends {endpoint}; programmatic callers use {address} — accept both
+      const address = req.body.address || req.body.endpoint;
 
       if (!validateUrl(address)) {
         return res.status(400).json({ error: 'Valid WebSocket URL required (ws:// or wss://)' });

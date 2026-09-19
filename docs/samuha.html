@@ -859,12 +859,12 @@
               <tr class="border-b border-mountain-700">
                 <td class="p-3 theme-accent font-mono">0.8 &ndash; 1.0</td>
                 <td class="p-3"><span class="text-yellow-400 font-semibold">HOLD</span></td>
-                <td class="p-3 text-mountain-400">High-priority peers may bump lowest; others wait in queue</td>
+                <td class="p-3 text-mountain-400">Peer waits in HOLD queue (depth 10, 30s timeout) for the next open slot</td>
               </tr>
               <tr>
                 <td class="p-3 theme-accent font-mono">&ge; 1.0</td>
                 <td class="p-3"><span class="text-red-400 font-semibold">REDIRECT</span></td>
-                <td class="p-3 text-mountain-400">Node at hard limit. Peer given neighbor addresses with capacity</td>
+                <td class="p-3 text-mountain-400">Node at hard limit. A higher-priority incoming peer may bump the lowest-priority peer; otherwise the peer is redirected to a neighbor with capacity</td>
               </tr>
             </tbody>
           </table>
@@ -913,7 +913,7 @@
               <tr class="border-b border-mountain-700">
                 <td class="p-3 font-semibold">Burst rate</td>
                 <td class="p-3 theme-accent">30 / min</td>
-                <td class="p-3 text-mountain-400">Max peer connection attempts per minute</td>
+                <td class="p-3 text-mountain-400">Connection spike that triggers a burst alert &mdash; per-IP limits are stricter (10 conn/min, 5 handshakes/min)</td>
               </tr>
               <tr class="border-b border-mountain-700">
                 <td class="p-3 font-semibold">Max handshakes</td>
@@ -984,8 +984,17 @@
                 <td class="p-3"><span class="theme-badge px-2 py-1 rounded">v3.3.0</span></td>
                 <td class="p-3 text-mountain-400">
                   Initial implementation: ternary ADMIT/HOLD/REDIRECT verdicts, composite priority
-                  formula (karma+hw+returning+mani), utilization-based capacity gating, graceful
-                  REDIRECT with signed referral tokens, HOLD queue with 30s timeout, burst rate limiting.
+                  formula (karma+hw+returning+mani), utilization-based capacity gating, lowest-priority
+                  eviction upgrade, burst detection, handshake concurrency limits.
+                </td>
+              </tr>
+              <tr>
+                <td class="p-3"><span class="theme-badge px-2 py-1 rounded">v3.5.5</span></td>
+                <td class="p-3 text-mountain-400">
+                  Completed the design: real HOLD queue (depth 10, 30s timeout, promote-on-slot-open
+                  with full re-verification), signed referral tokens on REDIRECT with referrer
+                  validation, <code>GET /api/samuha</code> and <code>GET /api/peers</code> surfaces,
+                  admission verdict + priority recorded per peer.
                 </td>
               </tr>
             </tbody>

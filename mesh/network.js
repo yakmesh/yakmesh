@@ -113,6 +113,7 @@ export const MandalaMessageTypes = {
 
   // Admission (capacity management)
   REDIRECT: 'redirect',     // Forward peer to another node with capacity
+  HOLD: 'hold',           // SAMUHA — peer queued pending a free slot
 };
 
 // Backward compatibility alias
@@ -133,6 +134,11 @@ export class MandalaNetwork {
       // Total connected peers is UNBOUNDED — the mesh scales freely.
       // This only gates the handshake window to prevent Sybil flood attacks.
       maxConcurrentHandshakes: config.maxConcurrentHandshakes || 50,
+      // SAMUHA HOLD queue — peers in the ABSTAIN utilization band wait for
+      // a slot instead of being rejected. Spec: 30s timeout, depth 10,
+      // overflow and timeout both degrade to REDIRECT.
+      holdTimeoutMs: config.holdTimeoutMs || 30000,
+      holdQueueMax: config.holdQueueMax || 10,
       ...config,
     };
 
@@ -175,6 +181,9 @@ export class MandalaNetwork {
     // Total peer count is UNBOUNDED (mesh scales freely).
     this._pendingHandshakeCount = 0;
     this._pendingHandshakeWs = new Set();  // Track WSs in handshake state
+
+    // SAMUHA HOLD queue — { ws, nodeId, msg, req, priority, enqueuedAt, timer }
+    this._holdQueue = [];
 
     // Connection burst detector — sliding window for GPS-timestamped alerts.
     // A sudden spike from baseline to hundreds of connections per minute
@@ -359,6 +368,11 @@ export class MandalaNetwork {
           capabilities: getCapabilities(),
           timestamp,
           proof: this.identity.sign(proofPayload),
+          // SAMUHA referral — if a peer redirected us here, present the
+          // signed token they issued so the target can verify the handoff.
+          ...(this._pendingReferral && this._pendingReferral.exp > Date.now()
+            ? { referral: this._pendingReferral }
+            : {}),
         });
       });
 
@@ -589,7 +603,31 @@ export class MandalaNetwork {
       name: peer.identity.name,
       endpoint: peer.endpoint,
       lastSeen: peer.lastSeen,
+      connectedAt: peer.connectedAt || null,
+      // SAMUHA admission record — verdict (+1 admit / 0 hold / -1 redirect)
+      // and composite priority at accept time
+      admission: peer.admission || null,
     }));
+  }
+
+  /**
+   * SAMUHA admission-control status — AGUWA's utilization/verdict tally
+   * merged with the live HOLD-queue state for the /api/samuha surface.
+   */
+  getSamuhaStatus() {
+    return {
+      ...aguwa.admissionStatus(),
+      holdQueue: {
+        depth: this._holdQueue.length,
+        maxDepth: this.config.holdQueueMax,
+        timeoutMs: this.config.holdTimeoutMs,
+        waiting: this._holdQueue.map(e => ({
+          nodeId: e.nodeId,
+          priority: +e.priority.toFixed(4),
+          waitedMs: Date.now() - e.enqueuedAt,
+        })),
+      },
+    };
   }
 
   /**
@@ -784,6 +822,26 @@ export class MandalaNetwork {
         try { existingPeer.ws.close(1000, 'Replaced by reconnect'); } catch { }
       }
 
+      // SAMUHA referral check — a REDIRECTed peer may present the signed
+      // referral token we issue. Valid iff: unexpired, referrer is a node
+      // we actually know, and the signature verifies under their key.
+      // Prevents open-season abuse of the redirect mechanism; logged as
+      // evidence either way.
+      if (msg.referral && typeof msg.referral === 'object') {
+        const { by, exp, sig } = msg.referral;
+        const referrer = this.peers.get(by) || this.knownNodes.get(by);
+        const referrerPk = referrer?.identity?.publicKey;
+        if (by && exp && sig && Date.now() < exp && referrerPk &&
+            this.identity.verify(`YAKMESH:REFERRAL:${nodeId}:${exp}`, sig, referrerPk)) {
+          ws._referralVerified = true;
+          log.info('SAMUHA referral verified', { peer: peerTag(nodeId), referrer: peerTag(by) });
+        } else if (by || sig) {
+          log.debug('SAMUHA referral rejected (unknown referrer, expired, or bad sig)', {
+            peer: peerTag(nodeId), referrer: by ? peerTag(by) : 'none',
+          });
+        }
+      }
+
       // ── Weighted Ternary Admission (Phase 3) ──
       // Check capacity BEFORE storing peer. HELLO already carries capabilities
       // and persistentId — we use these + persisted KARMA to decide.
@@ -798,10 +856,18 @@ export class MandalaNetwork {
         const lowestWs = this.peers.get(admission.lowestPeer)?.ws;
         if (lowestWs && lowestWs.readyState === WebSocket.OPEN) {
           const forwardEndpoint = msg.advertisedEndpoint || null;
+          const evictExp = Date.now() + 60000;
           this._send(lowestWs, {
             type: MessageTypes.REDIRECT,
             endpoint: forwardEndpoint,
             reason: 'capacity_eviction',
+            // Referral bound to the EVICTED peer — it presents this when
+            // connecting to the incoming peer that displaced it.
+            referral: this.identity?.sign ? {
+              by: this.identity.identity.nodeId,
+              exp: evictExp,
+              sig: this.identity.sign(`YAKMESH:REFERRAL:${admission.lowestPeer}:${evictExp}`),
+            } : null,
           });
           this.removePeer(admission.lowestPeer);
           log.info('Admission: evicted lower-priority peer via REDIRECT', {
@@ -822,17 +888,40 @@ export class MandalaNetwork {
           capabilities: getCapabilities(),
           peers: this.getPeers().filter(p => p.nodeId !== nodeId),
         });
-        this._send(ws, {
-          type: MessageTypes.REDIRECT,
-          reason: 'capacity_full',
-          peers: this.getPeers().slice(0, 3), // Suggest top 3 peers
-        });
+        this._sendRedirect(ws, nodeId, 'capacity_full');
         log.info('Admission DENY: redirected incoming peer', { peer: peerTag(nodeId), utilization: admission.utilization.toFixed(2) });
         ws.close(1000, 'Capacity full — redirected');
         return; // Don't continue HELLO processing
+      } else if (admission.verdict === 0) {
+        // SAMUHA HOLD — ABSTAIN band (utilization 0.8–1.0): the peer waits
+        // in queue for a slot rather than being rejected. Queue full or a
+        // peer already held twice → degrade to REDIRECT per spec.
+        const heldBefore = msg._holdCount || 0;
+        if (this._holdQueue.length >= this.config.holdQueueMax || heldBefore >= 2) {
+          this._sendRedirect(ws, nodeId, this._holdQueue.length >= this.config.holdQueueMax ? 'hold_queue_full' : 'hold_exhausted');
+          try { ws.close(1000, 'HOLD queue unavailable — redirected'); } catch { }
+          return;
+        }
+        msg._holdCount = heldBefore + 1;
+        this._send(ws, {
+          type: MessageTypes.HOLD,
+          position: this._holdQueue.length + 1,
+          timeoutMs: this.config.holdTimeoutMs,
+        });
+        const entry = {
+          ws, nodeId, msg, priority: admission.priority,
+          enqueuedAt: Date.now(),
+          timer: setTimeout(() => this._expireHold(entry), this.config.holdTimeoutMs),
+        };
+        this._holdQueue.push(entry);
+        log.info('SAMUHA HOLD — peer queued pending capacity', {
+          peer: peerTag(nodeId), position: this._holdQueue.length,
+          priority: admission.priority.toFixed(3), utilization: admission.utilization.toFixed(2),
+        });
+        return; // Don't continue HELLO processing — promoted on slot-open
       }
 
-      // Store peer — admission passed (AFFIRM or ABSTAIN or evicted lowest)
+      // Store peer — admission passed (AFFIRM, or eviction upgrade)
       // For outbound connections, use our tracked endpoint.
       // For inbound connections, use peer's advertised endpoint (so we can reconnect to them).
       const peerEndpoint = ws._outboundEndpoint || msg.advertisedEndpoint || null;
@@ -842,6 +931,9 @@ export class MandalaNetwork {
         endpoint: peerEndpoint,
         capabilities: msg.capabilities || null,
         lastSeen: Date.now(),
+        connectedAt: Date.now(),
+        // SAMUHA admission record — verdict + composite priority at accept time
+        admission: { verdict: admission.verdict, priority: admission.priority },
         // Pinned ratchet keys from the verified handshake — used to verify
         // _tribhujSig messages. Only keys bound inside the PoP proof are trusted.
         tribhujKeys: {
@@ -1158,6 +1250,13 @@ export class MandalaNetwork {
         suggestedPeers: msg.peers?.length || 0,
       });
 
+      // SAMUHA — stash the signed referral token; it is bound to OUR
+      // nodeId, so we present it in the next outbound HELLO to let the
+      // target verify this is a legitimate redirect, not a cold probe.
+      if (msg.referral && msg.referral.exp > Date.now()) {
+        this._pendingReferral = msg.referral;
+      }
+
       // Try to connect to suggested peers
       if (msg.endpoint) {
         this.connectToPeer(msg.endpoint).catch(() => { });
@@ -1218,6 +1317,7 @@ export class MandalaNetwork {
 
   _handleIncomingConnection(ws, req) {
     const clientIp = req.socket.remoteAddress || 'unknown';
+    ws._clientIp = clientIp; // preserved for SAMUHA HOLD re-dispatch
     log.debug('Incoming connection', { clientIp });
 
     // SECURITY: Rate limit check for connection flood protection (per-IP)
@@ -1458,6 +1558,14 @@ export class MandalaNetwork {
   }
 
   _handleDisconnect(ws) {
+    // SAMUHA: drop any HOLD-queue entries waiting on this socket
+    for (let i = this._holdQueue.length - 1; i >= 0; i--) {
+      if (this._holdQueue[i].ws === ws) {
+        clearTimeout(this._holdQueue[i].timer);
+        this._holdQueue.splice(i, 1);
+      }
+    }
+    let freed = false;
     for (const [nodeId, peer] of this.peers) {
       if (peer.ws === ws) {
         log.info('Peer disconnected', { name: peer.identity.name });
@@ -1478,10 +1586,64 @@ export class MandalaNetwork {
         // Clean up AGUWA phase tracking for departing peer
         aguwa.removePeer(nodeId);
         this.peers.delete(nodeId);
+        freed = true;
         // Signal so deferred ANNEX messages for this peer are cleaned up
         this.emit('peer-disconnected', nodeId);
         break;
       }
+    }
+    // SAMUHA: a slot opened — promote the head of the HOLD queue
+    if (freed) this._promoteHoldQueue();
+  }
+
+  /**
+   * SAMUHA — send REDIRECT with suggested peers and a signed referral
+   * token. The referral binds (referredNodeId ‖ expiry) under our key;
+   * the target node verifies it if it knows us, preventing open-season
+   * redirect abuse.
+   */
+  _sendRedirect(ws, nodeId, reason) {
+    const exp = Date.now() + 60000;
+    const referral = this.identity?.sign
+      ? { by: this.identity.identity.nodeId, exp, sig: this.identity.sign(`YAKMESH:REFERRAL:${nodeId}:${exp}`) }
+      : null;
+    this._send(ws, {
+      type: MessageTypes.REDIRECT,
+      reason,
+      peers: this.getPeers().slice(0, 3), // Suggest top 3 peers
+      referral,
+    });
+  }
+
+  /** HOLD timeout — the queued peer degrades to REDIRECT per spec. */
+  _expireHold(entry) {
+    const idx = this._holdQueue.indexOf(entry);
+    if (idx === -1) return; // already promoted or disconnected
+    this._holdQueue.splice(idx, 1);
+    log.info('SAMUHA HOLD timeout — redirecting queued peer', {
+      peer: peerTag(entry.nodeId), waitedMs: Date.now() - entry.enqueuedAt,
+    });
+    this._sendRedirect(entry.ws, entry.nodeId, 'hold_timeout');
+    try { entry.ws.close(1000, 'HOLD timeout — redirected'); } catch { }
+  }
+
+  /**
+   * Slot opened — re-dispatch the head of the HOLD queue through the
+   * normal HELLO pipeline. The message re-verifies fresh (signatures,
+   * timestamps, binding) and the admission verdict re-evaluates against
+   * current utilization — no stale state, no bypass.
+   */
+  _promoteHoldQueue() {
+    while (this._holdQueue.length > 0) {
+      const entry = this._holdQueue.shift();
+      clearTimeout(entry.timer);
+      if (entry.ws.readyState !== WebSocket.OPEN) continue;
+      log.info('SAMUHA HOLD — promoting queued peer', {
+        peer: peerTag(entry.nodeId), waitedMs: Date.now() - entry.enqueuedAt,
+      });
+      const stubReq = { socket: { remoteAddress: entry.ws._clientIp || 'unknown' } };
+      this._handleMessage(entry.ws, Buffer.from(JSON.stringify(entry.msg)), stubReq);
+      return; // one promotion per freed slot — the verdict re-gates the rest
     }
   }
 

@@ -6,7 +6,7 @@
  * Regenerate with: npm run build:docs
  * Source: website/docs/
  * 
- * @generated 2026-09-19T06:40:46.775Z
+ * @generated 2026-09-19T06:53:55.021Z
  * @module embedded-docs/bundle
  */
 
@@ -14,7 +14,7 @@
  * Master hash of the entire documentation bundle.
  * Computed as: SHA3-256(sorted individual file hashes joined)
  */
-export const BUNDLE_HASH = 'a787321615d0a786a3aa6767f9333f3aae1ed43ae69f430a00c6d2a2e728589f';
+export const BUNDLE_HASH = 'b72ae36ac758a8c9915b36a112c87208df817854676d05398764dec0dc71b01a';
 
 /**
  * Version of the documentation bundle.
@@ -25,7 +25,7 @@ export const BUNDLE_VERSION = '3.5.4';
 /**
  * Build timestamp (ISO 8601)
  */
-export const BUNDLE_BUILT_AT = '2026-09-19T06:40:46.775Z';
+export const BUNDLE_BUILT_AT = '2026-09-19T06:53:55.021Z';
 
 /**
  * Index of all files in the documentation bundle.
@@ -74,8 +74,8 @@ export const FILE_INDEX = {
     "contentType": "text/html; charset=utf-8"
   },
   "api.html": {
-    "hash": "78da6bed28b908e4cd1fca870e14a9f3e96598f7c84d0435c1e811b78c9787a6",
-    "size": 45383,
+    "hash": "e26ec376a921b21d5de32cb2f1f19b45e3259be680774c055e5d6edaefd46392",
+    "size": 45882,
     "contentType": "text/html; charset=utf-8"
   },
   "apple-touch-icon.png": {
@@ -334,8 +334,8 @@ export const FILE_INDEX = {
     "contentType": "text/html; charset=utf-8"
   },
   "cli.html": {
-    "hash": "080cade54c40bdfdc3352a463b6781a8731860db0697b55792936ad19e301aca",
-    "size": 65531,
+    "hash": "85a0e454d99c50fc74ba806d0b8bc904c7eb1a5f934208e4f27b6e4764946501",
+    "size": 65491,
     "contentType": "text/html; charset=utf-8"
   },
   "configuration.html": {
@@ -519,8 +519,8 @@ export const FILE_INDEX = {
     "contentType": "text/html; charset=utf-8"
   },
   "samuha.html": {
-    "hash": "83e0fa32c094677a65d81c0fddc2554c0799e7cbe68c02b216ec71e9a1c27609",
-    "size": 46251,
+    "hash": "774691ddad0ec56f7bd1d235ae26be3656349dd0d7cfa2dd956c812db95f5c3e",
+    "size": 46975,
     "contentType": "text/html; charset=utf-8"
   },
   "sangha.html": {

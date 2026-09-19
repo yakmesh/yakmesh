@@ -767,10 +767,10 @@
         <div class="bg-mountain-800 border border-mountain-700 rounded-xl overflow-hidden">
           <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
             <span class="method-get px-2 py-1 rounded text-xs font-mono">GET</span>
-            <code class="text-Yakmesh-300">/time/aguwa</code>
+            <code class="text-Yakmesh-300">/api/aguwa</code>
           </div>
           <div class="p-4">
-            <p class="text-mountain-300 mb-4">Returns AGUWA Kuramoto phase coupling statistics and dynamic capacity.</p>
+            <p class="text-mountain-300 mb-4">Returns AGUWA Kuramoto phase-coupling statistics — oscillator state, order parameter, per-peer phase, and dynamic capacity buffer. Also available at <code class="bg-mountain-800 px-2 py-1 rounded">/time/aguwa</code>.</p>
             <pre class="language-json rounded-lg"><code>{
   "initialized": true,
   "omega": 1.05,
@@ -779,6 +779,14 @@
   "peerCount": 3,
   "correctionMs": 0.4,
   "networkJitter": 1.2,
+  "entropyLinked": true,
+  "buffer": {
+    "peerCount": 3,
+    "maxPeers": 128,
+    "totalSlots": 160,
+    "utilization": 0.023,
+    "hasOverflow": false
+  },
   "peers": [
     { "nodeId": "8cCG…", "theta": 0.0012, "timeTrust": 1.0,
       "propagationDelayMs": 14 }
@@ -792,17 +800,31 @@
         <div class="bg-mountain-800 border border-mountain-700 rounded-xl overflow-hidden">
           <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
             <span class="method-get px-2 py-1 rounded text-xs font-mono">GET</span>
-            <code class="text-Yakmesh-300">SAMUHA</code> <span class="text-mountain-400">(internal — not exposed via HTTP)</span>
+            <code class="text-Yakmesh-300">/api/samuha</code>
           </div>
           <div class="p-4">
-            <p class="text-mountain-300 mb-4">SAMUHA admission control runs inside the node — no public endpoint. Internal state follows this shape:</p>
+            <p class="text-mountain-300 mb-4">Returns SAMUHA admission-control status — capacity utilization, verdict tallies, and the live HOLD queue.</p>
             <pre class="language-json rounded-lg"><code>{
   "utilization": 0.45,
-  "handshakes": 5,
-  "recentEvictions": 0,
+  "activePeers": 58,
+  "maxPeers": 128,
+  "verdicts": {
+    "admit": 41,
+    "hold": 3,
+    "redirect": 1,
+    "evictions": 0
+  },
   "thresholds": {
     "hold": 0.8,
     "redirect": 1.0
+  },
+  "holdQueue": {
+    "depth": 2,
+    "maxDepth": 10,
+    "timeoutMs": 30000,
+    "waiting": [
+      { "nodeId": "kP2x…", "priority": 0.412, "waitedMs": 8310 }
+    ]
   }
 }</code></pre>
           </div>

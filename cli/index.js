@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 /*
  * YAKMESH™: Yielding Atomic Kernel Modular Encryption Secured Hub
  * Copyright (C) 2026 YAKMESH™ / [JGP]
@@ -17,7 +18,6 @@
  *
  * "The standard is binary. The reality is ternary. The resonance is 432."
  */
-#!/usr/bin/env node
 
 /**
  * Yakmesh CLI
@@ -49,8 +49,8 @@ program
   .description('Initialize a new Yakmesh Node in the current directory')
   .option('-n, --name <name>', 'Node name', 'My Yakmesh Node')
   .option('-r, --region <region>', 'Geographic region', 'local')
-  .option('-p, --port <port>', 'HTTP port', '3000')
-  .option('-w, --ws-port <port>', 'WebSocket port', '9001')
+  .option('-p, --port <port>', 'HTTP port', '3080')
+  .option('-w, --ws-port <port>', 'WebSocket port', '9080')
   .option('--bootstrap <urls>', 'Comma-separated bootstrap node URLs')
   .action(async (options) => {
     showBanner();
@@ -183,7 +183,7 @@ program
 program
   .command('status')
   .description('Show node status')
-  .option('-p, --port <port>', 'HTTP port of local node', '3000')
+  .option('-p, --port <port>', 'HTTP port of local node', '3080')
   .action(async (options) => {
     try {
       const response = await fetch(`http://localhost:${options.port}/health`);
@@ -207,7 +207,7 @@ program
 program
   .command('peers')
   .description('List connected peers')
-  .option('-p, --port <port>', 'HTTP port of local node', '3000')
+  .option('-p, --port <port>', 'HTTP port of local node', '3080')
   .action(async (options) => {
     try {
       const response = await fetch(`http://localhost:${options.port}/peers`);
@@ -241,7 +241,7 @@ program
 program
   .command('info')
   .description('Show detailed node information')
-  .option('-p, --port <port>', 'HTTP port of local node', '3000')
+  .option('-p, --port <port>', 'HTTP port of local node', '3080')
   .action(async (options) => {
     try {
       const [nodeRes, replRes] = await Promise.all([
@@ -285,7 +285,7 @@ program
 program
   .command('join <endpoint>')
   .description('Connect to a peer node')
-  .option('-p, --port <port>', 'HTTP port of local node', '3000')
+  .option('-p, --port <port>', 'HTTP port of local node', '3080')
   .action(async (endpoint, options) => {
     try {
       const response = await fetch(`http://localhost:${options.port}/connect`, {
@@ -313,7 +313,7 @@ program
 program
   .command('open [target]')
   .description('Open node interfaces in browser (dashboard, docs, health, or yak:// URL)')
-  .option('-p, --port <port>', 'HTTP port of local node', '3000')
+  .option('-p, --port <port>', 'HTTP port of local node', '3080')
   .action(async (target = 'dashboard', options) => {
     const port = parseInt(options.port);
     
@@ -395,7 +395,7 @@ const protocolCmd = program
 protocolCmd
   .command('register')
   .description('Register yak:// protocol with the operating system')
-  .option('-p, --port <port>', 'HTTP port of local node', '3000')
+  .option('-p, --port <port>', 'HTTP port of local node', '3080')
   .action(async (options) => {
     showBanner();
     console.log(chalk.yellow('Registering yak:// protocol...\n'));
@@ -448,7 +448,7 @@ protocolCmd
 protocolCmd
   .command('test <url>')
   .description('Test a yak:// URL without opening browser')
-  .option('-p, --port <port>', 'HTTP port of local node', '3000')
+  .option('-p, --port <port>', 'HTTP port of local node', '3080')
   .action(async (url, options) => {
     try {
       const { parseYakUrl, yakToHttp } = await import('../protocol/yak-protocol.js');
@@ -476,7 +476,7 @@ protocolCmd
 protocolCmd
   .command('open <url>')
   .description('Open a yak:// URL in the default browser')
-  .option('-p, --port <port>', 'HTTP port of local node', '3000')
+  .option('-p, --port <port>', 'HTTP port of local node', '3080')
   .action(async (url, options) => {
     try {
       const { YakProtocolHandler } = await import('../protocol/yak-protocol.js');
@@ -626,7 +626,7 @@ const geoCmd = program
 geoCmd
   .command('status')
   .description('Show geographic proof status and statistics')
-  .option('-p, --port <port>', 'HTTP port of local node', '3000')
+  .option('-p, --port <port>', 'HTTP port of local node', '3080')
   .action(async (options) => {
     try {
       const response = await fetch(`http://localhost:${options.port}/geo/status`);
@@ -668,7 +668,7 @@ geoCmd
 geoCmd
   .command('landmarks')
   .description('List known geographic landmarks')
-  .option('-p, --port <port>', 'HTTP port of local node', '3000')
+  .option('-p, --port <port>', 'HTTP port of local node', '3080')
   .option('-v, --verified', 'Show only verified landmarks')
   .action(async (options) => {
     try {
@@ -713,7 +713,7 @@ geoCmd
 geoCmd
   .command('zones')
   .description('List exclusion zones for this node')
-  .option('-p, --port <port>', 'HTTP port of local node', '3000')
+  .option('-p, --port <port>', 'HTTP port of local node', '3080')
   .action(async (options) => {
     try {
       const response = await fetch(`http://localhost:${options.port}/geo/zones`);
@@ -750,7 +750,7 @@ geoCmd
 geoCmd
   .command('prove')
   .description('Generate a new geographic proof')
-  .option('-p, --port <port>', 'HTTP port of local node', '3000')
+  .option('-p, --port <port>', 'HTTP port of local node', '3080')
   .option('-f, --force', 'Force re-measurement of all landmarks')
   .action(async (options) => {
     try {
@@ -800,7 +800,7 @@ geoCmd
 geoCmd
   .command('verify <nodeId>')
   .description('Verify geographic claims of another node')
-  .option('-p, --port <port>', 'HTTP port of local node', '3000')
+  .option('-p, --port <port>', 'HTTP port of local node', '3080')
   .action(async (nodeId, options) => {
     try {
       showBanner();
@@ -846,7 +846,7 @@ geoCmd
 geoCmd
   .command('add-landmark <name>')
   .description('Add a well-known landmark node')
-  .option('-p, --port <port>', 'HTTP port of local node', '3000')
+  .option('-p, --port <port>', 'HTTP port of local node', '3080')
   .option('--lat <latitude>', 'Latitude of landmark')
   .option('--lon <longitude>', 'Longitude of landmark')
   .option('--node-id <nodeId>', 'Node ID of landmark')

@@ -947,34 +947,37 @@ yakmesh start --daemon</code></pre>
 }</code></pre>
             </div>
 
-            <!-- join a mesh — via bootstrap config -->
+            <!-- join a mesh -->
             <div class="command-block p-6 mb-8">
                 <div class="flex items-center gap-3 mb-4">
-                    <code class="text-xl theme-accent font-mono">yakmesh start</code>
-                    <span class="text-mountain-400 text-sm">Join a mesh via bootstrap peers</span>
+                    <code class="text-xl theme-accent font-mono">yakmesh join &lt;endpoint&gt;</code>
+                    <span class="text-mountain-400 text-sm">Connect the running node to a peer</span>
                 </div>
                 <p class="text-mountain-300 mb-4">
-                    There is no separate <code class="bg-mountain-800 px-2 py-1 rounded">join</code> command —
-                    a node joins a mesh by starting with bootstrap peers, set via the
-                    <code class="bg-mountain-800 px-2 py-1 rounded">YAKMESH_BOOTSTRAP</code> environment variable
-                    or <code class="bg-mountain-800 px-2 py-1 rounded">bootstrapPeers</code> in yakmesh.config.js.
-                    The handshake includes NAMCHE verification and the ANNEX post-quantum session.
+                    Connects your running node to a peer over its WebSocket endpoint
+                    (<code class="bg-mountain-800 px-2 py-1 rounded">ws://</code> or
+                    <code class="bg-mountain-800 px-2 py-1 rounded">wss://</code>).
+                    The handshake includes NAMCHE identity verification and the ANNEX
+                    post-quantum session; SAMUHA admission may return ADMIT, HOLD, or
+                    REDIRECT depending on the peer's capacity.
                 </p>
 
                 <h4 class="font-semibold mb-3">Examples</h4>
-                <pre class="language-bash"><code># Join a mesh via an existing peer
+                <pre class="language-bash"><code># Connect to a peer on the LAN
+yakmesh join ws://192.168.1.100:9080
+
+# Against a node on a non-default HTTP port
+yakmesh join ws://192.168.1.100:9080 -p 3081
+
+# Join at startup instead — bootstrap peers via env or config:
 YAKMESH_BOOTSTRAP=ws://192.168.1.100:9080 yakmesh start
-
-# Multiple bootstrap peers (comma-separated)
-YAKMESH_BOOTSTRAP=ws://node1:9080,ws://node2:9080 yakmesh start
-
-# Or set it permanently in yakmesh.config.js:
 #   bootstrapPeers: ['ws://192.168.1.100:9080']</code></pre>
 
-                <h4 class="font-semibold mb-3 mt-4">Startup Output</h4>
-                <pre class="language-text"><code>Genesis Network initialized: &lt;network-name&gt; (pq-xxxx)
-JHILKE chirp → ANNEX handshake → peer connected
-💓 PULSE heartbeat chain started</code></pre>
+                <h4 class="font-semibold mb-3 mt-4">Output</h4>
+                <pre class="language-text"><code>✓ Connected to ws://192.168.1.100:9080
+
+# or, if the peer cannot be reached / rejects:
+✗ Failed to connect: &lt;reason&gt;</code></pre>
             </div>
 
             <!-- ======================== -->

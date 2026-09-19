@@ -341,6 +341,9 @@ class Aguwa {
         // Initialized flag
         this._initialized = false;
 
+        // SAMUHA admission tally — verdicts issued this session
+        this._admissionStats = { admit: 0, hold: 0, redirect: 0, evictions: 0 };
+
         // ── PRAHARI ↔ AGUWA bidirectional link ──
         // Callback: receives (residualBytes: Uint8Array) after each Kuramoto update
         // Used by PRAHARI to absorb Kuramoto residuals as sponge entropy
@@ -663,10 +666,28 @@ class Aguwa {
             // If incoming > lowest connected → evict lowest
             if (lowestPeer && priority > lowestScore) {
                 verdict = 1; // Upgrade to AFFIRM (evict lowest)
+                this._admissionStats.evictions++;
             }
         }
 
+        this._admissionStats[verdict === 1 ? 'admit' : verdict === 0 ? 'hold' : 'redirect']++;
         return { verdict, priority, lowestPeer, maxPeers, utilization: util };
+    }
+
+    /**
+     * SAMUHA status — utilization, capacity, and verdict tallies for the
+     * /api/samuha surface. HOLD-queue depth lives in the network layer
+     * and is merged in by the endpoint.
+     */
+    admissionStatus() {
+        const maxPeers = this._buffer ? this._buffer.maxPeers : 128;
+        return {
+            utilization: this.peers.size / maxPeers,
+            activePeers: this.peers.size,
+            maxPeers,
+            verdicts: { ...this._admissionStats },
+            thresholds: { hold: 0.8, redirect: 1.0 },
+        };
     }
 
     /**
