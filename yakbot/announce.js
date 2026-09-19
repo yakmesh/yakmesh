@@ -17,7 +17,6 @@
  *
  * "The standard is binary. The reality is ternary. The resonance is 432."
  */
-#!/usr/bin/env node
 
 /**
  * YAKMESH Announcement Broadcaster
