@@ -374,38 +374,40 @@ function _probeAmdNpu() {
     // Check for AMD IPU/NPU device via PowerShell.
     // XDNA registers under multiple PnP classes (System, Processor, SoftwareDevice)
     // so we search ALL classes rather than just 'Processor'.
+    // Case-sensitive -cmatch: 'IPU' must not match 'Input' (USB Input Device),
+    // and 'AI' is dropped entirely — it matched 'AMD RAID'. A real device
+    // reports 'AMD IPU Device'. The VEN_1022 DEV_ check catches silicon whose
+    // driver never bound (shows as an unknown PCI device, not 'Processor').
     const output = execSync(
-      'powershell -NoProfile -Command "Get-PnpDevice -ErrorAction SilentlyContinue | Where-Object { $_.FriendlyName -match \'AMD\' -and $_.FriendlyName -match \'IPU|NPU|XDNA|AI\' } | Select-Object -First 1 -ExpandProperty FriendlyName"',
+      'powershell -NoProfile -Command "Get-PnpDevice -ErrorAction SilentlyContinue | ' +
+      'Where-Object { ($_.FriendlyName -cmatch \'AMD\' -and $_.FriendlyName -cmatch \'IPU|NPU|XDNA\') -or ' +
+      '$_.InstanceId -match \'VEN_1022&DEV_(1502|17F0|17F1)\' } | ' +
+      'Select-Object FriendlyName,Status,InstanceId | ConvertTo-Json -Compress"',
       { timeout: 8000, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }
     ).trim();
 
     if (output) {
-      HW.amdNpu = true;
-      log.debug(`  NPU detected (PnP): ${output}`);
-      // Assign TOPS rating by CPU model
-      const model = HW.cpuModel.toLowerCase();
-      if (model.includes('8700') || model.includes('8600')) {
-        HW.amdNpuTops = 16;
-      } else if (model.includes('7840') || model.includes('7940')) {
-        HW.amdNpuTops = 10;
+      const devs = JSON.parse(output);
+      const list = Array.isArray(devs) ? devs : [devs];
+      // Prefer the PCI-evidenced device; require Status OK to claim usable NPU.
+      const dev = list.find((d) => /VEN_1022/i.test(d?.InstanceId || '')) || list[0];
+      if (dev?.Status === 'OK') {
+        HW.amdNpu = true;
+        log.debug(`  NPU detected (PnP): ${dev.FriendlyName}`);
+        // Assign TOPS rating by CPU model
+        const model = HW.cpuModel.toLowerCase();
+        if (model.includes('8700') || model.includes('8600')) {
+          HW.amdNpuTops = 16;
+        } else if (model.includes('7840') || model.includes('7940')) {
+          HW.amdNpuTops = 10;
+        }
+      } else if (dev) {
+        // Silicon present but driver not functional — honest: no NPU claim.
+        log.debug(`  NPU silicon present but driver state is '${dev?.Status}' — not claiming acceleration`);
       }
     }
   } catch {
-    // PnP query failed — fallback below will handle it
-  }
-
-  // Fallback: if PnP didn't detect (empty result or error), check CPU model.
-  // The 8700F HAS XDNA NPU — PnP can return empty if driver class doesn't match.
-  if (!HW.amdNpu) {
-    const model = HW.cpuModel.toLowerCase();
-    if (model.includes('8700f') || model.includes('8700g') ||
-      model.includes('8600g') || model.includes('8500g') ||
-      model.includes('7840') || model.includes('7940') ||
-      model.includes('ai 9')) {
-      HW.amdNpu = true;
-      HW.amdNpuTops = model.includes('8700') || model.includes('8600') ? 16 : 10;
-      log.debug(`  NPU detected (model fallback): ${HW.cpuModel} → ${HW.amdNpuTops} TOPS`);
-    }
+    // PnP query failed — no claim (honest zero)
   }
 }
 

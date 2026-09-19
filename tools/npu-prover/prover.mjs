@@ -108,29 +108,33 @@ const seedFromNonce = (nonce) => {
 };
 
 // ─── PnP probe (cached once — hardware doesn't change) ───────────────────────
-// FIXED: the old regex 'NPU|XDNA|Ryzen.AI' missed the real FriendlyName
-// 'AMD IPU Device' — that is why the terminal reported no NPU while the
-// yakmesh node (utils/accel.js, which matches IPU) found it. Also added a
-// PCI-ID fallback keyed on the Hawk Point/Strix device IDs.
+// FIXED twice: (1) 'NPU|XDNA|Ryzen.AI' missed 'AMD IPU Device' → added IPU
+// + PCI-ID fallback. (2) case-insensitive 'IPU' ALSO matched "USB Input
+// Device" ('npu' inside "iNPUt") — a false positive that may also explain
+// accel.js reporting an NPU that isn't there. Now -cmatch (case-sensitive):
+// 'IPU' matches 'AMD IPU Device' but not 'Input'. PCI VEN_1022 result is
+// preferred over name matches when several devices hit.
 
 function probeDevice() {
   const out = { generation: 'windows/onnxruntime', pci: null, pnp: null, name: null };
   try {
     const ps = execSync(
       'powershell -NoProfile -Command "Get-PnpDevice -ErrorAction SilentlyContinue | ' +
-      'Where-Object { $_.FriendlyName -match \'NPU|XDNA|Ryzen.AI|IPU\' -or ' +
+      'Where-Object { $_.FriendlyName -cmatch \'NPU|XDNA|Ryzen|IPU\' -or ' +
       '$_.InstanceId -match \'VEN_1022&DEV_(1502|17F0|17F1)\' } | ' +
       'Select-Object FriendlyName,InstanceId | ConvertTo-Json -Compress"',
       { timeout: 10000, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }
     ).trim();
     if (ps) {
       const dev = JSON.parse(ps);
-      const first = Array.isArray(dev) ? dev[0] : dev;
-      if (first?.InstanceId) {
-        out.pnp = first.InstanceId;
-        out.name = first.FriendlyName || null;
-        const m = first.InstanceId.match(/VEN_([0-9A-Fa-f]{4})&DEV_([0-9A-Fa-f]{4})/);
+      const list = Array.isArray(dev) ? dev : [dev];
+      const pick = list.find((d) => /^PCI\\VEN_1022/i.test(d?.InstanceId || '')) || list[0];
+      if (pick?.InstanceId) {
+        out.pnp = pick.InstanceId;
+        out.name = pick.FriendlyName || null;
+        const m = pick.InstanceId.match(/VEN_([0-9A-Fa-f]{4})&DEV_([0-9A-Fa-f]{4})/);
         if (m) out.pci = `${m[1].toLowerCase()}:${m[2].toLowerCase()}`;
+        if (list.length > 1) out.pnp_all = list.map((d) => d.InstanceId);
       }
     }
   } catch { /* probe failed — honest nulls */ }
