@@ -2,6 +2,39 @@
 
 All notable changes to YAKMESH will be documented in this file.
 
+## [3.5.4] - 2026-09-19
+
+### 🔐 Security Audit + Dependency Cleanup + vegati Fix
+
+*Theme: "Verify the verifier."*
+
+- **Verification-path audit** — closed identity-binding and quorum gaps:
+  attestation-gossip now binds `attester` to the signing key's derived
+  nodeId (sybil attester inflation), revocation certificates dedup
+  attesters + enforce expiry + take quorum from the caller's measured
+  network size, mesh-auth binds responder identity and validates the
+  signed challenge fields, hardware-attestation measures challenger-side
+  elapsed time instead of trusting self-reported timing.
+- **Gossip wire slimmed ~4×** — signature once per layer instead of
+  stacked: self-signed rumor wrappers skip the redundant outer TRIBHUJ
+  signature; ratchet certs ride a bounded post-rotation announce window.
+  Heartbeat frames ~67KB → ~15–22KB.
+- **Dependency surface cut to 8 runtime packages** — removed
+  `onnxruntime-node` and `node-forge` (dormant consumers archived),
+  moved CLI-only packages to devDependencies, pinned `qs ^6.16.0` via
+  overrides. `npm audit --omit=dev`: **0 vulnerabilities**.
+- **vegati velocity monitor** — fixed false `elevated` alerts every ~60s
+  on quiet meshes: MESSAGE_RATE now observes one completed-window rate
+  sample instead of the per-message cumulative sawtooth, and the
+  z-score has a `minStdDev` floor so near-zero-variance baselines can
+  no longer produce unbounded deviations.
+- **Manifest-exact packaging** — `scripts/stage-dist.mjs` stages exactly
+  the manifest file set and fails the build on any hash divergence;
+  stray hashed files can no longer drift a shipped package's network id.
+- **Windows launchers** — `start-yakmesh-silent.vbs` runs the node with
+  no console window; `STOP-YAKMESH.bat` / `VIEW-YAKMESH-LOG.bat` for
+  control and live logs.
+
 ## [3.5.3] - 2026-09-19
 
 ### 🐛 Attestation Correctness — Timing & Graph Analysis Fixes
