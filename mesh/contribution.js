@@ -34,6 +34,17 @@ const FETCH_TIMEOUT_MS = 1500;
 /** Cached seal for the current epoch — bridge call is ~1ms, epochs are 30s. */
 let cached = { epoch: -1, payload: null };
 
+/**
+ * Time-trust provider — wired by the server at startup. Must return
+ * true when MANI tier ≥ PTP (can_attest_time, entropyFlags bit0).
+ * Unwired → bit0 stays 0: unattested time is reported, never claimed.
+ */
+let timeTrustProvider = null;
+
+export function setTimeTrustProvider(fn) {
+  timeTrustProvider = typeof fn === 'function' ? fn : null;
+}
+
 async function getJson(path) {
   const res = await fetch(`${BRIDGE_URL}${path}`, {
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
@@ -57,12 +68,14 @@ export function currentEpoch(nowMs = Date.now()) {
  *
  * @returns {Promise<object|null>} ContributionSummary-shaped object
  */
-export async function contributionMeshState() {
-  const epoch = currentEpoch();
+export async function contributionMeshState(nowMs) {
+  const epoch = currentEpoch(nowMs);
   if (cached.epoch === epoch) return cached.payload;
 
   try {
-    const { node_id, seal } = await getJson(`/yakcoin/seal?epoch=${epoch}`);
+    const { node_id, seal, real_silicon, silicon_drift } =
+      await getJson(`/yakcoin/seal?epoch=${epoch}`);
+    const canAttestTime = timeTrustProvider ? !!timeTrustProvider() : false;
     const payload = {
       version: 1,
       epoch,
@@ -71,7 +84,8 @@ export async function contributionMeshState() {
       spongeRounds: 0,         // PRAHARI feed not wired — honest zero
       shareCount: 0,           // mesh pool not live — honest zero
       jobRoot: '0'.repeat(64), // no completed work orders yet
-      entropyFlags: 0,         // set by MANI trust once detector reports in
+      entropyFlags: (canAttestTime ? 1 : 0) | (real_silicon ? 2 : 0),
+      siliconDrift: Number.isInteger(silicon_drift) ? silicon_drift : 0,
     };
     cached = { epoch, payload };
     return payload;
