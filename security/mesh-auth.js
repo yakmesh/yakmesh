@@ -29,6 +29,7 @@
 
 import { sha3_256 } from '@noble/hashes/sha3.js';
 import { bytesToHex, hexToBytes, utf8ToBytes } from '@noble/hashes/utils.js';
+import { generateNodeId } from '../identity/node-key.js';
 import { ternaryId } from '../utils/ternary-id.js';
 import { EventEmitter } from 'events';
 import { createLogger } from '../utils/logger.js';
@@ -104,6 +105,37 @@ export class MeshAuthenticator extends EventEmitter {
       this.stats.authFailed++;
       return { valid: false, error: 'Unknown or expired challenge' };
     }
+    // The responder must be the peer this challenge was issued to —
+    // otherwise anyone who sees the challenge can answer as any nodeId.
+    if (pending.peerId !== response.responderNodeId) {
+      this.stats.authFailed++;
+      return { valid: false, error: 'Responder does not match challenged peer' };
+    }
+    // responderNodeId must derive from responderPublicKey — otherwise the
+    // signature verifies under a key unrelated to the claimed identity.
+    try {
+      if (generateNodeId(hexToBytes(response.responderPublicKey)) !== response.responderNodeId) {
+        this.stats.authFailed++;
+        return { valid: false, error: 'responderNodeId not bound to publicKey' };
+      }
+    } catch (e) {
+      this.stats.authFailed++;
+      return { valid: false, error: 'Identity binding check failed' };
+    }
+    // The signed payload must answer THIS challenge — same nonce and
+    // challengeId as issued — or a signature over arbitrary data passes.
+    let claimed;
+    try {
+      claimed = JSON.parse(response.responseData);
+    } catch {
+      claimed = null;
+    }
+    if (!claimed || claimed.nonce !== pending.challenge.nonce ||
+        claimed.challengeId !== pending.challenge.challengeId) {
+      this.stats.authFailed++;
+      this.pendingChallenges.delete(response.challengeId);
+      return { valid: false, error: 'Response does not answer the issued challenge' };
+    }
     const isValid = this.identity.verify(response.responseData, response.signature, response.responderPublicKey);
     if (!isValid) {
       this.stats.authFailed++;
@@ -133,7 +165,12 @@ export class MeshAuthenticator extends EventEmitter {
   unblock(peerId) { this.options.blocklist.delete(peerId); }
 
   _deriveSessionKey(peerId, nonce) {
-    return sha3_256(utf8ToBytes(peerId + nonce + this.identity.identity.nodeId));
+    // Canonical ordering — both sides must derive the SAME key.
+    // sha3(theirId + nonce + ourId) on the challenger side equals
+    // sha3(theirId + nonce + ourId) on the responder side only if the
+    // two node IDs are sorted first.
+    const [first, second] = [peerId, this.identity.identity.nodeId].sort();
+    return sha3_256(utf8ToBytes(first + second + nonce));
   }
 
   getStats() {

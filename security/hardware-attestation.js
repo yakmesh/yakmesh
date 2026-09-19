@@ -659,11 +659,28 @@ export class HardwareAttestation {
     const responseBytes = new TextEncoder().encode(JSON.stringify(responseCopy));
     const signature = hexToBytes(response.signature);
     const pubKeyBytes = typeof publicKey === 'string' ? hexToBytes(publicKey) : publicKey;
-    
+
     if (!mlDsa65Verify(signature, responseBytes, pubKeyBytes)) {
       return { valid: false, reason: 'INVALID_SIGNATURE' };
     }
-    
+
+    // CHALLENGER-MEASURED WORK: the claimed compute (meanMs × iterations)
+    // must fit inside the elapsed time WE measured (challenge issued →
+    // response received). response.respondedAt is responder-controlled and
+    // cannot be trusted. Without this check the timing fields are just
+    // self-reported numbers with a signature — any node can sign a claim
+    // of AES-NI-class throughput it never performed.
+    const elapsedMs = Date.now() - challenge.createdAt;
+    const claimedWorkMs = response.timing?.meanMs * (challenge.iterations || 1);
+    if (Number.isFinite(claimedWorkMs) && elapsedMs < claimedWorkMs * 0.5) {
+      return {
+        valid: false,
+        reason: 'RESPONDED_IMPOSSIBLY_FAST',
+        elapsedMs,
+        claimedWorkMs,
+      };
+    }
+
     // Validate timing
     const timingValidation = validateAESTiming(response.timing);
     if (!timingValidation.valid) {

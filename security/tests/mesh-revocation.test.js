@@ -577,7 +577,7 @@ describe('MeshRevocation', () => {
     expect(cert.attestations.length).toBe(7);
   });
 
-  it('should verify revocation certificate', () => {
+  it('should verify revocation certificate', async () => {
     const attesters = [];
     for (let i = 0; i < 7; i++) {
       const kp = generateKeypair();
@@ -595,29 +595,31 @@ describe('MeshRevocation', () => {
     }
 
     const cert = revocation.createRevocationCertificate(targetDokoId);
-    const verification = MeshRevocation.verifyCertificate(cert, (id) => publicKeyMap.get(id));
-    
+    const verification = await MeshRevocation.verifyCertificate(
+      cert, (id) => publicKeyMap.get(id), { actualActiveNodes: 10 });
+
     expect(verification.valid).toBe(true);
     expect(verification.validSignatures).toBe(7);
   });
 
-  it('should reject certificate with invalid threshold', () => {
+  it('should reject certificate with too-small claimed threshold', async () => {
     const cert = {
       version: '1.0',
       type: 'mesh-consensus',
       dokoId: targetDokoId,
       activeNodes: 10,
-      threshold: 5, // Should be 7
+      threshold: 5, // below required quorum of 7
       attestations: [],
     };
 
-    const verification = MeshRevocation.verifyCertificate(cert, () => null);
-    
+    const verification = await MeshRevocation.verifyCertificate(
+      cert, () => null, { actualActiveNodes: 10 });
+
     expect(verification.valid).toBe(false);
-    expect(verification.reason).toBe('INVALID_THRESHOLD');
+    expect(verification.reason).toBe('INSUFFICIENT_VALID_SIGNATURES');
   });
 
-  it('should reject certificate below threshold', () => {
+  it('should reject certificate below threshold', async () => {
     const attesters = [];
     for (let i = 0; i < 5; i++) {
       const kp = generateKeypair();
@@ -645,10 +647,73 @@ describe('MeshRevocation', () => {
       attestations,
     };
 
-    const verification = MeshRevocation.verifyCertificate(cert, (id) => publicKeyMap.get(id));
-    
+    const verification = await MeshRevocation.verifyCertificate(
+      cert, (id) => publicKeyMap.get(id), { actualActiveNodes: 10 });
+
     expect(verification.valid).toBe(false);
-    expect(verification.reason).toBe('BELOW_THRESHOLD');
+    expect(verification.reason).toBe('INSUFFICIENT_VALID_SIGNATURES');
+  });
+
+  it('should not count duplicated attester signatures twice', async () => {
+    // One valid attestation duplicated threshold-times must NOT pass —
+    // distinct attesters are what count.
+    const kp = generateKeypair();
+    const id = createDokoId('attester-solo');
+    publicKeyMap.set(id, kp.publicKey);
+
+    const att = new Attestation({
+      dokoId: targetDokoId,
+      reason: REVOCATION_REASONS.DOUBLE_SIGN,
+      attesterId: id,
+    });
+    att.sign(kp.privateKey);
+    const json = att.toJSON();
+
+    const cert = {
+      version: '1.0',
+      type: 'mesh-consensus',
+      dokoId: targetDokoId,
+      activeNodes: 10,
+      threshold: 7,
+      attestations: [json, json, json, json, json, json, json], // 7 copies of ONE attester
+    };
+
+    const verification = await MeshRevocation.verifyCertificate(
+      cert, (aid) => publicKeyMap.get(aid), { actualActiveNodes: 10 });
+
+    expect(verification.valid).toBe(false);
+    expect(verification.validCount).toBe(1);
+  });
+
+  it('should ignore attacker-shrunken activeNodes when real count given', async () => {
+    // Attacker sets activeNodes=1 → threshold=1 → tries to revoke with
+    // a single attestation. With actualActiveNodes supplied, the quorum
+    // is computed from the real network size.
+    const kp = generateKeypair();
+    const id = createDokoId('attacker-attester');
+    publicKeyMap.set(id, kp.publicKey);
+
+    const att = new Attestation({
+      dokoId: targetDokoId,
+      reason: REVOCATION_REASONS.DOUBLE_SIGN,
+      attesterId: id,
+    });
+    att.sign(kp.privateKey);
+
+    const cert = {
+      version: '1.0',
+      type: 'mesh-consensus',
+      dokoId: targetDokoId,
+      activeNodes: 1,   // forged small network
+      threshold: 1,
+      attestations: [att.toJSON()],
+    };
+
+    const verification = await MeshRevocation.verifyCertificate(
+      cert, (aid) => publicKeyMap.get(aid), { actualActiveNodes: 10 });
+
+    expect(verification.valid).toBe(false);
+    expect(verification.requiredThreshold).toBe(7);
   });
 
   it('should import and export attestations', () => {

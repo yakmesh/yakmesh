@@ -37,8 +37,8 @@
 
 import { EventEmitter } from 'events';
 import { sha3_256 } from '@noble/hashes/sha3.js';
-import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js';
-import { verifySignature } from '../identity/node-key.js';
+import { bytesToHex, hexToBytes, utf8ToBytes } from '@noble/hashes/utils.js';
+import { verifySignature, generateNodeId } from '../identity/node-key.js';
 import { createLogger } from '../utils/logger.js';
 
 const log = createLogger('mesh:attestation-gossip');
@@ -138,6 +138,20 @@ export class AttestationGossip extends EventEmitter {
     if (!batch.pubKey || !verifySignature(JSON.stringify(signed), sig, batch.pubKey)) {
       this.stats.badSigs++;
       log.warn('attestation batch bad signature', { from: batch.attester });
+      return { accepted: 0, rejected: batch.items?.length || 0 };
+    }
+
+    // IDENTITY BINDING: batch.attester must derive from batch.pubKey.
+    // Otherwise a sybil can mint arbitrary attester nodeIds, each signing
+    // a self-consistent batch with its own key, inflating k-of-m counts
+    // with identities that don't exist. Same binding as HELLO handshake.
+    try {
+      if (generateNodeId(hexToBytes(batch.pubKey)) !== batch.attester) {
+        this.stats.badSigs++;
+        log.warn('attestation batch attester not bound to pubkey', { from: batch.attester });
+        return { accepted: 0, rejected: batch.items?.length || 0 };
+      }
+    } catch {
       return { accepted: 0, rejected: batch.items?.length || 0 };
     }
 

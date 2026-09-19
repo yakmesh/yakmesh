@@ -576,48 +576,65 @@ export class MeshRevocation extends EventEmitter {
 
   /**
    * Verify a revocation certificate
-   * 
+   *
    * Anyone can verify by checking:
    * 1. All attestation signatures are valid
-   * 2. attestationCount >= threshold
+   * 2. DISTINCT attester count >= threshold (duplicates never count twice)
    * 3. threshold = ceil(2/3 * activeNodes)
+   * 4. No attestation is expired
+   *
+   * @param {Object} certificate - The received certificate (attacker-controlled)
+   * @param {Function} resolvePublicKey - attesterId -> publicKey (sync or async)
+   * @param {Object} [options]
+   * @param {number} [options.actualActiveNodes] - OUR measured network size.
+   *   When provided, the threshold is computed from this value — the
+   *   certificate's claimed activeNodes/threshold cannot shrink the quorum.
+   *   Without it, only internal consistency is checked.
    */
-  static verifyCertificate(certificate, resolvePublicKey) {
+  static async verifyCertificate(certificate, resolvePublicKey, options = {}) {
     if (!certificate || !certificate.attestations) {
       return { valid: false, reason: 'MISSING_DATA' };
     }
 
-    // Verify threshold calculation
-    const expectedThreshold = Math.ceil(certificate.activeNodes * (2/3));
-    if (certificate.threshold !== expectedThreshold) {
-      return { valid: false, reason: 'INVALID_THRESHOLD' };
+    // Threshold basis: prefer our measured network size over the certificate's
+    // claimed value. An attacker setting activeNodes=1 reduces the quorum to 1.
+    const activeNodes = options.actualActiveNodes ?? certificate.activeNodes;
+
+    if (options.actualActiveNodes != null && options.actualActiveNodes < DEFAULT_CONFIG.minNodes) {
+      return { valid: false, reason: 'INSUFFICIENT_NETWORK' };
     }
 
-    // Verify attestation count meets threshold
-    if (certificate.attestations.length < certificate.threshold) {
-      return { valid: false, reason: 'BELOW_THRESHOLD' };
-    }
+    const expectedThreshold = Math.ceil(activeNodes * (2/3));
 
-    // Verify each attestation signature
+    // Required quorum: never less than ceil(2/3) of the trusted node count.
+    // A stricter certificate claim only raises the bar — it can't lower it.
+    const requiredThreshold = Math.max(certificate.threshold ?? 0, expectedThreshold);
+
+    // Verify each attestation signature — one vote per distinct attester,
+    // and no expired attestation counts.
+    const countedAttesters = new Set();
     let validCount = 0;
     for (const data of certificate.attestations) {
       const attestation = Attestation.fromJSON(data);
-      const publicKey = resolvePublicKey(attestation.attesterId);
-      
+      if (countedAttesters.has(attestation.attesterId)) continue;
+      if (attestation.isExpired()) continue;
+
+      const publicKey = await resolvePublicKey(attestation.attesterId);
       if (publicKey && attestation.verify(publicKey)) {
+        countedAttesters.add(attestation.attesterId);
         validCount++;
       }
     }
 
-    if (validCount < certificate.threshold) {
-      return { valid: false, reason: 'INSUFFICIENT_VALID_SIGNATURES', validCount };
+    if (validCount < requiredThreshold) {
+      return { valid: false, reason: 'INSUFFICIENT_VALID_SIGNATURES', validCount, requiredThreshold };
     }
 
     return {
       valid: true,
       validSignatures: validCount,
-      threshold: certificate.threshold,
-      confidence: validCount / certificate.activeNodes,
+      threshold: requiredThreshold,
+      confidence: validCount / activeNodes,
     };
   }
 }

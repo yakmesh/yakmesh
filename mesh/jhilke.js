@@ -87,6 +87,7 @@ const JHILKE_CONFIG = {
   // Timing
   chirpInterval: 30000,   // 30 seconds — matches gossip HELLO cadence
   tickTolerance: 1,       // ±1 tick tolerance for chirp verification
+  maxDynamicTicks: 5,     // hard cap on drift-widened tolerance — bounds replay window
 
   // ACT state machine timing
   actPrepareMinTicks: 3,  // Minimum ticks in PREPARE before advancing to READY
@@ -244,10 +245,17 @@ export class JhilkeCoordinator extends EventEmitter {
     // peer's potential correction + network propagation.
     const driftToleranceMs = Math.abs(aguwa._correctionMs) + 2000;
 
-    // Use the larger of MANI precision vs actual drift
+    // Use the larger of MANI precision vs actual drift — but cap the
+    // window. Without the cap, a large _correctionMs widens the chirp
+    // replay window arbitrarily (e.g. 60s skew = ±62 valid ticks).
+    // A node whose clock is really that far off SHOULD fail chirps —
+    // that is honest signal for KARMA, not something to paper over.
     const toleranceMs = Math.max(maniToleranceMs, driftToleranceMs);
     const dynamicTicks = Math.ceil(toleranceMs / 1000);
-    const tolerance = Math.max(JHILKE_CONFIG.tickTolerance, dynamicTicks);
+    const tolerance = Math.min(
+      Math.max(JHILKE_CONFIG.tickTolerance, dynamicTicks),
+      JHILKE_CONFIG.maxDynamicTicks
+    );
 
     for (let offset = -tolerance; offset <= tolerance; offset++) {
       const testTick = currentTick + offset;

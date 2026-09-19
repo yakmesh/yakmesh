@@ -368,9 +368,11 @@ export class KhataTrustIntegration extends EventEmitter {
   async handleRevocationCertificate(message, fromPeerId) {
     const { certificate } = message;
 
-    // Verify certificate
+    // Verify certificate — result is { valid, reason?, ... }; an object is
+    // ALWAYS truthy, so the .valid field must be checked, not the object.
     if (this.meshRevocation) {
-      const valid = await this.meshRevocation.constructor.verifyCertificate(
+      const actualActiveNodes = this.meshRevocation.getActiveNodeCount?.() ?? undefined;
+      const result = await this.meshRevocation.constructor.verifyCertificate(
         certificate,
         async (dokoId) => {
           // Resolver for public keys
@@ -379,10 +381,11 @@ export class KhataTrustIntegration extends EventEmitter {
             return profile?.publicKey || null;
           }
           return null;
-        }
+        },
+        { actualActiveNodes }
       );
 
-      if (valid) {
+      if (result.valid) {
         this.emit('revocation-certificate', {
           certificate,
           fromPeerId,
