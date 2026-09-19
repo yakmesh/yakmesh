@@ -665,12 +665,12 @@
         <use href="#icon-dashboard" />
       </svg> <span>Dashboard</span></a>
     <ul class="sidebar-nav">
-      <li class="sidebar-section"><span><svg class="doc-icon" aria-hidden="true"><use href="#icon-book"/></svg> Guides</span></li>
+      <li class="sidebar-section"><span>📘 Guides</span></li>
       <li><a href="index.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-home"/></svg> <span>Overview</span></a></li>
       <li><a href="getting-started.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-rocket"/></svg> <span>Getting Started</span></a></li>
       <li><a href="tutorials.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-book"/></svg> <span>Tutorials</span></a></li>
       <li><a href="gumba-tutorial.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-gumba"/></svg> <span>GUMBA Tutorial</span></a></li>
-      <li class="sidebar-section"><span><svg class="doc-icon" aria-hidden="true"><use href="#icon-yak"/></svg> Protocol Stack</span></li>
+      <li class="sidebar-section"><span>🐃 Protocol Stack</span></li>
       <li><a href="yak-protocol.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-yak"/></svg> <span>YAK://</span></a></li>
       <li><a href="annex.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-annex"/></svg> <span>ANNEX</span></a></li>
       <li><a href="jhilke.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-jhilke"/></svg> <span>JHILKE</span></a></li>
@@ -706,18 +706,18 @@
       <li><a href="docs-bundle.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-granth"/></svg> <span>GRANTH</span></a></li>
       <li><a href="api.html" class="active"><svg class="doc-icon" aria-hidden="true"><use href="#icon-api"/></svg> <span>API</span></a></li>
       <li><a href="adapters.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-adapters"/></svg> <span>Adapters</span></a></li>
-      <li class="sidebar-section"><span><svg class="doc-icon" aria-hidden="true"><use href="#icon-rocket"/></svg> Applications</span></li>
+      <li class="sidebar-section"><span>🚀 Applications</span></li>
       <li><a href="yakapp.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-yakapp"/></svg> <span>YakApp</span></a></li>
       <li><a href="c2c.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-c2c"/></svg> <span>C2C</span></a></li>
       <li><a href="studio.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-studio"/></svg> <span>Studio</span></a></li>
-      <li class="sidebar-section"><span><svg class="doc-icon" aria-hidden="true"><use href="#icon-gear"/></svg> Infrastructure</span></li>
+      <li class="sidebar-section"><span>🔧 Infrastructure</span></li>
       <li><a href="cli.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-terminal"/></svg> <span>CLI</span></a></li>
       <li><a href="configuration.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-gear"/></svg> <span>Configuration</span></a></li>
       <li><a href="mesh.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-mandala"/></svg> <span>Mesh Network</span></a></li>
       <li><a href="time-sources.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-mani"/></svg> <span>Time Sources</span></a></li>
       <li><a href="webserver.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-server"/></svg> <span>Web Server</span></a></li>
       <li><a href="advanced-systems.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-tivra"/></svg> <span>Advanced Systems</span></a></li>
-      <li class="sidebar-section"><span><svg class="doc-icon" aria-hidden="true"><use href="#icon-quickref"/></svg> Reference</span></li>
+      <li class="sidebar-section"><span>📋 Reference</span></li>
       <li><a href="quick-reference.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-quickref"/></svg> <span>Quick Ref</span></a></li>
     </ul>
   </nav>
@@ -767,20 +767,23 @@
         <div class="bg-mountain-800 border border-mountain-700 rounded-xl overflow-hidden">
           <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
             <span class="method-get px-2 py-1 rounded text-xs font-mono">GET</span>
-            <code class="text-Yakmesh-300">/api/aguwa</code>
+            <code class="text-Yakmesh-300">/time/aguwa</code>
           </div>
           <div class="p-4">
             <p class="text-mountain-300 mb-4">Returns AGUWA Kuramoto phase coupling statistics and dynamic capacity.</p>
             <pre class="language-json rounded-lg"><code>{
-  "timeSync": "calibrated",
-  "coupling": {
-    "omega": 1.05,
-    "orderParameter": 0.98
-  },
-  "capacity": {
-    "maxPeers": 30,
-    "multiplier": 1.2
-  }
+  "initialized": true,
+  "omega": 1.05,
+  "orderParameter": 0.98,
+  "health": "converged",
+  "peerCount": 3,
+  "correctionMs": 0.4,
+  "networkJitter": 1.2,
+  "peers": [
+    { "nodeId": "8cCG…", "theta": 0.0012, "timeTrust": 1.0,
+      "propagationDelayMs": 14 }
+  ],
+  "divergentPeers": []
 }</code></pre>
           </div>
         </div>
@@ -789,10 +792,10 @@
         <div class="bg-mountain-800 border border-mountain-700 rounded-xl overflow-hidden">
           <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
             <span class="method-get px-2 py-1 rounded text-xs font-mono">GET</span>
-            <code class="text-Yakmesh-300">/api/samuha</code>
+            <code class="text-Yakmesh-300">SAMUHA</code> <span class="text-mountain-400">(internal — not exposed via HTTP)</span>
           </div>
           <div class="p-4">
-            <p class="text-mountain-300 mb-4">Returns SAMUHA admission control state and rate limits.</p>
+            <p class="text-mountain-300 mb-4">SAMUHA admission control runs inside the node — no public endpoint. Internal state follows this shape:</p>
             <pre class="language-json rounded-lg"><code>{
   "utilization": 0.45,
   "handshakes": 5,
@@ -1063,7 +1066,7 @@
       </div>
 
       <!-- Journey Navigation -->
-                                                <div class="border-t border-mountain-700 mt-12 pt-8">
+                                    <div class="border-t border-mountain-700 mt-12 pt-8">
         <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
         <div class="flex flex-col sm:flex-row gap-4">
           <a href="docs-bundle.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">

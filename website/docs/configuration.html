@@ -721,7 +721,7 @@
                 <div>
                     <div class="flex items-center gap-3">
                         <h1 class="text-4xl font-bold">Configuration</h1>
-                        <span class="theme-badge text-xs px-2 py-1 rounded-full font-mono">v3.5.0</span>
+                        <span class="theme-badge text-xs px-2 py-1 rounded-full font-mono">v3.5.4</span>
                     </div>
                     <p class="theme-accent">Complete yakmesh.config.js reference</p>
                 </div>
@@ -858,13 +858,13 @@
                             <tr>
                                 <td><code>httpPort</code></td>
                                 <td>number</td>
-                                <td><code>3000</code></td>
+                                <td><code>3080</code></td>
                                 <td>HTTP server port for REST API and web interface</td>
                             </tr>
                             <tr>
                                 <td><code>wsPort</code></td>
                                 <td>number</td>
-                                <td><code>9001</code></td>
+                                <td><code>9080</code></td>
                                 <td>WebSocket port for mesh network P2P connections</td>
                             </tr>
                             <tr>
@@ -1043,9 +1043,9 @@
                         </thead>
                         <tbody>
                             <tr>
-                                <td><code>YAKMESH_PORT</code></td>
+                                <td><code>YAKMESH_HTTP_PORT</code></td>
                                 <td><code>network.httpPort</code></td>
-                                <td><code>YAKMESH_PORT=8080</code></td>
+                                <td><code>YAKMESH_HTTP_PORT=8080</code></td>
                             </tr>
                             <tr>
                                 <td><code>YAKMESH_WS_PORT</code></td>
@@ -1061,7 +1061,7 @@
                     </table>
                 </div>
                 <pre class="language-bash mt-4"><code># Example: Start with custom ports
-YAKMESH_PORT=8080 YAKMESH_WS_PORT=9002 npx yakmesh start</code></pre>
+YAKMESH_HTTP_PORT=8080 YAKMESH_WS_PORT=9002 npx yakmesh start</code></pre>
             </div>
 
             <!-- Deployment Examples -->
@@ -1180,7 +1180,7 @@ export default {
                     <h3 class="font-semibold text-blue-400 mb-2"><svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true"><use href="#icon-bolt"/></svg> Port Selection</h3>
                     <p class="text-mountain-300 text-sm">
                         If ports are in use, YAKMESH will automatically try sequential ports 
-                        (9001 → 9002 → 9003...). Use environment variables for container deployments.
+                        (9080 → 9081 → 9082...). Use environment variables for container deployments.
                     </p>
                 </div>
                 <div class="bg-mountain-800 rounded-lg p-4 border-l-4 border-teal-500">

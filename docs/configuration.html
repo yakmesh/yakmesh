@@ -646,12 +646,12 @@
     </a>
     <a href="/dashboard" class="sidebar-dashboard-link"><svg class="doc-icon" aria-hidden="true"><use href="#icon-dashboard"/></svg> <span>Dashboard</span></a>
     <ul class="sidebar-nav">
-      <li class="sidebar-section"><span><svg class="doc-icon" aria-hidden="true"><use href="#icon-book"/></svg> Guides</span></li>
+      <li class="sidebar-section"><span>📘 Guides</span></li>
       <li><a href="index.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-home"/></svg> <span>Overview</span></a></li>
       <li><a href="getting-started.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-rocket"/></svg> <span>Getting Started</span></a></li>
       <li><a href="tutorials.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-book"/></svg> <span>Tutorials</span></a></li>
       <li><a href="gumba-tutorial.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-gumba"/></svg> <span>GUMBA Tutorial</span></a></li>
-      <li class="sidebar-section"><span><svg class="doc-icon" aria-hidden="true"><use href="#icon-yak"/></svg> Protocol Stack</span></li>
+      <li class="sidebar-section"><span>🐃 Protocol Stack</span></li>
       <li><a href="yak-protocol.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-yak"/></svg> <span>YAK://</span></a></li>
       <li><a href="annex.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-annex"/></svg> <span>ANNEX</span></a></li>
       <li><a href="jhilke.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-jhilke"/></svg> <span>JHILKE</span></a></li>
@@ -687,18 +687,18 @@
       <li><a href="docs-bundle.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-granth"/></svg> <span>GRANTH</span></a></li>
       <li><a href="api.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-api"/></svg> <span>API</span></a></li>
       <li><a href="adapters.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-adapters"/></svg> <span>Adapters</span></a></li>
-      <li class="sidebar-section"><span><svg class="doc-icon" aria-hidden="true"><use href="#icon-rocket"/></svg> Applications</span></li>
+      <li class="sidebar-section"><span>🚀 Applications</span></li>
       <li><a href="yakapp.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-yakapp"/></svg> <span>YakApp</span></a></li>
       <li><a href="c2c.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-c2c"/></svg> <span>C2C</span></a></li>
       <li><a href="studio.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-studio"/></svg> <span>Studio</span></a></li>
-      <li class="sidebar-section"><span><svg class="doc-icon" aria-hidden="true"><use href="#icon-gear"/></svg> Infrastructure</span></li>
+      <li class="sidebar-section"><span>🔧 Infrastructure</span></li>
       <li><a href="cli.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-terminal"/></svg> <span>CLI</span></a></li>
       <li><a href="configuration.html" class="active"><svg class="doc-icon" aria-hidden="true"><use href="#icon-gear"/></svg> <span>Configuration</span></a></li>
       <li><a href="mesh.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-mandala"/></svg> <span>Mesh Network</span></a></li>
       <li><a href="time-sources.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-mani"/></svg> <span>Time Sources</span></a></li>
       <li><a href="webserver.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-server"/></svg> <span>Web Server</span></a></li>
       <li><a href="advanced-systems.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-tivra"/></svg> <span>Advanced Systems</span></a></li>
-      <li class="sidebar-section"><span><svg class="doc-icon" aria-hidden="true"><use href="#icon-quickref"/></svg> Reference</span></li>
+      <li class="sidebar-section"><span>📋 Reference</span></li>
       <li><a href="quick-reference.html"><svg class="doc-icon" aria-hidden="true"><use href="#icon-quickref"/></svg> <span>Quick Ref</span></a></li>
     </ul>
   </nav>
@@ -721,7 +721,7 @@
                 <div>
                     <div class="flex items-center gap-3">
                         <h1 class="text-4xl font-bold">Configuration</h1>
-                        <span class="theme-badge text-xs px-2 py-1 rounded-full font-mono">v3.5.0</span>
+                        <span class="theme-badge text-xs px-2 py-1 rounded-full font-mono">v3.5.4</span>
                     </div>
                     <p class="theme-accent">Complete yakmesh.config.js reference</p>
                 </div>
@@ -858,13 +858,13 @@
                             <tr>
                                 <td><code>httpPort</code></td>
                                 <td>number</td>
-                                <td><code>3000</code></td>
+                                <td><code>3080</code></td>
                                 <td>HTTP server port for REST API and web interface</td>
                             </tr>
                             <tr>
                                 <td><code>wsPort</code></td>
                                 <td>number</td>
-                                <td><code>9001</code></td>
+                                <td><code>9080</code></td>
                                 <td>WebSocket port for mesh network P2P connections</td>
                             </tr>
                             <tr>
@@ -1043,9 +1043,9 @@
                         </thead>
                         <tbody>
                             <tr>
-                                <td><code>YAKMESH_PORT</code></td>
+                                <td><code>YAKMESH_HTTP_PORT</code></td>
                                 <td><code>network.httpPort</code></td>
-                                <td><code>YAKMESH_PORT=8080</code></td>
+                                <td><code>YAKMESH_HTTP_PORT=8080</code></td>
                             </tr>
                             <tr>
                                 <td><code>YAKMESH_WS_PORT</code></td>
@@ -1061,7 +1061,7 @@
                     </table>
                 </div>
                 <pre class="language-bash mt-4"><code># Example: Start with custom ports
-YAKMESH_PORT=8080 YAKMESH_WS_PORT=9002 npx yakmesh start</code></pre>
+YAKMESH_HTTP_PORT=8080 YAKMESH_WS_PORT=9002 npx yakmesh start</code></pre>
             </div>
 
             <!-- Deployment Examples -->
@@ -1180,7 +1180,7 @@ export default {
                     <h3 class="font-semibold text-blue-400 mb-2"><svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true"><use href="#icon-bolt"/></svg> Port Selection</h3>
                     <p class="text-mountain-300 text-sm">
                         If ports are in use, YAKMESH will automatically try sequential ports 
-                        (9001 → 9002 → 9003...). Use environment variables for container deployments.
+                        (9080 → 9081 → 9082...). Use environment variables for container deployments.
                     </p>
                 </div>
                 <div class="bg-mountain-800 rounded-lg p-4 border-l-4 border-teal-500">
@@ -1244,7 +1244,7 @@ export default {
             </div>
 
                   <!-- Journey Navigation -->
-                                                                                                                                    <div class="border-t border-mountain-700 mt-12 pt-8">
+                                                                                                                        <div class="border-t border-mountain-700 mt-12 pt-8">
         <h2 class="text-xl font-bold mb-6">Continue the Journey</h2>
         <div class="flex flex-col sm:flex-row gap-4">
           <a href="cli.html" class="flex-1 block bg-mountain-800 border border-mountain-700 rounded-xl p-4 hover:border-theme-accent transition group">

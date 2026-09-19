@@ -6,7 +6,7 @@
  * Regenerate with: npm run build:docs
  * Source: website/docs/
  * 
- * @generated 2026-09-15T06:57:48.417Z
+ * @generated 2026-09-19T06:40:46.775Z
  * @module embedded-docs/bundle
  */
 
@@ -14,18 +14,18 @@
  * Master hash of the entire documentation bundle.
  * Computed as: SHA3-256(sorted individual file hashes joined)
  */
-export const BUNDLE_HASH = '9a5bd528c6c31647ffac15687411de733424d1db93b3dfa74ec0357393d04e9e';
+export const BUNDLE_HASH = 'a787321615d0a786a3aa6767f9333f3aae1ed43ae69f430a00c6d2a2e728589f';
 
 /**
  * Version of the documentation bundle.
  * Matches the npm package version at build time.
  */
-export const BUNDLE_VERSION = '3.5.0';
+export const BUNDLE_VERSION = '3.5.4';
 
 /**
  * Build timestamp (ISO 8601)
  */
-export const BUNDLE_BUILT_AT = '2026-09-15T06:57:48.417Z';
+export const BUNDLE_BUILT_AT = '2026-09-19T06:40:46.775Z';
 
 /**
  * Index of all files in the documentation bundle.
@@ -38,64 +38,9 @@ export const BUNDLE_BUILT_AT = '2026-09-15T06:57:48.417Z';
  * @type {Record<string, {hash: string, size: number, contentType: string}>}
  */
 export const FILE_INDEX = {
-  "CRYPTO-AGILITY.md": {
-    "hash": "b35427b7056bdd801e4c287d5feee366506b0ae3b909d008fe5f371af081d709",
-    "size": 6147,
-    "contentType": "application/octet-stream"
-  },
-  "MTLS-RESEARCH.md": {
-    "hash": "0b3742cb2ca6f98ca2e3fa39366f982e605e8926c322b7b32426e283947527d2",
-    "size": 12007,
-    "contentType": "application/octet-stream"
-  },
-  "NAMCHE-SPEC.md": {
-    "hash": "d7a56090a3e4efeccfcd5519b589f914f525400f5765dee9bb8d03783ed93278",
-    "size": 19042,
-    "contentType": "application/octet-stream"
-  },
-  "PEERQUANTA-YAKMESH-INTEGRATION.md": {
-    "hash": "e8a8415c1c4a8f7a3052d3145e71514ae4d8570f286ed4784f31d5beaaf746a4",
-    "size": 19826,
-    "contentType": "application/octet-stream"
-  },
-  "PRECISION-DISCLOSURE.md": {
-    "hash": "8816f5aadf4c5ad48af19dfe21eb0ec14f9bc67f3d21042888a67957252d78ec",
-    "size": 3505,
-    "contentType": "application/octet-stream"
-  },
   "README.md": {
-    "hash": "c76e346084def9bdf0c482edfa47b579583c7825290f3ae4493849f3a38ebdb7",
-    "size": 3779,
-    "contentType": "application/octet-stream"
-  },
-  "ROADMAP-2.4.0.md": {
-    "hash": "2c56d3971f5c6b984a7ff31476a459052280b27dae9a48fc959b70cf0b274bf2",
-    "size": 16724,
-    "contentType": "application/octet-stream"
-  },
-  "ROADMAP-2.5.0.md": {
-    "hash": "9f53ddc572cc422c69fddf0ff8b66bb29f7065b9996ac85094898b608105ceb2",
-    "size": 6652,
-    "contentType": "application/octet-stream"
-  },
-  "ROADMAP-3.3.0.md": {
-    "hash": "b608d8fc3125b18e8781ee32203ff625e4c9abed554e962563ab1c767451f327",
-    "size": 3706,
-    "contentType": "application/octet-stream"
-  },
-  "SECURITY-AUDIT-REPORT.md": {
-    "hash": "8f720e4eac4dfaf4d67bdc4955c345181fa14eee278ae8fff48766a930b7ae5c",
-    "size": 9888,
-    "contentType": "application/octet-stream"
-  },
-  "SST-INTEGRATION.md": {
-    "hash": "2c906a5d52538f948230496e5a8aab5c088a9bb8598c5bba41d46f7a3e23179c",
-    "size": 20824,
-    "contentType": "application/octet-stream"
-  },
-  "TERNARY-AUDIT-REPORT.md": {
-    "hash": "b37145e22ecae36c8e34313d53976f045321ae837fe904f0555a5ffb6905792f",
-    "size": 7615,
+    "hash": "dd24f85f84b727ac6021e62b9193dcc498724cedbe04336e52071a35976f56fd",
+    "size": 3702,
     "contentType": "application/octet-stream"
   },
   "TME-FAQ.md": {
@@ -104,33 +49,33 @@ export const FILE_INDEX = {
     "contentType": "application/octet-stream"
   },
   "WHITEPAPER.md": {
-    "hash": "a17c4d8fa81655dc56df0e68e895e0939e5f23c2cb2a4f5c1011cf8cd5165d43",
-    "size": 26096,
+    "hash": "f714aacc072581296ea57dc484aef9d0dacbffcbbce3c951173eeeb9b7b4115f",
+    "size": 25450,
     "contentType": "application/octet-stream"
   },
   "adapters.html": {
-    "hash": "d3d27bf2bf633f2b89366741f691fe148ae6b030818f588cb050d530e8300a87",
-    "size": 45990,
+    "hash": "6099a0aab174442ebfa25cabc26e235356056106d43ab84ec5aef9471d29119f",
+    "size": 45403,
     "contentType": "text/html; charset=utf-8"
   },
   "advanced-systems.html": {
-    "hash": "d9686f8f70a207eb1d6f5936da8af557604a764e4d3290e8a11dcc454cb5117f",
-    "size": 49747,
+    "hash": "9b24352afa9ce2caaf359d97acff796640d64a56839f9824bcbf4950ce63b87f",
+    "size": 49160,
     "contentType": "text/html; charset=utf-8"
   },
   "aguwa.html": {
-    "hash": "fb3b584faf1188271522872fcef47c28959dbabb417fc8014c1e4e5c6ccf0ad7",
-    "size": 49766,
+    "hash": "5d15818acea9f5f52ea51543db85e7fc029d3b1d07d6bd371d08c90057b746a8",
+    "size": 49179,
     "contentType": "text/html; charset=utf-8"
   },
   "annex.html": {
-    "hash": "b145cf52dceb3c604505a7825bb028edd4e0307387398ae85f9b9feae7cbb74f",
-    "size": 53640,
+    "hash": "e0773282aa7d9d3d9b198e739464ea3715fcfaebb0cb2f11ae1edda4dbc0aa75",
+    "size": 53053,
     "contentType": "text/html; charset=utf-8"
   },
   "api.html": {
-    "hash": "20273c145fad91d6045ae11ff4f9d4399256dcb941f871b868e8e509c4d0d283",
-    "size": 45715,
+    "hash": "78da6bed28b908e4cd1fca870e14a9f3e96598f7c84d0435c1e811b78c9787a6",
+    "size": 45383,
     "contentType": "text/html; charset=utf-8"
   },
   "apple-touch-icon.png": {
@@ -139,8 +84,8 @@ export const FILE_INDEX = {
     "contentType": "image/png"
   },
   "assets/icons.svg": {
-    "hash": "d84f57a5afc01e75fa4a78cc0c3e93fda9cabce3be043713a35bfaf9d72670f2",
-    "size": 21242,
+    "hash": "e8291d9af32b860ed7d4f6415ec9e2c557a7496763f2cd9888b772058a42fb32",
+    "size": 20654,
     "contentType": "image/svg+xml"
   },
   "assets/silhouettes/adapters.svg": {
@@ -149,8 +94,8 @@ export const FILE_INDEX = {
     "contentType": "image/svg+xml"
   },
   "assets/silhouettes/aguwa-oscillator.svg": {
-    "hash": "e888c122c691c60c4d572bd325a1185c7f89a771581f2cdcb11455496cad08e1",
-    "size": 3082,
+    "hash": "8507125798f230b38c108d62d1ab0e0ffa96f85c4e9254af5b33478276440dcf",
+    "size": 3081,
     "contentType": "image/svg+xml"
   },
   "assets/silhouettes/api-endpoints.svg": {
@@ -174,23 +119,23 @@ export const FILE_INDEX = {
     "contentType": "image/svg+xml"
   },
   "assets/silhouettes/c2c-cosmos.svg": {
-    "hash": "2c896fa1f5044f2728c125663ce49dce2ffc65e4649a5a31a104019f6921379d",
-    "size": 4961,
+    "hash": "e05a3653b2481931fe89407c4209701fd3b879f055830703799d47060cf4172d",
+    "size": 4875,
     "contentType": "image/svg+xml"
   },
   "assets/silhouettes/darbar-court.svg": {
-    "hash": "b06e6f7e1be1c2fc83909eb76a8848d1955bee9b3aa956f85e09922b178fbcf8",
-    "size": 9722,
+    "hash": "c4ef129d46759e857016b2d4604c7019dfda1c7c304d9fb2a529936162a4fe09",
+    "size": 9567,
     "contentType": "image/svg+xml"
   },
   "assets/silhouettes/darshan-eye.svg": {
-    "hash": "8f95c310d9b4d26733083fffa321c8fb37eb4318e80f2e14aa6077cacb36a4a5",
-    "size": 6037,
+    "hash": "265e32f9bf7182d0fc96319825ceb4f0a02639c7c5e30e0c8de82435c067baf6",
+    "size": 5945,
     "contentType": "image/svg+xml"
   },
   "assets/silhouettes/dharma-scales.svg": {
-    "hash": "a8d19bda4f56e9e3169fa3143927a25b0f92d66f0fde32c9c4d194ed3bb2b274",
-    "size": 3666,
+    "hash": "072c13764a572ca854070f78b41b3a67015843b8bfde78c262e43489690fedb8",
+    "size": 3612,
     "contentType": "image/svg+xml"
   },
   "assets/silhouettes/docs-bundle.svg": {
@@ -224,13 +169,13 @@ export const FILE_INDEX = {
     "contentType": "image/svg+xml"
   },
   "assets/silhouettes/gumba-monastery.svg": {
-    "hash": "f2e93a91e3da4bcfcb06a69d6032dabc369b28918d23922b06970d8397a822df",
-    "size": 4228,
+    "hash": "fb70985a9e7e69b44fffb591775811a9254d27257b54105f40b516540dc3e4f4",
+    "size": 4157,
     "contentType": "image/svg+xml"
   },
   "assets/silhouettes/jhilke-cricket.svg": {
-    "hash": "3baaceeb23a7aa220baf4f0835ed3eae4aa27f7630855188661d77393bf0c0cf",
-    "size": 25131,
+    "hash": "6a1164b5eace72a6d78fea701cc2f68ddaa5148e6547f4cc5e65a5782185ddd5",
+    "size": 24721,
     "contentType": "image/svg+xml"
   },
   "assets/silhouettes/karma-wheel.svg": {
@@ -239,8 +184,8 @@ export const FILE_INDEX = {
     "contentType": "image/svg+xml"
   },
   "assets/silhouettes/katha-storytelling.svg": {
-    "hash": "6ae8801374c39f283822550300796135d0be10b12de042f3f4f73714aa5a6b6a",
-    "size": 4233,
+    "hash": "e39d5b874cd5857e2d5fc7f229cf398d2093aa9eed038d41b8284ca48b50c172",
+    "size": 4158,
     "contentType": "image/svg+xml"
   },
   "assets/silhouettes/lama-council.svg": {
@@ -249,8 +194,8 @@ export const FILE_INDEX = {
     "contentType": "image/svg+xml"
   },
   "assets/silhouettes/mala-beads.svg": {
-    "hash": "13389f11eb871c77cf890d1fbd1c3673cdc260b26d35a7a6221d1a17facd5434",
-    "size": 2974,
+    "hash": "433bf15405638c3ba4d2f183ea3d03b5f4fdd5b93bd6e49e44fefa6382ee4d6f",
+    "size": 2906,
     "contentType": "image/svg+xml"
   },
   "assets/silhouettes/mandala-network.svg": {
@@ -284,28 +229,28 @@ export const FILE_INDEX = {
     "contentType": "image/svg+xml"
   },
   "assets/silhouettes/prahari-sentinel.svg": {
-    "hash": "76651c2e510bd92c59704adf75d8a8eb8c6b6362f0f00237f2fb1a1f8cc56706",
-    "size": 3566,
+    "hash": "474d3d56266b5f592ed149505a892b74d37ea2fd6a6e111a4708020e2e2bab96",
+    "size": 3509,
     "contentType": "image/svg+xml"
   },
   "assets/silhouettes/reference-clipboard.svg": {
-    "hash": "500fe66e21e776f34a65f61757a9287743df8d86fc3c46142337f7b99bebffed",
-    "size": 2470,
+    "hash": "681d5f1dd29b06ab24a81f081ca00958a6cdbb9186d9fda959d97abce055e65c",
+    "size": 2438,
     "contentType": "image/svg+xml"
   },
   "assets/silhouettes/samuha-capacity.svg": {
-    "hash": "88022d8bd47c58c893890860ebd9167ae61bc4715eb27236a554c602787f8f1f",
-    "size": 3856,
+    "hash": "efb1ec454baabfad1b7b03b3c1f01f5f9711dd85e9eaa1b4d39f4aa8c99d925e",
+    "size": 3855,
     "contentType": "image/svg+xml"
   },
   "assets/silhouettes/sangha-assembly.svg": {
-    "hash": "9d1226beac0983882788913f6b6a6e30d98edef502604537ffd53b1919da4bbc",
-    "size": 4459,
+    "hash": "e88d4d9be54d968d2cfb1a213f6354369f606ae48c0162af13b54b7b81310ee9",
+    "size": 4458,
     "contentType": "image/svg+xml"
   },
   "assets/silhouettes/seva-hands.svg": {
-    "hash": "06ed90623534ce31f9e3505eef046f710d5eb36444e7a8ec4dd7abb1c2e1afc9",
-    "size": 3996,
+    "hash": "795adb377156e2d6555771383c408eb0d0106b46dcf6eae83c63615f84dfee48",
+    "size": 3936,
     "contentType": "image/svg+xml"
   },
   "assets/silhouettes/sherpa.svg": {
@@ -314,8 +259,8 @@ export const FILE_INDEX = {
     "contentType": "image/svg+xml"
   },
   "assets/silhouettes/studio.svg": {
-    "hash": "5d2298bd61692fbdb50a5e75f78baf5bbbe8d6f892d08217e8a56a9e53e6a035",
-    "size": 4103,
+    "hash": "fa7809523e3f2ee62e13b22a4dcf1be2c8bbf1f7f7104255db817fe2452a3183",
+    "size": 4019,
     "contentType": "image/svg+xml"
   },
   "assets/silhouettes/stupa-tower.svg": {
@@ -334,28 +279,28 @@ export const FILE_INDEX = {
     "contentType": "image/svg+xml"
   },
   "assets/silhouettes/thangka-scroll.svg": {
-    "hash": "1637a2be1ed4e20a5cd04e2c1be6ddf44775a43b11760104e66645403d677feb",
-    "size": 3322,
+    "hash": "65e1524a605347ba29d69ee2a30bdcb98ef5ebf314ab2b0c167f38087a1df7f1",
+    "size": 3281,
     "contentType": "image/svg+xml"
   },
   "assets/silhouettes/three-peaks.svg": {
-    "hash": "d099ee7df09ce344306f195e5424457428e42e815228e353201ee122c99c621e",
-    "size": 1945,
+    "hash": "809c539099e8685e42b54f1c8ea5080a36310076dc81d33544c071f7d4f8dc0c",
+    "size": 1908,
     "contentType": "image/svg+xml"
   },
   "assets/silhouettes/tivra-lightning.svg": {
-    "hash": "98748d5a310c95ac267c1ae8f8b06af76366551928059cdcc205498c7bc65beb",
-    "size": 3893,
+    "hash": "48dd80d49286e56b9375bc43b78a31cc0b223b9ab101ae40596f8d76ad0b4e59",
+    "size": 3840,
     "contentType": "image/svg+xml"
   },
   "assets/silhouettes/tutorials-book.svg": {
-    "hash": "a150bd0bfacdb421a151dbbf1c6458e9a81d464c6468f359173c20f36c5e3396",
-    "size": 2626,
+    "hash": "d685a793055e089471a766c595d9d9a237fee2954d0b898f3a877f06cc2fde40",
+    "size": 2591,
     "contentType": "image/svg+xml"
   },
   "assets/silhouettes/vani-voice.svg": {
-    "hash": "e821bad1951aeb55c7f6a9922389ba6ee166d9a4b8aaaaaa8fbc6159dcf99119",
-    "size": 5703,
+    "hash": "7c5f128811e56c65242832e5874486caad692bfbe729956920bd619644385237",
+    "size": 5610,
     "contentType": "image/svg+xml"
   },
   "assets/silhouettes/webserver.svg": {
@@ -364,8 +309,8 @@ export const FILE_INDEX = {
     "contentType": "image/svg+xml"
   },
   "assets/silhouettes/witness-eye.svg": {
-    "hash": "f0ed5f68988c95d68f6df3ad97efdd5b356155175011d7a5f9f71c4a39ab1d6b",
-    "size": 3289,
+    "hash": "4d81e087426942b3ac277793be23297b9b8ab94c6de3040e35d331844964a760",
+    "size": 3221,
     "contentType": "image/svg+xml"
   },
   "assets/silhouettes/yak.svg": {
@@ -374,68 +319,63 @@ export const FILE_INDEX = {
     "contentType": "image/svg+xml"
   },
   "assets/silhouettes/yakapp-chat.svg": {
-    "hash": "9d95742d7d9529f166aec97a47fd7017b8cf7f9a9c35c40b5b8b28c04efa4992",
-    "size": 4754,
+    "hash": "bc388cf1aec09ea6bc00aec0940b8e802fdc58b451576713a01a8d36eaa548ed",
+    "size": 4669,
     "contentType": "image/svg+xml"
   },
   "assets/silhouettes/yurt-tents.svg": {
-    "hash": "ba5a51866b1dbba1dbd07e3493ffed88cb6b7ca2c84281257802bd72dc641ef1",
-    "size": 4626,
+    "hash": "0286b8a07b207599049e96b152a46904b3f3bbd88db5fd5e50e957bb165719d1",
+    "size": 4556,
     "contentType": "image/svg+xml"
   },
-  "business/response-templates.md": {
-    "hash": "885aadd3dd09788d7db2217a4555a698761840b9295c8d9f96b7c925c6ae8926",
-    "size": 4151,
-    "contentType": "application/octet-stream"
-  },
   "c2c.html": {
-    "hash": "fbb1b9278d8e1cd23dfb7f53db9f8d33fbf4e4ce21e76927bd79a47a6a2d6ba4",
-    "size": 70891,
+    "hash": "d228101b6416e50d2cf71c82d5e3b236bb1db031d67515dd5f2a9090a8aa6639",
+    "size": 70304,
     "contentType": "text/html; charset=utf-8"
   },
   "cli.html": {
-    "hash": "ec988912b549de2e530333b2b0cc33fb2ef6fb171665bd075e0accafcf9fe6ef",
-    "size": 65595,
+    "hash": "080cade54c40bdfdc3352a463b6781a8731860db0697b55792936ad19e301aca",
+    "size": 65531,
     "contentType": "text/html; charset=utf-8"
   },
   "configuration.html": {
-    "hash": "bf14da1d7a87d43af78a62081585906878a53cfaa63192af58b109882c13250e",
-    "size": 60279,
+    "hash": "55c5522c09690e3005037c943e3af78a98764fbf47e7e57f8a4ebed5e29ba02d",
+    "size": 59707,
     "contentType": "text/html; charset=utf-8"
   },
   "darbar.html": {
-    "hash": "9c49be8612bb5da834f903f9224ef9a4502269c7cb3faa4843c2fd5e89752fe8",
-    "size": 52568,
+    "hash": "717adb17afb7ba2dc7a9f9387c029509f05f70bae79b1dad86816f916420be98",
+    "size": 51981,
     "contentType": "text/html; charset=utf-8"
   },
   "darshan.html": {
-    "hash": "4fabbdd3e46090d91273bd0c4d416bf5539a90318f49ebefa79f8d0ff5e2e4d0",
-    "size": 54393,
+    "hash": "7423d450e2d68f79e3aeab75b0b51c36edab633bb4563bebddbe88edc7a36058",
+    "size": 53806,
     "contentType": "text/html; charset=utf-8"
   },
   "dharma.html": {
-    "hash": "9de89466dcbf55b3f7d88422dfbf52b19f797c25081a8a9c677689d898497573",
-    "size": 47401,
+    "hash": "b14db1d10635d8addc66ea44123b91ccbf60384b36ff9ac871bc2f6d667d71c1",
+    "size": 46814,
     "contentType": "text/html; charset=utf-8"
   },
   "docs-bundle.html": {
-    "hash": "fc3d7ec776f713d2c2e452f38398f92b453782c462a16d8c4520e6a1b6ee7540",
-    "size": 47471,
+    "hash": "2d3a6315dbf79a557f34fa8fea23d92aa72b39bc4c55318b48cedbe90c4a5ba7",
+    "size": 46896,
     "contentType": "text/html; charset=utf-8"
   },
   "docs.css": {
-    "hash": "1029efad660a3f797ba35310ce28c4f68274bc97a0032b6ead9b7dcda934acd5",
-    "size": 67224,
+    "hash": "dd81dd204f1ff77fa82a9c8d92ea1493a9b5f9fb9b55ffce341d0c5c4f257936",
+    "size": 63967,
     "contentType": "text/css; charset=utf-8"
   },
   "docs.js": {
-    "hash": "a737db72056e65e84589f99b326be48b3c94bcc8d631f56025dbd2ca1efce38c",
-    "size": 23765,
+    "hash": "c6d7ad4fc6efdd0d801108e122f0f25a19b5b99995754d1a434122755747fd9b",
+    "size": 23147,
     "contentType": "application/javascript; charset=utf-8"
   },
   "doko.html": {
-    "hash": "a2ff00351a2f53987808611da4413238a4b4def9530e0051f7f9c9a6f021a661",
-    "size": 48115,
+    "hash": "cbc0db8b63091e8ff938f5f9a8da8bbab23941ba4a525cd4f87fe7b8d4fe99de",
+    "size": 47528,
     "contentType": "text/html; charset=utf-8"
   },
   "favicon.ico": {
@@ -444,98 +384,98 @@ export const FILE_INDEX = {
     "contentType": "image/x-icon"
   },
   "favicon.svg": {
-    "hash": "69c913859aca4dea91146597c65cc542103dc2b8669732c84767e451ffa59f74",
-    "size": 1318,
+    "hash": "165844d4532b6b0cbb0b70657e161127945cbc75f19bf0c38aff12b5b2653afa",
+    "size": 1283,
     "contentType": "image/svg+xml"
   },
   "geo-proof.html": {
-    "hash": "0cc897f1399294470fbbac228a1e68052f5ee9c1a4417c2edcb12ead16e94b0c",
-    "size": 42132,
+    "hash": "4966e8211e8ce8cdf3b195315291cf9b87f12f373b8805f4442cdeba906dc3ef",
+    "size": 41545,
     "contentType": "text/html; charset=utf-8"
   },
   "getting-started.html": {
-    "hash": "42290e6769dee1839878fe26afc55cee2cbe665b781bd9ef31155eabd7909118",
-    "size": 41114,
+    "hash": "f74c027d674602d16a828f127d71cfb733cd0583433368d557e0218004419557",
+    "size": 40527,
     "contentType": "text/html; charset=utf-8"
   },
   "gumba-tutorial.html": {
-    "hash": "e4030bca485e09d11ea9fafb0c39dab593a0372e249a224f9637270f3529390c",
-    "size": 51033,
+    "hash": "708bce8d9644813d500e77094cd828bfe97ce86751984205afeec6eaba036e32",
+    "size": 49908,
     "contentType": "text/html; charset=utf-8"
   },
   "gumba.html": {
-    "hash": "4162b664811902994f14df9db7f93837796288fbc056a9e1a02b1607016fae2a",
-    "size": 54686,
+    "hash": "ffdd4ed3c55af8d452d34f654836cf8fce3d954ae8eeead872eaa530024a3a18",
+    "size": 54099,
     "contentType": "text/html; charset=utf-8"
   },
   "icon.svg": {
-    "hash": "0f47909b363d47a3fb6bf9c03b6d0d6a5368291b0e337f5511082342366565b6",
-    "size": 231362,
+    "hash": "e1b6934eb90253e50bba9a746676c2747c0a879f685e5200a73a79891b8f64ad",
+    "size": 231292,
     "contentType": "image/svg+xml"
   },
   "index.html": {
-    "hash": "ee4c296964e1eb7a03d6fb1a45f36389f0ef1234a318fca4d7edcf6178e75091",
-    "size": 62188,
+    "hash": "7647fd1052282450a1ef40f1ea38c0f66e83cc48a354758d55b866858091a374",
+    "size": 61601,
     "contentType": "text/html; charset=utf-8"
   },
   "jhilke.html": {
-    "hash": "7550ce1ac8374ec32e24fd5b4bb8bdf148bae8314b353a9107675bceb4d87d95",
-    "size": 80489,
+    "hash": "706847238853853a637904316541037f8187e14038c18e68754b1dcbc2716de8",
+    "size": 79902,
     "contentType": "text/html; charset=utf-8"
   },
   "karma.html": {
-    "hash": "70fc9de8cf46bd8cb504ab1c60d170f8359a55ed7900e3a707de0aacaf9a1e72",
-    "size": 52024,
+    "hash": "acb2b3d9fa5817f8f81946dfe39c4b776314a525eae4ac6b84d81321ce1237f9",
+    "size": 51437,
     "contentType": "text/html; charset=utf-8"
   },
   "katha.html": {
-    "hash": "375fb8d944f2e18be4f9bab9b7ad722c03f3689c599a9d1be26ebec065bae6ca",
-    "size": 46718,
+    "hash": "002b3da4310d10a26083c107f5bcde948e09cce2d4d69bc0c690c30e94e77a10",
+    "size": 46131,
     "contentType": "text/html; charset=utf-8"
   },
   "lama.html": {
-    "hash": "3ffee5a4d8232cc5527f68d5fddd749b45b13f7322c600a25f1a8d8c74177447",
-    "size": 45186,
+    "hash": "373d9840c8bea46dd13f12db916d9d8172bc6e00203961f95ba30b1bfd225119",
+    "size": 44599,
     "contentType": "text/html; charset=utf-8"
   },
   "mandala.html": {
-    "hash": "0f532a09a80d61fe7cbfe49e59692ecfa464f70434afff5192f1551f32834dfc",
-    "size": 50136,
+    "hash": "ebef11b6e8ba06276826f09439d6e7dba2b47aba60792d41229bbb057a8f5104",
+    "size": 49549,
     "contentType": "text/html; charset=utf-8"
   },
   "mani.html": {
-    "hash": "0d9c5de69dd5e6e2fa6263a13dca594097ecadd6abdd80603a53be04252e9c32",
-    "size": 44700,
+    "hash": "b4b5e8316554cedfdc7bd62d1c213b1e60cbe1370dca781759fecaaf193d845a",
+    "size": 44113,
     "contentType": "text/html; charset=utf-8"
   },
   "mantra.html": {
-    "hash": "29b43cf758f672d35375ef96402719fe5200f2ba2b8595abeee9a68814cf4d07",
-    "size": 48021,
+    "hash": "39096a0858c82885d94d0de7a7849c5795555cc7b03b6dd3affc9d2e05ca7eac",
+    "size": 47434,
     "contentType": "text/html; charset=utf-8"
   },
   "mesh.html": {
-    "hash": "e152b8f593fa22642b8c9c28e4d165fdf5a20c39aeb6487f4cf00392f796385b",
-    "size": 71976,
+    "hash": "b25a5dba8717290cf135e53901d8b479b453d331a068f3e2256b8121a0f28739",
+    "size": 71389,
     "contentType": "text/html; charset=utf-8"
   },
   "nakpak.html": {
-    "hash": "d022fa545b7e79218790d0a910ae2f8145b949269913fab9c774c1c1f9f35400",
-    "size": 42756,
+    "hash": "d423edae22f5731e093930af57fe7c3e5f38258a4df3a9825ca0e6ddd651f260",
+    "size": 42169,
     "contentType": "text/html; charset=utf-8"
   },
   "namche.html": {
-    "hash": "340e15bee815b2a42dc1477eb9dc1a771b39d6ebce9a35c438e32c6ff93f8bbf",
-    "size": 43890,
+    "hash": "0085e49df3608720c6a6b68e39be423ac5381935b9e0ba88f9740a11c5827530",
+    "size": 43303,
     "contentType": "text/html; charset=utf-8"
   },
   "nav-order.json": {
-    "hash": "aecf9b713fc6fdaad869fcee9279105733576cace203296ca74860621ecb17ba",
-    "size": 8879,
+    "hash": "7e57192d40f01cb44d7c28c162d2e53bc79741dbc92401b3b1eae94d5f3878ae",
+    "size": 8822,
     "contentType": "application/json"
   },
   "prahari.html": {
-    "hash": "041cefed94d467ab2fff3c9c731781ee8c1ec5b3164fef6dece8450d6a4becc6",
-    "size": 63675,
+    "hash": "772db7d4145553626e0ce358563b2578f0d2e83026343a2b851f4fc94f1f4f0e",
+    "size": 63088,
     "contentType": "text/html; charset=utf-8"
   },
   "prism-bash.min.js": {
@@ -564,43 +504,38 @@ export const FILE_INDEX = {
     "contentType": "application/javascript; charset=utf-8"
   },
   "privacy.html": {
-    "hash": "63e42d9132f27234d01e67a8c1ad0b4c1a960ed2311218e3ef74c3633f40c9b7",
-    "size": 29573,
+    "hash": "15be6432dfd0a135f7a380441b3603b7b9b9d7cdc3bb481b1e96d9e9fb223288",
+    "size": 28841,
     "contentType": "text/html; charset=utf-8"
   },
   "quick-reference.html": {
-    "hash": "916c74df29d741fb370f6ab7b4e4e653a406bc56f0ee8843a2c7a65707532941",
-    "size": 56730,
+    "hash": "1268002dbb126466e57378a04bc64a622d2cb3b57678389699e79b64d000631a",
+    "size": 56143,
     "contentType": "text/html; charset=utf-8"
   },
   "sakshi.html": {
-    "hash": "b20529d372f0b1a776aa27d90d35b0bf465424984006433beee0d9cbc635b8d1",
-    "size": 65754,
+    "hash": "eedcc82da5b7e3edc7aa00295ee433d516d0a9933da05e55eb4a46ec2d430ee9",
+    "size": 65167,
     "contentType": "text/html; charset=utf-8"
   },
   "samuha.html": {
-    "hash": "462714d15420ba2de7231ac2c5a9222d234b503ebfbed1d5953000388825415a",
-    "size": 46838,
+    "hash": "83e0fa32c094677a65d81c0fddc2554c0799e7cbe68c02b216ec71e9a1c27609",
+    "size": 46251,
     "contentType": "text/html; charset=utf-8"
   },
-  "sandboxing.md": {
-    "hash": "6ed33bd51ad42544cdcfa5371833cecb440ee2cf13dcf1d8edb8d542ddcee4ac",
-    "size": 8944,
-    "contentType": "application/octet-stream"
-  },
   "sangha.html": {
-    "hash": "fa86b9f184871345560c8f095a6b7556d085e8f5fd24abcb702f8e0b656e5bc4",
-    "size": 50939,
+    "hash": "ec03d16ebea2828877882779fadad129fe7d33090212fa0c4e8bf4aa53dac1f4",
+    "size": 50352,
     "contentType": "text/html; charset=utf-8"
   },
   "seva.html": {
-    "hash": "1fd2a09b75254d7db8e6c3fa54a80d7779e8f96c43cf6d943bfc0a906519a484",
-    "size": 45389,
+    "hash": "b199e90639432b0dd4574859b53bff7f5fe10c1df073715f1c172e3c18c2bc21",
+    "size": 44802,
     "contentType": "text/html; charset=utf-8"
   },
   "sherpa.html": {
-    "hash": "be4ecb642216b96d85b7bf771b7d5c78658b567bcb2540fbfa4569175fc323d6",
-    "size": 41041,
+    "hash": "cee1e50857d5f7fd8bcd8cee2b05c6206ab16a38382098503f13065496bceb82",
+    "size": 40454,
     "contentType": "text/html; charset=utf-8"
   },
   "sitemap.xml": {
@@ -609,23 +544,23 @@ export const FILE_INDEX = {
     "contentType": "application/octet-stream"
   },
   "studio.html": {
-    "hash": "69c9041357714f6f64efabf6a941c8299754c3e6d12e83e42a49663bdbcab734",
-    "size": 41556,
+    "hash": "9c9f943d8dcbe3ee2bd94811ea208077807a06531d90ac4b7933ce11ae64e45d",
+    "size": 40969,
     "contentType": "text/html; charset=utf-8"
   },
   "stupa.html": {
-    "hash": "38f3857a6aa69d3beb1bb653a042bf7c5589b4d37b05eecac2c321c41dcee399",
-    "size": 46056,
+    "hash": "9c5bd8ea597f5b143cfa389516df354fbf1051791043104747a15a8c6b6e497f",
+    "size": 45469,
     "contentType": "text/html; charset=utf-8"
   },
   "tailwind.min.css": {
-    "hash": "6a014d8173816948471a03f452b9368cdd17582cb76cf3fa7c9a3a49be1a7e91",
-    "size": 39982,
+    "hash": "9d49a9460bc61efba7dfd4719335b9e41355680523654e7f382c9c6da90908ec",
+    "size": 39981,
     "contentType": "text/css; charset=utf-8"
   },
   "tattva.html": {
-    "hash": "5f7eeefa2b202ef70ea5de6f20d6563189225ac3b8c4a2324202ba86a732e2df",
-    "size": 70673,
+    "hash": "2483979892a94a5cb5ac36829425faf0a5a548e092dde4e84f4237e5ff4aa748",
+    "size": 70086,
     "contentType": "text/html; charset=utf-8"
   },
   "terms.html": {
@@ -633,44 +568,39 @@ export const FILE_INDEX = {
     "size": 30140,
     "contentType": "text/html; charset=utf-8"
   },
-  "time-server-deployment.md": {
-    "hash": "9a12d2db138c9fe4dff98a818c5421b879024ef04f2be138e64ad22428a5f305",
-    "size": 5618,
-    "contentType": "application/octet-stream"
-  },
   "time-sources.html": {
-    "hash": "a9a8349ef79e1b59789c038863f7c36c3db8ddba48364ceab61c4b3b2ae20748",
-    "size": 69996,
+    "hash": "3fcc9dc91957eb6795504c3b5a9a6f9b09e2bd8d682e2a54db0c68072af9af3a",
+    "size": 69409,
     "contentType": "text/html; charset=utf-8"
   },
   "tivra.html": {
-    "hash": "fb0b0d486789700e3806f9cb39125787cc0c33d1406211c6e465db6bf236762c",
-    "size": 57279,
+    "hash": "121fd8d1f16a7b11a32a32bc3bd14dbfaeccbc27477168112ef80e692190fea7",
+    "size": 56692,
     "contentType": "text/html; charset=utf-8"
   },
   "trademark-policy.html": {
-    "hash": "20dd3d6c8b07b6f5e76f755b23f93c76e6a4c6aea4a80f6c71b94884b27586e3",
-    "size": 28450,
+    "hash": "84e59f313bc0fa7c310ab1f8dc8be599b531fdd7a612038c259d18740118a210",
+    "size": 27731,
     "contentType": "text/html; charset=utf-8"
   },
   "tribhuj.html": {
-    "hash": "685fdda5ecb173e24f445f5036bb7c64943b332fcbc255a04c9f8560d230c054",
-    "size": 64266,
+    "hash": "888698af4789d5c2353a33b25e3e5b08059e3d27320bd6d8b173798307026bde",
+    "size": 63679,
     "contentType": "text/html; charset=utf-8"
   },
   "trust-security.html": {
-    "hash": "36253a87c6fe8d77793bce27e7dbd92c82310565d0e721a151f115658990081a",
-    "size": 60963,
+    "hash": "7f745f2cac82888061d2e2b0144d21d18111660652e0e18e5adec58c74d47d81",
+    "size": 60376,
     "contentType": "text/html; charset=utf-8"
   },
   "tutorials/backup-recovery.html": {
-    "hash": "f3e9a606bb25b793a02f110accda60615747d60fdbdd6bedb15882a16e5d3eed",
-    "size": 31301,
+    "hash": "56057e49d24ff68415ffcd1e91d7a71435ade78ba6718e0dc2595a499341a49e",
+    "size": 30647,
     "contentType": "text/html; charset=utf-8"
   },
   "tutorials/dashboard.html": {
-    "hash": "cf1126cc5b6afaa35719e99d80c9a8871447b1ea868c7ac133b8b20b175b07dc",
-    "size": 30436,
+    "hash": "143cba65d2a3f823835a5671305a7381815810c4af66bdd9975d3ca5c05f6df7",
+    "size": 29832,
     "contentType": "text/html; charset=utf-8"
   },
   "tutorials/domain-setup.html": {
@@ -694,8 +624,8 @@ export const FILE_INDEX = {
     "contentType": "text/html; charset=utf-8"
   },
   "tutorials/privacy.html": {
-    "hash": "6c3ea55f432d6b92089ed6183cabd19905c42b4ff8ac25106f43b5b4d559d36c",
-    "size": 22185,
+    "hash": "c410c46ab295047bc6875aacb4bfdbbba7a5551f7379483985d519c78e482edc",
+    "size": 21719,
     "contentType": "text/html; charset=utf-8"
   },
   "tutorials/raspberry-pi.html": {
@@ -704,13 +634,13 @@ export const FILE_INDEX = {
     "contentType": "text/html; charset=utf-8"
   },
   "tutorials/security-basics.html": {
-    "hash": "3381495f796498c15bdff975710709d3a71d48395f63b1cb126997a02cf726a9",
-    "size": 26241,
+    "hash": "9e58a7b0bc72a7da78b1b6d4639b95f70945a7bedbcf7bebb70a79e4ea9707b3",
+    "size": 25703,
     "contentType": "text/html; charset=utf-8"
   },
   "tutorials/share-files.html": {
-    "hash": "9235cf264382c18a86334aec82b5b8b31e0a8fcd29fec5da5b441568c8e8dfe2",
-    "size": 22542,
+    "hash": "88729d2f90b8ffbadff45c0ba65c6050f818d2b62cefa04366ba566cdc479752",
+    "size": 22111,
     "contentType": "text/html; charset=utf-8"
   },
   "tutorials/troubleshooting.html": {
@@ -719,28 +649,28 @@ export const FILE_INDEX = {
     "contentType": "text/html; charset=utf-8"
   },
   "tutorials/trust-karma.html": {
-    "hash": "e718c9e5664f733262c43b5a1ec0ea38c0137c71ae6b280c37803fcff51334ad",
-    "size": 20955,
+    "hash": "b84b5be99c892e1f7602d9654eb6d2bcbdba262b2c62b784b07f70047c640ca7",
+    "size": 20537,
     "contentType": "text/html; charset=utf-8"
   },
   "tutorials/yak-protocol.html": {
-    "hash": "53c147a8a1c3629573f95cdd4faf45aa5963baab8db04986b6f2ff53e5608c60",
-    "size": 21934,
+    "hash": "c4460cd61f05cfe648d0ee17dfdf13cac9ba0766d6304c16974ef3f44b74d5de",
+    "size": 21478,
     "contentType": "text/html; charset=utf-8"
   },
   "tutorials.html": {
-    "hash": "d8ce0ad52573cd6c02c6cad80fc768349cdf63471147ac7a8acaf7ac35a0d024",
-    "size": 49095,
+    "hash": "ec2b5447655a4316fcaa0e3b7ba55ed907f6b0a6108e304e9538e31231d6c72c",
+    "size": 48508,
     "contentType": "text/html; charset=utf-8"
   },
   "vani.html": {
-    "hash": "aa8255a66763abc81a8cc22a4b000dc09dda82b2a2732d139980c1c282245851",
-    "size": 56426,
+    "hash": "269cea084fff0046a004bac4ce2b7e9608654668e9af943514c600bab6646528",
+    "size": 55839,
     "contentType": "text/html; charset=utf-8"
   },
   "webserver.html": {
-    "hash": "7de42dd6e2eeea4854b8afd585865589bf5110a1db68e68b83d23fa89b30abcf",
-    "size": 38774,
+    "hash": "428ddac5bbe246a6ec761329378c7372f4befdff8cc51f0db3ec4095b3d660e2",
+    "size": 38187,
     "contentType": "text/html; charset=utf-8"
   },
   "yak-icon.png": {
@@ -749,33 +679,28 @@ export const FILE_INDEX = {
     "contentType": "image/png"
   },
   "yak-icon.svg": {
-    "hash": "913cb59857a9cb481ad552a5b6f043ba4e18009e2c56c302e0be9dd37bd63472",
-    "size": 231306,
+    "hash": "e8f511c67cdb4b07eb71d786bf6194a34e962bce54e3e232191c9eb27d83131e",
+    "size": 231236,
     "contentType": "image/svg+xml"
   },
   "yak-protocol.html": {
-    "hash": "6c9e7b6e8ab5904b6e84962e0a07d49ec18debb6eb657c60cc3eefc42b284c48",
-    "size": 45379,
+    "hash": "e0a5cd143fef401b37f3289f6969ab52e4e3df57322316670ec2f6f4d22e40a0",
+    "size": 44792,
     "contentType": "text/html; charset=utf-8"
   },
-  "yak-timeserver-design.md": {
-    "hash": "1ae62fcabb3d7c37cdbccd47865c6fa3cd87a0a92da0669b55fcd25257cc30d2",
-    "size": 15659,
-    "contentType": "application/octet-stream"
-  },
   "yakapp.html": {
-    "hash": "e991fbd4224e248d9993dc31cd044ecae43ab34f151f26338085e6016007747d",
-    "size": 52533,
+    "hash": "f6c82deb5b9f6cc5f983e99e085245f3d9b10e34808c10fa348b23bc3990a486",
+    "size": 51946,
     "contentType": "text/html; charset=utf-8"
   },
   "ypc27.html": {
-    "hash": "91d0608c656b88ea91efb8b509254d7ebf5531a1b23fd3a28b22b119d031305f",
-    "size": 51597,
+    "hash": "c03868342e31896d0db4f221bb768699a5ddf96e5ef6e7ec0057723a1e029642",
+    "size": 50560,
     "contentType": "text/html; charset=utf-8"
   },
   "yurt.html": {
-    "hash": "22e9c5330c15247fcd96d2ee20804d6f5b0de88c6c583f7aa39393e1e661afe3",
-    "size": 53611,
+    "hash": "045a11b00c6cf58d3cf4322a7f03156e53fbfe90ee7e8103c4ca1c459a64f064",
+    "size": 53024,
     "contentType": "text/html; charset=utf-8"
   }
 };
