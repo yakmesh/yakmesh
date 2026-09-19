@@ -2,6 +2,8 @@
 
 Honest version of events: the package has been quietly broken since earlier this year, and nobody told me directly. I found out by auditing it myself. This release is the apology and the fix in one.
 
+**Credit where credit is due:** this audit exists because **Kami Sama 血** from **Mochimo** shared an audit of YPC-27 that sent me digging back into the code. That same work is what birthed AVOTH — and it landed at the perfect time for YakOS and YakCoin. Thank you. 🙏
+
 **What was wrong (and is now fixed):**
 • **Verification gaps** — attestation claims weren't bound to signer identities (sybil inflation), revocation certificates counted duplicate attesters and let the attacker declare the network size, hardware attestation trusted self-reported timing
 • **Alert fatigue** — vegati was crying `elevated` every 60s on quiet meshes. Root cause: it was fed a cumulative counter as a "rate" with no variance floor. Fixed properly — steady traffic is silent, real bursts still trip

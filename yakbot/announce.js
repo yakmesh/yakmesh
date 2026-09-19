@@ -43,8 +43,8 @@ const config = {
   // Discord webhook for announcements
   discordWebhook: process.env.DISCORD_WEBHOOK_URL,
 
-  // Telegram bot token and channel
-  telegramToken: process.env.TELEGRAM_BOT_TOKEN || '***REMOVED-ROTATE***',
+  // Telegram bot token and channel — env only, never hardcode a token here
+  telegramToken: process.env.TELEGRAM_BOT_TOKEN,
   telegramChannel: process.env.TELEGRAM_CHANNEL_ID || '@yakmesh', // Channel username or chat ID
 
   // Announcements directory
@@ -110,6 +110,11 @@ async function sendToDiscord(message, options = {}) {
  * Send message to Telegram channel
  */
 async function sendToTelegram(message, options = {}) {
+  if (!config.telegramToken) {
+    console.warn('⚠️  TELEGRAM_BOT_TOKEN not set, skipping Telegram');
+    return { success: false, error: 'No bot token configured' };
+  }
+
   try {
     const url = `https://api.telegram.org/bot${config.telegramToken}/sendMessage`;
 
@@ -132,7 +137,7 @@ async function sendToTelegram(message, options = {}) {
       throw new Error(data.description || 'Telegram API error');
     }
 
-    console.log('✅ Telegram: Message sent to', payload.chat_id);
+    console.log('✅ Telegram: Message sent to', payload.chat_id, `(message_id: ${data.result.message_id})`);
     return { success: true, messageId: data.result.message_id };
   } catch (error) {
     console.error('❌ Telegram:', error.message);
