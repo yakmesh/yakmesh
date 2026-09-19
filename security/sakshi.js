@@ -1555,6 +1555,12 @@ export class BehaviorVelocityMonitor {
       // Cooldown period after alert before re-alerting (ms)
       alertCooldown: options.alertCooldown || 60000,
       
+      // Floor for the standard deviation used in z-scores. A baseline
+      // built on a quiet mesh yields emVar ≈ 0 — without a floor, any
+      // nonzero observation produces an unbounded z-score and a false
+      // 'elevated' alert every cooldown period.
+      minStdDev: options.minStdDev ?? 0.5,
+      
       // Profile retention (ms)
       profileTTL: options.profileTTL || 7 * 24 * 60 * 60 * 1000, // 7 days
     };
@@ -1624,9 +1630,10 @@ export class BehaviorVelocityMonitor {
       };
     }
     
-    // Calculate z-score (standard deviations from mean)
-    const stdDev = Math.sqrt(stats.emVar);
-    const zScore = stdDev > 0 ? Math.abs(delta) / stdDev : 0;
+    // Calculate z-score (standard deviations from mean).
+    // minStdDev floor: near-zero-variance baselines must not blow up.
+    const stdDev = Math.max(Math.sqrt(stats.emVar), this.config.minStdDev);
+    const zScore = Math.abs(delta) / stdDev;
     
     // Determine alert level
     let alertLevel = VELOCITY_ALERT.NORMAL;

@@ -1914,15 +1914,24 @@ export class YakmeshNode {
         if (!rumor.origin) return;
         const count = (this._messageCountWindow.get(rumor.origin) || 0) + 1;
         this._messageCountWindow.set(rumor.origin, count);
-        this.velocityMonitor.observe(
-          rumor.origin,
-          BEHAVIOR_DIMENSION.MESSAGE_RATE,
-          count
-        );
       });
 
-      // Reset message count window every minute
-      this._messageCountInterval = setInterval(() => { this._messageCountWindow.clear(); }, 60000);
+      // Close the window every minute: observe the completed count as ONE
+      // rate sample per origin. Observing the running cumulative count
+      // per-message produces a sawtooth that always sits above the EMA —
+      // the cause of the repeating ~60s 'elevated' false positives.
+      this._messageCountInterval = setInterval(() => {
+        for (const [origin, count] of this._messageCountWindow) {
+          if (count > 0) {
+            this.velocityMonitor.observe(
+              origin,
+              BEHAVIOR_DIMENSION.MESSAGE_RATE,
+              count
+            );
+          }
+        }
+        this._messageCountWindow.clear();
+      }, 60000);
     }
 
     log.info('✓ SAKSHI initialized (witness consensus + velocity monitoring)');
