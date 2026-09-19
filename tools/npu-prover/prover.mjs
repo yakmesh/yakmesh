@@ -52,6 +52,12 @@ const MODEL_FP16 = Buffer.from(
 const MODEL_FP32 = Buffer.from(
   'CAg6ZwoRCgFBCgFCEgFDIgZNYXRNdWwSE3lha21lc2gtZ2VtbTY0LWZwMzJaEwoBQRIOCgwIARIICgIIQAoCCEBaEwoBQhIOCgwIARIICgIIQAoCCEBiEwoBQxIOCgwIARIICgIIQAoCCEBCAhAN',
   'base64');
+// QDQ-wrapped bf16 MatMul — uint16 boundary tensors carry bf16 bits
+// (scale bf16=1.0, zp u16=0 → bit-transparent). This is the only MatMul
+// shape vaip fuses (m_qmatmul_act_act → QMatMulDynamic on XDNA).
+const MODEL_QDQ = Buffer.from(
+  'CAo67wEKIAoBYQoBcwoBehIDYV9mIhBEZXF1YW50aXplTGluZWFyCiAKAWIKAXMKAXoSA2JfZiIQRGVxdWFudGl6ZUxpbmVhcgoXCgNhX2YKA2JfZhIDbV9mIgZNYXRNdWwKIAoDbV9mCgFzCgF6EgNvdXQiDlF1YW50aXplTGluZWFyEhd5YWttZXNoLWdlbW02NC1xZHEtYmYxNioJEBBCAXNKAoA/KgkQBEIBekoCAABaEwoBYRIOCgwIBBIICgIIQAoCCEBaEwoBYhIOCgwIBBIICgIIQAoCCEBiFQoDb3V0Eg4KDAgEEggKAghACgIIQEICEBU=',
+  'base64');
 const DIM = 64;
 const ELEMS = DIM * DIM;
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -78,6 +84,19 @@ function f16to32(h) {
   if (e === 0) return s * m * (2 ** -24);
   if (e === 31) return m ? NaN : s * Infinity;
   return s * (1 + m / 1024) * (2 ** (e - 15));
+}
+
+// bf16 = top 16 bits of fp32 — XDNA's native float format. The QDQ model
+// carries bf16 bit patterns in uint16 boundary tensors.
+function f32tobf16(v) {
+  const f = new Float32Array(1), u = new Uint32Array(f.buffer);
+  f[0] = v;
+  return (u[0] + 0x7fff + ((u[0] >> 16) & 1)) >>> 16;
+}
+function bf16to32(h) {
+  const u = new Uint32Array(1);
+  u[0] = h << 16;
+  return new Float32Array(u.buffer)[0];
 }
 
 function fnv1a64(bytes) {
@@ -515,16 +534,16 @@ const ryzenai = findRyzenAI();
 
 // ─── pure-JS fallback (honest floor tier) ────────────────────────────────────
 
-function jsGemm64(a16, b16) {
-  // fp32-accumulate MatMul, fp16 out — matches the ONNX graph semantics.
+function jsGemm64(a16, b16, fromBits = f16to32, toBits = f32to16) {
+  // fp32-accumulate MatMul — matches the ONNX graph semantics.
   const A = new Float32Array(ELEMS), B = new Float32Array(ELEMS);
-  for (let i = 0; i < ELEMS; i++) { A[i] = f16to32(a16[i]); B[i] = f16to32(b16[i]); }
+  for (let i = 0; i < ELEMS; i++) { A[i] = fromBits(a16[i]); B[i] = fromBits(b16[i]); }
   const out = new Uint16Array(ELEMS);
   for (let i = 0; i < DIM; i++) {
     for (let j = 0; j < DIM; j++) {
       let acc = 0;
       for (let k = 0; k < DIM; k++) acc += A[i * DIM + k] * B[k * DIM + j];
-      out[i * DIM + j] = f32to16(acc);
+      out[i * DIM + j] = toBits(acc);
     }
   }
   return new Uint8Array(out.buffer, out.byteOffset, out.byteLength);
@@ -566,6 +585,8 @@ async function initBackend() {
   if (ryzenai?.cfg) {
     // Real XDNA execution provider — preferred over DML's generic-ML path.
     attempts.push(['vitis-npu', ryzenai.dll, 'VitisAI', { config_file: ryzenai.cfg }, MODEL_FP16, 10]);
+    // QDQ-bf16 variant — matches vaip's m_qmatmul_act_act fusion pattern.
+    attempts.push(['vitis-npu', ryzenai.dll, 'VitisAI', { config_file: ryzenai.cfg }, MODEL_QDQ, 4]);
     // Also try under our own ort dll — may work if bridge versions match.
     attempts.push(['vitis-npu', null, 'VitisAI', { config_file: ryzenai.cfg }, MODEL_FP16, 10]);
   }
@@ -611,11 +632,14 @@ log(`init: probes done (${dxAdapters.length} dxcore adapters)`);
 
 async function runProof(n, nonce) {
   const rng = xorshift64star(seedFromNonce(nonce));
+  // onnxType 4 (uint16) carries bf16 bits — the QDQ model path.
+  const toBits = onnxType === 4 ? f32tobf16 : f32to16;
+  const fromBits = onnxType === 4 ? bf16to32 : f16to32;
   const A = new Uint16Array(ELEMS);
   const B = new Uint16Array(ELEMS);
   for (let i = 0; i < ELEMS; i++) {
-    A[i] = f32to16((Number(rng() % 4096n) / 1024) - 2);
-    B[i] = f32to16((Number(rng() % 4096n) / 1024) - 2);
+    A[i] = toBits((Number(rng() % 4096n) / 1024) - 2);
+    B[i] = toBits((Number(rng() % 4096n) / 1024) - 2);
   }
   const inputDigest = fnv1a64(Buffer.concat([
     Buffer.from(A.buffer, A.byteOffset, A.byteLength),
@@ -629,7 +653,7 @@ async function runProof(n, nonce) {
   if (backend === 'js-cpu') {
     for (let i = 0; i < n; i++) {
       const t0 = performance.now();
-      lastOutput = jsGemm64(A, B);
+      lastOutput = jsGemm64(A, B, fromBits, toBits);
       times.push((performance.now() - t0) * 1e6);
       outputDigests.add(fnv1a64(Buffer.from(lastOutput)));
     }
@@ -665,7 +689,7 @@ async function runProof(n, nonce) {
     device,
     adapter: npuAdapter || undefined,
     adapters: dxAdapters.length ? dxAdapters : undefined,
-    kernel: `${backend} gemm64 (${onnxType === 1 ? 'fp32' : 'fp16'})`,
+    kernel: `${backend} gemm64 (${{ 1: 'fp32', 4: 'qdq-bf16' }[onnxType] || 'fp16'})`,
     ort_version: ort?.version || undefined,
     n_dispatches: n,
     nonce,

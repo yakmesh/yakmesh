@@ -58,3 +58,31 @@ const model = Buffer.concat([
 const out = join(dirname(fileURLToPath(import.meta.url)), 'gemm64-fp16.onnx');
 writeFileSync(out, model);
 console.log(`wrote ${out} (${model.length} bytes)`);
+
+// ─── QDQ bf16 variant (gemm64-qdq.onnx) ──────────────────────────────────────
+// vaip only fuses QDQ-wrapped MatMul (m_qmatmul_act_act → QMatMulDynamic).
+// Boundary tensors are uint16 carrying bf16 bits: scale bf16=1.0, zp u16=0.
+// opset 21 (uint16 Q/DQ). No CPU kernel — vitis-tier only.
+const U16 = 4, BF16 = 16;
+const ttype2 = (t) => lenDelim(1, Buffer.concat([varintField(1, t), lenDelim(2, shape)]));
+const vi2 = (name, t) => Buffer.concat([str(1, name), lenDelim(2, ttype2(t))]);
+const init = (name, dt, bytes) => Buffer.concat([varintField(2, dt), str(8, name), lenDelim(9, bytes)]);
+const sBf16 = init('s', BF16, Buffer.from([0x80, 0x3f]));   // bf16 1.0
+const zU16 = init('z', U16, Buffer.from([0x00, 0x00]));     // uint16 0
+const node2 = (ins, outs, op) => Buffer.concat([
+  ...ins.map((i) => str(1, i)), ...outs.map((o) => str(2, o)), str(4, op),
+]);
+const graph2 = Buffer.concat([
+  lenDelim(1, node2(['a', 's', 'z'], ['a_f'], 'DequantizeLinear')),
+  lenDelim(1, node2(['b', 's', 'z'], ['b_f'], 'DequantizeLinear')),
+  lenDelim(1, node2(['a_f', 'b_f'], ['m_f'], 'MatMul')),
+  lenDelim(1, node2(['m_f', 's', 'z'], ['out'], 'QuantizeLinear')),
+  str(2, 'yakmesh-gemm64-qdq-bf16'),
+  lenDelim(5, sBf16), lenDelim(5, zU16),
+  lenDelim(11, vi2('a', U16)), lenDelim(11, vi2('b', U16)),
+  lenDelim(12, vi2('out', U16)),
+]);
+const model2 = Buffer.concat([varintField(1, 10), lenDelim(7, graph2), lenDelim(8, varintField(2, 21))]);
+const out2 = join(dirname(fileURLToPath(import.meta.url)), 'gemm64-qdq.onnx');
+writeFileSync(out2, model2);
+console.log(`wrote ${out2} (${model2.length} bytes)`);
