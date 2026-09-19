@@ -97,7 +97,7 @@ import {
 import { setTimeSourceConfig, getActiveConfig, getCurrentEpoch, getEpochStartTime } from '../oracle/phase-epoch.js';
 import { aguwa } from '../mesh/aguwa.js';
 import { PulseSync, PULSE_CONFIG } from '../mesh/pulse-sync.js';
-import { withContribution, setTimeTrustProvider } from '../mesh/contribution.js';
+import { withContribution, setTimeTrustProvider, setProofProvider, createNpuProofProvider } from '../mesh/contribution.js';
 import { ClaimLedger } from '../mesh/claim-ledger.js';
 import { AttestationGossip } from '../mesh/attestation-gossip.js';
 
@@ -1609,6 +1609,10 @@ export class YakmeshNode {
     // can_attest_time (entropyFlags bit0) — MANI tier ≥ PTP per the
     // wire format; the detector reports, the claim stays honest.
     setTimeTrustProvider(() => this.timeSource?.hasHighPrecisionTime?.() === true);
+    // NPU execution proof — rust-embed's /npu/proof runs a nonce-seeded
+    // GEMM on real silicon; the nonce binds to the epoch so proofs can't
+    // be replayed across epochs. Absent service/NPU → claim omits it.
+    setProofProvider(createNpuProofProvider());
     const emit = async () => {
       if (!this.gossip || !this.pulseSync) return;
       try {

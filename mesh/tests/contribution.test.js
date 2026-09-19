@@ -31,6 +31,7 @@ import {
   contributionMeshState,
   withContribution,
   setTimeTrustProvider,
+  setProofProvider,
   currentEpoch,
 } from '../contribution.js';
 
@@ -51,6 +52,7 @@ function stubBridge(body = SEAL_OK) {
 afterEach(() => {
   vi.unstubAllGlobals();
   setTimeTrustProvider(null);
+  setProofProvider(null);
 });
 
 describe('contributionMeshState', () => {
@@ -102,5 +104,34 @@ describe('contributionMeshState', () => {
     await contributionMeshState(t);
     await contributionMeshState(t + 500);
     expect(spy).toHaveBeenCalledTimes(1);
+  });
+
+  test('npuProof carried when provider returns an execution proof', async () => {
+    vi.stubGlobal('fetch', stubBridge());
+    const proof = {
+      nonce: 'yakmesh-e333',
+      device: '1022:1502',
+      consistent: true,
+      digests: { input: 'aa', output: 'bb' },
+      timingNs: { p50: 145000 },
+    };
+    setProofProvider(async () => proof);
+    const c = await contributionMeshState(1_000_180_000_000);
+    expect(c.npuProof).toEqual(proof);
+  });
+
+  test('proof provider throws → claim still emitted without npuProof', async () => {
+    vi.stubGlobal('fetch', stubBridge());
+    setProofProvider(async () => { throw new Error('no NPU'); });
+    const c = await contributionMeshState(1_000_210_000_000);
+    expect(c).not.toBeNull();
+    expect(c.npuProof).toBeUndefined();
+    expect(c.seal).toEqual([0, 1, 2, 3]);
+  });
+
+  test('unwired provider → npuProof omitted entirely', async () => {
+    vi.stubGlobal('fetch', stubBridge());
+    const c = await contributionMeshState(1_000_240_000_000);
+    expect(c.npuProof).toBeUndefined();
   });
 });

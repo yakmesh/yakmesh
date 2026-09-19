@@ -381,12 +381,21 @@ export class MandalaNetwork {
       });
 
       ws.on('close', () => {
+        // A socket that closes before WELCOME (duplicate-connection
+        // rejection, remote restart, dead listener) fails the connect
+        // immediately rather than waiting out the handshake timeout.
+        if (!settled) {
+          settled = true;
+          clearTimeout(handshakeTimeout);
+          reject(new Error(`Connection closed before WELCOME from ${endpoint}`));
+        }
         this._handleDisconnect(ws);
       });
 
       ws.on('error', (err) => {
         if (!settled) {
           settled = true;
+          clearTimeout(handshakeTimeout);
           log.debug(`Connection to ${endpoint} failed: ${err.message}`);
           reject(err);
         }
@@ -394,10 +403,22 @@ export class MandalaNetwork {
         try { ws.close(); } catch { }
       });
 
+      // Handshake timeout — a socket that opens but never completes the
+      // WELCOME exchange (silent firewall, duplicate-close, dead listener)
+      // must fail rather than hold the caller's promise forever.
+      const handshakeTimeout = setTimeout(() => {
+        if (!settled) {
+          settled = true;
+          try { ws.close(); } catch { }
+          reject(new Error(`Handshake timeout — no WELCOME from ${endpoint}`));
+        }
+      }, 15000);
+
       // Resolve when we get WELCOME back
       const welcomeHandler = (msg) => {
         if (msg.type === MessageTypes.WELCOME && !settled) {
           settled = true;
+          clearTimeout(handshakeTimeout);
           log.info('Connected to peer', { nodeId: msg.identity.nodeId });
           resolve(msg.identity);
         }

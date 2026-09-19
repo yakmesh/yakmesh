@@ -31,7 +31,7 @@ import { join, resolve } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
-const VERSION = '2.5.0';
+const VERSION = '3.5.5';
 
 const program = new Command();
 

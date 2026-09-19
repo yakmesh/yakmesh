@@ -29,6 +29,7 @@
  */
 
 const BRIDGE_URL = process.env.YAKOS_PQ_BRIDGE || 'http://127.0.0.1:9995';
+const NPU_PROOF_URL = process.env.YAKOS_NPU_PROOF || 'http://127.0.0.1:9997';
 const FETCH_TIMEOUT_MS = 1500;
 
 /** Cached seal for the current epoch — bridge call is ~1ms, epochs are 30s. */
@@ -43,6 +44,53 @@ let timeTrustProvider = null;
 
 export function setTimeTrustProvider(fn) {
   timeTrustProvider = typeof fn === 'function' ? fn : null;
+}
+
+/**
+ * NPU execution-proof provider — wired by the server at startup when a
+ * silicon-capable prover exists (rust-embed /npu/proof). Called once per
+ * epoch with the epoch number; must return the proof object or null.
+ * Unwired/failure → the claim simply omits npuProof: honest absence,
+ * never a fabricated attestation.
+ */
+let proofProvider = null;
+
+export function setProofProvider(fn) {
+  proofProvider = typeof fn === 'function' ? fn : null;
+}
+
+/**
+ * Build an execution-proof provider for rust-embed's /npu/proof
+ * (:9997). Runs a nonce-seeded GEMM on real silicon — the returned
+ * digest only exists if the kernel actually dispatched. The nonce is
+ * bound to the epoch so a proof can't be replayed into a later claim.
+ * Returns null when the service or NPU is absent.
+ */
+export function createNpuProofProvider({ url = NPU_PROOF_URL, n = 8, timeoutMs = 5000 } = {}) {
+  return async (epoch) => {
+    const res = await fetch(`${url}/npu/proof?n=${n}&nonce=yakmesh-e${epoch}`, {
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+    if (!res.ok) return null;
+    const p = await res.json();
+    if (p?.status !== 'ok' || !p.digests?.output) return null;
+    return {
+      nonce: p.nonce,
+      device: p.device?.pci || null,
+      kernel: p.kernel || null,
+      n: p.n_dispatches,
+      consistent: p.digests.consistent_across_dispatches === true,
+      digests: { input: p.digests.input, output: p.digests.output },
+      timingNs: {
+        p50: p.timing?.per_dispatch_ns?.p50,
+        p95: p.timing?.per_dispatch_ns?.p95,
+        mean: p.timing?.per_dispatch_ns?.mean,
+        min: p.timing?.per_dispatch_ns?.min,
+        max: p.timing?.per_dispatch_ns?.max,
+        wall: p.timing?.wall_ns,
+      },
+    };
+  };
 }
 
 async function getJson(path) {
@@ -76,6 +124,9 @@ export async function contributionMeshState(nowMs) {
     const { node_id, seal, real_silicon, silicon_drift } =
       await getJson(`/yakcoin/seal?epoch=${epoch}`);
     const canAttestTime = timeTrustProvider ? !!timeTrustProvider() : false;
+    // Execution proof is fetched once per epoch — the provider binds the
+    // nonce to this epoch so the digest can't be replayed across epochs.
+    const npuProof = proofProvider ? await proofProvider(epoch).catch(() => null) : null;
     const payload = {
       version: 1,
       epoch,
@@ -86,6 +137,7 @@ export async function contributionMeshState(nowMs) {
       jobRoot: '0'.repeat(64), // no completed work orders yet
       entropyFlags: (canAttestTime ? 1 : 0) | (real_silicon ? 2 : 0),
       siliconDrift: Number.isInteger(silicon_drift) ? silicon_drift : 0,
+      ...(npuProof ? { npuProof } : {}),
     };
     cached = { epoch, payload };
     return payload;
