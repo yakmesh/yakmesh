@@ -174,5 +174,8 @@
     "!**/tests/**",
     "!server/data/**",
     "!adapters/adapter-peerquanta/**"
-  ]
+  ],
+  "overrides": {
+    "qs": "^6.16.0"
+  }
 }
