@@ -28,7 +28,7 @@
  *   node tools\npu-prover\prover.mjs [--port 9997]
  */
 import http from 'node:http';
-import { execSync } from 'node:child_process';
+import { execSync, spawnSync } from 'node:child_process';
 import { existsSync, readdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -554,9 +554,25 @@ function jsGemm64(a16, b16, fromBits = f16to32, toBits = f32to16) {
 let backend = null;       // 'vitis-npu' | 'dml-npu' | 'dml-gpu' | 'ort-cpu' | 'js-cpu'
 let ort = null;
 let sess = null;
-let onnxType = 10;        // 10 = fp16, 1 = fp32
+let onnxType = 10;        // 10 = fp16, 4 = uint16/bf16 (QDQ), 1 = fp32
 let ortError = null;
 const orts = new Map();   // dllPath -> Ort (kept alive for process lifetime)
+
+// PROVER_PROBE=vitis → probe-child mode: run only the vitis attempts, then
+// exit 0/1. A native fault (FlexMLRT hw-context failure throws a C++
+// exception koffi cannot catch) kills the child, not the server — the
+// parent only attempts vitis in-process if the child survived.
+const PROBE = process.env.PROVER_PROBE;
+const SELF = fileURLToPath(import.meta.url);
+function vitisProbe() {
+  try {
+    const r = spawnSync(process.execPath, [SELF], {
+      env: { ...process.env, PROVER_PROBE: 'vitis' },
+      timeout: 180000, stdio: 'inherit',   // child's ORT/vaip logs reach prover.log
+    });
+    return r.status === 0;
+  } catch { return false; }
+}
 
 function ortFor(dll) {
   if (!orts.has(dll)) orts.set(dll, new Ort(dll));
@@ -583,12 +599,20 @@ async function initBackend() {
   // [label, dll|null=findOrtDll(), ep, provider_opts, model, onnx_type]
   const attempts = [];
   if (ryzenai?.cfg) {
-    // Real XDNA execution provider — preferred over DML's generic-ML path.
-    attempts.push(['vitis-npu', ryzenai.dll, 'VitisAI', { config_file: ryzenai.cfg }, MODEL_FP16, 10]);
-    // QDQ-bf16 variant — matches vaip's m_qmatmul_act_act fusion pattern.
-    attempts.push(['vitis-npu', ryzenai.dll, 'VitisAI', { config_file: ryzenai.cfg }, MODEL_QDQ, 4]);
-    // Also try under our own ort dll — may work if bridge versions match.
-    attempts.push(['vitis-npu', null, 'VitisAI', { config_file: ryzenai.cfg }, MODEL_FP16, 10]);
+    // Probe mode runs the vitis attempts itself; the parent probes first
+    // because a native fault here kills the process (can't catch C++
+    // exceptions through koffi).
+    const vitisOk = PROBE === 'vitis' || vitisProbe();
+    if (vitisOk) {
+      // Real XDNA execution provider — preferred over DML's generic-ML path.
+      attempts.push(['vitis-npu', ryzenai.dll, 'VitisAI', { config_file: ryzenai.cfg }, MODEL_FP16, 10]);
+      // QDQ-bf16 variant — matches vaip's m_qmatmul_act_act fusion pattern.
+      attempts.push(['vitis-npu', ryzenai.dll, 'VitisAI', { config_file: ryzenai.cfg }, MODEL_QDQ, 4]);
+      // Also try under our own ort dll — may work if bridge versions match.
+      attempts.push(['vitis-npu', null, 'VitisAI', { config_file: ryzenai.cfg }, MODEL_FP16, 10]);
+    } else {
+      errs.push('vitis-npu: probe child crashed or timed out — skipping (native fault, see ORT log lines above)');
+    }
   }
   attempts.push(
     ['dml-npu', null, 'DML', { device_filter: 'npu' }, MODEL_FP16, 10],
@@ -598,7 +622,8 @@ async function initBackend() {
     ['ort-cpu', null, null, null, MODEL_FP32, 1],
   );
 
-  for (const [label, d, ep, opts, model, otype] of attempts) {
+  const wanted = PROBE === 'vitis' ? attempts.filter(([l]) => l === 'vitis-npu') : attempts;
+  for (const [label, d, ep, opts, model, otype] of wanted) {
     const dllPath = d || dll;
     if (!dllPath) continue;
     log(`init: trying ${label} (dll=${dllPath} ep=${ep || 'cpu'} type=${otype})`);
@@ -624,9 +649,9 @@ async function initBackend() {
 // ─── proof ───────────────────────────────────────────────────────────────────
 
 log('init: probing pnp');
-const device = probeDevice();
+const device = PROBE ? { generation: 'probe' } : probeDevice();
 log('init: enumerating dxcore');
-const dxAdapters = enumDxCore();
+const dxAdapters = PROBE ? [] : enumDxCore();
 const npuAdapter = dxAdapters.find((a) => a.is_npu) || null;
 log(`init: probes done (${dxAdapters.length} dxcore adapters)`);
 
@@ -741,6 +766,10 @@ initBackend().catch((e) => {
   backend = 'js-cpu';
   console.error('[npu-prover] init failed (js-cpu fallback):', e);
 }).then(() => {
+  if (PROBE) {
+    log(`probe result: backend=${backend} — ${backend === 'js-cpu' ? 'FAIL' : 'OK'}`);
+    process.exit(backend === 'js-cpu' ? 1 : 0);
+  }
   server.listen(PORT, '127.0.0.1', () => {
     log(`backend=${backend}${onnxType === 1 ? ' (fp32)' : ''} — listening on http://127.0.0.1:${PORT}/npu/proof`);
     log(`ort=${ort?.version || 'unavailable'}${ortError ? ' err=' + ortError : ''}`);
