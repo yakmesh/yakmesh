@@ -305,6 +305,7 @@ const API = {
   AllocatorFree: 76, GetAllocatorWithDefaultOptions: 78,
   ReleaseEnv: 92, ReleaseStatus: 93, ReleaseMemoryInfo: 94,
   ReleaseSession: 95, ReleaseValue: 96, ReleaseSessionOptions: 100,
+  AddSessionConfigEntry: 130,
   SessionOptionsAppendExecutionProvider: 216,
   AppendEpVitis: 276, // dedicated VitisAI append — exists since API v23
 };
@@ -328,6 +329,7 @@ function initProtos() {
   P.GetApi = koffi.proto('void *OrtGetApiFn(uint32 v)');
   P.GetVersionStr = koffi.proto('void *OrtVersionStrFn(void)');
   P.AppendEpVitis = koffi.proto('void *OrtAppendEpVitisFn(void *so, void *keys, void *vals, uint64 n)');
+  P.AddCfgEntry = koffi.proto('void *OrtAddCfgEntry(void *so, const char *k, const char *v)');
 }
 
 class Ort {
@@ -384,6 +386,11 @@ class Ort {
             so, keys, vals, Object.keys(providerOpts).length);
         }
         this.chk(st, `AppendEP ${providerName} ${JSON.stringify(providerOpts)}`);
+        // Honesty gate: if the EP can't place our op, session creation must
+        // fail rather than silently run it on CPU inside this session —
+        // otherwise the backend label would claim silicon it never used.
+        this.chk(koffi.call(this.api[API.AddSessionConfigEntry], P.AddCfgEntry,
+          so, 'session.disable_cpu_ep_fallback', '1'), 'disable_cpu_ep_fallback');
       }
       const sCell = cell();
       this.chk(koffi.call(this.api[API.CreateSessionFromArray], P.CreateSessionFromArray,
