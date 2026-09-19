@@ -46,7 +46,7 @@ for (const dir of ASSET_DIRS) {
 }
 
 // Oracle-invisible extras: not SOURCE_EXTENSIONS, or in EXCLUDE_FILES/EXCLUDE_DIRS
-for (const extra of ['package-lock.json', 'start-yakmesh.bat', 'README.md', 'LICENSE', 'CHANGELOG.md']) {
+for (const extra of ['package-lock.json', 'start-yakmesh.bat', 'start-yakmesh-silent.vbs', 'VIEW-YAKMESH-LOG.bat', 'README.md', 'LICENSE', 'CHANGELOG.md']) {
     if (existsSync(join(repo, extra))) copyFileSync(join(repo, extra), join(out, extra));
 }
 
