@@ -604,9 +604,11 @@ async function initBackend() {
     // exceptions through koffi).
     const vitisOk = PROBE === 'vitis' || vitisProbe();
     if (vitisOk) {
-      // Real XDNA execution provider — preferred over DML's generic-ML path.
-      attempts.push(['vitis-npu', ryzenai.dll, 'VitisAI', { config_file: ryzenai.cfg }, MODEL_FP16, 10]);
-      // QDQ-bf16 variant — matches vaip's m_qmatmul_act_act fusion pattern.
+      // Real XDNA execution provider. AMD docs: Phoenix/Hawk Point →
+      // target 'X1' (fuse_DPU xcompiler path); the config default X2 is
+      // Strix. Try X1 first on both models, then the default target.
+      attempts.push(['vitis-npu', ryzenai.dll, 'VitisAI', { config_file: ryzenai.cfg, target: 'X1' }, MODEL_FP16, 10]);
+      attempts.push(['vitis-npu', ryzenai.dll, 'VitisAI', { config_file: ryzenai.cfg, target: 'X1' }, MODEL_QDQ, 4]);
       attempts.push(['vitis-npu', ryzenai.dll, 'VitisAI', { config_file: ryzenai.cfg }, MODEL_QDQ, 4]);
       // Also try under our own ort dll — may work if bridge versions match.
       attempts.push(['vitis-npu', null, 'VitisAI', { config_file: ryzenai.cfg }, MODEL_FP16, 10]);
