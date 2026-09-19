@@ -434,18 +434,20 @@ export class MandalaNetwork {
 
     // Sign the message — prefer TRIBHUJ ratchet for forward secrecy, fall back to identity
     const signed = this.ratchet
-      ? this._attachTribhujCert(this.ratchet.signObject(gossipMsg))
+      ? this.ratchet.signObject(gossipMsg)
       : this.identity.signObject(gossipMsg);
 
     this.seenMessages.add(msgId);
 
-    // Send to all WS peers
+    // Send to all WS peers — peers whose pinned ratchet key is stale get the
+    // rotation certificate attached so they can certify the new key.
     for (const [nodeId, peer] of this.peers) {
-      this._send(peer.ws, signed);
+      this._send(peer.ws, this._attachTribhujCert(signed, peer));
     }
 
-    // Emit for HTTP relay peers (server layer hooks this)
-    this.emit('outbound-gossip', signed, []);
+    // Emit for HTTP relay peers (server layer hooks this) — relay peers are
+    // anonymous to us, so the emitted copy always carries the cert.
+    this.emit('outbound-gossip', this._attachTribhujCert(signed, null), []);
   }
 
   /**
@@ -453,35 +455,52 @@ export class MandalaNetwork {
    */
   sendTo(nodeId, message) {
     const signed = this.ratchet
-      ? this._attachTribhujCert(this.ratchet.signObject({ ...message, timestamp: Date.now() }))
+      ? this.ratchet.signObject({ ...message, timestamp: Date.now() })
       : this.identity.signObject({ ...message, timestamp: Date.now() });
 
     const peer = this.peers.get(nodeId);
     if (peer) {
-      this._send(peer.ws, signed);
+      this._send(peer.ws, this._attachTribhujCert(signed, peer));
       return;
     }
 
-    // Not a WS peer — try relay fallback (server layer hooks this)
-    this.emit('outbound-relay', nodeId, signed);
+    // Not a WS peer — try relay fallback (server layer hooks this). The peer's
+    // pinned state is unknown, so the relayed copy carries the cert.
+    this.emit('outbound-relay', nodeId, this._attachTribhujCert(signed, null));
   }
 
   /**
-   * Attach a TRIBHUJ rotation certificate to a ratchet-signed message when our
-   * current ratchet key hasn't been announced in a handshake. The cert is a
-   * signature by our permanent identity key over
+   * Attach a TRIBHUJ rotation certificate to a ratchet-signed message when the
+   * recipient hasn't pinned our current ratchet key. The cert is a signature
+   * by our permanent identity key over
    * "YAKMESH:TRIBHUJ-KEY:{nodeId}:{newKey}:{epoch}" — receivers verify it
    * against the pinned identity key and advance their pinned ratchet set.
+   *
+   * Announcement is tracked PER-PEER: marking a key "announced" globally after
+   * a single send meant any peer that missed that one message could never
+   * certify the key and rejected all subsequent ratchet-signed gossip until
+   * the next rotation. The cert signature is computed once per key and cached.
    */
-  _attachTribhujCert(signed) {
+  _attachTribhujCert(signed, peer = null) {
     const cur = this.ratchet?._current?.publicKey;
     if (!cur) return signed;
     const curHex = bytesToHex(cur);
-    if (!this._announcedRatchetKeys) this._announcedRatchetKeys = new Set();
-    if (this._announcedRatchetKeys.has(curHex)) return signed;
-    const certPayload = `YAKMESH:TRIBHUJ-KEY:${this.identity.identity.nodeId}:${curHex}:${this.ratchet._epoch}`;
-    signed._tribhujCert = this.identity.sign(certPayload);
-    this._announcedRatchetKeys.add(curHex);
+    // Peers that already pin our current key get the lean message.
+    if (peer && peer.tribhujKeys?.current === curHex) return signed;
+    if (signed._tribhujCert) return signed;
+    if (!this._ratchetKeyCerts) this._ratchetKeyCerts = new Map();
+    let cert = this._ratchetKeyCerts.get(curHex);
+    if (!cert) {
+      const certPayload = `YAKMESH:TRIBHUJ-KEY:${this.identity.identity.nodeId}:${curHex}:${this.ratchet._epoch}`;
+      cert = this.identity.sign(certPayload);
+      this._ratchetKeyCerts.set(curHex, cert);
+      // Bound the cache — a stale key's cert is never needed again.
+      if (this._ratchetKeyCerts.size > 8) {
+        const oldest = this._ratchetKeyCerts.keys().next().value;
+        this._ratchetKeyCerts.delete(oldest);
+      }
+    }
+    signed._tribhujCert = cert;
     return signed;
   }
 

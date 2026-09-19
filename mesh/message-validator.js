@@ -24,7 +24,10 @@
 
 export const SIZE_LIMITS = {
   maxMessageSize: 1024 * 1024,
-  maxPayloadSizes: { gossip: 64 * 1024, handshake: 8 * 1024, listing: 128 * 1024, data: 512 * 1024 },
+  // Gossip carries stacked PQ material (heartbeat sig + rumor sig + TRIBHUJ
+  // sig/pubkey + ANNEX envelope sig ≈ 27KB before payload) — a 64KB cap sized
+  // for ECDSA-era signatures rejects legitimate signed traffic.
+  maxPayloadSizes: { gossip: 256 * 1024, handshake: 8 * 1024, listing: 128 * 1024, data: 512 * 1024 },
   maxDepth: 10,
   maxArrayLength: 1000,
   maxStringLength: 100000,
