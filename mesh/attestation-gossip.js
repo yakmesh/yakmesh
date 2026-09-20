@@ -94,8 +94,14 @@ export class AttestationGossip extends EventEmitter {
     if (claims.length === 0 && this.claimLedger.forks.length === 0) return null;
 
     // Only attest VERIFIED claims — a witness must not vouch for
-    // unsigned or forged beats (v3.5.3 signed-heartbeat fix).
-    const items = claims.filter(c => c.verified === 'verified').map(c => ({
+    // unsigned or forged beats (v3.5.3 signed-heartbeat fix). Claims
+    // that FAILED the AVOTH seal recompute (sealVerified === false, set
+    // by claimLedger.verifyEpochSeals at epoch close) are excluded too —
+    // seal failure is emitted separately as sealFailure evidence.
+    // sealVerified === undefined (bridge unreachable) still attests:
+    // verification defers to settlement, never fabricated.
+    const items = claims.filter(c =>
+      c.verified === 'verified' && c.sealVerified !== false).map(c => ({
       epoch,
       yakmeshNodeId: c.yakmeshNodeId,
       claimNodeId: c.nodeId,

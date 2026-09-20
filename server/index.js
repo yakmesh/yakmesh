@@ -1717,14 +1717,32 @@ export class YakmeshNode {
    */
   _startAttestationLoop() {
     let lastClosed = -1;
-    this._attestationInterval = setInterval(() => {
+    this._attestationInterval = setInterval(async () => {
       const closedEpoch = Math.floor(Date.now() / 30000) - 1;
       if (closedEpoch <= lastClosed || !this.attestationGossip) return;
       lastClosed = closedEpoch;
+      // Recompute every witnessed claim's wormhole seal before we
+      // vouch for the set — the batch excludes sealVerified === false.
+      // Bridge unreachable → claims attest unverified (deferred to
+      // settlement); this call never throws.
+      try { await this.claimLedger?.verifyEpochSeals(closedEpoch); }
+      catch (e) { log.warn('seal verification failed', { epoch: closedEpoch, error: e.message }); }
       const batch = this.attestationGossip.buildBatch(closedEpoch);
       if (batch) {
         this.gossip.spreadRumor('claim:attest', batch);
         log.debug('claim attestations gossiped', { epoch: closedEpoch, items: batch.items.length });
+      }
+      // Hourglass-attest the witnessed claim-set Merkle root — one
+      // signature per MANI epoch; a 409 means our witnessed set diverged
+      // from the first attester's (surfaced as attestationConflict).
+      try {
+        const att = await this.claimLedger?.attestEpoch(closedEpoch);
+        if (att && !att.conflict) {
+          log.debug('epoch claim root hourglass-attested',
+            { epoch: closedEpoch, root: att.claimRoot, claims: att.claims });
+        }
+      } catch (e) {
+        log.warn('epoch attestation failed', { epoch: closedEpoch, error: e.message });
       }
     }, 30_000);
     log.info('🖊️ Attestation gossip loop started (epoch-close batches)');
