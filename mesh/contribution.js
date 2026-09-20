@@ -28,9 +28,39 @@
  * @module mesh/contribution
  */
 
+import { readFileSync } from 'fs';
+import { join } from 'path';
+
 const BRIDGE_URL = process.env.YAKOS_PQ_BRIDGE || 'http://127.0.0.1:9995';
 const NPU_PROOF_URL = process.env.YAKOS_NPU_PROOF || 'http://127.0.0.1:9997';
 const FETCH_TIMEOUT_MS = 1500;
+
+/**
+ * yakcoind handoff: when the Rust daemon runs it publishes the epoch's
+ * self-verified claim to this path once per epoch. We adopt only its
+ * work fields (spongeRounds/shareCount/jobRoot) — identity stays
+ * bridge-derived, and a file whose nodeId or seal doesn't match ours
+ * is ignored (a foreign claim under our heartbeat is worse than none).
+ */
+const YAKCOIND_CLAIM = join(process.env.XDG_RUNTIME_DIR || '/tmp',
+  'yakmesh', 'yakcoind-claim.json');
+
+function yakcoindWorkFields(epoch, nodeId, seal) {
+  try {
+    const c = JSON.parse(readFileSync(YAKCOIND_CLAIM, 'utf8'));
+    if (c.epoch !== epoch || c.nodeId !== nodeId) return null;
+    if (!Array.isArray(c.seal) || c.seal.length !== 4 ||
+        c.seal.some((q, i) => q !== seal[i])) return null;
+    return {
+      spongeRounds: Number.isInteger(c.spongeRounds) ? c.spongeRounds : 0,
+      shareCount: Number.isInteger(c.shareCount) ? c.shareCount : 0,
+      jobRoot: typeof c.jobRoot === 'string' && /^[0-9a-f]{64}$/.test(c.jobRoot)
+        ? c.jobRoot : '0'.repeat(64),
+    };
+  } catch {
+    return null; // no daemon, stale file, or unreadable — self-generate
+  }
+}
 
 /** Cached seal for the current epoch — bridge call is ~1ms, epochs are 30s. */
 let cached = { epoch: -1, payload: null };
@@ -270,16 +300,20 @@ export async function contributionMeshState(nowMs) {
       const attestation = await signHwProof(epoch, node_id, hwProof).catch(() => null);
       if (attestation) hwProof.attestation = attestation;
     }
+    // Adopt yakcoind's work fields when its claim is present and its
+    // identity+seal provably match ours — zeros stay honest otherwise.
+    const work = yakcoindWorkFields(epoch, node_id, seal);
     const payload = {
       version: 1,
       epoch,
       nodeId: node_id,
       seal,                    // 4 quats — wormhole seal at AVOTH pos 191
-      spongeRounds: 0,         // PRAHARI feed not wired — honest zero
-      shareCount: 0,           // mesh pool not live — honest zero
-      jobRoot: '0'.repeat(64), // no completed work orders yet
+      spongeRounds: work?.spongeRounds ?? 0, // PRAHARI feed not wired — honest zero
+      shareCount: work?.shareCount ?? 0,     // mesh pool not live — honest zero
+      jobRoot: work?.jobRoot ?? '0'.repeat(64), // no completed work orders yet
       entropyFlags: (canAttestTime ? 1 : 0) | (real_silicon ? 2 : 0),
       siliconDrift: Number.isInteger(silicon_drift) ? silicon_drift : 0,
+      ...(work ? { yakcoind: true } : {}),
       ...(npuProof ? { npuProof } : {}),
       ...(hwProof ? { hwProof } : {}),
     };

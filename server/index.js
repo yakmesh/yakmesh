@@ -1662,6 +1662,17 @@ export class YakmeshNode {
   }
 
   /**
+   * The quorum-aggregated claim set for an epoch — distinct attester
+   * counts per claim after claim:attest gossip. This is the producer
+   * side of EpochClaim.attestations: yakcoin settlement consumes these
+   * counts when a chain is running. Returns [] before gossip wires in
+   * or for epochs with no attested claims.
+   */
+  claimAttestedSet(epoch) {
+    return this.attestationGossip?.attestedSet(epoch) || [];
+  }
+
+  /**
    * Attestation emit loop — at each 30s epoch close, sign and gossip a
    * batch attesting every claim witnessed in the just-closed epoch.
    * Attestations are witness statements, never claim re-broadcasts.
