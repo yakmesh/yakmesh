@@ -106,6 +106,7 @@ export const ManiTrustLevel = {
   ATOMIC: 'atomic',     // PCIe atomic clock (CSAC, Rubidium) - Most precious MANI stone
   GPS: 'gps',           // GPS with PPS signal - Celestial marker
   PTP: 'ptp',           // IEEE 1588 PTP synchronized - Network reference
+  WITNESSED: 'witnessed', // Mesh-witnessed stratum-1 pulses - measured bound, earned not configured
   NTP: 'ntp',           // Standard NTP - Basic synchronization
   UNSYNC: 'unsync',     // No reliable time source - Lost on the path
 };
@@ -122,6 +123,8 @@ export const ManiPhaseTolerance = {
   [ManiTrustLevel.ATOMIC]: 100,      // ±100ms for atomic
   [ManiTrustLevel.GPS]: 500,         // ±500ms for GPS
   [ManiTrustLevel.PTP]: 500,         // ±500ms for PTP
+  [ManiTrustLevel.WITNESSED]: 1000,  // ±1s nominal ceiling — the REAL bound is the
+                                     // measured inter-attester spread (witnessed-time.js)
   [ManiTrustLevel.NTP]: 5000,        // ±5 seconds for NTP
   [ManiTrustLevel.UNSYNC]: 30000,    // ±30 seconds for unsync (degraded mode)
 };
@@ -137,6 +140,8 @@ export const ManiStratumLevel = {
   [ManiTrustLevel.ATOMIC]: 0,  // Reference clock (primary MANI stone)
   [ManiTrustLevel.GPS]: 1,     // Primary server (celestial marker)
   [ManiTrustLevel.PTP]: 1,     // Primary server (network reference)
+  [ManiTrustLevel.WITNESSED]: 2, // Secondary — transitively one hop from stratum 1,
+                               // but the error bound is WITNESSED evidence, not assumed
   [ManiTrustLevel.NTP]: 2,     // Secondary server (distant echo)
   [ManiTrustLevel.UNSYNC]: 16, // Unsynchronized (lost on the path)
 };

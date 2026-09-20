@@ -99,6 +99,7 @@ import { aguwa } from '../mesh/aguwa.js';
 import { PulseSync, PULSE_CONFIG } from '../mesh/pulse-sync.js';
 import { withContribution, setTimeTrustProvider, setProofProvider, createNpuProofProvider } from '../mesh/contribution.js';
 import { ClaimLedger } from '../mesh/claim-ledger.js';
+import { WitnessedTime, pulsePreimage } from '../oracle/witnessed-time.js';
 import { AttestationGossip } from '../mesh/attestation-gossip.js';
 
 // v2.0 Security imports - NAMCHE and DOKO
@@ -809,6 +810,10 @@ export class YakmeshNode {
       signFn: (data) => this.identity.sign(data),
     });
     this.claimLedger = new ClaimLedger({ nodeId: this.identity.identity.nodeId });
+    this.witnessedTime = new WitnessedTime({
+      nodeId: this.identity.identity.nodeId,
+      now: () => aguwa.now(),
+    });
     this.claimLedger.on('fork', (ev) =>
       log.error('PULSE fork evidence', { node: ev.nodeId.slice(0, 16), seq: ev.sequence }));
     this.attestationGossip = new AttestationGossip({
@@ -1552,12 +1557,21 @@ export class YakmeshNode {
       const sats = status.ma902?.satellites || status.satellites || {};
       const locked = status.trustLevel === 'gps' || status.trustLevel === 'atomic';
 
+      // WITNESSED tier: a cardless node that holds a verified k-of-m
+      // pulse quorum reports 'witnessed' — elevated above NTP/UNSYNC,
+      // never above a real clock it doesn't have.
+      const wit = this.witnessedTime?.witnessedState();
+      const baseTrust = status.trustLevel;
+      const effectiveTrust =
+        wit?.eligible && (baseTrust === 'unsync' || baseTrust === 'ntp')
+          ? 'witnessed' : baseTrust;
+
       const heartbeat = {
         // Node identity
         nodeId: this.identity.identity.nodeId,
         nodeName: this.identity.identity.name,
         // Time quality
-        trustLevel: status.trustLevel,
+        trustLevel: effectiveTrust,
         stratum: status.stratum ?? (locked ? 1 : 2),
         accuracy_ms: locked ? 1 : 50,
         phaseTolerance: status.phaseTolerance,
@@ -1586,7 +1600,22 @@ export class YakmeshNode {
         publicNtp: locked ? 'time.yakmesh.dev' : null,
         // Timestamp of this heartbeat (local clock)
         timestamp: aguwa.now(),
+        // Witnessed-time evidence — the signature turns this heartbeat
+        // into a verifiable stratum-1 time pulse for cardless peers
+        witnessedBound: wit?.eligible ? wit.boundMs : null,
       };
+
+      // Signed pulse fields — stratum-1 nodes only (the signature is
+      // what makes the pulse count toward a peer's WITNESSED quorum;
+      // receivers enforce stratum ≤ 1 themselves)
+      const pulseEpoch = Math.floor(heartbeat.timestamp / 30_000);
+      heartbeat.pubKey = this.identity.identity.publicKey;
+      heartbeat.pulseSig = this.identity.sign(pulsePreimage({
+        nodeId: heartbeat.nodeId,
+        epoch: pulseEpoch,
+        timestamp: heartbeat.timestamp,
+        stratum: heartbeat.stratum,
+      }));
 
       this.gossip.spreadRumor('time:heartbeat', heartbeat);
     };
@@ -1673,6 +1702,15 @@ export class YakmeshNode {
   }
 
   /**
+   * WITNESSED-tier state: whether this node holds a verified k-of-m
+   * stratum-1 pulse quorum, and the measured offset/bound if so.
+   */
+  witnessedTimeState() {
+    return this.witnessedTime?.witnessedState() ||
+      { eligible: false, attesters: 0, offsetMs: null, boundMs: null };
+  }
+
+  /**
    * Attestation emit loop — at each 30s epoch close, sign and gossip a
    * batch attesting every claim witnessed in the just-closed epoch.
    * Attestations are witness statements, never claim re-broadcasts.
@@ -1703,6 +1741,9 @@ export class YakmeshNode {
     // AGUWA Kuramoto coupling: feed heartbeat arrival time so phase correction converges
     // This is the critical wiring that makes aguwa.now() converge across peers
     aguwa.onHeartbeat(origin, aguwa.now());
+
+    // WITNESSED tier: signed stratum-1 pulses feed the quorum collector
+    this.witnessedTime?.observePulse(data);
 
     // Update peer's MANI trust in AGUWA so coupling strength is calculated correctly
     const aguwaPeer = aguwa.peers.get(origin);

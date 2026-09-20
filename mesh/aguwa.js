@@ -106,6 +106,7 @@ const TRUST_SCORES = {
     [ManiTrustLevel.ATOMIC]: 0.95,
     [ManiTrustLevel.GPS]: 0.85,
     [ManiTrustLevel.PTP]: 0.75,
+    [ManiTrustLevel.WITNESSED]: 0.6,  // above NTP — measured bound, witnessed evidence
     [ManiTrustLevel.NTP]: 0.4,
     [ManiTrustLevel.UNSYNC]: 0.1,
 };
@@ -711,8 +712,8 @@ class Aguwa {
 
         // MANI trust weight
         const maniTrust = capabilities?.maniTrust || 'UNSYNC';
-        const maniWeights = { QUANTUM: 1.0, ATOMIC: 0.95, GPS: 0.85, PTP: 0.75, NTP: 0.4, UNSYNC: 0.1 };
-        const maniWeight = maniWeights[maniTrust] ?? 0.1;
+        const maniWeights = { quantum: 1.0, atomic: 0.95, gps: 0.85, ptp: 0.75, witnessed: 0.6, ntp: 0.4, unsync: 0.1 };
+        const maniWeight = maniWeights[String(maniTrust).toLowerCase()] ?? 0.1;
 
         return 0.3 * karmaWeight + 0.3 * hardwareWeight + 0.2 * returningBonus + 0.2 * maniWeight;
     }
