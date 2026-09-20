@@ -60,6 +60,18 @@ export function setProofProvider(fn) {
 }
 
 /**
+ * Generic hardware-proof provider — wired alongside (or instead of)
+ * the NPU proof provider. Use createHwProofProvider({device}) for any
+ * triad executor: 'cpu' | 'gpu' | 'npu'. A node proves the silicon it
+ * actually has; multiple providers can be chained by the caller.
+ */
+let hwProofProvider = null;
+
+export function setHwProofProvider(fn) {
+  hwProofProvider = typeof fn === 'function' ? fn : null;
+}
+
+/**
  * Build an execution-proof provider for rust-embed's /npu/proof
  * (:9997). Runs a nonce-seeded GEMM on real silicon — the returned
  * digest only exists if the kernel actually dispatched. The nonce is
@@ -80,6 +92,44 @@ export function createNpuProofProvider({ url = NPU_PROOF_URL, n = 8, timeoutMs =
       kernel: p.kernel || null,
       n: p.n_dispatches,
       consistent: p.digests.consistent_across_dispatches === true,
+      digests: { input: p.digests.input, output: p.digests.output },
+      timingNs: {
+        p50: p.timing?.per_dispatch_ns?.p50,
+        p95: p.timing?.per_dispatch_ns?.p95,
+        mean: p.timing?.per_dispatch_ns?.mean,
+        min: p.timing?.per_dispatch_ns?.min,
+        max: p.timing?.per_dispatch_ns?.max,
+        wall: p.timing?.wall_ns,
+      },
+    };
+  };
+}
+
+/**
+ * Generic hardware execution-proof provider — pq-bridge /hw/proof
+ * (:9995) covers all three triad executors with the same evidence
+ * contract as /npu/proof: N dispatches of a nonce-seeded AVOTH hash on
+ * real silicon. `device` selects the executor: 'cpu' | 'gpu' | 'npu'.
+ * The returned proof carries a capability block (CPU feature flags,
+ * GPU name+VRAM, NPU kernel/tiles) so the claim says WHAT ran, not
+ * just THAT something ran. Returns null when unavailable.
+ */
+export function createHwProofProvider({ device = 'cpu', url = BRIDGE_URL, n = 8, timeoutMs = 30000 } = {}) {
+  return async (epoch) => {
+    const res = await fetch(`${url}/hw/proof?device=${device}&nonce=yakmesh-e${epoch}&n=${n}`, {
+      signal: AbortSignal.timeout(timeoutMs),
+    });
+    if (!res.ok) return null;
+    const p = await res.json();
+    if (p?.status !== 'ok' || !p.digests?.output) return null;
+    return {
+      nonce: p.nonce,
+      device: p.device?.pci || p.device?.name || p.device?.class || device,
+      deviceClass: p.device?.class || device,
+      kernel: p.kernel || null,
+      n: p.n_dispatches,
+      consistent: p.digests.consistent_across_dispatches === true,
+      capability: p.capability || null,
       digests: { input: p.digests.input, output: p.digests.output },
       timingNs: {
         p50: p.timing?.per_dispatch_ns?.p50,
@@ -152,6 +202,38 @@ async function signNpuProof(epoch, nodeId, proof) {
 }
 
 /**
+ * Canonical serialization of a generic hardware-proof claim — same
+ * field discipline as npuProofClaim plus deviceClass (which executor
+ * proved itself) and a capability digest. YAKMESH|HW-PROOF|v1.
+ */
+export function hwProofClaim(epoch, nodeId, p) {
+  const t = p.timingNs || {};
+  return [
+    'YAKMESH|HW-PROOF|v1', epoch, nodeId,
+    p.deviceClass ?? '', p.device ?? '', p.kernel ?? '', p.nonce ?? '',
+    p.n ?? '', p.consistent ? 1 : 0,
+    JSON.stringify(p.capability ?? null),
+    p.digests?.input ?? '', p.digests?.output ?? '',
+    t.p50 ?? '', t.p95 ?? '', t.mean ?? '', t.min ?? '', t.max ?? '', t.wall ?? '',
+  ].join('|');
+}
+
+/** Sign a hardware-proof claim via the keystore — same flow as signNpuProof. */
+async function signHwProof(epoch, nodeId, proof) {
+  const claim = hwProofClaim(epoch, nodeId, proof);
+  const key = await getBridgeSigningKey();
+  const res = await fetch(`${BRIDGE_URL}/sign`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message: claim }),
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  });
+  if (!res.ok) throw new Error(`bridge /sign: ${res.status}`);
+  const { signature, algorithm } = await res.json();
+  return { claim, algorithm, keyId: key.keyId, publicKey: key.publicKey, signature };
+}
+
+/**
  * Current MANI-aligned epoch (30s — matches yakcoind EPOCH_SECS and
  * pq-bridge's default).
  */
@@ -183,6 +265,11 @@ export async function contributionMeshState(nowMs) {
       const attestation = await signNpuProof(epoch, node_id, npuProof).catch(() => null);
       if (attestation) npuProof.attestation = attestation;
     }
+    const hwProof = hwProofProvider ? await hwProofProvider(epoch).catch(() => null) : null;
+    if (hwProof) {
+      const attestation = await signHwProof(epoch, node_id, hwProof).catch(() => null);
+      if (attestation) hwProof.attestation = attestation;
+    }
     const payload = {
       version: 1,
       epoch,
@@ -194,6 +281,7 @@ export async function contributionMeshState(nowMs) {
       entropyFlags: (canAttestTime ? 1 : 0) | (real_silicon ? 2 : 0),
       siliconDrift: Number.isInteger(silicon_drift) ? silicon_drift : 0,
       ...(npuProof ? { npuProof } : {}),
+      ...(hwProof ? { hwProof } : {}),
     };
     cached = { epoch, payload };
     return payload;
