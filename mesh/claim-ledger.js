@@ -36,6 +36,7 @@
  */
 
 import { EventEmitter } from 'events';
+import { sha3_256 } from '@noble/hashes/sha3.js';
 import { createLogger } from '../utils/logger.js';
 
 const log = createLogger('mesh:claim-ledger');
@@ -246,6 +247,98 @@ export class ClaimLedger extends EventEmitter {
   /** Fork evidence for a node — empty = clean record. */
   forksFor(nodeId) {
     return this.forks.filter(f => f.nodeId === nodeId);
+  }
+
+  /**
+   * Canonical 81-byte claim encoding — the Merkle leaf preimage.
+   * Commits to the wire-format claim fields only; npuProof/hwProof are
+   * auxiliary evidence attachments, not part of the canonical claim, and
+   * witness metadata (firstSeenSeq/witnessedAt/verified) is local, so
+   * every honest witness derives the SAME leaf for the same claim.
+   *
+   *   version u8 ‖ epoch u32LE ‖ spongeRounds u16LE ‖ shareCount u32LE ‖
+   *   jobRoot[32] ‖ entropyFlags u8 ‖ siliconDrift u8 ‖ seal[4] ‖ nodeId[32]
+   */
+  static claimLeafBytes(c) {
+    const buf = Buffer.alloc(81);
+    let o = 0;
+    buf.writeUInt8(c.version, o); o += 1;
+    buf.writeUInt32LE(c.epoch, o); o += 4;
+    buf.writeUInt16LE(c.spongeRounds, o); o += 2;
+    buf.writeUInt32LE(c.shareCount, o); o += 4;
+    Buffer.from(c.jobRoot, 'hex').copy(buf, o); o += 32;
+    buf.writeUInt8(c.entropyFlags, o); o += 1;
+    buf.writeUInt8(c.siliconDrift || 0, o); o += 1;
+    buf.set(c.seal, o); o += 4;
+    Buffer.from(c.nodeId, 'hex').copy(buf, o);
+    return buf;
+  }
+
+  /**
+   * Binary Merkle root over an epoch's witnessed claim set:
+   * leaf = SHA3-256(canonical claim), sorted by (nodeId, leaf bytes),
+   * internal = SHA3-256(left ‖ right), odd node promoted un-hashed.
+   * Returns null for an empty/absent epoch — no attestation of nothing.
+   */
+  epochClaimRoot(epoch) {
+    const bucket = this.epochs.get(epoch);
+    if (!bucket || bucket.size === 0) return null;
+
+    const leaves = [...bucket.values()]
+      .map(c => ({ nodeId: c.nodeId, leaf: Buffer.from(sha3_256(ClaimLedger.claimLeafBytes(c))) }))
+      .sort((a, b) => a.nodeId.localeCompare(b.nodeId) || Buffer.compare(a.leaf, b.leaf))
+      .map(e => e.leaf);
+
+    let level = leaves;
+    while (level.length > 1) {
+      const next = [];
+      for (let i = 0; i < level.length; i += 2) {
+        next.push(i + 1 < level.length
+          ? Buffer.from(sha3_256(Buffer.concat([level[i], level[i + 1]])))
+          : level[i]); // odd promoted
+      }
+      level = next;
+    }
+    return { root: level[0].toString('hex'), claims: leaves.length, epoch };
+  }
+
+  /**
+   * Ask the pq-bridge to hourglass-sign this epoch's claim-set root.
+   * The bridge signs at most once per MANI epoch — a 409 means the epoch
+   * was already attested under a DIFFERENT root, which is evidence:
+   * either our witnessed set diverges from the first attester's, or
+   * someone attested a root they cannot substantiate. Emitted as
+   * 'attestationConflict', never silently resolved.
+   */
+  async attestEpoch(epoch) {
+    const r = this.epochClaimRoot(epoch);
+    if (!r) return null;
+
+    let res;
+    try {
+      res = await fetch(`${BRIDGE_URL}/yakcoin/epoch-attest`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ claim_root: r.root }),
+        signal: AbortSignal.timeout(VERIFY_TIMEOUT_MS),
+      });
+    } catch (e) {
+      log.warn('epoch attestation unreachable', { epoch, error: e.message });
+      return null;
+    }
+
+    if (res.status === 409) {
+      const evidence = { epoch, ourRoot: r.root, claims: r.claims, at: Date.now() };
+      log.warn('ATTESTATION CONFLICT — epoch already signed under a different root', evidence);
+      this.emit('attestationConflict', evidence);
+      return { conflict: true, epoch, ourRoot: r.root };
+    }
+    if (!res.ok) {
+      log.warn('epoch attestation rejected', { epoch, status: res.status });
+      return null;
+    }
+    const body = await res.json();
+    return { epoch, claimRoot: r.root, claims: r.claims, ...body };
   }
 
   _prune() {
