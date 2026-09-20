@@ -40,6 +40,9 @@ import { createLogger } from '../utils/logger.js';
 
 const log = createLogger('mesh:claim-ledger');
 
+const BRIDGE_URL = process.env.YAKOS_PQ_BRIDGE || 'http://127.0.0.1:9995';
+const VERIFY_TIMEOUT_MS = 30000;
+
 /**
  * Structural check on a contribution claim — shape only. The wormhole
  * seal's cryptographic validity is verified at settlement (AVOTH
@@ -172,6 +175,72 @@ export class ClaimLedger extends EventEmitter {
   /** All witnessed claims for an epoch → what settlement consumes. */
   epochClaims(epoch) {
     return [...(this.epochs.get(epoch)?.values() || [])];
+  }
+
+  /**
+   * Cryptographic seal verification for an epoch's witnessed claims —
+   * upgrades the shape check to a real AVOTH recompute via the pq-bridge
+   * (/yakcoin/verify-claims, triad-dispatched: GPU bulk, NPU dot matrix,
+   * or CPU floor). One POST verifies the whole epoch.
+   *
+   * Verdicts are written back onto the witnessed claim records
+   * (`sealVerified: true|false`) and failing claims are emitted as
+   * 'sealFailure' evidence — a forged or transplanted seal is provable
+   * misconduct, not a shape error. Returns null when the bridge is
+   * unreachable (witnessing continues; verification defers to settlement).
+   */
+  async verifyEpochSeals(epoch) {
+    const bucket = this.epochs.get(epoch);
+    if (!bucket || bucket.size === 0) return null;
+
+    const entries = [...bucket.values()];
+    const claims = entries.map(c => ({
+      node_id: c.nodeId,
+      epoch: c.epoch,
+      seal: c.seal,
+    }));
+
+    let res;
+    try {
+      res = await fetch(`${BRIDGE_URL}/yakcoin/verify-claims`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ claims }),
+        signal: AbortSignal.timeout(VERIFY_TIMEOUT_MS),
+      });
+    } catch (e) {
+      log.warn('seal verification unreachable', { epoch, error: e.message });
+      return null;
+    }
+    if (!res.ok) {
+      log.warn('seal verification rejected', { epoch, status: res.status });
+      return null;
+    }
+    const body = await res.json();
+
+    entries.forEach((claim, i) => {
+      claim.sealVerified = body.verdicts?.[i] === true;
+      if (!claim.sealVerified) {
+        const evidence = {
+          yakmeshNodeId: claim.yakmeshNodeId,
+          nodeId: claim.nodeId,
+          epoch: claim.epoch,
+          seal: claim.seal,
+          at: Date.now(),
+        };
+        log.warn('SEAL FAILURE — forged or transplanted claim seal', evidence);
+        this.emit('sealFailure', evidence);
+      }
+    });
+
+    return {
+      epoch,
+      total: body.total,
+      valid: body.valid,
+      invalid: body.invalid,
+      device: body.device,
+      elapsedMs: body.elapsed_ms,
+    };
   }
 
   /** Fork evidence for a node — empty = clean record. */
