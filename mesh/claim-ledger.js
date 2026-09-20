@@ -220,7 +220,12 @@ export class ClaimLedger extends EventEmitter {
     const body = await res.json();
 
     entries.forEach((claim, i) => {
-      claim.sealVerified = body.verdicts?.[i] === true;
+      // Verdict shape: legacy `true|false` or the signed-claim object
+      // `{seal_valid, sig_valid, valid}` — sealVerified tracks the seal
+      // layer specifically (these claims carry no signature, so
+      // sig_valid is null and valid === seal_valid).
+      const v = body.verdicts?.[i];
+      claim.sealVerified = v === true || v?.seal_valid === true;
       if (!claim.sealVerified) {
         const evidence = {
           yakmeshNodeId: claim.yakmeshNodeId,
