@@ -81,9 +81,16 @@ export class WitnessedTime {
     const stratum = data.stratum ?? 16;
     if (stratum > 1) { this.stats.lowStratum++; return false; }
 
+    // Future-pulse rejection: a pulse claiming an epoch beyond now+1
+    // can't be evidence for a time that hasn't happened — it would
+    // pollute a future epoch's map and never be collected. One epoch
+    // of lead is allowed for boundary-crossing skew only.
+    const nowEpoch = Math.floor(this.now() / EPOCH_MS);
+    const epoch = Math.floor(data.timestamp / EPOCH_MS);
+    if (epoch > nowEpoch + 1) return false;
+
     // Signature over the canonical pulse fields.
     if (!data.pubKey || !data.pulseSig) { this.stats.badSig++; return false; }
-    const epoch = Math.floor(data.timestamp / EPOCH_MS);
     const pre = pulsePreimage({ nodeId: data.nodeId, epoch,
       timestamp: data.timestamp, stratum });
     try {

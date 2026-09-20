@@ -51,12 +51,25 @@ function yakcoindWorkFields(epoch, nodeId, seal) {
     if (c.epoch !== epoch || c.nodeId !== nodeId) return null;
     if (!Array.isArray(c.seal) || c.seal.length !== 4 ||
         c.seal.some((q, i) => q !== seal[i])) return null;
-    return {
+    const work = {
       spongeRounds: Number.isInteger(c.spongeRounds) ? c.spongeRounds : 0,
       shareCount: Number.isInteger(c.shareCount) ? c.shareCount : 0,
       jobRoot: typeof c.jobRoot === 'string' && /^[0-9a-f]{64}$/.test(c.jobRoot)
         ? c.jobRoot : '0'.repeat(64),
     };
+    // Relay the coinbase-format attestation bundle only when its
+    // embedded nodeId (canonical bytes 1..33) matches ours — a bundle
+    // for foreign hardware must not ride our claim.
+    if (typeof c.attestationBundle === 'string') {
+      try {
+        const raw = Buffer.from(c.attestationBundle, 'base64');
+        if (raw.length > 33 &&
+            raw.subarray(1, 33).toString('hex') === nodeId) {
+          work.attestationBundle = c.attestationBundle;
+        }
+      } catch { /* malformed b64 — drop the field, keep the work */ }
+    }
+    return work;
   } catch {
     return null; // no daemon, stale file, or unreadable — self-generate
   }
@@ -314,6 +327,8 @@ export async function contributionMeshState(nowMs) {
       entropyFlags: (canAttestTime ? 1 : 0) | (real_silicon ? 2 : 0),
       siliconDrift: Number.isInteger(silicon_drift) ? silicon_drift : 0,
       ...(work ? { yakcoind: true } : {}),
+      ...(work?.attestationBundle
+          ? { attestationBundle: work.attestationBundle } : {}),
       ...(npuProof ? { npuProof } : {}),
       ...(hwProof ? { hwProof } : {}),
     };
