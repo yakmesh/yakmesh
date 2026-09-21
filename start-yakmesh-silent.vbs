@@ -9,7 +9,10 @@ dir = fso.GetParentFolderName(WScript.ScriptFullName)
 sh.CurrentDirectory = dir
 
 ' Per-node settings (env vars only — yakmesh.config.js must stay identical)
-sh.Environment("PROCESS")("YAKMESH_BOOTSTRAP") = "ws://192.168.1.172:19080"
+' Bootstrap peer — LAN seed node (override by setting YAKMESH_BOOTSTRAP in the system env)
+if sh.Environment("PROCESS")("YAKMESH_BOOTSTRAP") = "" then
+    sh.Environment("PROCESS")("YAKMESH_BOOTSTRAP") = "ws://192.168.1.172:9080"
+end if
 sh.Environment("PROCESS")("YAKMESH_DATA_DIR") = sh.ExpandEnvironmentStrings("%LOCALAPPDATA%") & "\yakmesh-data"
 
 ' 0 = hidden window, False = don't wait

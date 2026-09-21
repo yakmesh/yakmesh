@@ -33,7 +33,11 @@
 import express from 'express';
 import rateLimit from 'express-rate-limit';
 import crypto from 'node:crypto';
-import { existsSync, readFileSync, writeFileSync } from 'fs';
+import readline from 'node:readline';
+import { NetworkIdentity } from '../oracle/network-identity.js';
+import { UpdateTransfer } from '../utils/update-transfer.js';
+import { existsSync, readFileSync, statSync, writeFileSync } from 'fs';
+import { mkdir } from 'node:fs/promises';
 import { join } from 'path';
 import { networkInterfaces } from 'os';
 import { WebSocketServer } from 'ws';
@@ -198,6 +202,8 @@ import { getMemorySafety } from '../security/memory-safety.js';
 
 // SERVER DIRECTORY — C2C Lighthouse (server browser via gossip heartbeats)
 import ServerDirectory from '../mesh/server-directory.js';
+import { SevaMeshHandler, SEVA_CONFIG } from '../mesh/seva.js';
+import * as avothBridge from '../utils/avoth-bridge.js';
 
 // Temporal Signing — GPS-bound code signatures with auto-expiry
 import { getTemporalSigner, TemporalSignature } from '../security/temporal-signing.js';
@@ -777,6 +783,12 @@ export class YakmeshNode {
         this.attestationGossip?.receive(data, origin);
       }
 
+      // Handle YAK-TUN route announcements (multi-hop vIP routing)
+      if (topic === 'tun:announce' && data?.nodeId && data?.vIp) {
+        this.yakTun?.learnRoute(data.vIp, data.nodeId);
+        if (data.vIp6) this.yakTun?.learnRoute(data.vIp6, data.nodeId);
+      }
+
       // Handle C2C server heartbeats (Lighthouse directory)
       if (topic === 'server:heartbeat') {
         this.serverDirectory?.handleHeartbeat(data, origin);
@@ -797,6 +809,11 @@ export class YakmeshNode {
       // Handle ACT state broadcast from a peer (PREPARE/READY/SWITCH)
       if (topic === 'act:state') {
         this._handleACTStateGossip(data, origin);
+      }
+
+      // Handle signed upgrade announcements (the "what" — ACT is the "when")
+      if (topic === 'upgrade:proposal') {
+        this._handleUpgradeProposal(data, origin);
       }
     });
 
@@ -857,6 +874,8 @@ export class YakmeshNode {
     // 5g. Initialize KARMA trust model (fed by SAKSHI)
     this._initKarma();
     await this._initYakTun();
+    await this._initSeva();
+    this._initUpdateTransfer();
     await this._initTernaryHarmonization();
 
     // 5i. Initialize SHERPA for decentralized peer discovery
@@ -1152,13 +1171,14 @@ export class YakmeshNode {
    * Initiate ACT proposal (this node is the proposer — it detected the upgrade).
    * Computes target epoch from AGUWA propagation model and gossips proposal.
    */
-  _initiateACTProposal() {
+  _initiateACTProposal(epochsAhead = null) {
     if (!this.genesisNetwork || !this.gossip) return;
     if (this._actProposed) return; // Already proposed
     this._actProposed = true;
 
-    // Compute target epoch from AGUWA propagation model (Phase F)
-    const epochBuffer = aguwa.getACTEpochBuffer();
+    // Compute target epoch — operator override (rehearsal/emergency) or
+    // AGUWA propagation model (Phase F)
+    const epochBuffer = Number.isFinite(epochsAhead) ? epochsAhead : aguwa.getACTEpochBuffer();
     const targetEpoch = getCurrentEpoch() + epochBuffer;
 
     // Create proposal via GenesisNetworkV2
@@ -1173,10 +1193,10 @@ export class YakmeshNode {
       currentEpoch: getCurrentEpoch(),
     });
 
-    // Auto-consent if env var set (for headless/unattended nodes)
-    if (process.env.YAKMESH_ACT_AUTO_CONSENT === 'true') {
-      this._consentACT(targetEpoch, 'accept');
-    }
+    // The proposer consents its own proposal — initiating the epoch IS
+    // the coordinator's vote. Without this the proposer's JHILKE state
+    // machine never arms and it alone misses the transition.
+    this._consentACT(targetEpoch, 'accept');
   }
 
   /**
@@ -1195,11 +1215,169 @@ export class YakmeshNode {
 
     this._pendingACTProposal = data;
 
-    // Auto-consent if env var set (headless nodes)
-    if (process.env.YAKMESH_ACT_AUTO_CONSENT === 'true') {
+    // Auto-consent if the operator already accepted the matching offer,
+    // or if the env var is set (headless nodes)
+    if (this._acceptedUpgrade ||
+        process.env.YAKMESH_ACT_AUTO_CONSENT === 'true') {
       this._consentACT(data.targetEpoch, 'accept');
     }
     // Otherwise, the operator UI or API should call _consentACT()
+  }
+
+  /**
+   * Handle a signed upgrade announcement gossiped on 'upgrade:proposal'.
+   * This is the trusted-landmark notification layer: a high-trust node
+   * announces that a new network (newCodeHash → new fingerprint) exists.
+   * The operator decides — nothing auto-installs.
+   *
+   * Gates, in order:
+   *  1. Not our own announcement
+   *  2. Announcer trust — operator-pinned list (updates.trustedAnnouncers)
+   *     OR KARMA >= AWAKENED(2). Small meshes rely on the pin list.
+   *  3. Hourglass signature — verified via pq-bridge when available;
+   *     unsigned/unverifiable offers are stored flagged, not rejected
+   *     (bridge-less nodes can still see offers — they just can't
+   *     cryptographically confirm the announcer signed them).
+   */
+  async _handleUpgradeProposal(data, origin) {
+    if (!data || origin === this.identity.identity.nodeId) return;
+
+    // 2. Announcer trust gate — pinned by persistentId (the 162T
+    // hardware-bound identity, constant across code upgrades), NOT
+    // nodeId which is derived per-network and changes every build.
+    const announcerPid = this.mesh?.peers?.get(origin)?.identity?.persistentId
+      || data.announcerPersistentId || null;
+    const pinned = announcerPid &&
+      (this.config.updates?.trustedAnnouncers || []).includes(announcerPid);
+    const trustLvl = this.karmaModel?.getTrustLevel?.(origin) ?? 0;
+    if (!pinned && trustLvl < 2) {
+      log.warn('UPDATE: proposal dropped — announcer not trusted', {
+        proposer: peerTag(origin), trustLvl, pinned,
+      });
+      return;
+    }
+
+    // 3. Signature verification (Hourglass OTS via pq-bridge)
+    let signatureValid = null; // null = unverifiable here
+    if (data.signature && await avothBridge.isAvailable()) {
+      signatureValid = await avothBridge
+        .hourglassVerify(this._canonicalUpgradeProposal(data), data.signature)
+        .then(r => r.valid).catch(() => false);
+      if (!signatureValid) {
+        log.warn('UPDATE: proposal with INVALID hourglass signature', {
+          proposer: peerTag(origin),
+        });
+      }
+    }
+
+    let proposalAccepted = true;
+    try {
+      proposalAccepted =
+        this.genesisNetwork?.receiveUpgradeProposal?.(data) !== false;
+    } catch (err) {
+      proposalAccepted = false;
+      log.error('UPDATE: proposal processing failed', { error: err.message });
+    }
+    if (!proposalAccepted) return;
+
+    this._pendingUpgradeOffer = {
+      ...data,
+      announcer: origin,
+      announcerPersistentId: announcerPid,
+      announcerPinned: pinned,
+      announcerTrust: trustLvl,
+      signatureValid,
+      receivedAt: Date.now(),
+    };
+
+    log.warn('UPDATE: offer received — operator opt-in required (/api/update)', {
+      proposer: peerTag(origin),
+      newNetwork: data.newCodeHash ? undefined : undefined,
+      changelog: data.changelog?.slice?.(0, 80),
+      signatureValid,
+      trusted: pinned || trustLvl >= 2,
+    });
+
+    this._surfaceUpgradeOffer();
+  }
+
+  /**
+   * Surface a pending upgrade offer to the operator. Renders the
+   * GenesisNetworkV2 decision box to the console and arms a stdin Y/N
+   * reader when attached to a TTY. Headless nodes answer via
+   * POST /api/update/accept|decline (loopback only) — same opt-in gate.
+   */
+  _surfaceUpgradeOffer() {
+    const offer = this._pendingUpgradeOffer;
+    if (!offer) return;
+
+    let promptText = null;
+    try {
+      const fp = new NetworkIdentity(offer.newCodeHash).fingerprint;
+      promptText = this.genesisNetwork?.generateUpgradePrompt?.(fp)?.prompt || null;
+    } catch { /* fall through to minimal box */ }
+
+    const box = promptText || [
+      '╔══════════════════════════════════════════════════════════════╗',
+      '║            NETWORK UPGRADE DECISION REQUIRED                 ║',
+      '╠══════════════════════════════════════════════════════════════╣',
+      `║  From: ${String(offer.announcer || '?').padEnd(52)}║`,
+      `║  Changelog: ${String(offer.changelog || '').slice(0, 47).padEnd(47)}║`,
+      `║  Signature: ${(offer.signatureValid === true ? 'VERIFIED' : offer.signatureValid === false ? 'INVALID' : 'unverifiable (no bridge)').padEnd(47)}║`,
+      `║  Announcer: ${(offer.announcerPinned ? 'PINNED' : `KARMA trust ${offer.announcerTrust?.level ?? offer.announcerTrust}`).padEnd(47)}║`,
+      '╠══════════════════════════════════════════════════════════════╣',
+      '║  [Y] Accept — download new code, join new network            ║',
+      '║  [N] Decline — stay on current network                       ║',
+      '╚══════════════════════════════════════════════════════════════╝',
+    ].join('\n');
+
+    process.stdout.write(`\n${box}\n`);
+
+    if (!process.stdin.isTTY) {
+      process.stdout.write('Accept via: curl -X POST http://localhost:3080/api/update/accept  |  decline: /api/update/decline\n');
+      return;
+    }
+    if (this._upgradeStdinArmed) return;
+    this._upgradeStdinArmed = true;
+    const rl = readline.createInterface({ input: process.stdin, terminal: false });
+    rl.on('line', (line) => {
+      const answer = line.trim().toLowerCase();
+      if (!this._pendingUpgradeOffer || !['y', 'yes', 'n', 'no'].includes(answer)) return;
+      if (answer[0] === 'y') {
+        this._acceptedUpgrade = { ...this._pendingUpgradeOffer, acceptedAt: Date.now() };
+        log.warn('UPDATE: operator accepted offer (console)', {
+          announcer: peerTag(this._acceptedUpgrade.announcer),
+        });
+        if (this._pendingACTProposal) {
+          this._consentACT(this._pendingACTProposal.targetEpoch, 'accept');
+        }
+        this._fetchAcceptedPackage().catch(() => { });
+        process.stdout.write('Update accepted — fetching package.\n');
+      } else {
+        this._pendingUpgradeOffer = null;
+        this._acceptedUpgrade = null;
+        if (this._pendingACTProposal) {
+          this._consentACT(this._pendingACTProposal.targetEpoch, 'reject');
+        }
+        process.stdout.write('Update declined.\n');
+      }
+    });
+  }
+
+  /**
+   * Canonical string form of an upgrade proposal — what the Hourglass
+   * signature covers. Fixed key order; both sides derive it identically.
+   */
+  _canonicalUpgradeProposal(p) {
+    return JSON.stringify({
+      newCodeHash: p.newCodeHash || null,
+      changelog: p.changelog || '',
+      effectiveTime: p.effectiveTime || null,
+      sourceUrl: p.sourceUrl || null,
+      epoch: p.epoch ?? null,
+      packageSha256: p.packageSha256 || null,
+      packageSize: p.packageSize || null,
+    });
   }
 
   /**
@@ -1279,6 +1457,17 @@ export class YakmeshNode {
       currentEpoch: getCurrentEpoch(),
       orderParameter: aguwa.orderParameter().toFixed(3),
     });
+
+    // Safety: if we consented to an offer carrying a package but never
+    // finished fetching it, do NOT exit — the supervisor would find no
+    // staged zip and we'd respawn on the old network, alone.
+    const stagedZip = join(import.meta.dirname, '..', 'data', 'pending-update', 'package.zip');
+    if (this._acceptedUpgrade?.packageSha256 && !existsSync(stagedZip)) {
+      log.error('ACT: aborting execute — consented package not staged yet', {
+        sha256: this._acceptedUpgrade.packageSha256.slice(0, 16),
+      });
+      return;
+    }
 
     // Write act-restart marker so the next startup knows this was an ACT restart
     const restartMarker = {
@@ -1413,6 +1602,13 @@ export class YakmeshNode {
       log.warn(`📋 iO Manifest: failed to load — ${err.message}`);
     }
 
+    // ACT swap marker present but we were launched directly — the staged
+    // update can only be applied by the supervisor between process exits.
+    const actMarker = join(import.meta.dirname, '..', 'data', 'act-restart.json');
+    if (existsSync(actMarker)) {
+      log.warn('📋 ACT restart marker present — relaunch via `node scripts/yakmesh-run.js` to apply the staged update');
+    }
+
     const result = this.oracle.verifyManifest(manifest);
 
     if (result.skipped) {
@@ -1497,7 +1693,11 @@ export class YakmeshNode {
     }
 
     // Start continuous monitoring (async — initialises MA-902 SNMP session)
-    await this.timeSource.start();
+    // Bound it: a wedged SNMP/hardware probe must never block boot.
+    await Promise.race([
+      this.timeSource.start(),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('time-source start timeout')), 15_000)),
+    ]).catch(err => log.warn('Time source start bounded', { error: err.message }));
 
     // Log initial detection
     const trustIcons = {
@@ -2043,8 +2243,26 @@ export class YakmeshNode {
    */
   async _initYakTun() {
     log.info('🌐 Initializing YAK-TUN Native Interface...');
-    this.yakTun = new YakTun('yak0', this.mesh, this.karmaModel);
-    await this.yakTun.init();
+    // karmaModel may not exist yet at this init point — delegate lazily so
+    // the trust gate reads the live model whenever it is created.
+    const karmaDelegate = { getTrustLevel: (id) => this.karmaModel?.getTrustLevel(id) };
+    this.yakTun = new YakTun('yak0', this.mesh, karmaDelegate);
+    const up = await this.yakTun.init(this.identity.identity.nodeId);
+
+    if (up && this.yakTun.active) {
+      log.info(`🌐 YAK-TUN online: ${this.yakTun.virtualIp} / ${this.yakTun.virtualIpv6}`);
+      // Announce our vIP so multi-hop peers can route to us — once now,
+      // and on every new peer registration (cheap, idempotent).
+      const announce = () => this.gossip?.spreadRumor('tun:announce', {
+        nodeId: this.identity.identity.nodeId,
+        vIp: this.yakTun.virtualIp,
+        vIp6: this.yakTun.virtualIpv6,
+      });
+      announce();
+      this.mesh.on?.('peer-registered', announce);
+    } else {
+      log.warn('🌐 YAK-TUN offline — L3 tunnel inactive (Windows needs admin for the Wintun adapter; Linux needs a persistent /dev/net/tun device)');
+    }
 
     // Route incoming TUN_PACKET messages from the mesh directly back into OS
     this.mesh.messageHandlers.get('TUN_PACKET')?.push?.((msg, ws, senderNodeId) => {
@@ -2056,6 +2274,204 @@ export class YakmeshNode {
         this.yakTun.onReceive(msg, senderNodeId);
       }
     }]);
+  }
+
+  /**
+   * Initialize SEVA — shared compute over the mesh.
+   * Loads per-slot ONNX models from models/seva/<slot>.onnx and advertises
+   * only slots that actually loaded. Math-only params; ANNEX transport.
+   */
+  async _initSeva() {
+    const cfg = this.config.seva || {};
+    const modelsDir = join(import.meta.dirname, '..', 'models', 'seva');
+
+    // Capability = what actually loaded. Never advertise a slot we can't run.
+    const availableSlots = new Set();
+    if (cfg.enabled) {
+      for (const slot of SEVA_CONFIG.validSlots) {
+        if (SEVA_CONFIG.avothSlots.has(slot)) continue; // bridge-routed, not ONNX
+        const mp = join(modelsDir, `${slot}.onnx`);
+        if (!existsSync(mp)) continue;
+        if (await accel.inference.loadModel(`seva:${slot}`, mp)) {
+          availableSlots.add(slot);
+        }
+      }
+    }
+
+    // AVOTH slots are served only when the pq-bridge triad is reachable.
+    const avothOk = !!cfg.enabled && await avothBridge.isAvailable(true);
+    if (avothOk) {
+      for (const slot of SEVA_CONFIG.avothSlots) availableSlots.add(slot);
+    }
+
+    // Provider taxonomy — honest, best-first ordering
+    const providers = ['cpu'];
+    if (accel.HW.nvGpu) providers.push('gpu');
+    if (accel.HW.amdNpu) providers.push('onnx-dml');
+    if (avothOk) providers.push('avoth-triad');
+
+    // Deterministic job material for avoth-* slots — same bytes on every
+    // node, so spot-verification is exact equality, not approximation.
+    const avothMessage = (seed, len) => {
+      const out = Buffer.alloc(len);
+      let block = crypto.createHash('sha256').update(`seva-avoth:${seed}`).digest();
+      for (let i = 0; i < len; i++) {
+        if (i > 0 && i % 32 === 0) {
+          block = crypto.createHash('sha256').update(block).update(String(i)).digest();
+        }
+        out[i] = block[i % 32];
+      }
+      return out;
+    };
+
+    const sevaNet = {
+      broadcast: (m) => this.mesh.broadcast(m),
+      sendTo: (id, m) => this.mesh.sendTo(id, m),
+    };
+
+    this.seva = new SevaMeshHandler({
+      identity: this.identity.identity,
+      network: sevaNet,
+      enabled: !!cfg.enabled,
+      hardware: {
+        npu: accel.HW.amdNpu,
+        npuTops: accel.HW.amdNpuTops,
+        gpu: accel.HW.nvGpu,
+      },
+      availableSlots,
+      maxConcurrent: cfg.maxConcurrent || 10,
+      avoth: avothOk,
+      providers,
+      executor: async (slot, params) => {
+        if (!availableSlots.has(slot)) throw new Error(`no model for ${slot}`);
+
+        // AVOTH family — deterministic, triad-executed, exactly verifiable
+        if (SEVA_CONFIG.avothSlots.has(slot)) {
+          if (slot === 'avoth-bench') {
+            const count = Math.min(Math.max(1, Math.floor(params.count ?? 32)), 2000);
+            const msgs = Array.from({ length: count }, (_, i) => avothMessage(i, 64));
+            const r = await avothBridge.batchHash(msgs);
+            return {
+              total: r.total, hashesPerSec: r.hashes_per_sec,
+              device: r.device, elapsedMs: r.elapsed_ms,
+            };
+          }
+          const len = Math.min(Math.max(1, Math.floor(params.len ?? 64)), 4096);
+          const msg = avothMessage(params.seed ?? 0, len);
+          if (slot === 'avoth-sealed') {
+            const epoch = Math.floor(params.epoch ?? avothBridge.currentEpoch());
+            const seal = avothBridge.sealFromContext(`SEVA:${epoch}`);
+            const digest = await avothBridge.hashSealed(msg, seal);
+            return { digest, epoch };
+          }
+          const h = await avothBridge.hash(msg);
+          return { digest: h.hash, device: 'triad' };
+        }
+
+        // params is a numbers-only object — flatten in sorted-key order
+        const input = Float32Array.from(
+          Object.keys(params).sort().flatMap(k => [].concat(params[k]))
+        );
+        // Feed the model's declared first input (usually "input"); check the
+        // flattened vector against the declared shape so a wrong-size job
+        // fails here, not inside ORT.
+        const session = accel.inference._sessions.get(`seva:${slot}`);
+        const meta = session?.inputMetadata?.[0];
+        const inName = meta?.name || session?.inputNames?.[0] || 'input';
+        const dims = (meta?.shape || []).filter(d => Number.isInteger(d) && d > 0);
+        const expected = dims.reduce((a, b) => a * b, 1);
+        if (dims.length && input.length !== expected) {
+          throw new Error(`param size ${input.length} != model input ${dims.join('x')}`);
+        }
+        const out = await accel.inference.infer(`seva:${slot}`, { [inName]: input });
+        if (!out) throw new Error('inference unavailable');
+        const result = {};
+        for (const [name, data] of Object.entries(out)) result[name] = Array.from(data);
+        return result;
+      },
+    });
+    this.seva.start();
+
+    for (const t of Object.values(SEVA_CONFIG.messageTypes)) {
+      this.mesh.on(t, (msg, ws, senderNodeId) => {
+        this.seva.handleMessage(t, msg, senderNodeId);
+      });
+    }
+
+    log.info(cfg.enabled
+      ? `✓ SEVA serving compute — ${availableSlots.size} model slot(s) loaded`
+      : '✓ SEVA consumer mode (set YAKMESH_SEVA_ENABLED=1 to serve compute)');
+  }
+
+  /**
+   * Update transfer — package fetch/serve over direct ANNEX channels.
+   * Announcer stages packages under data/packages/<sha256>.zip; an opted-in
+   * node pulls chunks from the announcer and verifies SHA-256 end-to-end.
+   */
+  _initUpdateTransfer() {
+    const dataDir = join(import.meta.dirname, '..', 'data');
+    this.updateTransfer = new UpdateTransfer({
+      mesh: this.mesh,
+      packageDir: join(dataDir, 'packages'),
+      stagingDir: join(dataDir, 'pending-update'),
+    });
+  }
+
+  /**
+   * After operator opt-in: pull the package from the announcer and stage
+   * it under data/pending-update/ for the restart-time swap consumer.
+   */
+  async _fetchAcceptedPackage() {
+    const offer = this._acceptedUpgrade;
+    if (!offer?.packageSha256 || !this.updateTransfer) return;
+    if (this.updateTransfer.hasPackage(offer.packageSha256)) {
+      // We already have it staged (e.g. we are the announcer)
+      const src = join(import.meta.dirname, '..', 'data', 'packages', `${offer.packageSha256}.zip`);
+      const dest = join(import.meta.dirname, '..', 'data', 'pending-update', 'package.zip');
+      await mkdir(join(import.meta.dirname, '..', 'data', 'pending-update'), { recursive: true });
+      writeFileSync(dest, readFileSync(src));
+      // Persist offer.json too — the supervisor verifies the staged zip
+      // against it at swap time regardless of how it got there.
+      writeFileSync(
+        join(import.meta.dirname, '..', 'data', 'pending-update', 'offer.json'),
+        JSON.stringify({
+          packageSha256: offer.packageSha256,
+          size: statSync(src).size,
+          newCodeHash: offer.newCodeHash,
+          announcerPersistentId: offer.announcerPersistentId,
+          acceptedAt: offer.acceptedAt,
+        }, null, 2)
+      );
+      offer.status = 'downloaded';
+      log.info('UPDATE: package staged locally (self-serve)', { sha256: offer.packageSha256.slice(0, 12) });
+      return;
+    }
+    try {
+      log.warn('UPDATE: fetching package from announcer', {
+        from: peerTag(offer.announcer), sha256: offer.packageSha256.slice(0, 12),
+      });
+      const res = await this.updateTransfer.fetchPackage(offer.announcer, offer.packageSha256);
+      offer.status = 'downloaded';
+      offer.downloadedAt = Date.now();
+      // Persist the offer+hash so the restart-time swap consumer can
+      // re-verify without trusting in-memory state.
+      writeFileSync(
+        join(import.meta.dirname, '..', 'data', 'pending-update', 'offer.json'),
+        JSON.stringify({
+          packageSha256: res.packageSha256,
+          size: res.size,
+          newCodeHash: offer.newCodeHash,
+          announcerPersistentId: offer.announcerPersistentId,
+          acceptedAt: offer.acceptedAt,
+        }, null, 2)
+      );
+      log.warn('UPDATE: package verified + staged — awaiting ACT restart', {
+        sha256: res.packageSha256.slice(0, 12), size: res.size,
+      });
+    } catch (err) {
+      offer.status = 'fetch_failed';
+      log.error('UPDATE: package fetch failed', { error: err.message });
+    }
   }
 
   /**
@@ -2124,6 +2540,18 @@ export class YakmeshNode {
     // Wire mesh peer events → KARMA beacon sightings (positive karma accumulation)
     this.mesh.on('peer:connected', (peerId) => {
       this.karmaModel.recordBeaconSighting(peerId);
+    });
+
+    // peer-registered fires after NAMCHE identity gates + ANNEX channel —
+    // that handshake IS the peer's DOKO verification. Recording it lets a
+    // verified peer reach SEEKING (required for YAK-TUN packet injection);
+    // AWAKENED still requires mesh quorum for higher privileges.
+    this.mesh.on('peer-registered', (peerId) => {
+      this.karmaModel.recordDokoVerification(peerId, {
+        passed: true,
+        gatesChecked: 7,
+        source: 'namche-registration',
+      });
     });
 
     // Wire KARMA trust level changes → scheduled NPU trust prediction (second opinion)
@@ -3750,6 +4178,144 @@ export class YakmeshNode {
       const status = aguwa.getStatus();
       const divergent = aguwa.detectDivergentPeers();
       res.json({ ...status, divergentPeers: divergent });
+    });
+
+    // SEVA: local work-request trigger + capability view (localhost only —
+    // firing a mesh job is a privileged local action)
+    app.get('/api/seva', (req, res) => {
+      if (!this.seva) return res.status(503).json({ error: 'SEVA not initialized' });
+      const peers = {};
+      for (const [peerId, cap] of this.seva.peerCapabilities) {
+        peers[peerId] = { slots: [...cap.slots], accelerated: cap.accelerated, lastSeen: cap.lastSeen };
+      }
+      res.json({
+        enabled: this.seva.enabled,
+        servedSlots: this.seva.availableSlots ? [...this.seva.availableSlots] : 'all',
+        activeJobs: this.seva.activeJobs,
+        totalServed: this.seva.totalServed,
+        peerCapabilities: peers,
+      });
+    });
+
+    app.post('/api/seva/request', async (req, res) => {
+      if (!this.seva) return res.status(503).json({ error: 'SEVA not initialized' });
+      const { slot, params } = req.body || {};
+      try {
+        const result = await this.seva.requestWork(slot, params || {});
+        res.json(result);
+      } catch (err) {
+        res.status(400).json({ error: err.message });
+      }
+    });
+
+    // ── Update propagation (ACT announce layer) — loopback only ──────
+    // These endpoints decide whether this machine joins a proposed
+    // network. Loopback-only: the operator is the authority.
+
+    app.get('/api/update', (req, res) => {
+      res.json({
+        pendingOffer: this._pendingUpgradeOffer || null,
+        accepted: !!this._acceptedUpgrade,
+        pendingACT: this._pendingACTProposal || null,
+        trustedAnnouncers: this.config.updates?.trustedAnnouncers || [],
+        autoConsent: process.env.YAKMESH_ACT_AUTO_CONSENT === 'true',
+      });
+    });
+
+    // Announce a new network — landmark role. Signs the proposal with
+    // the Hourglass OTS when the pq-bridge is up (unsigned announcements
+    // are gossiped flagged; receivers weight them accordingly).
+    app.post('/api/update/announce', async (req, res) => {
+      if (!isLoopback(req)) return res.status(403).json({ error: 'loopback only' });
+      const { newCodeHash, changelog, sourceUrl, effectiveTime, packagePath, actDelaySeconds, actInEpochs } = req.body || {};
+      if (!newCodeHash || !changelog) {
+        return res.status(400).json({ error: 'newCodeHash and changelog required' });
+      }
+      const proposal = {
+        newCodeHash, changelog,
+        sourceUrl: sourceUrl || null,
+        effectiveTime: effectiveTime || Date.now() + 7 * 24 * 60 * 60 * 1000,
+        epoch: avothBridge.currentEpoch(),
+        announcer: this.identity.identity.nodeId,
+        announcerPersistentId: this.identity.getPersistentId?.() || null,
+      };
+      // Stage the package bytes so peers can fetch them after opting in.
+      // The sha256+size go inside the signed proposal — fetch is verified
+      // end-to-end against what was announced.
+      if (packagePath) {
+        try {
+          const staged = await this.updateTransfer.stagePackage(packagePath);
+          proposal.packageSha256 = staged.packageSha256;
+          proposal.packageSize = staged.packageSize;
+        } catch (err) {
+          return res.status(400).json({ error: `package staging failed: ${err.message}` });
+        }
+      }
+      if (await avothBridge.isAvailable()) {
+        proposal.signature = await avothBridge
+          .hourglassSign(this._canonicalUpgradeProposal(proposal))
+          .then(r => r.signature).catch(() => null);
+      }
+      this.gossip.spreadRumor('upgrade:proposal', proposal);
+      log.warn('UPDATE: announcement gossiped', {
+        newNetwork: newCodeHash.slice(0, 16),
+        signed: !!proposal.signature,
+      });
+
+      // The announcer is the ACT coordinator — it must propose the
+      // transition epoch while still on the shared network (a post-swap
+      // node is fingerprint-gated away from un-upgraded peers).
+      // Announcing a package is the operator's explicit act = our own
+      // consent: stage our copy and schedule the ACT proposal.
+      if (proposal.packageSha256) {
+        this._acceptedUpgrade = {
+          ...proposal, announcer: this.identity.identity.nodeId,
+          announcerPersistentId: proposal.announcerPersistentId,
+          announcerPinned: true, acceptedAt: Date.now(),
+        };
+        this._fetchAcceptedPackage().catch(err =>
+          log.error('UPDATE: coordinator self-stage failed', { error: err.message }));
+        const delaySec = Number.isFinite(actDelaySeconds) ? actDelaySeconds : 60;
+        const epochsAhead = Number.isFinite(actInEpochs) ? actInEpochs : null;
+        setTimeout(() => this._initiateACTProposal(epochsAhead), delaySec * 1000);
+        log.warn('UPDATE: ACT coordination armed', {
+          proposeInSec: delaySec, epochsAhead: epochsAhead ?? 'aguwa-auto',
+        });
+      }
+      res.json({ announced: true, signed: !!proposal.signature, proposal });
+    });
+
+    // Operator opt-in — the human decision. Marks the offer accepted;
+    // when the ACT epoch proposal arrives it is consented automatically
+    // (the offer is the "what", the ACT proposal is the "when").
+    app.post('/api/update/accept', async (req, res) => {
+      if (!isLoopback(req)) return res.status(403).json({ error: 'loopback only' });
+      if (!this._pendingUpgradeOffer) {
+        return res.status(404).json({ error: 'no pending offer' });
+      }
+      this._acceptedUpgrade = { ...this._pendingUpgradeOffer, acceptedAt: Date.now() };
+      log.warn('UPDATE: operator accepted offer', {
+        announcer: peerTag(this._acceptedUpgrade.announcer),
+      });
+      // If an ACT proposal is already pending, consent now.
+      if (this._pendingACTProposal) {
+        this._consentACT(this._pendingACTProposal.targetEpoch, 'accept');
+      }
+      // Pull the package bytes from the announcer (verified end-to-end
+      // against the signed packageSha256) — staged for restart-time swap.
+      this._fetchAcceptedPackage().catch(() => { });
+      res.json({ accepted: true, fetching: !!this._acceptedUpgrade.packageSha256 });
+    });
+
+    app.post('/api/update/decline', async (req, res) => {
+      if (!isLoopback(req)) return res.status(403).json({ error: 'loopback only' });
+      const had = !!this._pendingUpgradeOffer;
+      this._pendingUpgradeOffer = null;
+      this._acceptedUpgrade = null;
+      if (this._pendingACTProposal) {
+        this._consentACT(this._pendingACTProposal.targetEpoch, 'reject');
+      }
+      res.json({ declined: had });
     });
 
     // =========================================
@@ -5604,6 +6170,21 @@ export class YakmeshNode {
 
     // ── Try all bootstrap peers concurrently ──
     this._tryBootstrapConnections();
+
+    // ── Persistent seed retry — a failed first attempt isn't permanent.
+    // Peers boot in any order on a LAN; if every seed was unreachable at
+    // startup we must keep trying, not wait for a peer:disconnected that
+    // can only fire after we've already had peers. Skips while connected —
+    // gossip takes over from there. Per-seed 5s backoff lives in
+    // _tryBootstrapConnections via lastTry.
+    if (!this._bootstrapRetryTimer) {
+      this._bootstrapRetryTimer = setInterval(() => {
+        const peers = this.mesh?.getPeers?.() || [];
+        if (peers.length > 0) return;
+        this._tryBootstrapConnections();
+      }, 15_000);
+      this._bootstrapRetryTimer.unref?.();
+    }
 
     // ── Setup recovery watcher (only runs when we lose all peers) ──
     if (!this._bootstrapRecoverySetup) {

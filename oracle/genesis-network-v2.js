@@ -174,6 +174,14 @@ export class GenesisNetworkV2 {
       return false;
     }
 
+    // newCodeHash comes off the wire — a malformed proposal must be
+    // rejected, never allowed to throw (NetworkIdentity would crash the
+    // process on non-hex input).
+    if (!/^[0-9a-fA-F]{64}$/.test(newCodeHash)) {
+      log.error('Invalid upgrade proposal: newCodeHash is not a 256-bit hex string');
+      return false;
+    }
+
     // Derive the new network identity
     const newIdentity = new NetworkIdentity(newCodeHash);
 

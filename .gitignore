@@ -90,3 +90,4 @@ __pycache__/
 # CONFIDENTIAL — ALL research, specs, audits, and internal artifacts
 # live ONLY in this directory. NEVER commit it. See AGENTS.md.
 CONFIDENTIAL/
+models/seva/

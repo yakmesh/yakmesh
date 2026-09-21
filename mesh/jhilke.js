@@ -63,6 +63,11 @@ import { fibonacciRoot } from '../oracle/sst.js';
 // AGUWA — canonical mesh time source
 import { aguwa } from './aguwa.js';
 
+// AVOTH bridge — epoch-sealed chirps (wormhole channel, pos 191).
+// Optional hardening: nodes without a pq-bridge send plain chirps;
+// presence of jseal in a message is the capability advertisement.
+import * as avothBridge from '../utils/avoth-bridge.js';
+
 // Phase epoch — epoch boundaries for ACT coordination
 import { getCurrentEpoch, getEpochStartTime } from '../oracle/phase-epoch.js';
 
@@ -123,6 +128,10 @@ export class JhilkeCoordinator extends EventEmitter {
       chirpsReceived: 0,
       chirpsVerified: 0,
       chirpsFailed: 0,
+      sealsSent: 0,
+      sealsVerified: 0,
+      sealsFailed: 0,
+      sealsUnverified: 0, // peer sent a seal but we have no bridge to check it
     };
 
     log.info('JHILKE coordinator initialized', {
@@ -300,9 +309,13 @@ export class JhilkeCoordinator extends EventEmitter {
   }
 
   /**
-   * Handle incoming mesh_entropy message — verify friend-or-foe chirp
+   * Handle incoming mesh_entropy message — verify friend-or-foe chirp.
+   * Async: when the message carries a jseal, the sealed AVOTH digest is
+   * verified through the pq-bridge (one localhost call, 30s cadence).
+   * The HKDF chirp remains the authoritative friend-or-foe check; the
+   * seal adds epoch binding + AVOTH attestation when both sides have it.
    */
-  handleIncoming(fromPeerId, message) {
+  async handleIncoming(fromPeerId, message) {
     if (!message.jhilke) return;
 
     this.stats.chirpsReceived++;
@@ -329,12 +342,24 @@ export class JhilkeCoordinator extends EventEmitter {
       state.chirpsVerified++;
       this.stats.chirpsVerified++;
 
-      this.emit('chirp:verified', { peerId: fromPeerId, tick: result.tick, offset: result.offset });
+      // Wormhole-sealed digest — epoch binding. Verified only when the
+      // peer sent one AND we have a bridge; absent seal = legacy peer
+      // (capability-negotiated: presence is the advertisement).
+      let sealed = 'none';
+      if (message.jseal != null && typeof message.jsealEpoch === 'number') {
+        sealed = await this._verifySeal(fromPeerId, result.tick, message.jseal, message.jsealEpoch)
+          .catch(() => 'error');
+      }
+
+      this.emit('chirp:verified', {
+        peerId: fromPeerId, tick: result.tick, offset: result.offset, sealed,
+      });
 
       log.trace('JHILKE chirp verified (friend)', {
         peer: fromPeerId.slice(0, 16),
         tick: result.tick,
         offset: result.offset,
+        sealed,
       });
     } else {
       state.consecutiveFailures++;
@@ -350,6 +375,43 @@ export class JhilkeCoordinator extends EventEmitter {
   }
 
   /**
+   * Verify a wormhole-sealed chirp digest.
+   * seal = sealFromContext(`JHILKE:${codeHash}:${sealEpoch}`) binds the
+   * digest to this codebase AND the MANI epoch it was sealed in — a
+   * replayed sealed chirp dies at the epoch boundary. The seal epoch is
+   * accepted within ±1 epoch of now (30s epochs; mirrors the existing
+   * bounded chirp-tick tolerance rather than widening it).
+   *
+   * @returns {Promise<'ok'|'unverified'|'bad'>}
+   */
+  async _verifySeal(peerId, tick, jsealHex, sealEpoch) {
+    if (!(await avothBridge.isAvailable())) {
+      this.stats.sealsUnverified++;
+      return 'unverified';
+    }
+    const now = avothBridge.currentEpoch();
+    if (Math.abs(sealEpoch - now) > 1) {
+      this.stats.sealsFailed++;
+      log.warn('JHILKE seal epoch out of window', {
+        peer: peerId.slice(0, 16), sealEpoch, currentEpoch: now,
+      });
+      return 'bad';
+    }
+    const expectedChirp = this._generateChirp(peerId, tick);
+    const seal = avothBridge.sealFromContext(`JHILKE:${this.codeHash}:${sealEpoch}`);
+    const expected = await avothBridge.hashSealed(Buffer.from(expectedChirp), seal);
+    if (expected && expected === jsealHex) {
+      this.stats.sealsVerified++;
+      return 'ok';
+    }
+    this.stats.sealsFailed++;
+    log.warn('JHILKE seal mismatch — valid chirp, bad seal', {
+      peer: peerId.slice(0, 16), sealEpoch,
+    });
+    return 'bad';
+  }
+
+  /**
    * Chirp tick — send friend-or-foe chirps to all connected peers.
    * Called every 30 seconds. Blends with normal mesh_entropy traffic.
    */
@@ -357,15 +419,27 @@ export class JhilkeCoordinator extends EventEmitter {
     if (!this.mesh?.peers) return;
 
     for (const [peerId] of this.mesh.peers) {
-      this._sendChirp(peerId);
+      this._sendChirp(peerId).catch(() => { });
     }
   }
 
   /**
-   * Send a friend-or-foe chirp to a specific peer
+   * Send a friend-or-foe chirp to a specific peer.
+   * When the pq-bridge is up, attaches jseal — a wormhole-sealed AVOTH
+   * digest of the chirp bound to the current MANI epoch.
    */
-  _sendChirp(peerId) {
+  async _sendChirp(peerId) {
     const chirp = this._generateChirp(peerId, this._sharedTick());
+
+    let jseal = null;
+    let jsealEpoch = null;
+    if (await avothBridge.isAvailable().catch(() => false)) {
+      jsealEpoch = avothBridge.currentEpoch();
+      const seal = avothBridge.sealFromContext(`JHILKE:${this.codeHash}:${jsealEpoch}`);
+      jseal = await avothBridge.hashSealed(Buffer.from(chirp), seal).catch(() => null);
+      if (jseal) this.stats.sealsSent++;
+      else jsealEpoch = null;
+    }
 
     // Random padding to vary message size (camouflage) — PRAHARI sponge entropy
     const paddingRange = JHILKE_CONFIG.paddingMax - JHILKE_CONFIG.paddingMin;
@@ -374,13 +448,18 @@ export class JhilkeCoordinator extends EventEmitter {
     const padding = bytesToHex(seedStore.squeeze(paddingSize, 'JHILKE-PADDING'));
 
     // Send as mesh_entropy — blends with normal entropy exchange traffic
-    this.mesh.sendTo(peerId, {
+    const msg = {
       type: 'mesh_entropy',
       entropy: bytesToHex(seedStore.squeeze(32, 'JHILKE-ENTROPY')),  // Genuine entropy contribution
       jhilke: bytesToHex(chirp),             // Hidden cricket chirp
       pad: padding,                           // Variable-size camouflage
       t: aguwa.now(),
-    });
+    };
+    if (jseal) {
+      msg.jseal = jseal;                     // Wormhole-sealed chirp digest
+      msg.jsealEpoch = jsealEpoch;           // MANI epoch the seal binds to
+    }
+    this.mesh.sendTo(peerId, msg);
 
     this.stats.chirpsSent++;
 

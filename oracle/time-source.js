@@ -718,17 +718,19 @@ detectPTP() {
     // Meinberg not found via lspci
   }
 
-  // 5. Windows: Check for Meinberg driver + MbgAdjTm service
+  // 5. Windows: Check for Meinberg driver via the MbgAdjTm service.
+  // driverquery /v enumerates every driver through WMI — it can take a
+  // minute+ on a fresh boot and execSync timeouts may not interrupt a
+  // pipe-holding grandchild. A service query is instant and sufficient:
+  // if MbgAdjTm exists, the Meinberg driver package is installed.
   if (this.platform === 'win32') {
     try {
-      const driverCheck = execSilent('driverquery /v 2>nul | findstr /i meinberg', { encoding: 'utf8', timeout: 5000 });
-      if (driverCheck.trim()) {
+      const svcCheck = execSilent('sc query MbgAdjTm 2>nul', { encoding: 'utf8', timeout: 3000 });
+      if (svcCheck && !/FAILED|does not exist/i.test(svcCheck)) {
         result.detected = true;
         result.type = 'Meinberg PTP270PEX (Windows)';
 
-        // Check if MbgAdjTm service is running (disciplines system clock from PTP card)
-        const svcCheck = execSilent('sc query MbgAdjTm 2>nul', { encoding: 'utf8', timeout: 3000 });
-        if (svcCheck && /RUNNING/i.test(svcCheck)) {
+        if (/RUNNING/i.test(svcCheck)) {
           result.serviceRunning = true;
 
           // Cross-reference with MA-902 SNMP: if MA-902 is GPS-locked and serving PTP,

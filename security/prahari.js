@@ -638,10 +638,41 @@ class EntropySentinel {
         this._inferenceEngine = engine;
 
         if (engine && engine.hasModel(this._modelName)) {
-            this._modelLoaded = true;
-            log.info('Entropy Sentinel: NPU/GPU model loaded');
+            // Sanity-check the model before trusting it: it must score a
+            // uniform-random byte profile clearly above a degenerate one.
+            // A model that can't discriminate is worse than no model —
+            // it produces constant ~0.5 noise that false-alarms forever.
+            const sane = await this._sanityCheckModel();
+            if (sane) {
+                this._modelLoaded = true;
+                log.info('Entropy Sentinel: NPU/GPU model loaded (sanity-checked)');
+            } else {
+                this._modelLoaded = false;
+                log.warn('Entropy Sentinel: ONNX model failed discrimination check — using software statistical tests');
+            }
         } else {
             log.debug('Entropy Sentinel: using software statistical tests (no ONNX model)');
+        }
+    }
+
+    /**
+     * Verify the ONNX model discriminates a uniform-random profile
+     * (all bins ≈ 0.5) from a degenerate profile (all bins = 0).
+     * Returns true only if the margin is meaningful.
+     * @private
+     */
+    async _sanityCheckModel() {
+        try {
+            const randProfile = { seed_bytes: new Float32Array(32).fill(0.5) };
+            const zeroProfile = { seed_bytes: new Float32Array(32) };
+            const r = await this._inferenceEngine.infer(this._modelName, randProfile);
+            const z = await this._inferenceEngine.infer(this._modelName, zeroProfile);
+            const rs = r?.quality_score?.[0];
+            const zs = z?.quality_score?.[0];
+            if (typeof rs !== 'number' || typeof zs !== 'number') return false;
+            return (rs - zs) >= 0.1;
+        } catch {
+            return false;
         }
     }
 

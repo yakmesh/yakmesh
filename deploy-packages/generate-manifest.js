@@ -61,10 +61,14 @@ function walkDirectory(dir, results, baseDir) {
 
     for (const entry of entries) {
         const fullPath = join(dir, entry.name);
-        const relativePath = fullPath
-            .replace(baseDir, '')
-            .replace(/^[/\\]/, '')
-            .replace(/\\/g, '/');
+        // Strip baseDir ONLY as a path prefix — a bare .replace(baseDir,'')
+        // would eat the first matching substring anywhere (e.g. '.' eats the
+        // extension dot: claim-ledger.js -> claim-ledgerjs).
+        let relativePath = fullPath;
+        if (relativePath === baseDir) relativePath = '';
+        else if (relativePath.startsWith(baseDir + '/') || relativePath.startsWith(baseDir + '\\'))
+            relativePath = relativePath.slice(baseDir.length);
+        relativePath = relativePath.replace(/^[/\\]/, '').replace(/\\/g, '/');
 
         if (entry.isDirectory()) {
             if (EXCLUDE_DIRS.includes(entry.name)) continue;

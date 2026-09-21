@@ -28,6 +28,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { dirname } from 'path';
 import { MessageTypes } from '../mesh/network.js';
 import { createLogger } from '../utils/logger.js';
+import * as avothBridge from '../utils/avoth-bridge.js';
 
 const log = createLogger('database:replication');
 
@@ -145,6 +146,11 @@ export class ReplicationEngine {
     } catch (e) {
       // Column already exists
     }
+    // Add AVOTH seal columns — wormhole-sealed digest binding each row to
+    // the writer's device context (nodeId + MANI epoch)
+    for (const col of ['seal TEXT', 'seal_epoch INTEGER', 'avoth_digest TEXT']) {
+      try { this.db.run(`ALTER TABLE _replication_log ADD COLUMN ${col}`); } catch (e) { /* exists */ }
+    }
 
     this._saveDb();
     log.info('Database initialized', { path: this.dbPath });
@@ -187,7 +193,7 @@ export class ReplicationEngine {
   /**
    * Record a local change for replication
    */
-  recordChange(tableName, rowId, operation, data) {
+  async recordChange(tableName, rowId, operation, data) {
     if (!REPLICATED_TABLES.includes(tableName)) return;
 
     const vectorClock = this._generateVectorClock();
@@ -200,11 +206,23 @@ export class ReplicationEngine {
     });
     const signature = this.identity.sign(sigPayload);
 
+    // Wormhole-sealed AVOTH digest — binds the row to this node's device
+    // context (nodeId + MANI epoch) inside the hash itself. Only awaited
+    // when the bridge is known-up, so bridge-less nodes stay synchronous.
+    let seal = null, sealEpoch = null, avothDigest = null;
+    if (avothBridge.lastKnownAvailable()) {
+      sealEpoch = avothBridge.currentEpoch();
+      seal = avothBridge.sealFromContext(`REPL:${this.nodeId}:${sealEpoch}`);
+      avothDigest = await avothBridge.hashSealed(sigPayload, seal).catch(() => null);
+      if (avothDigest == null) { seal = null; sealEpoch = null; }
+    }
+
     this.db.run(
       `INSERT INTO _replication_log 
-       (table_name, row_id, operation, data, node_id, vector_clock, created_at, signature)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [tableName, String(rowId), operation, dataJson, this.nodeId, vectorClock, Date.now(), signature]
+       (table_name, row_id, operation, data, node_id, vector_clock, created_at, signature, seal, seal_epoch, avoth_digest)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [tableName, String(rowId), operation, dataJson, this.nodeId, vectorClock,
+       Date.now(), signature, seal ? JSON.stringify(seal) : null, sealEpoch, avothDigest]
     );
 
     this._saveDb();
@@ -255,8 +273,9 @@ export class ReplicationEngine {
   /**
    * Apply a replicated change from another node
    */
-  applyChange(change) {
-    const { table_name, row_id, operation, data, node_id, vector_clock, created_at, signature } = change;
+  async applyChange(change) {
+    const { table_name, row_id, operation, data, node_id, vector_clock, created_at, signature,
+            seal, seal_epoch, avoth_digest } = change;
 
     // Verify ML-DSA-65 signature before trusting remote change
     if (!signature) {
@@ -275,6 +294,26 @@ export class ReplicationEngine {
     if (!this.identity.verify(sigPayload, signature, peerPubKey)) {
       log.warn('Rejecting replication change with invalid signature', { nodeId: node_id?.slice(0, 12), table: table_name });
       return false;
+    }
+
+    // Wormhole-sealed digest check — when the sender included one and we
+    // have a bridge, recompute on our own triad and compare. A mismatch
+    // means the row was tampered after the writer sealed it (or the
+    // claimed nodeId/epoch context is forged). Reject, don't flag-after.
+    if (avoth_digest && seal && seal_epoch != null && await avothBridge.isAvailable()) {
+      let parsedSeal = seal;
+      try { if (typeof seal === 'string') parsedSeal = JSON.parse(seal); } catch { parsedSeal = null; }
+      const expectedSeal = avothBridge.sealFromContext(`REPL:${node_id}:${seal_epoch}`);
+      const sealOk = JSON.stringify(expectedSeal) === JSON.stringify(parsedSeal);
+      const expected = sealOk
+        ? await avothBridge.hashSealed(sigPayload, parsedSeal).catch(() => null)
+        : null;
+      if (!sealOk || expected !== avoth_digest) {
+        log.warn('Rejecting replication change — wormhole seal mismatch', {
+          nodeId: node_id?.slice(0, 12), table: table_name, sealOk,
+        });
+        return false;
+      }
     }
 
     // Check if we already have this change (parameterized)
@@ -465,14 +504,14 @@ export class ReplicationEngine {
     });
 
     // Handle sync responses
-    this.mesh.on(MessageTypes.SYNC_RESPONSE, (msg, ws, peerNodeId) => {
+    this.mesh.on(MessageTypes.SYNC_RESPONSE, async (msg, ws, peerNodeId) => {
       if (!peerNodeId) return;
 
       log.debug('Sync response received', { from: peerNodeId.slice(0, 12), changes: msg.changes.length });
 
       let applied = 0;
       for (const change of msg.changes) {
-        if (this.applyChange(change)) {
+        if (await this.applyChange(change)) {
           applied++;
         }
       }
@@ -491,7 +530,8 @@ export class ReplicationEngine {
 
     // Handle direct replication pushes
     this.mesh.on(MessageTypes.REPLICATE, (msg, ws, peerNodeId) => {
-      this.applyChange(msg.change);
+      this.applyChange(msg.change).catch(e =>
+        log.warn('Replicate push failed', { error: e.message }));
     });
   }
 }

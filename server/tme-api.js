@@ -55,6 +55,7 @@ import { Router } from 'express';
 import { createLogger } from '../utils/logger.js';
 import { TemporalMeshEncoder, TME_CONFIG } from '../mesh/temporal-encoder.js';
 import { ManiPhaseTolerance } from '../oracle/time-source.js';
+import * as avothBridge from '../utils/avoth-bridge.js';
 
 const log = createLogger('server:tme');
 
@@ -179,7 +180,7 @@ export function createTmeAPI({ gossip, identity, timeSource, getMeshTimeRef, wri
     // POST /tme/encode — Encode a message and gossip the slices
     // Body: { message: string, sliceSize?: number }
     // ═══════════════════════════════════════════════════════════════════════════
-    router.post('/encode', writeLimiter, (req, res) => {
+    router.post('/encode', writeLimiter, async (req, res) => {
         // Localhost-only — encoding is a local operation
         // SECURITY: Use raw socket address, NOT req.ip which trusts X-Forwarded-For
         const remoteIp = req.socket?.remoteAddress || '';
@@ -206,6 +207,23 @@ export function createTmeAPI({ gossip, identity, timeSource, getMeshTimeRef, wri
                 baseTimestamp: timeInfo.timestampNs,
             });
 
+            // Wormhole-seal the stream identity — binds the announced
+            // streamId to this node's device context + MANI epoch inside
+            // the AVOTH hash. Peers with a pq-bridge can verify the
+            // claimed origin; the per-slice SHA3 chain stays the
+            // integrity layer, the seal adds sender attestation.
+            let sealFields = {};
+            if (await avothBridge.isAvailable()) {
+                const sealEpoch = avothBridge.currentEpoch();
+                const seal = avothBridge.sealFromContext(`TME:${nodeId}:${sealEpoch}`);
+                const streamSeal = await avothBridge
+                    .hashSealed(`${result.streamId}:${nodeId}`, seal)
+                    .catch(() => null);
+                if (streamSeal) {
+                    sealFields = { streamSeal, sealEpoch, seal, sealedBy: nodeId };
+                }
+            }
+
             // Gossip the stream metadata first
             gossip.spreadRumor('tme:metadata', {
                 streamId: result.streamId,
@@ -213,6 +231,7 @@ export function createTmeAPI({ gossip, identity, timeSource, getMeshTimeRef, wri
                     ...result.metadata,
                     timeSource: timeInfo.source,
                     trustLevel: timeInfo.trustLevel,
+                    ...sealFields,
                 },
                 origin: nodeId,
             });

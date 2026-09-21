@@ -14,7 +14,7 @@
  * Usage: node scripts/stage-dist.mjs <outDir>
  */
 
-import { readFileSync, mkdirSync, copyFileSync, cpSync, existsSync, rmSync } from 'fs';
+import { readFileSync, mkdirSync, copyFileSync, cpSync, existsSync, rmSync, chmodSync } from 'fs';
 import { join, dirname } from 'path';
 import { execFileSync } from 'child_process';
 
@@ -34,20 +34,27 @@ for (const f of manifest.files) {
     const dst = join(out, f);
     mkdirSync(dirname(dst), { recursive: true });
     copyFileSync(join(repo, f), dst);
+    // copyFileSync preserves the source mode — NTFS-mounted source files
+    // are read-only (r-x), which makes the later asset-dir cpSync fail
+    // with EACCES when overwriting them. Force writable.
+    chmodSync(dst, 0o644);
 }
 
 // Runtime asset dirs: contain unhashed files the node needs (web UI, schemas,
 // docs). Hashed files inside them are already covered by manifest.files; any
 // stray hashed file would be caught by the self-verify below.
-const ASSET_DIRS = ['dashboard', 'public', 'htdocs', 'templates', 'database', 'content', 'embedded-docs'];
+const ASSET_DIRS = ['dashboard', 'public', 'htdocs', 'templates', 'database', 'content', 'embedded-docs', 'models'];
 for (const dir of ASSET_DIRS) {
     const src = join(repo, dir);
     if (existsSync(src)) cpSync(src, join(out, dir), { recursive: true });
 }
 
 // Oracle-invisible extras: not SOURCE_EXTENSIONS, or in EXCLUDE_FILES/EXCLUDE_DIRS
-for (const extra of ['package-lock.json', 'start-yakmesh.bat', 'start-yakmesh-silent.vbs', 'VIEW-YAKMESH-LOG.bat', 'STOP-YAKMESH.bat', 'README.md', 'LICENSE', 'CHANGELOG.md']) {
-    if (existsSync(join(repo, extra))) copyFileSync(join(repo, extra), join(out, extra));
+for (const extra of ['package-lock.json', 'start-yakmesh.bat', 'start-yakmesh-silent.vbs', 'VIEW-YAKMESH-LOG.bat', 'STOP-YAKMESH.bat', 'README.md', 'LICENSE', 'CHANGELOG.md', 'utils/wintun.dll', 'utils/verify-worker.js', 'scripts/yakmesh-run.js']) {
+    if (existsSync(join(repo, extra))) {
+        mkdirSync(dirname(join(out, extra)), { recursive: true });
+        copyFileSync(join(repo, extra), join(out, extra));
+    }
 }
 
 mkdirSync(join(out, 'data'), { recursive: true });

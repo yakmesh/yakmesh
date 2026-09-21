@@ -116,8 +116,8 @@ describe('ReplicationEngine: Changes', () => {
     if (existsSync(dbPath)) rmSync(dbPath);
   });
 
-  it('recordChange inserts into log for replicated table', () => {
-    engine.recordChange('pq_listings', 'row1', 'INSERT', { title: 'Test' });
+  it('recordChange inserts into log for replicated table', async () => {
+    await engine.recordChange('pq_listings', 'row1', 'INSERT', { title: 'Test' });
     
     const changes = engine.getChangesSince(0);
     assert.ok(changes.length >= 1, 'Should have at least one change');
@@ -126,16 +126,16 @@ describe('ReplicationEngine: Changes', () => {
     assert.strictEqual(changes[0].operation, 'INSERT');
   });
 
-  it('recordChange ignores non-replicated tables', () => {
+  it('recordChange ignores non-replicated tables', async () => {
     const beforeCount = engine.getChangesSince(0).length;
-    engine.recordChange('non_replicated_table', 'row1', 'INSERT', { data: 1 });
+    await engine.recordChange('non_replicated_table', 'row1', 'INSERT', { data: 1 });
     const afterCount = engine.getChangesSince(0).length;
     assert.strictEqual(afterCount, beforeCount, 'Non-replicated table changes should be ignored');
   });
 
-  it('getChangesSince filters by timestamp', () => {
+  it('getChangesSince filters by timestamp', async () => {
     const now = Date.now();
-    engine.recordChange('pq_chat_messages', 'msg1', 'INSERT', { text: 'hi' });
+    await engine.recordChange('pq_chat_messages', 'msg1', 'INSERT', { text: 'hi' });
     
     // Future timestamp should return nothing (no changes after future)
     const futureChanges = engine.getChangesSince(now + 100000);
@@ -163,7 +163,7 @@ describe('ReplicationEngine: applyChange', () => {
     if (existsSync(dbPath)) rmSync(dbPath);
   });
 
-  it('applies a new change and returns true', () => {
+  it('applies a new change and returns true', async () => {
     // Register the remote peer's public key so sig verification can find it
     mesh.peers.set('remote-node-abc', {
       identity: { publicKey: 'mock-pubkey-remote-node-abc' },
@@ -177,7 +177,7 @@ describe('ReplicationEngine: applyChange', () => {
       data: changeData, nodeId: 'remote-node-abc', vectorClock,
     });
 
-    const result = engine.applyChange({
+    const result = await engine.applyChange({
       table_name: 'pq_listings',
       row_id: 'remote-row-1',
       operation: 'INSERT',
@@ -190,7 +190,7 @@ describe('ReplicationEngine: applyChange', () => {
     assert.strictEqual(result, true);
   });
 
-  it('rejects duplicate change (same vector_clock)', () => {
+  it('rejects duplicate change (same vector_clock)', async () => {
     // Ensure peer key exists
     mesh.peers.set('remote-node-abc', {
       identity: { publicKey: 'mock-pubkey-remote-node-abc' },
@@ -209,8 +209,8 @@ describe('ReplicationEngine: applyChange', () => {
       created_at: Date.now(),
       signature: 'mock-sig-remote-node-abc',
     };
-    engine.applyChange(change);
-    const second = engine.applyChange(change);
+    await engine.applyChange(change);
+    const second = await engine.applyChange(change);
     assert.strictEqual(second, false, 'Duplicate should return false');
   });
 });
@@ -228,7 +228,7 @@ describe('ReplicationEngine: Stats', () => {
     mesh = createMockMesh();
     engine = new ReplicationEngine(mesh, dbPath);
     await engine.init();
-    engine.recordChange('pq_listings', 'r1', 'INSERT', { x: 1 });
+    await engine.recordChange('pq_listings', 'r1', 'INSERT', { x: 1 });
   });
 
   after(() => {
@@ -289,16 +289,16 @@ describe('ReplicationEngine: Signature Enforcement', () => {
     if (existsSync(dbPath)) rmSync(dbPath);
   });
 
-  it('recordChange produces a signed entry in the replication log', () => {
-    engine.recordChange('pq_listings', 'sig-row-1', 'INSERT', { title: 'Signed' });
+  it('recordChange produces a signed entry in the replication log', async () => {
+    await engine.recordChange('pq_listings', 'sig-row-1', 'INSERT', { title: 'Signed' });
     const changes = engine.getChangesSince(0);
     const lastChange = changes[changes.length - 1];
     assert.ok(lastChange.signature, 'Replication change should have a signature');
     assert.ok(lastChange.signature.startsWith('mock-sig-'), 'Signature should come from identity.sign()');
   });
 
-  it('applyChange rejects unsigned changes', () => {
-    const result = engine.applyChange({
+  it('applyChange rejects unsigned changes', async () => {
+    const result = await engine.applyChange({
       table_name: 'pq_listings',
       row_id: 'unsigned-row',
       operation: 'INSERT',
@@ -311,8 +311,8 @@ describe('ReplicationEngine: Signature Enforcement', () => {
     assert.strictEqual(result, false, 'Unsigned change should be rejected');
   });
 
-  it('applyChange rejects changes from unknown nodes', () => {
-    const result = engine.applyChange({
+  it('applyChange rejects changes from unknown nodes', async () => {
+    const result = await engine.applyChange({
       table_name: 'pq_listings',
       row_id: 'unknown-node-row',
       operation: 'INSERT',
@@ -325,7 +325,7 @@ describe('ReplicationEngine: Signature Enforcement', () => {
     assert.strictEqual(result, false, 'Change from unknown node should be rejected');
   });
 
-  it('applyChange rejects changes with invalid signatures', () => {
+  it('applyChange rejects changes with invalid signatures', async () => {
     // Register peer first
     mesh.peers.set('bad-sig-peer', { identity: { publicKey: 'mock-pubkey-bad-sig-peer' } });
 
@@ -333,7 +333,7 @@ describe('ReplicationEngine: Signature Enforcement', () => {
     const origVerify = mesh.identity.verify;
     mesh.identity.verify = (msg, sig, pk) => sig !== 'forged-sig';
 
-    const result = engine.applyChange({
+    const result = await engine.applyChange({
       table_name: 'pq_listings',
       row_id: 'bad-sig-row',
       operation: 'INSERT',
@@ -348,10 +348,10 @@ describe('ReplicationEngine: Signature Enforcement', () => {
     assert.strictEqual(result, false, 'Change with invalid signature should be rejected');
   });
 
-  it('applyChange accepts validly signed changes from known peers', () => {
+  it('applyChange accepts validly signed changes from known peers', async () => {
     mesh.peers.set('valid-peer', { identity: { publicKey: 'mock-pubkey-valid-peer' } });
 
-    const result = engine.applyChange({
+    const result = await engine.applyChange({
       table_name: 'pq_listings',
       row_id: 'valid-sig-row',
       operation: 'INSERT',

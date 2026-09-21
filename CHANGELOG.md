@@ -1,3 +1,13 @@
+## [3.5.7] — 2026-09-21
+
+### Fixed
+- PRAHARI entropy sentinel: ONNX model now sanity-checked at init — non-discriminating models fall back to software statistical tests instead of false-alarming
+- Update supervisor: log tee to data/supervisor.log on all platforms (VIEW-YAKMESH-LOG works)
+- Update supervisor: data/manifest.json rides the overlay (stale manifest no longer triggers perpetual "upgrade detected")
+- Update supervisor: rollback now removes files an update added, not just restores changed ones
+- FileGuardian: metadata-only fs events (atime touches over SMB, module-load reads) no longer raise tamper alerts; real events burst-collapse
+- Packaging: utils/verify-worker.js now included — verify worker pool spawns correctly
+
 # Changelog
 
 All notable changes to YAKMESH will be documented in this file.

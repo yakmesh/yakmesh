@@ -332,7 +332,7 @@ class AnnexSession {
   /**
    * Decrypt with a specific key (internal helper)
    */
-  _decryptWithKey(key, encryptedData, expectedSequence) {
+  _decryptWithKey(key, encryptedData, expectedSequence, sessionId = this.sessionId) {
     const nonce = Buffer.from(encryptedData.nonce, 'hex');
     const ciphertext = Buffer.from(encryptedData.ciphertext, 'hex');
     const authTag = Buffer.from(encryptedData.authTag, 'hex');
@@ -344,7 +344,7 @@ class AnnexSession {
       { authTagLength: ANNEX_CONFIG.authTagLength }
     );
 
-    const aad = Buffer.from(`${this.sessionId}:${expectedSequence}`);
+    const aad = Buffer.from(`${sessionId}:${expectedSequence}`);
     decipher.setAAD(aad);
     decipher.setAuthTag(authTag);
 
@@ -397,10 +397,15 @@ class AnnexSession {
 
       // Bootstrap→KEM upgrade bridge: the responder may still send messages
       // encrypted with the bootstrap key between our KEM switch and their
-      // implicit-ack promotion. Try the briefly-retained old key.
+      // implicit-ack promotion. Try the briefly-retained old key — AND the
+      // old sessionId, since AAD is `${sessionId}:${seq}` and a replacement
+      // session carries a different sessionId than the bootstrap session.
       // NO promotion — this key is being phased out (auto-expires via timer).
       if (this._transitionKey) {
-        const result = this._decryptWithKey(this._transitionKey, encryptedData, expectedSequence);
+        const result = this._decryptWithKey(
+          this._transitionKey, encryptedData, expectedSequence,
+          this._transitionSessionId || this.sessionId
+        );
         this.recvSequence = expectedSequence;
         this.lastActivity = Date.now();
         log.info('Bootstrap→KEM transition: decoded in-flight message with old key', {
@@ -813,6 +818,38 @@ export class Annex {
           recvSeq: session?.recvSequence,
           envelopeSeq: envelope.sequence,
         });
+
+        // Stale-session recovery: a restarted peer wipes its side while we
+        // keep encrypting under dead keys — without reset, every message
+        // drops forever. A single failure is normal during bootstrap→KEM
+        // transition; sustained failure means the session is dead.
+        // Threshold: 2 consecutive failures, recovery rate-limited to 15s.
+        const peerId = envelope.senderId;
+        const fails = (this._authFailCount?.get(peerId) || 0) + 1;
+        (this._authFailCount ??= new Map()).set(peerId, fails);
+        const lastRecovery = this._lastRecovery?.get(peerId) || 0;
+        if (session && fails >= 2 && Date.now() - lastRecovery > 15000) {
+          (this._lastRecovery ??= new Map()).set(peerId, Date.now());
+          this._authFailCount.set(peerId, 0);
+          this.sessions.delete(peerId);
+          this.pendingHandshakes.delete(peerId);
+          log.warn('ANNEX session invalidated after repeated auth failures — re-handshaking', {
+            peer: peerTag(peerId), failures: fails,
+          });
+          // Re-derive the deterministic JHILKE bootstrap session, then let
+          // openChannel's nodeId tie-break drive the KEM upgrade.
+          if (this.mesh?.jhilke) {
+            try {
+              this.bootstrapSession(peerId, this.mesh.jhilke.deriveBootstrapKey(peerId));
+              this.openChannel(peerId).catch(err =>
+                log.debug('ANNEX recovery re-handshake deferred', {
+                  peer: peerTag(peerId), error: err.message,
+                }));
+            } catch (err) {
+              log.debug('ANNEX recovery failed', { peer: peerTag(peerId), error: err.message });
+            }
+          }
+        }
       } else {
         log.error('Error handling ANNEX message', { error: err.message, type: envelope.type });
       }
@@ -849,6 +886,20 @@ export class Annex {
     await session.generateKeyPair();
     const kemCiphertext = session.encapsulate(envelope.kemPublicKey);
 
+    // Carry the replaced session's key+sessionId as transition material —
+    // AAD binds ciphertext to sessionId, so key alone can't decode
+    // in-flight bootstrap messages. 5s window, PFS-preserved.
+    const prev = this.sessions.get(envelope.senderId);
+    if (prev?.encryptionKey) {
+      session._transitionKey = prev.encryptionKey;
+      session._transitionSessionId = prev.sessionId;
+      session._transitionKeyTimer = setTimeout(() => {
+        session._transitionKey = null;
+        session._transitionSessionId = null;
+        session._transitionKeyTimer = null;
+      }, 5000);
+    }
+
     // Store session
     this.sessions.set(envelope.senderId, session);
     this.stats.sessionsCreated++;
@@ -882,6 +933,20 @@ export class Annex {
     // Decapsulate to get shared secret
     session.decapsulate(envelope.kemCiphertext);
 
+    // Same transition carry as the responder path — the pending session is
+    // a fresh object, so decapsulate()'s own transition block sees a null
+    // encryptionKey and arms nothing. Carry from the replaced session.
+    const prev = this.sessions.get(envelope.senderId);
+    if (prev?.encryptionKey && prev !== session) {
+      session._transitionKey = prev.encryptionKey;
+      session._transitionSessionId = prev.sessionId;
+      session._transitionKeyTimer = setTimeout(() => {
+        session._transitionKey = null;
+        session._transitionSessionId = null;
+        session._transitionKeyTimer = null;
+      }, 5000);
+    }
+
     // Move from pending to active
     this.pendingHandshakes.delete(envelope.senderId);
     this.sessions.set(envelope.senderId, session);
@@ -913,6 +978,7 @@ export class Annex {
       );
 
       this.stats.messagesDecrypted++;
+      this._authFailCount?.delete(envelope.senderId);
 
       // Parse and dispatch to handlers
       let payload;

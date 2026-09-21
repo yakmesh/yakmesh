@@ -108,7 +108,16 @@ export const SEVA_CONFIG = Object.freeze({
     'market-predictor',
     // ACT propagation model (numeric delay analysis for coordinated transitions)
     'act-propagation',
+    // AVOTH deterministic family — served via the pq-bridge triad
+    // (CPU/GPU/NPU bit-identical). Results are exactly re-verifiable:
+    // the 5% spot-check is an equality test, not a tolerance guess.
+    'avoth-hash',     // {seed, len} → {digest}
+    'avoth-sealed',   // {seed, len, epoch} → {digest, epoch} (wormhole-sealed)
+    'avoth-bench',    // {count} → {hashesPerSec, device, elapsedMs, total}
   ]),
+
+  // Slots in the AVOTH family — routed to the pq-bridge, not ONNX.
+  avothSlots: new Set(['avoth-hash', 'avoth-sealed', 'avoth-bench']),
 
   // Message types
   messageTypes: {
@@ -142,6 +151,16 @@ export class SevaMeshHandler extends EventEmitter {
     this.hardware = opts.hardware || {};
     this.executor = opts.executor || null;
     this.maxConcurrent = opts.maxConcurrent || SEVA_CONFIG.defaultMaxConcurrent;
+    // Slots this node can actually serve (models loaded). Null = advertise
+    // all valid slots (legacy); a Set = honest capability — only these.
+    this.availableSlots = opts.availableSlots || null;
+    // AVOTH capability — node has a live pq-bridge (triad-verifiable
+    // AVOTH execution). Advertised honestly; peers prefer avoth:true
+    // nodes for avoth-* slots.
+    this.avoth = opts.avoth ?? false;
+    // Provider taxonomy, best-first: 'xdna' (native IRON kernel) >
+    // 'gpu' > 'onnx-dml' > 'cpu'. Reported for observability.
+    this.providers = opts.providers || ['cpu'];
 
     // State
     this.activeJobs = 0;
@@ -238,6 +257,8 @@ export class SevaMeshHandler extends EventEmitter {
         accelerated: !!this.hardware.npu,
         npuTops: this.hardware.npuTops || 0,
       },
+      avoth: this.avoth,
+      providers: this.providers,
       ts: Date.now(),
     };
 
@@ -247,6 +268,9 @@ export class SevaMeshHandler extends EventEmitter {
   _getActiveSlots() {
     const slots = [];
     for (const slotId of SEVA_CONFIG.validSlots) {
+      // Never advertise a slot we can't execute — an empty list is honest,
+      // a padded one makes peers waste requests on us.
+      if (this.availableSlots && !this.availableSlots.has(slotId)) continue;
       slots.push({
         id: slotId,
         accelerated: !!this.hardware.npu,
@@ -262,6 +286,8 @@ export class SevaMeshHandler extends EventEmitter {
       slots: new Set(payload.slots.map(s => s.id)),
       capacity: payload.capacity || {},
       accelerated: payload.capacity?.accelerated || false,
+      avoth: payload.avoth || false,
+      providers: payload.providers || [],
       lastSeen: Date.now(),
     });
 
@@ -341,6 +367,14 @@ export class SevaMeshHandler extends EventEmitter {
 
       // Score: NPU acceleration = 100, low load bonus = 0-50, freshness = 0-10
       let score = 0;
+      // AVOTH slots strongly prefer triad-capable peers — the job is only
+      // servable where a pq-bridge exists, and the result is exactly
+      // re-verifiable, so the preference is capability, not courtesy.
+      if (SEVA_CONFIG.avothSlots.has(slot)) {
+        if (cap.avoth) score += 150;
+        if (cap.providers?.includes('npu') || cap.providers?.includes('xdna')) score += 25;
+        else if (cap.providers?.includes('gpu')) score += 15;
+      }
       if (cap.accelerated) score += 100;
       const loadRatio = (cap.capacity.currentLoad || 0) / (cap.capacity.maxConcurrent || 10);
       score += (1 - loadRatio) * 50;
@@ -391,6 +425,17 @@ export class SevaMeshHandler extends EventEmitter {
       return;
     }
 
+    // Honest rejection for slots we don't serve (no loaded model)
+    if (this.availableSlots && !this.availableSlots.has(payload.slot)) {
+      this.network.sendTo(peerId, {
+        type: SEVA_CONFIG.messageTypes.RESPONSE,
+        id: payload.id,
+        status: 'error',
+        error: 'Slot not served by this node',
+      });
+      return;
+    }
+
     // Validate math-only params
     if (!this._validateNumericOnly(payload.params)) {
       this.network.sendTo(peerId, {
@@ -427,7 +472,10 @@ export class SevaMeshHandler extends EventEmitter {
         slot: payload.slot,
         status: 'ok',
         result,
-        source: this.hardware.npu ? 'npu' : 'cpu',
+        // Honest provider field — the executor reports the real device
+        // (triad.rs returns 'cpu'|'gpu'|'npu'|'cpu-fallback'); fall back
+        // to the hardware flag only when the result doesn't say.
+        source: result?.device || (this.hardware.npu ? 'npu' : 'cpu'),
         computeMs,
       });
 

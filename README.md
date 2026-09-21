@@ -38,6 +38,66 @@ const node = new YakmeshNode({
 await node.start();
 ```
 
+## Running a Node
+
+From the `yakmesh-node` directory:
+
+```bash
+# Install deps (first time or after an update)
+npm install --omit=dev
+
+# Run in the foreground — Ctrl+C to stop
+node server/index.js
+```
+
+The node binds **9080** (mesh WebSocket), **3080** (dashboard/API), **3099**
+(time API). Open `http://localhost:3080` for the dashboard.
+
+### Environment variables
+
+| Variable | Purpose | Example |
+|---|---|---|
+| `YAKMESH_BOOTSTRAP` | Comma-separated seed peer(s) to join an existing network | `ws://192.168.1.172:9080` |
+| `YAKMESH_DATA_DIR` | Identity + data directory (keep it stable — it holds the machine seed) | `%LOCALAPPDATA%\yakmesh-data` |
+| `YAKMESH_PQ_BRIDGE` | Local yakos-pq-bridge URL for hardware-bound claims | `http://127.0.0.1:9995` |
+
+Peers must run the **same codebase** — the network id derives from a hash of
+the source, so mixed versions are rejected (`INCOMPATIBLE_CODEBASE`). Deploy
+the same package to every node.
+
+### Windows
+
+```bat
+start-yakmesh.bat            :: console start — uses PM2 if present, plain node otherwise
+start-yakmesh-silent.vbs     :: headless start, logs to yakmesh-node.log
+STOP-YAKMESH.bat             :: stop
+VIEW-YAKMESH-LOG.bat         :: tail the log
+```
+
+Set `YAKMESH_BOOTSTRAP` in the system environment (or edit the vbs) to join a
+LAN node. Without a bootstrap peer the node seeds a new network on its own
+codebase-derived network id.
+
+### Linux
+
+```bash
+YAKMESH_BOOTSTRAP=ws://<seed-host>:9080 \
+YAKMESH_DATA_DIR=~/.local/share/yakmesh-data \
+node server/index.js
+```
+
+`scripts/start.sh` provides a pidfile-based start/stop wrapper.
+
+### Optional services
+
+- **yakos-pq-bridge** (localhost:9995) — enables hardware-bound yakcoin claims.
+  Without it the node runs fine: it witnesses and attests peers' claims but
+  emits none of its own (an absent claim is honest; a fabricated one is not).
+- **YAK-TUN** — virtual adapter (`yak0`, subnet `10.199.0.0/16`). Windows uses
+  the bundled Wintun (`utils/wintun.dll`); Linux attaches a persistent
+  `/dev/net/tun` device (`ip tuntap add dev yak0 mode tun user <you>` once,
+  plus `sudo` for address binding).
+
 ## Features
 
 ### Cryptography & Identity

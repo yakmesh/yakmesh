@@ -1,25 +1,29 @@
 @echo off
-REM Start YAKMESH Node with PM2
+REM Start YAKMESH Node — works with or without PM2
+REM NOTE: never copy yakmesh.config.production.js over yakmesh.config.js —
+REM config.js is oracle-hashed; overwriting it changes the network id
+REM and drops the shipped LAN bootstrap seeds.
 REM Run this from the yakmesh-node directory
 
 echo Starting YAKMESH Node...
 
-REM Copy production config to main config
-copy /Y yakmesh.config.production.js yakmesh.config.js
-
-REM Create logs directory if needed
 if not exist "logs" mkdir logs
 if not exist "data" mkdir data
 
-REM Install dependencies if needed
 if not exist "node_modules" (
     echo Installing dependencies...
-    call npm install --production
+    call npm install --omit=dev
 )
 
-REM Start with PM2
-pm2 start ecosystem.config.json
-
-echo.
-echo YAKMESH Node started! Check status with: pm2 status
-echo View logs with: pm2 logs yakmesh-node
+REM PM2 if available (auto-restart), else plain node
+where pm2 >nul 2>nul
+if %ERRORLEVEL%==0 (
+    pm2 start ecosystem.config.json
+    echo.
+    echo YAKMESH Node started under PM2. Status: pm2 status ^| Logs: pm2 logs yakmesh-node
+) else (
+    echo PM2 not found — starting node directly in this window.
+    echo Ctrl+C to stop. For headless start use start-yakmesh-silent.vbs
+    echo.
+    node server\index.js
+)

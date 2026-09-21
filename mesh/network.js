@@ -1323,6 +1323,22 @@ export class MandalaNetwork {
         this.emit('gossip', msg.payload.gossip, nodeId);
       }
 
+      // App-level broadcast payloads (seva:capability, beacon, content:*)
+      // carry their own type inside the gossip envelope — dispatch to
+      // handlers registered for that inner type. Without this the envelope
+      // type 'gossip' swallows every app broadcast. Sender is the origin.
+      const innerType = msg.payload?.type;
+      if (innerType && innerType !== MessageTypes.GOSSIP) {
+        const handlers = this.messageHandlers.get(innerType) || [];
+        for (const handler of handlers) {
+          try {
+            handler(msg.payload, ws, msg.origin || nodeId);
+          } catch (err) {
+            log.warn('GOSSIP inner dispatch error', { type: innerType, error: err.message });
+          }
+        }
+      }
+
       // Forward to other WS peers
       const forwardMsg = { ...msg, ttl: msg.ttl - 1 };
       for (const [peerId, peer] of this.peers) {

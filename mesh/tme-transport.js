@@ -37,6 +37,23 @@
 
 import { MandalaMessageTypes } from './network.js';
 import { createHash } from 'crypto';
+import * as avothBridge from '../utils/avoth-bridge.js';
+
+/**
+ * Verify a wormhole-sealed TME stream identity.
+ * @returns {Promise<boolean|null>} false = forged origin (reject);
+ *   true = verified; null = unverifiable here (no bridge) — accept.
+ */
+async function verifyStreamSeal(streamId, metadata, senderNodeId) {
+  if (!(await avothBridge.isAvailable())) return null;
+  const claimed = metadata.sealedBy || senderNodeId;
+  const seal = avothBridge.sealFromContext(`TME:${claimed}:${metadata.sealEpoch}`);
+  const expected = await avothBridge
+    .hashSealed(`${streamId}:${claimed}`, seal)
+    .catch(() => null);
+  if (expected == null) return null; // bridge hiccup — don't punish
+  return expected === metadata.streamSeal;
+}
 
 /**
  * Create a structured logger stub if none provided.
@@ -90,7 +107,7 @@ export function wireTmeTransport({ mesh, encoder, nodeId, log: externalLog }) {
   /**
    * TME_SLICE — A peer sends us a temporal slice directly.
    */
-  mesh.on(MandalaMessageTypes.TME_SLICE, (msg, _ws, senderNodeId) => {
+  mesh.on(MandalaMessageTypes.TME_SLICE, async (msg, _ws, senderNodeId) => {
     if (senderNodeId === nodeId) return; // skip own
     const { slice, metadata } = msg;
     if (!slice) return;
@@ -98,6 +115,20 @@ export function wireTmeTransport({ mesh, encoder, nodeId, log: externalLog }) {
     try {
       // If we haven't seen this stream yet, init it from metadata
       if (metadata && !encoder.inboundStreams?.has(slice.streamId)) {
+        // Wormhole-sealed stream identity — verify the announced streamId
+        // actually belongs to the claimed origin when a seal rides along.
+        // Mismatch = forged origin claim → don't init the stream.
+        if (metadata.streamSeal && metadata.sealEpoch != null) {
+          const ok = await verifyStreamSeal(slice.streamId, metadata, senderNodeId);
+          if (ok === false) {
+            log.warn('TME transport: stream seal mismatch — rejected', {
+              stream: slice.streamId?.slice(0, 12),
+              claimedBy: metadata.sealedBy?.slice(0, 12),
+              from: senderNodeId?.slice(0, 12),
+            });
+            return;
+          }
+        }
         encoder.initReceive({ streamId: slice.streamId, ...metadata });
         log.debug('TME transport: init stream from direct slice', {
           stream: slice.streamId?.slice(0, 12),

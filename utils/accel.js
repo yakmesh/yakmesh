@@ -979,7 +979,17 @@ class InferenceEngine {
         options.executionProviders = [this._preferredProvider, 'cpu'];
       }
 
-      const session = await this._ort.InferenceSession.create(modelPath, options);
+      let session;
+      try {
+        session = await this._ort.InferenceSession.create(modelPath, options);
+      } catch (err) {
+        // A provider that fails to LOAD (e.g. CUDA .so missing cuDNN) kills
+        // session creation even with 'cpu' in the provider list — retry
+        // CPU-only and say so honestly.
+        if (!this._preferredProvider || this._preferredProvider === 'cpu') throw err;
+        session = await this._ort.InferenceSession.create(modelPath, { executionProviders: ['cpu'] });
+        log.warn(`Model ${modelName}: ${this._preferredProvider} provider unusable (${err.message.slice(0, 90)}) — loaded on CPU`);
+      }
       this._sessions.set(modelName, session);
 
       log.info(`Model loaded: ${modelName} → ${this._preferredProvider || 'CPU'}`);

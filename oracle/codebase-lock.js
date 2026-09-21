@@ -118,6 +118,10 @@ export class CodebaseLock extends EventEmitter {
   #watchers = [];
   #tamperEvents = [];
   #watchdogActive = false;
+  #watchdogStartedAt = 0;
+  #suppressedEvents = 0;
+  #burstWindowStart = 0;
+  #burstCount = 0;
 
   constructor() {
     super();
@@ -316,7 +320,23 @@ export class CodebaseLock extends EventEmitter {
             const ext = extname(filename).toLowerCase();
             if (!SOURCE_EXTENSIONS.has(ext)) return;
 
-            const event = new TamperEvent(eventType, join(dirPath, filename), {
+            const fullPath = join(dirPath, filename);
+
+            // Metadata-only events (atime updates on reads — common over SMB
+            // shares and at boot when the loader touches every module) must not
+            // alarm. A real modification updates mtime to now; a touch leaves
+            // mtime in the past. Deleted files still alert.
+            try {
+              const st = statSync(fullPath);
+              if (st.mtimeMs < this.#watchdogStartedAt) {
+                this.#suppressedEvents++;
+                return;
+              }
+            } catch {
+              // file vanished — fall through, rename/delete is a real event
+            }
+
+            const event = new TamperEvent(eventType, fullPath, {
               directory: dirName,
               filename,
             });
@@ -325,6 +345,23 @@ export class CodebaseLock extends EventEmitter {
 
             // Emit event for external handlers
             this.emit('tamper', event);
+
+            // Burst-collapse: beyond 3 real events in a 10s window, summarize
+            // instead of flooding (a mass overwrite is one attack, not N).
+            const now = Date.now();
+            if (now - this.#burstWindowStart > 10_000) {
+              this.#burstWindowStart = now;
+              this.#burstCount = 0;
+            }
+            this.#burstCount++;
+            if (this.#burstCount > 3) {
+              if (this.#burstCount === 4) {
+                log.error('⚠️ TAMPERING BURST — further alerts suppressed for this window', {
+                  directory: dirName,
+                });
+              }
+              return;
+            }
 
             // Log as critical security event
             log.error('⚠️ TAMPERING DETECTED', {
@@ -341,6 +378,7 @@ export class CodebaseLock extends EventEmitter {
         }
       }
 
+      this.#watchdogStartedAt = Date.now();
       this.#watchdogActive = this.#watchers.length > 0;
 
       if (this.#watchdogActive) {
