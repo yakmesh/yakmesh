@@ -154,7 +154,7 @@ describe('SAMUHA HOLD queue (network)', () => {
   let savedPeers;
 
   beforeEach(() => {
-    setCodebaseHash('samuha-test-codebase');
+    setCodebaseHash('ab'.repeat(32)); // valid hex — deriveNetworkName hexToBytes's it
     savedPeers = aguwa.peers;
     aguwa.peers = new Map();
     aguwa._admissionStats = { admit: 0, hold: 0, redirect: 0, evictions: 0 };
@@ -227,18 +227,19 @@ describe('SAMUHA HOLD queue (network)', () => {
 
   test('slot opens → held peer promoted through normal HELLO path and admitted', () => {
     const net = makeNet();
-    fillPeers(102);
+    fillPeers(102); // 102 + leaver = 103 → 0.805 → HOLD
     const ws = fakeWs();
+    // The leaver must exist in BOTH stores BEFORE the HELLO so it counts
+    // toward the 0.8 HOLD threshold: net.peers (socket map) and
+    // aguwa.peers (utilization count) — production keeps them in sync.
+    const peerWs = fakeWs();
+    net.peers.set('leaver', { ws: peerWs, identity: { name: 'leaver' } });
+    aguwa.peers.set('leaver', { aguwaScore: 0.5 });
     const { msg, nodeId } = makeHello(60);
     net._handleMessage(ws, Buffer.from(JSON.stringify(msg)), stubReq);
     expect(net._holdQueue).toHaveLength(1);
 
     // A connected peer disconnects → utilization drops below 0.8.
-    // The leaver must exist in BOTH stores: net.peers (socket map) and
-    // aguwa.peers (utilization count) — production keeps them in sync.
-    const peerWs = fakeWs();
-    net.peers.set('leaver', { ws: peerWs, identity: { name: 'leaver' } });
-    aguwa.peers.set('leaver', { aguwaScore: 0.5 });
     net._handleDisconnect(peerWs);
 
     // Promotion re-dispatched the stored HELLO → now admitted

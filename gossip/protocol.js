@@ -164,6 +164,11 @@ export class MantraProtocol extends EventEmitter {
 
     // State
     this.knownPeers = new Map();  // nodeId -> { info, lastSeen, endpoint }
+    // Exact dedup for locally-generated rumors. seenMessages is probabilistic —
+    // once it fills, has() false-positives and spreadRumor() would silently
+    // drop our own outbound rumors (this happened to act:proposal in the field).
+    this._localRumorIds = new Set();
+    this._localRumorQueue = []; // FIFO for bounded eviction
     this.seenMessages = new BloomFilter();
     this.pendingRumors = new Map();  // messageId -> { rumor, attempts, targets }
 
@@ -225,8 +230,17 @@ export class MantraProtocol extends EventEmitter {
   spreadRumor(topic, data) {
     const messageId = this._generateMessageId(topic, data);
 
-    if (this.seenMessages.has(messageId)) {
-      return; // Already seen
+    // Local dedup must be exact — never trust the bloom filter here. A
+    // saturated filter false-positives and swallows locally-generated rumors
+    // with no log, which is unrecoverable for the caller.
+    if (this._localRumorIds.has(messageId)) {
+      return; // We already generated this exact rumor
+    }
+
+    // If the filter is saturated, reset it now rather than letting inbound
+    // has() checks false-positive on every new rumor.
+    if (this.seenMessages.shouldReset()) {
+      this.seenMessages.reset();
     }
 
     const rumor = {
@@ -262,6 +276,11 @@ export class MantraProtocol extends EventEmitter {
     }
 
     this.seenMessages.add(messageId);
+    this._localRumorIds.add(messageId);
+    this._localRumorQueue.push(messageId);
+    if (this._localRumorQueue.length > 512) {
+      this._localRumorIds.delete(this._localRumorQueue.shift());
+    }
     this._bufferRumor(rumor);
     this._propagateRumor(rumor);
 
@@ -506,8 +525,17 @@ export class MantraProtocol extends EventEmitter {
   _handleRumor(rumor, fromNodeId) {
     const { messageId, ttl } = rumor;
 
+    // A saturated bloom filter false-positives on EVERY new rumor and silently
+    // eats them — reset before the has() check so the filter can never wedge.
+    // (Post-reset, a few genuinely-seen rumors may re-propagate once; TTL
+    // bounds the blast radius.)
+    if (this.seenMessages.shouldReset()) {
+      this.seenMessages.reset();
+    }
+
     // Already seen?
     if (this.seenMessages.has(messageId)) {
+      log.debug('Rumor dropped as already-seen', { topic: rumor.topic, from: peerTag(fromNodeId), messageId });
       // Send SEEN to stop rumor mongering
       this.mesh.sendTo(fromNodeId, {
         gossip: { type: GossipMessageType.SEEN, messageId }
@@ -550,13 +578,9 @@ export class MantraProtocol extends EventEmitter {
       }
     }
 
-    // Mark as seen
+    // Mark as seen (reset check now lives at the top of this handler, before
+    // the has() that would be poisoned by saturation)
     this.seenMessages.add(messageId);
-
-    // Check bloom filter health
-    if (this.seenMessages.shouldReset()) {
-      this.seenMessages.reset();
-    }
 
     // Buffer for HTTP API consumers
     this._bufferRumor(rumor);

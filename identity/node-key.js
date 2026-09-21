@@ -211,12 +211,29 @@ export function signMessage(message, secretKeyHex) {
 }
 
 /**
+ * Decode signature/public-key material — accepts canonical hex and the
+ * pq-bridge's base64 form. Hex must be tested first: it is a strict
+ * subset of the base64 alphabet, so a base64 test alone is ambiguous.
+ * Byte-size validity is enforced downstream by ml_dsa65 itself.
+ */
+function decodeKeyMaterial(value) {
+  if (typeof value !== 'string' || value.length === 0) return null;
+  if (value.length % 2 === 0 && /^[0-9a-fA-F]+$/.test(value)) return hexToBytes(value);
+  if (value.length % 4 === 0 && /^[A-Za-z0-9+/]+={0,2}$/.test(value)) {
+    const bytes = Buffer.from(value, 'base64');
+    if (bytes.length > 0 && bytes.toString('base64') === value) return bytes;
+  }
+  return null;
+}
+
+/**
  * Verify a signature from another node
  */
-export function verifySignature(message, signatureHex, publicKeyHex) {
+export function verifySignature(message, signatureEncoded, publicKeyEncoded) {
   try {
-    const publicKey = hexToBytes(publicKeyHex);
-    const signature = hexToBytes(signatureHex);
+    const publicKey = decodeKeyMaterial(publicKeyEncoded);
+    const signature = decodeKeyMaterial(signatureEncoded);
+    if (!publicKey || !signature) return false;
     const messageBytes = typeof message === 'string'
       ? new TextEncoder().encode(message)
       : message;

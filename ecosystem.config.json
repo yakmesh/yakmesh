@@ -1,7 +1,7 @@
 {
   "apps": [{
     "name": "yakmesh",
-    "script": "server/index.js",
+    "script": "scripts/yakmesh-run.js",
     "cwd": "./",
     "watch": false,
     "autorestart": true,

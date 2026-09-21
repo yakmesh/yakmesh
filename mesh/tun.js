@@ -12,8 +12,15 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import crypto from 'crypto';
 import os from 'os';
+import dgram from 'node:dgram';
 
 const execAsync = promisify(exec);
+
+// Wire B datagram magic — YKT1
+const TUN_MAGIC = Buffer.from('YKT1');
+const TUN_PING_MS = 10_000;       // underlay heartbeat per known endpoint
+const TUN_STALE_MS = 45_000;      // no pong/decrypt within this → wire down
+const TUN_DISCOVER_MS = 15_000;   // LAN presence beacon interval
 
 export class YakTun {
     /**
@@ -32,12 +39,30 @@ export class YakTun {
         // an entry — their vIP is recomputed from nodeId on every lookup.
         this.routes = new Map();
 
+        // Wire B (UDP underlay) peer table:
+        //   nodeId -> { host, port, wsPort, state:'up'|'down', rttMs,
+        //               lastPong, lastRx }
+        this.endpoints = new Map();
+        this.udpSocket = null;
+        this.udpPort = 0;
+
+        // LAN discovery — 'discover' datagrams broadcast on the underlay
+        // port, AES-GCM'd under a dialect-derived key so only same-build
+        // nodes can read them. Hooks fire on the server layer.
+        this._discoverTimer = null;
+        this._discoverFirstSeen = new Map();   // nodeId -> first beacon ms
+        this.onPeerDiscovered = null;          // (nodeId, wsUrl)
+        this.onWireBUp = null;                 // (nodeId)
+
         // Performance stats
         this.stats = {
             rx: 0,
             tx: 0,
             drops: 0,
-            latentRetransmit: 0
+            latentRetransmit: 0,
+            udpTx: 0,
+            udpRx: 0,
+            udpDrops: 0,
         };
     }
 
@@ -75,6 +100,420 @@ export class YakTun {
     /** Record an announced or observed route (multi-hop / relay peers). */
     learnRoute(vIp, nodeId) {
         if (vIp && nodeId) this.routes.set(vIp, nodeId);
+    }
+
+    // ────────────────────────────────────────────────────────────────
+    // Wire B — UDP underlay
+    //
+    // TUN packets travel as ANNEX-encrypted UDP datagrams to the peer's
+    // real endpoint, independent of mesh WS sessions. This is what makes
+    // overlay sessions (ws://vIP) safe: the tunnel's carrier is no longer
+    // the mesh itself, so no write can recurse into its own encapsulation.
+    //
+    // Sessions are keyed `tun:<nodeId>` — a separate ANNEX sequence space
+    // from the mesh session — and keyed by JHILKE's deterministic pair
+    // bootstrap key, so wire B is encrypted from datagram one with zero
+    // handshake. (Group-static key; KEM-inherited rekey is a documented
+    // next step — CONFIDENTIAL/docs/YAKTUN-DUAL-WIRE.md.)
+    // ────────────────────────────────────────────────────────────────
+
+    /**
+     * Bind the UDP underlay socket. Called after init() succeeds.
+     * @param {number} port UDP port to bind (convention: same number as wsPort)
+     */
+    async initUnderlay(port) {
+        // The socket doubles as the LAN-discovery transport — bind it even
+        // when the TUN device itself failed (no admin / no /dev/net/tun);
+        // 'data' ops still gate on the interface via injectLocal().
+        if (this.udpSocket) return false;
+        this.udpPort = port;
+        try {
+            this.udpSocket = dgram.createSocket({ type: 'udp4', reuseAddr: true });
+            this.udpSocket.on('message', (buf, rinfo) => this._onDatagram(buf, rinfo));
+            this.udpSocket.on('error', (err) => {
+                console.warn(`[YAK-TUN] UDP underlay error: ${err.message}`);
+            });
+            await new Promise((resolve, reject) => {
+                this.udpSocket.once('error', reject);
+                this.udpSocket.bind(port, () => resolve());
+            });
+            try { this.udpSocket.setBroadcast(true); } catch { }
+            this._underlayPingTimer = setInterval(() => this._pingEndpoints(), TUN_PING_MS);
+            this._discoverTimer = setInterval(() => this._sendDiscover(), TUN_DISCOVER_MS);
+            setTimeout(() => this._sendDiscover(), 1000);
+            console.log(`[YAK-TUN] 🟢 UDP underlay listening on :${this.udpPort} (wire B + LAN discovery)`);
+            return true;
+        } catch (err) {
+            console.warn(`[YAK-TUN] UDP underlay bind failed on :${port}: ${err.message}`);
+            try { this.udpSocket?.close(); } catch {}
+            this.udpSocket = null;
+            return false;
+        }
+    }
+
+    /**
+     * Learn a peer's real UDP endpoint. Called from tun:announce gossip and
+     * from any authenticated datagram (passive re-learn covers NAT rebinds).
+     */
+    learnEndpoint(nodeId, host, port, wsPort = 0) {
+        if (!nodeId || !host || !port) return;
+        const prev = this.endpoints.get(nodeId);
+        this.endpoints.set(nodeId, {
+            host, port,
+            wsPort: wsPort || prev?.wsPort || 0,
+            state: prev?.state || 'down',
+            rttMs: prev?.rttMs || 0,
+            lastPong: prev?.lastPong || 0,
+            lastRx: prev?.lastRx || 0,
+        });
+        // Probe immediately — don't make the first packets wait a full
+        // ping interval for the wire to prove itself.
+        if (this.udpSocket && (!prev || prev.host !== host || prev.port !== port)) {
+            this._sendDatagram(nodeId, 'hello', {
+                wsPort: this._selfWsPort || 0,
+                vIp: this.virtualIp,
+            });
+            this._sendDatagram(nodeId, 'ping', { t: Date.now() });
+        }
+    }
+
+    // ── LAN discovery ─────────────────────────────────────────────────
+    // Same codebase = same dialectSeed = decryptable beacon. A 'discover'
+    // datagram carries our real endpoint + vIP; receivers learn the wire-B
+    // endpoint directly and surface a dial hint via onPeerDiscovered.
+    // Identity is NOT established here — the WS HELLO handshake remains
+    // the admission gate; the beacon only proves same-build presence.
+
+    /** Symmetric beacon key: every node on this build shares dialectSeed. */
+    _discoveryKey() {
+        const seed = this.mesh?.jhilke?.dialectSeed;
+        if (!seed) return null;
+        return crypto.createHash('sha3-256')
+            .update('yaktun-lan:')
+            .update(seed)
+            .digest();
+    }
+
+    /** Limited broadcast + per-interface directed broadcasts. */
+    _broadcastAddrs() {
+        const addrs = new Set(['255.255.255.255']);
+        try {
+            for (const list of Object.values(os.networkInterfaces())) {
+                for (const i of list || []) {
+                    if (i.family !== 'IPv4' || i.internal || !i.netmask) continue;
+                    if (i.address.startsWith('10.199.')) continue; // our own vIP iface
+                    const a = i.address.split('.').map(Number);
+                    const m = i.netmask.split('.').map(Number);
+                    if (a.length === 4 && m.length === 4) {
+                        addrs.add(a.map((v, j) => (v | (~m[j] & 255))).join('.'));
+                    }
+                }
+            }
+        } catch { }
+        return [...addrs];
+    }
+
+    /** Broadcast one 'discover' beacon on the underlay port. */
+    _sendDiscover() {
+        const key = this._discoveryKey();
+        const selfId = this._selfNodeId || this.mesh?.identity?.identity?.nodeId;
+        if (!this.udpSocket || !key || !selfId) return;
+        try {
+            const iv = crypto.randomBytes(12);
+            const c = crypto.createCipheriv('aes-256-gcm', key, iv);
+            const ct = Buffer.concat([c.update(JSON.stringify({
+                op: 'discover',
+                nodeId: selfId,
+                wsPort: this._selfWsPort || 0,
+                tunPort: this.udpPort || 0,
+                vIp: this.virtualIp || null,
+                vIp6: this.virtualIpv6 || null,
+            }), 'utf8'), c.final()]);
+            const blob = Buffer.concat([iv, ct, c.getAuthTag()]);
+            const body = Buffer.from(JSON.stringify({
+                v: 1, t: Date.now(), k: 'net', d: blob.toString('base64'),
+            }), 'utf8');
+            const from = Buffer.from(String(selfId), 'utf8');
+            const gram = Buffer.concat([TUN_MAGIC, Buffer.from([from.length]), from, body]);
+            for (const addr of this._broadcastAddrs()) {
+                try { this.udpSocket.send(gram, this.udpPort, addr); } catch { }
+            }
+            this.stats.udpTx += gram.length;
+        } catch { }
+    }
+
+    /** Handle a 'net'-keyed beacon datagram. */
+    _onDiscover(env, rinfo) {
+        const key = this._discoveryKey();
+        if (!key || typeof env.d !== 'string') { this.stats.udpDrops++; return; }
+        let d;
+        try {
+            const blob = Buffer.from(env.d, 'base64');
+            const dec = crypto.createDecipheriv('aes-256-gcm', key, blob.subarray(0, 12));
+            dec.setAuthTag(blob.subarray(blob.length - 16));
+            d = JSON.parse(Buffer.concat([
+                dec.update(blob.subarray(12, blob.length - 16)), dec.final(),
+            ]).toString('utf8'));
+        } catch { this.stats.udpDrops++; return; } // foreign build — noise
+        if (d?.op !== 'discover' || !d.nodeId) return;
+        const selfId = this._selfNodeId || this.mesh?.identity?.identity?.nodeId;
+        if (d.nodeId === selfId) return; // own broadcast
+        const isNew = !this._discoverFirstSeen.has(d.nodeId);
+        const firstSeen = this._discoverFirstSeen.get(d.nodeId) ?? Date.now();
+        this._discoverFirstSeen.set(d.nodeId, firstSeen);
+        if (isNew) {
+            console.log(`[YAK-TUN] LAN peer discovered: ${String(d.nodeId).slice(0, 20)} (${rinfo.address}:${d.tunPort || rinfo.port})`);
+        }
+        // Learn the wire-B endpoint — source addr:port IS their underlay.
+        this.learnEndpoint(d.nodeId, rinfo.address, rinfo.port, d.wsPort || 0);
+        if (d.vIp) this.learnRoute(d.vIp, d.nodeId);
+        if (d.vIp6) this.learnRoute(d.vIp6, d.nodeId);
+        const wsUrl = d.wsPort ? `ws://${rinfo.address}:${d.wsPort}` : null;
+        this.onPeerDiscovered?.(d.nodeId, wsUrl, firstSeen);
+    }
+
+    /**
+     * Consume a tun:announce gossip payload. `originHost` is the sender's
+     * real IP when we share a transport (connected peer); when the announce
+     * arrived multi-hop and carries data.tunHost, that is used instead.
+     */
+    handleAnnounce(data, originHost) {
+        if (!data?.nodeId || !data?.vIp) return;
+        this.learnRoute(data.vIp, data.nodeId);
+        if (data.vIp6) this.learnRoute(data.vIp6, data.nodeId);
+        const host = originHost || data.tunHost || null;
+        if (host && data.tunPort) {
+            this.learnEndpoint(data.nodeId, host, data.tunPort, data.wsPort || 0);
+        }
+    }
+
+    /**
+     * Is wire B proven up for this peer? (Endpoint known AND a datagram —
+     * ping reply or any decrypt — seen within the stale window.)
+     */
+    underlayUp(nodeId) {
+        const ep = this.endpoints.get(nodeId);
+        if (!ep || ep.state === 'down') return false;
+        return (Date.now() - Math.max(ep.lastPong, ep.lastRx)) < TUN_STALE_MS;
+    }
+
+    /**
+     * Overlay dial target for a peer: `ws://<vIP>:<wsPort>` when wire B is
+     * up and the peer announced a WS port. network.js prefers this when
+     * dialing known nodeIds — session traffic then rides inside the tunnel.
+     */
+    overlayEndpointFor(nodeId) {
+        if (!this.udpSocket || !this.underlayUp(nodeId)) return null;
+        const ep = this.endpoints.get(nodeId);
+        const wsPort = ep?.wsPort || 9080;
+        return `ws://${YakTun.vIpFor(nodeId)}:${wsPort}`;
+    }
+
+    /** Snapshot for status surfaces. */
+    underlayStatus() {
+        const eps = {};
+        for (const [nodeId, ep] of this.endpoints) {
+            eps[nodeId.slice(0, 20)] = {
+                addr: `${ep.host}:${ep.port}`,
+                wsPort: ep.wsPort || null,
+                state: this.underlayUp(nodeId) ? 'up' : 'down',
+                rttMs: ep.rttMs || null,
+            };
+        }
+        return {
+            udpPort: this.udpPort || null,
+            listening: !!this.udpSocket,
+            peers: eps,
+            stats: { udpTx: this.stats.udpTx, udpRx: this.stats.udpRx, udpDrops: this.stats.udpDrops },
+        };
+    }
+
+    /**
+     * ANNEX session for wire B — `tun:<nodeId>` namespace. Creates a
+     * JHILKE-bootstrap session lazily; reuses whatever session exists
+     * (a future KEM-derived rekey lands here transparently).
+     */
+    _tunSession(nodeId) {
+        const annex = this.mesh?.annex;
+        const jhilke = this.mesh?.jhilke;
+        if (!annex) return null;
+        const key = `tun:${nodeId}`;
+        let session = annex.sessions.get(key);
+        if (session?.established && !session.isExpired()) return session;
+        if (!jhilke) return session || null;
+        // Domain-separated re-key of the pair bootstrap key: sorted-pair
+        // derivation must see the REAL nodeIds (a 'tun:' prefix would sort
+        // differently per side and produce different keys/AAD). Storage is
+        // namespaced so wire B gets its own sequence space.
+        const pairKey = jhilke.deriveBootstrapKey(nodeId);
+        const bk = crypto.createHash('sha3-256')
+            .update('yaktun-underlay:')
+            .update(pairKey)
+            .digest();
+        return annex.bootstrapSession(nodeId, bk, key);
+    }
+
+    /**
+     * Encrypt + send one datagram to a peer's real endpoint.
+     * ops: 'data' | 'ping' | 'pong' | 'hello'
+     */
+    _sendDatagram(nodeId, op, fields = {}) {
+        const ep = this.endpoints.get(nodeId);
+        if (!this.udpSocket || !ep) return false;
+        const session = this._tunSession(nodeId);
+        if (!session) return false;
+        const selfId = this._selfNodeId || this.mesh?.identity?.identity?.nodeId;
+        if (!selfId) return false;
+        let d;
+        try {
+            d = session.encrypt({ op, ...fields });
+        } catch { return false; }
+        const from = Buffer.from(String(selfId), 'utf8');
+        const body = Buffer.from(JSON.stringify({ v: 1, t: Date.now(), d }), 'utf8');
+        const head = Buffer.concat([TUN_MAGIC, Buffer.from([from.length]), from]);
+        const gram = Buffer.concat([head, body]);
+        this.udpSocket.send(gram, ep.port, ep.host);
+        this.stats.udpTx += gram.length;
+        return true;
+    }
+
+    /** Wire-B heartbeat: ping every known endpoint, expire stale wires. */
+    _pingEndpoints() {
+        const now = Date.now();
+        for (const [nodeId, ep] of this.endpoints) {
+            this._sendDatagram(nodeId, 'ping', { t: now });
+            const alive = (now - Math.max(ep.lastPong, ep.lastRx)) < TUN_STALE_MS;
+            const next = alive ? 'up' : 'down';
+            if (next !== ep.state) {
+                ep.state = next;
+                console.log(`[YAK-TUN] wire B ${next} for ${nodeId.slice(0, 20)} (${ep.host}:${ep.port})`);
+                if (next === 'up') { try { this.onWireBUp?.(nodeId); } catch { } }
+            }
+            // Reap endpoints that have been dead for 10+ minutes and belong
+            // to no live session — table stays small, stale entries can't
+            // pin a dead wire forever.
+            if (!alive && now - Math.max(ep.lastPong, ep.lastRx) > 600_000
+                && !this.mesh?.peers?.has(nodeId)) {
+                this.endpoints.delete(nodeId);
+            }
+        }
+        // Same TTL for discovery bookkeeping — a peer that vanished gets
+        // a fresh first-seen (and fresh dial eligibility) if it returns.
+        for (const [nodeId, t] of this._discoverFirstSeen) {
+            if (now - t > 600_000 && !this.endpoints.has(nodeId)
+                && !this.mesh?.peers?.has(nodeId)) {
+                this._discoverFirstSeen.delete(nodeId);
+            }
+        }
+    }
+
+    _onDatagram(buf, rinfo) {
+        if (buf.length < 6 || !buf.subarray(0, 4).equals(TUN_MAGIC)) return;
+        const fromLen = buf[4];
+        if (buf.length < 5 + fromLen) return;
+        const fromNodeId = buf.subarray(5, 5 + fromLen).toString('utf8');
+        let env;
+        try { env = JSON.parse(buf.subarray(5 + fromLen).toString('utf8')); }
+        catch { this.stats.udpDrops++; return; }
+        if (env?.v !== 1 || !env?.d) { this.stats.udpDrops++; return; }
+
+        // 'net'-keyed datagrams are LAN beacons — same-build broadcast
+        // channel, not a pair session. Handled before pair decrypt.
+        if (env.k === 'net') { this._onDiscover(env, rinfo); return; }
+
+        // Sender claims nodeId in cleartext — the GCM authTag under the
+        // pair key is what actually proves it.
+        let session = this._tunSession(fromNodeId);
+        if (!session) { this.stats.udpDrops++; return; }
+        let plain;
+        try {
+            plain = JSON.parse(session.decrypt(env.d, env.d.sequence));
+        } catch (e) {
+            // Peer restart resets their send sequence to 0 — our session
+            // would reject it as replay forever. The bootstrap key is
+            // deterministic, so recreating the session heals instantly.
+            // A forged low-seq datagram still fails GCM after recreation.
+            if (typeof env.d.sequence === 'number' && env.d.sequence < 16) {
+                // Throttle the heal — under build skew every datagram fails
+                // GCM, and unthrottled delete+recreate turns a ping burst
+                // into a session-creation storm (hundreds/ms observed).
+                this._sessionResetAt ||= new Map();
+                const lastReset = this._sessionResetAt.get(fromNodeId) || 0;
+                if (Date.now() - lastReset < 5000) { this.stats.udpDrops++; return; }
+                this._sessionResetAt.set(fromNodeId, Date.now());
+                this.mesh?.annex?.sessions.delete(`tun:${fromNodeId}`);
+                session = this._tunSession(fromNodeId);
+                try {
+                    plain = JSON.parse(session.decrypt(env.d, env.d.sequence));
+                    console.log(`[YAK-TUN] wire-B session reset for ${fromNodeId.slice(0, 20)} (peer restart)`);
+                } catch { this.stats.udpDrops++; return; }
+            } else {
+                this.stats.udpDrops++;
+                return;
+            }
+        }
+
+        // Authenticated — learn/refresh the endpoint (NAT rebind covered).
+        const ep = this.endpoints.get(fromNodeId) || {
+            host: rinfo.address, port: rinfo.port, wsPort: 0,
+            state: 'down', rttMs: 0, lastPong: 0, lastRx: 0,
+        };
+        ep.host = rinfo.address;
+        ep.port = rinfo.port;
+        ep.lastRx = Date.now();
+        if (ep.state !== 'up') {
+            ep.state = 'up';
+            console.log(`[YAK-TUN] wire B up for ${fromNodeId.slice(0, 20)} (${ep.host}:${ep.port})`);
+            try { this.onWireBUp?.(fromNodeId); } catch { }
+        }
+        this.endpoints.set(fromNodeId, ep);
+        this.stats.udpRx += buf.length;
+
+        switch (plain.op) {
+            case 'data': {
+                // Wire-B auth IS the gate — GCM under the pair key proves a
+                // same-build, nodeId-bound sender. The karma gate stays on
+                // the WS-encap path (v1 semantics unchanged).
+                if (typeof plain.p !== 'string') return;
+                const packet = Buffer.from(plain.p, 'base64');
+                this.learnRoute(YakTun.vIpFor(fromNodeId), fromNodeId);
+                this.learnRoute(YakTun.vIp6For(fromNodeId), fromNodeId);
+                this.injectLocal(packet);
+                break;
+            }
+            case 'ping':
+                this._sendDatagram(fromNodeId, 'pong', { t: plain.t });
+                break;
+            case 'pong':
+                if (typeof plain.t === 'number') {
+                    ep.lastPong = Date.now();
+                    ep.rttMs = Date.now() - plain.t;
+                }
+                break;
+            case 'hello':
+                if (plain.wsPort) ep.wsPort = plain.wsPort;
+                if (plain.vIp) this.learnRoute(plain.vIp, fromNodeId);
+                this._sendDatagram(fromNodeId, 'hello', {
+                    wsPort: this._selfWsPort || 0,
+                    vIp: this.virtualIp,
+                });
+                break;
+        }
+    }
+
+    /** Clean shutdown — socket + timers. */
+    destroy() {
+        this.active = false;
+        if (this._underlayPingTimer) {
+            clearInterval(this._underlayPingTimer);
+            this._underlayPingTimer = null;
+        }
+        if (this._discoverTimer) {
+            clearInterval(this._discoverTimer);
+            this._discoverTimer = null;
+        }
+        try { this.udpSocket?.close(); } catch {}
+        this.udpSocket = null;
     }
 
     /**
@@ -330,8 +769,22 @@ export class YakTun {
         // TODO: NPU-PrePrediction (Is the link stable enough for this packet?)
         // This is where 117 TOPS are used for traffic shaping.
 
-        // sendTo signs + ANNEX-wraps and falls back to relay when the
-        // peer has no direct WS session.
+        // Wire B first: real-endpoint UDP datagram, no mesh session needed.
+        // Wire stays eligible while 'up' or freshly learned — the ping loop
+        // marks it 'down' only after a full stale window of silence.
+        const ep = this.endpoints.get(destinationNodeId);
+        if (this.udpSocket && ep && ep.state !== 'down') {
+            if (this._sendDatagram(destinationNodeId, 'data', {
+                p: packet.toString('base64'),
+            })) {
+                this.stats.tx += packet.length;
+                return;
+            }
+        }
+
+        // Fallback: WS-encap — sendTo signs + ANNEX-wraps and falls back
+        // to relay when the peer has no direct WS session. TUN_PACKET must
+        // never ride an overlay socket (recursion) — sendTo enforces that.
         this.mesh.sendTo(destinationNodeId, {
             type: 'TUN_PACKET',
             v: 1,

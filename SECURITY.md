@@ -45,6 +45,8 @@ YAKMESH implements multiple layers of post-quantum security:
 - **144T Ternary Security**: Dual-layer cryptographic backbone (NIST + 144T)
 - **Authenticated Encryption**: AES-256-GCM (ANNEX), XChaCha20-Poly1305
 - **Replay Protection**: Phase-epoch based message validation
+- **Handshake Boundary**: HELLO/WELCOME/REDIRECT/HOLD/REJECT are proof-of-possession-signed plaintext and are never ANNEX-wrapped; all other traffic is ANNEX-encrypted once a session exists
+- **Identity Binding**: claimed `nodeId` must equal `generateNodeId(publicKey)` — a peer cannot assert an identity its key doesn't derive
 - **Code Integrity**: Self-verifying oracle with module sealing
 - **Entropy**: PRAHARI v2 mesh-consensus entropy engine (SHA3 sponge, GPS jitter, mesh timing)
 

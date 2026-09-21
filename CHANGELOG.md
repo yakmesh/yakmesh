@@ -1,3 +1,137 @@
+## [3.5.10] — Unreleased
+
+### Added
+- YAK-TUN LAN discovery — the UDP underlay socket broadcasts a 'discover'
+  beacon every 15s (limited + per-interface directed broadcast), AES-GCM'd
+  under a key derived from JHILKE's dialectSeed: same build = decryptable
+  beacon, foreign builds see noise. Receivers learn the sender's real
+  wire-B endpoint + wsPort + vIP routes directly from the datagram.
+- Auto-connect on discovery — server/index.js hooks
+  yakTun.onPeerDiscovered: the lower nodeId dials ws://<lan>:<wsPort>
+  immediately (deterministic tie-break prevents simultaneous cross-dials);
+  the higher-id side dials only if the peer stays visible >45s
+  unconnected. 30s per-peer dial cooldown stays under the remote
+  connection-flood limiter. Bootstrap seeds are now a last resort for
+  non-LAN peers, not the primary mechanism.
+
+### Fixed
+- Claim attestation false-forgery — the pq-bridge emits ML-DSA
+  signatures/public keys as base64 while verifySignature() decoded hex
+  only, so every legitimate bridge-signed NPU/HW proof attestation was
+  classified 'forged' by remote claim ledgers. verifySignature() now
+  decodes hex OR strict-round-trip base64 (charset-disambiguated, hex
+  first), and the producer normalizes bridge output to canonical hex so
+  the wire format stays uniform. Verified end-to-end against a live
+  bridge signature; regression test covers both encodings + rejection.
+- YAK-TUN dial diagnostics — overlay/lifeline/discovery dial failures
+  were swallowed by empty catches; they now log the endpoint + error.
+  Inbound HELLOs log one 'HELLO handshake' line (clientIp, wire
+  classification, prior-peer state) so dual-wire attach/reject decisions
+  are observable.
+- YAK-TUN overlay promotion is event-driven — a wire-B 'up' transition
+  (datagram or ping pong) triggers exactly one overlay dial per peer per
+  60s cooldown, replacing the blind 3s/15s timers that sprayed tunnel
+  dials into the rate limiter and earned a 5-minute vIP ban.
+- Dual-wire convergence — when a tun-primary peer registers without a
+  lifeline, the LAN endpoint (advertised in HELLO) is dialed direct so
+  wire A always exists; the reverse case (lan primary, wire B up) dials
+  the overlay. Cooldowns: 60s per peer per direction.
+- wire reconciler — a 60s sweep re-arms overlay/lifeline promotion for
+  any peer stuck single-wire; a failed dial no longer strands the peer
+  (previously the one-shot event path was the only trigger).
+- connect() dedup — concurrent dials to the same nodeId/endpoint no longer
+  open parallel sockets (_inflightDials), and tunnel-first preference now
+  only applies to already-registered peers: first-contact dials hit the
+  real endpoint so the lifeline exists before promotion.
+- tun:announce now carries tunHost — multi-hop receivers can build the
+  origin's real underlay endpoint instead of only direct-peer IP reuse.
+- UDP underlay binds even when the TUN device fails (no admin) — discovery
+  and wire-B heartbeats still work; only vIP traffic needs the adapter.
+- MANTRA gossip: locally-generated rumors now dedup against an exact
+  message-id set — the bloom filter's false positives could silently
+  swallow outbound rumors (act:proposal was eaten in the field).
+- MANTRA gossip: saturated bloom filter resets BEFORE the inbound has()
+  check, so a full filter can no longer wedge rumor intake; the
+  already-seen drop path now logs at debug.
+- Handshake messages bypass ANNEX — once a session existed, _send() wrapped
+  re-dial HELLOs in the peer's ANNEX envelope; the receiver decrypted and
+  re-dispatched 'hello' to the HELLO handler bound to the peer's REGISTERED
+  socket, which re-registered the peer on its existing wire every dial
+  cycle (Peer connected churn, connectedAt resets, lifeline dropped) while
+  the answering WELCOME also left on the old socket — so every overlay
+  promotion dial timed out 'no WELCOME' and dual-wire never completed.
+  HELLO/WELCOME/REDIRECT/HOLD/REJECT are already PoP-signed and now stay
+  plaintext (HANDSHAKE_PLAINTEXT_TYPES); decrypted handshake types are
+  dropped at the ANNEX dispatch boundary.
+- yakmesh-run.js: tee() no longer double-writes when the supervisor's own
+  stdout/stderr is redirected into supervisor.log (fd compare per stream).
+- Stale package export removed — `./security/tls-binding` pointed at a
+  module archived in bdd70dd; importing it crashed at resolve time.
+
+### Tests
+- mesh-auth fixtures derive nodeId from the generated keypair — the
+  hardened nodeId↔publicKey binding check (8d54700) made random-key +
+  literal-id mocks invalid by construction.
+- samuha HOLD-queue fixtures: valid hex codebaseHash (deriveNetworkName
+  hexToBytes's it) and the leaver peer is registered BEFORE the held
+  HELLO so it counts toward the 0.8 utilization threshold; promotion
+  then drops below threshold and admits. Boundary math verified
+  (103/128 = 0.805 HOLD, 102/128 = 0.797 ADMIT).
+- Full matrix green: 1869 tests, 0 failures (oracle 258, protocol 61,
+  multinode 18, byond 36, vitest 1496).
+
+### Added
+- claim-ledger: inner ML-DSA attestation verification for npuProof /
+  hwProof attachments (canonical claim recompute + signature check;
+  forgeries emitted as 'proofForgery' evidence) and deviceClass
+  classification on witnessed claims.
+- API: GET /api/claims/epoch/:epoch — witnessed claims with verification
+  verdicts, claim-set Merkle root, and quorum attestation counts.
+- API: POST /api/claims/epoch/:epoch/attest — loopback-only hourglass
+  attestation of an epoch's claim-set root (409 surfaces conflicts).
+- yakmesh-run.js: supervisor now manages the pq-bridge (attestation)
+  child — health-checks YAKOS_PQ_BRIDGE (default :9995), adopts an
+  already-running bridge (systemd/manual), or auto-spawns
+  yakos-pq-bridge(.exe) / newest dated yakos-pq-bridge-* binary found
+  beside it, with restart backoff. YAKMESH_NO_BRIDGE=1 opts out;
+  YAKOS_PQ_BRIDGE_BIN pins an explicit path. Bridge survives ACT swaps
+  and dies with the supervisor.
+- ACT upgrade proposals carry the signer's hourglass commitment set
+  (sigCommitments) so foreign signatures are verifiable — each node's
+  glass is uniquely seeded, so local archives alone can never verify a
+  remote sig. Consent gossip now echoes the voter's signatureValid.
+- All launchers (start-yakmesh.bat, silent.vbs, ecosystem.config.json,
+  start.sh, launcher/yakmesh.sh, start-full-stack.sh) converge on
+  scripts/yakmesh-run.js — previously they ran server/index.js bare,
+  which skipped ACT swap application, respawn, and bridge management.
+  start.sh runs the supervisor under setsid so stop kills the tree.
+
+## [3.5.9] — 2026-09-21
+
+### Added
+- YAK-TUN wire B: UDP underlay carrying ANNEX-encrypted TUN datagrams to peers' real endpoints (port = wsPort, UDP namespace). JHILKE pair bootstrap keys in a separate `tun:` session namespace — encrypted from datagram one, zero handshake, self-healing on peer restart.
+- Dual-wire peer links: overlay session (ws://vIP:wsPort) promoted to primary when wire B is up; LAN socket demotes to lifeline. Heartbeats on both wires, per-socket liveness, automatic failover promotion.
+- Tunnel-first dialing: `connect()` prefers the overlay endpoint for known nodeIds with a proven underlay, falls back to the real endpoint.
+- `annex.sendOn()` — socket-pinned encrypted sends (wire selection survives ANNEX wrapping).
+- `tun:announce` v2 carries `tunPort` + `wsPort`; passive endpoint learn on authed datagrams (NAT rebind tolerant).
+
+### Fixed
+- `_getAdvertisedEndpoint` never advertises tunnel vIPs (10.199/16, fd99:199::/48) — enumeration order no longer decides reachability.
+- sendTo: TUN_PACKET never rides an overlay socket (encapsulation recursion).
+
+## [3.5.8] — 2026-09-21
+
+### Fixed
+- timeSource.start() bounded by 15s Promise.race (Windows WMI stall)
+- Meinberg detection via `sc query MbgAdjTm` instead of 60s+ `driverquery /v`
+- ANNEX bootstrap→KEM transition bridge carries transition key + sessionId for 5s
+- ANNEX auth-failure recovery: two consecutive AES-GCM failures invalidate the stale session, rederive JHILKE bootstrap, reopen KEM (rate-limited 15s/peer)
+
+### Added
+- scripts/yakmesh-run.js — supervisor + ACT swap consumer (SHA-verified overlay, rollback, restart marker)
+- utils/update-transfer.js — chunked ANNEX package fetch, 20KB chunks under the wire-string cap
+- Malformed upgrade proposal rejected before NetworkIdentity construction (DoS fix)
+
 ## [3.5.7] — 2026-09-21
 
 ### Fixed

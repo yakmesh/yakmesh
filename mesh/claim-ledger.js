@@ -38,6 +38,8 @@
 import { EventEmitter } from 'events';
 import { sha3_256 } from '@noble/hashes/sha3.js';
 import { createLogger } from '../utils/logger.js';
+import { verifySignature } from '../identity/node-key.js';
+import { npuProofClaim, hwProofClaim } from './contribution.js';
 
 const log = createLogger('mesh:claim-ledger');
 
@@ -115,15 +117,77 @@ export class ClaimLedger extends EventEmitter {
       this._prune();
     }
     if (!bucket.has(hb.nodeId)) {
+      // Inner attestations: npuProof/hwProof carry a keystore ML-DSA-65
+      // signature over the canonical claim string (contribution.js) —
+      // separate from the heartbeat signature, which only covers the
+      // heartbeat hash. Recompute the claim from the witnessed proof
+      // fields and verify; a bad signature or rebound fields are forgery
+      // evidence, never attestable weight.
+      const proofVerification = this._verifyInnerProofs(c, hb.nodeId);
       bucket.set(hb.nodeId, {
         ...c,
         yakmeshNodeId: hb.nodeId,
         firstSeenSeq: hb.sequence,
         witnessedAt: hb.timestamp,
         verified: opts.verified || 'unsigned',
+        proofVerification,
+        deviceClass: ClaimLedger._classifyDevice(c, proofVerification),
       });
       this.emit('claim', bucket.get(hb.nodeId));
     }
+  }
+
+  /**
+   * Verify the inner keystore attestations on npuProof/hwProof. Per-proof
+   * verdict: 'verified' | 'forged' | 'malformed' | 'unsigned'. Only
+   * present proofs get a key. Forgery/malformation is emitted as
+   * 'proofForgery' evidence — the raw proof stays on the claim record.
+   */
+  _verifyInnerProofs(c, yakmeshNodeId) {
+    const out = {};
+    if (c.npuProof) out.npu = this._verifyProofAttestation('npu', c);
+    if (c.hwProof) out.hw = this._verifyProofAttestation('hw', c);
+    for (const [kind, verdict] of Object.entries(out)) {
+      if (verdict === 'forged' || verdict === 'malformed') {
+        const evidence = { nodeId: yakmeshNodeId, epoch: c.epoch, kind, verdict, at: Date.now() };
+        log.error('CLAIM forged inner attestation', evidence);
+        this.emit('proofForgery', evidence);
+      }
+    }
+    return out;
+  }
+
+  _verifyProofAttestation(kind, c) {
+    const proof = kind === 'npu' ? c.npuProof : c.hwProof;
+    const claimFn = kind === 'npu' ? npuProofClaim : hwProofClaim;
+    const att = proof?.attestation;
+    if (!att) return 'unsigned';
+    if (typeof att.claim !== 'string' || typeof att.signature !== 'string' || typeof att.publicKey !== 'string') {
+      return 'malformed';
+    }
+    // Field binding: the signed claim must be the canonical form of the
+    // proof fields exactly as witnessed — a mismatch means fields were
+    // altered after signing or the attestation belongs to other data.
+    if (att.claim !== claimFn(c.epoch, c.nodeId, proof)) return 'forged';
+    return verifySignature(att.claim, att.signature, att.publicKey) ? 'verified' : 'forged';
+  }
+
+  /**
+   * Honest executor classification — derived from VERIFIED proofs only.
+   * An unverified proof is recorded as claimed-* evidence; a failed one
+   * as forged-*; no proofs at all is 'unproven'. The producer's own
+   * labels are never trusted on their own.
+   */
+  static _classifyDevice(c, verdicts) {
+    const bad = (v) => v === 'forged' || v === 'malformed';
+    if (verdicts.npu === 'verified') return 'npu';
+    if (verdicts.hw === 'verified') return c.hwProof?.deviceClass || 'hw';
+    if (c.npuProof) return bad(verdicts.npu) ? 'forged-npu' : 'claimed-npu';
+    if (c.hwProof) {
+      const cls = c.hwProof.deviceClass || 'hw';
+      return bad(verdicts.hw) ? `forged-${cls}` : `claimed-${cls}`;
+    }
+    return 'unproven';
   }
 
   /**

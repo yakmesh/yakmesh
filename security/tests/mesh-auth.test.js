@@ -27,7 +27,8 @@
  */
 
 import { describe, test, expect, beforeEach, vi, afterEach } from 'vitest';
-import { bytesToHex, randomBytes } from '@noble/hashes/utils.js';
+import { bytesToHex, randomBytes, hexToBytes } from '@noble/hashes/utils.js';
+import { generateNodeId, setCodebaseHash } from '../../identity/node-key.js';
 
 // Import MeshAuthenticator
 import { MeshAuthenticator } from '../mesh-auth.js';
@@ -36,11 +37,17 @@ import { MeshAuthenticator } from '../mesh-auth.js';
 // MOCK SETUP
 // ═══════════════════════════════════════════════════════════════════════════
 
+// verifyResponse enforces nodeId↔publicKey binding — mocks must derive
+// nodeId from their publicKey like real identities do.
+const TEST_CODEBASE_HASH = 'cd'.repeat(32);
+
 function createMockIdentity(nodeId = 'test-node') {
+  setCodebaseHash(TEST_CODEBASE_HASH); // idempotent — keeps no-arg derivations consistent
+  const publicKey = bytesToHex(randomBytes(32));
   return {
     identity: {
-      nodeId,
-      publicKey: bytesToHex(randomBytes(32)),
+      nodeId: generateNodeId(hexToBytes(publicKey), TEST_CODEBASE_HASH),
+      publicKey,
     },
     sign: vi.fn((data) => bytesToHex(randomBytes(64))),
     verify: vi.fn(() => true),
@@ -213,7 +220,7 @@ describe('MeshAuthenticator generateChallenge', () => {
 
   test('includes challenger node ID', () => {
     const challenge = authenticator.generateChallenge('peer-1');
-    expect(challenge.challengerNodeId).toBe('challenger-node');
+    expect(challenge.challengerNodeId).toBe(authenticator.identity.identity.nodeId);
   });
 
   test('stores challenge in pending map', () => {
@@ -297,7 +304,7 @@ describe('MeshAuthenticator respondToChallenge', () => {
 
     const response = authenticator.respondToChallenge(challenge);
 
-    expect(response.responderNodeId).toBe('responder-node');
+    expect(response.responderNodeId).toBe(mockIdentity.identity.nodeId);
   });
 
   test('includes responder public key', () => {
@@ -347,17 +354,17 @@ describe('MeshAuthenticator verifyResponse', () => {
   });
 
   test('verifies valid response', () => {
-    const challenge = challenger.generateChallenge('responder-node');
+    const challenge = challenger.generateChallenge(responderIdentity.identity.nodeId);
     const response = responder.respondToChallenge(challenge);
 
     const result = challenger.verifyResponse(response);
 
     expect(result.valid).toBe(true);
-    expect(result.peerId).toBe('responder-node');
+    expect(result.peerId).toBe(responderIdentity.identity.nodeId);
   });
 
   test('returns session key on success', () => {
-    const challenge = challenger.generateChallenge('responder-node');
+    const challenge = challenger.generateChallenge(responderIdentity.identity.nodeId);
     const response = responder.respondToChallenge(challenge);
 
     const result = challenger.verifyResponse(response);
@@ -367,27 +374,27 @@ describe('MeshAuthenticator verifyResponse', () => {
   });
 
   test('creates session on success', () => {
-    const challenge = challenger.generateChallenge('responder-node');
+    const challenge = challenger.generateChallenge(responderIdentity.identity.nodeId);
     const response = responder.respondToChallenge(challenge);
 
     challenger.verifyResponse(response);
 
-    expect(challenger.sessions.has('responder-node')).toBe(true);
+    expect(challenger.sessions.has(responderIdentity.identity.nodeId)).toBe(true);
   });
 
   test('emits authenticated event', () => {
     const handler = vi.fn();
     challenger.on('authenticated', handler);
 
-    const challenge = challenger.generateChallenge('responder-node');
+    const challenge = challenger.generateChallenge(responderIdentity.identity.nodeId);
     const response = responder.respondToChallenge(challenge);
     challenger.verifyResponse(response);
 
-    expect(handler).toHaveBeenCalledWith({ peerId: 'responder-node' });
+    expect(handler).toHaveBeenCalledWith({ peerId: responderIdentity.identity.nodeId });
   });
 
   test('increments authSuccess stat', () => {
-    const challenge = challenger.generateChallenge('responder-node');
+    const challenge = challenger.generateChallenge(responderIdentity.identity.nodeId);
     const response = responder.respondToChallenge(challenge);
     challenger.verifyResponse(response);
 
@@ -395,7 +402,7 @@ describe('MeshAuthenticator verifyResponse', () => {
   });
 
   test('removes pending challenge after verification', () => {
-    const challenge = challenger.generateChallenge('responder-node');
+    const challenge = challenger.generateChallenge(responderIdentity.identity.nodeId);
     const response = responder.respondToChallenge(challenge);
     challenger.verifyResponse(response);
 
@@ -406,7 +413,7 @@ describe('MeshAuthenticator verifyResponse', () => {
     const response = {
       type: 'auth_response',
       challengeId: 'unknown-challenge',
-      responderNodeId: 'responder-node',
+      responderNodeId: responderIdentity.identity.nodeId,
       responderPublicKey: bytesToHex(randomBytes(32)),
       responseData: '{}',
       signature: bytesToHex(randomBytes(64)),
@@ -421,7 +428,7 @@ describe('MeshAuthenticator verifyResponse', () => {
   test('rejects invalid signature', () => {
     challengerIdentity.verify.mockReturnValue(false);
 
-    const challenge = challenger.generateChallenge('responder-node');
+    const challenge = challenger.generateChallenge(responderIdentity.identity.nodeId);
     const response = responder.respondToChallenge(challenge);
 
     const result = challenger.verifyResponse(response);
@@ -433,7 +440,7 @@ describe('MeshAuthenticator verifyResponse', () => {
   test('increments authFailed on invalid signature', () => {
     challengerIdentity.verify.mockReturnValue(false);
 
-    const challenge = challenger.generateChallenge('responder-node');
+    const challenge = challenger.generateChallenge(responderIdentity.identity.nodeId);
     const response = responder.respondToChallenge(challenge);
     challenger.verifyResponse(response);
 
@@ -441,9 +448,9 @@ describe('MeshAuthenticator verifyResponse', () => {
   });
 
   test('rejects blocked peer', () => {
-    challenger.block('responder-node');
+    challenger.block(responderIdentity.identity.nodeId);
 
-    const challenge = challenger.generateChallenge('responder-node');
+    const challenge = challenger.generateChallenge(responderIdentity.identity.nodeId);
     const response = responder.respondToChallenge(challenge);
 
     const result = challenger.verifyResponse(response);
@@ -619,21 +626,21 @@ describe('MeshAuthenticator Full Authentication Flow', () => {
     const bob = new MeshAuthenticator(bobIdentity);
 
     // Alice challenges Bob
-    const challenge = alice.generateChallenge('bob');
+    const challenge = alice.generateChallenge(bobIdentity.identity.nodeId);
     expect(challenge.type).toBe('auth_challenge');
 
     // Bob responds to challenge
     const response = bob.respondToChallenge(challenge);
     expect(response.type).toBe('auth_response');
-    expect(response.responderNodeId).toBe('bob');
+    expect(response.responderNodeId).toBe(bobIdentity.identity.nodeId);
 
     // Alice verifies Bob's response
     const result = alice.verifyResponse(response);
     expect(result.valid).toBe(true);
-    expect(result.peerId).toBe('bob');
+    expect(result.peerId).toBe(bobIdentity.identity.nodeId);
 
     // Bob is now authenticated with Alice
-    expect(alice.isAuthenticated('bob')).toBe(true);
+    expect(alice.isAuthenticated(bobIdentity.identity.nodeId)).toBe(true);
     expect(alice.getSession('bob')).toBeDefined();
   });
 
@@ -645,17 +652,17 @@ describe('MeshAuthenticator Full Authentication Flow', () => {
     const bob = new MeshAuthenticator(bobIdentity);
 
     // Alice challenges Bob
-    const challengeAtoB = alice.generateChallenge('bob');
+    const challengeAtoB = alice.generateChallenge(bobIdentity.identity.nodeId);
     const responseB = bob.respondToChallenge(challengeAtoB);
     alice.verifyResponse(responseB);
 
     // Bob challenges Alice
-    const challengeBtoA = bob.generateChallenge('alice');
+    const challengeBtoA = bob.generateChallenge(aliceIdentity.identity.nodeId);
     const responseA = alice.respondToChallenge(challengeBtoA);
     bob.verifyResponse(responseA);
 
     // Both authenticated
-    expect(alice.isAuthenticated('bob')).toBe(true);
-    expect(bob.isAuthenticated('alice')).toBe(true);
+    expect(alice.isAuthenticated(bobIdentity.identity.nodeId)).toBe(true);
+    expect(bob.isAuthenticated(aliceIdentity.identity.nodeId)).toBe(true);
   });
 });

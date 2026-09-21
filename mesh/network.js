@@ -119,6 +119,21 @@ export const MandalaMessageTypes = {
 // Backward compatibility alias
 export const MessageTypes = MandalaMessageTypes;
 
+// Handshake/control types always ride plaintext: they are proof-of-
+// possession signed and MUST reach the handshake handler on the actual
+// socket they arrived on. ANNEX-wrapping them re-dispatches the decrypted
+// payload against the peer's REGISTERED socket — the HELLO handler then
+// re-registers the peer on its existing wire (dual-wire churn) and the
+// WELCOME reply goes to the wrong socket (dial times out, promotion never
+// completes).
+export const HANDSHAKE_PLAINTEXT_TYPES = new Set([
+  MandalaMessageTypes.HELLO,
+  MandalaMessageTypes.WELCOME,
+  MandalaMessageTypes.REDIRECT,
+  MandalaMessageTypes.HOLD,
+  'REJECT',
+]);
+
 /**
  * MANDALA Network Manager
  * Handles peer connections and message routing through sacred geometry
@@ -239,6 +254,10 @@ export class MandalaNetwork {
           if (!payload || typeof payload !== 'object') return;
 
           const msgType = payload.type || 'gossip';
+          // Handshake types never legitimately arrive via ANNEX — _send
+          // keeps them plaintext. Dropping here prevents a decrypted HELLO
+          // from re-running registration against the primary socket.
+          if (HANDSHAKE_PLAINTEXT_TYPES.has(msgType)) return;
           const handlers = this.messageHandlers.get(msgType) || [];
           if (handlers.length === 0) return;
 
@@ -325,19 +344,67 @@ export class MandalaNetwork {
   }
 
   /**
-   * Connect to a peer node.
-   * @param {string} endpoint - WebSocket URL
+   * Connect to a peer node. When the target nodeId is known and YAK-TUN's
+   * UDP underlay (wire B) is proven up for it, the overlay endpoint
+   * (ws://<vIP>:wsPort) is attempted first — session traffic then rides
+   * inside the tunnel. Falls back to the given real endpoint on failure.
+   * @param {string} endpoint - WebSocket URL (real/underlay endpoint)
    * @param {string|null} targetNodeId - Expected nodeId (from gossip/SHERPA).
    *   When provided, WELCOME handler verifies the responding nodeId matches,
    *   preventing MITM substitution attacks.
    */
-  async connect(endpoint, targetNodeId = null) {
+  async connect(endpoint, targetNodeId = null, opts = {}) {
+    // In-flight dedup — concurrent dials to the same peer (discovery +
+    // peer-registered + reconnect racing) must not each open a socket;
+    // they trip the remote's connection-flood limiter and waste a ban.
+    this._inflightDials ||= new Set();
+    const dialKey = targetNodeId || endpoint;
+    if (this._inflightDials.has(dialKey)) {
+      throw new Error(`dial already in flight for ${String(dialKey).slice(0, 24)}`);
+    }
+    this._inflightDials.add(dialKey);
+    try {
+      // Tunnel-first dialing: only for already-registered peers (a first-
+      // contact dial should hit the real endpoint so the LAN lifeline
+      // exists before the overlay promotes). Requires proven wire B —
+      // the SYN has to reach the peer as a UDP datagram.
+      if (!opts.direct && targetNodeId && this.peers.has(targetNodeId)
+          && this.yakTun?.overlayEndpointFor) {
+        const hostMatch = endpoint.match(/^wss?:\/\/\[?([^\]:\/]+)/);
+        const isTunTarget = hostMatch && MandalaNetwork._isTunnelIp(hostMatch[1]);
+        if (!isTunTarget) {
+          const overlay = this.yakTun.overlayEndpointFor(targetNodeId);
+          if (overlay && overlay !== endpoint) {
+            try {
+              return await this._connectOnce(overlay, targetNodeId, { handshakeMs: 8000 });
+            } catch (err) {
+              log.debug('Overlay dial failed — falling back to real endpoint', {
+                peer: peerTag(targetNodeId), overlay, error: err.message,
+              });
+            }
+          }
+        }
+      }
+      return await this._connectOnce(endpoint, targetNodeId);
+    } finally {
+      this._inflightDials.delete(dialKey);
+    }
+  }
+
+  /**
+   * Single dial attempt. Split from connect() so the tunnel-preferred
+   * overlay attempt can fall back to the real endpoint cleanly.
+   */
+  async _connectOnce(endpoint, targetNodeId = null, opts = {}) {
     return new Promise((resolve, reject) => {
       log.debug('Connecting to peer', { endpoint, targetNodeId: targetNodeId ? peerTag(targetNodeId) : null });
       let settled = false;
+      const handshakeMs = opts.handshakeMs || 15000;
 
       const ws = new WebSocket(endpoint);
       ws._outboundEndpoint = endpoint;  // Track origin for reconnect detection
+      const hostMatch = endpoint.match(/^wss?:\/\/\[?([^\]:\/]+)/);
+      if (hostMatch && MandalaNetwork._isTunnelIp(hostMatch[1])) ws._viaTun = true;
       if (targetNodeId) ws._targetNodeId = targetNodeId;
 
       ws.on('open', () => {
@@ -412,7 +479,7 @@ export class MandalaNetwork {
           try { ws.close(); } catch { }
           reject(new Error(`Handshake timeout — no WELCOME from ${endpoint}`));
         }
-      }, 15000);
+      }, handshakeMs);
 
       // Resolve when we get WELCOME back
       const welcomeHandler = (msg) => {
@@ -507,8 +574,19 @@ export class MandalaNetwork {
 
     const peer = this.peers.get(nodeId);
     if (peer) {
-      this._send(peer.ws, signed._tribhujSig ? this._attachTribhujCert(signed, peer) : signed);
-      return;
+      // Wire policy: TUN_PACKET is the tunnel's own carrier — it must use
+      // the LAN wire. Sending it on the overlay would recurse (the write
+      // generates TCP-to-vIP → tun capture → sendTo → same socket).
+      // Everything else rides the primary socket, which is the overlay
+      // whenever wire B is up.
+      let sock = peer.ws;
+      if (outbound.type === 'TUN_PACKET' && peer.wsVia === 'tun') {
+        sock = peer.lifelineWs;
+      }
+      if (sock && sock.readyState === WebSocket.OPEN) {
+        this._send(sock, signed._tribhujSig ? this._attachTribhujCert(signed, peer) : signed);
+        return;
+      }
     }
 
     // Not a WS peer — try relay fallback (server layer hooks this). The peer's
@@ -625,6 +703,8 @@ export class MandalaNetwork {
       endpoint: peer.endpoint,
       lastSeen: peer.lastSeen,
       connectedAt: peer.connectedAt || null,
+      via: peer.wsVia || 'lan',
+      lifeline: !!peer.lifelineWs,
       // SAMUHA admission record — verdict (+1 admit / 0 hold / -1 redirect)
       // and composite priority at accept time
       admission: peer.admission || null,
@@ -652,6 +732,18 @@ export class MandalaNetwork {
   }
 
   /**
+   * Is this address inside the YAK-TUN virtual subnet? Covers v4
+   * (10.199.0.0/16, incl. IPv4-mapped IPv6) and the ULA fd99:199::/48.
+   * Tunnel IPs are identity-derived overlays — they are NOT dialable
+   * endpoints for peers that lack a route to us through the tunnel.
+   */
+  static _isTunnelIp(ip) {
+    if (!ip || typeof ip !== 'string') return false;
+    const a = ip.startsWith('::ffff:') ? ip.slice(7) : ip;
+    return a.startsWith('10.199.') || a.toLowerCase().startsWith('fd99:199:');
+  }
+
+  /**
    * Get our advertised WebSocket endpoint for peer discovery.
    * This tells inbound peers how to reconnect to us.
    */
@@ -671,6 +763,10 @@ export class MandalaNetwork {
     for (const [name, addrs] of Object.entries(ifaces)) {
       for (const addr of addrs) {
         if (addr.family === 'IPv4' && !addr.internal) {
+          // YAK-TUN vIPs are never advertised — a peer without an underlay
+          // route could never dial them, and enumeration order is not
+          // guaranteed to prefer the physical NIC.
+          if (MandalaNetwork._isTunnelIp(addr.address)) continue;
           // Prefer 192.168.x.x or 10.x.x.x (private networks)
           if (addr.address.startsWith('192.168.') || addr.address.startsWith('10.')) {
             bestIp = addr.address;
@@ -720,9 +816,10 @@ export class MandalaNetwork {
     this.gateway = null;
     this.peerRatchets.clear();
 
-    // Close all peer connections
+    // Close all peer connections — both wires
     for (const [nodeId, peer] of this.peers) {
-      peer.ws.close();
+      try { peer.ws.close(); } catch { }
+      try { peer.lifelineWs?.close(); } catch { }
     }
     this.peers.clear();
 
@@ -822,9 +919,25 @@ export class MandalaNetwork {
       // DUPLICATE / RECONNECT DETECTION: If this peer is already connected
       // with a different WebSocket, decide which connection to keep.
       const existingPeer = this.peers.get(nodeId);
+      log.info('HELLO handshake', {
+        peer: peerTag(nodeId), ip: ws._clientIp, viaTun: !!ws._viaTun,
+        known: !!existingPeer,
+        existingAlive: existingPeer ? existingPeer.ws.readyState === WebSocket.OPEN : null,
+      });
       if (existingPeer && existingPeer.ws !== ws) {
         const oldAlive = existingPeer.ws.readyState === WebSocket.OPEN;
         if (oldAlive) {
+          // Dual-wire: a socket on the OTHER wire is a second link, not a
+          // duplicate. Identity is already verified above (PoP + binding),
+          // so attach, answer WELCOME, and skip re-registration.
+          if (this._attachSecondWire(existingPeer, ws, nodeId)) {
+            if (this._pendingHandshakeWs.has(ws)) {
+              this._pendingHandshakeCount = Math.max(0, this._pendingHandshakeCount - 1);
+              this._pendingHandshakeWs.delete(ws);
+            }
+            this._sendWelcome(ws, nodeId);
+            return;
+          }
           // Existing connection is still alive — this is a duplicate, not a
           // reconnect. Close the NEW socket to avoid ping-pong overwrites.
           log.info('Duplicate connection from peer — keeping existing WS', { peer: peerTag(nodeId) });
@@ -945,9 +1058,15 @@ export class MandalaNetwork {
       // Store peer — admission passed (AFFIRM, or eviction upgrade)
       // For outbound connections, use our tracked endpoint.
       // For inbound connections, use peer's advertised endpoint (so we can reconnect to them).
-      const peerEndpoint = ws._outboundEndpoint || msg.advertisedEndpoint || null;
+      // Tunnel-dialed outbound stores the peer's REAL endpoint — the vIP
+      // is recomputed from nodeId at dial time and is useless without wire B.
+      const peerEndpoint = ws._viaTun
+        ? (msg.advertisedEndpoint || ws._outboundEndpoint || null)
+        : (ws._outboundEndpoint || msg.advertisedEndpoint || null);
       this.peers.set(nodeId, {
         ws,
+        wsVia: ws._viaTun ? 'tun' : 'lan',
+        lifelineWs: null,
         identity: msg.identity,
         endpoint: peerEndpoint,
         capabilities: msg.capabilities || null,
@@ -980,32 +1099,7 @@ export class MandalaNetwork {
       // Send WELCOME back — this is a handshake message, always plaintext.
       // Like TLS ServerHello: the identity exchange MUST be unencrypted because
       // the initiator hasn't learned our nodeId yet and can't derive JHILKE.
-      // Include proof-of-possession: sign "YAKMESH:WELCOME:{nodeId}:{timestamp}:{tribhujPubKey}"
-      const welcomeTimestamp = Date.now();
-      const ourNodeId = this.identity.identity.nodeId;
-      const ourTribhuj = this.ratchet?._current?.publicKey
-        ? bytesToHex(this.ratchet._current.publicKey) : null;
-      const ourTribhujPrev = this.ratchet?._previous?.publicKey
-        ? bytesToHex(this.ratchet._previous.publicKey) : null;
-      const welcomeProof = this.identity.sign(`YAKMESH:WELCOME:${ourNodeId}:${welcomeTimestamp}:${ourTribhuj || ''}`);
-      if (!this._announcedRatchetKeys) this._announcedRatchetKeys = new Set();
-      if (ourTribhuj) this._announcedRatchetKeys.add(ourTribhuj);
-      if (ourTribhujPrev) this._announcedRatchetKeys.add(ourTribhujPrev);
-      this._send(ws, {
-        type: MessageTypes.WELCOME,
-        identity: {
-          ...this.identity.getPublicIdentity(),
-          tribhujPubKey: ourTribhuj,
-          tribhujPrevPubKey: ourTribhujPrev,
-          networkId: this.networkId,
-          networkFingerprint: this.networkFingerprint,
-        },
-        advertisedEndpoint: this._getAdvertisedEndpoint(),
-        capabilities: getCapabilities(),
-        peers: this.getPeers().filter(p => p.nodeId !== nodeId),
-        timestamp: welcomeTimestamp,
-        proof: welcomeProof,
-      });
+      this._sendWelcome(ws, nodeId);
 
       // JHILKE: Bootstrap ANNEX session IMMEDIATELY after WELCOME send.
       // Both nodes derive the same key from codeHash + buildNonce + sorted(nodeId1, nodeId2).
@@ -1149,6 +1243,15 @@ export class MandalaNetwork {
       if (existingPeerW && existingPeerW.ws !== ws) {
         const oldAlive = existingPeerW.ws.readyState === WebSocket.OPEN;
         if (oldAlive) {
+          // Dual-wire: our outbound dial landed on the other wire — attach
+          // it as the second link instead of dropping it.
+          if (this._attachSecondWire(existingPeerW, ws, nodeId)) {
+            if (ws._pendingWelcome) {
+              ws._pendingWelcome(msg);
+              delete ws._pendingWelcome;
+            }
+            return;
+          }
           // Existing connection is still alive — duplicate. Keep the old one.
           // Tag the existing peer with this endpoint so bootstrap's
           // connectedEndpoints check will match and stop retrying.
@@ -1180,10 +1283,15 @@ export class MandalaNetwork {
         try { existingPeerW.ws.close(1000, 'Replaced by reconnect'); } catch { }
       }
 
-      // Store peer — for outbound we have _outboundEndpoint, for inbound use advertised
-      const peerEndpoint = ws._outboundEndpoint || msg.advertisedEndpoint || null;
+      // Store peer — for outbound we have _outboundEndpoint, for inbound use advertised.
+      // Tunnel-dialed outbound keeps the peer's REAL endpoint (see HELLO path).
+      const peerEndpoint = ws._viaTun
+        ? (msg.advertisedEndpoint || ws._outboundEndpoint || null)
+        : (ws._outboundEndpoint || msg.advertisedEndpoint || null);
       this.peers.set(nodeId, {
         ws,
+        wsVia: ws._viaTun ? 'tun' : 'lan',
+        lifelineWs: null,
         identity: msg.identity,
         endpoint: peerEndpoint,
         capabilities: msg.capabilities || null,
@@ -1297,6 +1405,9 @@ export class MandalaNetwork {
 
     // Handle PONG
     this.on(MessageTypes.PONG, (msg, ws, nodeId) => {
+      // Per-socket liveness — dual-wire peers need each wire tracked
+      // independently (a dead primary can't hide behind lifeline PONGs).
+      ws._lastPong = Date.now();
       const peer = this.peers.get(nodeId);
       if (peer) {
         peer.lastSeen = Date.now();
@@ -1355,6 +1466,9 @@ export class MandalaNetwork {
   _handleIncomingConnection(ws, req) {
     const clientIp = req.socket.remoteAddress || 'unknown';
     ws._clientIp = clientIp; // preserved for SAMUHA HOLD re-dispatch
+    // Sockets arriving from the tunnel subnet are overlay links — they ride
+    // wire B (UDP underlay) and must never carry TUN_PACKETs (recursion).
+    if (MandalaNetwork._isTunnelIp(clientIp)) ws._viaTun = true;
     log.debug('Incoming connection', { clientIp });
 
     // SECURITY: Rate limit check for connection flood protection (per-IP)
@@ -1432,14 +1546,16 @@ export class MandalaNetwork {
         return;
       }
 
-      // Find nodeId for this connection
+      // Find nodeId for this connection — matches the primary socket or
+      // the lifeline (dual-wire second link).
       let senderNodeId = null;
       let senderPublicKey = null;
       for (const [nodeId, peer] of this.peers) {
-        if (peer.ws === ws) {
+        if (peer.ws === ws || peer.lifelineWs === ws) {
           senderNodeId = nodeId;
           senderPublicKey = peer.identity?.publicKey;
           peer.lastSeen = Date.now();
+          ws._lastRx = Date.now();
           break;
         }
       }
@@ -1470,7 +1586,12 @@ export class MandalaNetwork {
 
       // TRIBHUJ ratchet verification (rotating keys)
       if (msg._tribhujSig && !msg._gwAttest?.hash) {
-        const peer = senderNodeId ? this.peers.get(senderNodeId) : null;
+        // Dual-wire: on a second-wire socket the handshake hasn't run yet, so
+        // the socket isn't mapped to a peer — but an ANNEX envelope carries
+        // its (signed) senderId in the clear. Verify the hop signature
+        // against that claimed peer's pinned keys instead of dropping.
+        const effectiveSender = senderNodeId || msg.annex?.senderId || null;
+        const peer = effectiveSender ? this.peers.get(effectiveSender) : null;
         const pinned = peer?.tribhujKeys;
         const claimedKey = msg._tribhujPubKey;
 
@@ -1483,19 +1604,19 @@ export class MandalaNetwork {
           ratchetKeyValid = true;
         } else if (msg._tribhujCert && claimedKey && peer?.identity?.publicKey) {
           // Rotation cert: identity key signs "YAKMESH:TRIBHUJ-KEY:{nodeId}:{newKey}:{epoch}"
-          const certPayload = `YAKMESH:TRIBHUJ-KEY:${senderNodeId}:${claimedKey}:${msg._tribhujEpoch}`;
+          const certPayload = `YAKMESH:TRIBHUJ-KEY:${effectiveSender}:${claimedKey}:${msg._tribhujEpoch}`;
           if (this.identity.verify(certPayload, msg._tribhujCert, peer.identity.publicKey)) {
             ratchetKeyValid = true;
             // Advance the pinned set — chain moved forward
             peer.tribhujKeys = { current: claimedKey, previous: pinned?.current || null };
-            log.debug('TRIBHUJ rotation certified by identity key', { peer: peerTag(senderNodeId) });
+            log.debug('TRIBHUJ rotation certified by identity key', { peer: peerTag(effectiveSender) });
           }
         }
 
         if (!ratchetKeyValid) {
           log.warn('Rejected message — ratchet key not pinned or certified', {
             type: msg.type,
-            sender: peerTag(senderNodeId),
+            sender: peerTag(effectiveSender),
             hasPinned: !!pinned,
           });
           return; // Drop forged message
@@ -1519,7 +1640,7 @@ export class MandalaNetwork {
             type: msg.type,
             epoch: msg._tribhujEpoch,
             keyState: result.keyState,
-            sender: peerTag(senderNodeId),
+            sender: peerTag(effectiveSender),
           });
           return; // Drop forged message
         }
@@ -1604,7 +1725,24 @@ export class MandalaNetwork {
     }
     let freed = false;
     for (const [nodeId, peer] of this.peers) {
+      // Second-wire socket closed — the peer survives on its primary.
+      if (peer.lifelineWs === ws) {
+        peer.lifelineWs = null;
+        log.info('Lifeline wire closed', { name: peer.identity.name, peer: peerTag(nodeId) });
+        return;
+      }
       if (peer.ws === ws) {
+        // Primary wire died but the lifeline is up — promote instead of
+        // tearing the peer down. ANNEX/JHILKE state is per-nodeId and stays.
+        if (peer.lifelineWs && peer.lifelineWs.readyState === WebSocket.OPEN) {
+          peer.ws = peer.lifelineWs;
+          peer.wsVia = peer.wsVia === 'tun' ? 'lan' : 'tun';
+          peer.lifelineWs = null;
+          log.info('Wire failover — lifeline promoted to primary', {
+            name: peer.identity.name, peer: peerTag(nodeId), nowVia: peer.wsVia,
+          });
+          return;
+        }
         log.info('Peer disconnected', { name: peer.identity.name });
         // Sync ANNEX cleanup — peer is gone, no CLOSE notification needed.
         // Using async closeChannel here caused a race: if a reconnect
@@ -1631,6 +1769,71 @@ export class MandalaNetwork {
     }
     // SAMUHA: a slot opened — promote the head of the HOLD queue
     if (freed) this._promoteHoldQueue();
+  }
+
+  /**
+   * WELCOME sender — proof-of-possession handshake response.
+   * "YAKMESH:WELCOME:{nodeId}:{timestamp}:{tribhujPubKey}" under our key.
+   * Extracted so the dual-wire attach path can answer a second-wire HELLO
+   * without re-running admission/registration.
+   */
+  _sendWelcome(ws, nodeId) {
+    const welcomeTimestamp = Date.now();
+    const ourNodeId = this.identity.identity.nodeId;
+    const ourTribhuj = this.ratchet?._current?.publicKey
+      ? bytesToHex(this.ratchet._current.publicKey) : null;
+    const ourTribhujPrev = this.ratchet?._previous?.publicKey
+      ? bytesToHex(this.ratchet._previous.publicKey) : null;
+    const welcomeProof = this.identity.sign(`YAKMESH:WELCOME:${ourNodeId}:${welcomeTimestamp}:${ourTribhuj || ''}`);
+    if (!this._announcedRatchetKeys) this._announcedRatchetKeys = new Set();
+    if (ourTribhuj) this._announcedRatchetKeys.add(ourTribhuj);
+    if (ourTribhujPrev) this._announcedRatchetKeys.add(ourTribhujPrev);
+    this._send(ws, {
+      type: MessageTypes.WELCOME,
+      identity: {
+        ...this.identity.getPublicIdentity(),
+        tribhujPubKey: ourTribhuj,
+        tribhujPrevPubKey: ourTribhujPrev,
+        networkId: this.networkId,
+        networkFingerprint: this.networkFingerprint,
+      },
+      advertisedEndpoint: this._getAdvertisedEndpoint(),
+      capabilities: getCapabilities(),
+      peers: this.getPeers().filter(p => p.nodeId !== nodeId),
+      timestamp: welcomeTimestamp,
+      proof: welcomeProof,
+    });
+  }
+
+  /**
+   * Dual-wire attach: a verified second socket for an already-connected
+   * peer on the OTHER wire (lan <-> tun). The tunnel wire carries session
+   * traffic (more opaque), so a tun socket promotes to primary and the
+   * existing socket demotes to lifeline; a lan socket arriving while tun
+   * is primary becomes the lifeline. Returns true when handled.
+   */
+  _attachSecondWire(existingPeer, ws, nodeId) {
+    const newIsTun = !!ws._viaTun;
+    const curIsTun = existingPeer.wsVia === 'tun';
+    if (newIsTun === curIsTun) return false; // same wire → ordinary duplicate
+
+    if (newIsTun) {
+      // Overlay promoted to primary; existing LAN socket becomes lifeline.
+      if (existingPeer.lifelineWs) { try { existingPeer.lifelineWs.close(1000, 'Lifeline replaced'); } catch { } }
+      existingPeer.lifelineWs = existingPeer.ws;
+      existingPeer.ws = ws;
+      existingPeer.wsVia = 'tun';
+    } else {
+      // New LAN socket under a tun primary → lifeline only.
+      if (existingPeer.lifelineWs) { try { existingPeer.lifelineWs.close(1000, 'Lifeline replaced'); } catch { } }
+      existingPeer.lifelineWs = ws;
+    }
+    ws._targetNodeId = nodeId; // lets _send's ANNEX lookup hit this socket
+    log.info('Dual-wire link attached', {
+      peer: peerTag(nodeId),
+      role: newIsTun ? 'primary(tun)' : 'lifeline(lan)',
+    });
+    return true;
   }
 
   /**
@@ -1692,11 +1895,12 @@ export class MandalaNetwork {
     // This ensures gossip, broadcast, ping — ALL traffic — is encrypted on the wire.
     // SKIP for ANNEX control messages (type 'annex') to prevent infinite recursion:
     //   _send → annex.send → _sendToMesh → mesh.sendTo → _send → ...
-    if (this.annex && message.type !== 'annex') {
+    // Also plaintext-only for handshake types — see HANDSHAKE_PLAINTEXT_TYPES.
+    if (this.annex && message.type !== 'annex' && !HANDSHAKE_PLAINTEXT_TYPES.has(message.type)) {
       // Reverse-lookup nodeId from ws (primary path)
       let targetNodeId = null;
       for (const [nodeId, peer] of this.peers) {
-        if (peer.ws === ws) {
+        if (peer.ws === ws || peer.lifelineWs === ws) {
           targetNodeId = nodeId;
           break;
         }
@@ -1711,14 +1915,18 @@ export class MandalaNetwork {
       if (targetNodeId) {
         const session = this.annex.sessions.get(targetNodeId);
         if (session?.established && !session.isExpired()) {
-          // Send via ANNEX (async, fire-and-forget for broadcast)
-          this.annex.send(targetNodeId, message).catch(err => {
+          // Socket-pinned send — dual-wire semantics require the message to
+          // leave on THIS socket. annex.send() would re-route through
+          // sendTo → the peer's primary socket, silently switching wires.
+          try {
+            this.annex.sendOn(targetNodeId, message, ws);
+          } catch (err) {
             // HARD FAIL: No plaintext fallback. Encryption is mandatory per Yakmesh ethos.
             // Peer must re-negotiate ANNEX session. Dropping message is safer than leaking it.
             log.error('ANNEX send failed — message dropped (no plaintext fallback)', {
               peer: peerTag(targetNodeId), error: err.message
             });
-          });
+          }
           return;
         }
       }
@@ -1734,8 +1942,38 @@ export class MandalaNetwork {
     this._pingInterval = setInterval(() => {
       const now = Date.now();
       for (const [nodeId, peer] of this.peers) {
-        // Check for stale connections
-        if (now - peer.lastSeen > this.config.pingInterval * 3) {
+        // Dual-wire lifeline: heartbeat on BOTH sockets. Each wire is
+        // tracked by its own last-rx/last-PONG stamp — asymmetric failure
+        // detection, so a dead primary can't hide behind lifeline traffic.
+        const staleAfter = this.config.pingInterval * 3;
+        const sockFresh = (s) =>
+          now - Math.max(s?._lastPong || 0, s?._lastRx || 0, peer.connectedAt || 0) < staleAfter;
+        if (peer.lifelineWs) {
+          const lw = peer.lifelineWs;
+          if (lw.readyState === WebSocket.OPEN && sockFresh(lw)) {
+            this._send(lw, { type: MessageTypes.PING, timestamp: now });
+          } else {
+            try { lw.close(); } catch { }
+            peer.lifelineWs = null;
+            log.info('Lifeline wire dropped', { peer: peerTag(nodeId) });
+          }
+        }
+        // Check for stale connections — per-socket, not just peer-level.
+        const primaryFresh = sockFresh(peer.ws);
+        if (!primaryFresh || now - peer.lastSeen > staleAfter) {
+          if (peer.lifelineWs && peer.lifelineWs.readyState === WebSocket.OPEN) {
+            // Primary wire timed out but the lifeline is alive — promote it
+            // rather than dropping the peer outright.
+            log.warn('Primary wire timeout — promoting lifeline', {
+              name: peer.identity.name, from: peer.wsVia,
+            });
+            try { peer.ws.close(); } catch { }
+            peer.ws = peer.lifelineWs;
+            peer.wsVia = peer.wsVia === 'tun' ? 'lan' : 'tun';
+            peer.lifelineWs = null;
+            peer.lastSeen = now;
+            continue;
+          }
           log.warn('Peer timeout', { name: peer.identity.name });
           peer.ws.close();
           this.peers.delete(nodeId);

@@ -197,10 +197,20 @@ async function getJson(path) {
 /** Bridge signing key — fetched once, the keystore identity doesn't rotate. */
 let bridgeSigningKey = null;
 
+/**
+ * The pq-bridge emits base64 key/signature material; the mesh's canonical
+ * encoding is hex. Hex-looking input is already canonical — base64's
+ * alphabet is a superset, so hex must be tested first.
+ */
+function toCanonicalHex(value) {
+  if (typeof value !== 'string' || /^[0-9a-fA-F]+$/.test(value)) return value;
+  return /^[A-Za-z0-9+/]+={0,2}$/.test(value) ? Buffer.from(value, 'base64').toString('hex') : value;
+}
+
 async function getBridgeSigningKey() {
   if (!bridgeSigningKey) {
     const { signing_key } = await getJson('/public-keys');
-    bridgeSigningKey = { keyId: signing_key.key_id, publicKey: signing_key.public_key };
+    bridgeSigningKey = { keyId: signing_key.key_id, publicKey: toCanonicalHex(signing_key.public_key) };
   }
   return bridgeSigningKey;
 }
@@ -241,7 +251,7 @@ async function signNpuProof(epoch, nodeId, proof) {
   });
   if (!res.ok) throw new Error(`bridge /sign: ${res.status}`);
   const { signature, algorithm } = await res.json();
-  return { claim, algorithm, keyId: key.keyId, publicKey: key.publicKey, signature };
+  return { claim, algorithm, keyId: key.keyId, publicKey: key.publicKey, signature: toCanonicalHex(signature) };
 }
 
 /**
@@ -273,7 +283,7 @@ async function signHwProof(epoch, nodeId, proof) {
   });
   if (!res.ok) throw new Error(`bridge /sign: ${res.status}`);
   const { signature, algorithm } = await res.json();
-  return { claim, algorithm, keyId: key.keyId, publicKey: key.publicKey, signature };
+  return { claim, algorithm, keyId: key.keyId, publicKey: key.publicKey, signature: toCanonicalHex(signature) };
 }
 
 /**

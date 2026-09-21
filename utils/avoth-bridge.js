@@ -169,11 +169,20 @@ export async function hourglassSign(message) {
 /**
  * Verify a JSON-encoded FractalSignature. Old epochs verify via archived
  * commitments (sig.epoch lookup), so recent-epoch sigs survive flips.
- * @returns {Promise<{valid:boolean, epoch:number}>}
+ * @param {Buffer|string} message
+ * @param {string} signatureJson - JSON-encoded FractalSignature
+ * @param {Object} [commitments] - Signer's full epoch commitment set
+ *   ({epoch, commitments: {"index:level": hex}}) as returned by /avoth/sign.
+ *   Required to verify signatures from a FOREIGN hourglass — each node's
+ *   glass is uniquely seeded, so local archives can't verify remote sigs.
+ *   Must be the complete set; partial sets are rejected by the bridge.
+ * @returns {Promise<{valid:boolean, epoch:number, external?:boolean}>}
  */
-export async function hourglassVerify(message, signatureJson) {
+export async function hourglassVerify(message, signatureJson, commitments = null) {
   const b64 = (Buffer.isBuffer(message) ? message : Buffer.from(String(message))).toString('base64');
-  return postJson('/avoth/verify', { message: b64, signature: signatureJson });
+  const body = { message: b64, signature: signatureJson };
+  if (commitments) body.commitments = commitments;
+  return postJson('/avoth/verify', body);
 }
 
 /** Flip the hourglass — rotate epoch keys through the neck. */

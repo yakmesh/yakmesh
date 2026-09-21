@@ -13,7 +13,7 @@ CADDY_PID=$!
 
 # Start mesh node
 echo "[2/2] Starting Yakmesh mesh node..."
-node ./server/index.js &
+node ./scripts/yakmesh-run.js &
 MESH_PID=$!
 
 echo ""

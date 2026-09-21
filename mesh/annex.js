@@ -487,9 +487,13 @@ export class Annex {
    * eliminating plaintext KEM exchange. It is immediately upgraded to a
    * proper KEM-backed session with full PFS.
    */
-  bootstrapSession(peerId, bootstrapKey) {
+  bootstrapSession(peerId, bootstrapKey, sessionKey = peerId) {
     // Deterministic sessionId — both sides MUST agree on AES-GCM AAD.
     // AAD = "${sessionId}:${sequence}", so random sessionId = instant auth failure.
+    // sessionKey lets callers file the session under a namespaced key (e.g.
+    // YAK-TUN's 'tun:<nodeId>') while keeping the REAL nodeId pair in the
+    // sessionId derivation — a namespaced peerId would sort differently on
+    // each side and the AAD would never match.
     const localNodeId = this.identity.identity.nodeId;
     const [first, second] = [localNodeId, peerId].sort();
     const deterministicSessionId = createHash('sha3-256')
@@ -508,7 +512,7 @@ export class Annex {
     session.channelState = ChannelState.ESTABLISHED;
     session.lastRekey = Date.now();
 
-    this.sessions.set(peerId, session);
+    this.sessions.set(sessionKey, session);
     log.info('JHILKE bootstrap session created (encrypted from message #1)', {
       peerId: peerTag(peerId),
       sessionId: deterministicSessionId.slice(0, 8) + '...',
@@ -632,6 +636,47 @@ export class Annex {
     this.stats.messagesEncrypted++;
 
     return { sent: true, sessionId: session.sessionId, sequence: encrypted.sequence };
+  }
+
+  /**
+   * Send an encrypted message pinned to a specific socket (dual-wire).
+   * Bypasses mesh.sendTo's socket selection — lifeline heartbeats and
+   * wire-pinned traffic must actually leave on THEIR wire; send() would
+   * re-route through sendTo onto the peer's primary socket.
+   * Returns false when no usable session exists (caller decides).
+   */
+  sendOn(remoteNodeId, payload, ws) {
+    const session = this.sessions.get(remoteNodeId);
+    if (!session || !session.established || session.isExpired()) return false;
+
+    const encrypted = session.encrypt(payload);
+    const envelope = new AnnexEnvelope({
+      type: ANNEX_CONFIG.messageTypes.ENCRYPTED,
+      senderId: this.identity.identity.nodeId,
+      recipientId: remoteNodeId,
+      sessionId: session.sessionId,
+      sequence: encrypted.sequence,
+      nonce: encrypted.nonce,
+      ciphertext: encrypted.ciphertext,
+      authTag: encrypted.authTag,
+    });
+    envelope.signature = this.identity.sign(envelope.getSigningPayload());
+
+    // The outer wrapper must carry the same hop signature sendTo() applies —
+    // the receiver drops unsigned non-handshake messages. Reuse the mesh's
+    // signing path so TRIBHUJ ratchet + rotation certs behave identically.
+    const outbound = { type: 'annex', annex: envelope.toJSON(), timestamp: Date.now() };
+    const signed = this.mesh?.ratchet
+      ? this.mesh.ratchet.signObject(outbound)
+      : this.identity.signObject(outbound);
+    const peer = this.mesh?.peers?.get(remoteNodeId);
+    const finalMsg = signed._tribhujSig && this.mesh?._attachTribhujCert
+      ? this.mesh._attachTribhujCert(signed, peer)
+      : signed;
+
+    ws.send(JSON.stringify(finalMsg));
+    this.stats.messagesEncrypted++;
+    return true;
   }
 
   /**

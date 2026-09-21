@@ -783,10 +783,19 @@ export class YakmeshNode {
         this.attestationGossip?.receive(data, origin);
       }
 
-      // Handle YAK-TUN route announcements (multi-hop vIP routing)
+      // Handle YAK-TUN route announcements (multi-hop vIP routing +
+      // wire-B UDP endpoints). The sender's real IP comes from our
+      // transport to them when connected; announces that arrive multi-hop
+      // may carry data.tunHost for WAN-reachable endpoints.
       if (topic === 'tun:announce' && data?.nodeId && data?.vIp) {
-        this.yakTun?.learnRoute(data.vIp, data.nodeId);
-        if (data.vIp6) this.yakTun?.learnRoute(data.vIp6, data.nodeId);
+        const originPeer = this.mesh?.peers?.get(data.nodeId);
+        let originHost = originPeer?.ws?._clientIp
+          || (originPeer?.endpoint || '').match(/^wss?:\/\/\[?([^\]:\/]+)/)?.[1]
+          || null;
+        // A tunnel IP is not a real UDP target — underlay endpoints are
+        // always on the physical network.
+        if (originHost && MeshNetwork._isTunnelIp(originHost)) originHost = null;
+        this.yakTun?.handleAnnounce(data, originHost);
       }
 
       // Handle C2C server heartbeats (Lighthouse directory)
@@ -1261,7 +1270,7 @@ export class YakmeshNode {
     let signatureValid = null; // null = unverifiable here
     if (data.signature && await avothBridge.isAvailable()) {
       signatureValid = await avothBridge
-        .hourglassVerify(this._canonicalUpgradeProposal(data), data.signature)
+        .hourglassVerify(this._canonicalUpgradeProposal(data), data.signature, data.sigCommitments)
         .then(r => r.valid).catch(() => false);
       if (!signatureValid) {
         log.warn('UPDATE: proposal with INVALID hourglass signature', {
@@ -1389,11 +1398,18 @@ export class YakmeshNode {
     if (this._actConsented) return;
     this._actConsented = true;
 
+    // Carry our verification verdict + the signer's commitments so the
+    // coordinator sees whether voters could verify the proposal, and so
+    // nodes that missed the upgrade:proposal rumor still receive the
+    // commitment set needed to verify it themselves.
+    const offer = this._acceptedUpgrade || this._pendingUpgradeOffer;
     const consent = {
       vote,
       targetEpoch,
       nodeId: this.identity.identity.nodeId,
       fingerprint: this.genesisNetwork?.fingerprint,
+      signatureValid: offer?.signatureValid ?? null,
+      sigCommitments: offer?.sigCommitments ?? null,
     };
 
     // Gossip consent
@@ -1423,6 +1439,7 @@ export class YakmeshNode {
       peer: peerTag(origin),
       vote: data.vote,
       targetEpoch: data.targetEpoch,
+      signatureValid: data.signatureValid ?? null,
     });
   }
 
@@ -1514,6 +1531,7 @@ export class YakmeshNode {
     if (this._attestationInterval) clearInterval(this._attestationInterval);
     if (this._messageCountInterval) clearInterval(this._messageCountInterval);
     if (this._relayExpiryInterval) clearInterval(this._relayExpiryInterval);
+    this.yakTun?.destroy();  // UDP underlay socket + wire-B timers
     await accel.scheduler.shutdown();  // Drain compute scheduler queues
     // Annex channels cleaned up by mesh.stop()
     this.gossip?.stop();
@@ -2246,17 +2264,118 @@ export class YakmeshNode {
     // karmaModel may not exist yet at this init point — delegate lazily so
     // the trust gate reads the live model whenever it is created.
     const karmaDelegate = { getTrustLevel: (id) => this.karmaModel?.getTrustLevel(id) };
-    this.yakTun = new YakTun('yak0', this.mesh, karmaDelegate);
+    const tunCfg = this.config.yaktun || {};
+    const iface = process.env.YAKTUN_IFACE || tunCfg.iface || 'yak0';
+    this.yakTun = new YakTun(iface, this.mesh, karmaDelegate);
+    this.yakTun._selfNodeId = this.identity.identity.nodeId;
+    this.yakTun._selfWsPort = this.config.network?.wsPort || 9080;
     const up = await this.yakTun.init(this.identity.identity.nodeId);
+    // network.js consults this for overlay dials and wire policy
+    this.mesh.yakTun = this.yakTun;
+
+    // Wire B — UDP underlay + LAN discovery. Bind even when the TUN device
+    // failed: hosts without admin still get discovery and wire-B heartbeats,
+    // they just can't carry vIP traffic. Convention: same port number as
+    // the mesh WS (UDP and TCP namespaces are disjoint). YAKTUN_UDP_PORT
+    // overrides.
+    const udpPort = parseInt(process.env.YAKTUN_UDP_PORT || tunCfg.udpPort || this.yakTun._selfWsPort, 10);
+    await this.yakTun.initUnderlay(udpPort);
+
+    // LAN discovery → auto-connect. Same-build nodes broadcast a
+    // dialect-keyed beacon on the underlay port; the lower nodeId dials
+    // first (deterministic tie-break halves simultaneous cross-dials),
+    // the higher-id side falls in only if the peer stays visible but
+    // unconnected past the grace window. Cooldowns keep us under the
+    // remote connection-flood limiter.
+    this._dialCooldowns = new Map();   // nodeId -> last dial ms
+    this.yakTun.onPeerDiscovered = (nodeId, wsUrl, firstSeen) => {
+      if (!wsUrl || this.mesh.peers.has(nodeId)) return;
+      const selfId = this.identity.identity.nodeId;
+      if (selfId > nodeId && (Date.now() - firstSeen) < 45_000) return;
+      const last = this._dialCooldowns.get(nodeId) || 0;
+      if (Date.now() - last < 30_000) return;
+      this._dialCooldowns.set(nodeId, Date.now());
+      log.info('YAK-TUN: LAN peer discovered — auto-connecting', {
+        peer: peerTag(nodeId), wsUrl,
+      });
+      this.mesh.connect(wsUrl, nodeId).catch((err) => {
+        log.warn('YAK-TUN: discovery dial failed', { peer: peerTag(nodeId), wsUrl, error: err.message });
+      });
+    };
+
+    // Overlay promotion — event-driven, never blind timers. wire-B 'up'
+    // transitions (datagram or ping) trigger exactly one overlay dial per
+    // peer per cooldown window; a tun-primary peer instead gets its LAN
+    // lifeline dialed so the dual-wire shape always converges.
+    this._overlayDialAt = new Map();   // nodeId -> last overlay dial ms
+    this._lifelineDialAt = new Map();  // nodeId -> last lifeline dial ms
+    const tryOverlayDial = (nodeId) => {
+      const peer = this.mesh.peers.get(nodeId);
+      if (!peer || peer.wsVia === 'tun') return;
+      const last = this._overlayDialAt.get(nodeId) || 0;
+      if (Date.now() - last < 60_000) return;
+      const ep = this.yakTun.overlayEndpointFor(nodeId);
+      if (!ep) return;
+      this._overlayDialAt.set(nodeId, Date.now());
+      log.info('YAK-TUN: wire B proven — dialing overlay', { peer: peerTag(nodeId), ep });
+      this.mesh.connect(ep, nodeId).catch((err) => {
+        log.warn('YAK-TUN: overlay dial failed', { peer: peerTag(nodeId), ep, error: err.message });
+      });
+    };
+    const tryLifelineDial = (nodeId) => {
+      const peer = this.mesh.peers.get(nodeId);
+      if (!peer || peer.wsVia !== 'tun' || peer.lifelineWs || !peer.endpoint) return;
+      const h = peer.endpoint.match(/^wss?:\/\/\[?([^\]:\/]+)/)?.[1];
+      if (h && MeshNetwork._isTunnelIp(h)) return; // not a real endpoint
+      const last = this._lifelineDialAt.get(nodeId) || 0;
+      if (Date.now() - last < 60_000) return;
+      this._lifelineDialAt.set(nodeId, Date.now());
+      log.info('YAK-TUN: tun primary — establishing LAN lifeline', {
+        peer: peerTag(nodeId), endpoint: peer.endpoint,
+      });
+      this.mesh.connect(peer.endpoint, nodeId, { direct: true }).catch((err) => {
+        log.warn('YAK-TUN: lifeline dial failed', { peer: peerTag(nodeId), error: err.message });
+      });
+    };
+    this.yakTun.onWireBUp = tryOverlayDial;
+    this.mesh.on?.('peer-registered', (nodeId) => {
+      const peer = this.mesh.peers.get(nodeId);
+      if (!peer) return;
+      if (peer.wsVia === 'tun') tryLifelineDial(nodeId);
+      else tryOverlayDial(nodeId);
+    });
+
+    // Wire reconciler — a failed promotion dial is never re-armed by
+    // events alone (wire B stays 'up', peer stays registered). Sweep
+    // every peer once a minute; per-peer cooldowns and in-flight dedup
+    // keep the actual dial rate at <=1/min/peer, well under the remote
+    // connection-flood limiter.
+    this._wireReconciler = setInterval(() => {
+      for (const [nodeId] of this.mesh.peers) {
+        const peer = this.mesh.peers.get(nodeId);
+        if (!peer) continue;
+        if (peer.wsVia === 'tun') tryLifelineDial(nodeId);
+        else tryOverlayDial(nodeId);
+      }
+    }, 60_000);
+    this._wireReconciler.unref?.();
 
     if (up && this.yakTun.active) {
       log.info(`🌐 YAK-TUN online: ${this.yakTun.virtualIp} / ${this.yakTun.virtualIpv6}`);
+
       // Announce our vIP so multi-hop peers can route to us — once now,
-      // and on every new peer registration (cheap, idempotent).
+      // and on every new peer registration (cheap, idempotent). tunHost +
+      // tunPort let multi-hop peers build our real underlay endpoint;
+      // wsPort gives the overlay dial target port.
+      const advHost = (this.mesh._getAdvertisedEndpoint?.() || '')
+        .match(/^wss?:\/\/\[?([^\]:\/]+)/)?.[1] || null;
       const announce = () => this.gossip?.spreadRumor('tun:announce', {
         nodeId: this.identity.identity.nodeId,
         vIp: this.yakTun.virtualIp,
         vIp6: this.yakTun.virtualIpv6,
+        tunHost: advHost,
+        tunPort: this.yakTun.udpPort || null,
+        wsPort: this.yakTun._selfWsPort,
       });
       announce();
       this.mesh.on?.('peer-registered', announce);
@@ -4150,6 +4269,13 @@ export class YakmeshNode {
           correctionMs: aguwa._correctionMs,
           divergentPeers: aguwa.detectDivergentPeers().length,
         },
+        yaktun: this.yakTun ? {
+          active: !!this.yakTun.active,
+          vIp: this.yakTun.virtualIp || null,
+          vIp6: this.yakTun.virtualIpv6 || null,
+          underlay: this.yakTun.underlayStatus ? this.yakTun.underlayStatus() : null,
+          peers: wsPeers.map(p => ({ nodeId: p.nodeId.slice(0, 20), via: p.via, lifeline: p.lifeline })),
+        } : null,
         security: this.mesh.getSecurityStats(),
       });
     });
@@ -4252,9 +4378,15 @@ export class YakmeshNode {
         }
       }
       if (await avothBridge.isAvailable()) {
-        proposal.signature = await avothBridge
+        const sig = await avothBridge
           .hourglassSign(this._canonicalUpgradeProposal(proposal))
-          .then(r => r.signature).catch(() => null);
+          .catch(() => null);
+        proposal.signature = sig?.signature ?? null;
+        // The signer's full epoch commitment set — a foreign hourglass
+        // can't be verified without it (each node's glass is uniquely
+        // seeded). It rides the rumor, which is ML-DSA-signed, so the
+        // set is bound to the announcer's identity.
+        proposal.sigCommitments = sig?.commitments ?? null;
       }
       this.gossip.spreadRumor('upgrade:proposal', proposal);
       log.warn('UPDATE: announcement gossiped', {
@@ -4316,6 +4448,42 @@ export class YakmeshNode {
         this._consentACT(this._pendingACTProposal.targetEpoch, 'reject');
       }
       res.json({ declined: had });
+    });
+
+    // ── Claim ledger: witnessed contribution claims + epoch attestation ──
+    // Read-only view of an epoch's witnessed claims, their verification
+    // verdicts, the Merkle claim root, and the k-of-m attestation set.
+    app.get('/api/claims/epoch/:epoch', (req, res) => {
+      const epoch = parseInt(req.params.epoch, 10);
+      if (!Number.isInteger(epoch)) {
+        return res.status(400).json({ error: 'epoch must be an integer' });
+      }
+      const claims = this.claimLedger?.epochClaims(epoch) || [];
+      res.json({
+        epoch,
+        count: claims.length,
+        claims,
+        claimRoot: this.claimLedger?.epochClaimRoot(epoch) || null,
+        attestedSet: this.attestationGossip?.attestedSet(epoch) || [],
+      });
+    });
+
+    // Trigger seal verification + epoch-root attestation for a closed
+    // epoch. Mutating — hourglass-signs the claim root via the keystore —
+    // so loopback only, same gate as /api/update/accept.
+    app.post('/api/claims/epoch/:epoch/attest', async (req, res) => {
+      if (!isLoopback(req)) return res.status(403).json({ error: 'loopback only' });
+      const epoch = parseInt(req.params.epoch, 10);
+      if (!Number.isInteger(epoch)) {
+        return res.status(400).json({ error: 'epoch must be an integer' });
+      }
+      try {
+        const seals = await this.claimLedger?.verifyEpochSeals(epoch);
+        const attestation = await this.claimLedger?.attestEpoch(epoch);
+        res.json({ epoch, seals, attestation });
+      } catch (err) {
+        res.status(500).json({ error: err.message });
+      }
     });
 
     // =========================================

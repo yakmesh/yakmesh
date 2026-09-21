@@ -27,7 +27,7 @@
  */
 
 import { spawn } from 'node:child_process';
-import { existsSync, readFileSync, writeFileSync, rmSync, mkdirSync, copyFileSync, readdirSync, statSync, unlinkSync, createWriteStream } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync, rmSync, mkdirSync, copyFileSync, readdirSync, statSync, unlinkSync, createWriteStream, fstatSync, openSync, closeSync, chmodSync } from 'node:fs';
 import { inflateRawSync } from 'node:zlib';
 import { createHash } from 'node:crypto';
 import { join, dirname, relative } from 'node:path';
@@ -133,6 +133,9 @@ function applyPendingUpdate() {
       added.push(rel);
     }
     mkdirSync(dirname(dest), { recursive: true });
+    // FileGuardian re-baselines runtime files to read-only — unlock the
+    // target before overwrite or the whole swap dies with EACCES.
+    try { chmodSync(dest, 0o644); } catch { }
     writeFileSync(dest, data);
     overlaid++;
   }
@@ -180,11 +183,131 @@ function getLog() {
   }
   return logStream;
 }
+// When the supervisor is launched with stdout/stderr already redirected to
+// data/supervisor.log (`node yakmesh-run.js >> data/supervisor.log 2>&1` —
+// the standard nohup/service pattern), writing each child chunk to the
+// stream AND the log stream duplicates every line. Detect that case by
+// comparing the stream's fd target (dev+ino) with the log file's.
+const _fdIsLog = new Map();
+function streamIsLogFile(stream) {
+  const fd = stream?.fd;
+  if (fd == null) return false;
+  if (_fdIsLog.get(fd)) return true;
+  try {
+    const a = fstatSync(fd);
+    const t = openSync(join(DATA, 'supervisor.log'), 'r');
+    try {
+      const b = fstatSync(t);
+      if (a.dev === b.dev && a.ino === b.ino) {
+        _fdIsLog.set(fd, true);
+        return true;
+      }
+    } finally { closeSync(t); }
+  } catch { /* log file may not exist yet — recheck next chunk */ }
+  return false;
+}
 function tee(stream, chunk) {
   try { stream.write(chunk); } catch {}
   const s = getLog();
-  if (s) s.write(chunk);
+  if (s && !streamIsLogFile(stream)) s.write(chunk);
 }
+
+// ---------------------------------------------------------------
+// PQ bridge (attestation) child — optional, managed
+// ---------------------------------------------------------------
+// The node's attestation path (hourglass sign/verify, yakcoin seals,
+// claim verification) talks to yakos-pq-bridge. When a bridge is already
+// answering (systemd service, scheduled task, manual start) we adopt it
+// and spawn nothing; when nothing answers but a binary sits beside this
+// script, we run it ourselves so attestation works out of the box.
+//
+//   YAKOS_PQ_BRIDGE      bridge URL (default http://127.0.0.1:9995)
+//   YAKOS_PQ_BRIDGE_BIN  explicit binary path (overrides auto-detect)
+//   YAKMESH_NO_BRIDGE=1  never spawn (bridge managed elsewhere / absent)
+const BRIDGE_URL = process.env.YAKOS_PQ_BRIDGE || 'http://127.0.0.1:9995';
+let bridgeChild = null;
+let bridgeRestarts = 0;
+let bridgeBin;           // undefined = unresolved, null = none found
+let bridgeWarned = false;
+
+function resolveBridgeBin() {
+  if (process.env.YAKOS_PQ_BRIDGE_BIN) return process.env.YAKOS_PQ_BRIDGE_BIN;
+  const exe = process.platform === 'win32' ? 'yakos-pq-bridge.exe' : 'yakos-pq-bridge';
+  const exact = join(ROOT, exe);
+  if (existsSync(exact)) return exact;
+  // Dated-deploy convention: yakos-pq-bridge-YYYYMMDD(.exe) — newest wins.
+  try {
+    const dated = readdirSync(ROOT)
+      .filter(f => /^yakos-pq-bridge-\d+(\.exe)?$/.test(f))
+      .sort();
+    if (dated.length) return join(ROOT, dated[dated.length - 1]);
+  } catch { }
+  return null;
+}
+
+async function bridgeHealthy() {
+  try {
+    const res = await fetch(`${BRIDGE_URL}/health`, { signal: AbortSignal.timeout(1500) });
+    return res.ok;
+  } catch { return false; }
+}
+
+function spawnBridge() {
+  const child = spawn(bridgeBin, [], {
+    cwd: ROOT, stdio: ['ignore', 'pipe', 'pipe'], env: process.env, windowsHide: true,
+  });
+  bridgeChild = child;
+  console.log(`[yakmesh-run] pq-bridge spawned (pid ${child.pid}) — ${bridgeBin}`);
+  child.stdout?.on('data', (c) => tee(process.stdout, c));
+  child.stderr?.on('data', (c) => tee(process.stderr, c));
+  child.on('exit', (code) => {
+    if (bridgeChild === child) bridgeChild = null;
+    const delay = Math.min(60000, 2000 * 2 ** bridgeRestarts++);
+    console.log(`[yakmesh-run] pq-bridge exited (code ${code ?? '?'}) — rechecking in ${delay / 1000}s`);
+    setTimeout(ensureBridge, delay);
+  });
+}
+
+async function ensureBridge() {
+  if (process.env.YAKMESH_NO_BRIDGE === '1') return;
+  if (bridgeChild) return;                    // ours and still running
+  if (await bridgeHealthy()) {
+    if (!bridgeWarned) {
+      bridgeWarned = true;
+      console.log(`[yakmesh-run] pq-bridge reachable at ${BRIDGE_URL} — attestation enabled`);
+    }
+    return;                                    // external bridge — adopt it
+  }
+  if (bridgeBin === undefined) bridgeBin = resolveBridgeBin();
+  if (!bridgeBin) {
+    if (!bridgeWarned) {
+      bridgeWarned = true;
+      console.log('[yakmesh-run] pq-bridge unreachable and no binary found — attestation idle. ' +
+        'Drop yakos-pq-bridge(.exe) beside this script or set YAKOS_PQ_BRIDGE_BIN.');
+    }
+    return;
+  }
+  spawnBridge();
+}
+
+// Bridge lifecycle is independent of the node child — it survives ACT
+// swaps (the package never contains it) and dies with the supervisor.
+// The node child dies with us too: an orphaned node keeps the WS port
+// bound and fights the respawn.
+let nodeChild = null;
+function killChildren() {
+  try { bridgeChild?.kill(); } catch { }
+  try { nodeChild?.kill(); } catch { }
+}
+process.on('exit', killChildren);
+// 'exit' does NOT fire on signals — without these, kill/Ctrl+C orphans
+// the node child (it keeps the WS port bound and fights the respawn).
+for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) {
+  process.on(sig, () => { killChildren(); process.exit(128 + (sig === 'SIGINT' ? 2 : sig === 'SIGHUP' ? 1 : 15)); });
+}
+ensureBridge().catch(() => { });
+const _bridgeTimer = setInterval(() => ensureBridge().catch(() => { }), 30_000);
+_bridgeTimer.unref?.();
 
 function run() {
   return new Promise((resolve) => {
@@ -193,9 +316,10 @@ function run() {
       stdio: ['inherit', 'pipe', 'pipe'],
       env: process.env,
     });
+    nodeChild = child;
     child.stdout?.on('data', (c) => tee(process.stdout, c));
     child.stderr?.on('data', (c) => tee(process.stderr, c));
-    child.on('exit', (code) => resolve(code ?? 1));
+    child.on('exit', (code) => { if (nodeChild === child) nodeChild = null; resolve(code ?? 1); });
   });
 }
 

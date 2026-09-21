@@ -1,6 +1,6 @@
 {
   "name": "yakmesh",
-  "version": "3.5.8",
+  "version": "3.5.10",
   "description": "YAKMESH: Yielding Atomic Kernel Modular Encryption Secured Hub - Post-quantum secure P2P mesh network for the 2026 threat landscape",
   "type": "module",
   "main": "server/index.js",
@@ -22,7 +22,6 @@
     "./security/crypto-config": "./security/crypto-config.js",
     "./security/namche-gateway": "./security/namche-gateway.js",
     "./security/doko-identity": "./security/doko-identity.js",
-    "./security/tls-binding": "./security/tls-binding.js",
     "./security/hybrid-trust": "./security/hybrid-trust.js",
     "./security/domain-consensus": "./security/domain-consensus.js",
     "./security/khata-protocol": "./security/khata-protocol.js",

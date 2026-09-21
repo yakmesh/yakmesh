@@ -16,4 +16,6 @@ end if
 sh.Environment("PROCESS")("YAKMESH_DATA_DIR") = sh.ExpandEnvironmentStrings("%LOCALAPPDATA%") & "\yakmesh-data"
 
 ' 0 = hidden window, False = don't wait
-sh.Run "cmd.exe /c node server\index.js >> yakmesh-node.log 2>&1", 0, False
+' Supervisor applies staged ACT swaps, respawns the node, and manages
+' yakos-pq-bridge when a binary sits beside it. Log: data\supervisor.log
+sh.Run "cmd.exe /c node scripts\yakmesh-run.js >> yakmesh-node.log 2>&1", 0, False

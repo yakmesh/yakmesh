@@ -5,7 +5,7 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 NODE_DIR="$(dirname "$SCRIPT_DIR")"
 PID_FILE="$NODE_DIR/data/yakmesh.pid"
-LOG_FILE="$NODE_DIR/data/yakmesh.log"
+LOG_FILE="$NODE_DIR/data/supervisor.log"
 
 # Ensure data directory exists
 mkdir -p "$NODE_DIR/data"
@@ -25,12 +25,12 @@ is_running() {
 stop_node() {
     if is_running; then
         PID=$(cat "$PID_FILE")
-        echo "🛑 Stopping Yakmesh Node (PID: $PID)..."
-        kill "$PID" 2>/dev/null
+        echo "🛑 Stopping Yakmesh Node (supervisor PID: $PID)..."
+        kill -- -"$PID" 2>/dev/null || kill "$PID" 2>/dev/null
         sleep 2
         # Force kill if still running
         if ps -p "$PID" > /dev/null 2>&1; then
-            kill -9 "$PID" 2>/dev/null
+            kill -9 -- -"$PID" 2>/dev/null || kill -9 "$PID" 2>/dev/null
         fi
         rm -f "$PID_FILE"
         echo "✓ Node stopped"
@@ -51,8 +51,10 @@ start_node() {
     echo "🦬 Starting Yakmesh Node..."
     cd "$NODE_DIR"
     
-    # Start node in background, redirect output to log
-    nohup node server/index.js >> "$LOG_FILE" 2>&1 &
+    # Supervisor in its own process group: applies staged ACT swaps,
+    # respawns the node, and manages yakos-pq-bridge when present.
+    # setsid lets `stop` kill the whole tree (supervisor+node+bridge).
+    nohup setsid node scripts/yakmesh-run.js >> "$LOG_FILE" 2>&1 &
     PID=$!
     echo $PID > "$PID_FILE"
     

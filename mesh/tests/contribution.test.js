@@ -35,6 +35,7 @@ import {
   currentEpoch,
   npuProofClaim,
 } from '../contribution.js';
+import { generateKeyPair, signMessage, verifySignature } from '../../identity/node-key.js';
 
 const SEAL_OK = {
   node_id: 'a'.repeat(64),
@@ -46,11 +47,12 @@ const SEAL_OK = {
   weight_1to1: 0.125,
 };
 
+// Real ML-DSA-65 sizes — the pq-bridge emits base64 (pubkey 1952B, sig 3309B)
 const KEYS_OK = {
-  signing_key: { key_id: 'k'.repeat(32), public_key: 'pkB64', algorithm: 'ML-DSA-65' },
+  signing_key: { key_id: 'k'.repeat(32), public_key: Buffer.alloc(1952, 7).toString('base64'), algorithm: 'ML-DSA-65' },
 };
 
-const SIGN_OK = { signature: 'sigB64', algorithm: 'ML-DSA-65', key_id: 'k'.repeat(32) };
+const SIGN_OK = { signature: Buffer.alloc(3309, 9).toString('base64'), algorithm: 'ML-DSA-65', key_id: 'k'.repeat(32) };
 
 function stubBridge(body = SEAL_OK, { signFails = false } = {}) {
   return vi.fn(async (url) => {
@@ -137,8 +139,8 @@ describe('contributionMeshState', () => {
     expect(c.npuProof).toMatchObject(proof);
     expect(c.npuProof.attestation).toMatchObject({
       algorithm: 'ML-DSA-65',
-      signature: 'sigB64',
-      publicKey: 'pkB64',
+      signature: Buffer.alloc(3309, 9).toString('hex'),
+      publicKey: Buffer.alloc(1952, 7).toString('hex'),
     });
     expect(c.npuProof.attestation.claim).toContain('YAKMESH|NPU-PROOF|v1|');
   });
@@ -153,6 +155,19 @@ describe('contributionMeshState', () => {
     const c = await contributionMeshState(1_000_270_000_000);
     expect(c.npuProof).toMatchObject(proof);
     expect(c.npuProof.attestation).toBeUndefined();
+  });
+
+  test('verifySignature — pq-bridge base64 signature/key decode + hex path', () => {
+    const kp = generateKeyPair();
+    const claim = 'YAKMESH|NPU-PROOF|v1|42|node1|d|k|n|8|1|i|o|1|2|3|4|5|6';
+    const sigB64 = Buffer.from(signMessage(claim, kp.secretKey), 'hex').toString('base64');
+    const pkB64 = Buffer.from(kp.publicKey, 'hex').toString('base64');
+    // base64 (bridge form) and hex (canonical form) both verify
+    expect(verifySignature(claim, sigB64, pkB64)).toBe(true);
+    expect(verifySignature(claim, signMessage(claim, kp.secretKey), kp.publicKey)).toBe(true);
+    // tampered claim and non-encoded garbage still reject
+    expect(verifySignature(claim + 'x', sigB64, pkB64)).toBe(false);
+    expect(verifySignature(claim, 'not-a-signature!!', pkB64)).toBe(false);
   });
 
   test('npuProofClaim — canonical serialization is deterministic and complete', () => {

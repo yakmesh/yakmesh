@@ -67,4 +67,4 @@ echo ""
 
 # Start node
 cd "$NODE_DIR"
-exec node server/index.js
+exec node scripts/yakmesh-run.js

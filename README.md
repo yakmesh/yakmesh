@@ -1,7 +1,7 @@
 <div align="center">
   <img src="https://yakmesh.dev/assets/yakmesh-logo2.png" alt="YAKMESH" width="200">
 
-  <h1>🏔️ YAKMESH™ v3.5.4 — The Fortress Release</h1>
+  <h1>🏔️ YAKMESH™ v3.5.10 — The Fortress Release</h1>
 
   <p><strong>Yielding Atomic Kernel Modular Encryption Secured Hub</strong></p>
 
@@ -10,7 +10,7 @@
     <a href="https://nodejs.org"><img src="https://img.shields.io/badge/Node.js-24+-green.svg" alt="Node.js"></a>
     <a href="https://csrc.nist.gov/projects/post-quantum-cryptography"><img src="https://img.shields.io/badge/Crypto-Post--Quantum-blue.svg" alt="Post-Quantum"></a>
     <a href="https://www.npmjs.com/package/yakmesh"><img src="https://img.shields.io/npm/v/yakmesh.svg" alt="npm version"></a>
-    <img src="https://img.shields.io/badge/version-3.5.4-purple.svg" alt="v3.5.4">
+    <img src="https://img.shields.io/badge/version-3.5.10-purple.svg" alt="v3.5.10">
     <img src="https://img.shields.io/badge/Protocol_Layers-30-orange.svg" alt="30-Layer Stack">
   </p>
 </div>
@@ -109,7 +109,9 @@ node server/index.js
 
 ### Networking & Discovery
 
-- 🌐 **Mesh Networking** — P2P WebSocket mesh with epidemic gossip protocol
+- 🌐 **Mesh Networking** — P2P WebSocket mesh with epidemic gossip protocol; LAN-focused but WAN-capable
+- 🔀 **YAK-TUN Dual-Wire** — UDP underlay + virtual `10.199.0.0/16` overlay; the tunnel session promotes to primary while the direct socket stays warm as a lifeline — automatic failover, no partition
+- 🧭 **Same-codebase discovery** — nodes on the same build find each other via encrypted LAN beacons and auto-connect; `YAKMESH_BOOTSTRAP` seeds are a last resort for non-LAN peers
 - 🏔️ **SHERPA Discovery** — Decentralized peer discovery with DNS beacon broadcast
 - 📦 **NAKPAK Routing** — Efficient binary message routing with checksum verification
 - 💬 **KOMM Stack** — Real-time communication layer (VANI messaging, GUMBA channels, KATHA sessions)
