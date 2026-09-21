@@ -67,6 +67,17 @@
   stdout/stderr is redirected into supervisor.log (fd compare per stream).
 - Stale package export removed — `./security/tls-binding` pointed at a
   module archived in bdd70dd; importing it crashed at resolve time.
+- Loopback endpoint poisoning — a node with no remotely-usable IPv4
+  (e.g. an outbound-only container) advertised `ws://127.0.0.1:<port>`;
+  propagated through gossip it made remote peers dial THEIR OWN listener
+  (observed live: the VPS kept handshaking with itself).
+  _getAdvertisedEndpoint() now returns null instead of advertising
+  loopback, and every LEARNED-endpoint dial path (gossip peers, HELLO
+  referrals/discovery, YAK-TUN lifeline, SHERPA beacon candidates) skips
+  loopback hosts via MandalaNetwork._isLoopbackHost/_endpointHost
+  (bracketed-IPv6 aware). Configured dials (YAKMESH_BOOTSTRAP seeds,
+  explicit /connect) still allow loopback — an operator may legitimately
+  point at a local port forward.
 
 ### Tests
 - mesh-auth fixtures derive nodeId from the generated keypair — the

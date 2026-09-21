@@ -481,8 +481,13 @@ export class MantraProtocol extends EventEmitter {
           lastSeen: peer.lastSeen,
         });
 
-        // Try to connect if we have an endpoint — pass nodeId for MITM detection
-        if (peer.endpoint && !this.mesh.isConnectedTo(peer.nodeId)) {
+        // Try to connect if we have an endpoint — pass nodeId for MITM detection.
+        // Skip loopback advertisements: a remote 127.x endpoint resolves to
+        // OUR listener, not the advertiser — dialing it handshakes with self.
+        const epHost = (peer.endpoint || '').match(/^wss?:\/\/\[?([^\]:\/]+)/)?.[1];
+        const epLoopback = epHost && (epHost === '::1' || epHost === 'localhost'
+          || epHost === '0.0.0.0' || epHost.startsWith('127.') || epHost.startsWith('::ffff:127.'));
+        if (peer.endpoint && !epLoopback && !this.mesh.isConnectedTo(peer.nodeId)) {
           log.debug('Attempting connection to discovered peer', { name: peer.name });
           this.mesh.connectToPeer(peer.endpoint, peer.nodeId).catch(() => {
             // Connection failed — try relay if available

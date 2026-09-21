@@ -744,6 +744,27 @@ export class MandalaNetwork {
   }
 
   /**
+   * Loopback/unspecified hosts in an endpoint are only meaningful to the
+   * advertiser itself — a remote peer dialing 127.x reaches its OWN
+   * listener, not the advertiser. Learned endpoints (gossip, referrals,
+   * discovery, advertisedEndpoint) must never be dialed when loopback.
+   * Configured paths (YAKMESH_BOOTSTRAP seeds, explicit /connect) bypass
+   * this check — an operator may legitimately point at a local forward.
+   */
+  static _isLoopbackHost(host) {
+    if (!host || typeof host !== 'string') return false;
+    const h = host.startsWith('::ffff:') ? host.slice(7) : host;
+    return h === '::1' || h === 'localhost' || h === '0.0.0.0' || h.startsWith('127.');
+  }
+
+  /** Extract the host from a ws:// endpoint (bracketed IPv6 aware), or null. */
+  static _endpointHost(endpoint) {
+    const m = (endpoint || '').match(/^wss?:\/\/(\[[^\]]+\]|[^:\/]+)/);
+    if (!m) return null;
+    return m[1].startsWith('[') ? m[1].slice(1, -1) : m[1];
+  }
+
+  /**
    * Get our advertised WebSocket endpoint for peer discovery.
    * This tells inbound peers how to reconnect to us.
    */
@@ -779,6 +800,12 @@ export class MandalaNetwork {
         }
       }
     }
+
+    // No remotely-usable address → advertise nothing. A loopback endpoint
+    // propagated through gossip makes remote peers dial their own listener
+    // (observed live: an outbound-only container advertised
+    // ws://127.0.0.1:9080 and kept dialing itself via the echoed record).
+    if (bestIp === '127.0.0.1') return null;
 
     return `ws://${bestIp}:${this.boundPort}`;
   }
@@ -1387,11 +1414,13 @@ export class MandalaNetwork {
       }
 
       // Try to connect to suggested peers
-      if (msg.endpoint) {
+      const learnedDialable = (ep) =>
+        ep && !MandalaNetwork._isLoopbackHost(MandalaNetwork._endpointHost(ep));
+      if (learnedDialable(msg.endpoint)) {
         this.connectToPeer(msg.endpoint).catch(() => { });
       } else if (msg.peers?.length) {
         for (const peer of msg.peers.slice(0, 3)) {
-          if (peer.endpoint) {
+          if (learnedDialable(peer.endpoint)) {
             this.connectToPeer(peer.endpoint, peer.nodeId).catch(() => { });
           }
         }

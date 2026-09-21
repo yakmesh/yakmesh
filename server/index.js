@@ -2326,7 +2326,7 @@ export class YakmeshNode {
       const peer = this.mesh.peers.get(nodeId);
       if (!peer || peer.wsVia !== 'tun' || peer.lifelineWs || !peer.endpoint) return;
       const h = peer.endpoint.match(/^wss?:\/\/\[?([^\]:\/]+)/)?.[1];
-      if (h && MeshNetwork._isTunnelIp(h)) return; // not a real endpoint
+      if (h && (MeshNetwork._isTunnelIp(h) || MeshNetwork._isLoopbackHost(h))) return; // not a real endpoint
       const last = this._lifelineDialAt.get(nodeId) || 0;
       if (Date.now() - last < 60_000) return;
       this._lifelineDialAt.set(nodeId, Date.now());
@@ -6495,7 +6495,9 @@ export class YakmeshNode {
 
       // Try WebSocket first (preferred — full duplex)
       // Pass nodeId for MITM detection in WELCOME handler
-      if (candidate.wsEndpoint) {
+      // Skip loopback beacons — they resolve to our own listener, not the advertiser's.
+      const candHost = MeshNetwork._endpointHost?.(candidate.wsEndpoint);
+      if (candidate.wsEndpoint && !(candHost && MeshNetwork._isLoopbackHost?.(candHost))) {
         try {
           log.info(`SHERPA auto-connect WS → ${candidate.wsEndpoint} (${peerTag(candidate.nodeId)})`);
           await this.mesh.connect(candidate.wsEndpoint, candidate.nodeId);
