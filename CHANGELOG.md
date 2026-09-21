@@ -78,6 +78,17 @@
   (bracketed-IPv6 aware). Configured dials (YAKMESH_BOOTSTRAP seeds,
   explicit /connect) still allow loopback — an operator may legitimately
   point at a local port forward.
+- Self-connection guards — a node must never peer with itself, whatever
+  the path. connect() refuses dials tagged with our own nodeId; HELLO
+  and WELCOME handlers reject handshakes carrying our nodeId (covers
+  NAT-hairpin self-dials the bootstrap self-skip can't see — e.g. a
+  container's own public IP is not in its interface list); gossip
+  _handleHello no longer stores an echoed self-record in knownPeers
+  (was producing recurring JHILKE sessions to our own nodeId).
+- yakmesh.config.js ships with bootstrap: [] — the previous file
+  hardcoded three deployment IPs (including each node's own), contrary
+  to the no-hardcoded-IPs design; seeds are env/operator config
+  (YAKMESH_BOOTSTRAP) or LAN discovery.
 
 ### Tests
 - mesh-auth fixtures derive nodeId from the generated keypair — the

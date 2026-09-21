@@ -354,6 +354,13 @@ export class MandalaNetwork {
    *   preventing MITM substitution attacks.
    */
   async connect(endpoint, targetNodeId = null, opts = {}) {
+    // Self-dial guard — a node never connects to itself. Auto-dial paths
+    // (gossip echo of our own record, stale learned endpoints, bootstrap
+    // self-skip misses on NAT'd hosts) can all present our own nodeId.
+    if (targetNodeId && targetNodeId === this.identity?.identity?.nodeId) {
+      throw new Error(`refusing self-dial to ${String(targetNodeId).slice(0, 24)}`);
+    }
+
     // In-flight dedup — concurrent dials to the same peer (discovery +
     // peer-registered + reconnect racing) must not each open a socket;
     // they trip the remote's connection-flood limiter and waste a ban.
@@ -943,6 +950,15 @@ export class MandalaNetwork {
         return;
       }
 
+      // SELF-CONNECTION REJECT: a HELLO carrying our own nodeId can only
+      // come from ourselves (loopback dial, NAT hairpin, echoed endpoint).
+      // A node must never register itself as a peer — drop the socket.
+      if (nodeId === this.identity?.identity?.nodeId) {
+        log.warn('Rejected HELLO — self-connection (own nodeId)', { ip: ws._clientIp });
+        try { ws.close(1008, 'Self-connection'); } catch { }
+        return;
+      }
+
       // DUPLICATE / RECONNECT DETECTION: If this peer is already connected
       // with a different WebSocket, decide which connection to keep.
       const existingPeer = this.peers.get(nodeId);
@@ -1234,6 +1250,18 @@ export class MandalaNetwork {
       } catch (err) {
         log.warn('Rejected WELCOME — could not verify identity binding', { error: err.message });
         ws.close(1008, 'Identity binding failed');
+        return;
+      }
+
+      // SELF-CONNECTION REJECT: a WELCOME carrying our own nodeId means we
+      // dialed ourselves (own advertised/learned endpoint, NAT hairpin).
+      if (nodeId === this.identity?.identity?.nodeId) {
+        log.warn('Rejected WELCOME — self-connection (own nodeId)');
+        try { ws.close(1008, 'Self-connection'); } catch { }
+        if (ws._pendingWelcome) {
+          ws._pendingWelcome({ rejected: true, reason: 'SELF_CONNECTION' });
+          delete ws._pendingWelcome;
+        }
         return;
       }
 

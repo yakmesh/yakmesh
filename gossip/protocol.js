@@ -403,6 +403,11 @@ export class MantraProtocol extends EventEmitter {
    * Handle HELLO from a peer
    */
   _handleHello(message, fromNodeId) {
+    // Never record ourselves — an echoed self-record makes every tick try
+    // to reach "peer <self>" (observed: VPS creating JHILKE sessions to
+    // its own nodeId after its loopback endpoint propagated back).
+    if (message.nodeId === this.identity?.identity?.nodeId) return;
+
     const isNewPeer = !this.knownPeers.has(message.nodeId);
 
     this.knownPeers.set(message.nodeId, {
