@@ -96,6 +96,26 @@
   space), _onDatagram (own datagrams dropped before decrypt),
   learnEndpoint (own nodeId never stored), and handleAnnounce (own
   echoed announce ignored).
+- ANNEX replay protection is a sliding window, not strict +1 ordering —
+  dual-wire peers share ONE forward-moving send counter across two
+  sockets of different latency, so the faster wire legitimately
+  overtakes the slower one; late in-window sequences were rejected as
+  'Replay attack' on every wire failover. Unseen sequences inside the
+  window now decrypt normally; only true duplicates and stale packets
+  drop (debug-level outOfOrderDropped stat, not warnings).
+- yakmesh-run.js quarantines leftover files on update — files deleted
+  between versions previously survived the overlay and silently forked
+  the node onto a different network fingerprint (observed live:
+  archive/security/tls-binding.js orphaned by an earlier update made
+  updated nodes incompatible with fresh extracts of the SAME package).
+  Post-apply, hashable files not in the new package's manifest move to
+  data/update-quarantine-<ts>/ and are restored on rollback.
+- scripts/build-package.sh — canonical package builder; enforces the
+  rule that every manifest-listed file ships in the zip (the rc4 zip
+  excluded archive/ while the manifest listed it, so fresh extracts
+  computed a different network than update-applied trees).
+- npm test now runs the full gate (test:all) instead of oracle tests
+  only — 1869 tests, not 258.
 
 ### Tests
 - mesh-auth fixtures derive nodeId from the generated keypair — the

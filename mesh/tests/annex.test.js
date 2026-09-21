@@ -469,9 +469,27 @@ describe('AnnexSession', () => {
       const encrypted = alice.encrypt('message');
       bob.decrypt(encrypted, encrypted.sequence);
 
-      // Try to replay same message
+      // Try to replay same message — a true duplicate, rejected
       expect(() => bob.decrypt(encrypted, encrypted.sequence))
-        .toThrow(/[Rr]eplay/);
+        .toThrow(/[Dd]uplicate/);
+    });
+
+    test('accepts in-window late arrivals (dual-wire reorder)', () => {
+      // Dual-wire shares one forward send counter across sockets of
+      // different latency — whichever wire is faster wins; the slower
+      // wire's earlier sequences legitimately arrive late and must NOT
+      // be rejected as replays.
+      const m0 = alice.encrypt('first');
+      const m1 = alice.encrypt('second');
+      const m2 = alice.encrypt('third');
+
+      // Wire B delivers seq 2 first, then wire A's earlier seqs arrive
+      bob.decrypt(m2, m2.sequence);
+      expect(() => bob.decrypt(m0, m0.sequence)).not.toThrow();
+      expect(() => bob.decrypt(m1, m1.sequence)).not.toThrow();
+
+      // ...but a second copy of an already-seen seq is a true duplicate
+      expect(() => bob.decrypt(m0, m0.sequence)).toThrow(/[Dd]uplicate/);
     });
 
     test('tampered ciphertext fails authentication', () => {

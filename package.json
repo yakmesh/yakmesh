@@ -74,7 +74,7 @@
     "build:docs": "node scripts/build-docs-bundle.mjs",
     "build:public": "node scripts/build-public.mjs",
     "prebuild": "npm run build:docs && npm run build:public",
-    "test": "node --test oracle/tests/*.test.js",
+    "test": "npm run test:all",
     "test:time": "node --test oracle/tests/time-source.test.js",
     "test:phase": "node --test oracle/tests/phase-epoch.test.js",
     "test:crypto": "node --test oracle/tests/crypto.test.js",

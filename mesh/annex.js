@@ -88,6 +88,7 @@ const ANNEX_CONFIG = {
 
   // Session management
   sessionTimeout: 3600000,       // 1 hour session lifetime
+  replayWindow: 64,              // sliding window for dual-wire reorder tolerance
 
   // Message types
   messageTypes: {
@@ -361,17 +362,42 @@ class AnnexSession {
       throw new Error('Session not established');
     }
 
-    // Replay protection: sequence must be greater than last received
-    if (typeof expectedSequence !== 'number' || expectedSequence <= this.recvSequence) {
+    // Replay protection — sliding window, not strict +1 ordering.
+    // Dual-wire peers share ONE forward-moving send counter across two
+    // sockets with different latencies: whichever wire is faster wins,
+    // and the slower wire's earlier sequences legitimately arrive late.
+    // Accept unseen sequences inside the window (the loser agrees);
+    // reject only true duplicates and packets too old to be reordering.
+    if (typeof expectedSequence !== 'number') {
       throw new Error(`Replay detected: sequence ${expectedSequence} <= ${this.recvSequence}`);
     }
+    this._seenSeqs ||= new Set();
+    const forward = expectedSequence > this.recvSequence;
+    if (!forward) {
+      if (this._seenSeqs.has(expectedSequence)) {
+        throw new Error(`Duplicate sequence ${expectedSequence} (already received)`);
+      }
+      if (expectedSequence <= this.recvSequence - ANNEX_CONFIG.replayWindow) {
+        throw new Error(`Stale sequence ${expectedSequence} << ${this.recvSequence}`);
+      }
+    }
+
+    const accept = (result) => {
+      if (forward) this.recvSequence = expectedSequence;
+      this._seenSeqs.add(expectedSequence);
+      if (this._seenSeqs.size > ANNEX_CONFIG.replayWindow * 2) {
+        const floor = this.recvSequence - ANNEX_CONFIG.replayWindow;
+        for (const s of this._seenSeqs) {
+          if (s <= floor) this._seenSeqs.delete(s);
+        }
+      }
+      this.lastActivity = Date.now();
+      return result;
+    };
 
     try {
       // Try current key first
-      const result = this._decryptWithKey(this.encryptionKey, encryptedData, expectedSequence);
-      this.recvSequence = expectedSequence;
-      this.lastActivity = Date.now();
-      return result;
+      return accept(this._decryptWithKey(this.encryptionKey, encryptedData, expectedSequence));
     } catch (err) {
       // During rekey transition, the initiator has switched to the new key
       // but the responder is still on the old key. Try the PENDING (future)
@@ -386,10 +412,8 @@ class AnnexSession {
           // Implicit ack: promote pending → current, zero old key
           this.encryptionKey = this.pendingEncryptionKey;
           this.pendingEncryptionKey = null;
-          this.recvSequence = expectedSequence;
-          this.lastActivity = Date.now();
           log.info('Rekey activated via implicit ack', { sessionId: this.sessionId?.slice(0, 16) });
-          return result;
+          return accept(result);
         } catch {
           // pending key also failed — fall through to transition key
         }
@@ -406,12 +430,10 @@ class AnnexSession {
           this._transitionKey, encryptedData, expectedSequence,
           this._transitionSessionId || this.sessionId
         );
-        this.recvSequence = expectedSequence;
-        this.lastActivity = Date.now();
         log.info('Bootstrap→KEM transition: decoded in-flight message with old key', {
           sessionId: this.sessionId?.slice(0, 16),
         });
-        return result;
+        return accept(result);
       }
 
       throw err;
@@ -1057,6 +1079,10 @@ export class Annex {
       if (err.message.includes('Replay')) {
         this.stats.replaysBlocked++;
         log.warn('Replay attack blocked', { error: err.message });
+      } else if (/Duplicate|Stale/.test(err.message)) {
+        // Dual-wire reorder artifacts — tolerated by design, not attacks.
+        this.stats.outOfOrderDropped = (this.stats.outOfOrderDropped || 0) + 1;
+        log.debug('Out-of-window envelope dropped', { error: err.message });
       } else {
         throw err;
       }
