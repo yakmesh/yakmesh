@@ -157,6 +157,8 @@ export class YakTun {
      */
     learnEndpoint(nodeId, host, port, wsPort = 0) {
         if (!nodeId || !host || !port) return;
+        const selfId = this._selfNodeId || this.mesh?.identity?.identity?.nodeId;
+        if (nodeId === selfId) return; // never learn our own endpoint
         const prev = this.endpoints.get(nodeId);
         this.endpoints.set(nodeId, {
             host, port,
@@ -279,6 +281,8 @@ export class YakTun {
      */
     handleAnnounce(data, originHost) {
         if (!data?.nodeId || !data?.vIp) return;
+        const selfId = this._selfNodeId || this.mesh?.identity?.identity?.nodeId;
+        if (data.nodeId === selfId) return; // own announce echoed back via gossip
         this.learnRoute(data.vIp, data.nodeId);
         if (data.vIp6) this.learnRoute(data.vIp6, data.nodeId);
         const host = originHost || data.tunHost || null;
@@ -337,6 +341,11 @@ export class YakTun {
         const annex = this.mesh?.annex;
         const jhilke = this.mesh?.jhilke;
         if (!annex) return null;
+        // Never build sessions to ourselves — own datagrams CAN loop back
+        // (broadcast echo, or our tun:announce re-learning our endpoint
+        // via gossip), and a self-pair key space is meaningless noise.
+        const selfId = this._selfNodeId || this.mesh?.identity?.identity?.nodeId;
+        if (nodeId === selfId) return null;
         const key = `tun:${nodeId}`;
         let session = annex.sessions.get(key);
         if (session?.established && !session.isExpired()) return session;
@@ -420,6 +429,11 @@ export class YakTun {
         // 'net'-keyed datagrams are LAN beacons — same-build broadcast
         // channel, not a pair session. Handled before pair decrypt.
         if (env.k === 'net') { this._onDiscover(env, rinfo); return; }
+
+        // Own datagrams can loop back (broadcast echo, reflected relay) —
+        // never build a wire-B session to ourselves.
+        const selfId = this._selfNodeId || this.mesh?.identity?.identity?.nodeId;
+        if (fromNodeId === selfId) return;
 
         // Sender claims nodeId in cleartext — the GCM authTag under the
         // pair key is what actually proves it.

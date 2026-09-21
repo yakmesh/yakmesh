@@ -89,6 +89,13 @@
   hardcoded three deployment IPs (including each node's own), contrary
   to the no-hardcoded-IPs design; seeds are env/operator config
   (YAKMESH_BOOTSTRAP) or LAN discovery.
+- YAK-TUN self-sessions — own wire-B datagrams can loop back (broadcast
+  echo, or our tun:announce re-learning our endpoint via gossip) and
+  _onDatagram built `tun:<self>` JHILKE sessions to our own nodeId on
+  every cycle. Self-guards now cover _tunSession (no self-pair key
+  space), _onDatagram (own datagrams dropped before decrypt),
+  learnEndpoint (own nodeId never stored), and handleAnnounce (own
+  echoed announce ignored).
 
 ### Tests
 - mesh-auth fixtures derive nodeId from the generated keypair — the
