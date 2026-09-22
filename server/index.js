@@ -2127,6 +2127,15 @@ export class YakmeshNode {
 
     this.darshanGateway = new DarshanGateway(this.identity, {
       maxBandwidth: this.config.darshan?.maxBandwidth || Infinity,
+      // GUMBA bundle-gated access — accessList on content is a bundle id;
+      // verifyAccess resolves it through GumbaHub.handleAccessRequest
+      // (gate verify → session). No hub → deny, never silent-grant.
+      accessController: {
+        verifyAccess: (proof, _keyLookup, bundleId, viewerId) =>
+          this.gumbaHub
+            ? this.gumbaHub.handleAccessRequest(bundleId, proof, viewerId)
+            : Promise.resolve({ granted: false, reason: 'GUMBA not initialized' }),
+      },
     });
 
     // Wire DARSHAN gossip handlers

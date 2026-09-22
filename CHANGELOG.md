@@ -1,6 +1,22 @@
 ## [3.5.10] — Unreleased
 
 ### Added
+- AVOTH epoch-bound ANNEX wire keys — the session encryption key is now a
+  per-epoch derivation: wireKey = derivePhaseModulated(sessionBase, epoch),
+  driven by the AGUWA phase clock (6h epochs). Both peers flip at the same
+  boundary with zero round-trips — the deterministic post-bootstrap rekey
+  JHILKE comments always described but never wired. Decrypt accepts the
+  epoch ±1 window (boundary straddle, delayed dual-wire packets); anything
+  outside is rejected. A leaked epoch wire key heals at the next flip and
+  cannot derive neighbours (HKDF one-way). Bootstrap→KEM transition and
+  pending-key promotion are unchanged; send-key cache invalidates on both
+  epoch flip and base-key change. 8 new tests cover same-epoch, ±1 window,
+  ±2 rejection, and replay across a flip.
+- GUMBA-gated DARSHAN streaming — DarshanGateway.accessController is now
+  wired to GumbaHub.handleAccessRequest: a content accessList is a GUMBA
+  bundle id; proof verify runs through the real gate (challenge /
+  attestation / merkle) and grants a session. /darshan/stream passes the
+  bundle id + viewer id through; without the hub it denies honestly.
 - YAK-TUN LAN discovery — the UDP underlay socket broadcasts a 'discover'
   beacon every 15s (limited + per-interface directed broadcast), AES-GCM'd
   under a key derived from JHILKE's dialectSeed: same build = decryptable

@@ -959,3 +959,105 @@ describe('ANNEX Signature Enforcement (CRITICAL 5.1)', () => {
     expect(annex.pendingHandshakes.size).toBe(0);
   });
 });
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// EPOCH-BOUND WIRE KEYS (AVOTH phase flip)
+// Wire key = derivePhaseModulated(sessionBase, epoch). Both peers share the
+// AGUWA epoch clock, so keys rotate every phase with zero round-trips; the
+// receiver accepts epoch ±1 to absorb boundary straddle.
+// ═══════════════════════════════════════════════════════════════════════════
+
+const epochCtl = vi.hoisted(() => ({ epoch: null, real: null }));
+
+vi.mock('../../oracle/phase-epoch.js', async (importOriginal) => {
+  const mod = await importOriginal();
+  epochCtl.real = mod.getCurrentEpoch;
+  return {
+    ...mod,
+    getCurrentEpoch: vi.fn(() => epochCtl.epoch ?? epochCtl.real()),
+  };
+});
+
+describe('AnnexSession — epoch-bound wire keys', () => {
+  let alice, bob;
+  let baseEpoch;
+
+  beforeEach(async () => {
+    alice = new AnnexSession({
+      localNodeId: 'alice',
+      remoteNodeId: 'bob',
+      initiator: true,
+    });
+    bob = new AnnexSession({
+      sessionId: alice.sessionId,
+      localNodeId: 'bob',
+      remoteNodeId: 'alice',
+      initiator: false,
+    });
+    await bob.generateKeyPair();
+    const ct = alice.encapsulate(bytesToHex(bob.kemKeyPair.publicKey));
+    bob.decapsulate(ct);
+    baseEpoch = epochCtl.real();
+    epochCtl.epoch = baseEpoch;
+  });
+
+  afterEach(() => { epochCtl.epoch = null; });
+
+  test('same-epoch round trip', () => {
+    const msg = alice.encrypt('phase-locked');
+    expect(bob.decrypt(msg, msg.sequence)).toBe('phase-locked');
+  });
+
+  test('wire key differs across epochs for same base', () => {
+    const k0 = alice._epochKeyFor(alice.encryptionKey, baseEpoch);
+    const k1 = alice._epochKeyFor(alice.encryptionKey, baseEpoch + 1);
+    expect(Buffer.compare(k0, k1)).not.toBe(0);
+  });
+
+  test('receiver decrypts previous-epoch ciphertext (sender behind)', () => {
+    const msg = alice.encrypt('sent before flip');
+    epochCtl.epoch = baseEpoch + 1; // receiver now one epoch ahead
+    expect(bob.decrypt(msg, msg.sequence)).toBe('sent before flip');
+  });
+
+  test('receiver decrypts next-epoch ciphertext (sender ahead)', () => {
+    epochCtl.epoch = baseEpoch + 1;
+    const msg = alice.encrypt('sent after flip');
+    epochCtl.epoch = baseEpoch; // receiver still on old epoch
+    expect(bob.decrypt(msg, msg.sequence)).toBe('sent after flip');
+  });
+
+  test('post-flip traffic uses the new epoch key both ways', () => {
+    epochCtl.epoch = baseEpoch + 1;
+    const msg = alice.encrypt('new epoch');
+    expect(bob.decrypt(msg, msg.sequence)).toBe('new epoch');
+  });
+
+  test('rejects ciphertext from epoch ±2 (outside window)', () => {
+    const msg = alice.encrypt('too old');
+    epochCtl.epoch = baseEpoch + 2;
+    expect(() => bob.decrypt(msg, msg.sequence)).toThrow();
+  });
+
+  test('replay protection survives an epoch flip', () => {
+    const m1 = alice.encrypt('one');
+    const m2 = alice.encrypt('two');
+    epochCtl.epoch = baseEpoch + 1;
+    bob.decrypt(m2, m2.sequence); // forward seq accepted post-flip
+    bob.decrypt(m1, m1.sequence); // delayed slower-wire seq inside window
+    expect(() => bob.decrypt(m2, m2.sequence)).toThrow(/Duplicate/);
+  });
+
+  test('send-key cache invalidates on epoch flip and base change', () => {
+    const k0 = alice._sendKey();
+    epochCtl.epoch = baseEpoch + 1;
+    const k1 = alice._sendKey();
+    expect(Buffer.compare(k0, k1)).not.toBe(0);
+    // Base change (e.g. KEM upgrade) invalidates even at same epoch
+    const before = alice._sendKey();
+    alice.encryptionKey = randomBytes(32);
+    alice._sendKeyEpoch = -1; // mirrors assignment-site invalidation
+    expect(Buffer.compare(before, alice._sendKey())).not.toBe(0);
+  });
+});

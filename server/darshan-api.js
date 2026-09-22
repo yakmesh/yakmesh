@@ -224,7 +224,9 @@ export function createDarshanAPI({
       }
       const accessResult = await darshanGateway.accessController.verifyAccess(
         req.body.accessProof || null,
-        () => {} // public key lookup — resolved by controller
+        () => {}, // public key lookup — resolved inside the controller
+        content.accessList,
+        viewerNodeId || req.authenticatedPeer
       ).catch(() => ({ granted: false, reason: 'verification failed' }));
       if (!accessResult.granted) {
         return res.status(403).json({

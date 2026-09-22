@@ -50,6 +50,7 @@ import { sha3_256 as _nobleSha3 } from '@noble/hashes/sha3.js';
 import { bytesToHex, hexToBytes, utf8ToBytes } from '@noble/hashes/utils.js';
 import { createLogger } from '../utils/logger.js';
 import { signatureToWire } from '../identity/node-key.js';
+import { getCurrentEpoch, derivePhaseModulated } from '../oracle/phase-epoch.js';
 
 // ACCEL: Hardware-accelerated crypto (native SHA3, native KEM via liboqs/AVX-512)
 import { sha3_256, mlKem768Keygen, mlKem768Encapsulate, mlKem768Decapsulate } from '../utils/accel.js';
@@ -240,6 +241,7 @@ class AnnexSession {
     } else {
       // Initial handshake or initiator: switch immediately
       this.encryptionKey = newKey;
+      this._sendKeyEpoch = -1; // base changed — invalidate send cache
     }
     this.established = true;
     this.channelState = ChannelState.ESTABLISHED;
@@ -282,6 +284,7 @@ class AnnexSession {
     // The initiator is always "first mover" — its next message triggers
     // the responder to promote pendingEncryptionKey.
     this.encryptionKey = this._deriveEncryptionKey();
+    this._sendKeyEpoch = -1; // base changed — invalidate send cache
     this.pendingEncryptionKey = null; // Clear any pending state
     this.established = true;
     this.channelState = ChannelState.ESTABLISHED;
@@ -301,7 +304,7 @@ class AnnexSession {
     const nonce = randomBytes(ANNEX_CONFIG.nonceSize);
     const cipher = createCipheriv(
       ANNEX_CONFIG.symmetricAlgorithm,
-      this.encryptionKey,
+      this._sendKey(),
       nonce,
       { authTagLength: ANNEX_CONFIG.authTagLength }
     );
@@ -396,49 +399,76 @@ class AnnexSession {
       return result;
     };
 
-    try {
-      // Try current key first
-      return accept(this._decryptWithKey(this.encryptionKey, encryptedData, expectedSequence));
-    } catch (err) {
-      // During rekey transition, the initiator has switched to the new key
-      // but the responder is still on the old key. Try the PENDING (future)
-      // key — if it works, promote it to current. This is the implicit ack.
-      //
-      // Security note: we only ever store the FUTURE key as fallback, never
-      // the PAST key. An attacker who dumps memory gets a key they'd have
-      // gotten anyway once activated. PFS of past messages is never at risk.
-      if (this.pendingEncryptionKey) {
+    // Candidate base keys × epoch window. Wire keys are epoch-derived
+    // (AVOTH epoch flip): key = phaseHKDF(base, epoch). Both sides share the
+    // same epoch clock, so rotation needs no round-trip; the ±1 window
+    // absorbs boundary straddle. A leaked epoch key heals at the next flip.
+    const epoch = getCurrentEpoch();
+    const candidates = [
+      { base: this.encryptionKey, sessionId: this.sessionId, promote: false },
+    ];
+    // PENDING (future) key — implicit-ack promotion on success. Only the
+    // future key is ever stored, never the past — PFS of prior traffic holds.
+    if (this.pendingEncryptionKey) {
+      candidates.push({ base: this.pendingEncryptionKey, sessionId: this.sessionId, promote: true });
+    }
+    // Bootstrap→KEM bridge — old session's base key + its sessionId (AAD
+    // binds `${sessionId}:${seq}`). Phases out via its own expiry timer.
+    if (this._transitionKey) {
+      candidates.push({ base: this._transitionKey, sessionId: this._transitionSessionId || this.sessionId, promote: false });
+    }
+
+    let firstErr = null;
+    for (const cand of candidates) {
+      for (const e of [epoch, epoch - 1, epoch + 1]) {
         try {
-          const result = this._decryptWithKey(this.pendingEncryptionKey, encryptedData, expectedSequence);
-          // Implicit ack: promote pending → current, zero old key
-          this.encryptionKey = this.pendingEncryptionKey;
-          this.pendingEncryptionKey = null;
-          log.info('Rekey activated via implicit ack', { sessionId: this.sessionId?.slice(0, 16) });
+          const result = this._decryptWithKey(
+            this._epochKeyFor(cand.base, e), encryptedData, expectedSequence, cand.sessionId);
+          if (cand.promote) {
+            this.encryptionKey = this.pendingEncryptionKey;
+            this.pendingEncryptionKey = null;
+            this._sendKeyEpoch = -1; // base changed — invalidate send cache
+            log.info('Rekey activated via implicit ack', { sessionId: this.sessionId?.slice(0, 16) });
+          } else if (cand.base === this._transitionKey) {
+            log.info('Bootstrap→KEM transition: decoded in-flight message with old key', {
+              sessionId: this.sessionId?.slice(0, 16),
+            });
+          }
           return accept(result);
-        } catch {
-          // pending key also failed — fall through to transition key
+        } catch (err2) {
+          if (!firstErr) firstErr = err2;
         }
       }
-
-      // Bootstrap→KEM upgrade bridge: the responder may still send messages
-      // encrypted with the bootstrap key between our KEM switch and their
-      // implicit-ack promotion. Try the briefly-retained old key — AND the
-      // old sessionId, since AAD is `${sessionId}:${seq}` and a replacement
-      // session carries a different sessionId than the bootstrap session.
-      // NO promotion — this key is being phased out (auto-expires via timer).
-      if (this._transitionKey) {
-        const result = this._decryptWithKey(
-          this._transitionKey, encryptedData, expectedSequence,
-          this._transitionSessionId || this.sessionId
-        );
-        log.info('Bootstrap→KEM transition: decoded in-flight message with old key', {
-          sessionId: this.sessionId?.slice(0, 16),
-        });
-        return accept(result);
-      }
-
-      throw err;
     }
+
+    throw firstErr || new Error('Decryption failed');
+  }
+
+  /**
+   * Derive the wire key for a given epoch from a base secret.
+   * Base = encryptionKey (KEM/bootstrap session secret); the phase flip
+   * rotates it every epoch without any message exchange.
+   */
+  _epochKeyFor(baseKey, epoch) {
+    return Buffer.from(derivePhaseModulated(
+      baseKey,
+      'YAKMESH-ANNEX-EPOCH-2026',
+      'yakmesh-annex-epoch-key-v1',
+      32,
+      epoch,
+    ));
+  }
+
+  /**
+   * Current-epoch send key, cached per epoch flip.
+   */
+  _sendKey() {
+    const epoch = getCurrentEpoch();
+    if (this._sendKeyEpoch !== epoch) {
+      this._sendKeyCache = this._epochKeyFor(this.encryptionKey, epoch);
+      this._sendKeyEpoch = epoch;
+    }
+    return this._sendKeyCache;
   }
 
   /**
@@ -530,6 +560,7 @@ export class Annex {
       remoteNodeId: peerId,
     });
     session.encryptionKey = bootstrapKey;
+    session._sendKeyEpoch = -1; // base set — invalidate send cache
     session.established = true;
     session.bootstrapped = true;
     session.channelState = ChannelState.ESTABLISHED;
@@ -1083,9 +1114,9 @@ export class Annex {
   }
 
 
-  // KEM-based _handleRekey and _rekey REMOVED — JHILKE handles all rekeys
-  // deterministically via deriveRekeyKey(). Both nodes compute the same key
-  // after cricket coordination. No encapsulate/decapsulate dance needed.
+  // KEM-based _handleRekey and _rekey REMOVED — rekeys are deterministic:
+  // the wire key is derived per AVOTH phase epoch (_epochKeyFor), so both
+  // nodes rotate at the same flip with no encapsulate/decapsulate dance.
 
   /**
    * Send an ANNEX control message.

@@ -1027,7 +1027,9 @@ export class DarshanGateway extends EventEmitter {
     if (this.accessController && content.accessList) {
       const accessResult = await this.accessController.verifyAccess(
         request.accessProof,
-        () => {} // Public key lookup
+        () => {}, // Public key lookup — resolved inside the controller
+        content.accessList,
+        request.viewerId
       );
       if (!accessResult.granted) {
         this.emit('access:denied', { request, reason: accessResult.reason });
