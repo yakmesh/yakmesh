@@ -1066,7 +1066,8 @@ export class MandalaNetwork {
               sig: this.identity.sign(`YAKMESH:REFERRAL:${admission.lowestPeer}:${evictExp}`),
             } : null,
           });
-          this.removePeer(admission.lowestPeer);
+          try { lowestWs.close(1000, 'capacity_eviction'); } catch { }
+          this._teardownPeer(admission.lowestPeer);
           log.info('Admission: evicted lower-priority peer via REDIRECT', {
             evicted: peerTag(admission.lowestPeer),
             incoming: peerTag(nodeId),
