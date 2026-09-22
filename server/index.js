@@ -2085,6 +2085,10 @@ export class YakmeshNode {
       nodeId: this.identity.identity.nodeId,
       timeSourceDetector: this.timeSource,
     });
+    // SHERPA-discovered beacons carry geo coordinates — wire the service so
+    // crawls register landmarks and feed RTT measurements (dead branch
+    // otherwise: geoProofService was never assigned on the discovery layer).
+    this.sherpa?.setGeoProofService(this.geoProofService);
   }
 
   /**
