@@ -386,7 +386,14 @@ class AnnexSession {
       }
     }
 
-    const accept = (result) => {
+    const accept = (result, recordSeq = true) => {
+      // Transition-key decryptions belong to the REPLACED session's sequence
+      // space — recording them here would mark the new session's own early
+      // sequences as duplicates (both spaces start at 0).
+      if (!recordSeq) {
+        this.lastActivity = Date.now();
+        return result;
+      }
       if (forward) this.recvSequence = expectedSequence;
       this._seenSeqs.add(expectedSequence);
       if (this._seenSeqs.size > ANNEX_CONFIG.replayWindow * 2) {
@@ -433,6 +440,7 @@ class AnnexSession {
             log.info('Bootstrap→KEM transition: decoded in-flight message with old key', {
               sessionId: this.sessionId?.slice(0, 16),
             });
+            return accept(result, false);
           }
           return accept(result);
         } catch (err2) {
@@ -920,6 +928,7 @@ export class Annex {
           peer: peerTag(envelope.senderId),
           type: envelope.type,
           sessionId: session?.sessionId?.slice(0, 8),
+          envSessionId: envelope.sessionId?.slice(0, 8),
           bootstrapped: session?.bootstrapped,
           sessionAge: session ? Date.now() - session.createdAt : null,
           recvSeq: session?.recvSequence,
