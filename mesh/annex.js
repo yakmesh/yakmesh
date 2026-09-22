@@ -567,6 +567,7 @@ export class Annex {
     session.lastRekey = Date.now();
 
     this.sessions.set(sessionKey, session);
+    this._authFailCount?.delete(sessionKey); // fresh session, fresh accounting
     log.info('JHILKE bootstrap session created (encrypted from message #1)', {
       peerId: peerTag(peerId),
       sessionId: deterministicSessionId.slice(0, 8) + '...',
@@ -609,35 +610,28 @@ export class Annex {
       // Fall through to create KEM session
     }
 
-    // No session exists — create new KEM-based session (non-JHILKE fallback)
+    // A handshake is already in flight — do NOT stomp pendingHandshakes.
+    // A second KEM session would overwrite the map entry, and the peer's
+    // KEY_RESPONSE would then decapsulate into the wrong session (implicit
+    // rejection → garbage shared secret → permanent key mismatch).
+    const pending = this.pendingHandshakes.get(remoteNodeId);
+    if (pending?._handshakePromise) {
+      log.debug('ANNEX handshake already in flight — reusing pending session', {
+        peerId: peerTag(remoteNodeId),
+      });
+      return pending._handshakePromise;
+    }
+
+    // No session exists — create new KEM-based session (non-JHILKE fallback).
+    // The pending entry + handshake promise are registered SYNCHRONOUSLY so
+    // a concurrent openChannel() sees them before its first await.
     session = new AnnexSession({
       localNodeId: this.identity.identity.nodeId,
       remoteNodeId,
       initiator: true,
     });
 
-    // Generate our key pair (ACCEL: native liboqs/AVX-512, PRAHARI: quantum seed)
-    const ourPublicKey = await session.generateKeyPair();
-
-    // Store pending handshake
-    this.pendingHandshakes.set(remoteNodeId, session);
-
-    // Send key exchange request (raw — no bootstrap session exists)
-    const envelope = new AnnexEnvelope({
-      type: ANNEX_CONFIG.messageTypes.KEY_EXCHANGE,
-      senderId: this.identity.identity.nodeId,
-      recipientId: remoteNodeId,
-      sessionId: session.sessionId,
-      kemPublicKey: ourPublicKey,
-    });
-
-    // Sign the envelope
-    envelope.signature = signatureToWire(this.identity.sign(envelope.getSigningPayload()));
-
-    await this._sendToMesh(remoteNodeId, envelope);
-
-    // Wait for response (with timeout)
-    return new Promise((resolve, reject) => {
+    const handshakePromise = new Promise((resolve, reject) => {
       const timeout = setTimeout(() => {
         this.pendingHandshakes.delete(remoteNodeId);
         this.stats.handshakesFailed++;
@@ -655,6 +649,28 @@ export class Annex {
         reject(error);
       };
     });
+    session._handshakePromise = handshakePromise;
+    handshakePromise.finally(() => { session._handshakePromise = null; });
+    this.pendingHandshakes.set(remoteNodeId, session);
+
+    // Generate our key pair (ACCEL: native liboqs/AVX-512, PRAHARI: quantum seed)
+    const ourPublicKey = await session.generateKeyPair();
+
+    // Send key exchange request (raw — no bootstrap session exists)
+    const envelope = new AnnexEnvelope({
+      type: ANNEX_CONFIG.messageTypes.KEY_EXCHANGE,
+      senderId: this.identity.identity.nodeId,
+      recipientId: remoteNodeId,
+      sessionId: session.sessionId,
+      kemPublicKey: ourPublicKey,
+    });
+
+    // Sign the envelope
+    envelope.signature = signatureToWire(this.identity.sign(envelope.getSigningPayload()));
+
+    await this._sendToMesh(remoteNodeId, envelope);
+
+    return handshakePromise;
   }
 
   /**
@@ -994,6 +1010,10 @@ export class Annex {
     // Store session
     this.sessions.set(envelope.senderId, session);
     this.stats.sessionsCreated++;
+    // Fresh session, fresh failure accounting — in-flight traffic encrypted
+    // under the previous key is handled by _transitionKey, not by counting
+    // auth failures that would invalidate this session seconds later.
+    this._authFailCount?.delete(envelope.senderId);
 
     // Send response with our public key and the KEM ciphertext (raw transport)
     const response = new AnnexEnvelope({
@@ -1021,6 +1041,16 @@ export class Annex {
       return;
     }
 
+    // The response must answer OUR pending exchange. A superseded KEX leaves
+    // a stale response in flight — decapsulating it into the newer session
+    // produces an implicit-rejection garbage secret (permanent mismatch).
+    if (envelope.sessionId && session.sessionId !== envelope.sessionId) {
+      log.debug('Stale KEY_RESPONSE (superseded handshake) — ignoring', {
+        peerId: peerTag(envelope.senderId),
+      });
+      return;
+    }
+
     // Decapsulate to get shared secret
     session.decapsulate(envelope.kemCiphertext);
 
@@ -1042,6 +1072,7 @@ export class Annex {
     this.pendingHandshakes.delete(envelope.senderId);
     this.sessions.set(envelope.senderId, session);
     this.stats.sessionsCreated++;
+    this._authFailCount?.delete(envelope.senderId); // fresh session, fresh accounting
     log.info('Channel established with peer (KEM)', { peerId: peerTag(envelope.senderId) });
 
     // Resolve the handshake promise

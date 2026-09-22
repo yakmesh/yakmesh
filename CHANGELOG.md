@@ -39,6 +39,19 @@
   non-LAN peers, not the primary mechanism.
 
 ### Fixed
+- ANNEX handshake stomp — openChannel() had no in-flight dedup: concurrent
+  triggers (peer-registered, WELCOME, recovery, send) each fired a fresh
+  KEY_EXCHANGE and overwrote pendingHandshakes. A KEY_RESPONSE then
+  decapsulated into the WRONG pending session (ML-KEM implicit rejection →
+  garbage shared secret → permanent key mismatch). Pending session +
+  handshake promise are now registered synchronously before the first
+  await, and _handleKeyResponse ignores responses whose sessionId does not
+  match the pending session.
+- ANNEX failure counter now resets on session (re)establishment —
+  in-flight bootstrap traffic during the KEM transition window was
+  accumulating auth failures that deleted freshly-established sessions
+  ~200ms after creation, producing an invalidation/re-handshake loop
+  (observed live: 25 consecutive decrypt failures before convergence).
 - Claim attestation false-forgery — the pq-bridge emits ML-DSA
   signatures/public keys as base64 while verifySignature() decoded hex
   only, so every legitimate bridge-signed NPU/HW proof attestation was

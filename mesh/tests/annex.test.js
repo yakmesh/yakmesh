@@ -1061,3 +1061,62 @@ describe('AnnexSession — epoch-bound wire keys', () => {
     expect(Buffer.compare(before, alice._sendKey())).not.toBe(0);
   });
 });
+
+
+describe('AnnexSession — handshake race hardening', () => {
+  let annex;
+  let sendCalls;
+
+  beforeEach(() => {
+    const mockIdentity = {
+      identity: { nodeId: 'node-b', publicKey: 'aa'.repeat(32) },
+      sign: vi.fn(() => 'mock-signature'),
+      verify: vi.fn(() => true),
+    };
+    sendCalls = [];
+    const mockMesh = {
+      on: vi.fn(),
+      peers: new Map(),
+      _relayPeerKeys: new Map(),
+      sendTo: vi.fn((id, env) => { sendCalls.push(env); return true; }),
+    };
+    annex = new Annex({ identity: mockIdentity, mesh: mockMesh });
+  });
+
+  test('concurrent openChannel calls share one pending handshake', async () => {
+    // First call fires the KEX; the second must reuse it — a stomp would
+    // overwrite pendingHandshakes and orphan the first session.
+    const p1 = annex.openChannel('node-a');
+    const p2 = annex.openChannel('node-a');
+    expect(annex.pendingHandshakes.size).toBe(1); // synchronous dedup
+    await vi.waitFor(() => expect(sendCalls.length).toBeGreaterThan(0));
+    const kexCount = sendCalls.filter(e => e.annex?.type === ANNEX_CONFIG.messageTypes.KEY_EXCHANGE).length;
+    expect(kexCount).toBe(1);
+    // Settle both to avoid dangling timers
+    const s = annex.pendingHandshakes.get('node-a');
+    s._resolveHandshake(s);
+    await Promise.all([p1, p2]);
+  });
+
+  test('stale KEY_RESPONSE (wrong sessionId) is ignored, not decapsulated', async () => {
+    const p = annex.openChannel('node-a');
+    const pending = annex.pendingHandshakes.get('node-a'); // set synchronously
+    expect(pending).toBeDefined();
+    const decapSpy = vi.spyOn(pending, 'decapsulate');
+    await annex._handleKeyResponse({
+      senderId: 'node-a',
+      sessionId: 'superseded-session-id',
+      kemCiphertext: 'aa',
+    });
+    expect(decapSpy).not.toHaveBeenCalled();
+    expect(annex.pendingHandshakes.has('node-a')).toBe(true);
+    pending._resolveHandshake(pending);
+    await p;
+  });
+
+  test('session establishment resets the auth-failure counter', async () => {
+    annex._authFailCount = new Map([['node-a', 5]]);
+    annex.bootstrapSession('node-a', randomBytes(32));
+    expect(annex._authFailCount.get('node-a')).toBeUndefined();
+  });
+});
