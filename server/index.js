@@ -460,7 +460,9 @@ export class YakmeshNode {
     // This is critical for Code Proof Protocol security
     log.info('🔐 Securing codebase...');
     const lockResult = lockCodebase();
-    if (lockResult.success) {
+    if (lockResult.success && lockResult.devTree) {
+      log.info('🔐 Codebase lock skipped — dev working tree (.git present)');
+    } else if (lockResult.success) {
       this.codebaseLocked = true;
       setupUnlockOnExit();  // Ensure cleanup on process exit
       log.info(`✓ Codebase locked: ${lockResult.fileCount} source files protected`);

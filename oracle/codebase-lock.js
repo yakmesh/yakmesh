@@ -37,7 +37,7 @@
  * @version 1.3.0
  */
 
-import { openSync, closeSync, readdirSync, statSync, chmodSync, watch, existsSync } from 'fs';
+import { openSync, closeSync, readdirSync, statSync, chmodSync, watch, existsSync, readFileSync, writeFileSync, mkdirSync, unlinkSync } from 'fs';
 import { join, extname, basename } from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
@@ -85,6 +85,11 @@ const CRITICAL_FILES = [
   'identity/private-key.pem',
   'data/node-identity.json',
 ];
+
+// Persistent lock manifest — records original modes so a crashed/killed
+// node's locks self-heal on the next start instead of leaving the tree
+// permanently read-only. Lives under data/ (runtime state, never locked).
+const LOCK_MANIFEST_REL = join('data', 'codebase-lock.json');
 
 // Directories containing sensitive data
 const SECURE_DIRS = [
@@ -137,6 +142,23 @@ export class CodebaseLock extends EventEmitter {
       return { success: true, fileCount: this.#handles.length, message: 'Already locked' };
     }
 
+    // A .git working tree is source, not a sealed deployment — chmod-locking
+    // it breaks editors and silently eats writes (ntfs3 + 555 = EACCES with
+    // no obvious error surface). Packaged deployments ship without .git and
+    // still lock as designed. YAKMESH_CODEBASE_LOCK=1 forces the lock on a
+    // dev tree; =0 disables it anywhere.
+    const envFlag = process.env.YAKMESH_CODEBASE_LOCK;
+    const isDevTree = existsSync(join(this.#rootDir, '.git'));
+    if (envFlag === '0' || (envFlag !== '1' && isDevTree)) {
+      log.info('Codebase lock skipped — git working tree (YAKMESH_CODEBASE_LOCK=1 to force)');
+      // Still heal stale locks left by a previous crashed run of this tree
+      this.#recoverStaleLock();
+      return { success: true, fileCount: 0, message: 'Skipped on dev tree', devTree: true };
+    }
+
+    // Heal stale locks from a previous crashed/killed run before re-locking
+    this.#recoverStaleLock();
+
     try {
       const sourceFiles = this.#collectSourceFiles(this.#rootDir);
 
@@ -171,6 +193,9 @@ export class CodebaseLock extends EventEmitter {
 
       // Protect critical identity files
       this.#protectCriticalFiles();
+
+      // Persist the mode map so crash residue can be healed on next start
+      this.#writeManifest();
 
       return {
         success: true,
@@ -215,6 +240,8 @@ export class CodebaseLock extends EventEmitter {
     this.#handles = [];
     this.#originalPermissions.clear();
     this.#locked = false;
+
+    this.#deleteManifest();
 
     // Stop watchdog
     this.#stopWatchdog();
@@ -263,6 +290,80 @@ export class CodebaseLock extends EventEmitter {
    */
   getLockedFileCount() {
     return this.#handles.length;
+  }
+
+  /**
+   * Persist the locked-file mode map so a crashed/killed node's locks can
+   * be healed by the next start. Manifest lives under data/ (runtime state,
+   * outside the locked set).
+   * @private
+   */
+  #writeManifest() {
+    try {
+      const manifestPath = join(this.#rootDir, LOCK_MANIFEST_REL);
+      mkdirSync(dirname(manifestPath), { recursive: true });
+      writeFileSync(manifestPath, JSON.stringify({
+        pid: process.pid,
+        rootDir: this.#rootDir,
+        lockedAt: Date.now(),
+        files: Object.fromEntries(this.#originalPermissions),
+      }));
+    } catch (e) {
+      log.warn('Could not write lock manifest', { error: e.message });
+    }
+  }
+
+  /**
+   * Heal stale locks: if a manifest exists and its owning pid is dead,
+   * restore every recorded mode and remove the manifest. If the pid is
+   * alive another instance legitimately holds the lock — leave it alone.
+   * @private
+   */
+  #recoverStaleLock() {
+    const manifestPath = join(this.#rootDir, LOCK_MANIFEST_REL);
+    if (!existsSync(manifestPath)) return;
+
+    let manifest;
+    try {
+      manifest = JSON.parse(readFileSync(manifestPath, 'utf8'));
+    } catch {
+      try { unlinkSync(manifestPath); } catch { }
+      return;
+    }
+
+    // Manifest from a different root (e.g. moved deployment) — drop it
+    if (manifest.rootDir !== this.#rootDir) {
+      try { unlinkSync(manifestPath); } catch { }
+      return;
+    }
+
+    let pidAlive = false;
+    try {
+      process.kill(manifest.pid, 0);
+      pidAlive = true;
+    } catch { /* ESRCH = dead pid = stale lock */ }
+
+    if (pidAlive) return;
+
+    let restored = 0;
+    for (const [filePath, mode] of Object.entries(manifest.files || {})) {
+      try {
+        chmodSync(filePath, mode);
+        restored++;
+      } catch { /* file may be gone after an update — skip */ }
+    }
+    try { unlinkSync(manifestPath); } catch { }
+
+    if (restored > 0) {
+      log.warn(`Healed stale codebase lock from dead pid ${manifest.pid} — ${restored} files restored`);
+    }
+  }
+
+  /**
+   * @private
+   */
+  #deleteManifest() {
+    try { unlinkSync(join(this.#rootDir, LOCK_MANIFEST_REL)); } catch { }
   }
 
   /**
