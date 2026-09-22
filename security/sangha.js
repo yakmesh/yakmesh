@@ -369,6 +369,7 @@ export class Sangha extends EventEmitter {
   #components;
   #synapses;
   #antibodies;
+  #pendingAnomalies;
   #timeSource;
   #state;
   #lastCirculation;
@@ -382,6 +383,7 @@ export class Sangha extends EventEmitter {
     this.#components = new Map();
     this.#synapses = new Map();
     this.#antibodies = [];
+    this.#pendingAnomalies = [];
     this.#timeSource = null;
     this.#state = new Trit(NEUTRAL);
     this.#lastCirculation = 0;
@@ -564,6 +566,23 @@ export class Sangha extends EventEmitter {
   // ─────────────────────────────────────────────────────────────────────────
 
   /**
+   * Record an out-of-band anomaly reported by a component between
+   * circulations (e.g. fs-hardening tamper events). Queued anomalies merge
+   * into the next circulation's antibody so they trigger the same
+   * anomalyDetected / collectiveResponse path as circulation-detected ones.
+   * @param {string} component - Component reporting the anomaly
+   * @param {string} type - Anomaly type
+   * @param {object} details - Anomaly details
+   */
+  reportAnomaly(component, type, details = {}) {
+    this.#pendingAnomalies.push({ component, type, details });
+    // Bounded — a flood of reports must not grow memory unbounded
+    if (this.#pendingAnomalies.length > 1000) {
+      this.#pendingAnomalies.splice(0, this.#pendingAnomalies.length - 1000);
+    }
+  }
+
+  /**
    * Circulate an antibody through all components
    * @returns {Promise<object>} - Circulation result
    */
@@ -597,6 +616,13 @@ export class Sangha extends EventEmitter {
         });
       }
     }
+
+    // Merge out-of-band component reports (fs tamper, etc.) so they reach
+    // the same finalize → collectiveResponse path as circulation anomalies
+    for (const a of this.#pendingAnomalies) {
+      antibody.recordAnomaly(a.component, a.type, a.details);
+    }
+    this.#pendingAnomalies.length = 0;
 
     const result = antibody.finalize();
 
