@@ -40,6 +40,7 @@ import { sha3_256 } from '@noble/hashes/sha3.js';
 import { createLogger } from '../utils/logger.js';
 import { verifySignature } from '../identity/node-key.js';
 import { npuProofClaim, hwProofClaim } from './contribution.js';
+import { isAvailable as bridgeAvailable } from '../utils/avoth-bridge.js';
 
 const log = createLogger('mesh:claim-ledger');
 
@@ -81,6 +82,12 @@ export class ClaimLedger extends EventEmitter {
 
     this.forks = [];        // recorded fork evidence
     this.bindingConflicts = [];
+
+    // pq-bridge degraded-mode: warn once on the down-transition, stay at
+    // debug while unreachable, announce recovery. Bridge-less nodes are a
+    // supported configuration (verification defers to settlement) — a WARN
+    // every epoch was log spam, not signal.
+    this._bridgeDown = false;
   }
 
   /**
@@ -243,6 +250,32 @@ export class ClaimLedger extends EventEmitter {
   }
 
   /**
+   * Bridge availability gate. Returns true when the pq-bridge is
+   * reachable (probe cached ~15s in avoth-bridge). On the down/up
+   * transitions we log once at warn/info; while down, calls return
+   * false and callers defer — witnessing continues regardless.
+   */
+  async _bridgeGate(what, epoch) {
+    const up = await bridgeAvailable();
+    if (!up) {
+      if (!this._bridgeDown) {
+        this._bridgeDown = true;
+        log.warn(`pq-bridge unreachable — ${what} deferred to settlement`, {
+          url: BRIDGE_URL, epoch,
+        });
+      } else {
+        log.debug(`${what} deferred (bridge still down)`, { epoch });
+      }
+      return false;
+    }
+    if (this._bridgeDown) {
+      this._bridgeDown = false;
+      log.info(`pq-bridge reachable — ${what} resumed`, { epoch });
+    }
+    return true;
+  }
+
+  /**
    * Cryptographic seal verification for an epoch's witnessed claims —
    * upgrades the shape check to a real AVOTH recompute via the pq-bridge
    * (/yakcoin/verify-claims, triad-dispatched: GPU bulk, NPU dot matrix,
@@ -264,6 +297,8 @@ export class ClaimLedger extends EventEmitter {
       epoch: c.epoch,
       seal: c.seal,
     }));
+
+    if (!await this._bridgeGate('seal verification', epoch)) return null;
 
     let res;
     try {
@@ -382,6 +417,8 @@ export class ClaimLedger extends EventEmitter {
   async attestEpoch(epoch) {
     const r = this.epochClaimRoot(epoch);
     if (!r) return null;
+
+    if (!await this._bridgeGate('epoch attestation', epoch)) return null;
 
     let res;
     try {
