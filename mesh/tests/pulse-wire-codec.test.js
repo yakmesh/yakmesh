@@ -85,3 +85,27 @@ describe('ANNEX wrapper — no stacked hop signatures', () => {
     expect(frame._tribhujPubKey).toBeUndefined();
   });
 });
+
+describe('PulseSync chain-head persistence', () => {
+  test('restart resumes the chain instead of forking it', async () => {
+    const { PulseSync } = await import('../pulse-sync.js');
+    const { mkdtempSync, rmSync } = await import('fs');
+    const { join } = await import('path');
+    const { tmpdir } = await import('os');
+
+    const dir = mkdtempSync(join(tmpdir(), 'pulse-chain-'));
+    const file = join(dir, 'pulse-chain.json');
+    try {
+      const a = new PulseSync({ nodeId: 'node-x', chainStateFile: file });
+      a.createHeartbeat({});
+      const last = a.createHeartbeat({});
+      // Fresh process-equivalent: new instance, same state file
+      const b = new PulseSync({ nodeId: 'node-x', chainStateFile: file });
+      const resumed = b.createHeartbeat({});
+      expect(resumed.sequence).toBe(last.sequence + 1);
+      expect(resumed.prevHash).toBe(last.hash);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});

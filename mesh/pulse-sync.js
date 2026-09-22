@@ -37,6 +37,7 @@
  */
 
 import { randomBytes } from 'crypto';
+import { readFileSync, writeFileSync, renameSync } from 'fs';
 import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js';
 
 // ACCEL: Hardware-accelerated SHA3-256 (OpenSSL/SHA-NI — 4.6x faster)
@@ -527,8 +528,29 @@ class PulseSync {
     // ML-DSA signing hooks (v3.5.3): heartbeats are signed over their
     // hash — an unsigned or forged beat is evidence, not liveness.
     this.signFn = options.signFn || null;
+    this.chainStateFile = options.chainStateFile || null;
     this.sequence = 0;
     this.lastHeartbeat = null;
+
+    // The heartbeat chain is a monotonic tamper-evident history — restarting
+    // at seq 0 rewrites it, and every witness holding the old head flags a
+    // fork storm until their seq cache evicts. Persist the chain head so a
+    // restart RESUMES the chain; only a wiped/replaced data dir forks.
+    if (this.chainStateFile) {
+      try {
+        const saved = JSON.parse(readFileSync(this.chainStateFile, 'utf8'));
+        if (saved && Number.isInteger(saved.sequence) && saved.sequence >= 0
+            && typeof saved.hash === 'string' && /^[0-9a-f]{64}$/.test(saved.hash)
+            && Number.isFinite(saved.timestamp)) {
+          this.sequence = saved.sequence;
+          this.lastHeartbeat = {
+            hash: saved.hash,
+            sequence: saved.sequence - 1,
+            timestamp: saved.timestamp,
+          };
+        }
+      } catch { /* absent or unreadable — fresh chain */ }
+    }
     this.healthMonitor = new MeshHealthMonitor();
     this.election = new PulseLeaderElection({ nodeId: this.nodeId });
     this.election.heartbeatChains = this.healthMonitor.nodes;
@@ -566,11 +588,25 @@ class PulseSync {
 
     this.lastHeartbeat = heartbeat;
     this.stats.heartbeatsSent++;
+    this._persistChainHead();
 
     // Also process our own heartbeat for monitoring
     this.healthMonitor.processHeartbeat(heartbeat);
 
     return heartbeat.serialize();
+  }
+
+  _persistChainHead() {
+    if (!this.chainStateFile || !this.lastHeartbeat) return;
+    try {
+      const tmp = this.chainStateFile + '.tmp';
+      writeFileSync(tmp, JSON.stringify({
+        sequence: this.sequence,
+        hash: this.lastHeartbeat.hash,
+        timestamp: this.lastHeartbeat.timestamp,
+      }));
+      renameSync(tmp, this.chainStateFile);
+    } catch { /* persistence is best-effort — chain still advances in memory */ }
   }
 
   /**

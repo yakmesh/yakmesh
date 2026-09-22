@@ -838,6 +838,7 @@ export class YakmeshNode {
     this.pulseSync = new PulseSync({
       nodeId: this.identity.identity.nodeId,
       signFn: (data) => this.identity.sign(data),
+      chainStateFile: join(this.config?.node?.dataDir || './data', 'pulse-chain.json'),
     });
     this.claimLedger = new ClaimLedger({ nodeId: this.identity.identity.nodeId });
     this.witnessedTime = new WitnessedTime({
