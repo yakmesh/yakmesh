@@ -608,6 +608,54 @@ export class YakmeshNode {
     this.identity = new NodeIdentity(dbDir);
     await this.identity.init(this.config.node.name, this.config.node.region, this.oracle);
 
+    // DOKO identity store — backs the /security/doko/* endpoints.
+    // Persisted to <dbDir>/dokos.json; populated via creation APIs and
+    // (future) KHATA DOKO announce.
+    this.dokoRegistry = new DOKOStore();
+    this._dokoStorePath = join(dbDir, 'dokos.json');
+    if (existsSync(this._dokoStorePath)) {
+      try {
+        const dokos = JSON.parse(readFileSync(this._dokoStorePath, 'utf8'));
+        const res = this.dokoRegistry.import(dokos);
+        if (res.imported || res.failed) {
+          log.info(`📋 DOKO registry: restored ${res.imported} DOKOs (${res.failed} rejected)`);
+        }
+      } catch (e) {
+        log.warn(`⚠️  DOKO registry restore failed: ${e.message}`);
+      }
+    }
+
+    // Self-register the node's DOKO — bound to the identity key so KHATA
+    // attestations verify against the same public key peers resolve via
+    // KeyResolver. Deterministic dokoId (publicKey+NODE type) regenerates
+    // identically each boot.
+    try {
+      const nodeDoko = DOKOGenerator.fromKeyPair(
+        this.identity.identity.publicKey,
+        this.identity.identity.secretKey,
+        {
+          type: DOKOTypes.NODE,
+          claims: {
+            nodeId: this.identity.identity.nodeId,
+            networkName: this.identity.identity.networkName,
+          },
+          extensions: {
+            persistentId144T: this.identity.getPersistentId(),
+            capabilities: this.identity.identity.capabilities || ['mesh', 'gossip', 'relay'],
+          },
+        }
+      );
+      const addRes = this.dokoRegistry.add(nodeDoko);
+      if (addRes.success) {
+        this.selfDokoId = nodeDoko.dokoId;
+        log.info(`📋 DOKO: node self-registered (${nodeDoko.dokoId.slice(0, 16)}…)`);
+      } else {
+        log.warn(`⚠️  DOKO self-registration rejected: ${addRes.error}`);
+      }
+    } catch (e) {
+      log.warn(`⚠️  DOKO self-registration failed: ${e.message}`);
+    }
+
     // 2b. Update codeProof and consensus with the initialized identity
     if (this.codeProof) {
       this.codeProof.nodeId = this.identity.identity?.nodeId;
@@ -1581,6 +1629,16 @@ export class YakmeshNode {
     // Annex channels cleaned up by mesh.stop()
     this.gossip?.stop();
     this.replication?.stopSync();
+
+    // Persist DOKO registry
+    if (this.dokoRegistry && this._dokoStorePath) {
+      try {
+        writeFileSync(this._dokoStorePath, JSON.stringify(this.dokoRegistry.export()));
+      } catch (e) {
+        log.warn(`⚠️  DOKO registry save failed: ${e.message}`);
+      }
+    }
+
     await this.mesh?.stop();
 
     if (this.http) {
@@ -6259,15 +6317,17 @@ export class YakmeshNode {
       }
 
       const type = req.query.type || null;
-      const identities = this.dokoRegistry.list(type);
+      const identities = type
+        ? this.dokoRegistry.getByType(type)
+        : [...this.dokoRegistry.documents.values()];
       res.json({
         count: identities.length,
         type: type || 'all',
-        identities: identities.map(id => ({
-          id: id.id,
-          type: id.type,
-          created: id.created,
-          verified: id.verified,
+        identities: identities.map(doc => ({
+          id: doc.dokoId,
+          type: doc.type,
+          created: doc.created,
+          expires: doc.expires,
         }))
       });
     });
@@ -6284,7 +6344,32 @@ export class YakmeshNode {
         return res.status(400).json({ error: 'Missing id, challenge, or signature' });
       }
 
-      const result = this.dokoRegistry.verify(id, challenge, signature);
+      // Proof-of-possession: the caller must hold the DOKO's secret key —
+      // signature over the supplied challenge verifies against the DOKO's
+      // stored public key.
+      const doko = this.dokoRegistry.get(id);
+      if (!doko) {
+        return res.status(404).json({ verified: false, error: 'Unknown DOKO id' });
+      }
+      const valid = this.identity.verify(String(challenge), signature, doko.publicKey);
+      res.json({ verified: !!valid, dokoId: doko.dokoId });
+    });
+
+    // Register a DOKO document — full validation (signature, expiry, structure)
+    // via DOKOValidator inside store.add(). Peer-authed: only known peers may
+    // publish identities into the registry.
+    app.post('/security/doko/register', writeLimiter, requirePeerAuth, (req, res) => {
+      if (!this.dokoRegistry) {
+        return res.status(503).json({ error: 'DOKO registry not initialized' });
+      }
+      const doko = req.body?.doko;
+      if (!doko || typeof doko !== 'object') {
+        return res.status(400).json({ error: 'Missing doko document' });
+      }
+      const result = this.dokoRegistry.add(doko);
+      if (!result.success) {
+        return res.status(422).json(result);
+      }
       res.json(result);
     });
 
