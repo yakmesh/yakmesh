@@ -98,6 +98,7 @@ const ANNEX_CONFIG = {
 
   // Session management
   sessionTimeout: 3600000,       // 1 hour session lifetime
+  rekeyInterval: 1800000,        // proactive KEM rekey at half-life — bounds base-secret exposure
   replayWindow: 64,              // sliding window for dual-wire reorder tolerance
 
   // Message types
@@ -607,12 +608,15 @@ export class Annex {
    * hash + buildNonce + nodeIDs) — NO forward secrecy. We must upgrade to
    * a proper KEM-backed session as soon as possible.
    */
-  async openChannel(remoteNodeId) {
+  async openChannel(remoteNodeId, { force = false } = {}) {
     // Check for existing session (bootstrap or KEM — both are valid)
     let session = this.sessions.get(remoteNodeId);
 
-    // Return existing KEM-backed session — it has forward secrecy
-    if (session && session.established && !session.bootstrapped && !session.isExpired()) {
+    // Return existing KEM-backed session — it has forward secrecy.
+    // `force` (periodic rekey) skips this so a fresh KEM exchange replaces
+    // the base secret — epoch wire keys heal a leaked WIRE key but only a
+    // new encapsulate/decapsulate heals a leaked BASE secret.
+    if (!force && session && session.established && !session.bootstrapped && !session.isExpired()) {
       return session;
     }
 
@@ -813,6 +817,7 @@ export class Annex {
     if (currentSession && currentSession.sessionId === capturedSessionId) {
       currentSession.channelState = ChannelState.CLOSED;
       this.sessions.delete(remoteNodeId);
+      this._clearRekeyTimer(remoteNodeId);
     } else if (currentSession) {
       log.debug('closeChannel: session replaced by reconnect — keeping new session', {
         peer: peerTag(remoteNodeId),
@@ -929,6 +934,7 @@ export class Annex {
           const closedSession = this.sessions.get(envelope.senderId);
           if (closedSession) closedSession.channelState = ChannelState.CLOSED;
           this.sessions.delete(envelope.senderId);
+          this._clearRekeyTimer(envelope.senderId);
           log.info('Channel closed by peer', { peerId: peerTag(envelope.senderId) });
           break;
         }
@@ -965,6 +971,7 @@ export class Annex {
           this._authFailCount.set(peerId, 0);
           this.sessions.delete(peerId);
           this.pendingHandshakes.delete(peerId);
+          this._clearRekeyTimer(peerId);
           log.warn('ANNEX session invalidated after repeated auth failures — re-handshaking', {
             peer: peerTag(peerId), failures: fails,
           });
@@ -1035,6 +1042,7 @@ export class Annex {
     // Store session
     this.sessions.set(envelope.senderId, session);
     this.stats.sessionsCreated++;
+    this._armRekeyTimer(envelope.senderId);
     // Fresh session, fresh failure accounting — in-flight traffic encrypted
     // under the previous key is handled by _transitionKey, not by counting
     // auth failures that would invalidate this session seconds later.
@@ -1097,6 +1105,7 @@ export class Annex {
     this.pendingHandshakes.delete(envelope.senderId);
     this.sessions.set(envelope.senderId, session);
     this.stats.sessionsCreated++;
+    this._armRekeyTimer(envelope.senderId);
     this._authFailCount?.delete(envelope.senderId); // fresh session, fresh accounting
     log.info('Channel established with peer (KEM)', { peerId: peerTag(envelope.senderId) });
 
@@ -1104,6 +1113,36 @@ export class Annex {
     if (session._resolveHandshake) {
       session._resolveHandshake(session);
     }
+  }
+
+  /**
+   * Periodic KEM rekey — the only path that heals a compromised session
+   * BASE secret (epoch wire-key rotation derives forward from the same
+   * base). Deterministic initiator: the lexicographically smaller nodeId
+   * drives the exchange, the larger side only responds — same tie-break
+   * as the bootstrap→KEM upgrade, so rekeys never cross.
+   */
+  _armRekeyTimer(peerId) {
+    (this._rekeyTimers ??= new Map());
+    clearTimeout(this._rekeyTimers.get(peerId));
+    const timer = setTimeout(() => {
+      this._rekeyTimers.delete(peerId);
+      const localId = this.identity.identity.nodeId;
+      if (localId > peerId) return; // larger side waits — peer initiates
+      const session = this.sessions.get(peerId);
+      if (!session?.established || session.isExpired()) return;
+      this.openChannel(peerId, { force: true }).catch(err =>
+        log.debug('ANNEX periodic rekey failed', {
+          peerId: peerTag(peerId), error: err.message,
+        }));
+    }, ANNEX_CONFIG.rekeyInterval);
+    timer.unref?.();
+    this._rekeyTimers.set(peerId, timer);
+  }
+
+  _clearRekeyTimer(peerId) {
+    const t = this._rekeyTimers?.get(peerId);
+    if (t) { clearTimeout(t); this._rekeyTimers.delete(peerId); }
   }
 
   async _handleEncrypted(envelope) {

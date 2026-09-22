@@ -1214,3 +1214,86 @@ describe('Annex — envelope sessionId routing', () => {
     expect(annex._authFailCount?.get('peer-node') || 0).toBe(0);
   });
 });
+
+describe('Annex — periodic KEM rekey', () => {
+  let annex;
+  let sendCalls;
+
+  beforeEach(() => {
+    sendCalls = [];
+    annex = new Annex({
+      identity: {
+        identity: { nodeId: 'aaa-node' },
+        sign: vi.fn(() => 'sig'),
+        verify: vi.fn(() => true),
+      },
+    });
+    annex._sendToMesh = async (peerId, env) => { sendCalls.push({ peerId, env }); };
+  });
+
+  const established = () => {
+    const s = new AnnexSession({ localNodeId: 'aaa-node', remoteNodeId: 'zzz-peer' });
+    s.encryptionKey = randomBytes(32);
+    s.established = true;
+    return s;
+  };
+
+  test('force rekey on an established session opens a fresh handshake', async () => {
+    const session = established();
+    annex.sessions.set('zzz-peer', session);
+
+    const p = annex.openChannel('zzz-peer', { force: true });
+    // wait for generateKeyPair + send to flush
+    await vi.waitFor(() => expect(sendCalls.length).toBe(1));
+    expect(sendCalls[0].env.type).toBe('annex:key_exchange');
+    // pending session is NEW — different sessionId, old session still live
+    const pending = annex.pendingHandshakes.get('zzz-peer');
+    expect(pending).toBeDefined();
+    expect(pending.sessionId).not.toBe(session.sessionId);
+    expect(annex.sessions.get('zzz-peer')).toBe(session);
+    pending._resolveHandshake(pending);
+    await p;
+  });
+
+  test('non-force openChannel still returns the established session', async () => {
+    const session = established();
+    annex.sessions.set('zzz-peer', session);
+    const got = await annex.openChannel('zzz-peer');
+    expect(got).toBe(session);
+    expect(sendCalls.length).toBe(0);
+  });
+
+  test('rekey timer fires only for the lexicographically smaller nodeId', async () => {
+    vi.useFakeTimers();
+    try {
+      // localId 'aaa-node' < 'zzz-peer' → we initiate
+      annex.sessions.set('zzz-peer', established());
+      const spy = vi.spyOn(annex, 'openChannel').mockResolvedValue(null);
+      annex._armRekeyTimer('zzz-peer');
+      await vi.advanceTimersByTimeAsync(1800000 + 10);
+      expect(spy).toHaveBeenCalledWith('zzz-peer', { force: true });
+
+      // localId 'aaa-node' > '000-peer' → wait for peer, never initiate
+      spy.mockClear();
+      annex.sessions.set('000-peer', established());
+      annex._armRekeyTimer('000-peer');
+      await vi.advanceTimersByTimeAsync(1800000 + 10);
+      expect(spy).not.toHaveBeenCalled();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  test('session teardown clears the rekey timer', async () => {
+    vi.useFakeTimers();
+    try {
+      annex.sessions.set('zzz-peer', established());
+      annex._armRekeyTimer('zzz-peer');
+      expect(annex._rekeyTimers.has('zzz-peer')).toBe(true);
+      annex._clearRekeyTimer('zzz-peer');
+      expect(annex._rekeyTimers.has('zzz-peer')).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
