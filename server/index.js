@@ -6060,37 +6060,34 @@ export class YakmeshNode {
           });
         }
 
-        // Measure RTT to each landmark (simulated for now - real implementation uses WebSocket)
-        const measurements = [];
-        for (const lm of landmarks) {
-          // In real implementation, this would use service.measureRTT(lm.nodeId)
-          // For now, we create a simulated measurement
-          const rttMs = Math.random() * 50 + 10; // 10-60ms simulated
-          measurements.push({
-            landmarkId: lm.nodeId,
-            rttMs,
-            minDistanceKm: calculateMinDistance(rttMs),
-            measuredAt: aguwa.now(),
+        // Real RTT measurements — HTTP beacon fetch per landmark — then
+        // generateProof() builds exclusion zones from the measurement cache
+        // (which also folds in AGUWA heartbeat-derived distance bounds).
+        const results = await service.measureAllLandmarks();
+        const measured = results.filter(r => r.success).length;
+        if (measured === 0) {
+          return res.json({
+            success: false,
+            error: 'No landmark measurements succeeded',
+            results,
           });
         }
 
-        // Create proof from measurements
-        const proof = service.createProof(measurements);
+        const proof = service.generateProof();
 
         res.json({
           success: true,
           proof: {
             confidence: proof.confidence,
-            zoneCount: proof.zones?.length || 0,
+            zoneCount: proof.exclusionZones?.length || 0,
             timeSource: service.timeSourceDetector?.getStatus()?.trustLevel || 'UNKNOWN',
             expiresAt: proof.timestamp + GEO_PROOF_CONFIG.proofValidityMs,
-            zones: (proof.zones || []).map(z => {
-              const lm = service.landmarkRegistry.getLandmark(z.landmarkId);
-              return {
-                landmarkName: lm?.name || peerTag(z.landmarkId),
-                radiusKm: z.minDistanceKm,
-              };
-            }),
+            zones: (proof.exclusionZones || []).map(z => ({
+              landmarkName: z.landmarkName || peerTag(z.landmarkId),
+              radiusKm: z.minDistanceKm,
+              rttMs: z.rttMs,
+            })),
+            measurements: results,
           },
         });
       } catch (error) {
