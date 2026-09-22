@@ -2755,6 +2755,19 @@ export class YakmeshNode {
       });
     });
 
+    // Wire JHILKE chirp failures → KARMA. Repeated chirp-verification
+    // failure means wrong codebase or an impersonation attempt — the same
+    // evidence class as a failed DOKO verification.
+    this.mesh.jhilke?.on('chirp:failed', ({ peerId, consecutiveFailures }) => {
+      log.warn('JHILKE chirp failure evidence', { node: peerTag(peerId), consecutiveFailures });
+      this.karmaModel.recordDokoVerification(peerId, {
+        passed: false,
+        reason: 'chirp-verification-failed',
+        consecutiveFailures,
+        source: 'jhilke',
+      });
+    });
+
     // Wire KARMA trust level changes → scheduled NPU trust prediction (second opinion)
     this.karmaModel.on('promoted', ({ nodeId, from, to, reason }) => {
       const nid = String(nodeId ?? 'unknown');

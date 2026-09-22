@@ -465,17 +465,17 @@ export class FSHardening extends EventEmitter {
     // Emit for external handlers
     this.emit('tamper', event);
 
-    // If SANGHA is connected, trigger collective response
+    // If SANGHA is connected, report into the collective — the anomaly rides
+    // the next antibody circulation and triggers collectiveResponse
     if (this.#sangha) {
       try {
-        // Record as anomaly in current antibody circulation
-        const anomaly = {
+        this.#sangha.reportAnomaly('fs', event.type, event);
+        this.emit('anomaly', {
           componentId: 'fs',
           type: event.type,
           details: event,
           timestamp: Date.now(),
-        };
-        this.emit('anomaly', anomaly);
+        });
       } catch (e) {
         log.error('Failed to report to SANGHA', { error: e.message });
       }
