@@ -2347,7 +2347,9 @@ export class YakmeshNode {
       const stalled = peer.wsVia === 'tun' ? peer.ws : peer.lifelineWs;
       if (stalled) {
         log.info('YAK-TUN: wire B down — closing stalled wire-B socket', { peer: peerTag(nodeId) });
-        try { stalled.close(); } catch { }
+        // terminate() not close() — the graceful close handshake cannot
+        // complete on a dead wire; the socket would linger in CLOSING.
+        try { stalled.terminate(); } catch { }
       }
     };
     this.mesh.on?.('peer-registered', (nodeId) => {
