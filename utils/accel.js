@@ -61,6 +61,18 @@ import { fileURLToPath } from 'url';
 
 const log = createLogger('utils:accel');
 
+// ORT thread pool sizing — InferenceSession defaults intraOpNumThreads to the
+// physical core count, which on shared hosting (e.g. a 64-core Hostinger box)
+// tries to spawn ~64 native threads per session and dies with an uncatchable
+// std::system_error under the account's pids/thread cap. These models are tiny
+// sentinels — a handful of threads is plenty. Env override for tuning.
+function ortThreadOpts() {
+  const n = Math.max(1,
+    parseInt(process.env.YAKMESH_ORT_THREADS || '', 10) ||
+    Math.min(4, os.cpus().length || 4));
+  return { intraOpNumThreads: n, interOpNumThreads: 1 };
+}
+
 // =============================================================================
 // HARDWARE CAPABILITY FLAGS
 // =============================================================================
@@ -974,7 +986,7 @@ class InferenceEngine {
     }
 
     try {
-      const options = {};
+      const options = { ...ortThreadOpts() };
       if (this._preferredProvider) {
         options.executionProviders = [this._preferredProvider, 'cpu'];
       }
@@ -987,7 +999,7 @@ class InferenceEngine {
         // session creation even with 'cpu' in the provider list — retry
         // CPU-only and say so honestly.
         if (!this._preferredProvider || this._preferredProvider === 'cpu') throw err;
-        session = await this._ort.InferenceSession.create(modelPath, { executionProviders: ['cpu'] });
+        session = await this._ort.InferenceSession.create(modelPath, { executionProviders: ['cpu'], ...ortThreadOpts() });
         log.warn(`Model ${modelName}: ${this._preferredProvider} provider unusable (${err.message.slice(0, 90)}) — loaded on CPU`);
       }
       this._sessions.set(modelName, session);
@@ -1570,6 +1582,7 @@ class ComputeScheduler {
 
       this._schedulerSession = await ort.InferenceSession.create(modelPath, {
         executionProviders: providers,
+        ...ortThreadOpts(),
       });
       this._useMLRouting = true;
       this._ort = ort;
