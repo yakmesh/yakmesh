@@ -198,6 +198,9 @@ import { getSangha, joinSangha, SANGHA_COMPONENT } from '../security/sangha.js';
 // KHATA Trust — v2.4 networked trust tier (accumulate-only wiring)
 import { KhataTrustIntegration, KHATA_TRUST_MESSAGE } from '../security/khata-trust-integration.js';
 import { MeshRevocation, AttestationAccountability, REVOCATION_REASONS } from '../security/mesh-revocation.js';
+import { DomainConsensusVerifier } from '../security/domain-consensus.js';
+import { TrustTierRegistry, TIME_SOURCE } from '../security/trust-tier.js';
+import { HardwareAttestation } from '../security/hardware-attestation.js';
 import { SybilGraphAnalyzer } from '../security/sybil-graph.js';
 import { SiliconParityManager } from '../security/silicon-parity.js';
 
@@ -380,6 +383,7 @@ async function loadConfig() {
 export class YakmeshNode {
   constructor(config = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
+    this._bootedAt = Date.now();
     this.identity = null;
     this.mesh = null;
     this.replication = null;
@@ -921,6 +925,7 @@ export class YakmeshNode {
 
     // 5g. Initialize KARMA trust model (fed by SAKSHI)
     this._initKarma();
+    this._initDomainConsensus();
     await this._initYakTun();
     await this._initSeva();
     this._initUpdateTransfer();
@@ -2313,11 +2318,39 @@ export class YakmeshNode {
     // Attester accountability — who files attestations that later validate
     this.attestationAccountability = new AttestationAccountability();
 
+    // Hardware attestation — self-benchmark once, cached. Peers have no
+    // attestation source yet (silicon identities ≠ HW attestation objects),
+    // so they honestly resolve to null → OBSERVER tier.
+    this._hwAttestation = null;
+    HardwareAttestation.createLocal()
+      .then(att => { this._hwAttestation = att; })
+      .catch(e => log.debug('Hardware attestation unavailable', { error: e.message }));
+
+    // Trust tier registry — weighted attestation profiles (time source,
+    // network age, endorsements, AES-NI). Accumulate-only: tiers are
+    // computed and announced, never gated on.
+    this.trustRegistry = new TrustTierRegistry({
+      getTimeSource: (dokoId) => {
+        if (dokoId !== myNodeId) return TIME_SOURCE.SYSTEM;
+        const level = this.timeSource?.getStatus?.().trustLevel;
+        return level === 'unsync' ? TIME_SOURCE.SYSTEM : (level || TIME_SOURCE.SYSTEM);
+      },
+      getNetworkAge: (dokoId) => {
+        if (dokoId === myNodeId) return Date.now() - (this._bootedAt || Date.now());
+        const seen = this.domainConsensus?.eligibility?.nodeFirstSeen?.get(dokoId);
+        return seen ? Date.now() - seen : 0;
+      },
+      getEndorsementCount: () => 0, // no endorsement producer wired yet — honest zero
+      getHardwareAttestation: async (dokoId) =>
+        dokoId === myNodeId ? this._hwAttestation : null,
+    });
+
     // The bridge — network transport + inbound dispatch + sig verification
     this.khataTrust = new KhataTrustIntegration({
       meshRevocation: this.meshRevocation,
       siliconParity: this.siliconParity,
       sybilGraph: this.sybilGraph,
+      trustRegistry: this.trustRegistry,
       nodeIdentity: this.identity,
       geoProofService: this.geoProofService || null,
     });
@@ -2392,7 +2425,121 @@ export class YakmeshNode {
     this.mesh.on('peer-registered', (peerId) => this.sybilGraph.recordNodeOnline(peerId));
     this.mesh.on('peer-disconnected', (peerId) => this.sybilGraph.recordNodeOffline(peerId));
 
+    // Announce our trust tier when peers join (debounced — it's a broadcast)
+    this.mesh.on('peer-registered', () => {
+      if (this._tierAnnouncePending) return;
+      this._tierAnnouncePending = setTimeout(() => {
+        this._tierAnnouncePending = null;
+        this.khataTrust.announceTier()
+          .catch(e => log.debug('Tier announce failed', { error: e.message }));
+      }, 5000);
+    });
+
     log.info('✓ KHATA trust tier active (attest + gossip + accumulate; enforcement OFF)');
+  }
+
+  /**
+   * Domain consensus — quorum verification of domain claims for web serving.
+   * Accumulate-only: peers are registered for eligibility (age/diversity DB),
+   * verify requests are answered with signed proofs, claims can be initiated —
+   * but NOTHING gates serving yet. Proofs and outcomes are logged/observable.
+   */
+  _initDomainConsensus() {
+    const pendingVerifications = new Map(); // requestId -> { resolve, timer }
+
+    this.domainConsensus = new DomainConsensusVerifier(
+      this.identity,
+      this.namcheGateway,
+      this.config.domainConsensus || {},
+    );
+
+    this.domainConsensus.setNetworkLayer(
+      // fetchBeacon — verifier side: pull the claimed domain's SHERPA beacon
+      async (url, { timeout = 10000, maxSize = 65536 } = {}) => {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeout);
+        try {
+          const res = await fetch(url, {
+            signal: controller.signal,
+            headers: { Accept: 'application/json', 'User-Agent': 'YAKMESH-DomainVerify/1.0' },
+          });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const text = await res.text();
+          if (text.length > maxSize) throw new Error('Beacon too large');
+          return JSON.parse(text);
+        } finally {
+          clearTimeout(timer);
+        }
+      },
+      // requestVerification — claimant side: ask a peer to verify, await proof
+      (peerId, request) => new Promise((resolve, reject) => {
+        const timer = setTimeout(() => {
+          pendingVerifications.delete(request.requestId);
+          reject(new Error('Verification request timed out'));
+        }, this.domainConsensus.config.verificationTimeout || 30000);
+        pendingVerifications.set(request.requestId, { resolve, timer });
+        try {
+          this.mesh.sendTo(peerId, { type: 'domain-verify-request', ...request });
+        } catch (err) {
+          clearTimeout(timer);
+          pendingVerifications.delete(request.requestId);
+          reject(err);
+        }
+      }),
+      // getVerifierPeers — live mesh peers; endpoint IP feeds /24 + ASN diversity
+      async () => this.mesh.getPeers().map(p => {
+        let ip;
+        try { ip = new URL(String(p.endpoint).replace(/^ws/, 'http')).hostname; } catch { }
+        return { nodeId: p.nodeId, ip, endpoint: p.endpoint };
+      }),
+    );
+
+    // Verifier side — answer a claim request with a signed proof (or refusal)
+    this.mesh.on('domain-verify-request', async (msg, _ws, fromPeerId) => {
+      try {
+        const result = await this.domainConsensus.handleVerificationRequest(msg);
+        if (fromPeerId) {
+          this.mesh.sendTo(fromPeerId, {
+            type: 'domain-verify-response',
+            requestId: msg.requestId,
+            ...result,
+          });
+        }
+      } catch (e) {
+        log.debug('domain-verify-request handling failed', { error: e.message });
+      }
+    });
+
+    // Claimant side — resolve the pending verification
+    this.mesh.on('domain-verify-response', (msg) => {
+      const pending = pendingVerifications.get(msg.requestId);
+      if (!pending) return;
+      clearTimeout(pending.timer);
+      pendingVerifications.delete(msg.requestId);
+      pending.resolve(msg);
+    });
+
+    // Accumulate eligibility — the age/diversity DB builds over time;
+    // the 7-day verifier-age rule makes early claims fail closed anyway.
+    this.mesh.on('peer-registered', (peerId) => {
+      const peer = this.mesh.peers.get(peerId);
+      let ip;
+      try { ip = new URL(String(peer?.endpoint).replace(/^ws/, 'http')).hostname; } catch { }
+      this.domainConsensus.registerPeer(peerId, { ip, endpoint: peer?.endpoint });
+    });
+
+    this.domainConsensus.on('claim-succeeded', (ev) =>
+      log.info('Domain claim verified by quorum (observe-only)', {
+        domain: ev.domain, proofs: ev.proofs?.length,
+      }));
+    this.domainConsensus.on('sybil-defense-triggered', (ev) =>
+      log.warn('Domain claim rejected by Sybil defense', { reason: ev.reason }));
+    this.domainConsensus.on('verification-completed', (ev) =>
+      log.info('Verified domain claim as verifier (observe-only)', {
+        domain: ev.domain, claimant: peerTag(ev.claimantNodeId),
+      }));
+
+    log.info('✓ Domain consensus active (verify + accumulate; serving gates OFF)');
   }
 
   _initSakshi() {
@@ -4532,6 +4679,17 @@ export class YakmeshNode {
           peers: wsPeers.map(p => ({ nodeId: p.nodeId.slice(0, 20), via: p.via, lifeline: p.lifeline })),
         } : null,
         security: this.mesh.getSecurityStats(),
+        khata: this.khataTrust ? {
+          ...this.khataTrust.getStats(),
+          revocation: this.meshRevocation?.getStats() || null,
+          enforcement: 'accumulate-only',
+        } : null,
+        domainConsensus: this.domainConsensus ? {
+          ...this.domainConsensus.stats,
+          activeClaims: this.domainConsensus.activeRequests.size,
+          eligibleVerifiers: this.domainConsensus.eligibility.nodeFirstSeen.size,
+          enforcement: 'observe-only',
+        } : null,
       });
     });
 
