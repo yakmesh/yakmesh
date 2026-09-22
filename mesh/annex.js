@@ -1107,10 +1107,33 @@ export class Annex {
   }
 
   async _handleEncrypted(envelope) {
-    const session = this.sessions.get(envelope.senderId);
+    let session = this.sessions.get(envelope.senderId);
     if (!session || !session.established) {
       log.warn('No session for encrypted message', { peerId: peerTag(envelope.senderId) });
       return;
+    }
+
+    // Route by envelope sessionId — AEAD binds ciphertext to sessionId, so an
+    // envelope stamped for a session we no longer hold can NEVER authenticate.
+    // Feeding it to the live session counts guaranteed-failures toward
+    // invalidation — that was the attach-storm re-handshake loop's fuel.
+    const holds = (s, id) => s?.established && (s.sessionId === id || s._transitionSessionId === id);
+    if (envelope.sessionId && !holds(session, envelope.sessionId)) {
+      // The deterministic bootstrap sessionId is shared between the mesh
+      // session and the 'tun:<id>' session — a tun-keyed envelope arriving
+      // on the mesh path is legitimate; try the namespaced session.
+      const tunSession = this.sessions.get(`tun:${envelope.senderId}`);
+      if (holds(tunSession, envelope.sessionId)) {
+        session = tunSession;
+      } else {
+        this.stats.staleEnvelopes = (this.stats.staleEnvelopes || 0) + 1;
+        log.debug('Envelope for replaced/unknown session dropped', {
+          peer: peerTag(envelope.senderId),
+          envSessionId: envelope.sessionId.slice(0, 8),
+          sessionId: session.sessionId?.slice(0, 8),
+        });
+        return;
+      }
     }
 
     let plaintext;
@@ -1157,21 +1180,18 @@ export class Annex {
         }
       }
     } catch (err) {
-      // DIAGNOSTIC: envelope sessionIds are deterministic per node-pair, so a
-      // 'tun:<id>' session shares sessionId with the mesh session but uses a
-      // domain-separated base. If a tun-keyed envelope ever reaches the mesh
-      // path, it authenticates under the tun base — try it before failing.
+      // SessionId ambiguity: the deterministic bootstrap sessionId is shared
+      // between the mesh session and 'tun:<id>' session (same sorted-nodeId
+      // derivation) while their base keys are domain-separated. If the
+      // envelope's sessionId also matches the tun session, it may have been
+      // keyed under the tun base — authenticate there before failing.
       const tunSession = this.sessions.get(`tun:${envelope.senderId}`);
-      if (tunSession?.established && tunSession !== session) {
+      if (tunSession !== session && holds(tunSession, envelope.sessionId)) {
         try {
           const alt = tunSession.decrypt(
             { nonce: envelope.nonce, ciphertext: envelope.ciphertext, authTag: envelope.authTag },
             envelope.sequence
           );
-          log.warn('DIAG: envelope decrypted under TUN session base — sender used wrong session', {
-            peer: peerTag(envelope.senderId), envSessionId: envelope.sessionId?.slice(0, 8),
-          });
-          plaintext = alt;
           this.stats.messagesDecrypted++;
           this._authFailCount?.delete(envelope.senderId);
           try { payload = JSON.parse(alt); } catch { payload = alt; }

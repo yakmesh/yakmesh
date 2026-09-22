@@ -1132,3 +1132,85 @@ describe('AnnexSession — handshake race hardening', () => {
     expect(annex._authFailCount.get('node-a')).toBeUndefined();
   });
 });
+
+describe('Annex — envelope sessionId routing', () => {
+  let annex;
+  let meshSession;
+  let peerSession;
+
+  beforeEach(async () => {
+    annex = new Annex({
+      identity: {
+        identity: { nodeId: 'route-node' },
+        sign: vi.fn(() => 'sig'),
+        verify: vi.fn(() => true),
+      },
+    });
+
+    // Live (KEM) mesh session for 'peer-node'
+    meshSession = new AnnexSession({
+      localNodeId: 'route-node',
+      remoteNodeId: 'peer-node',
+      initiator: true,
+    });
+    peerSession = new AnnexSession({
+      sessionId: meshSession.sessionId,
+      localNodeId: 'peer-node',
+      remoteNodeId: 'route-node',
+      initiator: false,
+    });
+    await peerSession.generateKeyPair();
+    const ct = meshSession.encapsulate(bytesToHex(peerSession.kemKeyPair.publicKey));
+    peerSession.decapsulate(ct);
+    annex.sessions.set('peer-node', meshSession);
+  });
+
+  const mkEnvelope = (sessionId, encrypted) => ({
+    senderId: 'peer-node',
+    sessionId,
+    nonce: encrypted?.nonce ?? '00',
+    ciphertext: encrypted?.ciphertext ?? '00',
+    authTag: encrypted?.authTag ?? '00',
+    sequence: encrypted?.sequence ?? 99,
+    timestamp: Date.now(),
+  });
+
+  test('envelope for a replaced/unknown session drops without auth failure', async () => {
+    // Regression: envelopes stamped with a dead sessionId can NEVER
+    // authenticate (AAD binds sessionId) — counting them as failures
+    // invalidated healthy sessions during attach storms.
+    await annex._handleEncrypted(mkEnvelope('deadbeefdeadbeefdeadbeefdeadbeef'));
+    expect(annex.stats.staleEnvelopes).toBe(1);
+    expect(annex._authFailCount?.get('peer-node') || 0).toBe(0);
+  });
+
+  test('envelope stamped with the transition sessionId reaches decrypt', async () => {
+    meshSession._transitionSessionId = 'transition-id-0123456789abcdef';
+    // Garbage ciphertext, but the sessionId claims a held session — the
+    // envelope must reach decrypt (which throws), not the stale-drop path.
+    await expect(
+      annex._handleEncrypted(mkEnvelope('transition-id-0123456789abcdef'))
+    ).rejects.toThrow();
+    expect(annex.stats.staleEnvelopes || 0).toBe(0);
+  });
+
+  test('tun-keyed envelope decrypts under the namespaced tun session', async () => {
+    // The deterministic bootstrap sessionId is shared between mesh and
+    // 'tun:<id>' sessions while bases are domain-separated. An envelope
+    // keyed under the tun base must authenticate against the tun session.
+    const tunSession = new AnnexSession({
+      sessionId: 'tun-shared-session-id-000000',
+      localNodeId: 'route-node',
+      remoteNodeId: 'tun:peer-node',
+      initiator: true,
+    });
+    tunSession.encryptionKey = randomBytes(32);
+    tunSession.established = true;
+    annex.sessions.set('tun:peer-node', tunSession);
+
+    const encrypted = tunSession.encrypt('tun payload');
+    await annex._handleEncrypted(mkEnvelope(tunSession.sessionId, encrypted));
+    expect(annex.stats.messagesDecrypted).toBe(1);
+    expect(annex._authFailCount?.get('peer-node') || 0).toBe(0);
+  });
+});
