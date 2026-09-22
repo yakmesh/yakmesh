@@ -26,6 +26,12 @@ cp -r models "$STAGE/" 2>/dev/null || true
 cp -r public/c2c "$STAGE/" 2>/dev/null || true
 cp -r templates "$STAGE/" 2>/dev/null || true
 
+# Normalize modes — stale FileGuardian/codebase-lock 555s on the working tree
+# must not leak into deploy packages (they break later in-place updates).
+find "$STAGE" -type d -exec chmod 755 {} +
+find "$STAGE" -type f ! -perm -111 -exec chmod 644 {} +
+find "$STAGE" -type f -perm -111 -exec chmod 755 {} +
+
 echo "== generating manifest over the shipped tree"
 node deploy-packages/generate-manifest.js --root "$STAGE" | tail -3
 
