@@ -420,9 +420,18 @@ export class CommitRevealEntropy {
      * @returns {boolean} True if within tolerance
      * @private
      */
-    _validateTimestamp(remoteTimestamp) {
+    _validateTimestamp(remoteTimestamp, senderNodeId = null) {
         const now = aguwa.now();
-        const maniToleranceMs = this._getTimestampTolerance();
+
+        // Per-peer tolerance: a GPS-disciplined node must not impose its own
+        // ±500ms window on a WAN peer running NTP/unsynced time. AGUWA already
+        // tracks each peer's advertised maniTrust (from time heartbeats) and
+        // returns the LESS precise of both sides — unknown peers get UNSYNC
+        // (30s). This is what lets a Hostinger-class node stay in the mesh
+        // with looser responsibility instead of being spam-rejected.
+        const maniToleranceMs = senderNodeId
+            ? aguwa.getToleranceForPeer(senderNodeId)
+            : this._getTimestampTolerance();
 
         // MANI tolerance measures time-source precision (GPS=±500ms),
         // NOT inter-node clock drift. Two GPS nodes can have system clocks
@@ -766,9 +775,9 @@ export class CommitRevealEntropy {
             return;
         }
 
-        // MANI: Validate timestamp within tolerance window
-        if (data.timestamp && !this._validateTimestamp(data.timestamp)) {
-            log.warn(`CommitReveal: Commit from ${data.nodeId} rejected — timestamp outside MANI tolerance (${this._getTimestampTolerance()}ms)`);
+        // MANI: Validate timestamp within the sender's trust-tier tolerance
+        if (data.timestamp && !this._validateTimestamp(data.timestamp, data.nodeId)) {
+            log.warn(`CommitReveal: Commit from ${data.nodeId} rejected — timestamp outside MANI tolerance (${aguwa.getToleranceForPeer(data.nodeId)}ms)`);
             if (this.sakshiMonitor) {
                 this.sakshiMonitor.observe(data.nodeId, BEHAVIOR_DIMENSION.RESPONSE_LATENCY, Math.abs(aguwa.now() - data.timestamp));
             }
@@ -812,9 +821,9 @@ export class CommitRevealEntropy {
             return;
         }
 
-        // MANI: Validate timestamp
-        if (data.timestamp && !this._validateTimestamp(data.timestamp)) {
-            log.warn(`CommitReveal: Reveal from ${data.nodeId} rejected — timestamp outside MANI tolerance`);
+        // MANI: Validate timestamp against the sender's trust-tier tolerance
+        if (data.timestamp && !this._validateTimestamp(data.timestamp, data.nodeId)) {
+            log.warn(`CommitReveal: Reveal from ${data.nodeId} rejected — timestamp outside MANI tolerance (${aguwa.getToleranceForPeer(data.nodeId)}ms)`);
             if (this.sakshiMonitor) {
                 this.sakshiMonitor.observe(data.nodeId, BEHAVIOR_DIMENSION.RESPONSE_LATENCY, Math.abs(aguwa.now() - data.timestamp));
             }
