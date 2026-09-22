@@ -2338,6 +2338,18 @@ export class YakmeshNode {
       });
     };
     this.yakTun.onWireBUp = tryOverlayDial;
+    // Wire B died — the overlay TCP riding it stalls until TCP timeout.
+    // Close the stalled socket now; the existing close handler promotes
+    // the lifeline to primary (or drops the dead second wire).
+    this.yakTun.onWireBDown = (nodeId) => {
+      const peer = this.mesh?.peers?.get(nodeId);
+      if (!peer) return;
+      const stalled = peer.wsVia === 'tun' ? peer.ws : peer.lifelineWs;
+      if (stalled) {
+        log.info('YAK-TUN: wire B down — closing stalled wire-B socket', { peer: peerTag(nodeId) });
+        try { stalled.close(); } catch { }
+      }
+    };
     this.mesh.on?.('peer-registered', (nodeId) => {
       const peer = this.mesh.peers.get(nodeId);
       if (!peer) return;

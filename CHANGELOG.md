@@ -116,6 +116,12 @@
   computed a different network than update-applied trees).
 - npm test now runs the full gate (test:all) instead of oracle tests
   only — 1869 tests, not 258.
+- Wire-B demotion — _pingEndpoints transitioned endpoints to 'down' but
+  nothing told the mesh, so a dead underlay left the stalled overlay TCP
+  primary until kernel timeout (minutes of blackholed sends). onWireBDown
+  now closes the stalled wire-B socket; the existing close handler
+  promotes the lifeline immediately (verified live via UDP block drill:
+  wire B down detected at the 45s stale mark, clean recovery on restore).
 
 ### Tests
 - mesh-auth fixtures derive nodeId from the generated keypair — the

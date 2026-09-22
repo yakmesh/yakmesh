@@ -53,6 +53,7 @@ export class YakTun {
         this._discoverFirstSeen = new Map();   // nodeId -> first beacon ms
         this.onPeerDiscovered = null;          // (nodeId, wsUrl)
         this.onWireBUp = null;                 // (nodeId)
+        this.onWireBDown = null;               // (nodeId)
 
         // Performance stats
         this.stats = {
@@ -397,6 +398,7 @@ export class YakTun {
                 ep.state = next;
                 console.log(`[YAK-TUN] wire B ${next} for ${nodeId.slice(0, 20)} (${ep.host}:${ep.port})`);
                 if (next === 'up') { try { this.onWireBUp?.(nodeId); } catch { } }
+                else { try { this.onWireBDown?.(nodeId); } catch { } }
             }
             // Reap endpoints that have been dead for 10+ minutes and belong
             // to no live session — table stays small, stale entries can't
