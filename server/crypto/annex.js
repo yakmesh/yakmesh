@@ -30,7 +30,7 @@
  * 4. All subsequent messages encrypted/decrypted via session
  * 
  * @module server/crypto/annex
- * @license MIT
+ * @license YakMesh-NE-1.0 (YAKMESH NETWORK ENGINE LICENSE AGREEMENT v1.0)
  * @copyright 2026 YAKMESH Contributors
  */
 

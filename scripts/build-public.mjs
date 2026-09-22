@@ -15,7 +15,7 @@
  * Run: npm run build:public
  * 
  * @author YAKMESH Team
- * @license MIT
+ * @license YakMesh-NE-1.0 (YAKMESH NETWORK ENGINE LICENSE AGREEMENT v1.0)
  */
 
 import { existsSync, mkdirSync, cpSync, readdirSync, statSync, copyFileSync, rmSync } from 'fs';

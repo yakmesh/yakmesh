@@ -53,7 +53,7 @@
  * where access is granted to those who prove their dedication.
  * 
  * @module mesh/gumba
- * @license MIT
+ * @license YakMesh-NE-1.0 (YAKMESH NETWORK ENGINE LICENSE AGREEMENT v1.0)
  * @copyright 2026 YAKMESH™ Contributors
  */
 

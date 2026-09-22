@@ -591,7 +591,7 @@ export class NodeIdentity {
     const payload = JSON.stringify(obj);
     return {
       ...obj,
-      _signature: this.sign(payload),
+      _signature: signatureToWire(this.sign(payload)),
       _signer: this.identity.nodeId,
       _signedAt: Date.now(),
     };

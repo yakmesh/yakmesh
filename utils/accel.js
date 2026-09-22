@@ -44,7 +44,7 @@
  * 
  * @module utils/accel
  * @version 1.0.0
- * @license MIT
+ * @license YakMesh-NE-1.0 (YAKMESH NETWORK ENGINE LICENSE AGREEMENT v1.0)
  * @copyright 2026 YAKMESH™ Contributors
  */
 

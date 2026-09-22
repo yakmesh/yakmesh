@@ -75,7 +75,7 @@ import { aguwa } from './aguwa.js';
 
 // TRIBHUJ Key Ratchet — trinary rotating keypairs with gateway attestation
 import { TribhujRatchet, GatewayAttestation } from '../identity/tribhuj-ratchet.js';
-import { generateNodeId } from '../identity/node-key.js';
+import { generateNodeId, signatureToWire } from '../identity/node-key.js';
 import { hexToBytes, bytesToHex } from '@noble/hashes/utils.js';
 
 /** Extract unique peer suffix from nodeId (e.g. 'node-net-name-pq-kEEU' → 'kEEU') */
@@ -635,7 +635,7 @@ export class MandalaNetwork {
     let cert = this._ratchetKeyCerts.get(curHex);
     if (!cert) {
       const certPayload = `YAKMESH:TRIBHUJ-KEY:${this.identity.identity.nodeId}:${curHex}:${epoch}`;
-      cert = this.identity.sign(certPayload);
+      cert = signatureToWire(this.identity.sign(certPayload));
       this._ratchetKeyCerts.set(curHex, cert);
       if (this._ratchetKeyCerts.size > 8) {
         const oldest = this._ratchetKeyCerts.keys().next().value;

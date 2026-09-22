@@ -27,7 +27,7 @@
  * than pretend an AVOTH operation happened (rule 9 — no fake success).
  *
  * @module utils/avoth-bridge
- * @license MIT
+ * @license YakMesh-NE-1.0 (YAKMESH NETWORK ENGINE LICENSE AGREEMENT v1.0)
  * @copyright 2026 YAKMESH™ Contributors
  */
 

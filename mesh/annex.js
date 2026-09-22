@@ -49,6 +49,7 @@ import { ml_kem768 } from '@noble/post-quantum/ml-kem.js';
 import { sha3_256 as _nobleSha3 } from '@noble/hashes/sha3.js';
 import { bytesToHex, hexToBytes, utf8ToBytes } from '@noble/hashes/utils.js';
 import { createLogger } from '../utils/logger.js';
+import { signatureToWire } from '../identity/node-key.js';
 
 // ACCEL: Hardware-accelerated crypto (native SHA3, native KEM via liboqs/AVX-512)
 import { sha3_256, mlKem768Keygen, mlKem768Encapsulate, mlKem768Decapsulate } from '../utils/accel.js';
@@ -600,7 +601,7 @@ export class Annex {
     });
 
     // Sign the envelope
-    envelope.signature = this.identity.sign(envelope.getSigningPayload());
+    envelope.signature = signatureToWire(this.identity.sign(envelope.getSigningPayload()));
 
     await this._sendToMesh(remoteNodeId, envelope);
 
@@ -651,7 +652,7 @@ export class Annex {
     });
 
     // Sign
-    envelope.signature = this.identity.sign(envelope.getSigningPayload());
+    envelope.signature = signatureToWire(this.identity.sign(envelope.getSigningPayload()));
 
     // Send
     await this._sendToMesh(remoteNodeId, envelope);
@@ -682,7 +683,7 @@ export class Annex {
       ciphertext: encrypted.ciphertext,
       authTag: encrypted.authTag,
     });
-    envelope.signature = this.identity.sign(envelope.getSigningPayload());
+    envelope.signature = signatureToWire(this.identity.sign(envelope.getSigningPayload()));
 
     // The outer wrapper must carry the same hop signature sendTo() applies —
     // the receiver drops unsigned non-handshake messages. Reuse the mesh's
@@ -738,7 +739,7 @@ export class Annex {
         recipientId: remoteNodeId,
         sessionId: session.sessionId,
       });
-      envelope.signature = this.identity.sign(envelope.getSigningPayload());
+      envelope.signature = signatureToWire(this.identity.sign(envelope.getSigningPayload()));
       await this._sendToMesh(remoteNodeId, envelope);
     }
 
@@ -981,7 +982,7 @@ export class Annex {
       kemCiphertext: kemCiphertext,
     });
 
-    response.signature = this.identity.sign(response.getSigningPayload());
+    response.signature = signatureToWire(this.identity.sign(response.getSigningPayload()));
     await this._sendToMesh(envelope.senderId, response);
 
     log.info('Channel established with peer (KEM)', { peerId: peerTag(envelope.senderId) });

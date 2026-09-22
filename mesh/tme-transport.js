@@ -31,7 +31,7 @@
  * targeted, low-latency delivery as an overlay.
  *
  * @module mesh/tme-transport
- * @license MIT
+ * @license YakMesh-NE-1.0 (YAKMESH NETWORK ENGINE LICENSE AGREEMENT v1.0)
  * @copyright 2026 YAKMESH™ Contributors
  */
 

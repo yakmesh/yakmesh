@@ -25,7 +25,7 @@
  * 
  * @module tests/adapter.test.js
  * @version 3.0.0
- * @license MIT
+ * @license YakMesh-NE-1.0 (YAKMESH NETWORK ENGINE LICENSE AGREEMENT v1.0)
  */
 
 import { describe, it, beforeEach, afterEach, mock } from 'node:test';

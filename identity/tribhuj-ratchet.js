@@ -48,7 +48,7 @@
  * The ratchet IS a TRIBHUJ operation — three states, rotating forward.
  * 
  * @module identity/tribhuj-ratchet
- * @license MIT
+ * @license YakMesh-NE-1.0 (YAKMESH NETWORK ENGINE LICENSE AGREEMENT v1.0)
  * @copyright 2026 YAKMESH™ Contributors
  */
 
@@ -59,6 +59,7 @@ import { createLogger } from '../utils/logger.js';
 
 // ACCEL: Hardware-accelerated crypto (native SHA3 via OpenSSL/SHA-NI, future liboqs)
 import { sha3_256, mlDsa65Sign, mlDsa65Verify } from '../utils/accel.js';
+import { signatureToWire } from './node-key.js';
 
 const log = createLogger('identity:tribhuj-ratchet');
 
@@ -307,7 +308,7 @@ export class TribhujRatchet {
     
     return {
       ...obj,
-      _tribhujSig: sig.signature,
+      _tribhujSig: signatureToWire(sig.signature),
       _tribhujEpoch: sig.epoch,
       _tribhujPubKey: sig.publicKey,
     };

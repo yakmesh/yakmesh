@@ -9,7 +9,7 @@
  * Run: npm run build:docs
  * 
  * @author YAKMESH Team
- * @license MIT
+ * @license YakMesh-NE-1.0 (YAKMESH NETWORK ENGINE LICENSE AGREEMENT v1.0)
  */
 
 import { sha3_256 } from '@noble/hashes/sha3.js';

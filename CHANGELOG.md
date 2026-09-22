@@ -184,6 +184,12 @@
   re-sent ~10-15KB of identical attestation material ~25x/epoch for
   nothing; a short window absorbs boundary wire transitions. Steady-state
   heartbeat gossip drops ~80% (~25-30KB/beat → ~4.5KB/beat + claim bursts).
+- Base64 wire encoding extended to the full ANNEX send path — the envelope
+  signature, signObject _signature, TRIBHUJ _tribhujSig, and _tribhujCert
+  all carried ~6.6KB of hex each; stacked, they made a 5KB rumor ~34KB on
+  the wire. All four now emit base64 (~4.4KB each). _tribhujPubKey stays
+  hex — it's compared by string equality against handshake-pinned keys.
+  All verify paths decode both encodings via decodeKeyMaterial.
 
 ## [3.5.8] — 2026-09-21
 

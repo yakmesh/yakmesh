@@ -28,7 +28,7 @@
  * 
  * @module tests/multi-node.test.js
  * @version 2.2.0
- * @license MIT
+ * @license YakMesh-NE-1.0 (YAKMESH NETWORK ENGINE LICENSE AGREEMENT v1.0)
  */
 
 import { describe, it, beforeEach, afterEach } from 'node:test';

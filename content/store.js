@@ -30,7 +30,7 @@
  * "The math checks out" is the only consensus needed.
  * 
  * @module content/store
- * @license MIT
+ * @license YakMesh-NE-1.0 (YAKMESH NETWORK ENGINE LICENSE AGREEMENT v1.0)
  * @copyright 2026 YAKMESH Contributors
  */
 

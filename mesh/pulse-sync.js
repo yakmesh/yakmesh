@@ -32,12 +32,11 @@
  * - Partition detection through heartbeat gap analysis
  * 
  * @module mesh/pulse-sync
- * @license MIT
+ * @license YakMesh-NE-1.0 (YAKMESH NETWORK ENGINE LICENSE AGREEMENT v1.0)
  * @copyright 2026 YAKMESH™ Contributors
  */
 
-import { randomBytes, createHash } from 'crypto';
-import { sha3_256 as _nobleSha3 } from '@noble/hashes/sha3.js';
+import { randomBytes } from 'crypto';
 import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js';
 
 // ACCEL: Hardware-accelerated SHA3-256 (OpenSSL/SHA-NI — 4.6x faster)

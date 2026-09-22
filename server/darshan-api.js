@@ -32,7 +32,7 @@
  * Creators keep sovereignty — no copies leave unless explicitly permitted.
  * 
  * @module server/darshan-api
- * @license MIT
+ * @license YakMesh-NE-1.0 (YAKMESH NETWORK ENGINE LICENSE AGREEMENT v1.0)
  * @copyright 2026 YAKMESH™ Contributors
  */
 

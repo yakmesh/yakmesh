@@ -25,7 +25,7 @@
  * 
  * @module embedded-docs
  * @author YAKMESH Team
- * @license MIT
+ * @license YakMesh-NE-1.0 (YAKMESH NETWORK ENGINE LICENSE AGREEMENT v1.0)
  */
 
 // Core exports
