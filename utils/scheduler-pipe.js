@@ -147,24 +147,56 @@ export async function startPipeServer({ accel, identity, karmaLimiter, strikeBri
     }
 
     return new Promise((resolve, reject) => {
-        _server = net.createServer(_handleConnection);
+        const tryListen = (retriesLeft) => {
+            _server = net.createServer(_handleConnection);
 
-        _server.on('error', (err) => {
-            _log.error(`Scheduler pipe error: ${err.message}`);
-            if (err.code === 'EADDRINUSE') {
-                // Another instance has the pipe — not fatal, just skip
-                _log.warn(`Scheduler pipe ${pipePath} already in use — running without pipe coordination`);
-                _server = null;
-                resolve({ path: pipePath, listening: false });
-            } else {
-                reject(err);
-            }
-        });
+            _server.on('error', async (err) => {
+                if (err.code === 'EADDRINUSE' && os.platform() !== 'win32' && retriesLeft > 0) {
+                    // A bound socket file remains — distinguish stale file from
+                    // a live owner by probing; never steal a running instance's
+                    // path. Dead socket → unlink and retry once.
+                    const alive = await _probePipe(pipePath);
+                    if (alive) {
+                        _log.warn(`Scheduler pipe ${pipePath} owned by a live process — running without pipe coordination`);
+                        _server = null;
+                        resolve({ path: pipePath, listening: false });
+                    } else {
+                        try { unlinkSync(pipePath); } catch { /* ignore */ }
+                        tryListen(retriesLeft - 1);
+                    }
+                    return;
+                }
+                _log.error(`Scheduler pipe error: ${err.message}`);
+                if (err.code === 'EADDRINUSE') {
+                    // Another instance has the pipe — not fatal, just skip
+                    _log.warn(`Scheduler pipe ${pipePath} already in use — running without pipe coordination`);
+                    _server = null;
+                    resolve({ path: pipePath, listening: false });
+                } else {
+                    reject(err);
+                }
+            });
 
-        _server.listen(pipePath, () => {
-            _log.info(`Scheduler pipe listening: ${pipePath} (${_accel.HW.totalTops} TOPS available)`);
-            resolve({ path: pipePath, listening: true });
-        });
+            _server.listen(pipePath, () => {
+                _log.info(`Scheduler pipe listening: ${pipePath} (${_accel.HW.totalTops} TOPS available)`);
+                resolve({ path: pipePath, listening: true });
+            });
+        };
+        tryListen(1);
+    });
+}
+
+/**
+ * Probe whether a live server owns the pipe path.
+ * @returns {Promise<boolean>} true if a process accepted the connection
+ */
+function _probePipe(pipePath) {
+    return new Promise((resolve) => {
+        const sock = net.createConnection(pipePath);
+        const done = (alive) => { try { sock.destroy(); } catch {} resolve(alive); };
+        sock.once('connect', () => done(true));
+        sock.once('error', () => done(false));
+        sock.setTimeout(500, () => done(false));
     });
 }
 

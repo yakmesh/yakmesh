@@ -23,6 +23,32 @@
   first), and the producer normalizes bridge output to canonical hex so
   the wire format stays uniform. Verified end-to-end against a live
   bridge signature; regression test covers both encodings + rejection.
+- MANTRA anti-entropy — DIGEST/DIFF handlers were empty stubs ("
+  Would compare digests..."); now _runAntiEntropy advertises the rumor
+  buffer tail (≤256 ids) to a random peer each 60s, _handleDigest pulls
+  unknown ids via DIFF (≤64) and pushes held rumors the peer lacks
+  (≤16/round), and _handleDiff serves buffered rumors verbatim (≤32,
+  5s/peer cooldown). Rumor buffer now stores full rumors so re-served
+  entries keep their signatures; receivers verify via the normal rumor
+  path. Partitioned nodes now converge instead of diverging forever.
+- TRIBHUJ wire slimming — _tribhujPubKey (3.9KB hex) is dropped from
+  steady-state messages; receivers resolve the signing key against the
+  handshake-pinned current/previous set. The field is still carried
+  during the 90s rotation-cert window where the new key must transmit.
+- Rate-limit grace for authenticated peers — checkConnection was
+  IP-only: version-skew/reconnect storms could ban a real peer's IP with
+  no recovery path. Successful handshakes now bind IP→nodeId
+  (noteAuthenticated): bound IPs get trust-scaled limits (floor NORMAL),
+  and a banned-but-bound IP gets a 2/min grace trickle so it can
+  re-authenticate and lift the ban.
+- Scheduler pipe EADDRINUSE — on bind conflict the server now probes the
+  socket: live owner → stand down (never steal the path), dead file →
+  unlink + retry once. Fixes silent loss of pipe coordination when a
+  stale socket survived a prior run.
+- /geo/prove stub — endpoint fabricated Math.random() RTTs into a
+  nonexistent service.createProof(); now calls measureAllLandmarks() +
+  generateProof() and reports honest 'insufficient' when no landmarks
+  are measurable.
 - YAK-TUN dial diagnostics — overlay/lifeline/discovery dial failures
   were swallowed by empty catches; they now log the endpoint + error.
   Inbound HELLOs log one 'HELLO handshake' line (clientIp, wire

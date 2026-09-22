@@ -633,7 +633,12 @@ export class MandalaNetwork {
       this._ratchetEpochSeen = epoch;
       this._ratchetEpochAnnouncedAt = now;
     }
-    if (now - this._ratchetEpochAnnouncedAt > 90_000) return signed;
+    if (now - this._ratchetEpochAnnouncedAt > 90_000) {
+      // Steady state — drop the claimed key (3.9KB hex); receivers verify
+      // against the handshake-pinned current/previous set instead.
+      delete signed._tribhujPubKey;
+      return signed;
+    }
     const curHex = bytesToHex(cur);
     if (!this._ratchetKeyCerts) this._ratchetKeyCerts = new Map();
     let cert = this._ratchetKeyCerts.get(curHex);
@@ -1129,6 +1134,11 @@ export class MandalaNetwork {
         },
       });
 
+      // Rate-limit grace: bind this IP to the now-verified nodeId — clears
+      // bans accrued pre-auth (version-skew retries) and raises its limits.
+      const boundIp = ws._clientIp || ws._socket?.remoteAddress;
+      if (boundIp) this.rateLimiter.noteAuthenticated(boundIp, nodeId);
+
       // AGUWA: register peer for Kuramoto phase tracking
       if (msg.capabilities) aguwa.addPeer(nodeId, msg.capabilities);
 
@@ -1362,6 +1372,11 @@ export class MandalaNetwork {
           previous: msg.identity.tribhujPrevPubKey || null,
         },
       });
+
+      // Rate-limit grace: bind this IP to the now-verified nodeId — clears
+      // bans accrued pre-auth (version-skew retries) and raises its limits.
+      const boundIp = ws._clientIp || ws._socket?.remoteAddress;
+      if (boundIp) this.rateLimiter.noteAuthenticated(boundIp, nodeId);
 
       // AGUWA: register peer for Kuramoto phase tracking
       if (msg.capabilities) aguwa.addPeer(nodeId, msg.capabilities);
@@ -1663,6 +1678,11 @@ export class MandalaNetwork {
         if (pinned && claimedKey &&
             (claimedKey === pinned.current || claimedKey === pinned.previous)) {
           ratchetKeyValid = true;
+        } else if (!claimedKey && !msg._tribhujCert && pinned &&
+                   (pinned.current || pinned.previous)) {
+          // Compact wire form — no claimed key carried; the signature itself
+          // resolves which pinned key signed it (verified below).
+          ratchetKeyValid = true;
         } else if (msg._tribhujCert && claimedKey && peer?.identity?.publicKey) {
           // Rotation cert: identity key signs "YAKMESH:TRIBHUJ-KEY:{nodeId}:{newKey}:{epoch}"
           const certPayload = `YAKMESH:TRIBHUJ-KEY:${effectiveSender}:${claimedKey}:${msg._tribhujEpoch}`;
@@ -1691,9 +1711,18 @@ export class MandalaNetwork {
           keyState: 'invalid',
         };
         try {
-          const ok = this.identity.verify(JSON.stringify(rest), _tribhujSig, claimedKey);
-          result.valid = ok;
-          result.keyState = ok ? 'pinned' : 'invalid';
+          const payload = JSON.stringify(rest);
+          // Compact form carries no claimed key — try each pinned key.
+          const keys = _tribhujPubKey
+            ? [_tribhujPubKey]
+            : [pinned.current, pinned.previous].filter(Boolean);
+          for (const key of keys) {
+            if (this.identity.verify(payload, _tribhujSig, key)) {
+              result.valid = true;
+              result.keyState = 'pinned';
+              break;
+            }
+          }
         } catch (e) { /* result stays invalid */ }
 
         if (!result.valid) {

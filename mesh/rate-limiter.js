@@ -82,6 +82,12 @@ export class ConnectionRateLimiter {
       // Ban thresholds (adjusted by trust penalty multiplier)
       banThreshold: options.banThreshold || 5,  // violations before ban
       banDuration: options.banDuration || 300000, // 5 minutes
+
+      // Grace path for previously-authenticated peers: a banned IP bound to a
+      // verified nodeId gets a trickle of connections so it can re-prove
+      // identity (version-skew retry storms shouldn't perma-lock real peers).
+      graceConnectionsPerMinute: options.graceConnectionsPerMinute || 2,
+      authBindingTtl: options.authBindingTtl || 86400000, // 24h ip->nodeId binding
       
       // Cleanup interval
       cleanupInterval: options.cleanupInterval || 60000, // 1 minute
@@ -94,6 +100,8 @@ export class ConnectionRateLimiter {
     this.gossip = new Map();       // nodeId -> { count, windowStart }
     this.violations = new Map();   // IP -> { count, lastViolation }
     this.banned = new Map();       // IP -> banExpiry timestamp
+    this.authenticatedIps = new Map(); // IP -> { nodeId, lastAuth } — post-handshake bindings
+    this._graceWindow = new Map(); // IP -> last grace-connection ts
     
     // Trust level cache (nodeId -> TRUST_LEVEL)
     this.trustLevels = new Map();
@@ -141,6 +149,23 @@ export class ConnectionRateLimiter {
     return TRUST_MULTIPLIERS[trustLevel]?.penalty || 1.0;
   }
   
+  /**
+   * Record that an IP completed an authenticated handshake for a nodeId.
+   * Proving identity clears bans/violations — the ban likely accrued while
+   * the peer was unauthenticated (version-skew retries, reconnect storms).
+   * @param {string} ip
+   * @param {string} nodeId - Verified peer identity (post-handshake only)
+   */
+  noteAuthenticated(ip, nodeId) {
+    if (!ip || ip === 'unknown' || !nodeId) return;
+    this.authenticatedIps.set(ip, { nodeId, lastAuth: Date.now() });
+    if (this.banned.delete(ip)) {
+      console.log(`✅ Rate-limit ban lifted for ${ip} — authenticated as ${nodeId.slice(-8)}`);
+    }
+    this.violations.delete(ip);
+    this._graceWindow.delete(ip);
+  }
+
   /**
    * Check if an IP is currently banned
    */
@@ -195,11 +220,26 @@ export class ConnectionRateLimiter {
    */
   checkConnection(ip) {
     if (this.isBanned(ip)) {
+      // Grace path — an IP bound to a previously-authenticated peer may
+      // trickle through to re-prove identity. Successful handshake calls
+      // noteAuthenticated() which clears the ban; failure keeps accruing.
+      const bound = this.authenticatedIps.get(ip);
+      if (bound) {
+        const lastGrace = this._graceWindow.get(ip) || 0;
+        if (Date.now() - lastGrace >= 60000 / this.config.graceConnectionsPerMinute) {
+          this._graceWindow.set(ip, Date.now());
+          return { allowed: true, grace: true };
+        }
+      }
       const retryAfter = Math.ceil((this.banned.get(ip) - Date.now()) / 1000);
       return { allowed: false, reason: 'IP is temporarily banned', retryAfter };
     }
-    
+
     const now = Date.now();
+    const bound = this.authenticatedIps.get(ip);
+    // Bound IPs get the bound peer's trust-scaled limits, floor NORMAL —
+    // the peer already proved identity once, so it is not an UNKNOWN flood.
+    const minMult = bound ? Math.max(1.0, this._getEffectiveLimit(1.0, bound.nodeId)) : 1.0;
     const record = this.connections.get(ip) || { 
       count: 0, 
       firstSeen: now, 
@@ -219,8 +259,8 @@ export class ConnectionRateLimiter {
       record.hourStart = now;
     }
     
-    // Check limits
-    if (record.count >= this.config.maxConnectionsPerMinute) {
+    // Check limits (trust-scaled for previously-authenticated IPs)
+    if (record.count >= Math.ceil(this.config.maxConnectionsPerMinute * minMult)) {
       this._recordViolation(ip, 'connection_flood_minute');
       return { 
         allowed: false, 
@@ -229,7 +269,7 @@ export class ConnectionRateLimiter {
       };
     }
     
-    if (record.hourlyCount >= this.config.maxConnectionsPerHour) {
+    if (record.hourlyCount >= Math.ceil(this.config.maxConnectionsPerHour * minMult)) {
       this._recordViolation(ip, 'connection_flood_hour');
       return { 
         allowed: false, 
@@ -455,6 +495,18 @@ export class ConnectionRateLimiter {
     for (const [ip, expiry] of this.banned) {
       if (now > expiry) {
         this.banned.delete(ip);
+      }
+    }
+
+    // Expire stale auth bindings (default 24h) and grace-window entries
+    for (const [ip, binding] of this.authenticatedIps) {
+      if (now - binding.lastAuth > this.config.authBindingTtl) {
+        this.authenticatedIps.delete(ip);
+      }
+    }
+    for (const [ip, ts] of this._graceWindow) {
+      if (now - ts > 3600000) {
+        this._graceWindow.delete(ip);
       }
     }
   }

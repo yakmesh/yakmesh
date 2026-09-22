@@ -509,3 +509,111 @@ describe('MantraProtocol: Rumor Signature Enforcement', () => {
     assert.strictEqual(key, null);
   });
 });
+
+
+// =============================================================================
+// Anti-entropy — DIGEST/DIFF reconciliation
+// =============================================================================
+
+describe('MantraProtocol: Anti-entropy (DIGEST/DIFF)', () => {
+  function recordingMesh() {
+    const mesh = createMockMesh();
+    mesh.sent = [];
+    mesh.sendTo = (nodeId, msg) => { mesh.sent.push({ nodeId, msg }); };
+    return mesh;
+  }
+
+  function bufferedRumor(id, origin = 'origin-x') {
+    return {
+      type: 'GOSSIP_RUMOR',
+      messageId: id,
+      topic: 'test',
+      data: { id },
+      origin,
+      ttl: 3,
+      originTTL: 3,
+      timestamp: Date.now(),
+      signature: 'mock-sig-' + origin,
+    };
+  }
+
+  it('_runAntiEntropy sends WANT_PEERS + DIGEST of buffered rumor ids', () => {
+    const mesh = recordingMesh();
+    mesh.getPeers = () => [{ nodeId: 'peer-a' }];
+    const protocol = new MantraProtocol(mesh, createMockIdentity());
+
+    protocol._bufferRumor(bufferedRumor('m1'));
+    protocol._bufferRumor(bufferedRumor('m2'));
+    protocol._runAntiEntropy();
+
+    const msgs = mesh.sent.map(s => s.msg.gossip);
+    assert.ok(msgs.some(m => m.type === 'GOSSIP_WANT_PEERS'), 'should send WANT_PEERS');
+    const digest = msgs.find(m => m.type === 'GOSSIP_DIGEST');
+    assert.ok(digest, 'should send DIGEST');
+    assert.deepStrictEqual(digest.ids, ['m1', 'm2']);
+  });
+
+  it('_handleDigest pulls unknown ids via DIFF and pushes held rumors they lack', () => {
+    const mesh = recordingMesh();
+    const protocol = new MantraProtocol(mesh, createMockIdentity());
+
+    protocol._bufferRumor(bufferedRumor('ours-1'));
+    // Their digest lacks 'ours-1' -> we push it; they hold 'theirs-*' -> we pull.
+    protocol._handleDigest({ type: 'GOSSIP_DIGEST', ids: ['theirs-1', 'theirs-2'] }, 'peer-b');
+
+    const msgs = mesh.sent.map(s => s.msg.gossip);
+    const diff = msgs.find(m => m.type === 'GOSSIP_DIFF');
+    assert.ok(diff, 'should request missing rumors');
+    assert.deepStrictEqual(diff.want, ['theirs-1', 'theirs-2']);
+
+    const pushed = msgs.filter(m => m.type === 'GOSSIP_RUMOR');
+    assert.strictEqual(pushed.length, 1, 'should push rumors peer lacks');
+    assert.strictEqual(pushed[0].messageId, 'ours-1');
+  });
+
+  it('_handleDiff serves buffered rumors verbatim and honors cooldown', () => {
+    const mesh = recordingMesh();
+    const protocol = new MantraProtocol(mesh, createMockIdentity());
+
+    protocol._bufferRumor(bufferedRumor('have-1'));
+    protocol._bufferRumor(bufferedRumor('have-2'));
+
+    protocol._handleDiff({ type: 'GOSSIP_DIFF', want: ['have-2', 'not-held'] }, 'peer-c');
+
+    const served = mesh.sent.map(s => s.msg.gossip).filter(m => m.type === 'GOSSIP_RUMOR');
+    assert.strictEqual(served.length, 1);
+    assert.strictEqual(served[0].messageId, 'have-2');
+    assert.strictEqual(served[0].signature, 'mock-sig-origin-x', 'served rumor must keep its signature');
+
+    mesh.sent.length = 0;
+    protocol._handleDiff({ type: 'GOSSIP_DIFF', want: ['have-1'] }, 'peer-c');
+    assert.strictEqual(mesh.sent.length, 0, 'second DIFF inside cooldown must be ignored');
+  });
+
+  it('full round-trip: digest -> diff -> served rumor verifies through _handleRumor', () => {
+    // Node B holds nothing; node A holds a rumor B missed (partition).
+    const meshA = recordingMesh();
+    const meshB = recordingMesh();
+    const protoA = new MantraProtocol(meshA, createMockIdentity('node-a'));
+    const protoB = new MantraProtocol(meshB, createMockIdentity('node-b'));
+    meshB.peers = new Map([['node-a', { identity: { publicKey: 'mock-pubkey-node-a' } }]]);
+
+    protoA._bufferRumor(bufferedRumor('missed-1', 'node-a'));
+
+    // B receives A's digest -> sends DIFF (pull) - and holds nothing to push.
+    protoB._handleDigest({ type: 'GOSSIP_DIGEST', ids: ['missed-1'] }, 'node-a');
+    const diff = meshB.sent.map(s => s.msg.gossip).find(m => m.type === 'GOSSIP_DIFF');
+    assert.deepStrictEqual(diff.want, ['missed-1']);
+
+    // A serves the DIFF -> rumor delivered verbatim.
+    protoA._handleDiff(diff, 'node-b');
+    const rumorMsg = meshA.sent.map(s => s.msg.gossip).find(m => m.type === 'GOSSIP_RUMOR');
+
+    // B ingests it through the normal rumor path - signature verifies, buffered.
+    let emitted = false;
+    meshB.on('rumor', () => { emitted = true; });
+    protoB._handleRumor(rumorMsg, 'node-a');
+    assert.strictEqual(emitted, true);
+    assert.ok(protoB.recentRumors.some(r => r.messageId === 'missed-1'));
+  });
+});

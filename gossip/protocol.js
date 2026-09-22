@@ -160,6 +160,11 @@ export class MantraProtocol extends EventEmitter {
       peerTTL: options.peerTTL || 300000,       // 5 min peer expiry
       maxPeersToShare: options.maxPeersToShare || 10,
       rumorTTL: options.rumorTTL || 5,          // Max hops (wheel spins)
+      digestMaxIds: options.digestMaxIds || 256,   // Rumor ids advertised per DIGEST
+      digestPushMax: options.digestPushMax || 16,  // Rumors re-served per DIGEST
+      diffMaxWant: options.diffMaxWant || 64,      // Max ids requested per DIFF
+      diffMaxServe: options.diffMaxServe || 32,    // Max rumors sent per DIFF
+      diffMinIntervalMs: options.diffMinIntervalMs || 5000, // Per-peer DIFF serve cooldown
       ...options,
     };
 
@@ -172,6 +177,7 @@ export class MantraProtocol extends EventEmitter {
     this._localRumorQueue = []; // FIFO for bounded eviction
     this.seenMessages = new BloomFilter();
     this.pendingRumors = new Map();  // messageId -> { rumor, attempts, targets }
+    this._lastDiffServed = new Map(); // nodeId -> ts (anti-entropy serve cooldown)
 
     // Recent rumors buffer (for HTTP polling by MeshBridge)
     this.recentRumors = [];           // { topic, data, origin, timestamp, messageId }
@@ -660,8 +666,6 @@ export class MantraProtocol extends EventEmitter {
    * Run anti-entropy synchronization
    */
   _runAntiEntropy() {
-    // This would typically sync with replication engine
-    // For now, just exchange peer lists
     const peers = this.mesh.getPeers();
     if (peers.length === 0) return;
 
@@ -671,22 +675,82 @@ export class MantraProtocol extends EventEmitter {
     this.mesh.sendTo(target.nodeId, {
       gossip: { type: GossipMessageType.WANT_PEERS }
     });
+
+    // Content reconciliation — advertise the tail of our rumor buffer so the
+    // peer can pull rumors it missed (partition repair) via DIFF, and push
+    // ours it lacks when its DIGEST arrives.
+    const ids = this.recentRumors
+      .slice(-this.config.digestMaxIds)
+      .map(r => r.messageId);
+    if (ids.length > 0) {
+      this.mesh.sendTo(target.nodeId, {
+        gossip: { type: GossipMessageType.DIGEST, ids, ts: aguwa.now() }
+      });
+    }
   }
 
   /**
    * Handle DIGEST for anti-entropy
    */
   _handleDigest(message, fromNodeId) {
-    // Would compare digests and request missing data
-    // Integration point with replication engine
+    if (!Array.isArray(message.ids)) return;
+    const theirIds = new Set(
+      message.ids.slice(0, this.config.digestMaxIds).filter(id => typeof id === 'string')
+    );
+    const known = new Set(this.recentRumors.map(r => r.messageId));
+
+    // Pull side — rumors they hold that we never buffered → DIFF request
+    const missing = [...theirIds].filter(id => !known.has(id))
+      .slice(0, this.config.diffMaxWant);
+    if (missing.length > 0) {
+      this.mesh.sendTo(fromNodeId, {
+        gossip: { type: GossipMessageType.DIFF, want: missing }
+      });
+    }
+
+    // Push side — rumors absent from their digest → re-serve directly,
+    // drip-fed across digest rounds. The receiver runs the normal rumor
+    // path, so signatures are re-verified and TTL governs re-propagation.
+    const toPush = this.recentRumors.filter(r => !theirIds.has(r.messageId))
+      .slice(-this.config.digestPushMax);
+    for (const rumor of toPush) {
+      this.mesh.sendTo(fromNodeId, { gossip: rumor });
+    }
+    if (missing.length > 0 || toPush.length > 0) {
+      log.debug('Anti-entropy digest exchange', {
+        with: peerTag(fromNodeId), pull: missing.length, push: toPush.length,
+      });
+    }
   }
 
   /**
    * Handle DIFF request
    */
   _handleDiff(message, fromNodeId) {
-    // Would send missing data
-    // Integration point with replication engine
+    if (!Array.isArray(message.want)) return;
+
+    // Per-peer cooldown — a DIFF is only answered with our own buffer, but
+    // unbounded re-serves would let a peer farm copies of every rumor.
+    const now = aguwa.now();
+    if (now - (this._lastDiffServed.get(fromNodeId) || 0) < this.config.diffMinIntervalMs) {
+      return;
+    }
+    this._lastDiffServed.set(fromNodeId, now);
+
+    const want = new Set(
+      message.want.slice(0, this.config.diffMaxWant).filter(id => typeof id === 'string')
+    );
+    let served = 0;
+    for (const rumor of this.recentRumors) {
+      if (served >= this.config.diffMaxServe) break;
+      if (want.has(rumor.messageId)) {
+        this.mesh.sendTo(fromNodeId, { gossip: rumor });
+        served++;
+      }
+    }
+    if (served > 0) {
+      log.debug('Anti-entropy DIFF served', { to: peerTag(fromNodeId), served });
+    }
   }
 
   /**
@@ -732,13 +796,11 @@ export class MantraProtocol extends EventEmitter {
    * Buffer a rumor for HTTP API retrieval
    */
   _bufferRumor(rumor) {
-    this.recentRumors.push({
-      messageId: rumor.messageId,
-      topic: rumor.topic,
-      data: rumor.data,
-      origin: rumor.origin,
-      timestamp: rumor.timestamp || aguwa.now(),
-    });
+    // Store the full rumor — anti-entropy re-serves it verbatim to peers
+    // that missed the original spread, so signature/selfSigned/ttl must be
+    // intact for the normal verify path on receipt.
+    if (!rumor.timestamp) rumor.timestamp = aguwa.now();
+    this.recentRumors.push(rumor);
 
     // Evict old entries
     const cutoff = aguwa.now() - this.rumorRetentionMs;
