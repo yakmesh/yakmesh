@@ -177,7 +177,11 @@ export class KhataTrustIntegration extends EventEmitter {
     }
 
     // Identify the signer's public key. Trust messages carry dokoId or nodeId.
-    const signerId = message.dokoId || message.landmark?.nodeId || fromPeerId;
+    // Attestations are signed by the ATTESTER (nested attesterId), not the
+    // relaying node — same for senderId on graph updates. Falling back to
+    // fromPeerId last keeps direct sends working.
+    const signerId = message.dokoId || message.attestation?.attesterId ||
+      message.landmark?.nodeId || message.senderId || fromPeerId;
     if (!signerId) {
       return { valid: false, reason: 'Cannot identify message signer' };
     }
@@ -251,6 +255,19 @@ export class KhataTrustIntegration extends EventEmitter {
     this._resolvePublicKey = resolver;
   }
 
+  /**
+   * Sign an outbound trust message with this node's identity.
+   * Signs exactly what _verifyMessageSignature's default case reconstructs
+   * on receipt: the full payload minus signature/messageId/hops, in the
+   * object's field order (JSON.stringify preserves insertion order and the
+   * wire roundtrip preserves it end-to-end).
+   */
+  _signTrustMessage(message) {
+    if (!this.nodeIdentity?.sign) return;
+    const { signature: _s, messageId: _m, hops: _h, ...rest } = message;
+    message.signature = this.nodeIdentity.sign(JSON.stringify(rest));
+  }
+
   // ═══════════════════════════════════════════════════════════════════════════
   // MESH REVOCATION GOSSIP
   // ═══════════════════════════════════════════════════════════════════════════
@@ -277,8 +294,11 @@ export class KhataTrustIntegration extends EventEmitter {
     const hash = this.computeMessageHash(message);
     this.seenMessages.set(hash, Date.now());
 
+    // Sign — receivers require ATTESTATION_ANNOUNCE to carry a valid signature
+    this._signTrustMessage(message);
+
     this.stats.attestationsGossiped++;
-    log.debug('khata-trust', `Gossiping attestation for ${attestation.targetDokoId}`);
+    log.debug('khata-trust', `Gossiping attestation for ${attestation.dokoId}`);
 
     await this.broadcastToPeers(message);
 
@@ -321,11 +341,12 @@ export class KhataTrustIntegration extends EventEmitter {
             revocationTriggered: result.revoked,
           });
 
-          // Update sybil graph with attestation
+          // Update sybil graph with attestation — Attestation fields are
+          // attesterId (signer) + dokoId (target)
           if (this.sybilGraph) {
             this.sybilGraph.addAttestation(
-              message.attestation.attestorId,
-              message.attestation.targetDokoId,
+              message.attestation.attesterId,
+              message.attestation.dokoId,
               message.timestamp
             );
           }
@@ -357,7 +378,10 @@ export class KhataTrustIntegration extends EventEmitter {
       timestamp: Date.now(),
     };
 
-    log.info('khata-trust', `Broadcasting revocation certificate for ${certificate.targetDokoId}`);
+    // Sign — receivers require REVOCATION_CERTIFICATE signed
+    this._signTrustMessage(message);
+
+    log.info('khata-trust', `Broadcasting revocation certificate for ${certificate.dokoId}`);
 
     await this.broadcastToPeers(message);
   }
@@ -375,12 +399,13 @@ export class KhataTrustIntegration extends EventEmitter {
       const result = await this.meshRevocation.constructor.verifyCertificate(
         certificate,
         async (dokoId) => {
-          // Resolver for public keys
+          // Resolver for public keys — trustRegistry profile first, then the
+          // shared key-resolver cascade (peer registry / DOKO / SHERPA)
           if (this.trustRegistry) {
             const profile = await this.trustRegistry.getProfile(dokoId);
-            return profile?.publicKey || null;
+            if (profile?.publicKey) return profile.publicKey;
           }
-          return null;
+          return this._resolvePublicKey?.(dokoId) || null;
         },
         { actualActiveNodes }
       );
@@ -389,15 +414,15 @@ export class KhataTrustIntegration extends EventEmitter {
         this.emit('revocation-certificate', {
           certificate,
           fromPeerId,
-          targetDokoId: certificate.targetDokoId,
+          targetDokoId: certificate.dokoId,
         });
 
         // Mark node as revoked in local state
         log.info('khata-trust',
-          `Verified revocation certificate for ${certificate.targetDokoId}`);
+          `Verified revocation certificate for ${certificate.dokoId}`);
       } else {
         log.warn('khata-trust',
-          `Invalid revocation certificate for ${certificate.targetDokoId}`);
+          `Invalid revocation certificate for ${certificate.dokoId}`);
       }
     }
   }
@@ -578,6 +603,9 @@ export class KhataTrustIntegration extends EventEmitter {
       timestamp: Date.now(),
     };
 
+    // Sign — receivers require SILICON_IDENTITY signed
+    this._signTrustMessage(message);
+
     await this.broadcastToPeers(message);
   }
 
@@ -601,6 +629,9 @@ export class KhataTrustIntegration extends EventEmitter {
       graphStats: stats,
       timestamp: Date.now(),
     };
+
+    // Sign — receivers require GRAPH_UPDATE signed
+    this._signTrustMessage(message);
 
     await this.broadcastToPeers(message);
   }
@@ -639,6 +670,10 @@ export class KhataTrustIntegration extends EventEmitter {
       detectedBy: this.nodeIdentity?.identity?.nodeId,
       timestamp: Date.now(),
     };
+
+    // Not in SIGNED_TYPES (alerts are advisory), but sign anyway — receivers
+    // that choose to verify can; the signature costs nothing at this volume.
+    this._signTrustMessage(message);
 
     log.warn('khata-trust',
       `Broadcasting cluster alert: ${cluster.size} nodes, score=${cluster.suspicionScore}`);

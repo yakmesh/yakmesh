@@ -195,6 +195,12 @@ import { KarmaTrustModel, KarmaLevel } from '../security/hybrid-trust.js';
 // SANGHA — Unified Component Attestation (collective security)
 import { getSangha, joinSangha, SANGHA_COMPONENT } from '../security/sangha.js';
 
+// KHATA Trust — v2.4 networked trust tier (accumulate-only wiring)
+import { KhataTrustIntegration, KHATA_TRUST_MESSAGE } from '../security/khata-trust-integration.js';
+import { MeshRevocation, AttestationAccountability, REVOCATION_REASONS } from '../security/mesh-revocation.js';
+import { SybilGraphAnalyzer } from '../security/sybil-graph.js';
+import { SiliconParityManager } from '../security/silicon-parity.js';
+
 // FS Hardening — File integrity with SANGHA-FS integration
 import { getFSHardening, PROTECTION_LEVEL } from '../security/fs-hardening.js';
 
@@ -877,6 +883,10 @@ export class YakmeshNode {
       log.error('PULSE seal-conflict evidence', {
         claim: ev.claimKey?.slice(0, 24), attester: ev.attester?.slice(0, 16),
       }));
+
+    // 4e. KHATA trust tier — v2.4 networked trust (accumulate-only)
+    this._initKhataTrust();
+
     this._startPulseHeartbeat();
     this._startAttestationLoop();
 
@@ -2091,6 +2101,9 @@ export class YakmeshNode {
     // crawls register landmarks and feed RTT measurements (dead branch
     // otherwise: geoProofService was never assigned on the discovery layer).
     this.sherpa?.setGeoProofService(this.geoProofService);
+    // KHATA trust tier may already exist — it consumes geo proofs for
+    // GEO_PROOF_ANNOUNCE/LANDMARK gossip
+    this.khataTrust?.setComponents({ geoProofService: this.geoProofService });
   }
 
   /**
@@ -2239,6 +2252,149 @@ export class YakmeshNode {
    * Initialize SAKSHI witness consensus
    * Observational capability system for node behavior monitoring.
    */
+  /**
+   * Initialize the v2.4 KHATA trust tier — accumulate-only wiring.
+   *
+   * Attestations are created from observed evidence, signed, gossiped via
+   * the rumor layer, verified on receipt, and fed into MeshRevocation /
+   * SybilGraph / AttestationAccountability. Revocation certificates are
+   * logged and broadcast when quorum math triggers — but NOTHING is
+   * enforced: isRevoked never gates peers, no node is refused or dropped.
+   * Enforcement is a separate decision pending multi-node quorum testing.
+   */
+  _initKhataTrust() {
+    log.info('🕉️ Initializing KHATA trust tier (accumulate-only)...');
+
+    const myNodeId = this.identity.identity.nodeId;
+
+    // MeshRevocation — attestation collection + threshold math
+    this.meshRevocation = new MeshRevocation({
+      myDokoId: myNodeId,
+      privateKey: this.identity.identity.secretKey,
+      resolvePublicKey: (id) => this.keyResolver?.resolve(id) || null,
+      getActiveNodeCount: () => (this.mesh?.peers?.size || 0) + 1,
+    });
+    this.meshRevocation.start();
+
+    // Quorum reached → build + broadcast the certificate. Accumulate-only:
+    // receivers verify and log; nobody enforces.
+    this.meshRevocation.on('revoked', async (ev) => {
+      log.error('🚨 MESH REVOCATION QUORUM — certificate issued (NOT enforced)', {
+        dokoId: ev.dokoId?.slice(0, 24),
+        attestations: ev.attestations?.count,
+      });
+      try {
+        const cert = await this.meshRevocation.createRevocationCertificate(ev.dokoId);
+        await this.khataTrust?.broadcastRevocationCertificate(cert);
+      } catch (e) {
+        log.warn('Revocation certificate broadcast failed', { error: e.message });
+      }
+    });
+
+    // Sybil graph — attestation edges + online/offline behavior accumulate
+    this.sybilGraph = new SybilGraphAnalyzer({
+      onSybilDetected: (cluster) =>
+        log.error('🕸️ SYBIL cluster detected', { nodes: cluster.nodes?.length, score: cluster.suspicionScore }),
+      onSuspiciousCluster: (cluster) =>
+        log.warn('Suspicious cluster', { nodes: cluster.nodes?.length, score: cluster.suspicionScore }),
+    });
+
+    // Silicon parity — hardware fingerprints; duplicate fingerprint across
+    // distinct nodeIds is a same-host Sybil tell
+    this.siliconParity = new SiliconParityManager({
+      onDuplicateFingerprint: (fp, dokoIds) =>
+        log.error('🔬 Duplicate silicon fingerprint — shared hardware?', { fingerprint: fp?.slice(0, 16), dokoIds }),
+      onVMDetected: (dokoId) =>
+        log.warn('VM/emulation indicators', { node: peerTag(dokoId) }),
+      onVerificationFailed: (dokoId, reason) =>
+        log.warn('Silicon verification failed', { node: peerTag(dokoId), reason }),
+    });
+
+    // Attester accountability — who files attestations that later validate
+    this.attestationAccountability = new AttestationAccountability();
+
+    // The bridge — network transport + inbound dispatch + sig verification
+    this.khataTrust = new KhataTrustIntegration({
+      meshRevocation: this.meshRevocation,
+      siliconParity: this.siliconParity,
+      sybilGraph: this.sybilGraph,
+      nodeIdentity: this.identity,
+      geoProofService: this.geoProofService || null,
+    });
+    this.khataTrust.setPublicKeyResolver((id) => this.keyResolver?.resolve(id) || null);
+    this.khataTrust.setNetworkLayer(
+      // Directed traffic rides one envelope type through the mesh dispatch table
+      (peerId, msg) => this.mesh.sendTo(peerId, { type: 'khata:trust:direct', inner: msg }),
+      // Broadcast traffic rides the rumor layer (dedup + fanout handled there)
+      (msg) => this.gossip?.spreadRumor('khata:trust', msg),
+    );
+
+    // Inbound directed trust messages
+    this.mesh.on('khata:trust:direct', (msg, _ws, senderNodeId) => {
+      if (msg?.inner) {
+        this.khataTrust.handleMessage(msg.inner, senderNodeId)
+          .catch(e => log.warn('khata-trust direct handling failed', { error: e.message }));
+      }
+    });
+
+    // Inbound gossiped trust messages — origin is the signed rumor origin
+    this.mesh.on('rumor', (topic, data, origin) => {
+      if (topic === 'khata:trust' && data?.type) {
+        this.khataTrust.handleMessage(data, origin)
+          .catch(e => log.warn('khata-trust rumor handling failed', { error: e.message }));
+      }
+    });
+
+    // Track attestation flow for accountability + sybil graph
+    this.khataTrust.on('attestation-received', ({ attestation }) => {
+      this.attestationAccountability.recordAttestation(
+        attestation.attesterId, attestation.dokoId, attestation.reason);
+      this.sybilGraph.addAttestation(attestation.attesterId, attestation.dokoId, attestation.timestamp);
+    });
+    this.khataTrust.on('revocation-certificate', ({ certificate, fromPeerId }) =>
+      log.error('🚨 Revocation certificate received (verified, NOT enforced)', {
+        target: certificate.dokoId?.slice(0, 24), from: peerTag(fromPeerId),
+      }));
+
+    // ── Evidence → signed attestations ──
+    // claim-ledger events are provable observations; map them onto
+    // REVOCATION_REASONS. Throttled to one attestation per (node, reason)
+    // per hour — evidence accumulation, not gossip flooding.
+    const REASON_MAP = {
+      fork: REVOCATION_REASONS.DOUBLE_SIGN,
+      proofForgery: REVOCATION_REASONS.INVALID_PROOFS,
+      sealFailure: REVOCATION_REASONS.INVALID_PROOFS,
+      bindingConflict: REVOCATION_REASONS.KEY_REUSE,
+      attestationConflict: REVOCATION_REASONS.PROTOCOL_VIOLATION,
+    };
+    this._attestThrottle = new Map();
+    const attestEvidence = (kind) => (ev) => {
+      const nid = ev.yakmeshNodeId || ev.nodeId;
+      if (!nid || nid === myNodeId) return;
+      const key = `${nid}:${kind}`;
+      const last = this._attestThrottle.get(key) || 0;
+      if (Date.now() - last < 60 * 60 * 1000) return;
+      try {
+        const attestation = this.meshRevocation.createAttestation(
+          nid, REASON_MAP[kind], { kind, epoch: ev.epoch, sequence: ev.sequence });
+        this._attestThrottle.set(key, Date.now());
+        this.khataTrust.gossipAttestation(attestation)
+          .catch(e => log.debug('Attestation gossip failed', { error: e.message }));
+      } catch (e) {
+        log.debug('Attestation creation failed', { kind, error: e.message });
+      }
+    };
+    for (const kind of Object.keys(REASON_MAP)) {
+      this.claimLedger.on(kind, attestEvidence(kind));
+    }
+
+    // Feed the sybil graph's online/offline model
+    this.mesh.on('peer-registered', (peerId) => this.sybilGraph.recordNodeOnline(peerId));
+    this.mesh.on('peer-disconnected', (peerId) => this.sybilGraph.recordNodeOffline(peerId));
+
+    log.info('✓ KHATA trust tier active (attest + gossip + accumulate; enforcement OFF)');
+  }
+
   _initSakshi() {
     log.info('👁️ Initializing SAKSHI...');
 
