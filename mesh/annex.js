@@ -685,19 +685,11 @@ export class Annex {
     });
     envelope.signature = signatureToWire(this.identity.sign(envelope.getSigningPayload()));
 
-    // The outer wrapper must carry the same hop signature sendTo() applies —
-    // the receiver drops unsigned non-handshake messages. Reuse the mesh's
-    // signing path so TRIBHUJ ratchet + rotation certs behave identically.
+    // Bare wrapper — envelope.signature is mandatory-verified at the annex
+    // boundary, so a wrapper hop-signature would be ~9KB of pure redundancy
+    // per message. The receiver's unsigned-message gate exempts 'annex'.
     const outbound = { type: 'annex', annex: envelope.toJSON(), timestamp: Date.now() };
-    const signed = this.mesh?.ratchet
-      ? this.mesh.ratchet.signObject(outbound)
-      : this.identity.signObject(outbound);
-    const peer = this.mesh?.peers?.get(remoteNodeId);
-    const finalMsg = signed._tribhujSig && this.mesh?._attachTribhujCert
-      ? this.mesh._attachTribhujCert(signed, peer)
-      : signed;
-
-    ws.send(JSON.stringify(finalMsg));
+    ws.send(JSON.stringify(outbound));
     this.stats.messagesEncrypted++;
     return true;
   }

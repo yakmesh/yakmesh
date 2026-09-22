@@ -573,7 +573,11 @@ export class MandalaNetwork {
     // Other message types keep ratchet/identity signing as their hop auth.
     const isRumorWrapper = outbound.type === MessageTypes.GOSSIP &&
       outbound.payload?.gossip?.type === 'GOSSIP_RUMOR';
-    const signed = isRumorWrapper
+    // Annex wrappers self-authenticate — envelope.signature is mandatory-
+    // verified at the annex boundary; a wrapper hop-sig adds ~9KB per
+    // message for zero security gain.
+    const isAnnexWrapper = outbound.type === 'annex';
+    const signed = (isRumorWrapper || isAnnexWrapper)
       ? outbound
       : this.ratchet
         ? this.ratchet.signObject(outbound)
@@ -1746,7 +1750,7 @@ export class MandalaNetwork {
         const isRumorWrapper = msg.type === MessageTypes.GOSSIP &&
           msg.payload?.gossip?.type === 'GOSSIP_RUMOR';
         const HANDSHAKE_TYPES = new Set([MessageTypes.HELLO, MessageTypes.WELCOME, MessageTypes.REDIRECT, 'REJECT']);
-        if (!HANDSHAKE_TYPES.has(msg.type) && !isRumorWrapper) {
+        if (!HANDSHAKE_TYPES.has(msg.type) && !isRumorWrapper && msg.type !== 'annex') {
           log.warn('Rejected unsigned message from peer', {
             type: msg.type,
             sender: peerTag(senderNodeId) || 'unknown',

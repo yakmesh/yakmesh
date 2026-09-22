@@ -53,3 +53,35 @@ describe('Heartbeat wire encoding', () => {
     expect(back.hash).toBe(hb.hash);
   });
 });
+
+describe('ANNEX wrapper — no stacked hop signatures', () => {
+  test('sendOn emits a bare annex wrapper (envelope.signature only)', async () => {
+    const { default: Annex } = await import('../annex.js');
+    const sent = [];
+    const annex = new Annex({
+      identity: {
+        identity: { nodeId: 'node-test-pq-SELF' },
+        sign: () => 'ab'.repeat(3309),
+      },
+      mesh: null,
+    });
+    annex.sessions.set('node-test-pq-PEER', {
+      established: true,
+      isExpired: () => false,
+      sessionId: 'sess-1',
+      encrypt: () => ({ sequence: 1, nonce: 'n'.repeat(24), ciphertext: 'AAAA', authTag: 'BBBB' }),
+    });
+    const ws = { readyState: 1, send: (s) => sent.push(s) };
+
+    annex.sendOn('node-test-pq-PEER', { type: 'test' }, ws);
+
+    const frame = JSON.parse(sent[0]);
+    expect(frame.type).toBe('annex');
+    expect(frame.annex.signature).toBe(Buffer.from('ab'.repeat(3309), 'hex').toString('base64'));
+    // The redundant hop layer is gone — envelope.signature is the sole auth
+    expect(frame._signature).toBeUndefined();
+    expect(frame._tribhujSig).toBeUndefined();
+    expect(frame._tribhujCert).toBeUndefined();
+    expect(frame._tribhujPubKey).toBeUndefined();
+  });
+});

@@ -190,6 +190,12 @@
   the wire. All four now emit base64 (~4.4KB each). _tribhujPubKey stays
   hex — it's compared by string equality against handshake-pinned keys.
   All verify paths decode both encodings via decodeKeyMaterial.
+- ANNEX wrappers no longer carry a stacked hop signature — `sendOn` and
+  `sendTo` emit bare `{type:'annex', annex:{...}}` frames, and the
+  receiver's unsigned-message gate exempts 'annex' (the annex boundary
+  mandatorily verifies envelope.signature — strictly stronger auth than
+  the wrapper sig it replaces). ~9KB saved per encrypted message;
+  steady-state gossip frames drop ~34KB → ~12KB.
 
 ## [3.5.8] — 2026-09-21
 
