@@ -199,7 +199,7 @@ export function createDarshanAPI({
   /**
    * POST /darshan/stream — Request a stream
    */
-  router.post('/stream', writeLimiter, requirePeerAuth, (req, res) => {
+  router.post('/stream', writeLimiter, requirePeerAuth, async (req, res) => {
     const { contentId, quality, viewerNodeId } = req.body;
     
     if (!contentId) {
@@ -211,12 +211,26 @@ export function createDarshanAPI({
       return res.status(404).json({ error: 'Content not found' });
     }
 
-    // Check access if GUMBA-controlled
+    // Check access if GUMBA-controlled. accessList is a GUMBA bundle id —
+    // verification goes through the gateway's accessController. When no
+    // controller is wired there is no way to prove membership, so deny
+    // honestly instead of granting access-listed content to any caller.
     if (content.accessList) {
-      // Access verification would go through GUMBA — simplified for now
-      const viewer = viewerNodeId || req.authenticatedPeer;
-      if (!viewer) {
-        return res.status(403).json({ error: 'GUMBA access proof required' });
+      if (!darshanGateway.accessController) {
+        return res.status(403).json({
+          error: 'Content is GUMBA access-controlled and no access controller is configured',
+          accessList: content.accessList,
+        });
+      }
+      const accessResult = await darshanGateway.accessController.verifyAccess(
+        req.body.accessProof || null,
+        () => {} // public key lookup — resolved by controller
+      ).catch(() => ({ granted: false, reason: 'verification failed' }));
+      if (!accessResult.granted) {
+        return res.status(403).json({
+          error: 'Access denied',
+          reason: accessResult.reason || 'no valid GUMBA access proof',
+        });
       }
     }
 

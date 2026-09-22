@@ -41,7 +41,9 @@ function makeNet() {
     getPublicIdentity: () => ({ nodeId: 'node-test-self', name: 'self' }),
     getPersistentId: () => 'self-persistent',
   };
-  return new MandalaNetwork(identity, { wsPort: 0 });
+  // Tests drive many HELLOs from the same fake IP — raise the handshake
+  // rate limit so the suite exercises admission logic, not flood limits.
+  return new MandalaNetwork(identity, { wsPort: 0, rateLimiter: { maxHandshakesPerMinute: 100000 } });
 }
 
 const selfKeys = generateKeyPair(new Uint8Array(32).fill(7));

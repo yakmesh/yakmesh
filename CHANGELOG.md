@@ -45,6 +45,20 @@
   socket: live owner → stand down (never steal the path), dead file →
   unlink + retry once. Fixes silent loss of pipe coordination when a
   stale socket survived a prior run.
+- /tme/encode write limiter — createTmeAPI received a placeholder
+  no-op limiter; resolved lazily to the real writeLimiter (20/min).
+- DARSHAN /darshan/stream — access-listed (GUMBA) content granted to
+  any authenticated peer; now verifies via accessController when wired
+  and honestly denies when no controller is configured.
+- fs-hardening Windows path — FileGuardian permission hardening was a
+  no-op TODO on Windows; now applies icacls owner-only ACLs for
+  CRITICAL/HIGH files (CRITICAL → read-only).
+- Handshake rate limit wired — checkHandshake() existed but was never
+  called; ML-DSA PoP verifies were unbounded per-IP. HELLO handler now
+  checks before verifying (bound peers trust-scaled, grace trickle).
+- Per-peer message rate limit wired — checkMessage() existed but was
+  never called; post-verification dispatch now enforces the sliding
+  second/minute windows (deny-only, no ban escalation).
 - /geo/prove stub — endpoint fabricated Math.random() RTTs into a
   nonexistent service.createProof(); now calls measureAllLandmarks() +
   generateProof() and reports honest 'insufficient' when no landmarks

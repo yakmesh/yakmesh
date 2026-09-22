@@ -292,19 +292,33 @@ export class ConnectionRateLimiter {
    */
   checkHandshake(ip) {
     if (this.isBanned(ip)) {
+      // Same grace trickle as checkConnection — bound peers may re-auth
+      const bound = this.authenticatedIps.get(ip);
+      if (bound) {
+        const lastGrace = this._graceWindow.get(ip) || 0;
+        if (Date.now() - lastGrace >= 60000 / this.config.graceConnectionsPerMinute) {
+          this._graceWindow.set(ip, Date.now());
+          return { allowed: true, grace: true };
+        }
+      }
       return { allowed: false, reason: 'IP is temporarily banned' };
     }
-    
+
     const now = Date.now();
     const record = this.handshakes.get(ip) || { count: 0, windowStart: now };
-    
+
     // Reset window
     if (now - record.windowStart > 60000) {
       record.count = 0;
       record.windowStart = now;
     }
-    
-    if (record.count >= this.config.maxHandshakesPerMinute) {
+
+    // Bound IPs get trust-scaled handshake limits, floor NORMAL — legit
+    // reconnects (wire failover, restarts) must not read as floods.
+    const bound = this.authenticatedIps.get(ip);
+    const minMult = bound ? Math.max(1.0, this._getEffectiveLimit(1.0, bound.nodeId)) : 1.0;
+
+    if (record.count >= Math.ceil(this.config.maxHandshakesPerMinute * minMult)) {
       this._recordViolation(ip, 'handshake_flood');
       return { 
         allowed: false, 

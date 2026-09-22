@@ -708,7 +708,10 @@ export class YakmeshNode {
       identity: this.identity,
       timeSource: this.timeSource || null,
       getMeshTimeRef: () => this.meshTimeReference || null,
-      writeLimiter: (_req, _res, next) => next(), // placeholder — real limiter on routes
+      // writeLimiter is defined inside _startHttpServer (runs later than this
+      // factory) — resolve it lazily at request time. The router can't serve
+      // until mounted there anyway, so the limiter is always in place.
+      writeLimiter: (req, res, next) => (this._writeLimiter ? this._writeLimiter(req, res, next) : next()),
       tmeTransportGetter: () => this.tmeTransport || null,
     });
     this.tmeEncoder = tmeEncoder;
@@ -3935,6 +3938,8 @@ export class YakmeshNode {
       legacyHeaders: false,
       validate: { xForwardedForHeader: false },
     });
+
+    this._writeLimiter = writeLimiter;
 
     // Apply general limiter to all routes
     app.use(generalLimiter);

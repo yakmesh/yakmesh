@@ -885,6 +885,17 @@ export class MandalaNetwork {
     this.on(MessageTypes.HELLO, (msg, ws) => {
       const nodeId = msg.identity.nodeId;
 
+      // Handshake rate limit — PoP verification below is an expensive
+      // ML-DSA op; per-IP bound before we spend it. Bound peers get
+      // trust-scaled limits; banned-but-bound get the grace trickle.
+      if (ws._clientIp) {
+        const hs = this.rateLimiter.checkHandshake(ws._clientIp);
+        if (!hs.allowed) {
+          ws.close(1008, hs.reason || 'handshake rate limit exceeded');
+          return;
+        }
+      }
+
       // CODE PROOF VERIFICATION: Check network fingerprint
       // Nodes with different codebases will have different fingerprints
       if (this.networkFingerprint && msg.identity.networkFingerprint) {
@@ -1786,6 +1797,20 @@ export class MandalaNetwork {
           });
           return; // Drop unsigned non-handshake message
         }
+      }
+
+      // Per-peer message rate limit (trust-scaled; deny-only — no violation
+      // accrual so legit reconcile bursts don't escalate to bans)
+      const rateCheck = this.rateLimiter.checkMessage(senderNodeId || ws._clientIp || 'unknown', senderNodeId || null);
+      if (!rateCheck.allowed) {
+        this._rateDropCount = (this._rateDropCount || 0) + 1;
+        if (this._rateDropCount % 100 === 1) {
+          log.warn('Message rate limit — dropping', {
+            type: msg.type, sender: peerTag(senderNodeId) || ws._clientIp,
+            drops: this._rateDropCount,
+          });
+        }
+        return;
       }
 
       // Dispatch to handlers

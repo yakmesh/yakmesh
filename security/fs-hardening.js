@@ -60,7 +60,8 @@ import { sha3_256 } from '../utils/accel.js';
 import { bytesToHex } from '@noble/hashes/utils.js';
 import { readFileSync, chmodSync, statSync, existsSync, watch } from 'fs';
 import { join, resolve } from 'path';
-import { platform } from 'os';
+import { platform, userInfo } from 'os';
+import { execFileSync } from 'child_process';
 import { EventEmitter } from 'events';
 
 const log = createLogger('security:fs-hardening');
@@ -191,8 +192,27 @@ export class FileGuardian extends EventEmitter {
    */
   #applyPermissions() {
     if (platform() === 'win32') {
-      // Windows uses NTFS ACLs — handled differently
-      // TODO: Use icacls for Windows permission hardening
+      // NTFS ACLs via icacls — strip inheritance, grant owner-only.
+      // CRITICAL → owner read-only; HIGH → owner full control. NORMAL files
+      // keep default ACLs (world-readable equivalent is the NTFS default).
+      if (this.#level === 'NORMAL') return;
+      const grant = this.#level === 'CRITICAL' ? 'R' : 'F';
+      try {
+        const user = userInfo().username;
+        execFileSync('icacls', [
+          this.#filePath,
+          '/inheritance:r',
+          '/grant:r', `${user}:${grant}`, 'SYSTEM:F', 'Administrators:F',
+        ], { stdio: 'ignore' });
+        log.debug('Applied NTFS ACL', {
+          path: this.#filePath, user, grant,
+        });
+      } catch (e) {
+        log.warn('Failed to set NTFS ACL', {
+          path: this.#filePath,
+          error: e.message,
+        });
+      }
       return;
     }
 
