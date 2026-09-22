@@ -101,9 +101,14 @@ let _serverDirectory = null;
 /** @type {Map<string, { persistentId: string, publicKey: string, createdAt: number }>} */
 const _visitorIdentities = new Map();
 
+// XDG_RUNTIME_DIR is user-private — a stale socket from a *different* uid
+// in sticky /tmp cannot be unlinked by us (observed: root-owned file wedging
+// every abl-run instance). Fall back to /tmp only when XDG is absent.
 const PIPE_PATH = os.platform() === 'win32'
     ? '\\\\.\\pipe\\yakmesh-scheduler'
-    : '/tmp/yakmesh-scheduler.sock';
+    : (process.env.XDG_RUNTIME_DIR
+        ? `${process.env.XDG_RUNTIME_DIR}/yakmesh-scheduler.sock`
+        : '/tmp/yakmesh-scheduler.sock');
 
 /** @type {net.Server|null} */
 let _server = null;
