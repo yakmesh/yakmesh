@@ -50,7 +50,15 @@ import { sha3_256 as _nobleSha3 } from '@noble/hashes/sha3.js';
 import { bytesToHex, hexToBytes, utf8ToBytes } from '@noble/hashes/utils.js';
 import { createLogger } from '../utils/logger.js';
 import { signatureToWire } from '../identity/node-key.js';
-import { getCurrentEpoch, derivePhaseModulated } from '../oracle/phase-epoch.js';
+import { derivePhaseModulated } from '../oracle/phase-epoch.js';
+import { aguwa } from './aguwa.js';
+
+// Canonical wire-key epoch — FIXED 6h cadence. Do NOT use getCurrentEpoch()
+// here: it follows the node's trust-scaled epochDurationHours (1/2/6/12h via
+// setTimeSourceConfig), so two healthy peers can disagree on the epoch number
+// and never derive the same wire key. Observed live: one node at 'gps' (2h)
+// vs a booting peer still at 'ntp'/'unsync' (6h/12h) → total decrypt failure.
+const ANNEX_WIRE_EPOCH_MS = 6 * 60 * 60 * 1000;
 
 // ACCEL: Hardware-accelerated crypto (native SHA3, native KEM via liboqs/AVX-512)
 import { sha3_256, mlKem768Keygen, mlKem768Encapsulate, mlKem768Decapsulate } from '../utils/accel.js';
@@ -410,7 +418,7 @@ class AnnexSession {
     // (AVOTH epoch flip): key = phaseHKDF(base, epoch). Both sides share the
     // same epoch clock, so rotation needs no round-trip; the ±1 window
     // absorbs boundary straddle. A leaked epoch key heals at the next flip.
-    const epoch = getCurrentEpoch();
+    const epoch = this._wireEpoch();
     const candidates = [
       { base: this.encryptionKey, sessionId: this.sessionId, promote: false },
     ];
@@ -453,6 +461,14 @@ class AnnexSession {
   }
 
   /**
+   * Canonical wire epoch — fixed 6h boundaries on AGUWA mesh time.
+   * Overridable in tests.
+   */
+  _wireEpoch() {
+    return Math.floor(aguwa.now() / ANNEX_WIRE_EPOCH_MS);
+  }
+
+  /**
    * Derive the wire key for a given epoch from a base secret.
    * Base = encryptionKey (KEM/bootstrap session secret); the phase flip
    * rotates it every epoch without any message exchange.
@@ -471,7 +487,7 @@ class AnnexSession {
    * Current-epoch send key, cached per epoch flip.
    */
   _sendKey() {
-    const epoch = getCurrentEpoch();
+    const epoch = this._wireEpoch();
     if (this._sendKeyEpoch !== epoch) {
       this._sendKeyCache = this._epochKeyFor(this.encryptionKey, epoch);
       this._sendKeyEpoch = epoch;
@@ -1097,9 +1113,11 @@ export class Annex {
       return;
     }
 
+    let plaintext;
+    let payload;
     try {
       // Decrypt
-      const plaintext = session.decrypt(
+      plaintext = session.decrypt(
         {
           nonce: envelope.nonce,
           ciphertext: envelope.ciphertext,
@@ -1112,7 +1130,6 @@ export class Annex {
       this._authFailCount?.delete(envelope.senderId);
 
       // Parse and dispatch to handlers
-      let payload;
       try {
         payload = JSON.parse(plaintext);
       } catch {
@@ -1140,6 +1157,35 @@ export class Annex {
         }
       }
     } catch (err) {
+      // DIAGNOSTIC: envelope sessionIds are deterministic per node-pair, so a
+      // 'tun:<id>' session shares sessionId with the mesh session but uses a
+      // domain-separated base. If a tun-keyed envelope ever reaches the mesh
+      // path, it authenticates under the tun base — try it before failing.
+      const tunSession = this.sessions.get(`tun:${envelope.senderId}`);
+      if (tunSession?.established && tunSession !== session) {
+        try {
+          const alt = tunSession.decrypt(
+            { nonce: envelope.nonce, ciphertext: envelope.ciphertext, authTag: envelope.authTag },
+            envelope.sequence
+          );
+          log.warn('DIAG: envelope decrypted under TUN session base — sender used wrong session', {
+            peer: peerTag(envelope.senderId), envSessionId: envelope.sessionId?.slice(0, 8),
+          });
+          plaintext = alt;
+          this.stats.messagesDecrypted++;
+          this._authFailCount?.delete(envelope.senderId);
+          try { payload = JSON.parse(alt); } catch { payload = alt; }
+          if (payload && payload._annexControl) {
+            await this._handleAnnexControl(payload._annexControl, envelope.senderId);
+            return;
+          }
+          for (const handler of this.messageHandlers.values()) {
+            try { await handler({ from: envelope.senderId, sessionId: envelope.sessionId, payload, timestamp: envelope.timestamp }); }
+            catch (herr) { log.error('Handler error', { error: herr.message }); }
+          }
+          return;
+        } catch { /* not tun-keyed either — fall through to normal handling */ }
+      }
       if (err.message.includes('Replay')) {
         this.stats.replaysBlocked++;
         log.warn('Replay attack blocked', { error: err.message });

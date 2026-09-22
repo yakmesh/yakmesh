@@ -968,16 +968,11 @@ describe('ANNEX Signature Enforcement (CRITICAL 5.1)', () => {
 // receiver accepts epoch ±1 to absorb boundary straddle.
 // ═══════════════════════════════════════════════════════════════════════════
 
-const epochCtl = vi.hoisted(() => ({ epoch: null, real: null }));
-
-vi.mock('../../oracle/phase-epoch.js', async (importOriginal) => {
-  const mod = await importOriginal();
-  epochCtl.real = mod.getCurrentEpoch;
-  return {
-    ...mod,
-    getCurrentEpoch: vi.fn(() => epochCtl.epoch ?? epochCtl.real()),
-  };
-});
+// Wire epochs are driven by AnnexSession._wireEpoch() — a fixed 6h cadence
+// on AGUWA time (deliberately NOT getCurrentEpoch's trust-scaled value).
+// Tests override _wireEpoch per session to simulate boundary straddle.
+const epochCtl = { epoch: null };
+import { aguwa } from '../../mesh/aguwa.js';
 
 describe('AnnexSession — epoch-bound wire keys', () => {
   let alice, bob;
@@ -998,8 +993,11 @@ describe('AnnexSession — epoch-bound wire keys', () => {
     await bob.generateKeyPair();
     const ct = alice.encapsulate(bytesToHex(bob.kemKeyPair.publicKey));
     bob.decapsulate(ct);
-    baseEpoch = epochCtl.real();
+    baseEpoch = Math.floor(aguwa.now() / (6 * 60 * 60 * 1000));
     epochCtl.epoch = baseEpoch;
+    const wireEpoch = () => epochCtl.epoch;
+    alice._wireEpoch = wireEpoch;
+    bob._wireEpoch = wireEpoch;
   });
 
   afterEach(() => { epochCtl.epoch = null; });
@@ -1047,6 +1045,20 @@ describe('AnnexSession — epoch-bound wire keys', () => {
     bob.decrypt(m2, m2.sequence); // forward seq accepted post-flip
     bob.decrypt(m1, m1.sequence); // delayed slower-wire seq inside window
     expect(() => bob.decrypt(m2, m2.sequence)).toThrow(/Duplicate/);
+  });
+
+  test('wire epoch is canonical — immune to trust-scaled epochDurationHours', async () => {
+    // Regression: getCurrentEpoch() follows setTimeSourceConfig trust levels
+    // (1/2/6/12h) — two healthy nodes once derived different epochs and could
+    // never decrypt each other. _wireEpoch must stay on the fixed 6h cadence.
+    const fresh = new AnnexSession({ localNodeId: 'x', remoteNodeId: 'y' });
+    const { setPhaseConfig, getCurrentEpoch } = await import('../../oracle/phase-epoch.js');
+    const before = fresh._wireEpoch();
+    setPhaseConfig('gps');   // 2h epochs — would change getCurrentEpoch
+    setPhaseConfig('unsync'); // 12h epochs
+    expect(fresh._wireEpoch()).toBe(before);
+    // restore default for other tests
+    setPhaseConfig('ntp');
   });
 
   test('send-key cache invalidates on epoch flip and base change', () => {
