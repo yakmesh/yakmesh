@@ -678,7 +678,11 @@ export class Annex {
       };
     });
     session._handshakePromise = handshakePromise;
-    handshakePromise.finally(() => { session._handshakePromise = null; });
+    // .finally() returns a DERIVED promise — if the handshake times out, that
+    // derived rejection is unhandled and kills the process (observed: ANNEX
+    // handshake timeout → uncaught exception → node exit). Swallow it; the
+    // original promise still rejects normally for real callers.
+    handshakePromise.finally(() => { session._handshakePromise = null; }).catch(() => { });
     this.pendingHandshakes.set(remoteNodeId, session);
 
     // Generate our key pair (ACCEL: native liboqs/AVX-512, PRAHARI: quantum seed)

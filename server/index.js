@@ -1256,7 +1256,7 @@ export class YakmeshNode {
     // If upgrade detected (Phase A), wait for first peer then propose
     if (this._actUpgradeDetected) {
       const onFirstPeer = () => {
-        this.mesh.removeListener('peer-registered', onFirstPeer);
+        this.mesh.off('peer-registered', onFirstPeer);
         // Delay slightly to let gossip stabilize
         setTimeout(() => this._initiateACTProposal(), 5000);
       };
