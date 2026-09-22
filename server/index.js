@@ -58,6 +58,7 @@ import { YakmeshWebServer } from '../webserver/index.js';
 const log = createLogger('server:main');
 const peerTag = (id) => id?.split('-pq-').pop() || id?.slice?.(-8) || String(id);
 import { NodeIdentity } from '../identity/node-key.js';
+import { KeyResolver } from '../identity/key-resolver.js';
 import { MeshNetwork } from '../mesh/network.js';
 import { YakTun } from '../mesh/tun.js';
 import { ReplicationEngine } from '../database/replication.js';
@@ -911,6 +912,7 @@ export class YakmeshNode {
       },
       seedEndpoints: this.config.sherpa?.seeds || [],
     });
+    this.keyResolver?.attachSherpa(this.sherpa);
 
     // Expose SHERPA registry on mesh so ANNEX can look up relay peer public keys
     this.mesh.sherpa = this.sherpa;
@@ -2091,12 +2093,28 @@ export class YakmeshNode {
     this.kathaHub = new KathaHub();
     log.debug('   KATHA: Chat messaging hub ready');
 
+    // KEY RESOLVER — unified public-key cascade. SHERPA attaches lazily
+    // below (it initializes after the KOMM stack).
+    this.keyResolver = new KeyResolver({ identity: this.identity });
+    this.keyResolver.attachNetwork(this.mesh);
+
+    // NAMCHE — 7-gate DOKO verification + cache. DOKOs enter via the
+    // /namche/verify API; verified keys become resolvable for GUMBA proofs.
+    this.namcheGateway = new NamcheGateway({
+      networkName: this.genesisNetwork?.networkName,
+    });
+    this.keyResolver.attachNamche(this.namcheGateway);
+
     // GUMBA — Access control (initialized before YURT, which depends on it)
-    this.gumbaHub = new GumbaHub(this.identity, this.mesh?.annex, {});
+    this.gumbaHub = new GumbaHub(this.identity, this.mesh?.annex, {
+      keyResolver: this.keyResolver,
+    });
     log.debug('   GUMBA: Access control hub ready');
 
     // YURT — Room directory (depends on identity, gumbaHub, mesh)
-    this.yurtHub = new YurtHub(this.identity, this.gumbaHub, this.mesh, {});
+    this.yurtHub = new YurtHub(this.identity, this.gumbaHub, this.mesh, {
+      keyResolver: this.keyResolver,
+    });
     this.yurtHub.start();
     log.debug('   YURT: Room directory + gossip started');
 

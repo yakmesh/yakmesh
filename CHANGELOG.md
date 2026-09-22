@@ -1,6 +1,14 @@
 ## [3.5.10] — Unreleased
 
 ### Added
+- KeyResolver + NamcheGateway activation — both existed fully built but
+  were never instantiated (the /namche/* routes always reported
+  'uninitialized'). KeyResolver is now created with the KOMM stack and
+  attaches the network peer map, NamcheGateway DOKO cache, and SHERPA
+  beacon registry as resolution sources (lazy attach — SHERPA wires in
+  after its own init). GumbaHub and YurtHub now receive it, so GUMBA
+  access proofs resolve DOKO/peer public keys through the real cascade
+  instead of only the local registry.
 - AVOTH epoch-bound ANNEX wire keys — the session encryption key is now a
   per-epoch derivation: wireKey = derivePhaseModulated(sessionBase, epoch),
   driven by the AGUWA phase clock (6h epochs). Both peers flip at the same
