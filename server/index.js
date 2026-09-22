@@ -847,12 +847,34 @@ export class YakmeshNode {
     });
     this.claimLedger.on('fork', (ev) =>
       log.error('PULSE fork evidence', { node: ev.nodeId.slice(0, 16), seq: ev.sequence }));
+    // Claim-ledger evidence → KARMA. These already log at warn inside the
+    // ledger; the subscription is the escalation path — a node emitting
+    // forged seals/proofs or conflicting attestations is failed
+    // verification, same class as a critical velocity anomaly.
+    const claimEvidence = (kind) => (ev) => {
+      const nid = ev.yakmeshNodeId || ev.nodeId;
+      log.error(`PULSE ${kind} evidence`, { node: nid?.slice(0, 24), epoch: ev.epoch });
+      if (nid && nid !== this.identity.identity.nodeId) {
+        this.karmaModel?.recordDokoVerification(nid, { passed: false, reason: `claim-ledger ${kind}` });
+      }
+    };
+    this.claimLedger.on('sealFailure', claimEvidence('seal-failure'));
+    this.claimLedger.on('proofForgery', claimEvidence('proof-forgery'));
+    this.claimLedger.on('bindingConflict', claimEvidence('binding-conflict'));
+    this.claimLedger.on('attestationConflict', claimEvidence('attestation-conflict'));
     this.attestationGossip = new AttestationGossip({
       nodeId: this.identity.identity.nodeId,
       publicKey: this.identity.identity.publicKey,
       sign: (data) => this.identity.sign(data),
       claimLedger: this.claimLedger,
     });
+    // Two attesters reporting different seals for the same claim — evidence,
+    // but ambiguous attribution (either witness could be lying), so log
+    // rather than penalize.
+    this.attestationGossip.on('sealConflict', (ev) =>
+      log.error('PULSE seal-conflict evidence', {
+        claim: ev.claimKey?.slice(0, 24), attester: ev.attester?.slice(0, 16),
+      }));
     this._startPulseHeartbeat();
     this._startAttestationLoop();
 
