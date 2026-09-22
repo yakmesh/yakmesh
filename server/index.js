@@ -605,6 +605,7 @@ export class YakmeshNode {
     // 2. Initialize identity - extract directory from database path
     // Pass the oracle so it can derive network name from codebase hash
     const dbDir = this.config.database.path.replace(/[/\\\\][^/\\\\]+\.db$/, '');
+    this.dataDir = dbDir;  // used by FS hardening + DOKO persistence
     this.identity = new NodeIdentity(dbDir);
     await this.identity.init(this.config.node.name, this.config.node.region, this.oracle);
 
@@ -3397,13 +3398,13 @@ export class YakmeshNode {
     log.info('[SIGN] Initializing Temporal Code Signing...');
 
     const temporalSigner = getTemporalSigner({
-      timeSource: this.timeSourceDetector,
-      networkId: this.networkId || this._identity?.network?.name || 'yakmesh',
+      timeSource: this.timeSource,
+      networkId: this.genesisNetwork?.networkId || 'yakmesh',
     });
 
     // Bind GPS time source if available
-    if (this.timeSourceDetector) {
-      temporalSigner.bindTimeSource(this.timeSourceDetector);
+    if (this.timeSource) {
+      temporalSigner.bindTimeSource(this.timeSource);
     }
 
     // Register as SANGHA component (signer participates in collective)
@@ -3433,9 +3434,12 @@ export class YakmeshNode {
 
     const rateLimiter = getKarmaRateLimiter();
 
-    // Bind to KARMA trust model for reputation lookups
-    if (this.karmaTrust) {
-      rateLimiter.bindKarmaTrust(this.karmaTrust);
+    // Bind to KARMA trust model for reputation lookups — rate limiter calls
+    // getTrustScore(peerId) → 0-100; KarmaTrustModel exposes getTrustLevel().
+    if (this.karmaModel) {
+      rateLimiter.bindKarmaTrust({
+        getTrustScore: (id) => this.karmaModel.getTrustLevel(id)?.score ?? -1,
+      });
     }
 
     // Bind to SANGHA for collective response
