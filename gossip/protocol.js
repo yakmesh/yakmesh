@@ -55,6 +55,7 @@ import { sha3_256 } from '../utils/accel.js';
 
 // AGUWA — canonical mesh time source
 import { aguwa } from '../mesh/aguwa.js';
+import { signatureToWire } from '../identity/node-key.js';
 
 const log = createLogger('mantra:protocol');
 
@@ -272,7 +273,8 @@ export class MantraProtocol extends EventEmitter {
         originTTL: rumor.originTTL,
         timestamp: rumor.timestamp,
       });
-      rumor.signature = this.identity.sign(sigPayload);
+      // Wire-encoded (base64) — ~33% smaller than hex; verify accepts both.
+      rumor.signature = signatureToWire(this.identity.sign(sigPayload));
     }
 
     this.seenMessages.add(messageId);

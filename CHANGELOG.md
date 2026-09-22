@@ -174,6 +174,17 @@
 - `_getAdvertisedEndpoint` never advertises tunnel vIPs (10.199/16, fd99:199::/48) — enumeration order no longer decides reachability.
 - sendTo: TUN_PACKET never rides an overlay socket (encapsulation recursion).
 
+### Changed
+- Wire signatures are base64, not hex — `signatureToWire` encodes ML-DSA
+  material at the transport boundary (heartbeat.serialize + rumor signing).
+  33% smaller on the wire (~4.4KB vs ~6.6KB per signature); verifiers
+  already decode both encodings so mixed fleets interoperate. No hexes here.
+- PULSE contribution claim piggybacks on the first 5 beats of each 30s
+  epoch only. The claim is epoch-bound, so the previous all-beats behavior
+  re-sent ~10-15KB of identical attestation material ~25x/epoch for
+  nothing; a short window absorbs boundary wire transitions. Steady-state
+  heartbeat gossip drops ~80% (~25-30KB/beat → ~4.5KB/beat + claim bursts).
+
 ## [3.5.8] — 2026-09-21
 
 ### Fixed

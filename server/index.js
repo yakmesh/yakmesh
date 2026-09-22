@@ -1860,10 +1860,20 @@ export class YakmeshNode {
     // GEMM on real silicon; the nonce binds to the epoch so proofs can't
     // be replayed across epochs. Absent service/NPU → claim omits it.
     setProofProvider(createNpuProofProvider());
+    // Claim piggyback window — first N beats of each 30s epoch carry the
+    // contribution claim; the rest carry heartbeat fields only.
+    const PULSE_CLAIM_EPOCH_SECS = 30;
+    const PULSE_CLAIM_BEATS = 5;
     const emit = async () => {
       if (!this.gossip || !this.pulseSync) return;
       try {
-        const meshState = await withContribution({});
+        // The contribution claim is epoch-bound (30s) — re-sending the
+        // identical payload on all ~30 beats of an epoch is ~10-15KB/beat
+        // of dead weight. Piggyback it on the first few beats of each
+        // epoch only; the small window absorbs wire transitions/loss at
+        // the boundary while claim consumers observe one copy per epoch.
+        const beatInEpoch = Math.floor(Date.now() / 1000) % PULSE_CLAIM_EPOCH_SECS;
+        const meshState = beatInEpoch < PULSE_CLAIM_BEATS ? await withContribution({}) : {};
         const heartbeat = this.pulseSync.createHeartbeat(meshState);
         this.gossip.spreadRumor('pulse:heartbeat', heartbeat);
       } catch (err) {

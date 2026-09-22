@@ -211,6 +211,18 @@ export function signMessage(message, secretKeyHex) {
 }
 
 /**
+ * Encode signature material for the wire — no hexes here. Base64 is ~33%
+ * smaller than canonical hex, which matters at heartbeat cadence (ML-DSA-65:
+ * 6618 hex chars vs 4412 b64 chars). Verifiers accept both encodings via
+ * decodeKeyMaterial, so mixed fleets interoperate. Non-hex or malformed
+ * input passes through untouched.
+ */
+export function signatureToWire(value) {
+  if (typeof value !== 'string' || value.length % 2 !== 0 || !/^[0-9a-fA-F]+$/.test(value)) return value;
+  return Buffer.from(value, 'hex').toString('base64');
+}
+
+/**
  * Decode signature/public-key material — accepts canonical hex and the
  * pq-bridge's base64 form. Hex must be tested first: it is a strict
  * subset of the base64 alphabet, so a base64 test alone is ambiguous.

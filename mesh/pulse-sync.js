@@ -42,6 +42,7 @@ import { bytesToHex, utf8ToBytes } from '@noble/hashes/utils.js';
 
 // ACCEL: Hardware-accelerated SHA3-256 (OpenSSL/SHA-NI — 4.6x faster)
 import { sha3_256 } from '../utils/accel.js';
+import { signatureToWire } from '../identity/node-key.js';
 
 // AGUWA: Kuramoto time backbone — heartbeat arrival IS the 4th signal
 import { aguwa } from './aguwa.js';
@@ -123,7 +124,8 @@ class Heartbeat {
       nonce: this.nonce,
       meshState: this.meshState,
       hash: this.hash,
-      signature: this.signature,
+      // Wire-encoded (base64) — ~33% smaller than hex at 1Hz cadence.
+      signature: signatureToWire(this.signature),
     };
   }
 
