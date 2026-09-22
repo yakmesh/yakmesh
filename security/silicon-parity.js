@@ -39,6 +39,7 @@ import { createCipheriv, randomBytes, createHash } from 'crypto';
 import { sha3_256 } from '@noble/hashes/sha3.js';
 import { bytesToHex, hexToBytes } from '@noble/hashes/utils.js';
 import { createLogger } from '../utils/logger.js';
+import { readFileSync } from 'fs';
 import os from 'os';
 
 const log = createLogger('security:silicon');
@@ -352,31 +353,50 @@ function generateFallbackUUID() {
  */
 export function detectTopology() {
   const cpus = os.cpus();
-  
-  // On Linux, we could parse /proc/cpuinfo for physical id
-  // For now, use heuristics based on core count and model
   const model = cpus[0]?.model || '';
-  const coreCount = cpus.length;
-  
-  // Detect likely multi-socket scenarios
-  // (This is a heuristic - true detection requires /proc/cpuinfo parsing)
-  let socketCount = 1;
-  
-  // High core counts often indicate multi-socket
-  if (coreCount > 64) {
-    socketCount = Math.ceil(coreCount / 64);
+  const logicalCount = cpus.length;
+
+  // Linux: /proc/cpuinfo carries real topology — physical id (socket) and
+  // core id (physical core). os.cpus() reports SMT threads; silicon
+  // identity should bind to physical topology, not logical siblings.
+  if (os.platform() === 'linux') {
+    try {
+      const cpuinfo = readFileSync('/proc/cpuinfo', 'utf8');
+      const sockets = new Set();
+      const cores = new Set();
+      for (const block of cpuinfo.split(/\n\n+/)) {
+        const phys = block.match(/^physical id\s*:\s*(\d+)/m)?.[1] ?? '0';
+        const core = block.match(/^core id\s*:\s*(\d+)/m)?.[1];
+        sockets.add(phys);
+        if (core !== undefined) cores.add(`${phys}:${core}`); // per-socket dedup
+      }
+      if (cores.size > 0) {
+        return {
+          socketCount: sockets.size || 1,
+          coreCount: cores.size,
+          logicalCount,
+          model,
+          isMultiSocket: sockets.size > 1,
+        };
+      }
+    } catch { /* fall through to heuristic */ }
   }
-  
-  // Server-class CPUs with "Platinum", "Gold", "EPYC" in name
+
+  // Heuristic fallback (non-Linux): socket count from core count + model.
+  let socketCount = 1;
+  if (logicalCount > 64) {
+    socketCount = Math.ceil(logicalCount / 64);
+  }
   if (model.includes('Platinum') || model.includes('Gold') || model.includes('EPYC')) {
-    if (coreCount > 32) {
+    if (logicalCount > 32) {
       socketCount = Math.max(socketCount, 2);
     }
   }
-  
+
   return {
     socketCount,
-    coreCount,
+    coreCount: logicalCount,
+    logicalCount,
     model,
     isMultiSocket: socketCount > 1,
   };

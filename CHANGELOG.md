@@ -45,6 +45,10 @@
   socket: live owner → stand down (never steal the path), dead file →
   unlink + retry once. Fixes silent loss of pipe coordination when a
   stale socket survived a prior run.
+- silicon-parity topology — socket/core detection was a core-count
+  heuristic; now parses /proc/cpuinfo physical id + core id on Linux
+  (real socket count, physical cores vs SMT threads), heuristic kept
+  as the non-Linux fallback.
 - /tme/encode write limiter — createTmeAPI received a placeholder
   no-op limiter; resolved lazily to the real writeLimiter (20/min).
 - DARSHAN /darshan/stream — access-listed (GUMBA) content granted to
