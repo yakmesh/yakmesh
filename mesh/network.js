@@ -1859,31 +1859,36 @@ export class MandalaNetwork {
           return;
         }
         log.info('Peer disconnected', { name: peer.identity.name });
-        // Sync ANNEX cleanup — peer is gone, no CLOSE notification needed.
-        // Using async closeChannel here caused a race: if a reconnect
-        // created a new bootstrap session before closeChannel's microtask
-        // ran, it would delete the NEW session. Sync delete avoids this.
-        if (this.annex) {
-          const session = this.annex.sessions.get(nodeId);
-          if (session) session.channelState = ChannelState.CLOSED;
-          this.annex.sessions.delete(nodeId);
-          this.annex.pendingHandshakes.delete(nodeId);
-        }
-        // Clean up JHILKE state for departing peer
-        if (this.jhilke) {
-          this.jhilke.cleanupPeer(nodeId);
-        }
-        // Clean up AGUWA phase tracking for departing peer
-        aguwa.removePeer(nodeId);
-        this.peers.delete(nodeId);
+        this._teardownPeer(nodeId);
         freed = true;
-        // Signal so deferred ANNEX messages for this peer are cleaned up
-        this.emit('peer-disconnected', nodeId);
         break;
       }
     }
     // SAMUHA: a slot opened — promote the head of the HOLD queue
     if (freed) this._promoteHoldQueue();
+  }
+
+  /**
+   * Full peer teardown — every removal path (socket close, heartbeat
+   * timeout) must run this. Sync by design: an async closeChannel raced
+   * reconnects and deleted NEW sessions. Emits 'peer-disconnected' so
+   * deferred ANNEX queues, ternary routing, scheduler mesh-awareness,
+   * and velocity churn all observe the departure.
+   */
+  _teardownPeer(nodeId) {
+    if (this.annex) {
+      const session = this.annex.sessions.get(nodeId);
+      if (session) session.channelState = ChannelState.CLOSED;
+      this.annex.sessions.delete(nodeId);
+      this.annex.pendingHandshakes.delete(nodeId);
+      this.annex._clearRekeyTimer?.(nodeId);
+    }
+    if (this.jhilke) {
+      this.jhilke.cleanupPeer(nodeId);
+    }
+    aguwa.removePeer(nodeId);
+    this.peers.delete(nodeId);
+    this.emit('peer-disconnected', nodeId);
   }
 
   /**
@@ -2091,7 +2096,8 @@ export class MandalaNetwork {
           }
           log.warn('Peer timeout', { name: peer.identity.name });
           peer.ws.close();
-          this.peers.delete(nodeId);
+          this._teardownPeer(nodeId);
+          this._promoteHoldQueue();
         } else {
           this._send(peer.ws, { type: MessageTypes.PING, timestamp: now });
         }

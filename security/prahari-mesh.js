@@ -213,8 +213,9 @@ export function registerMeshEntropyWithPrahari(prahari, mesh) {
             onMessage(size);
         });
 
-        mesh.on('peer:connected', () => onPeerConnect());
-        mesh.on('peer:join', () => onPeerConnect());
+        // mesh emits 'peer-registered' (post-verification) — 'peer:connected'
+        // and 'peer:join' are stale names and never fired.
+        mesh.on('peer-registered', () => onPeerConnect());
     }
 
     log.info('Mesh arrival entropy source registered with PRAHARI');

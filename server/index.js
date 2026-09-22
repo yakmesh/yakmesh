@@ -1190,7 +1190,7 @@ export class YakmeshNode {
     // If upgrade detected (Phase A), wait for first peer then propose
     if (this._actUpgradeDetected) {
       const onFirstPeer = () => {
-        this.mesh.removeListener('peer:connected', onFirstPeer);
+        this.mesh.removeListener('peer-registered', onFirstPeer);
         // Delay slightly to let gossip stabilize
         setTimeout(() => this._initiateACTProposal(), 5000);
       };
@@ -1199,7 +1199,7 @@ export class YakmeshNode {
       if (this.mesh?.peers?.size > 0) {
         setTimeout(() => this._initiateACTProposal(), 5000);
       } else {
-        this.mesh.on('peer:connected', onFirstPeer);
+        this.mesh.on('peer-registered', onFirstPeer);
       }
     }
   }
@@ -2216,9 +2216,10 @@ export class YakmeshNode {
 
     // Register known peers as NAKPAK nodes
     // Re-register whenever new peers connect
-    this.mesh.on('peer:connected', (peerId, peerInfo) => {
-      if (peerInfo?.publicKey) {
-        this.nakpakRouter.registerNode(peerId, peerInfo.publicKey);
+    this.mesh.on('peer-registered', (peerId) => {
+      const peerInfo = this.mesh.peers?.get(peerId);
+      if (peerInfo?.identity?.publicKey || peerInfo?.publicKey) {
+        this.nakpakRouter.registerNode(peerId, peerInfo.identity?.publicKey || peerInfo.publicKey);
       }
     });
 
@@ -2251,7 +2252,7 @@ export class YakmeshNode {
     });
 
     // Track connection churn per peer via velocity monitor
-    this.mesh.on('peer:connected', (peerId) => {
+    this.mesh.on('peer-registered', (peerId) => {
       this.velocityMonitor.observe(
         peerId,
         BEHAVIOR_DIMENSION.CONNECTION_CHURN,
@@ -2259,7 +2260,7 @@ export class YakmeshNode {
       );
     });
 
-    this.mesh.on('peer:disconnected', (peerId) => {
+    this.mesh.on('peer-disconnected', (peerId) => {
       this.velocityMonitor.observe(
         peerId,
         BEHAVIOR_DIMENSION.CONNECTION_CHURN,
@@ -2738,7 +2739,7 @@ export class YakmeshNode {
     }
 
     // Wire mesh peer events → KARMA beacon sightings (positive karma accumulation)
-    this.mesh.on('peer:connected', (peerId) => {
+    this.mesh.on('peer-registered', (peerId) => {
       this.karmaModel.recordBeaconSighting(peerId);
     });
 
@@ -2816,7 +2817,7 @@ export class YakmeshNode {
     this.ternaryRouter = new TernaryRoutingTable(this.tritAddress, 6);
 
     // Wire mesh peer connections → ternary routing table
-    this.mesh.on('peer:connected', (peerId) => {
+    this.mesh.on('peer-registered', (peerId) => {
       try {
         const peerAddress = hexIdToAddress(peerId);
         this.ternaryRouter.addPeer(peerId, peerAddress);
@@ -2826,18 +2827,18 @@ export class YakmeshNode {
       }
     });
 
-    this.mesh.on('peer:disconnected', (peerId) => {
+    this.mesh.on('peer-disconnected', (peerId) => {
       this.ternaryRouter.removePeer(peerId);
     });
 
     // Wire mesh peer connections → ComputeScheduler mesh awareness
-    this.mesh.on('peer:connected', (peerId) => {
+    this.mesh.on('peer-registered', (peerId) => {
       const peer = this.mesh.peers?.get(peerId);
       if (peer?.capabilities) {
         accel.scheduler.addMeshPeer(peerId, peer.capabilities);
       }
     });
-    this.mesh.on('peer:disconnected', (peerId) => {
+    this.mesh.on('peer-disconnected', (peerId) => {
       accel.scheduler.removeMeshPeer(peerId);
     });
 
@@ -3607,8 +3608,8 @@ export class YakmeshNode {
 
     // ── Wire mesh events → dashboard push (debounced) ──────────────────
     if (this.mesh) {
-      this.mesh.on('peer:connected', () => pushDashboardUpdate());
-      this.mesh.on('peer:disconnected', () => pushDashboardUpdate());
+      this.mesh.on('peer-registered', () => pushDashboardUpdate());
+      this.mesh.on('peer-disconnected', () => pushDashboardUpdate());
     }
 
     // 10 s heartbeat — keeps dashboards fresh even when nothing changes
@@ -6437,7 +6438,7 @@ export class YakmeshNode {
     // ── Setup recovery watcher (only runs when we lose all peers) ──
     if (!this._bootstrapRecoverySetup) {
       this._bootstrapRecoverySetup = true;
-      this.mesh.on('peer:disconnected', () => {
+      this.mesh.on('peer-disconnected', () => {
         // Check if we lost ALL peers — if so, trigger bootstrap
         setTimeout(() => {
           const peers = this.mesh?.getPeers?.() || [];
