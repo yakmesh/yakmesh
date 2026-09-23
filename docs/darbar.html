@@ -1055,32 +1055,16 @@ async function registerServer(req, res) {
         </div>
       </section>
 
-      <!-- Version History -->
+      <!-- Provenance -->
       <section class="mb-12">
-        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2"><svg class="doc-icon inline-icon" width="24"
-            height="24" aria-hidden="true">
+        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+          <svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true">
             <use href="#icon-hourglass" />
-          </svg> Version History          <a href="version-history.html" class="theme-accent text-sm font-normal ml-auto">full history →</a>
+          </svg> Provenance
+          <a href="version-history.html" class="theme-accent text-sm font-normal ml-auto">full version history →</a>
         </h2>
         <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
-          <table class="w-full">
-            <thead>
-              <tr class="border-b border-mountain-700">
-                <th class="text-left p-3 text-mountain-300">Version</th>
-                <th class="text-left p-3 text-mountain-300">Changes</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td class="p-3"><span class="theme-badge px-2 py-1 rounded">v3.4.0</span></td>
-                <td class="p-3 text-mountain-400">
-                  Initial DARBAR: 6 auth levels (PUBLIC&ndash;HOST), domain-based crash-isolated routing,
-                  DarbarError/ErrorCode, DarbarConfig interface, createDarbar() factory, asyncWrap error
-                  boundary, peer signature verification with 10s drift tolerance.
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <p class="text-mountain-300">Introduced in <span class="theme-badge px-2 py-1 rounded">v3.4.0</span> — Initial DARBAR: 6 auth levels (PUBLIC&ndash;HOST), domain-based crash-isolated routing, DarbarError/ErrorCode, DarbarConfig interface, createDarbar() factory, asyncWrap error boundary, peer signature verification with 10s drift tolerance.</p>
         </div>
       </section>
 

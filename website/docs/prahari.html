@@ -1227,41 +1227,16 @@ npm run verify:beacon https://time.yakmesh.dev
 python3 scripts/verify_beacon.py https://time.yakmesh.dev</code></pre>
       </section>
 
-      <!-- Version History -->
+      <!-- Provenance -->
       <section class="mb-12">
-        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2"><svg class="doc-icon inline-icon" width="24"
-            height="24" aria-hidden="true">
+        <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+          <svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true">
             <use href="#icon-hourglass" />
-          </svg> Version History          <a href="version-history.html" class="theme-accent text-sm font-normal ml-auto">full history →</a>
+          </svg> Provenance
+          <a href="version-history.html" class="theme-accent text-sm font-normal ml-auto">full version history →</a>
         </h2>
         <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
-          <table class="w-full">
-            <thead>
-              <tr class="border-b border-mountain-700">
-                <th class="text-left p-3 text-mountain-300">Version</th>
-                <th class="text-left p-3 text-mountain-300">Changes</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr class="border-b border-mountain-700">
-                <td class="p-3"><span class="theme-badge px-2 py-1 rounded">v3.4.0</span></td>
-                <td class="p-3 text-mountain-400">
-                  Complete rewrite: SHA3-256 sponge engine replaces 144-slot array.
-                  5 hardware entropy sources, two-source extractor, pluggable registry,
-                  ~128 byte state (was 4,608). Entropy Sentinel &amp; TRIBHUJ verdicts retained.
-                </td>
-              </tr>
-              <tr class="border-b border-mountain-700">
-                <td class="p-3"><span class="theme-badge px-2 py-1 rounded">v2.x</span></td>
-                <td class="p-3 text-mountain-400">STEADYWATCH seed store: 144 quantum seeds, Hurwitz quaternion
-                  simulation, SST families, Fibonacci-cycle selection, batch quality consensus.</td>
-              </tr>
-              <tr>
-                <td class="p-3"><span class="theme-badge px-2 py-1 rounded">v1.0</span></td>
-                <td class="p-3 text-mountain-400">Initial seed loading and hybrid seed algorithm.</td>
-              </tr>
-            </tbody>
-          </table>
+          <p class="text-mountain-300">Introduced in <span class="theme-badge px-2 py-1 rounded">v1.0</span> — Initial seed loading and hybrid seed algorithm. Complete rewrite: SHA3-256 sponge engine replaces 144-slot array. 5 hardware entropy sources, two-source extractor, pluggable registry, ~128 byte state (was 4,608). Entropy Sentinel &amp; TRIBHUJ verdicts retained — <span class="theme-badge px-2 py-1 rounded">v3.4.0</span>.</p>
         </div>
       </section>
 

@@ -1342,37 +1342,16 @@ const pattern = trackDisagreementPattern(history, 'abc123', analysis);
         </div>
       </section>
 
-      <!-- Version History -->
+      <!-- Provenance -->
       <section class="mb-12">
         <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
-          <svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true"><use href="#icon-hourglass"/></svg> Version History
-                  <a href="version-history.html" class="theme-accent text-sm font-normal ml-auto">full history →</a>
+          <svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true">
+            <use href="#icon-hourglass" />
+          </svg> Provenance
+          <a href="version-history.html" class="theme-accent text-sm font-normal ml-auto">full version history →</a>
         </h2>
         <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
-          <table class="cause-table">
-            <thead>
-              <tr>
-                <th>Version</th>
-                <th>Changes</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><span class="theme-badge px-2 py-1 rounded">v2.9.0</span></td>
-                <td>VEGATI behavior velocity monitor with 6 dimensions, σ-based alerts.
-                    NPU anomaly assessment via <code>assessNode()</code> with ONNX model
-                    (sakshi-anomaly) and CPU heuristic fallback (wired v3.0.0).</td>
-              </tr>
-              <tr>
-                <td><span class="theme-badge px-2 py-1 rounded">v2.8.1</span></td>
-                <td>SETU bridge functions for trust-tier integration</td>
-              </tr>
-              <tr>
-                <td><span class="theme-badge px-2 py-1 rounded">v2.8.1</span></td>
-                <td>Initial SAKSHI + VIVAAD release. Removed VARNA (anti-yakmesh ethos)</td>
-              </tr>
-            </tbody>
-          </table>
+          <p class="text-mountain-300">Introduced in <span class="theme-badge px-2 py-1 rounded">v2.8.1</span> — SETU bridge functions for trust-tier integration. Initial SAKSHI + VIVAAD release; VARNA removed (anti-yakmesh ethos). VEGATI behavior velocity monitor with 6 dimensions, σ-based alerts. NPU anomaly assessment via <code>assessNode()</code> with ONNX model (sakshi-anomaly) and CPU heuristic fallback (wired v3.0.0) — <span class="theme-badge px-2 py-1 rounded">v2.9.0</span>.</p>
         </div>
       </section>
 
