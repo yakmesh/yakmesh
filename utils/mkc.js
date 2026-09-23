@@ -30,6 +30,7 @@ export const OP = {
     nop: 0, ld: 1, mov: 2, xor: 3, g256m: 4, g256i: 5, aff: 6,
     gf4m: 7, f3a: 8, f3m: 9, sha256: 10, rsp: 11, cmp: 12,
     emit: 13, sha3: 14, halt: 15, seti: 16, setn: 17, perm: 18,
+    emitat: 19,
 };
 
 // VM status bits
@@ -323,6 +324,40 @@ export async function runTiles(tileScripts, tileData = {}) {
  * sha256 -> GFNI affine -> sha3 in ONE launch (no host round-trip).
  * Default transform reproduces the AES S-box pipeline shape.
  */
+// ── split-role image (MLIR_AIE_CRYSTAL, 0xa00) ───────────────────────
+// One PDI, 16 fixed-role tiles — heterogeneous jobs in ONE dispatch.
+// Resident state persists across ALL crystal launches (the PDI never
+// reloads internally). Tile roles:
+//   0,1 tribh | 2,3 aes | 4 kecu64 | 5 ghash | 6 sha256 | 7 field
+//   8-11,15 mkc | 12 ypc | 13 seal | 14 ntt
+export const CRYSTAL_TILES = {
+    tribh: [0, 1], aes: [2, 3], kecu64: [4], ghash: [5], sha256: [6],
+    field: [7], mkc: [8, 9, 10, 11, 15], ypc: [12], seal: [13], ntt: [14],
+};
+
+/**
+ * Heterogeneous crystal dispatch: jobs = [{svc, rec:Uint8Array}] — the
+ * tile's NATIVE record format; optional `tile:N` selects a replica.
+ * One job per tile per dispatch. -> {outs:{tile:Uint8Array}, epoch,
+ * device}
+ */
+export async function crystal(jobs) {
+    const r = await post('crystal', {
+        jobs: jobs.map(j => ({
+            svc: j.svc, rec: b64(j.rec),
+            ...(j.tile !== undefined ? { tile: j.tile } : {}),
+        })),
+    });
+    const outs = {};
+    for (const [t, o] of Object.entries(r.outs || {})) outs[+t] = unb64(o);
+    return { outs, epoch: r.epoch, device: r.device };
+}
+
+/** Role map + epoch for the crystal image. */
+export async function crystalStatus() {
+    return post('crystal', { action: 'status' });
+}
+
 export async function sha256AffineSha3(data, mat = null, add = 0x63) {
     if (!mat) mat = new Uint8Array(
         [0xF1, 0xE3, 0xC7, 0x8F, 0x1F, 0x3E, 0x7C, 0xF8]);
@@ -349,4 +384,5 @@ export default {
     aesSetKey, aesEcb, aesCtr, aesGcm, aesGcmVerify,
     tribhujSet, tribhujClear, tribhujPop, tribhujQuery, tribhujTopk,
     run, runTiles, sha256AffineSha3,
+    CRYSTAL_TILES, crystal, crystalStatus,
 };
