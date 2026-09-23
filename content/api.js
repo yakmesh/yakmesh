@@ -86,7 +86,7 @@ export function createContentAPI(contentStore, options = {}) {
     res.setHeader('Content-Type', result.meta?.contentType || 'application/octet-stream');
     res.setHeader('Content-Length', result.meta?.size || result.content.length);
     res.setHeader('X-Content-Hash', result.hash);
-    res.setHeader('X-Content-Hash-144T', result.hash144t || result.meta?.hash144t || '');
+    res.setHeader('X-Content-Hash-Trit', result.hashTrit || result.meta?.hashTrit || '');
     res.setHeader('X-Content-Status', result.meta?.status || 'unknown');
 
     // Cache headers (verified content = cache forever)
@@ -145,7 +145,7 @@ export function createContentAPI(contentStore, options = {}) {
 
     res.json({
       hash: meta.hash,
-      hash144t: meta.hash144t,
+      hashTrit: meta.hashTrit,
       ioName: meta.ioName,
       verified: meta.status === ContentStatus.VERIFIED,
       status: meta.status,
@@ -271,11 +271,11 @@ export function createContentAPI(contentStore, options = {}) {
       res.status(201).json({
         success: true,
         hash: result.hash,
-        hash144t: result.hash144t,
+        hashTrit: result.hashTrit,
         ioName: result.ioName,
         status: result.status,
         meta: result.meta?.toJSON ? result.meta.toJSON() : result.meta,
-        url: `/content/${result.hash144t || result.hash}`,
+        url: `/content/${result.hashTrit || result.hash}`,
       });
     } catch (error) {
       res.status(500).json({ error: error.message });

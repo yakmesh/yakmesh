@@ -47,7 +47,7 @@ import { sha3_256 as _nobleSha3 } from '@noble/hashes/sha3.js';
 import { bytesToHex } from '@noble/hashes/utils.js';
 import { createLogger } from '../utils/logger.js';
 
-// 144T ternary addressing for message IDs (eliminates hex "666" patterns)
+// 162T ternary addressing for message IDs (eliminates hex "666" patterns)
 import { TritAddress } from '../oracle/ternary-routing.js';
 
 // ACCEL: Hardware-accelerated SHA3-256 (OpenSSL/SHA-NI — 4.6x faster)
@@ -290,7 +290,8 @@ export class MantraProtocol extends EventEmitter {
       this._localRumorIds.delete(this._localRumorQueue.shift());
     }
     this._bufferRumor(rumor);
-    this._propagateRumor(rumor);
+    this._propagateRumor(rumor).catch(err =>
+      log.warn('rumor propagation failed', { error: err.message }));
 
     // Also emit for HTTP relay bridge — locally-generated rumors must reach
     // relay peers (nodes connected via HTTP polling, not WebSocket).
@@ -612,7 +613,8 @@ export class MantraProtocol extends EventEmitter {
     // Propagate if TTL allows
     if (ttl > 1) {
       const forwardRumor = { ...rumor, ttl: ttl - 1 };
-      this._propagateRumor(forwardRumor, fromNodeId);
+      this._propagateRumor(forwardRumor, fromNodeId).catch(err =>
+        log.warn('rumor propagation failed', { error: err.message }));
     }
   }
 
@@ -632,7 +634,7 @@ export class MantraProtocol extends EventEmitter {
   /**
    * Propagate a rumor using fanout
    */
-  _propagateRumor(rumor, excludeNodeId = null) {
+  async _propagateRumor(rumor, excludeNodeId = null) {
     const peers = this.mesh.getPeers()
       .filter(p => p.nodeId !== excludeNodeId && p.nodeId !== rumor.origin);
 
@@ -640,8 +642,10 @@ export class MantraProtocol extends EventEmitter {
       return;
     }
 
-    // Select random subset based on fanout
-    const targets = this._selectRandom(peers, this.config.fanout);
+    // Tier-diverse fanout when the 162T router is wired in — spreads
+    // rumors across the address space instead of clustering like
+    // uniform random does. NPU-resident table when the bridge is up.
+    const targets = await this._selectTargets(peers, this.config.fanout);
 
     for (const target of targets) {
       // Use broadcast format so the mesh routes it correctly
@@ -767,14 +771,14 @@ export class MantraProtocol extends EventEmitter {
   }
 
   /**
-   * Generate deterministic message ID using 144T ternary format
+   * Generate deterministic message ID using 162T ternary format
    * Eliminates hex "666" patterns while maintaining collision resistance
-   * Returns tier 1 (36 trits) as compact string: "TT00TTT00:TTT00TTT0:0TTT00TTT:00TTT00TT"
+   * Returns the summit tier (54 trits) as compact string
    */
   _generateMessageId(topic, data) {
     const payload = JSON.stringify({ topic, data, origin: this.identity.identity.nodeId, ts: aguwa.now() });
     const hex = bytesToHex(sha3_256(new TextEncoder().encode(payload)));
-    // Convert to 144T ternary address, extract tier 1 as compact string
+    // Convert to 162T ternary address, extract summit tier as compact string
     const tritAddr = TritAddress.fromHex(hex);
     return tritAddr.toString().split('.')[0];  // First tier only
   }
@@ -790,6 +794,33 @@ export class MantraProtocol extends EventEmitter {
       [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
     return shuffled.slice(0, Math.min(count, array.length));
+  }
+
+  /**
+   * Select propagation targets — tier-diverse when the 162T router is
+   * wired in (server attaches `ternaryRouter` and optionally the
+   * NPU-resident `tribhuj` mirror), uniform random otherwise.
+   *
+   * NPU path: TribhujMirror.selectDiverse computes tier distances
+   * on-tile via TRIBH QUERY. JS path: TernaryRoutingTable.selectDiverse
+   * computes the identical spread. Both spread picks across the
+   * address space; random remains the no-router fallback.
+   */
+  async _selectTargets(peers, count) {
+    const byId = new Map(peers.map(p => [p.nodeId, p]));
+    const ids = peers.map(p => p.nodeId);
+
+    if (this.tribhuj?.ready) {
+      const picks = await this.tribhuj.selectDiverse(ids, count);
+      if (picks?.length) {
+        return picks.map(id => byId.get(id)).filter(Boolean);
+      }
+    }
+    if (this.ternaryRouter) {
+      return this.ternaryRouter.selectDiverse(ids, count)
+        .map(id => byId.get(id)).filter(Boolean);
+    }
+    return this._selectRandom(peers, count);
   }
 
   /**

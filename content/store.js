@@ -43,7 +43,7 @@ import { createLogger } from '../utils/logger.js';
 // Import iO system for human-readable content names
 import { deriveNetworkName } from '../oracle/network-identity.js';
 
-// Import 144T ternary system for hex-free content addressing
+// Import 162T ternary system for hex-free content addressing
 import { TritAddress, TOTAL_TRITS } from '../oracle/ternary-routing.js';
 
 const log = createLogger('content:store');
@@ -118,8 +118,6 @@ export function computeContentHashTernary(content) {
   return { hex, trit, tritAddress };
 }
 
-/** @deprecated Use computeContentHashTernary */
-export const computeContentHash144T = computeContentHashTernary;
 
 /**
  * Validate that a hex string doesn't contain forbidden patterns.
@@ -159,7 +157,7 @@ export function isValidContentHash(hash) {
   if (!hash || typeof hash !== 'string') return false;
   // Hex: 64 chars, 0-9a-f
   if (/^[0-9a-f]{64}$/i.test(hash)) return true;
-  // 144T trit address: T/0/1 with optional . or : separators
+  // 162T trit address: T/0/1 with optional . or : separators
   if (isTritAddress(hash)) return true;
   return false;
 }
@@ -181,7 +179,7 @@ export function deriveContentName(hash) {
 class ContentMetadata {
   constructor(options = {}) {
     this.hash = options.hash;             // SHA3-256 hex (legacy, internal)
-    this.hash144t = options.hash144t || null;  // 144T ternary address (preferred, public)
+    this.hashTrit = options.hashTrit || options.hash144t || null;  // 162T ternary address (preferred, public; hash144t read-compat for old meta)
     this.ioName = options.ioName || null;  // Auto-generated iO name (human-readable)
     this.contentType = options.contentType || ContentType.BINARY;
     this.size = options.size || 0;
@@ -198,7 +196,7 @@ class ContentMetadata {
   toJSON() {
     return {
       hash: this.hash,
-      hash144t: this.hash144t,
+      hashTrit: this.hashTrit,
       ioName: this.ioName,
       contentType: this.contentType,
       size: this.size,
@@ -214,11 +212,11 @@ class ContentMetadata {
   }
 
   /**
-   * Get the public-facing content ID (144T preferred, fallback to iO name)
+   * Get the public-facing content ID (ternary preferred, fallback to iO name)
    * Never returns hex to external callers.
    */
   getPublicId() {
-    return this.hash144t || this.ioName || this.name;
+    return this.hashTrit || this.ioName || this.name;
   }
 
   static fromJSON(json) {
@@ -317,17 +315,17 @@ export class ContentStore {
   }
 
   /**
-   * Get content path for a hash (supports both hex and 144T)
+   * Get content path for a hash (supports both hex and 162T)
    * 
    * For ternary addresses, uses first tier's first sub-block (9 chars) as prefix.
    * For hex (legacy), uses first 2 chars as prefix.
    */
   _getContentPath(hash) {
-    // Reject path traversal — hash must be valid hex or 144T trit address
+    // Reject path traversal — hash must be valid hex or 162T trit address
     if (!isValidContentHash(hash)) {
       throw new Error(`Invalid content hash format: ${hash.slice(0, 20)}...`);
     }
-    // Check if this is a 144T address (contains T, 0, 1 and dots/colons)
+    // Check if this is a 162T address (contains T, 0, 1 and dots/colons)
     if (isTritAddress(hash)) {
       // Use first 9 trits (first sub-block) as directory prefix
       const clean = hash.replace(/[.:]/g, '');
@@ -342,14 +340,14 @@ export class ContentStore {
   }
 
   /**
-   * Get metadata path for a hash (supports both hex and 144T)
+   * Get metadata path for a hash (supports both hex and 162T)
    */
   _getMetaPath(hash) {
-    // Reject path traversal — hash must be valid hex or 144T trit address
+    // Reject path traversal — hash must be valid hex or 162T trit address
     if (!isValidContentHash(hash)) {
       throw new Error(`Invalid content hash format: ${hash.slice(0, 20)}...`);
     }
-    // Normalize 144T to filename-safe format (remove separators)
+    // Normalize 162T to filename-safe format (remove separators)
     const safeHash = hash.replace(/[.:]/g, '');
     return join(this.metaDir, `${safeHash}.json`);
   }
@@ -378,7 +376,7 @@ export class ContentStore {
       const existing = this.getMeta(hash);
       return {
         hash,
-        hash144t: existing.hash144t || hashTrit,
+        hashTrit: existing.hashTrit || hashTrit,
         ioName: existing.ioName,
         status: 'exists',
         meta: existing
@@ -391,7 +389,7 @@ export class ContentStore {
     // Create metadata with both hash formats
     const meta = new ContentMetadata({
       hash,
-      hash144t: hashTrit,
+      hashTrit: hashTrit,
       ioName,
       contentType: options.contentType || this._detectContentType(content),
       size,
@@ -434,7 +432,7 @@ export class ContentStore {
     }
 
     log.info('Content stored', { hash: hashTrit.split('.')[0] + '...', ioName, size });
-    return { hash, hash144t: hashTrit, ioName, status: 'stored', meta };
+    return { hash, hashTrit, ioName, status: 'stored', meta };
   }
 
   /**
@@ -446,7 +444,7 @@ export class ContentStore {
     if (!id) return null;
     // Already hex?
     if (/^[a-f0-9]{64}$/i.test(id)) return id;
-    // 144T address or name - look up in index
+    // 162T address or name - look up in index
     return this.nameIndex.get(id) || id;
   }
 
@@ -487,7 +485,7 @@ export class ContentStore {
     return {
       content,
       hash,
-      hash144t: meta?.hash144t || null,
+      hashTrit: meta?.hashTrit || null,
       meta: meta?.toJSON() || null,
       verified: meta?.status === ContentStatus.VERIFIED,
     };

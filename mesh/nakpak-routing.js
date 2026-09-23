@@ -672,7 +672,7 @@ class NakpakRouter {
    */
   async createCircuit(hopNodeIds) {
     if (hopNodeIds.length === 0) {
-      // Auto-select random hops
+      // Auto-select hops
       const availableNodes = Array.from(this.knownNodes.keys())
         .filter(id => id !== this.nodeId);
 
@@ -680,13 +680,26 @@ class NakpakRouter {
         throw new Error('Not enough known nodes for circuit');
       }
 
-      // Shuffle and pick — PRAHARI sponge entropy for unpredictable circuit paths
-      for (let i = availableNodes.length - 1; i > 0; i--) {
-        const j = seedStore.squeeze(4, 'NAKPAK-CIRCUIT-SHUFFLE').readUInt32BE(0) % (i + 1);
-        [availableNodes[i], availableNodes[j]] = [availableNodes[j], availableNodes[i]];
+      if (this.ternaryRouter) {
+        // Tier-diverse hops — the 162T table picks nodes spread across
+        // the address space (different summit/ridge regions), giving
+        // structurally diverse circuits instead of clustered ones.
+        hopNodeIds = this.ternaryRouter.selectDiverse(
+          availableNodes, NAKPAK_CONFIG.defaultHopCount);
+      } else {
+        hopNodeIds = availableNodes;
       }
 
-      hopNodeIds = availableNodes.slice(0, NAKPAK_CONFIG.defaultHopCount);
+      // Shuffle and pick — PRAHARI sponge entropy for unpredictable
+      // circuit paths. Runs in both modes: with the router it
+      // scrambles hop order/within-tier picks (tier diversity alone
+      // must not make circuits deterministic to an observer); without
+      // it this is the original uniform-random selection.
+      for (let i = hopNodeIds.length - 1; i > 0; i--) {
+        const j = seedStore.squeeze(4, 'NAKPAK-CIRCUIT-SHUFFLE').readUInt32BE(0) % (i + 1);
+        [hopNodeIds[i], hopNodeIds[j]] = [hopNodeIds[j], hopNodeIds[i]];
+      }
+      hopNodeIds = hopNodeIds.slice(0, NAKPAK_CONFIG.defaultHopCount);
     }
 
     const circuit = new NakpakCircuit();

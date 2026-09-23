@@ -241,7 +241,8 @@ import { batchChecksumVerifier, BatchChecksumVerifier } from '../oracle/packet-c
 import { TernaryInferenceAdapter } from '../oracle/ternary-ml.js';
 
 // 162T — Hierarchical ternary mesh addressing
-import { TritAddress, TernaryRoutingTable, hexIdToAddress, TierName } from '../oracle/ternary-routing.js';
+import { TritAddress, TernaryRoutingTable, hexIdToAddress, persistentIdToAddress, TierName } from '../oracle/ternary-routing.js';
+import { TribhujMirror } from '../oracle/tribhuj-npu.js';
 
 // Time API — HTTP bridge to MA-902 GPS time server (serves on port 3099)
 import { startTimeApi, stopTimeApi } from '../oracle/time-api.js';
@@ -641,7 +642,7 @@ export class YakmeshNode {
             networkName: this.identity.identity.networkName,
           },
           extensions: {
-            persistentId144T: this.identity.getPersistentId(),
+            persistentId: this.identity.getPersistentId(),
             capabilities: this.identity.identity.capabilities || ['mesh', 'gossip', 'relay'],
           },
         }
@@ -1611,6 +1612,7 @@ export class YakmeshNode {
     this.velocityMonitor?.stop?.();  // Stop velocity monitoring
     this.karmaModel?.stopPromotionChecks?.();  // Stop KARMA auto-promotion
     this.nakpakRouter?.cleanupCircuits?.();  // Cleanup NAKPAK circuits
+    this.tribhuj?.detach();                  // Stop NPU mirror probes
     this.kommWss?.close();  // Close KOMM WebSocket server
     this.serverDirectory?.stop();  // Stop C2C Lighthouse directory
     // Stop Caddy web server
@@ -3100,6 +3102,17 @@ export class YakmeshNode {
     this.karmaModel = new KarmaTrustModel({
       ...this.config.karma,
       inferenceEngine: accel.inference,
+      // Resolve ephemeral nodeId → persistentId for evidence keying.
+      // KARMA is persistent trust — it MUST survive the peer's code
+      // upgrades (nodeId rotates every build; persistentId doesn't).
+      // Checks live peers first, then the disconnect-history map.
+      resolveId: (id) => {
+        const peer = this.mesh?.peers?.get(id);
+        if (peer?.identity?.persistentId) return peer.identity.persistentId;
+        const hist = this._pidByNodeId?.get(id);
+        if (hist?.pid) return hist.pid;
+        return id;
+      },
     });
 
     // Restore persisted KARMA state from disk (non-blocking, non-fatal)
@@ -3234,22 +3247,65 @@ export class YakmeshNode {
   async _initTernaryHarmonization() {
     log.info('◬ Initializing ternary harmonization stack...');
 
-    // ── 1. 162T Address — derive from node identity ──
-    const nodeId = this.identity?.publicKeyHex || crypto.randomBytes(32).toString('hex');
-    this.tritAddress = hexIdToAddress(nodeId, {
-      summit: 0,  // Summit 0 = default mesh
-    });
-    log.info(`◬ 162T address: ${this.tritAddress.toString()}`);
+    // ── 1. 162T Address — derived from persistentId (stable across
+    //         code upgrades; nodeId/publicKey rotate every build) ──
+    // The persistentId trits occupy the summit tier verbatim — the
+    // machine's persistent identity IS its global-routing address.
+    let selfPid = null;
+    try { selfPid = this.identity.getPersistentId?.() } catch { }
+    if (selfPid) {
+      this.tritAddress = persistentIdToAddress(selfPid);
+    } else {
+      // Legacy path: no seed identity (should not happen in production)
+      const nodeId = this.identity?.publicKeyHex || crypto.randomBytes(32).toString('hex');
+      this.tritAddress = hexIdToAddress(nodeId, { summit: 0 });
+    }
+    log.info(`◬ 162T address: ${this.tritAddress.toString()}${selfPid ? ' (persistentId-keyed)' : ' (nodeId fallback)'}`);
 
     // ── 2. Ternary routing table ──
     this.ternaryRouter = new TernaryRoutingTable(this.tritAddress, 6);
 
+    // ── 2a. NPU-resident mirror — MLIR_AIE_TRIBH keeps the table on-tile
+    //         via the YakOS MKC bridge (:9995). When the bridge is down the
+    //         mirror stays stale and every consumer falls back to the
+    //         identical JS path; on recovery it re-syncs automatically.
+    this.tribhuj = new TribhujMirror(this.ternaryRouter);
+    this.tribhuj.attach();
+
+    // Wire 162T into live routing decisions:
+    //   gossip fanout picks tier-diverse peers (NPU-distanced when ready)
+    //   NAKPAK circuits pick structurally diverse hops
+    //   mesh.sendToPersistentId resolves directed delivery via nextHop
+    if (this.gossip) {
+      this.gossip.ternaryRouter = this.ternaryRouter;
+      this.gossip.tribhuj = this.tribhuj;
+    }
+    if (this.nakpakRouter) {
+      this.nakpakRouter.ternaryRouter = this.ternaryRouter;
+    }
+    this.mesh.ternaryRouter = this.ternaryRouter;
+
     // Wire mesh peer connections → ternary routing table
+    // Peers' addresses derive from their persistentId (advertised in
+    // HELLO identity) — stable across THEIR code upgrades. Falls back
+    // to nodeId-derived addressing for peers that don't advertise one.
+    this._pidByNodeId = this._pidByNodeId || new Map();
     this.mesh.on('peer-registered', (peerId) => {
       try {
-        const peerAddress = hexIdToAddress(peerId);
+        const peerPid = this.mesh.peers?.get(peerId)?.identity?.persistentId || null;
+        const peerAddress = peerPid
+          ? persistentIdToAddress(peerPid)
+          : hexIdToAddress(peerId);
         this.ternaryRouter.addPeer(peerId, peerAddress);
-        log.debug(`◬ 162T: Added peer ${peerTag(peerId)} (tier distance: ${this.tritAddress.tierDistance(peerAddress)})`);
+        if (peerPid) {
+          // Bound only if the peer proved pid ownership in handshake
+          const bound = this.mesh.peers.get(peerId)?.identity?.persistentIdBound;
+          this._pidByNodeId.set(peerId, { pid: peerPid, bound: !!bound });
+          if (this._pidByNodeId.size > 512) {
+            this._pidByNodeId.delete(this._pidByNodeId.keys().next().value);
+          }
+        }
+        log.debug(`◬ 162T: Added peer ${peerTag(peerId)} (tier distance: ${this.tritAddress.tierDistance(peerAddress)}, pid: ${peerPid ? peerPid.slice(0, 20) + '…' : 'none'})`);
       } catch (err) {
         log.debug(`◬ 162T: Could not add peer address: ${err.message}`);
       }

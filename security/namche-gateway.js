@@ -26,7 +26,7 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  * ⚠️  SECURITY: This module implements the 8-step verification flow.
  *     All trust decisions are mathematical computations - no exceptions.
- *     Defense-in-depth: NIST (Gate 2) + 144T (Gate 8) must BOTH verify.
+ *     Defense-in-depth: NIST (Gate 2) + ternary commitment (Gate 8) must BOTH verify.
  * ═══════════════════════════════════════════════════════════════════════════════
  * 
  * The 8 Gates of Verification:
@@ -37,7 +37,7 @@
  * 5. NETWORK_OK         - Correct network name
  * 6. NOT_REVOKED        - Not in revocation log
  * 7. DOMAINS_OK         - Quorum verified domain claims (if applicable)
- * 8. TRIT_COMMITMENT_OK - 144T backbone verification (if present)
+ * 8. TRIT_COMMITMENT_OK - ternary backbone verification (if present)
  * 
  * @module security/namche-gateway
  * @version 1.0.0
@@ -54,7 +54,7 @@ import { deriveNetworkName } from '../oracle/network-identity.js';
 import { createLogger } from '../utils/logger.js';
 // SAKSHI: Observational verification & revocation agreement
 import { NodeWitness, checkMathematicalAgreement, checkRevocationAgreement } from './sakshi.js';
-// 144T: Ternary backbone security (defense-in-depth with NIST)
+// Ternary backbone security (defense-in-depth with NIST)
 import { TritCommitment } from './trit-commitment.js';
 
 const log = createLogger('security:namche');
@@ -357,10 +357,10 @@ export class NamcheGateway extends EventEmitter {
       }
 
       // ─────────────────────────────────────────────────────────────────────
-      // GATE 8: 144T COMMITMENT (if present — defense-in-depth)
+      // GATE 8: TRIT COMMITMENT (if present — defense-in-depth)
       // ─────────────────────────────────────────────────────────────────────
-      // The 144T commitment provides a second cryptographic layer independent
-      // of NIST. Both ML-DSA-65 (Gate 2) AND 144T must verify for full trust.
+      // The trit commitment provides a second cryptographic layer independent
+      // of NIST. Both ML-DSA-65 (Gate 2) AND the ternary layer must verify.
       // This means an attacker must break BOTH NIST and SHA3-hard YPC-27.
       if (doko.tritCommitment) {
         const tritResult = this.checkTritCommitment(doko);
@@ -637,17 +637,17 @@ export class NamcheGateway extends EventEmitter {
   }
 
   /**
-   * GATE 8: Check 144T commitment (backbone verification)
+   * GATE 8: Check trit commitment (backbone verification)
    * 
    * This gate provides DEFENSE-IN-DEPTH alongside NIST (Gate 2).
-   * The 144T commitment uses YPC-27 (SHA3-hard checksum over F₃²⁷) and
+   * The trit commitment uses YPC-27 (SHA3-hard checksum over F₃²⁷) and
    * polynomial binding to ensure the payload is tied to the sender's
-   * 144T mesh address.
+   * 162T mesh address.
    * 
    * Security properties:
    * - YPC-27 operates in the finite field F₃²⁷ (order 3²⁷ ≈ 7.6 trillion)
    * - Forging requires breaking SHA3-256 (the hash-to-field function)
-   * - Independent of NIST — if NIST is backdoored, 144T still holds
+   * - Independent of NIST — if NIST is backdoored, the ternary layer still holds
    * - Note: YPC-27 is checksum-grade (~2²¹·⁴ collision resistance), not signature-grade
    * - Both layers must be broken to compromise a message
    * 
@@ -666,23 +666,23 @@ export class NamcheGateway extends EventEmitter {
       };
     }
 
-    // Verify the 144T commitment against the DOKO payload
+    // Verify the trit commitment against the DOKO payload
     const result = TritCommitment.verify(payloadFields, tritCommitment);
 
     if (!result.valid) {
-      log.warn('144T commitment verification FAILED', {
+      log.warn('trit commitment verification FAILED', {
         reason: result.reason,
         detail: result.detail,
         checks: result.checks,
       });
       return {
         valid: false,
-        detail: `144T: ${result.reason} — ${result.detail || 'verification failed'}`,
+        detail: `trit: ${result.reason} — ${result.detail || 'verification failed'}`,
         checks: result.checks,
       };
     }
 
-    log.debug('144T commitment verified (defense-in-depth active)', {
+    log.debug('trit commitment verified (defense-in-depth active)', {
       checks: result.checks,
     });
 
@@ -978,15 +978,15 @@ export class NamcheGateway extends EventEmitter {
   }
 
   /**
-   * Create a DOKO with 144T commitment (dual-layer security).
+   * Create a DOKO with trit commitment (dual-layer security).
    * 
    * This is the recommended way to create DOKOs for full defense-in-depth:
    * - NIST layer: ML-DSA-65 signature
-   * - 144T layer: YPC-27 + polynomial binding commitment
+   * - Ternary layer: YPC-27 + polynomial binding commitment
    * 
    * @param {Object} dokoFields — DOKO fields (type, nodeId, publicKey, etc.)
    * @param {string} secretKey — Sender's ML-DSA-65 secret key (hex)
-   * @param {TritAddress} senderAddress — Sender's 144T mesh address
+   * @param {TritAddress} senderAddress — Sender's 162T mesh address
    * @returns {Object} — Complete DOKO with signature and tritCommitment
    */
   static createDokoWithCommitment(dokoFields, secretKey, senderAddress) {
@@ -996,7 +996,7 @@ export class NamcheGateway extends EventEmitter {
     // Layer 1: NIST signature (ML-DSA-65)
     const signature = signMessage(payload, secretKey);
 
-    // Layer 2: 144T commitment (YPC-27 + polynomial binding)
+    // Layer 2: trit commitment (YPC-27 + polynomial binding)
     const tritCommitment = TritCommitment.create(dokoFields, senderAddress);
 
     return {

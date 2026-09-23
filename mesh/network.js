@@ -78,6 +78,12 @@ import { TribhujRatchet, GatewayAttestation } from '../identity/tribhuj-ratchet.
 import { generateNodeId, signatureToWire } from '../identity/node-key.js';
 import { hexToBytes, bytesToHex } from '@noble/hashes/utils.js';
 
+// 162T persistentId-directed delivery
+import { persistentIdToAddress } from '../oracle/ternary-routing.js';
+
+// AVOTH wormhole seal — public seal riding all 24 rounds (AVOTH-SPEC §2.8)
+import * as avothBridge from '../utils/avoth-bridge.js';
+
 /** Extract unique peer suffix from nodeId (e.g. 'node-net-name-pq-kEEU' → 'kEEU') */
 const peerTag = (id) => id?.split('-pq-').pop() || id?.slice?.(-8) || String(id);
 
@@ -414,18 +420,26 @@ export class MandalaNetwork {
       if (hostMatch && MandalaNetwork._isTunnelIp(hostMatch[1])) ws._viaTun = true;
       if (targetNodeId) ws._targetNodeId = targetNodeId;
 
-      ws.on('open', () => {
+      ws.on('open', async () => {
         // Send HELLO with our identity AND network fingerprint for code proof verification
         // Include our advertised endpoint so inbound peers know how to reach us
-        // Include proof-of-possession: sign "YAKMESH:HELLO:{nodeId}:{timestamp}:{tribhujPubKey}"
-        // The ratchet pubkey is bound INSIDE the proof so it can't be swapped in transit.
+        // Include proof-of-possession: sign "YAKMESH:HELLO:{nodeId}:{timestamp}:{tribhujPubKey}:{persistentId}"
+        // The ratchet pubkey AND persistentId are bound INSIDE the proof
+        // so neither can be swapped in transit — the pid↔key tuple is
+        // signed, not just claimed (KARMA keys on persistentId).
         const timestamp = Date.now();
         const nodeId = this.identity.identity.nodeId;
         const tribhujPubKey = this.ratchet?._current?.publicKey
           ? bytesToHex(this.ratchet._current.publicKey) : null;
         const tribhujPrevPubKey = this.ratchet?._previous?.publicKey
           ? bytesToHex(this.ratchet._previous.publicKey) : null;
-        const proofPayload = `YAKMESH:HELLO:${nodeId}:${timestamp}:${tribhujPubKey || ''}`;
+        const persistentId = this.identity.getPersistentId?.() || '';
+        const proofPayload = `YAKMESH:HELLO:${nodeId}:${timestamp}:${tribhujPubKey || ''}:${persistentId}`;
+        // AVOTH wormhole seal — second-family commitment to the same
+        // tuple, bound to our hardware fingerprint via a public seal
+        // that rides all 24 rounds (read, never written). Null when the
+        // pq-bridge is unreachable — the ML-DSA proof stays load-bearing.
+        const avoth = await this._avothBinding(proofPayload);
         if (!this._announcedRatchetKeys) this._announcedRatchetKeys = new Set();
         if (tribhujPubKey) this._announcedRatchetKeys.add(tribhujPubKey);
         if (tribhujPrevPubKey) this._announcedRatchetKeys.add(tribhujPrevPubKey);
@@ -442,6 +456,7 @@ export class MandalaNetwork {
           capabilities: getCapabilities(),
           timestamp,
           proof: this.identity.sign(proofPayload),
+          ...(avoth ? { avoth } : {}),
           // SAMUHA referral — if a peer redirected us here, present the
           // signed token they issued so the target can verify the handoff.
           ...(this._pendingReferral && this._pendingReferral.exp > Date.now()
@@ -603,6 +618,62 @@ export class MandalaNetwork {
     // Not a WS peer — try relay fallback (server layer hooks this). The peer's
     // pinned state is unknown, so the relayed copy carries the cert.
     this.emit('outbound-relay', nodeId, this._attachTribhujCert(signed, null));
+  }
+
+  /**
+   * Resolve a persistentId to a directly-connected peer's nodeId.
+   * @param {string} persistentId — "yak-…" machine identity
+   * @returns {string|null} nodeId or null
+   */
+  findPeerByPersistentId(persistentId) {
+    for (const [nodeId, peer] of this.peers) {
+      if (peer.identity?.persistentId === persistentId) return nodeId;
+    }
+    return null;
+  }
+
+  /**
+   * Send a message to the machine holding a persistentId — the 162T
+   * directed-delivery primitive. Routes to a MACHINE, not a build:
+   * the target's nodeId may rotate on upgrade; its persistentId won't.
+   *
+   * Direct hit → sendTo. Otherwise wraps a 'route162t' envelope and
+   * forwards via the ternary routing table's nextHop toward the
+   * persistentId's 162T address (intermediate nodes re-resolve).
+   *
+   * @param {string} persistentId — target machine identity
+   * @param {Object} payload — application payload
+   * @param {number} [ttl=8] — max forwarding hops
+   * @returns {boolean} true if sent or forwarded
+   */
+  sendToPersistentId(persistentId, payload, ttl = 8) {
+    if (!persistentId) return false;
+    const direct = this.findPeerByPersistentId(persistentId);
+    if (direct) {
+      this.sendTo(direct, {
+        type: 'route162t:deliver',
+        targetPid: persistentId,
+        payload,
+        origin: this.identity.identity.nodeId,
+      });
+      return true;
+    }
+    const router = this.ternaryRouter; // attached by server at ternary init
+    if (!router) return false;
+    try {
+      const hop = router.nextHop(persistentIdToAddress(persistentId));
+      if (!hop) return false;
+      this.sendTo(hop.peerId, {
+        type: 'route162t',
+        targetPid: persistentId,
+        payload,
+        ttl: ttl - 1,
+        origin: this.identity.identity.nodeId,
+      });
+      return true;
+    } catch {
+      return false; // malformed persistentId — not routable
+    }
   }
 
   /**
@@ -930,8 +1001,23 @@ export class MandalaNetwork {
       // swapped by a relay.
       const claimedPubKey = msg.identity?.publicKey;
       const claimedTribhuj = msg.identity?.tribhujPubKey || '';
-      const proofPayload = `YAKMESH:HELLO:${nodeId}:${msg.timestamp}:${claimedTribhuj}`;
-      if (!claimedPubKey || !msg.proof || !this.identity.verify(proofPayload, msg.proof, claimedPubKey)) {
+      const claimedPid = msg.identity?.persistentId || '';
+      // New format binds persistentId; legacy 3-field format still
+      // accepted for pre-binding peers (rolling upgrade compat), but
+      // their pid claim is marked unbound — consumers decide trust.
+      const proofNew = `YAKMESH:HELLO:${nodeId}:${msg.timestamp}:${claimedTribhuj}:${claimedPid}`;
+      const proofLegacy = `YAKMESH:HELLO:${nodeId}:${msg.timestamp}:${claimedTribhuj}`;
+      let persistentIdBound = false;
+      let proofOk = false;
+      if (claimedPubKey && msg.proof) {
+        if (claimedPid && this.identity.verify(proofNew, msg.proof, claimedPubKey)) {
+          proofOk = true;
+          persistentIdBound = true;
+        } else if (this.identity.verify(proofLegacy, msg.proof, claimedPubKey)) {
+          proofOk = true; // legacy node — pid claim unverified
+        }
+      }
+      if (!proofOk) {
         log.warn('Rejected HELLO — invalid proof of possession', {
           peer: peerTag(nodeId),
           hasPubKey: !!claimedPubKey,
@@ -1131,7 +1217,7 @@ export class MandalaNetwork {
         ws,
         wsVia: ws._viaTun ? 'tun' : 'lan',
         lifelineWs: null,
-        identity: msg.identity,
+        identity: { ...msg.identity, persistentIdBound },
         endpoint: peerEndpoint,
         capabilities: msg.capabilities || null,
         lastSeen: Date.now(),
@@ -1145,6 +1231,10 @@ export class MandalaNetwork {
           previous: msg.identity.tribhujPrevPubKey || null,
         },
       });
+
+      // AVOTH wormhole binding — post-registration, additive attestation.
+      // Senders always seal the 4-field payload (proofNew).
+      if (msg.avoth) this._verifyAvothBinding(proofNew, msg.avoth, nodeId);
 
       // Rate-limit grace: bind this IP to the now-verified nodeId — clears
       // bans accrued pre-auth (version-skew retries) and raises its limits.
@@ -1243,8 +1333,20 @@ export class MandalaNetwork {
       // publicKey. The ratchet key is bound inside the proof.
       const welcomePubKey = msg.identity?.publicKey;
       const claimedTribhujW = msg.identity?.tribhujPubKey || '';
-      const welcomeProofPayload = `YAKMESH:WELCOME:${nodeId}:${msg.timestamp}:${claimedTribhujW}`;
-      if (!welcomePubKey || !msg.proof || !this.identity.verify(welcomeProofPayload, msg.proof, welcomePubKey)) {
+      const claimedPidW = msg.identity?.persistentId || '';
+      const welcomeProofNew = `YAKMESH:WELCOME:${nodeId}:${msg.timestamp}:${claimedTribhujW}:${claimedPidW}`;
+      const welcomeProofLegacy = `YAKMESH:WELCOME:${nodeId}:${msg.timestamp}:${claimedTribhujW}`;
+      let persistentIdBound = false;
+      let welcomeProofOk = false;
+      if (welcomePubKey && msg.proof) {
+        if (claimedPidW && this.identity.verify(welcomeProofNew, msg.proof, welcomePubKey)) {
+          welcomeProofOk = true;
+          persistentIdBound = true;
+        } else if (this.identity.verify(welcomeProofLegacy, msg.proof, welcomePubKey)) {
+          welcomeProofOk = true; // legacy peer — pid claim unverified
+        }
+      }
+      if (!welcomeProofOk) {
         log.warn('Rejected WELCOME — invalid proof of possession', {
           peer: peerTag(nodeId),
           hasPubKey: !!welcomePubKey,
@@ -1373,7 +1475,7 @@ export class MandalaNetwork {
         ws,
         wsVia: ws._viaTun ? 'tun' : 'lan',
         lifelineWs: null,
-        identity: msg.identity,
+        identity: { ...msg.identity, persistentIdBound },
         endpoint: peerEndpoint,
         capabilities: msg.capabilities || null,
         lastSeen: Date.now(),
@@ -1384,6 +1486,10 @@ export class MandalaNetwork {
           previous: msg.identity.tribhujPrevPubKey || null,
         },
       });
+
+      // AVOTH wormhole binding — post-registration, additive attestation.
+      // Senders always seal the 4-field payload (welcomeProofNew).
+      if (msg.avoth) this._verifyAvothBinding(welcomeProofNew, msg.avoth, nodeId);
 
       // Rate-limit grace: bind this IP to the now-verified nodeId — clears
       // bans accrued pre-auth (version-skew retries) and raises its limits.
@@ -1548,6 +1654,54 @@ export class MandalaNetwork {
 
       // Also forward to HTTP relay peers (server layer hooks this)
       this.emit('outbound-gossip', forwardMsg, [nodeId, msg.origin]);
+    });
+
+    // ── route162t — persistentId-directed delivery ──
+    // The YAK-TUN design primitive: packets "distributed to the node
+    // with the corresponding persistent ID". Intermediate hops
+    // re-resolve via the 162T routing table until the pid holder
+    // (or a direct peer of it) is reached.
+    this.on('route162t', (msg, ws, nodeId) => {
+      const { targetPid, ttl = 0 } = msg;
+      if (!targetPid) return;
+
+      const ourPid = this.identity.getPersistentId?.();
+      if (ourPid && targetPid === ourPid) {
+        this.emit('route162t:delivered', {
+          payload: msg.payload, origin: msg.origin, from: nodeId,
+        });
+        return;
+      }
+      const direct = this.findPeerByPersistentId(targetPid);
+      if (direct) {
+        this.sendTo(direct, {
+          type: 'route162t:deliver', targetPid,
+          payload: msg.payload, origin: msg.origin,
+        });
+        return;
+      }
+      if (ttl <= 0) {
+        log.debug('route162t TTL expired', { targetPid: targetPid.slice(0, 20) });
+        return;
+      }
+      const router = this.ternaryRouter;
+      if (!router) return;
+      try {
+        const hop = router.nextHop(persistentIdToAddress(targetPid));
+        if (hop && hop.peerId !== nodeId) {
+          this.sendTo(hop.peerId, { ...msg, ttl: ttl - 1 });
+        }
+      } catch { /* unroutable pid — drop */ }
+    });
+
+    // Final hop — the envelope reaches a peer who holds the pid
+    this.on('route162t:deliver', (msg, ws, nodeId) => {
+      const ourPid = this.identity.getPersistentId?.();
+      if (ourPid && msg.targetPid === ourPid) {
+        this.emit('route162t:delivered', {
+          payload: msg.payload, origin: msg.origin, from: nodeId,
+        });
+      }
     });
   }
 
@@ -1898,14 +2052,16 @@ export class MandalaNetwork {
    * Extracted so the dual-wire attach path can answer a second-wire HELLO
    * without re-running admission/registration.
    */
-  _sendWelcome(ws, nodeId) {
+  async _sendWelcome(ws, nodeId) {
     const welcomeTimestamp = Date.now();
     const ourNodeId = this.identity.identity.nodeId;
     const ourTribhuj = this.ratchet?._current?.publicKey
       ? bytesToHex(this.ratchet._current.publicKey) : null;
     const ourTribhujPrev = this.ratchet?._previous?.publicKey
       ? bytesToHex(this.ratchet._previous.publicKey) : null;
-    const welcomeProof = this.identity.sign(`YAKMESH:WELCOME:${ourNodeId}:${welcomeTimestamp}:${ourTribhuj || ''}`);
+    const welcomePayload = `YAKMESH:WELCOME:${ourNodeId}:${welcomeTimestamp}:${ourTribhuj || ''}:${this.identity.getPersistentId?.() || ''}`;
+    const welcomeProof = this.identity.sign(welcomePayload);
+    const avoth = await this._avothBinding(welcomePayload);
     if (!this._announcedRatchetKeys) this._announcedRatchetKeys = new Set();
     if (ourTribhuj) this._announcedRatchetKeys.add(ourTribhuj);
     if (ourTribhujPrev) this._announcedRatchetKeys.add(ourTribhujPrev);
@@ -1923,7 +2079,72 @@ export class MandalaNetwork {
       peers: this.getPeers().filter(p => p.nodeId !== nodeId),
       timestamp: welcomeTimestamp,
       proof: welcomeProof,
+      ...(avoth ? { avoth } : {}),
     });
+  }
+
+  /**
+   * AVOTH wormhole-sealed handshake binding — the seal is PUBLIC
+   * (AVOTH-SPEC §2.8: "a wax seal, not a key"). 4 quats derived from our
+   * keystore hardware fingerprint ride position 191 through all 24
+   * rounds — read by θ/χ every round, never written — so the digest is
+   * jointly bound to (proof payload, hardware identity) and survives
+   * the full permutation. Any peer can recompute; no secret involved.
+   * Returns {hw, seal, hash, device} or null when the bridge is down.
+   */
+  async _avothBinding(proofPayload) {
+    try {
+      if (this._avothHw === undefined) {
+        const id = await Promise.race([
+          avothBridge.hardwareIdentity(),
+          new Promise(r => setTimeout(() => r(null), 3000)),
+        ]);
+        this._avothHw = id?.fingerprint || null;
+      }
+      if (!this._avothHw) return null;
+      const seal = avothBridge.sealFromContext(`yakmesh:hw:${this._avothHw}`);
+      // hw also rides the payload: the wormhole seal binds all 8 bits via
+      // θ's per-quat read of 191 (fixed 2026-09-23), and payload absorb
+      // gives full 256-bit-strength fingerprint binding on top.
+      const res = await Promise.race([
+        avothBridge.batchHash([`${proofPayload}:${this._avothHw}`], { seals: [seal] }),
+        new Promise(r => setTimeout(() => r(null), 4000)),
+      ]);
+      const hash = res?.digests?.[0];
+      return hash ? { hw: this._avothHw, seal, hash, device: res.device } : null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Verify a peer's wormhole binding. The carried seal MUST equal
+   * sealFromContext('yakmesh:hw:'+claimedHw) — otherwise the quats are
+   * arbitrary and bind nothing. Recomputes AVOTH(payload, seal) through
+   * the triad and patches identity.avothBound/avothHw on the stored
+   * peer record. Runs post-registration (additive attestation — the
+   * ML-DSA proof stays load-bearing).
+   */
+  async _verifyAvothBinding(proofPayload, avoth, nodeId) {
+    try {
+      if (!avoth?.hw || !Array.isArray(avoth.seal) || avoth.seal.length !== 4
+        || typeof avoth.hash !== 'string') return;
+      const expect = avothBridge.sealFromContext(`yakmesh:hw:${avoth.hw}`);
+      if (avoth.seal.some((q, i) => q !== expect[i])) {
+        log.warn('AVOTH seal does not derive from claimed hw fingerprint', { peer: peerTag(nodeId) });
+        return;
+      }
+      const res = await avothBridge.batchHash([`${proofPayload}:${avoth.hw}`], { seals: [expect] });
+      const ok = res?.digests?.[0] === avoth.hash;
+      const peer = this.peers.get(nodeId);
+      if (ok && peer) {
+        peer.identity.avothBound = true;
+        peer.identity.avothHw = avoth.hw;
+        peer.identity.avothDevice = res.device;
+      } else if (!ok) {
+        log.warn('AVOTH wormhole binding mismatch — peer hash does not recompute', { peer: peerTag(nodeId) });
+      }
+    } catch { /* verifier-side bridge down — flag stays unset, honest */ }
   }
 
   /**

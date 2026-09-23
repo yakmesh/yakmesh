@@ -449,10 +449,10 @@ function mnemonicToSeed(words) {
  * projections of the seed onto a specific network version.
  * 
  * File stored: machine-seed.json in dataDir
- * Contents: { encryptedSeed, ypc27Checksum, persistentId144T, migrationChain[], sstFamilies, schemaVersion }
+ * Contents: { encryptedSeed, ypc27Checksum, persistentId, migrationChain[], sstFamilies, schemaVersion }
  * NEVER stored: raw seed, private keys
  * 
- * The persistentId144T is constant across ALL code upgrades — it identifies
+ * The persistentId is constant across ALL code upgrades — it identifies
  * the physical machine/node owner regardless of which network version is running.
  */
 export class MachineSeed {
@@ -463,7 +463,7 @@ export class MachineSeed {
     this.dataDir = dataDir;
     this.seedPath = join(dataDir, SEED_FILENAME);
     this.seed = null;          // Raw seed (in memory only)
-    this.persistentId = null;  // 144T persistent identity (constant across upgrades)
+    this.persistentId = null;  // 162T persistent identity (constant across upgrades)
     this.migrationChain = [];  // History of (oracleHash, pubKeyHash) pairs
     this.sstFamilies = null;   // SST family analysis
     this.created = false;      // True if seed was just generated (first run)
@@ -572,9 +572,7 @@ export class MachineSeed {
       }
 
       this.seed = seed;
-      this.persistentId = data.persistentId || data.persistentId144T
-        ? computePersistentId(seed)  // always re-derive for 162T format
-        : computePersistentId(seed);
+      this.persistentId = computePersistentId(seed); // always re-derive (162T; old files' persistentId144T ignored)
       this.migrationChain = data.migrationChain || [];
       this.sstFamilies = data.sstFamilies || analyzeSeedFamilies(seed);
       this.created = false;

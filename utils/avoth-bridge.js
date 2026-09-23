@@ -200,6 +200,7 @@ export const triadStats = () => getJson('/avoth/triad-stats');
 export const defenseState = () => getJson('/avoth/defense-state');
 export const yakcoinSeal = (epoch) => getJson(`/yakcoin/seal?epoch=${epoch}`);
 export const hwProof = () => getJson('/hw/proof');
+export const hardwareIdentity = () => getJson('/hardware-identity');
 
 /**
  * Compact capability summary for mesh advertisements — honest values
@@ -228,5 +229,5 @@ export default {
   sealFromContext, hash, batchHash, hashSealed,
   hourglassSign, hourglassVerify, flip,
   getState, getFractalState, selfcheck, cryptanalysis, triadStats,
-  defenseState, yakcoinSeal, hwProof, capabilitySummary,
+  defenseState, yakcoinSeal, hwProof, hardwareIdentity, capabilitySummary,
 };

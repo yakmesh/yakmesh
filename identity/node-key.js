@@ -490,13 +490,13 @@ export class NodeIdentity {
   }
 
   /**
-   * Get the persistent 144T machine identity.
+   * Get the persistent 162T machine identity.
    * This ID is CONSTANT across all code upgrades — it identifies the
    * physical machine/node owner regardless of network version.
    * 
    * Use this to link reputation across network upgrades.
    * 
-   * @returns {string} Persistent 144T identifier like "yak-TT00TTT00:TTT00TTT0:..."
+   * @returns {string} Persistent 162T identifier like "yak-TT00TTT00:TTT00TTT0:..."
    */
   getPersistentId() {
     return this.machineSeed.getPersistentId();

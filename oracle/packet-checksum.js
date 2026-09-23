@@ -37,6 +37,9 @@
 
 import { YPC27Checksum, ypc27, bytesToTrits, tritsToBytes, seedFromPeerId, Poly27 } from './ypc27.js';
 import { YPC27_SST } from './ypc27.js';
+import { createLogger } from '../utils/logger.js';
+
+const log = createLogger('oracle:packet-checksum');
 
 // =============================================================================
 // PROTOCOL DOMAIN TAGS
@@ -167,6 +170,27 @@ export class PacketChecksum {
    */
   get domain() {
     return this.#domain;
+  }
+
+  /**
+   * Seed as 27 trits in F_3 {0,1,2} — the format the NPU bridge
+   * (/ypc27/digest) takes for per-message seeds.
+   * @returns {number[]}
+   */
+  get seedTrits() {
+    return [...this.#seed.toTypedArray()];
+  }
+
+  /**
+   * The exact bytes this engine hashes — domain||normalized(data).
+   * Exposed so batch accelerators can reproduce the message stream.
+   * @param {Object|string|Buffer|Uint8Array} data
+   * @returns {Buffer}
+   */
+  bytesFor(data) {
+    const bytes = this.#normalizeToBytes(data);
+    const domainBytes = Buffer.from(this.#domain, 'utf-8');
+    return Buffer.concat([domainBytes, bytes]);
   }
 
   /**
@@ -351,6 +375,84 @@ export function unwrapWithChecksum(wrappedMessage, domain, nodeId = null) {
 // BATCH CHECKSUM VERIFICATION ENGINE
 // =============================================================================
 
+// =============================================================================
+// NPU BATCH ACCELERATION — YakOS MKC bridge (localhost:9995)
+// =============================================================================
+//
+// When a YakOS node with a Hawk Point NPU is present, YPC-27 batch
+// verification dispatches to MLIR_AIE_YPC on the fused xclbin — 16 AIE2
+// tiles compute hashToField·seed in F_3^27 with zero host math. Verified
+// bit-exact vs YPC27Checksum on this codebase (same hashToField, same
+// field multiply, same F_3 trit encoding).
+//
+// This path is STRICTLY OPTIONAL: any failure (bridge down, HTTP error,
+// digest mismatch on the first-use self-check) falls back to the pure-JS
+// path in flush(). The NPU is never trusted blindly — the first batch
+// recomputes one item in JS and compares trits before marking the
+// device path usable.
+
+const NPU_URL = process.env.YAKOS_PQ_BRIDGE_URL || 'http://127.0.0.1:9995';
+let _npuAvailable = null;   // tri-state: unknown | true | false
+let _npuCheckedAt = 0;
+let _npuTrusted = false;    // set after the first self-checked batch
+
+async function npuBridgeUp() {
+  if (_npuAvailable !== null && Date.now() - _npuCheckedAt < 30000) {
+    return _npuAvailable;
+  }
+  try {
+    const r = await fetch(`${NPU_URL}/health`,
+      { signal: AbortSignal.timeout(1500) });
+    _npuAvailable = r.ok;
+  } catch {
+    _npuAvailable = false;
+  }
+  _npuCheckedAt = Date.now();
+  return _npuAvailable;
+}
+
+/** Decode 'YPC27:v2:<b64>' → 27 trits in F_3 {0,1,2} (5 trits/byte). */
+function decodeV2Digest(wire) {
+  const raw = Buffer.from(wire.split(':')[2], 'base64');
+  const trits = [];
+  for (const byte of raw) {
+    let v = byte;
+    for (let k = 0; k < 5; k++) {
+      trits.push(v % 3);
+      v = Math.floor(v / 3);
+    }
+  }
+  return trits.slice(0, 27);
+}
+
+/**
+ * One /ypc27/digest call for a batch of messages.
+ * @param {Buffer[]} messages — domain||data per item
+ * @param {number[][]} seeds — 27 F_3 trits per item
+ * @returns {Promise<{trits: number[][], device: string}>}
+ */
+async function npuYpc27Batch(messages, seeds) {
+  const r = await fetch(`${NPU_URL}/ypc27/digest`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      messages: messages.map(m => m.toString('base64')),
+      seeds,
+    }),
+    signal: AbortSignal.timeout(30000),
+  });
+  if (!r.ok) throw new Error(`ypc27/digest HTTP ${r.status}`);
+  const j = await r.json();
+  if (!j.digests || j.digests.length !== messages.length) {
+    throw new Error('ypc27/digest: malformed response');
+  }
+  return {
+    trits: j.digests.map(decodeV2Digest),
+    device: j.device || 'unknown',
+  };
+}
+
+
 /**
  * BatchChecksumVerifier — Batched YPC-27 verification for high-throughput
  * packet processing. Collects individual verify requests and processes them
@@ -440,9 +542,9 @@ export class BatchChecksumVerifier {
       this._stats.totalEnqueued++;
       
       if (this._queue.length >= this.minBatchSize) {
-        this.flush();
+        this._flushMaybeNpu();
       } else if (!this._timer) {
-        this._timer = setTimeout(() => this.flush(), this.flushInterval);
+        this._timer = setTimeout(() => this._flushMaybeNpu(), this.flushInterval);
       }
     });
   }
@@ -513,8 +615,113 @@ export class BatchChecksumVerifier {
     this._stats.batchCount++;
     this._stats.avgBatchSize = this._stats.totalFlushed / this._stats.batchCount;
     this._stats.lastFlushMs = durationMs;
+    this._stats.lastDevice = 'cpu';
     
     return { verified: batch.length, valid, invalid, errors, durationMs };
+  }
+
+  /**
+   * Internal flush dispatcher — tries the NPU path first when the YakOS
+   * bridge is reachable, falls through to the sync JS path on any failure.
+   * Fire-and-forget: queue items resolve/reject inside whichever path runs.
+   */
+  _flushMaybeNpu() {
+    this.flushNpu().catch(err => {
+      log.debug(`NPU flush failed, JS fallback: ${err.message}`);
+      try { this.flush(); } catch (e2) {
+        log.error(`JS flush also failed: ${e2.message}`);
+      }
+    });
+  }
+
+  /**
+   * NPU batch flush — one /ypc27/digest call for the whole batch.
+   * 16 AIE2 tiles compute hashToField·seed in F_3^27; the first batch
+   * re-verifies one item in JS before trusting the device path.
+   * Falls back to flush() when the bridge is absent or misbehaving.
+   * 
+   * @returns {Promise<{verified: number, valid: number, invalid: number, errors: number, durationMs: number, device: string}>}
+   */
+  async flushNpu() {
+    if (this._timer) {
+      clearTimeout(this._timer);
+      this._timer = null;
+    }
+    
+    if (this._queue.length === 0) {
+      return { verified: 0, valid: 0, invalid: 0, errors: 0, durationMs: 0, device: 'none' };
+    }
+    
+    if (!(await npuBridgeUp())) {
+      return { ...this.flush(), device: 'cpu' };
+    }
+    
+    const batch = this._queue.splice(0, this.maxBatchSize);
+    const t0 = performance.now();
+    
+    try {
+      // Per-item engine cache (domain+nodeId → PacketChecksum) — needed for
+      // seed trits AND the JS self-check / per-item normalization.
+      const engineCache = new Map();
+      const engineFor = (item) => {
+        const key = `${item.domain}:${item.nodeId || ''}`;
+        if (!engineCache.has(key)) {
+          engineCache.set(key, new PacketChecksum(item.domain, item.nodeId));
+        }
+        return engineCache.get(key);
+      };
+      
+      const messages = batch.map(it => engineFor(it).bytesFor(it.data));
+      const seeds = batch.map(it => engineFor(it).seedTrits);
+      
+      const { trits, device } = await npuYpc27Batch(messages, seeds);
+      
+      // First-use self-check: recompute item 0 in JS and compare trits.
+      // A misbehaving bridge is never trusted — one bad digest drops the
+      // whole device path back to JS for this batch (and stays untrusted).
+      if (!_npuTrusted) {
+        const ref = engineFor(batch[0]).compute(batch[0].data);
+        const refTrits = [...ref.toTypedArray()];
+        if (JSON.stringify(refTrits) !== JSON.stringify(trits[0])) {
+          throw new Error('NPU digest self-check failed — staying on CPU');
+        }
+        _npuTrusted = true;
+      }
+      
+      let valid = 0, invalid = 0, errors = 0;
+      for (let i = 0; i < batch.length; i++) {
+        const item = batch[i];
+        try {
+          const isValid = new Poly27(trits[i]).equals(item.checksum);
+          if (isValid) {
+            valid++;
+            this._stats.totalValid++;
+          } else {
+            invalid++;
+            this._stats.totalInvalid++;
+          }
+          item.resolve({ valid: isValid, index: i });
+        } catch (err) {
+          errors++;
+          this._stats.totalErrors++;
+          item.reject(err);
+        }
+      }
+      
+      const durationMs = performance.now() - t0;
+      this._stats.totalFlushed += batch.length;
+      this._stats.batchCount++;
+      this._stats.avgBatchSize = this._stats.totalFlushed / this._stats.batchCount;
+      this._stats.lastFlushMs = durationMs;
+      this._stats.lastDevice = device;
+      this._stats.npuBatches = (this._stats.npuBatches || 0) + 1;
+      
+      return { verified: batch.length, valid, invalid, errors, durationMs, device };
+    } catch (err) {
+      // Put the batch back and let the caller's catch run the JS flush.
+      this._queue.unshift(...batch);
+      throw err;
+    }
   }
 
   /**

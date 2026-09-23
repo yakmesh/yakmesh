@@ -403,6 +403,12 @@ export class KarmaTrustModel extends EventEmitter {
     // Karma evidence per node (spiritual ledger)
     this.evidence = new Map();  // nodeId -> KarmaEvidence
 
+    // Identity resolver — wired by server to map ephemeral nodeId →
+    // persistentId (stable across code upgrades). When set, ALL
+    // evidence keys normalize to persistentId so trust survives
+    // node rebuilds/identity rotation — the designed behavior.
+    this._resolveId = config.resolveId || null;
+
     // Stats
     this.stats = {
       assessmentsPerformed: 0,
@@ -428,7 +434,12 @@ export class KarmaTrustModel extends EventEmitter {
    */
   getEvidence(nodeId) {
     // Coerce to string — prevent non-string keys from entering evidence Map
-    const id = typeof nodeId === 'string' ? nodeId : String(nodeId ?? 'unknown');
+    let id = typeof nodeId === 'string' ? nodeId : String(nodeId ?? 'unknown');
+    // Resolve ephemeral nodeId → persistentId when the binding is known
+    if (this._resolveId) {
+      const resolved = this._resolveId(id);
+      if (resolved && resolved !== id) id = resolved;
+    }
     if (!this.evidence.has(id)) {
       this.evidence.set(id, new KarmaEvidence(id));
     }
@@ -755,7 +766,8 @@ export class KarmaTrustModel extends EventEmitter {
    * Get current trust level for a node
    */
   getTrustLevel(nodeId) {
-    if (!this.evidence.has(nodeId)) {
+    const id = this._resolveId ? (this._resolveId(nodeId) || nodeId) : nodeId;
+    if (!this.evidence.has(id)) {
       return {
         level: KarmaLevel.UNTRUSTED,
         levelInfo: KarmaLevelInfo[KarmaLevel.UNTRUSTED],
@@ -764,7 +776,7 @@ export class KarmaTrustModel extends EventEmitter {
       };
     }
 
-    const evidence = this.evidence.get(nodeId);
+    const evidence = this.evidence.get(id);
     return {
       level: evidence.trustLevel,
       levelInfo: TrustLevelInfo[evidence.trustLevel],

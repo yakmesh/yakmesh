@@ -232,7 +232,7 @@ function renderPixels(grid, palette) {
 /**
  * Generate a PNG identicon from a persistentId
  * 
- * @param {string} persistentId - The 144T persistent identity string
+ * @param {string} persistentId - The 162T persistent identity string
  * @param {number} [size] - Unused, maintained for API compatibility
  * @returns {Buffer} PNG image buffer
  */

@@ -46,7 +46,7 @@ const log = createLogger('security:doko');
 import { deriveNetworkName, deriveNetworkId } from '../oracle/network-identity.js';
 
 // ═══ TOKEN FORMAT DETECTION ═══
-// DOKO uses dual-format tokens: hex (ML-DSA layer) + balanced ternary (144T layer)
+// DOKO uses dual-format tokens: hex (ML-DSA layer) + balanced ternary (TRIBHUJ layer)
 const HEX_RE = /^[a-f0-9]+$/i;
 const TRIT_RE = /^[T01]+$/;
 
@@ -317,17 +317,17 @@ export class DOKOGenerator {
 
   /**
    * Generate a Node DOKO for mesh network nodes
-   * Includes persistentId144T for cross-upgrade identity continuity
+   * Includes persistentId for cross-upgrade identity continuity
    * 
    * @param {Object} options
-   * @param {string} options.persistentId - 144T persistent machine identity
+   * @param {string} options.persistentId - 162T persistent machine identity
    * @param {string} options.nodeId - Current network-specific node ID
    * @param {string} options.networkName - Network name from oracle
    * @param {Uint8Array} [options.seed] - Optional deterministic seed
    */
   static generateNode(options = {}) {
     if (!options.persistentId) {
-      throw new Error('Node DOKO requires persistentId (144T persistent machine identity)');
+      throw new Error('Node DOKO requires persistentId (162T persistent machine identity)');
     }
     return DOKOGenerator.generate({
       ...options,
@@ -339,7 +339,7 @@ export class DOKOGenerator {
       },
       extensions: {
         ...options.extensions,
-        persistentId144T: options.persistentId,  // Constant across upgrades
+        persistentId: options.persistentId,  // Constant across upgrades
         capabilities: options.capabilities || ['mesh', 'gossip', 'relay'],
       },
     });
@@ -1232,7 +1232,7 @@ export class DOKORevocation {
 
     // Generate random emergency token — DUAL FORMAT for double security layer:
     // - emergencyTokenHex:  64-char hex (ML-DSA/classical layer)
-    // - emergencyToken:     160-char balanced ternary (144T/TRIBHUJ layer, '666' impossible)
+    // - emergencyToken:     160-char balanced ternary (TRIBHUJ layer, '666' impossible)
     // Both are derived from the same 32 bytes of randomness.
     // Verification accepts EITHER format for backward compatibility with legacy hex certs.
     const tokenBytes = _nobleRandomBytes(32);

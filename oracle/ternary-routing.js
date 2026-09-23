@@ -29,7 +29,6 @@
  * - DR(162) = 9 → SST Family C (Governing/Source)
  * - 3 × 54 = 162 — three all-Family-C tiers (DR(3)=3, DR(54)=9)
  * - YPC-27: 2 chunks per tier, 6 chunks per address, ZERO padding waste
- * - Previous 144T (4×36) wasted 18 trits per Poly27 chunk; 162T eliminates this
  * 
  * POST-QUANTUM HARDENING:
  * - 162 trits × log₂(3) ≈ 256.8 bits of classical entropy
@@ -64,6 +63,7 @@
  */
 
 import { randomInt } from 'node:crypto';
+import { sha3_256 } from '@noble/hashes/sha3.js';
 import { Trit, TritArray, POSITIVE, NEUTRAL, NEGATIVE } from './tribhuj.js';
 import { digitalRoot, getFamilyOf, SSTFamily, FIBONACCI_CYCLE_24 } from './sst.js';
 import { Poly27, YPC27Checksum, N as YPC27_N, DEFAULT_SEED, bytesToTrits } from './ypc27.js';
@@ -282,7 +282,7 @@ export class TritAddress {
   /**
    * Compute a YPC-27 checksum for the full address.
    * With 162T, each tier is exactly 54 trits = 2 × YPC-27 chunks.
-   * Zero padding waste (unlike 144T which wasted 18 trits per chunk).
+   * Zero padding waste — 162 = 6 × 27, exact YPC-27 alignment.
    * 
    * @returns {Poly27} — 27-trit checksum
    */
@@ -472,6 +472,17 @@ export class TernaryRoutingTable {
   addPeer(peerId, peerAddress, rtt = 0) {
     const distance = this.selfAddress.tierDistance(peerAddress);
     if (distance === 0) return false; // Can't add self
+
+    // Same machine re-registered under a new key (code upgrade → new
+    // nodeId, same persistentId → same address). Remove the stale entry
+    // so the table holds one entry per machine.
+    for (const bucket of this._buckets) {
+      for (const [key, entry] of bucket) {
+        if (key !== peerId && entry.address.equals(peerAddress)) {
+          this.removePeer(key);
+        }
+      }
+    }
     
     const bucketIdx = distance - 1; // 1-3 → 0-2
     const bucket = this._buckets[bucketIdx];
@@ -586,6 +597,63 @@ export class TernaryRoutingTable {
   }
 
   /**
+   * Select a tier-diverse subset of peers — round-robin across buckets,
+   * farthest tier-distance first. Spreads picks across the address
+   * space instead of clustering like uniform random does.
+   *
+   * Used by MANTRA fanout (rumor coverage) and NAKPAK hop selection
+   * (structural diversity of circuit paths).
+   *
+   * @param {string[]} peerIds — candidate peer identifiers
+   * @param {number} count — max peers to return
+   * @returns {string[]} — selected peerIds (unscored candidates appended last)
+   */
+  selectDiverse(peerIds, count) {
+    const byTier = [new Map(), new Map(), new Map()]; // dist 1,2,3
+    const unscored = [];
+    for (const id of peerIds) {
+      let scored = false;
+      for (let t = 0; t < TIER_COUNT && !scored; t++) {
+        if (this._buckets[t].has(id)) {
+          byTier[t].set(id, this._buckets[t].get(id));
+          scored = true;
+        }
+      }
+      if (!scored) unscored.push(id);
+    }
+
+    // Shuffle within each tier for unbiased load spread (Fisher-Yates;
+    // bucket Map order is insertion order, which biases toward oldest).
+    const lists = byTier.map(m => {
+      const ids = [...m.keys()];
+      for (let i = ids.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [ids[i], ids[j]] = [ids[j], ids[i]];
+      }
+      return ids;
+    });
+
+    const picks = [];
+    const cursors = [0, 0, 0];
+    while (picks.length < count) {
+      let added = false;
+      for (let t = TIER_COUNT - 1; t >= 0; t--) { // summit-distant first
+        if (cursors[t] < lists[t].length) {
+          picks.push(lists[t][cursors[t]++]);
+          added = true;
+          if (picks.length >= count) break;
+        }
+      }
+      if (!added) break;
+    }
+    for (const id of unscored) {
+      if (picks.length >= count) break;
+      picks.push(id);
+    }
+    return picks;
+  }
+
+  /**
    * Get routing table status.
    * @returns {Object}
    */
@@ -671,6 +739,59 @@ export function hexIdToAddress(hexId, locality = {}) {
 }
 
 /**
+ * Derive a 162T routing address from a persistentId.
+ *
+ * persistentId ("yak-TT00TTT00:...") IS the summit tier of the machine's
+ * address — hardware-confined, constant across all code upgrades (unlike
+ * nodeId, which is derived per-network and regenerates every build).
+ *
+ * Layout:
+ *   summit (54 trits) = the persistentId trits verbatim — the persistent
+ *                       identity literally occupies the global-routing tier
+ *   ridge  (54 trits) = SHA3-256(persistentId || ":162t:ridge") → trits
+ *   base   (54 trits) = SHA3-256(persistentId || ":162t:base") → trits
+ *
+ * Ridge/base are pure functions of the persistentId, so the full address
+ * is stable across upgrades — routing to an address routes to a MACHINE,
+ * not a build. Two nodes sharing a persistentId produce the same address
+ * (detectable as a duplicate — see TernaryRoutingTable dedupe).
+ *
+ * @param {string} persistentId — "yak-" + 54 trits (T/0/1, ':'-separated)
+ * @returns {TritAddress}
+ */
+export function persistentIdToAddress(persistentId) {
+  if (typeof persistentId !== 'string') {
+    throw new Error('persistentId must be a string');
+  }
+  const body = persistentId.startsWith('yak-')
+    ? persistentId.slice(4) : persistentId;
+  // Extract trit chars (T/0/1), ignoring ':' separators
+  const trits = new Int8Array(TOTAL_TRITS);
+  let n = 0;
+  for (const ch of body) {
+    if (n >= TRITS_PER_TIER) break;
+    if (ch === 'T') trits[n++] = -1;
+    else if (ch === '0') trits[n++] = 0;
+    else if (ch === '1') trits[n++] = 1;
+  }
+  if (n < TRITS_PER_TIER) {
+    throw new Error(`persistentId yields ${n} trits, need ${TRITS_PER_TIER}`);
+  }
+
+  // Deterministic expansion for ridge + base — stable per persistentId
+  const enc = new TextEncoder();
+  for (let tier = 1; tier < TIER_COUNT; tier++) {
+    const label = tier === 1 ? 'ridge' : 'base';
+    const hash = sha3_256(enc.encode(`${persistentId}:162t:${label}`));
+    const tierTrits = bytesToTrits(hash);
+    for (let i = 0; i < TRITS_PER_TIER; i++) {
+      trits[tier * TRITS_PER_TIER + i] = tierTrits[i];
+    }
+  }
+  return new TritAddress(trits);
+}
+
+/**
  * Compute the 216-hypercycle position for an address.
  * The hypercycle is LCM(27, 24) = 216 — the full SST-YPC-27 alignment.
  * 
@@ -720,6 +841,7 @@ export default {
   
   // Utilities
   hexIdToAddress,
+  persistentIdToAddress,
   hypercyclePosition,
   verifyAddressIntegrity,
 };
