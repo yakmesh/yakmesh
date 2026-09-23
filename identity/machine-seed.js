@@ -73,8 +73,8 @@ const log = createLogger('identity:machine-seed');
 
 import { sha3_256 } from '../utils/accel.js';
 import { bytesToHex, hexToBytes } from '@noble/hashes/utils.js';
-import { readFileSync, writeFileSync, existsSync, mkdirSync, chmodSync } from 'fs';
-import { join } from 'path';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, chmodSync, realpathSync } from 'fs';
+import { join, resolve } from 'path';
 import { createCipheriv, createDecipheriv, scryptSync, randomBytes } from 'crypto';
 import { hostname, platform, cpus } from 'os';
 import { hkdf } from '@noble/hashes/hkdf.js';
@@ -127,7 +127,11 @@ const PERSISTENT_ID_PREFIX = 'yak';
  */
 function deriveHardwareKey(dataDir) {
   const cpuModel = cpus()[0]?.model || 'unknown-cpu';
-  const fingerprint = `yakmesh:machine-seed:${hostname()}:${platform()}:${cpuModel}:${dataDir}`;
+  // Bind to the RESOLVED path — the literal string ('./data') is trivially
+  // reproduced by a cloned directory at a matching relative location.
+  let resolvedDir;
+  try { resolvedDir = realpathSync(dataDir); } catch { resolvedDir = resolve(dataDir); }
+  const fingerprint = `yakmesh:machine-seed:${hostname()}:${platform()}:${cpuModel}:${resolvedDir}`;
   const salt = sha3_256(new TextEncoder().encode('yakmesh-hardware-salt-2026'));
   // scrypt: N=2^14, r=8, p=1, 32-byte key
   return scryptSync(fingerprint, Buffer.from(salt), 32, {
@@ -531,8 +535,30 @@ export class MachineSeed {
         // Future: add migration logic for schema upgrades
       }
 
-      // Decrypt seed using hardware-derived key
-      const seed = decryptSeed(data.encryptedSeed, this.dataDir);
+      // Decrypt seed using hardware-derived key (realpath-bound).
+      // Pre-realpath seeds were encrypted with the literal dataDir string —
+      // fall back to that key once, then re-seal under the realpath key.
+      let seed;
+      try {
+        seed = decryptSeed(data.encryptedSeed, this.dataDir);
+      } catch (primaryErr) {
+        const cpuModel = cpus()[0]?.model || 'unknown-cpu';
+        const legacyFingerprint = `yakmesh:machine-seed:${hostname()}:${platform()}:${cpuModel}:${this.dataDir}`;
+        const salt = sha3_256(new TextEncoder().encode('yakmesh-hardware-salt-2026'));
+        const legacyKey = scryptSync(legacyFingerprint, Buffer.from(salt), 32, {
+          N: 16384, r: 8, p: 1,
+        });
+        const decipher = createDecipheriv(
+          'aes-256-gcm', legacyKey, Buffer.from(data.encryptedSeed.nonce, 'hex'),
+        );
+        decipher.setAuthTag(Buffer.from(data.encryptedSeed.tag, 'hex'));
+        seed = new Uint8Array(Buffer.concat([
+          decipher.update(Buffer.from(data.encryptedSeed.ciphertext, 'hex')),
+          decipher.final(),
+        ]));
+        log.info('Machine seed migrated to realpath binding');
+        this._reboundSeed = true;
+      }
 
       // Verify YPC-27 integrity checksum
       if (!verifySeedChecksum(seed, data.ypc27Checksum)) {
@@ -553,10 +579,12 @@ export class MachineSeed {
       this.sstFamilies = data.sstFamilies || analyzeSeedFamilies(seed);
       this.created = false;
 
-      // Schema migration: upgrade to v3 (162T persistent ID)
-      if (data.schemaVersion < 3 || !data.persistentId) {
-        log.info('Migrating seed file to v3 (162T persistentId)');
+      // Schema migration: upgrade to v3 (162T persistent ID), or re-seal
+      // under the realpath-bound key after a legacy-binding fallback.
+      if (data.schemaVersion < 3 || !data.persistentId || this._reboundSeed) {
+        if (!this._reboundSeed) log.info('Migrating seed file to v3 (162T persistentId)');
         this._updateSeedFile();
+        this._reboundSeed = false;
       }
 
       log.info('Machine seed loaded and verified', {

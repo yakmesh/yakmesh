@@ -40,7 +40,7 @@ import { existsSync, readFileSync, statSync, writeFileSync } from 'fs';
 import { mkdir } from 'node:fs/promises';
 import { join } from 'path';
 import { networkInterfaces } from 'os';
-import { WebSocketServer } from 'ws';
+import WebSocket, { WebSocketServer } from 'ws';
 import { createLogger } from '../utils/logger.js';
 import * as accel from '../utils/accel.js';
 import { startPipeServer, getPipePath, upgradePipeAntiCheat, isPipeServerRunning } from '../utils/scheduler-pipe.js';
@@ -1997,7 +1997,24 @@ export class YakmeshNode {
    * health monitoring and AGUWA's Kuramoto observation.
    */
   _handlePulseHeartbeat(data, origin) {
-    if (data?.nodeId === this.identity.identity.nodeId) return;
+    if (data?.nodeId === this.identity.identity.nodeId) {
+      // Echo of our own emission is normal gossip flow — but a heartbeat
+      // carrying OUR nodeId at a sequence we emitted with a DIFFERENT hash
+      // is a live clone operating our identity. This is the only self-
+      // impersonation signal available: cryptographic checks cannot
+      // distinguish a clone (it holds our key), only divergent output can.
+      const mine = this.pulseSync?.healthMonitor?.nodes?.get(data.nodeId)?.chain
+        ?.find(h => h.sequence === data.sequence);
+      if (mine && mine.hash !== data.hash) {
+        this._handleSelfImpersonation({
+          sequence: data.sequence,
+          ourHash: mine.hash,
+          theirHash: data.hash,
+          origin,
+        });
+      }
+      return;
+    }
     this.pulseSync?.receiveHeartbeat(data);
     // Witness side of yakcoin transport — fork detection + epoch claims.
     // Verify the beat's ML-DSA signature before its claim can be
@@ -2020,6 +2037,40 @@ export class YakmeshNode {
       }
     }
     this.claimLedger?.observe(data, { verified });
+  }
+
+  /**
+   * A foreign heartbeat carrying our nodeId with a divergent chain hash is
+   * proof our identity is cloned. We cannot win the crypto check — the clone
+   * holds our key — so we publish a signed self-report attestation: the
+   * legitimate keyholder formally disputing the forked segment. Throttled
+   * to once per hour; each emission re-affirms the dispute.
+   */
+  _handleSelfImpersonation(evidence) {
+    const now = Date.now();
+    if (this._lastSelfImpersonationReport && now - this._lastSelfImpersonationReport < 3600000) {
+      return;
+    }
+    this._lastSelfImpersonationReport = now;
+    this._selfImpersonationCount = (this._selfImpersonationCount || 0) + 1;
+
+    log.error('🚨 SELF-IMPERSONATION — cloned identity emitting divergent heartbeat chain', {
+      sequence: evidence.sequence,
+      ourHash: evidence.ourHash?.slice(0, 24),
+      theirHash: evidence.theirHash?.slice(0, 24),
+      origin: evidence.origin ? peerTag(evidence.origin) : 'unknown',
+    });
+
+    try {
+      const attestation = this.meshRevocation?.createAttestation(
+        this.identity.identity.nodeId,
+        REVOCATION_REASONS.DOUBLE_SIGN,
+        { kind: 'selfFork', ...evidence, selfReport: true },
+      );
+      if (attestation) this.khataTrust?.gossipAttestation(attestation);
+    } catch (e) {
+      log.warn('self-impersonation attestation failed', { error: e.message });
+    }
   }
 
   /**
@@ -4744,6 +4795,7 @@ export class YakmeshNode {
         khata: this.khataTrust ? {
           ...this.khataTrust.getStats(),
           revocation: this.meshRevocation?.getStats() || null,
+          selfImpersonationDetected: this._selfImpersonationCount || 0,
           enforcement: 'accumulate-only',
         } : null,
         domainConsensus: this.domainConsensus ? {
@@ -5148,6 +5200,22 @@ export class YakmeshNode {
         const { nodeId, networkName, publicKey, capabilities, signature, timestamp } = req.body;
         if (!nodeId || !networkName) {
           return res.status(400).json({ error: 'nodeId and networkName required for register' });
+        }
+
+        // 1:1 identity rule — a nodeId is one node. Refuse registrations that
+        // claim our own identity, or an identity already holding a live WS
+        // peer slot. A cloned key is cryptographically indistinguishable, so
+        // channel exclusivity is the enforceable boundary.
+        if (nodeId === this.identity.identity.nodeId) {
+          log.warn('Relay registration refused — self-impersonation', { ip: req.ip });
+          return res.status(403).json({ error: 'Self-registration refused' });
+        }
+        const livePeer = this.mesh?.peers?.get(nodeId);
+        if (livePeer?.ws?.readyState === WebSocket.OPEN) {
+          log.warn('Relay registration refused — identity already connected via WS', {
+            peer: peerTag(nodeId), ip: req.ip,
+          });
+          return res.status(409).json({ error: 'Identity already connected' });
         }
 
         // Timestamp is REQUIRED for replay protection — reject if missing or stale
