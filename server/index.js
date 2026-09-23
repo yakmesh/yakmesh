@@ -5210,6 +5210,15 @@ export class YakmeshNode {
           log.warn('Relay registration refused — self-impersonation', { ip: req.ip });
           return res.status(403).json({ error: 'Self-registration refused' });
         }
+        // Same-codebase = same-network: a registration declaring a different
+        // network is not a peer, it's cross-partition chatter. The handshake
+        // layer enforces this via fingerprint; the relay must gate it too.
+        if (this.genesisNetwork?.networkName && networkName !== this.genesisNetwork.networkName) {
+          log.warn('Relay registration refused — network mismatch', {
+            peer: peerTag(nodeId), theirs: networkName, ours: this.genesisNetwork.networkName,
+          });
+          return res.status(403).json({ error: 'Network mismatch' });
+        }
         const livePeer = this.mesh?.peers?.get(nodeId);
         if (livePeer?.ws?.readyState === WebSocket.OPEN) {
           log.warn('Relay registration refused — identity already connected via WS', {
