@@ -508,7 +508,8 @@ export class MandalaNetwork {
         if (msg.type === MessageTypes.WELCOME && !settled) {
           settled = true;
           clearTimeout(handshakeTimeout);
-          log.info('Connected to peer', { nodeId: msg.identity.nodeId });
+          const bound = this.peers.get(msg.identity.nodeId)?.identity?.persistentIdBound;
+          log.info('Connected to peer', { nodeId: msg.identity.nodeId, persistentIdBound: bound });
           resolve(msg.identity);
         }
       };
@@ -1287,7 +1288,7 @@ export class MandalaNetwork {
         }
       }
 
-      log.info('Peer connected', { name: msg.identity.name, peer: peerTag(nodeId), totalPeers: this.peers.size });
+      log.info('Peer connected', { name: msg.identity.name, peer: peerTag(nodeId), totalPeers: this.peers.size, persistentIdBound });
 
       // Signal that this peer's public key is now available — any deferred
       // ANNEX messages waiting for this key will be replayed.
