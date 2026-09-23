@@ -1742,20 +1742,27 @@ export class YakmeshNode {
 
     if (result.valid) {
       log.info(`📋 iO Manifest: ✓ verified (${result.fileCount} files)`);
+    } else if (this._actUpgradeDetected) {
+      // Missing files on upgrade are expected removals — the manifest
+      // describes the previous tree.
+      log.info(`📋 iO Manifest: ${result.missing.length} files absent (expected on upgrade — prior manifest)`);
     } else {
       log.warn(`📋 iO Manifest: ${result.missing.length} missing files detected`);
     }
 
     if (result.unexpected.length > 0) {
       log.info(`📋 iO Manifest: ${result.unexpected.length} files not in manifest`);
-      // Handle stale files (rename/delete/quarantine based on env vars)
-      const staleResult = this.oracle.handleStaleFiles(result.unexpected);
-      if (staleResult.handled > 0) {
+      // Upgrade grace: when the loaded manifest describes a previous tree
+      // (hash mismatch detected above), new files are code, not tampering —
+      // hold for review instead of quarantining them mid-upgrade.
+      const staleResult = this.oracle.handleStaleFiles(result.unexpected,
+        { grace: this._actUpgradeDetected });
+      if (staleResult.mode === 'grace') {
+        this._upgradeHeldFiles = staleResult.held;
+      } else if (staleResult.handled > 0) {
         log.info(`📋 iO Stale files: ${staleResult.handled} handled (mode=${staleResult.mode})`);
         // Re-verify after pruning to get clean oracle hash
-        if (staleResult.mode !== 'none') {
-          log.info('📋 iO Manifest: re-computing oracle hash after stale file handling...');
-        }
+        log.info('📋 iO Manifest: re-computing oracle hash after stale file handling...');
       }
     }
   }

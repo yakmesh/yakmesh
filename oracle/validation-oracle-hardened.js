@@ -1207,11 +1207,24 @@ export class ValidationOracle {
    *   - YAKMESH_QUARANTINE=true: move to data/stale-files/
    *
    * @param {string[]} unexpected — file paths from verifyManifest().unexpected
-   * @returns {{ handled: number, mode: string, errors: string[] }}
+   * @param {{ grace?: boolean }} [opts] — grace: an upgrade was detected
+   *   (manifest hash ≠ oracle selfHash), so the loaded manifest describes a
+   *   PREVIOUS tree. Files not in it are new-code candidates, not tampering —
+   *   hold them for review instead of quarantining them out from under a
+   *   running/booting upgrade. Enforcement still stands: the oracle hash is
+   *   the network identity (a tampered tree lands on a different network),
+   *   and FileGuardian watches the tree at runtime.
+   * @returns {{ handled: number, mode: string, held?: string[], errors: string[] }}
    */
-  handleStaleFiles(unexpected) {
+  handleStaleFiles(unexpected, { grace = false } = {}) {
     if (!unexpected || unexpected.length === 0) {
       return { handled: 0, mode: 'none', errors: [] };
+    }
+
+    if (grace) {
+      log.warn(`iO Stale: UPGRADE GRACE — ${unexpected.length} file(s) not in the ` +
+        'previous manifest held for review (not quarantined)', { files: unexpected.slice(0, 20) });
+      return { handled: 0, mode: 'grace', held: [...unexpected], errors: [] };
     }
 
     const rootDir = join(__dirname, '..');
