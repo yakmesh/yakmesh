@@ -6,7 +6,7 @@
  * Regenerate with: npm run build:docs
  * Source: website/docs/
  * 
- * @generated 2026-09-23T22:46:53.889Z
+ * @generated 2026-09-23T23:03:46.875Z
  * @module embedded-docs/bundle
  */
 
@@ -14,7 +14,7 @@
  * Master hash of the entire documentation bundle.
  * Computed as: SHA3-256(sorted individual file hashes joined)
  */
-export const BUNDLE_HASH = 'c453081d5f7b5f0fbc400c3db71a8fb31521e11dd56caae0ae42b7313c6d0fad';
+export const BUNDLE_HASH = '174b48f1694272ba9dfe370e83f8f8b41010a967c01e99ee9c503b926dc3ff72';
 
 /**
  * Version of the documentation bundle.
@@ -25,7 +25,7 @@ export const BUNDLE_VERSION = '3.5.10';
 /**
  * Build timestamp (ISO 8601)
  */
-export const BUNDLE_BUILT_AT = '2026-09-23T22:46:53.889Z';
+export const BUNDLE_BUILT_AT = '2026-09-23T23:03:46.875Z';
 
 /**
  * Index of all files in the documentation bundle.
@@ -54,13 +54,13 @@ export const FILE_INDEX = {
     "contentType": "application/octet-stream"
   },
   "adapters.html": {
-    "hash": "17599acb76b1fcde5b803b486b9835ece6c802ec2b0380cc63fa0b72e251f2ae",
-    "size": 46398,
+    "hash": "9b6a9108e2074b15f13c8067724f6d467500a9c6d540467d8befd343a56a6190",
+    "size": 46524,
     "contentType": "text/html; charset=utf-8"
   },
   "advanced-systems.html": {
-    "hash": "fdad5e2e8c4bfacf1244fec00c79cebb4ad7458a6c584a5c44f251b5fa6efbe0",
-    "size": 52409,
+    "hash": "bd6275bbe3669652c2bb7641ddf783e0b1a6d85e7854cdd9adcc853ab4773d29",
+    "size": 52535,
     "contentType": "text/html; charset=utf-8"
   },
   "aguwa.html": {
@@ -69,13 +69,13 @@ export const FILE_INDEX = {
     "contentType": "text/html; charset=utf-8"
   },
   "annex.html": {
-    "hash": "43eac61f97a8f21f9cc0bd71395a5d4d5584c4e6cb9932e140ba27f43709313d",
-    "size": 54033,
+    "hash": "01dcdbb03446143577fea941ea1d619b9a4969ca9d93a4462c62d9b3ec4a574e",
+    "size": 54127,
     "contentType": "text/html; charset=utf-8"
   },
   "api.html": {
-    "hash": "4506ef9d98770d2b46a11a6403b78cba2346b2117c1d6dce14d679d8a5abc222",
-    "size": 51960,
+    "hash": "1f9fe98e4f2b8ab79b74060b22f126eeea9df13ffb34abda8554797430914aad",
+    "size": 52106,
     "contentType": "text/html; charset=utf-8"
   },
   "apple-touch-icon.png": {
@@ -334,13 +334,13 @@ export const FILE_INDEX = {
     "contentType": "text/html; charset=utf-8"
   },
   "cli.html": {
-    "hash": "f02f1025e1278fcd0a47cbea4594ec0acad5b976879aa7b1615818315add4636",
-    "size": 66601,
+    "hash": "bd52d894bdc4ba800a757ef6cd8e4a12ecc9ea56d2e1778198d03f220475162f",
+    "size": 66727,
     "contentType": "text/html; charset=utf-8"
   },
   "configuration.html": {
-    "hash": "6745b6c74c3fc1905cb55d1468dd3573c0d8291f4de73423be8adbbbad01a3b4",
-    "size": 60650,
+    "hash": "4c72eafcad31d37a468ef34c8b65caa34ba2ade3e5c5a51203e0201cc0f1043d",
+    "size": 60744,
     "contentType": "text/html; charset=utf-8"
   },
   "darbar.html": {
@@ -359,8 +359,8 @@ export const FILE_INDEX = {
     "contentType": "text/html; charset=utf-8"
   },
   "docs-bundle.html": {
-    "hash": "b5fb9d2a3997485f9917e1a6643940f1d3082e54c343ca00aa6f1b8c4f36447e",
-    "size": 47908,
+    "hash": "88ada15da2918e55e37aefe7bad69224861828ba38728e97487fd9d1e067cf62",
+    "size": 48002,
     "contentType": "text/html; charset=utf-8"
   },
   "docs.css": {
@@ -374,8 +374,8 @@ export const FILE_INDEX = {
     "contentType": "application/javascript; charset=utf-8"
   },
   "doko.html": {
-    "hash": "68a4c295d171f9d118248dfeb7be8fc5f705da0c320950d3dccd69fc2245ed10",
-    "size": 48810,
+    "hash": "9840bdc0017f9fe7465026a524007f20259ea1e332b210f7e25ab7d4595198dc",
+    "size": 48904,
     "contentType": "text/html; charset=utf-8"
   },
   "favicon.ico": {
@@ -404,8 +404,8 @@ export const FILE_INDEX = {
     "contentType": "text/html; charset=utf-8"
   },
   "gumba.html": {
-    "hash": "20c7f6bb5a1c4543f9412f8e9191b2689a889e103b5e391beecce0c794298a2c",
-    "size": 55052,
+    "hash": "aba6997e0350d5e07eac01464f38a7637397da7df293886186c79ca48b94a356",
+    "size": 55146,
     "contentType": "text/html; charset=utf-8"
   },
   "icon.svg": {
@@ -419,13 +419,13 @@ export const FILE_INDEX = {
     "contentType": "text/html; charset=utf-8"
   },
   "jhilke.html": {
-    "hash": "09505c07ffbde770967792e751cd9783169379642b93ffd1e5fe204ed9e99425",
-    "size": 80963,
+    "hash": "94bf3cbade8d52ac092bb0d5fb471d7e8417e883bb95a14ad80e690f748b017f",
+    "size": 81089,
     "contentType": "text/html; charset=utf-8"
   },
   "karma.html": {
-    "hash": "99735599065e43e418f1b148b09b7c58dc925c0bcf30b2b904e5c1f7504d5d51",
-    "size": 50988,
+    "hash": "71734dcac8d42ec3c78f4f2b6d2caadd0baf07cd1d3655e6d1628be9dc5c49f7",
+    "size": 51082,
     "contentType": "text/html; charset=utf-8"
   },
   "katha.html": {
@@ -434,38 +434,38 @@ export const FILE_INDEX = {
     "contentType": "text/html; charset=utf-8"
   },
   "lama.html": {
-    "hash": "9ffaea1c6b71cf4a95a300b8b3aa38279480115cd533831c566e87ec74ea64ed",
-    "size": 45144,
+    "hash": "90a4ab5d664d8948c8862aa0cb890d46d2a8b9ecb42206bf67f78e5853528b0c",
+    "size": 45238,
     "contentType": "text/html; charset=utf-8"
   },
   "mandala.html": {
-    "hash": "071a320175583f98486b3b2db165a15c6ce28fb76cf4577ce98771700a2f13a6",
-    "size": 50638,
+    "hash": "b35441c98865f57f9eec2760f8998c7b0ca83310f8dedacb649f69a7f98e7222",
+    "size": 50732,
     "contentType": "text/html; charset=utf-8"
   },
   "mani.html": {
-    "hash": "3c29e6f7e1a16e7376265a768072baf45129a115cd6235ece092b5c6c1dd05af",
-    "size": 45195,
+    "hash": "163211c918c7d76c86b7a76936c2a4325f5c3d9573e1a9c83c7a28eb8c62352d",
+    "size": 45321,
     "contentType": "text/html; charset=utf-8"
   },
   "mantra.html": {
-    "hash": "e827e9ce04c55714776ae855b0b9b16a34d4d0a668c52fa9d83ea21f7940bf48",
-    "size": 48347,
+    "hash": "6b83371cff355c93547b467d790a046ee03809af36c93a6347711b63d8dedd7f",
+    "size": 48441,
     "contentType": "text/html; charset=utf-8"
   },
   "mesh.html": {
-    "hash": "f03af074c80180b63e1d5405c8099302dc8dd42ff0441dd515982de35dbe985d",
-    "size": 73543,
+    "hash": "1d0b24d0d4d61bbf28769aedc6544da038d0312f8f886a92c2d2917d28c25c64",
+    "size": 73669,
     "contentType": "text/html; charset=utf-8"
   },
   "nakpak.html": {
-    "hash": "7563ed0d70603d815774643b6e54cf09bbbb2ae50e2b7659f352e80ab0f4ecb5",
-    "size": 43163,
+    "hash": "1d97266dd5f3b81ea5674fcb42ffa510ec9a41aa06bccb00f1a427e1601c1691",
+    "size": 43289,
     "contentType": "text/html; charset=utf-8"
   },
   "namche.html": {
-    "hash": "b777d37b2e34cd25ff40c7a5a06bb2c8560eef0eb7f2c22bd6250ed4a2c1f713",
-    "size": 44218,
+    "hash": "7816b63f50e7a72529d718b856f232a1bf38b0045d473f3d5b3bee5a188337bb",
+    "size": 44312,
     "contentType": "text/html; charset=utf-8"
   },
   "nav-order.json": {
@@ -474,8 +474,8 @@ export const FILE_INDEX = {
     "contentType": "application/json"
   },
   "prahari.html": {
-    "hash": "4420924561b9aae8c4aa5026e9246c67ae15d037fb8fb05458b7995890af6128",
-    "size": 62318,
+    "hash": "ffc037b78b1ac8c7858819072df4d33f4823e6029b5a57c93f6cffc0245fdc46",
+    "size": 62412,
     "contentType": "text/html; charset=utf-8"
   },
   "prism-bash.min.js": {
@@ -514,13 +514,13 @@ export const FILE_INDEX = {
     "contentType": "text/html; charset=utf-8"
   },
   "sakshi.html": {
-    "hash": "cce0ed5baa3317adc640627dddd7c506fd04d0fc5a9da4f52fb4f95806f1f791",
-    "size": 65012,
+    "hash": "c333f14c8a0b049a36e1bd55b8c9ca8436965fa93767aff3e645c3ca4fa29f38",
+    "size": 65106,
     "contentType": "text/html; charset=utf-8"
   },
   "samuha.html": {
-    "hash": "d0dd598f1ba2362df887f4dbe36a2ce8c034e8bbacae6f8a07d89d56939c5e5c",
-    "size": 46534,
+    "hash": "d4e8c4bb15bffb7ef09d60a3a1be7ab386ee33004cbc91aaadf9735c985b0e65",
+    "size": 46628,
     "contentType": "text/html; charset=utf-8"
   },
   "sangha.html": {
@@ -534,8 +534,8 @@ export const FILE_INDEX = {
     "contentType": "text/html; charset=utf-8"
   },
   "sherpa.html": {
-    "hash": "080acf16ead7390592d488f922c608d7cd2fd48814774e91e42e7027a8dc2edd",
-    "size": 41423,
+    "hash": "7eede7e01a0e5f238abb8ffb391458af3bb51dd32e8a961a1c262a533a8b5a0d",
+    "size": 41517,
     "contentType": "text/html; charset=utf-8"
   },
   "sitemap.xml": {
@@ -549,8 +549,8 @@ export const FILE_INDEX = {
     "contentType": "text/html; charset=utf-8"
   },
   "stupa.html": {
-    "hash": "c5c8596962f2b5f305dba09099a69b199abc4e3b7c37fec7115a063e304e579a",
-    "size": 46845,
+    "hash": "d3c4307de9d6f5f346217d9723f9220bf2711b20a65e65914f3e0114b71b6a44",
+    "size": 46939,
     "contentType": "text/html; charset=utf-8"
   },
   "tailwind.min.css": {
@@ -569,8 +569,8 @@ export const FILE_INDEX = {
     "contentType": "text/html; charset=utf-8"
   },
   "time-sources.html": {
-    "hash": "85a3728becfafd6914e913886459951cb7a679277be2e81726e4e463420d460d",
-    "size": 70415,
+    "hash": "9e46da0bd30e6d771c091d3fa4dc8a43cbda65ba0cfbd99f845c1d1baf8320a6",
+    "size": 70541,
     "contentType": "text/html; charset=utf-8"
   },
   "tivra.html": {
@@ -584,13 +584,13 @@ export const FILE_INDEX = {
     "contentType": "text/html; charset=utf-8"
   },
   "tribhuj.html": {
-    "hash": "bf8fb49f669fc76ece949aa14ace207287d70d1e161f43f148b50fdc9a42b391",
-    "size": 63558,
+    "hash": "8271530b9c6ee4c5c54f9928b171283bb7f2700cf1d0532849e0b42324555399",
+    "size": 63684,
     "contentType": "text/html; charset=utf-8"
   },
   "trust-security.html": {
-    "hash": "d827518f352cc73a270bfcd2b3271e77db741a38b797303fa1521ca9bcc4dfcd",
-    "size": 61454,
+    "hash": "1b2bd3672fda3894270873447d2eec95ef5f13fb5d36b0d95c10d172027f456d",
+    "size": 61580,
     "contentType": "text/html; charset=utf-8"
   },
   "tutorials/backup-recovery.html": {
@@ -689,8 +689,8 @@ export const FILE_INDEX = {
     "contentType": "image/svg+xml"
   },
   "yak-protocol.html": {
-    "hash": "5332d4e315f085ff26d14eda4d131162a40e5a01feb0b0c7c794347d51b8979f",
-    "size": 45769,
+    "hash": "a29a8e55e791c236f9a1b0b8eafb8f306410d9ed44616bdc6a006f34102284e7",
+    "size": 45863,
     "contentType": "text/html; charset=utf-8"
   },
   "yakapp.html": {
@@ -699,13 +699,13 @@ export const FILE_INDEX = {
     "contentType": "text/html; charset=utf-8"
   },
   "ypc27.html": {
-    "hash": "60b6e1701b2f10d3f2c6166621a84e505b42cf314b49a69a38a59e67506c1f4f",
-    "size": 51003,
+    "hash": "abcf608e8257738f7da0acb1548215bdb7d9639a6f8c7c5be536027838a1ccc6",
+    "size": 51097,
     "contentType": "text/html; charset=utf-8"
   },
   "yurt.html": {
-    "hash": "fcccfe68edb62badef07d4e79c4df9f5cff7757aa37a620690f34b52ec16f670",
-    "size": 53939,
+    "hash": "dae6db6fa9a11f24eddeebe852d7c9fd51f545e145a5fb101ba2f4af6d3f9bb5",
+    "size": 54033,
     "contentType": "text/html; charset=utf-8"
   }
 };
