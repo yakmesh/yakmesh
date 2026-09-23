@@ -26,7 +26,7 @@
  * zlib.inflateRawSync) — no third-party zip dependency.
  */
 
-import { spawn } from 'node:child_process';
+import { spawn, execSync } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync, rmSync, mkdirSync, copyFileSync, readdirSync, statSync, unlinkSync, renameSync, createWriteStream, fstatSync, openSync, closeSync, chmodSync } from 'node:fs';
 import { inflateRawSync } from 'node:zlib';
 import { createHash } from 'node:crypto';
@@ -42,6 +42,35 @@ const OFFER = join(STAGING, 'offer.json');
 const BOOT_GRACE_MS = 60000;
 
 const EXCLUDE_DIRS = new Set(['data', 'node_modules', '.git', 'models']);
+
+// onnxruntime-node's CUDA EP needs CUDA-13 runtime libs (libcublasLt.so.13
+// etc.), which often live outside the default linker path — pip-bundled
+// nvidia wheels, /usr/local/cuda-*, etc. If ldconfig can't resolve them,
+// find a directory that has them and prepend it to LD_LIBRARY_PATH so the
+// spawned node (and bridge) can actually load the CUDA provider instead of
+// silently falling back to CPU.
+function cudaLibPathFix() {
+  if (process.platform !== 'linux') return;
+  try {
+    const ld = execSync('ldconfig -p', { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+    if (ld.includes('libcublasLt.so.13')) return;
+  } catch { }
+  const dirs = [];
+  const add = d => { try { if (existsSync(join(d, 'libcublasLt.so.13'))) dirs.push(d); } catch { } };
+  add('/usr/local/cuda/lib64');
+  add('/opt/cuda/lib64');
+  try { for (const e of readdirSync('/usr/local')) if (e.startsWith('cuda')) add(join('/usr/local', e, 'lib64')); } catch { }
+  try {
+    const out = execSync(
+      "find /home /root /opt -maxdepth 10 -type d -path '*/nvidia/cu13/lib' 2>/dev/null | head -4",
+      { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'], timeout: 15000 });
+    for (const d of out.split('\n').filter(Boolean)) add(d);
+  } catch { }
+  if (!dirs.length) return;
+  process.env.LD_LIBRARY_PATH = [...dirs, process.env.LD_LIBRARY_PATH].filter(Boolean).join(':');
+  console.log(`[yakmesh-run] CUDA 13 libs not on linker path — prepended ${dirs.join(', ')} to LD_LIBRARY_PATH`);
+}
+cudaLibPathFix();
 
 // ---------------------------------------------------------------
 // Minimal ZIP reader — central directory only (deflate + stored)
