@@ -139,14 +139,14 @@
     "koffi": "^2.15.2",
     "onnxruntime-node": "^1.29.0",
     "sql.js": "^1.10.0",
-    "ws": "^8.16.0"
+    "ws": "^8.16.0",
+    "commander": "^12.0.0",
+    "chalk": "^5.3.0"
   },
   "optionalDependencies": {
     "net-snmp": "^3.26.1"
   },
   "devDependencies": {
-    "chalk": "^5.3.0",
-    "commander": "^12.0.0",
     "nodemon": "^3.0.0",
     "vitest": "^4.0.18"
   },
@@ -202,6 +202,8 @@
     "public/assets",
     "public/dashboard",
     "public/servers.html",
+    "website/docs",
+    "website/assets",
     "security",
     "server",
     "types",
