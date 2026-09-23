@@ -703,7 +703,7 @@
         </div>
       </div>
       <p class="text-xl text-mountain-300 mb-4">WebRTC voice and video calling for the Yakmesh network.</p>
-      <span class="inline-block text-xs theme-badge px-2 py-1 rounded mb-8">v3.5.4</span>
+      <span class="inline-block text-xs theme-badge px-2 py-1 rounded mb-8">v3.5.10</span>
 
       <!-- Architecture -->
       <section class="callout theme-callout" id="architecture">
@@ -760,7 +760,7 @@
       <section class="mt-8" id="quick-start">
         <h2 class="section-title theme-border"><svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true"><use href="#icon-rocket"/></svg> Quick Start</h2>
         <pre><code class="language-javascript">
-import { VaniHub, MEDIA_TYPE, CALL_STATE } from 'yakmesh/mesh/vani.js';
+import { VaniHub, MEDIA_TYPE, CALL_STATE } from 'yakmesh/mesh/vani';
 
 // Create hub with local peer ID
 const hub = new VaniHub({
@@ -1081,7 +1081,7 @@ call.bundleId // → 'gumba-bundle-123'
         <h2 class="section-title theme-border"><svg class="doc-icon inline-icon" aria-hidden="true"><use href="#icon-gear"/></svg> Configuration</h2>
         
         <pre><code class="language-javascript">
-import { VANI_CONFIG } from 'yakmesh/mesh/vani.js';
+import { VANI_CONFIG } from 'yakmesh/mesh/vani';
 
 // Default configuration
 VANI_CONFIG.callTimeout        // 30000ms - ring timeout
@@ -1142,7 +1142,7 @@ hub.on('error', ({ callId, code, error }) => {
 });
 
 // Call end reasons
-import { CALL_END_REASON } from 'yakmesh/mesh/vani.js';
+import { CALL_END_REASON } from 'yakmesh/mesh/vani';
 
 CALL_END_REASON.NORMAL    // Normal hangup
 CALL_END_REASON.REJECTED  // Callee rejected
@@ -1172,7 +1172,7 @@ CALL_END_REASON.PARTICIPANT_LEFT // Group participant left
         <h2 class="section-title theme-border"><svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true"><use href="#icon-scroll"/></svg> Complete Example</h2>
         
         <pre><code class="language-javascript">
-import { VaniHub, MEDIA_TYPE, CALL_STATE, CALL_END_REASON } from 'yakmesh/mesh/vani.js';
+import { VaniHub, MEDIA_TYPE, CALL_STATE, CALL_END_REASON } from 'yakmesh/mesh/vani';
 
 class CallManager {
   constructor(meshNode) {

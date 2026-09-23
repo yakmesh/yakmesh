@@ -733,7 +733,7 @@
       </div>
       <p class="text-xl text-mountain-300 mb-4">Community-driven collective attestation with synapse mesh,
         antibody circulation, filesystem hardening, and memory canaries.</p>
-      <span class="inline-block text-xs theme-badge px-2 py-1 rounded mb-8">v3.5.4 &bull; Layer 23.5</span>
+      <span class="inline-block text-xs theme-badge px-2 py-1 rounded mb-8">v3.5.10 &bull; Layer 23.5</span>
 
       <div class="feature-box">
         <h2>The Community That Guards Itself</h2>
@@ -970,7 +970,11 @@ sangha.register('CRYPTO', accel, () => ({
             <li><strong>SHA3-256 hash verification</strong>: baseline hash taken at startup, compared on each verification cycle</li>
             <li><strong>Size verification</strong>: baseline size vs. current &mdash; detects truncation or append attacks</li>
             <li><strong>Stale detection</strong>: heartbeat &gt;10s old marks peer as stale in PeerPhaseBuffer</li>
-            <li><strong>Detection timeline</strong>: tamper detected within 5 seconds (one circulation cycle)</li>
+            <li><strong>Detection timeline</strong>: tamper detected within 5 seconds (one circulation cycle); the real-time watcher fires immediately on CRITICAL/HIGH files</li>
+            <li><strong>Upgrade grace</strong> <span class="text-xs text-emerald-400">v3.5.10</span>: when ACT detects a deploy manifest whose codebase hash differs from the oracle's
+              <code class="bg-mountain-800 px-1 rounded">selfHash</code>, stale files are <em>held for review</em>
+              instead of quarantined — legitimate upgrades don't trip tamper response. Non-upgrade tamper paths
+              still quarantine immediately.</li>
           </ul>
         </div>
       </section>

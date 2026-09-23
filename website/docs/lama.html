@@ -705,7 +705,7 @@
         </div>
       </div>
       <p class="text-xl text-mountain-300 mb-4">Distributed consensus through independent wisdom.</p>
-      <span class="inline-block text-xs theme-badge px-2 py-1 rounded mb-8">v3.5.4</span>
+      <span class="inline-block text-xs theme-badge px-2 py-1 rounded mb-8">v3.5.10</span>
 
       <div class="feature-box">
         <h2>The Wise Council</h2>
@@ -854,7 +854,7 @@ lama.on('consensus', ({ contentHash, attestations }) => {
 });
 
 // Listen for conflict resolution
-lama.on('conflictResolved', ({ primaryKey, winner, loser }) => {
+lama.on('conflict-resolved', ({ primaryKey, winner, loser }) => {
   console.log(`Conflict resolved: ${winner} chosen over ${loser}`);
 });</code></pre>
 
@@ -902,29 +902,19 @@ lama.on('conflictResolved', ({ primaryKey, winner, loser }) => {
         </thead>
         <tbody>
           <tr>
-            <td><code>validated</code></td>
-            <td>{ contentHash, content }</td>
-            <td>Content passed local validation</td>
-          </tr>
-          <tr>
             <td><code>consensus</code></td>
             <td>{ contentHash, attestations }</td>
             <td>Consensus threshold reached</td>
           </tr>
           <tr>
-            <td><code>conflictDetected</code></td>
-            <td>{ primaryKey, hashes }</td>
-            <td>Conflicting versions identified</td>
-          </tr>
-          <tr>
-            <td><code>conflictResolved</code></td>
+            <td><code>conflict-resolved</code></td>
             <td>{ primaryKey, winner, loser }</td>
             <td>Conflict deterministically resolved</td>
           </tr>
           <tr>
-            <td><code>rejected</code></td>
-            <td>{ contentHash, reason }</td>
-            <td>Content failed validation</td>
+            <td><code>stopped</code></td>
+            <td>{ stats }</td>
+            <td>Consensus engine stopped</td>
           </tr>
         </tbody>
       </table>

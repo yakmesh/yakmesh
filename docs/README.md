@@ -10,7 +10,7 @@
 | Configuration | [yakmesh.dev/docs/configuration](https://yakmesh.dev/docs/configuration) | — |
 | API Reference | [yakmesh.dev/docs/api](https://yakmesh.dev/docs/api) | — |
 | CLI Reference | [yakmesh.dev/docs/cli](https://yakmesh.dev/docs/cli) | — |
-| NAMCHE Gateway | [yakmesh.dev/docs/namche](https://yakmesh.dev/docs/namche) | [NAMCHE-SPEC.md](NAMCHE-SPEC.md) |
+| NAMCHE Gateway | [yakmesh.dev/docs/namche](https://yakmesh.dev/docs/namche) | — |
 | TATTVA Oracle | [yakmesh.dev/docs/tattva](https://yakmesh.dev/docs/tattva) | — |
 | SURAKSHA Security | [yakmesh.dev/docs/trust-security](https://yakmesh.dev/docs/trust-security) | — |
 | Time Sources | [yakmesh.dev/docs/time-sources](https://yakmesh.dev/docs/time-sources) | — |
@@ -21,7 +21,7 @@
 | YAK:// Protocol | [yakmesh.dev/docs/yak-protocol](https://yakmesh.dev/docs/yak-protocol) | — |
 | Geographic Proof | [yakmesh.dev/docs/geo-proof](https://yakmesh.dev/docs/geo-proof) | — |
 
-## Protocols (v3.3.0)
+## Protocols
 
 | Protocol | Purpose | Docs |
 |----------|---------|------|
@@ -38,19 +38,10 @@ These documents provide deep technical details for implementers:
 | Document | Description |
 |----------|-------------|
 | [WHITEPAPER.md](WHITEPAPER.md) | Full technical whitepaper |
-| [NAMCHE-SPEC.md](NAMCHE-SPEC.md) | NAMCHE gateway specification |
-| [CRYPTO-AGILITY.md](CRYPTO-AGILITY.md) | Cryptographic algorithm choices |
 | [TME-FAQ.md](TME-FAQ.md) | Temporal Matrix Encoding FAQ |
-| [MTLS-RESEARCH.md](MTLS-RESEARCH.md) | mTLS integration research |
-| [PRECISION-DISCLOSURE.md](PRECISION-DISCLOSURE.md) | Precision timing disclosure |
 
-## Roadmaps
-
-| Version | Status |
-|---------|--------|
-| [ROADMAP-3.3.0.md](ROADMAP-3.3.0.md) | ✅ Released |
-| [ROADMAP-2.5.0.md](ROADMAP-2.5.0.md) | ✅ Released |
-| [ROADMAP-2.4.0.md](ROADMAP-2.4.0.md) | ✅ Released |
+Internal specifications (NAMCHE-SPEC, CRYPTO-AGILITY, PRECISION-DISCLOSURE,
+ROADMAP-*) are maintained in the private repo and are not published here.
 
 ## GRANTH: Embedded Documentation Bundle
 
@@ -58,7 +49,7 @@ YAKMESH includes an embedded documentation bundle (**GRANTH**) that ships with t
 
 ```javascript
 // Access embedded docs programmatically
-import { BUNDLE_HASH, BUNDLE_VERSION, FILES } from 'yakmesh/embedded-docs/bundle.js';
+import { BUNDLE_HASH, BUNDLE_VERSION, FILE_INDEX } from 'yakmesh/embedded-docs/bundle';
 
 console.log(`Docs v${BUNDLE_VERSION} - Hash: ${BUNDLE_HASH.slice(0, 16)}...`);
 ```

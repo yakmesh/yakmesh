@@ -192,7 +192,15 @@ function buildDocsBundle() {
   const docsFiles = collectFiles(DOCS_SOURCE, DOCS_SOURCE);
   const assetFiles = collectFiles(join(ASSETS_SOURCE, 'silhouettes'), join(ASSETS_SOURCE, 'silhouettes'), 'assets/silhouettes');
 
-  const allFiles = [...docsFiles, ...assetFiles];
+  // DOCS_SOURCE already contains assets/ — dedupe by bundle path so each
+  // file is hashed exactly once (docs copy wins: that's what serve.js reads).
+  const docsPaths = new Set(docsFiles.map(f => f.path));
+  const uniqueAssetFiles = assetFiles.filter(f => !docsPaths.has(f.path));
+  if (uniqueAssetFiles.length !== assetFiles.length) {
+    console.log(`  ℹ ${assetFiles.length - uniqueAssetFiles.length} asset files already indexed via docs/ (deduped)`);
+  }
+
+  const allFiles = [...docsFiles, ...uniqueAssetFiles];
 
   console.log(`📊 Found ${docsFiles.length} documentation files`);
   console.log(`📊 Found ${assetFiles.length} asset files`);

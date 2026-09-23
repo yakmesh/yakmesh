@@ -715,7 +715,7 @@
             <p class="text-xl text-mountain-300 mb-8">
                 Decentralized peer discovery using public web beacons. No central bootstrap servers required.
             </p>
-            <span class="inline-block text-xs theme-badge px-2 py-1 rounded mb-8">v3.5.4</span>
+            <span class="inline-block text-xs theme-badge px-2 py-1 rounded mb-8">v3.5.10</span>
 
             <h2 class="text-2xl font-bold mb-4">Overview</h2>
             <p class="text-mountain-300 mb-6">
@@ -859,9 +859,9 @@ sherpa.start();
 // Get discovered peers
 const peers = sherpa.registry.getBestPeers(10);
 
-// Listen for new peers
-sherpa.on('peer:discovered', (peer) => {
-  console.log('Found peer:', peer.nodeId);
+// Listen for crawl results
+sherpa.on('crawl-complete', ({ peersFound }) => {
+  console.log(`Crawl done — ${peersFound} peers in registry`);
 });
 
 // Get stats

@@ -717,7 +717,7 @@
             <p class="text-xl text-mountain-300 mb-8">
                 The gateway where Math itself verifies your identity. No human CA required.
             </p>
-            <span class="inline-block text-xs theme-badge px-2 py-1 rounded mb-8">v3.5.4</span>
+            <span class="inline-block text-xs theme-badge px-2 py-1 rounded mb-8">v3.5.10</span>
 
             <!-- Philosophy Quote -->
             <div class="theme-callout border rounded-r-xl p-6 mb-8 italic text-mountain-200">
@@ -858,28 +858,25 @@
 
             <h2 class="text-2xl font-bold mb-4">Usage</h2>
             <div class="bg-mountain-800 rounded-xl p-6 mb-8">
-                <pre class="text-sm overflow-x-auto"><code class="language-javascript">import { NamcheGateway } from 'yakmesh/security';
+                <pre class="text-sm overflow-x-auto"><code class="language-javascript">import { NamcheGateway } from 'yakmesh/security/namche-gateway';
 
 // Create gateway instance
 const gateway = new NamcheGateway({
   networkName: 'mobius-rabi-junction',
-  clockSkewTolerance: 5 * 60 * 1000,  // 5 minutes
+  maxClockSkew: 5 * 60 * 1000,  // 5 minutes
 });
 
 // Verify a DOKO
 const result = await gateway.verify(peerDoko);
 
-if (result.verified) {
-  console.log('✓ Identity verified through all 7 gates');
-  console.log('Gates passed:', result.gatesChecked);
+if (result.valid) {
+  console.log('✓ Identity verified — all gates passed');
+  console.log('Checks:', result.checks);
+  console.log('DOKO hash:', result.dokoHash);
 } else {
-  console.log('✗ Verification failed at:', result.failedGate);
-  console.log('Reason:', result.error);
-}
-
-// Check specific gate
-if (result.gates & gateway.GATE.SIGNATURE_OK) {
-  console.log('Signature is valid');
+  // result.reason is a VERIFY_RESULT code, e.g. INVALID_SIGNATURE,
+  // EXPIRED, WRONG_NETWORK, REVOKED, INSUFFICIENT_QUORUM …
+  console.log('✗ Verification failed:', result.reason);
 }
 </code></pre>
             </div>
@@ -910,18 +907,16 @@ if (result.gates & gateway.GATE.SIGNATURE_OK) {
 
             <h2 class="text-2xl font-bold mb-4">Events</h2>
             <div class="bg-mountain-800 rounded-xl p-6 mb-8">
-                <pre class="text-sm overflow-x-auto"><code class="language-javascript">gateway.on('verification-passed', ({ nodeId, dokoHash, gates }) => {
-  console.log(
-ode ${nodeId} verified successfully`);
+                <pre class="text-sm overflow-x-auto"><code class="language-javascript">gateway.on('verified', ({ doko, dokoHash, checks }) => {
+  console.log(`DOKO ${dokoHash} verified successfully`);
 });
 
-gateway.on('verification-failed', ({ nodeId, failedGate, error }) => {
-  console.log(
-ode ${nodeId} failed at gate ${failedGate}: ${error}`);
+gateway.on('verification-failed', ({ reason, detail }) => {
+  console.log(`Verification failed: ${reason} — ${detail}`);
 });
 
-gateway.on('doko-cached', ({ nodeId, expiresAt }) => {
-  console.log(`DOKO cached for ${nodeId} until ${expiresAt}`);
+gateway.on('revoked', ({ dokoHash, revocation }) => {
+  console.log(`DOKO ${dokoHash} revoked`);
 });
 </code></pre>
             </div>

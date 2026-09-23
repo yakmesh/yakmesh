@@ -705,7 +705,7 @@
         </div>
       </div>
       <p class="text-xl text-mountain-300 mb-4">Precious time synchronization for the Yakmesh network.</p>
-      <span class="inline-block text-xs theme-badge px-2 py-1 rounded mb-8">v3.5.4</span>
+      <span class="inline-block text-xs theme-badge px-2 py-1 rounded mb-8">v3.5.10</span>
 
       <div class="feature-box">
         <h2>The Sacred Stones</h2>
@@ -854,8 +854,11 @@ console.log(`Phase Tolerance: ±${status.phaseTolerance}ms`);
 console.log(`Primary Source: ${status.primarySource}`);
 
 // Listen for changes
-mani.on('trustLevelChanged', ({ previous, current }) => {
-  console.log(`Time quality changed: ${previous} → ${current}`);
+mani.on('detected', (results) => {
+  console.log(`Trust level: ${results.trustLevel}`);
+});
+mani.on('ma902:trustChanged', (data) => {
+  console.log('MA-902 trust changed:', data);
 });</code></pre>
 
       <h3>Phase Configuration</h3>

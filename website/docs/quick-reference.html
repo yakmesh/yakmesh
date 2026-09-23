@@ -720,16 +720,36 @@
             </thead>
             <tbody>
               <tr>
-                <td><span class="version-tag">v3.3.0</span></td>
-                <td>SETU trust-tier bridge, SAKSHI integration complete</td>
+                <td><span class="version-tag">v3.5.10</span></td>
+                <td>Persistent IDs bound to HELLO/WELCOME, upgrade-grace deploy protection, epoch claim roots, MKC client</td>
+              </tr>
+              <tr>
+                <td><span class="version-tag">v3.5.9</span></td>
+                <td>YAK-TUN wire B LAN broadcast discovery</td>
+              </tr>
+              <tr>
+                <td><span class="version-tag">v3.5.4</span></td>
+                <td>Fortress Release — AGUWA, SAMUHA, SANGHA, ANNEX session hardening, YakMesh-NE-1.0</td>
+              </tr>
+              <tr>
+                <td><span class="version-tag">v3.5.0</span></td>
+                <td>YPC-27 v2 verified-irreducible F₃²⁷ polynomial</td>
+              </tr>
+              <tr>
+                <td><span class="version-tag">v3.4.0</span></td>
+                <td>See CHANGELOG for 3.4.x series</td>
               </tr>
               <tr>
                 <td><span class="version-tag">v3.3.0</span></td>
-                <td>SAKSHI observational system, VIVAAD disagreement analysis, VARNA removed</td>
+                <td>Hardening protocols + SANGHA collective attestation, 3-node mesh live</td>
               </tr>
               <tr>
-                <td><span class="version-tag">v3.3.0</span></td>
+                <td><span class="version-tag">v2.8.2</span></td>
                 <td>TRIBHUJ balanced ternary math, TATTVA ternary ValidationResult, LAMA ternary consensus</td>
+              </tr>
+              <tr>
+                <td><span class="version-tag">v2.8.1</span></td>
+                <td>SETU trust-tier bridge + SAKSHI observational system, VIVAAD disagreement analysis</td>
               </tr>
               <tr>
                 <td><span class="version-tag">v2.7.1</span></td>
@@ -931,11 +951,11 @@
               <tr><th>Tier</th><th>Nepali Name</th><th>Multiplier</th><th>Requirements</th></tr>
             </thead>
             <tbody>
-              <tr><td>ORACLE</td><td>SARATHI (सारथी)</td><td>2.0×</td><td>Atomic clock + AES-NI + 30 days</td></tr>
-              <tr><td>ANCHOR</td><td>SAMRAT (सम्राट)</td><td>1.5×</td><td>GPS+PPS + AES-NI + 14 days</td></tr>
-              <tr><td>SENTINEL</td><td>SIPAHI (सिपाही)</td><td>1.25×</td><td>PTP + AES-NI + 7 days</td></tr>
-              <tr><td>PARTICIPANT</td><td>PATHIK (पथिक)</td><td>1.0×</td><td>NTP + AES-NI verified</td></tr>
-              <tr><td>OBSERVER</td><td>PARYATAK (पर्यटक)</td><td>0.25×</td><td>New/unverified nodes</td></tr>
+              <tr><td>SIRDAR</td><td>सिरदार — Expedition Leader</td><td>2.0×</td><td>Atomic clock + AES-NI + 30 days</td></tr>
+              <tr><td>SATHI</td><td>साथी — Trusted Companion</td><td>1.5×</td><td>GPS+PPS + AES-NI + 14 days</td></tr>
+              <tr><td>PATHIK</td><td>पथिक — Traveler on Path</td><td>1.25×</td><td>PTP + AES-NI + 7 days</td></tr>
+              <tr><td>YATRI</td><td>यात्री — Pilgrim/Journeyer</td><td>1.0×</td><td>NTP/SYSTEM + AES-NI, 1 day</td></tr>
+              <tr><td>NAYA</td><td>नया — Newcomer</td><td>0.25×</td><td>New/unverified nodes</td></tr>
             </tbody>
           </table>
 
@@ -1016,36 +1036,34 @@ npx yakmesh docs serve        # Start local docs server</code></pre>
           <svg class="doc-icon inline-icon" aria-hidden="true"><use href="#icon-scroll"/></svg> API Exports
         </h2>
         <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
-          <pre class="bg-black/30 rounded-lg p-4 mb-4 overflow-x-auto"><code class="language-javascript">import { 
-  YakmeshNode,           // Main node class
-  NAMCHE,                // 7-gate identity verification
-  DOKO,                  // Distributed identity
-  SHERPA,                // Peer discovery
-  NAKPAK,                // Onion routing
-  ANNEX,                 // Encrypted channels
-  KHATA,                 // Gossip protocol
-  GeographicProof,       // Location verification
-  HardwareAttestation,   // AES-NI verification
-  TrustTier,             // KARMA trust levels
-  StrikeSystem,          // 3-strike system
-  SybilDetection,        // Fake identity detection
-  CodeProofProtocol,     // Code verification
-  CodebaseLock,          // Runtime file locking
-} from 'yakmesh';
+          <pre class="bg-black/30 rounded-lg p-4 mb-4 overflow-x-auto"><code class="language-javascript">// The root module exports the node class; subsystems use subpath imports
+import { YakmeshNode } from 'yakmesh';
+
+import { NamcheGateway } from 'yakmesh/security/namche-gateway';
+import { DOKOGenerator, DOKODocument } from 'yakmesh/security/doko-identity';
+import { SherpaDiscovery } from 'yakmesh/mesh/sherpa-discovery';
+import { NakpakRouter } from 'yakmesh/mesh/nakpak-routing';
+import { Annex } from 'yakmesh/mesh/annex';
+import { MantraProtocol } from 'yakmesh/gossip/protocol';
+import { HardwareAttestation } from 'yakmesh/security/hardware-attestation';
+import { KARMA_TIER, TrustTierRegistry } from 'yakmesh/security/trust-tier';
+import { StrikeRegistry } from 'yakmesh/security/strike-system';
+import { SybilDefense } from 'yakmesh/mesh/sybil-defense';
+import { CodebaseLock } from 'yakmesh/oracle/codebase-lock';
 
 // Network identity
 import { 
   deriveNetworkName, 
   deriveVerificationPhrase 
-} from 'yakmesh/oracle/network-identity.js';
+} from 'yakmesh/oracle/identity';
 
-// Embedded docs
+// Embedded docs (GRANTH)
 import { 
   BUNDLE_HASH, 
   BUNDLE_VERSION, 
   getDocsFile,
   verifyFile,
-} from 'yakmesh/embedded-docs/index.js';</code></pre>
+} from 'yakmesh/embedded-docs';</code></pre>
         </div>
       </section>
 

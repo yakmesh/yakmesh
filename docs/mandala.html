@@ -704,7 +704,7 @@
         </div>
       </div>
       <p class="text-xl text-mountain-300 mb-4">Sacred geometry of interconnected nodes.</p>
-      <span class="inline-block text-xs theme-badge px-2 py-1 rounded mb-8">v3.5.4</span>
+      <span class="inline-block text-xs theme-badge px-2 py-1 rounded mb-8">v3.5.10</span>
 
       <div class="feature-box">
         <h2>The Sacred Geometry of Connection</h2>
@@ -853,30 +853,32 @@
       <p>The main mesh networking engine—the cosmic web of interconnection:</p>
       <pre><code>import { MandalaNetwork, MandalaMessageTypes } from 'yakmesh/mesh/network';
 
-// Initialize the mandala mesh
-const mandala = new MandalaNetwork({
-  nodeId: 'my-node-id',
-  maxPeers: 50,                    // Maximum concurrent connections
-  heartbeatInterval: 30000,        // PING every 30 seconds
-  peerExchangeEnabled: true,       // Share peer lists
-  autoReconnect: true,             // Reconnect on disconnect
+// Initialize the mandala mesh (identity first, config second)
+const mandala = new MandalaNetwork(identity, {
+  wsPort: 9001,                    // WebSocket listen port (auto-retries +10)
+  pingInterval: 30000,             // Peer ping cadence
+  maxConcurrentHandshakes: 50,     // Sybil gate — connected peers are unbounded
+  holdTimeoutMs: 30000,            // SAMUHA HOLD queue wait
+  holdQueueMax: 10,                // HOLD queue depth
 });
 
+await mandala.start();
+
 // Listen for events
-mandala.on('peer:connected', (peerId) => {
+mandala.on('peer-registered', (peerId) => {
   console.log(`🌐 New connection in the mandala: ${peerId}`);
 });
 
-mandala.on('message', (type, payload, from) => {
-  console.log(`📨 Message received: ${type} from ${from}`);
+mandala.on('gossip', (payload, fromNodeId) => {
+  console.log(`📨 Gossip received from ${fromNodeId}`);
 });
 
 // Connect to a peer
-await mandala.connect('ws://peer.example.com:8080');
+await mandala.connect('ws://peer.example.com:9001');
 
 // Broadcast to all peers
-mandala.broadcast(MandalaMessageTypes.GOSSIP, {
-  mantraId: 'msg-123',
+mandala.broadcast({
+  type: MandalaMessageTypes.GOSSIP,
   payload: { content: 'Hello Mandala!' }
 });
 </code></pre>
@@ -979,30 +981,27 @@ mandala.broadcast(MandalaMessageTypes.GOSSIP, {
       </div>
 
       <h2><svg class="doc-icon inline-icon" aria-hidden="true"><use href="#icon-gear"/></svg> Configuration</h2>
-      <pre><code>const mandala = new MandalaNetwork({
-  // Node identity
-  nodeId: string,                // Unique node identifier
+      <pre><code>const mandala = new MandalaNetwork(identity, {
+  // Listener
+  wsPort: 9001,                  // WebSocket listen port
+  portRetries: 10,               // Sequential ports tried on bind failure
   
-  // Connection limits
-  maxPeers: 50,                  // Maximum concurrent peers
-  minPeers: 3,                   // Minimum peers to maintain
+  // Handshake gate (Sybil defense — connected peers stay unbounded)
+  maxConcurrentHandshakes: 50,   // Simultaneous HELLO/WELCOME exchanges
   
-  // Heartbeat settings
-  heartbeatInterval: 30000,      // PING interval (ms)
-  heartbeatTimeout: 10000,       // PONG timeout (ms)
+  // SAMUHA HOLD queue
+  holdTimeoutMs: 30000,          // Wait for slot before REDIRECT
+  holdQueueMax: 10,              // HOLD queue depth
   
-  // Peer discovery
-  peerExchangeEnabled: true,     // Share peer lists
-  peerExchangeInterval: 60000,   // Exchange frequency (ms)
-  
-  // Reconnection
-  autoReconnect: true,           // Auto-reconnect on disconnect
-  reconnectDelay: 5000,          // Initial delay (ms)
+  // Peer maintenance
+  pingInterval: 30000,           // PING interval (ms)
   reconnectMaxDelay: 60000,      // Maximum backoff (ms)
   
-  // Message handling
-  messageQueueSize: 1000,        // Max queued messages
-  deduplicationWindow: 60000,    // Dedup window (ms)
+  // Identity & upgrades
+  networkFingerprint: hex,       // Expected network fingerprint
+  tribhujRotation: {...},        // Tribhuj key-rotation cadence
+  tribhujGrace: {...},           // Grace window for rotated keys
+  publicHost: 'host:port',       // Advertised endpoint for inbound peers
 });</code></pre>
 
       <h2><svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true"><use href="#icon-link"/></svg> Integration with Other Protocols</h2>

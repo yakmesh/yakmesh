@@ -790,31 +790,25 @@
             Observes and records a node's capabilities without granting or denying permissions.
             <strong>Note:</strong> There is no <code>hasPermission()</code> method — by design.
           </p>
-          <pre class="bg-mountain-900 rounded-lg p-4 overflow-x-auto"><code class="language-javascript">import { NodeWitness, WITNESS_CAPABILITY } from 'yakmesh/security/sakshi';
+          <pre class="bg-mountain-900 rounded-lg p-4 overflow-x-auto"><code class="language-javascript">import { NodeWitness, CAPABILITY_LEVEL } from 'yakmesh/security/sakshi';
 
-// Create witness for a node
-const witness = new NodeWitness(nodeId, {
-  capabilities: [
-    WITNESS_CAPABILITY.AES_NI,
-    WITNESS_CAPABILITY.HARDWARE_RNG,
-    WITNESS_CAPABILITY.GPS_AVAILABLE
-  ],
-  observedSince: Date.now(),
-  lastProofTime: Date.now()
+// Create witness from observed facts about a node
+const witness = new NodeWitness({
+  nodeId: 'node-abc123',
+  timeSource: 'gps',        // best available time source
+  hasAESNI: true,           // hardware attestation result
+  networkAgeDays: 45,
+  uptimePercent: 0.98,
+  karmaScore: 0.7,
 });
 
-// Observe capabilities (not grant permissions!)
-witness.hasCapability(WITNESS_CAPABILITY.AES_NI);  // → true
-
-// Record attestation
-witness.recordAttestation({
-  type: 'time_sync',
-  value: Date.now(),
-  proof: cryptoProof
-});
-
-// Get reliability score (based on proof history)
-witness.getReliabilityScore();  // → 0.0 to 1.0</code></pre>
+// Observe derived capability level (not grant permissions!)
+witness.capabilityLevel;        // → CAPABILITY_LEVEL.PRECISION_NODE, etc.
+witness.capabilityInfo.name;    // → 'Precision Node'
+witness.qualityScore;           // → composite quality (0-1)
+witness.canProvideHighPrecisionTime;  // → true
+witness.isHardwareAttested;     // → true
+witness.reliabilityCoefficient; // → derived from observed uptime</code></pre>
         </div>
 
         <div class="module-card-sakshi rounded-xl p-6">
@@ -822,26 +816,18 @@ witness.getReliabilityScore();  // → 0.0 to 1.0</code></pre>
           <p class="text-sm text-mountain-300 mb-4">
             Witnesses observe hardware capabilities — they don't grant or deny based on them.
           </p>
-          <pre class="bg-mountain-900 rounded-lg p-4 overflow-x-auto"><code class="language-javascript">// Capability categories
-const WITNESS_CAPABILITY = {
-  // Cryptographic Hardware
-  AES_NI: 'aes_ni',               // AES hardware acceleration
-  SHA_EXTENSIONS: 'sha_ext',       // SHA hardware extensions
-  HARDWARE_RNG: 'hw_rng',          // Hardware random generator
-  
-  // Timing/Location
-  GPS_AVAILABLE: 'gps',            // GPS receiver
-  HIGH_PRECISION_CLOCK: 'hpc',     // High-precision timing
-  NTP_SYNCED: 'ntp',               // NTP synchronization
-  
-  // Compute
-  MULTI_CORE: 'multi_core',        // Multiple CPU cores
-  GPU_COMPUTE: 'gpu',              // GPU for compute
-  
-  // Network
-  LOW_LATENCY: 'low_lat',          // <50ms round-trip
-  HIGH_BANDWIDTH: 'high_bw',       // >100Mbps
-};</code></pre>
+          <pre class="bg-mountain-900 rounded-lg p-4 overflow-x-auto"><code class="language-javascript">// Observed capability tiers — derived from facts, never granted
+import { CAPABILITY_LEVEL, CAPABILITY_INFO } from 'yakmesh/security/sakshi';
+
+const CAPABILITY_LEVEL = {
+  ATOMIC_VETERAN: 'atomic_veteran',   // Atomic time + attested HW + history
+  PRECISION_NODE: 'precision_node',   // Precision time + attested HW
+  RELIABLE_NODE:  'reliable_node',    // Good time source + hardware
+  STANDARD_NODE:  'standard_node',    // Standard time + hardware
+  BASIC_NODE:     'basic_node',       // Basic participation
+  NEW_NODE:       'new_node',         // New/unverified
+};
+// CAPABILITY_INFO[level] → { name, nepali, description, color }</code></pre>
         </div>
       </section>
 
@@ -1110,32 +1096,25 @@ const trust = assessComputationTrust({
             and suggest systemic fixes.
           </p>
           
-          <pre class="bg-mountain-900 rounded-lg p-4 overflow-x-auto"><code class="language-javascript">import { trackDisagreementPattern, getPatternInsights } from 'yakmesh/security/sakshi';
+          <pre class="bg-mountain-900 rounded-lg p-4 overflow-x-auto"><code class="language-javascript">import { trackDisagreementPattern, analyzeDisagreement } from 'yakmesh/security/sakshi';
 
-// Track each disagreement
-trackDisagreementPattern({
-  nodeId: 'abc123',
-  cause: 'TIMEOUT',
-  timestamp: Date.now(),
-  context: { computationType: 'PROOF_VERIFICATION' }
-});
+// The caller owns the history — a Map of nodeId → disagreement records
+const history = new Map();
 
-// Get insights for a node
-const insights = getPatternInsights('abc123');
+// Track each disagreement; returns the updated pattern assessment
+const analysis = analyzeDisagreement(observation, expected, actual);
+const pattern = trackDisagreementPattern(history, 'abc123', analysis);
 // → {
-//   mostCommonCause: 'TIMEOUT',
-//   frequency: 0.15,  // 15% of computations
-//   trend: 'STABLE',  // or 'IMPROVING', 'DEGRADING'
-//   suggestion: 'Node may benefit from hardware upgrade or reduced load'
+//   nodeId: 'abc123',
+//   totalDisagreements: 7,
+//   benignRatio: 0.86,
+//   dominantCause: 'TIME_DRIFT',
+//   assessment: 'NORMAL'   // or 'NEEDS_OBSERVATION'
 // }
 
-// Get network-wide patterns
-const networkInsights = getPatternInsights();
-// → {
-//   byCategory: { HARDWARE: 0.70, TIMING: 0.15, NETWORK: 0.10, BYZANTINE: 0.05 },
-//   hotspots: ['proof_verification', 'time_sync'],
-//   trend: 'STABLE'
-// }</code></pre>
+// history.get('abc123') holds the full record:
+// { disagreements: [...], causeCounts: Map, firstSeen: ts }
+// Patterns are observational — no punishment is applied.</code></pre>
         </div>
       </section>
 
@@ -1165,8 +1144,8 @@ const networkInsights = getPatternInsights();
                 <td>Observational witness class (no permissions!)</td>
               </tr>
               <tr>
-                <td><code>WITNESS_CAPABILITY</code></td>
-                <td>Enum of observable hardware capabilities</td>
+                <td><code>CAPABILITY_LEVEL</code> / <code>CAPABILITY_INFO</code></td>
+                <td>Observed capability tiers + metadata (witness, not permission)</td>
               </tr>
               <tr>
                 <td><code>fuseTimeAttestations(arr)</code></td>
@@ -1214,12 +1193,12 @@ const networkInsights = getPatternInsights();
                 <td>Create constructive remediation plan</td>
               </tr>
               <tr>
-                <td><code>trackDisagreementPattern(event)</code></td>
-                <td>Track disagreement for pattern analysis</td>
+                <td><code>trackDisagreementPattern(history, nodeId, analysis)</code></td>
+                <td>Record a disagreement; returns pattern assessment</td>
               </tr>
               <tr>
-                <td><code>getPatternInsights(nodeId?)</code></td>
-                <td>Get insights from tracked patterns</td>
+                <td><code>analyzeDisagreement(observation, expected, actual)</code></td>
+                <td>Classify a disagreement's likely cause</td>
               </tr>
             </tbody>
           </table>

@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMax slice">
+  <defs>
+    <linearGradient id="dharmaGlow" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#d97706" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#101a16" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="scaleCenter" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#fbbf24" stop-opacity="0.35"/>
+      <stop offset="50%" stop-color="#d97706" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#101a16" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <!-- MOUNTAIN BACKDROP -->
+  <polygon points="0,620 280,300 560,580 0,1080" fill="#1a2a22" opacity="0.35"/>
+  <polygon points="1450,650 1700,280 1920,550 1920,1080 1400,1080" fill="#1a2a22" opacity="0.35"/>
+  <!-- Central glow -->
+  <ellipse cx="960" cy="420" rx="450" ry="320" fill="url(#dharmaGlow)"/>
+  <!-- BALANCE SCALES -->
+  <!-- Central pillar -->
+  <rect x="955" y="350" width="10" height="250" fill="#b45309" opacity="0.35"/>
+  <!-- Fulcrum triangle -->
+  <polygon points="935,350 960,320 985,350" fill="#d97706" opacity="0.4" stroke="#fbbf24" stroke-width="1" stroke-opacity="0.3"/>
+  <!-- Beam -->
+  <line x1="720" y1="380" x2="1200" y2="380" stroke="#fbbf24" stroke-width="3" opacity="0.35"/>
+  <!-- Left pan -->
+  <path d="M 720,380 Q 720,440 760,450 Q 800,455 800,440 Q 800,455 840,450 Q 880,440 880,380" fill="none" stroke="#fbbf24" stroke-width="1.5" opacity="0.3"/>
+  <!-- Left pan chains -->
+  <line x1="720" y1="380" x2="750" y2="360" stroke="#d97706" stroke-width="1" opacity="0.25"/>
+  <line x1="880" y1="380" x2="850" y2="360" stroke="#d97706" stroke-width="1" opacity="0.25"/>
+  <!-- Right pan -->
+  <path d="M 1040,380 Q 1040,440 1080,450 Q 1120,455 1120,440 Q 1120,455 1160,450 Q 1200,440 1200,380" fill="none" stroke="#fbbf24" stroke-width="1.5" opacity="0.3"/>
+  <!-- Right pan chains -->
+  <line x1="1040" y1="380" x2="1070" y2="360" stroke="#d97706" stroke-width="1" opacity="0.25"/>
+  <line x1="1200" y1="380" x2="1170" y2="360" stroke="#d97706" stroke-width="1" opacity="0.25"/>
+  <!-- DHARMA WHEEL above fulcrum -->
+  <circle cx="960" cy="280" r="35" fill="none" stroke="#fbbf24" stroke-width="1.5" opacity="0.3"/>
+  <!-- 8 spokes of dharma wheel -->
+  <line x1="960" y1="245" x2="960" y2="315" stroke="#fbbf24" stroke-width="1" opacity="0.25"/>
+  <line x1="925" y1="280" x2="995" y2="280" stroke="#fbbf24" stroke-width="1" opacity="0.25"/>
+  <line x1="935" y1="255" x2="985" y2="305" stroke="#fbbf24" stroke-width="1" opacity="0.2"/>
+  <line x1="985" y1="255" x2="935" y2="305" stroke="#fbbf24" stroke-width="1" opacity="0.2"/>
+  <!-- Center hub -->
+  <circle cx="960" cy="280" r="6" fill="#451a03" opacity="0.5" stroke="#fbbf24" stroke-width="1" stroke-opacity="0.4"/>
+  <!-- 9 category markers on left side -->
+  <text x="650" y="520" fill="#fbbf24" opacity="0.15" font-size="12" font-family="monospace" text-anchor="middle">9 CATEGORIES</text>
+  <!-- Action text on right -->
+  <text x="1270" y="520" fill="#fbbf24" opacity="0.15" font-size="12" font-family="monospace" text-anchor="middle">ACTIONS</text>
+  <!-- Lotus base -->
+  <ellipse cx="960" cy="610" rx="80" ry="20" fill="#d97706" opacity="0.15"/>
+  <path d="M 920,610 Q 940,580 960,590 Q 980,580 1000,610" fill="#b45309" opacity="0.15"/>
+  <path d="M 900,615 Q 930,590 960,600 Q 990,590 1020,615" fill="#d97706" opacity="0.1"/>
+  <!-- GROUND -->
+  <polygon points="0,920 350,890 700,930 960,900 1200,940 1500,895 1920,920 1920,1080 0,1080" fill="#101a16" opacity="0.75"/>
+</svg>

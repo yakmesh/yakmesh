@@ -745,18 +745,18 @@
   GumbaProof,
   GUMBA_ROLE,
   GUMBA_PROOF_TYPE,
-} from 'yakmesh/mesh/gumba.js';
+} from 'yakmesh/mesh/gumba';
 
-// You'll also need your node's identity
-import { loadIdentity } from 'yakmesh/mesh/identity.js';</code></pre>
+// Your node's persistent identity (loads or creates keys under dataDir)
+import { NodeIdentity } from 'yakmesh/identity/node-key';</code></pre>
         </div>
 
         <!-- Step 2 -->
         <div class="tutorial-card">
           <h3 class="text-xl font-bold mb-3"><span class="step-number">2</span> Initialize the GUMBA Hub</h3>
           <p class="text-mountain-300 mb-4">Create a GumbaHub with your node's identity:</p>
-          <pre class="language-javascript"><code>// Load your node's identity
-const identity = await loadIdentity();
+          <pre class="language-javascript"><code>// Load your node's identity (persisted under ./data)
+const identity = new NodeIdentity('./data');
 
 // Create the GUMBA hub
 // The second parameter is an ANNEX instance for secure delivery (optional)
@@ -1067,12 +1067,12 @@ console.log('All members:', members);</code></pre>
         
         <div class="tutorial-card">
           <h3 class="text-xl font-bold mb-3">Full Chat Room Implementation</h3>
-          <pre class="language-javascript"><code>import { GumbaHub, GumbaProof, GUMBA_ROLE } from 'yakmesh/mesh/gumba.js';
-import { loadIdentity } from 'yakmesh/mesh/identity.js';
+          <pre class="language-javascript"><code>import { GumbaHub, GumbaProof, GUMBA_ROLE } from 'yakmesh/mesh/gumba';
+import { NodeIdentity } from 'yakmesh/identity/node-key';
 
 async function createPrivateChatRoom() {
   // 1. Load identity and create hub
-  const identity = await loadIdentity();
+  const identity = new NodeIdentity('./data');
   const hub = new GumbaHub(identity, null);
   
   // 2. Create the chat room

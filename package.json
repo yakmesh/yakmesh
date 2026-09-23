@@ -13,6 +13,7 @@
     "./oracle/ma902-snmp": "./oracle/ma902-snmp.js",
     "./oracle/phase-epoch": "./oracle/phase-epoch.js",
     "./oracle/consensus": "./oracle/consensus-engine.js",
+    "./oracle/consensus-engine": "./oracle/consensus-engine.js",
     "./oracle/validation": "./oracle/validation-oracle-hardened.js",
     "./oracle/genesis": "./oracle/genesis-network-v2.js",
     "./oracle/identity": "./oracle/network-identity.js",
@@ -54,16 +55,53 @@
     "./mesh/sherpa-discovery": "./mesh/sherpa-discovery.js",
     "./mesh/annex": "./mesh/annex.js",
     "./mesh/temporal-encoder": "./mesh/temporal-encoder.js",
+    "./server/darbar": {
+      "import": "./server/darbar.js",
+      "default": "./server/darbar.js"
+    },
     "./utils/accel": "./utils/accel.js",
+    "./utils/mkc": {
+      "import": "./utils/mkc.js",
+      "default": "./utils/mkc.js"
+    },
     "./protocol/yak-protocol": "./protocol/yak-protocol.js",
     "./adapters/byond": "./adapters/adapter-byond/index.js",
     "./adapters/byond/topic-client": "./adapters/adapter-byond/topic-client.js",
+    "./adapters/base-adapter": {
+      "import": "./adapters/base-adapter.js",
+      "default": "./adapters/base-adapter.js"
+    },
+    "./adapters/content-adapter": {
+      "import": "./adapters/content-adapter.js",
+      "default": "./adapters/content-adapter.js"
+    },
+    "./adapters/chat-mod-adapter": {
+      "import": "./adapters/chat-mod-adapter.js",
+      "default": "./adapters/chat-mod-adapter.js"
+    },
+    "./adapters/adapter-mlv-bible": {
+      "import": "./adapters/adapter-mlv-bible/index.js",
+      "default": "./adapters/adapter-mlv-bible/index.js"
+    },
     "./adapters/byond/http-bridge": "./adapters/adapter-byond/http-bridge.js",
     "./adapters/byond/security": "./adapters/adapter-byond/security.js",
     "./embedded-docs": "./embedded-docs/index.js",
     "./embedded-docs/verify": "./embedded-docs/verify.js",
     "./embedded-docs/serve": "./embedded-docs/serve.js",
-    "./embedded-docs/bundle": "./embedded-docs/bundle.js"
+    "./embedded-docs/bundle": "./embedded-docs/bundle.js",
+    "./mesh/yurt": "./mesh/yurt.js",
+    "./mesh/darshan": "./mesh/darshan.js",
+    "./mesh/vani": "./mesh/vani.js",
+    "./mesh/gumba": "./mesh/gumba.js",
+    "./security/prahari": "./security/prahari.js",
+    "./security/dharma-moderation": "./security/dharma-moderation.js",
+    "./security/trit-commitment": "./security/trit-commitment.js",
+    "./oracle/tribhuj": "./oracle/tribhuj.js",
+    "./oracle/ypc27": "./oracle/ypc27.js",
+    "./oracle/ternary-routing": "./oracle/ternary-routing.js",
+    "./oracle/packet-checksum": "./oracle/packet-checksum.js",
+    "./gossip/protocol": "./gossip/protocol.js",
+    "./webserver": "./webserver/index.js"
   },
   "bin": {
     "yakmesh": "cli/index.js"

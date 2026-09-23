@@ -705,7 +705,7 @@
         </div>
       </div>
       <p class="text-xl text-mountain-300 mb-4">Trust earned through consistent good actions.</p>
-      <span class="inline-block text-xs theme-badge px-2 py-1 rounded mb-8">v3.5.4</span>
+      <span class="inline-block text-xs theme-badge px-2 py-1 rounded mb-8">v3.5.10</span>
 
       <div class="feature-box">
         <h2>The Wheel of Cause and Effect</h2>
@@ -868,30 +868,24 @@
 
       <h2><svg class="doc-icon inline-icon" aria-hidden="true"><use href="#icon-karma"/></svg> Core Components</h2>
 
-      <h3>KarmaTrustModel</h3>
+      <h3>TrustTierRegistry</h3>
       <p>The main trust assessment engine—the wheel of cause and effect:</p>
-      <pre><code>import { KarmaTrustModel, KARMA_TIER } from 'yakmesh/security/trust-tier';
+      <pre><code>import { TrustTierRegistry, KARMA_TIER, TIER_REQUIREMENTS } from 'yakmesh/security/trust-tier';
 
-// Initialize the karma system
-const karma = new KarmaTrustModel({
-  minAgeForSirdar: 30 * 24 * 60 * 60 * 1000, // 30 days for SIRDAR
-  minAgeForSathi: 14 * 24 * 60 * 60 * 1000,  // 14 days for SATHI
-  autoPromoteEnabled: true,                   // Auto-promotion when earned
-});
+// Initialize the karma registry
+const karma = new TrustTierRegistry();
 
-// Get a node's karma tier
-const { tier, tierInfo, score } = karma.getTrustLevel(nodeId);
-console.log(`${nodeId}: ${tierInfo.name} (${tierInfo.nepali})`);
-console.log(`Karma Score: ${score}/100`);
+// Get a node's karma tier (profiles cached; refresh to recompute)
+const tier = await karma.getTier(dokoId);
+const profile = await karma.refreshProfile(dokoId);
+console.log(`${dokoId}: ${KARMA_TIER[tier]}`);
 
-// Listen for karma tier changes
-karma.on('tierChanged', ({ nodeId, previous, current }) => {
-  if (current > previous) {
-    console.log(`${nodeId} has advanced to ${KARMA_TIER[current]}!`);
-  } else {
-    console.log(`${nodeId}'s karma has decreased.`);
-  }
-});</code></pre>
+// Tier-weighted counts for attestations
+const effective = await karma.calculateEffectiveCount(attestations);
+
+// Network view
+karma.getTierDistribution();    // tiers present in the mesh
+karma.getEffectiveNetworkSize();// Sybil-resistant node count</code></pre>
 
       <h3>KarmaEvidence</h3>
       <p>Records the spiritual ledger of a node's actions:</p>
@@ -1062,7 +1056,7 @@ karma.computeTrustLevel(nodeId);</code></pre>
 import { HybridTrustModel, TrustLevel, TrustEvidence } from 'yakmesh/security/hybrid-trust';
 
 // These map to the new KARMA names
-// HybridTrustModel → KarmaTrustModel
+// HybridTrustModel blends KARMA tiers with behavioral evidence
 // TrustLevel → KarmaLevel
 // TrustEvidence → KarmaEvidence
 

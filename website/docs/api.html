@@ -744,16 +744,19 @@
             <code class="text-Yakmesh-300">/health</code>
           </div>
           <div class="p-4">
-            <p class="text-mountain-300 mb-4">Returns node health and network status.</p>
+            <p class="text-mountain-300 mb-4">Returns node health, persistent identity, peer counts (WS + relay), acceleration status, and network membership.</p>
             <h2 class="font-semibold mb-2">Response</h2>
             <pre class="language-json rounded-lg"><code>{
   "status": "ok",
-  "nodeId": "a7f3b2c1e8d9...",
-  "peers": 3,
+  "nodeId": "node-walk-forest-infinity-pq-xwEL",
+  "persistentId": "yak-1100010T0:T100TT010:...",
+  "peers": 1,
+  "relayPeers": 2,
+  "totalPeers": 3,
   "algorithm": "ML-DSA-65",
   "network": {
-    "name": "mobius-rabi-junction",
-    "id": "pq-g1b6"
+    "name": "walk-forest-infinity",
+    "id": "pq-9dq7"
   },
   "sangha": {
     "state": "HARMONIOUS",
@@ -1040,16 +1043,22 @@
         <div class="bg-mountain-800 border border-mountain-700 rounded-xl overflow-hidden">
           <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
             <span class="method-get px-2 py-1 rounded text-xs font-mono">GET</span>
-            <code class="text-Yakmesh-300">/time</code>
+            <code class="text-Yakmesh-300">/api/time</code>
           </div>
           <div class="p-4">
-            <p class="text-mountain-300 mb-4">Returns current MANI time synchronization status.</p>
+            <p class="text-mountain-300 mb-4">Returns Universal Mesh Time with the effective time source — local GPS when locked, otherwise the mesh grandmaster received via <code class="bg-mountain-800 px-1 rounded">time:heartbeat</code> gossip, otherwise system clock. Also sets <code class="bg-mountain-800 px-1 rounded">X-Yakmesh-Time/Stratum/Source</code> response headers. Related: <code class="bg-mountain-800 px-1 rounded">/api/time/simple</code>, <code class="bg-mountain-800 px-1 rounded">/time/status</code>, <code class="bg-mountain-800 px-1 rounded">/time/aguwa</code>.</p>
             <pre class="language-json rounded-lg"><code>{
-  "source": "ntp",
-  "trustLevel": "yatri",
-  "offset": 0.003,
-  "timestamp": 1737200000000,
-  "synced": true
+  "iso": "2026-09-23T21:30:28.884Z",
+  "unix": 1790199028.884,
+  "unix_ms": 1790199028884,
+  "stratum": 1,
+  "source": "MA-902/S-C1 GPS",
+  "accuracy_ms": 1,
+  "satellites": { "visible": 9, "used": 4, "tracking": 7, "constellations": ["GPS", "BeiDou"] },
+  "lock": true,
+  "quality": "excellent",
+  "reference_id": "GPS",
+  "public_ntp": "time.yakmesh.dev"
 }</code></pre>
           </div>
         </div>
@@ -1061,14 +1070,20 @@
             <code class="text-Yakmesh-300">/bookmarks</code>
           </div>
           <div class="p-4">
-            <p class="text-mountain-300 mb-4">Returns all saved YAK:// protocol bookmarks.</p>
-            <pre class="language-json rounded-lg"><code>[
-  {
-    "name": "my-docs",
-    "uri": "yak://docs.yakmesh/",
-    "createdAt": 1737200000000
-  }
-]</code></pre>
+            <p class="text-mountain-300 mb-4">Lists local <code class="bg-mountain-800 px-1 rounded">yak://</code> bookmarks (pet names for mesh resources). Also: <code class="bg-mountain-800 px-1 rounded">GET /bookmarks/:name</code>, <code class="bg-mountain-800 px-1 rounded">POST /bookmarks</code>, <code class="bg-mountain-800 px-1 rounded">DELETE /bookmarks/:name</code>.</p>
+            <pre class="language-json rounded-lg"><code>{
+  "count": 1,
+  "bookmarks": [
+    {
+      "name": "docs",
+      "yakUrl": "yak://docs",
+      "target": "/docs",
+      "httpUrl": "http://localhost:3080/docs",
+      "createdAt": 1758400000000
+    }
+  ]
+}</code></pre>
+            <p class="text-mountain-400 text-sm mt-3">Remote bookmark sharing (gossip sync between subscribed nodes): <code class="bg-mountain-800 px-1 rounded">GET /bookmarks/remote</code>, <code class="bg-mountain-800 px-1 rounded">GET /bookmarks/remote/status</code>, <code class="bg-mountain-800 px-1 rounded">POST /bookmarks/remote/subscribe</code>, <code class="bg-mountain-800 px-1 rounded">POST /bookmarks/remote/unsubscribe</code>, <code class="bg-mountain-800 px-1 rounded">POST /bookmarks/remote/publish</code>.</p>
           </div>
         </div>
 
@@ -1079,10 +1094,62 @@
             <code class="text-Yakmesh-300">/docs/</code>
           </div>
           <div class="p-4">
-            <p class="text-mountain-300 mb-4">Serves embedded documentation bundle (SHA3-256 verified).</p>
-            <pre class="language-json rounded-lg"><code>// Returns HTML documentation
-// Bundle hash: 17ccf7d033f25b9de...
-// 56 files, ~736 KB total</code></pre>
+            <p class="text-mountain-300 mb-4">Serves the documentation bundle (GRANTH). File integrity is verified against SHA3-256 hashes recorded in the bundle index at build time; metadata at <code class="bg-mountain-800 px-1 rounded">/docs/_bundle</code>.</p>
+          </div>
+        </div>
+
+        <!-- Network status -->
+        <div class="bg-mountain-800 border border-mountain-700 rounded-xl overflow-hidden">
+          <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
+            <span class="method-get px-2 py-1 rounded text-xs font-mono">GET</span>
+            <code class="text-Yakmesh-300">/network/status</code>
+          </div>
+          <div class="p-4">
+            <p class="text-mountain-300 mb-4">Returns network identity, codebase fingerprint, peer compatibility counts, and pending upgrade state.</p>
+            <pre class="language-json rounded-lg"><code>{
+  "name": "walk-forest-infinity",
+  "shortId": "pq-9dq7",
+  "verificationPhrase": "A saber logarithm guides the pauli lamb",
+  "fingerprint": "fb88f401c962...",
+  "peers": { "compatible": 0, "incompatible": 0, "total": 0 },
+  "pendingUpgrades": 0
+}</code></pre>
+          </div>
+        </div>
+
+        <!-- Acceleration -->
+        <div class="bg-mountain-800 border border-mountain-700 rounded-xl overflow-hidden">
+          <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
+            <span class="method-get px-2 py-1 rounded text-xs font-mono">GET</span>
+            <code class="text-Yakmesh-300">/accel</code>
+          </div>
+          <div class="p-4">
+            <p class="text-mountain-300 mb-4">Reports detected acceleration hardware and active backends. Values are measured, not assumed — <code class="bg-mountain-800 px-1 rounded">npu</code> is <code class="bg-mountain-800 px-1 rounded">null</code> when the node's own probe finds no NPU (NPU execution lives in the YakOS bridge, not the mesh node process). Detailed counters at <code class="bg-mountain-800 px-1 rounded">/accel/telemetry</code>.</p>
+            <pre class="language-json rounded-lg"><code>{
+  "hardware": {
+    "cpu": "AMD Ryzen 7 8700F 8-Core Processor",
+    "simd": { "avx512": true, "vaes": true, "shaNI": true, "gfni": true },
+    "gpu": { "name": "NVIDIA GeForce RTX 3060", "cuda": "13.0", "tops": 101 },
+    "npu": null,
+    "totalTops": 101
+  },
+  "acceleration": {
+    "sha3": "native (OpenSSL)",
+    "pqCrypto": "pure-JS (@noble)",
+    "inference": "cuda"
+  }
+}</code></pre>
+          </div>
+        </div>
+
+        <!-- Peers + routing -->
+        <div class="bg-mountain-800 border border-mountain-700 rounded-xl overflow-hidden">
+          <div class="flex items-center gap-3 p-4 border-b border-mountain-700">
+            <span class="method-get px-2 py-1 rounded text-xs font-mono">GET</span>
+            <code class="text-Yakmesh-300">/api/peers</code>
+          </div>
+          <div class="p-4">
+            <p class="text-mountain-300 mb-4">Returns the live peer table. Also: <code class="bg-mountain-800 px-1 rounded">/nakpak/status</code> (circuit routing), <code class="bg-mountain-800 px-1 rounded">/annex/status</code> (PQ sessions), <code class="bg-mountain-800 px-1 rounded">/sherpa/status</code>, <code class="bg-mountain-800 px-1 rounded">/api/claims/epoch/:epoch</code> (epoch-batched claim root).</p>
           </div>
         </div>
       </div>

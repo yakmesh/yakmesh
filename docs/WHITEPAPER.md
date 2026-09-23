@@ -215,7 +215,7 @@ import {
   TemporalStream,       // Message → slices with chaining
   TemporalReconstructor, // Recovery via timing proofs
   TemporalMeshEncoder   // High-level encode/decode API
-} from 'yakmesh/mesh/temporal-encoder.js';
+} from 'yakmesh/mesh/temporal-encoder';
 
 // Encode a message
 const encoder = new TemporalMeshEncoder({ meshPosition: [1, 2, 3] });
@@ -247,7 +247,7 @@ A computational challenge for new node registration:
 - **Purpose:** Prevents Sybil attacks by making identity creation costly
 
 ```javascript
-import { NAVR } from 'yakmesh/mesh/sybil-defense.js';
+import { NAVR } from 'yakmesh/mesh/sybil-defense';
 
 const navr = new NAVR({ difficulty: 16 });
 const challenge = navr.createChallenge('new-node-id');
@@ -382,7 +382,7 @@ This ensures that compromise of a session key doesn't expose past or future comm
 #### API Usage
 
 ```javascript
-import { Annex } from 'yakmesh/mesh/annex.js';
+import { Annex } from 'yakmesh/mesh/annex';
 
 // Initialize with node identity and mesh connection
 const annex = new Annex({ identity, mesh });
@@ -585,6 +585,13 @@ The `yakmesh.dev` portal serves as:
 | Message Validator | ✅ Complete | yakmesh@1.1.0 |
 | Rate Limiter | ✅ Complete | yakmesh@1.0.3 |
 | ML-DSA-65 Signatures | ✅ Complete | yakmesh@1.0.0 |
+| TRIBHUJ (balanced-ternary math + dual-sign identity) | ✅ Complete | yakmesh@2.8.2 |
+| SETU trust-tier bridge + SAKSHI observational system | ✅ Complete | yakmesh@2.8.1 |
+| AGUWA phase coupling, SAMUHA admission, SANGHA attestation | ✅ Complete | yakmesh@3.3.0 |
+| YPC-27 v2 verified-irreducible F₃²⁷ polynomial | ✅ Complete | yakmesh@3.5.0 |
+| YakMesh-NE-1.0 embedded docs (GRANTH) + ANNEX hardening | ✅ Complete | yakmesh@3.5.4 |
+| YAK-TUN LAN broadcast discovery (wire B) | ✅ Complete | yakmesh@3.5.9 |
+| Persistent IDs bound to HELLO/WELCOME + upgrade grace | ✅ Complete | yakmesh@3.5.10 |
 
 ### 7.3 Conclusion
 

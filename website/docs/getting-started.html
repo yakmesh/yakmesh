@@ -790,7 +790,9 @@
             
             <h3 class="text-xl font-bold mb-3">Option 3: LAN Discovery</h3>
             <p class="text-mountain-300 mb-8">
-                Nodes on the same local network discover each other automatically through gossip once any two are connected.
+                Nodes on the same local network can discover each other without any bootstrap — YAK-TUN wire B
+                broadcasts encrypted discovery beacons on the LAN (v3.5.9+), and MANTRA gossip propagates peer
+                knowledge once any two are connected.
             </p>
 
             <!-- Verify -->
@@ -798,12 +800,13 @@
             <p class="text-mountain-300 mb-4">Check your node's status:</p>
             <pre class="language-bash mb-4"><code>curl http://localhost:3080/health</code></pre>
             <pre class="language-json mb-8"><code>{
-  "status": "healthy",
-  "network": "factor-primitive-bose",
-  "networkId": "pq-XXXX",
+  "status": "ok",
+  "nodeId": "node-your-network-pq-abCD",
+  "persistentId": "yak-...",
   "algorithm": "ML-DSA-65",
-  "peers": 2,
-  "version": "3.5.x"
+  "peers": 1,
+  "totalPeers": 3,
+  "network": { "name": "your-network", "id": "pq-XXXX" }
 }</code></pre>
             <p class="text-mountain-400 text-sm italic mb-4">
                 * Values shown are examples; actual output reflects your installed version.

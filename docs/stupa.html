@@ -705,7 +705,7 @@
         </div>
       </div>
       <p class="text-xl text-mountain-300 mb-4">Priority-based broadcast messaging across the Yakmesh network.</p>
-      <span class="inline-block text-xs theme-badge px-2 py-1 rounded mb-8">v3.5.4</span>
+      <span class="inline-block text-xs theme-badge px-2 py-1 rounded mb-8">v3.5.10</span>
 
       <div class="feature-box">
         <h2>The Sacred Tower</h2>
@@ -819,104 +819,98 @@
 
       <h3>StupaMessage</h3>
       <p>The fundamental message unit for broadcasts:</p>
-      <pre><code>import { StupaMessage, STUPA_PRIORITY } from 'yakmesh/mesh/beacon-broadcast';
+      <pre><code>import { StupaMessage, STUPA_CONFIG } from 'yakmesh/mesh/beacon-broadcast';
 
 // Create a broadcast message
 const message = new StupaMessage({
-  type: 'NETWORK_ALERT',
   payload: { alert: 'Node cluster offline', region: 'asia-1' },
-  priority: STUPA_PRIORITY.FLASH,
-  ttl: 300, // 5 minutes
-  origin: nodeId
+  priority: STUPA_CONFIG.priorities.FLASH,
+  ttl: 20,              // hop count (default 10, max 50)
+  originNodeId: nodeId
 });
 
 // Message properties
-console.log(message.id);        // Unique message ID
-console.log(message.priority);  // Priority level
-console.log(message.hops);      // Propagation count
-console.log(message.isExpired); // TTL check</code></pre>
+console.log(message.id);            // Unique message ID
+console.log(message.priority);      // Priority level
+console.log(message.hopPath);       // Nodes traversed so far
+console.log(message.isValid());     // TTL/expiry/integrity check
+console.log(message.ypc27);         // YPC-27 quantum-hard checksum</code></pre>
 
       <h3>StupaBroadcast</h3>
       <p>The broadcast controller managing message propagation:</p>
       <pre><code>import { StupaBroadcast, STUPA_CONFIG } from 'yakmesh/mesh/beacon-broadcast';
 
-// Initialize the broadcast system
-const stupa = new StupaBroadcast(node, {
-  ...STUPA_CONFIG,
-  maxHops: 10,
-  deduplicationWindow: 60000 // 1 minute
+// Initialize the broadcast system (callbacks, not EventEmitter)
+const stupa = new StupaBroadcast({
+  nodeId,
+  onBroadcast: (msg) => mesh.sendToAll(msg.serialize()),
+  onReceive:   (msg) => console.log(`Received from ${msg.originNodeId}`),
+  onReceipt:   (rcpt) => console.log('Delivery receipt:', rcpt),
 });
 
-// Broadcast a message
-await stupa.broadcast({
-  type: 'CONSENSUS_REACHED',
-  payload: { decision: 'upgrade-v2', votes: 42 },
-  priority: STUPA_PRIORITY.IMMEDIATE
-});
+// Register peers that carry broadcasts
+for (const peerId of mesh.peerIds) stupa.addPeer(peerId);
 
-// Listen for broadcasts
-stupa.on('message', (message) => {
-  console.log(`Received ${message.type} from ${message.origin}`);
-  console.log(`Priority: ${stupa.getPriorityName(message.priority)}`);
-});</code></pre>
+// Broadcast a message (payload + priority)
+await stupa.broadcast(
+  { decision: 'upgrade-v2', votes: 42 },
+  { priority: STUPA_CONFIG.priorities.IMMEDIATE }
+);
 
-      <h2><svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true"><use href="#icon-megaphone"/></svg> Event System</h2>
-      <p>STUPA emits events for broadcast lifecycle management:</p>
+// Priority helpers
+await stupa.sendFlash({ alert: 'partition detected' });
+await stupa.sendEmergency({ alert: 'critical' });
+await stupa.sendRevocation('revocation:key_compromise', { dokoId });</code></pre>
+
+      <h2><svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true"><use href="#icon-megaphone"/></svg> Callbacks</h2>
+      <p>STUPA uses constructor callbacks for broadcast lifecycle events:</p>
 
       <table class="api-table">
         <thead>
           <tr>
-            <th>Event</th>
+            <th>Callback</th>
             <th>Payload</th>
             <th>Description</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td><code>message</code></td>
+            <td><code>onReceive</code></td>
             <td>StupaMessage</td>
             <td>New broadcast received from the network</td>
           </tr>
           <tr>
-            <td><code>broadcast</code></td>
+            <td><code>onBroadcast</code></td>
             <td>StupaMessage</td>
-            <td>Message successfully broadcast to peers</td>
+            <td>Message ready to send to peers (wire it to your transport)</td>
           </tr>
           <tr>
-            <td><code>forward</code></td>
-            <td>StupaMessage</td>
-            <td>Message forwarded to next-hop peers</td>
-          </tr>
-          <tr>
-            <td><code>expired</code></td>
-            <td>StupaMessage</td>
-            <td>Message TTL exceeded, dropped</td>
-          </tr>
-          <tr>
-            <td><code>duplicate</code></td>
-            <td>messageId</td>
-            <td>Duplicate message detected and filtered</td>
+            <td><code>onReceipt</code></td>
+            <td>DeliveryReceipt</td>
+            <td>Signed delivery receipt from a peer</td>
           </tr>
         </tbody>
       </table>
+      <p class="text-sm text-mountain-400 mt-2">Duplicates are filtered internally by the <code>DeduplicationTracker</code>; expired/invalid messages are dropped by <code>receive()</code> and counted in <code>getStats()</code>.</p>
 
       <h2><svg class="doc-icon inline-icon" aria-hidden="true"><use href="#icon-gear"/></svg> Configuration</h2>
       <pre><code>export const STUPA_CONFIG = {
-  // Message propagation
-  maxHops: 10,              // Maximum hop count before drop
-  defaultTTL: 3600,         // Default message TTL (1 hour)
-  
-  // Deduplication
-  deduplicationWindow: 60000, // Duplicate detection window (ms)
-  maxSeenMessages: 10000,     // Message ID cache size
-  
-  // Priority handling
-  priorityQueues: true,       // Enable priority-based queuing
-  criticalBypass: true,       // CRITICAL skips normal queue
-  
-  // Rate limiting
-  maxBroadcastsPerMinute: 60, // Outbound rate limit
-  burstAllowance: 10          // Burst capacity
+  priorities: {
+    ROUTINE: 0, PRIORITY: 1, IMMEDIATE: 2,
+    FLASH: 3, CRITICAL: 4, REVOCATION: 5,
+  },
+  defaultTTL: 10,             // Default hop count
+  maxTTL: 50,                 // Maximum hop count
+  revocationTTL: 100,         // Extra hops for revocation broadcasts
+  deduplicationWindowMs: 60000, // 1 minute dedup window
+  receiptTimeout: 30000,      // 30s to collect delivery receipts
+  minRedundantPaths: 3,       // Minimum paths for critical messages
+  maxRetransmissions: 5,
+  maxMessagesPerSecond: 100,  // Per-node rate limit
+  priorityBoost: {            // Rate limit multiplier by priority
+    ROUTINE: 1, PRIORITY: 2, IMMEDIATE: 5,
+    FLASH: 10, CRITICAL: 100, REVOCATION: 1000,
+  },
 };</code></pre>
 
       <h2><svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true"><use href="#icon-sync"/></svg> Message Flow</h2>

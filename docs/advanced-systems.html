@@ -703,7 +703,7 @@
                 <div>
                     <div class="flex items-center gap-3">
                         <h1 class="text-4xl font-bold">Advanced Systems</h1>
-                        <span class="theme-badge text-xs px-2 py-1 rounded-full">v3.5.4</span>
+                        <span class="theme-badge text-xs px-2 py-1 rounded-full">v3.5.10</span>
                     </div>
                     <p class="theme-accent">ECHO, PULSE, BEACON & TME</p>
                 </div>
@@ -743,16 +743,18 @@
 
 const echo = new EchoRanging({ nodeId: 'my-node' });
 
-// Measure latency to peer
-const measurement = await echo.probe(peerId);
-console.log(`RTT: ${measurement.rtt}ms`);
+// Probes are wire messages — send over the mesh, handle replies
+const probeBytes = echo.createProbe(peerId);          // optionally encrypted
+ws.send(probeBytes);
 
-// Get virtual coordinates
-const coords = echo.getCoordinates();
-console.log(`Position: (${coords.x}, ${coords.y})`);
+// On receipt:
+const response = echo.handleProbe(probeBytes, fromId);   // → reply to send back
+echo.handleResponse(responseBytes);                       // completes RTT measurement
 
-// Find optimal route
-const route = echo.findOptimalPath(targetId);</code></pre>
+// Then query what was measured
+const rttMs = echo.estimateLatency(peerId);
+const route = echo.findBestRoute(targetId, availablePeers);
+const topo  = echo.getTopology();</code></pre>
                 </div>
             </section>
 
@@ -798,25 +800,24 @@ const route = echo.findOptimalPath(targetId);</code></pre>
                 </div>
 
                 <div class="bg-mountain-800 rounded-lg overflow-hidden">
-                    <pre class="p-4"><code class="language-javascript">import { PulseHeartbeat } from 'yakmesh/mesh/pulse-heartbeat';
+                    <pre class="p-4"><code class="language-javascript">import { PulseSync } from 'yakmesh/mesh/pulse-sync';
 
-const pulse = new PulseHeartbeat({
-  interval: 5000,    // 5 second heartbeats
-  timeout: 15000,    // 15 seconds to SUSPECT
-  deadAfter: 45000   // 45 seconds to DEAD
-});
+const pulse = new PulseSync({ nodeId: 'my-node' });
 
-// Start heartbeating
-pulse.start();
+// Emit a signed heartbeat (broadcast to peers)
+const heartbeat = pulse.createHeartbeat({ peerCount: mesh.peers.size });
 
-// Check peer status
-const status = pulse.getPeerStatus(peerId);
-// Returns: 'alive' | 'suspect' | 'dead'
+// Inbound heartbeats update liveness + partition analysis
+pulse.receiveHeartbeat(heartbeatData);
 
-// Listen for state changes
-pulse.on('peerStateChange', ({ peerId, from, to }) => {
-  console.log(`${peerId}: ${from} → ${to}`);
-});</code></pre>
+// Query health and proofs
+const health = pulse.getHealth();          // peer liveness, partition detection
+const proof  = pulse.getLivenessProof(5);  // temporal heartbeat chain
+const stats  = pulse.getStats();
+
+// Leader election (cryptographic timing)
+pulse.startElection();
+pulse.handleVoteRequest(request);</code></pre>
                 </div>
             </section>
 
@@ -864,26 +865,25 @@ pulse.on('peerStateChange', ({ peerId, from, to }) => {
                 </div>
 
                 <div class="bg-mountain-800 rounded-lg overflow-hidden">
-                    <pre class="p-4"><code class="language-javascript">import { BeaconBroadcast, PRIORITY } from 'yakmesh/mesh/beacon-broadcast';
+                    <pre class="p-4"><code class="language-javascript">import { BeaconBroadcast, STUPA_CONFIG } from 'yakmesh/mesh/beacon-broadcast';
 
-const beacon = new BeaconBroadcast({ nodeId: 'my-node' });
+const beacon = new BeaconBroadcast({
+  nodeId: 'my-node',
+  onBroadcast: (msg) => mesh.sendToAll(msg.serialize()),
+  onReceive:   (msg) => { /* inbound beacon */ },
+  onReceipt:   (rcpt) => { /* signed delivery receipt */ },
+});
+beacon.addPeer(peerId);
 
 // Send critical alert
-await beacon.broadcast({
-  priority: PRIORITY.CRITICAL,
-  message: 'Security incident detected',
-  payload: { type: 'intrusion', source: '...' }
-});
+await beacon.broadcast(
+  { type: 'intrusion', source: '...' },
+  { priority: STUPA_CONFIG.priorities.CRITICAL }
+);
 
-// Listen for beacons
-beacon.on('beacon', (alert) => {
-  if (alert.priority === PRIORITY.CRITICAL) {
-    // Handle emergency
-  }
-});
-
-// Proof of receipt
-const receipt = beacon.getReceipt(beaconId);</code></pre>
+// Priority helpers
+await beacon.sendEmergency({ message: 'Security incident detected' });
+const stats = beacon.getStats();</code></pre>
                 </div>
             </section>
 
@@ -910,23 +910,59 @@ const receipt = beacon.getReceipt(beaconId);</code></pre>
                 </div>
 
                 <div class="bg-mountain-800 rounded-lg overflow-hidden">
-                    <pre class="p-4"><code class="language-javascript">import { TemporalEncoder } from 'yakmesh/mesh/temporal-encoder';
+                    <pre class="p-4"><code class="language-javascript">import { TemporalMeshEncoder } from 'yakmesh/mesh/temporal-encoder';
 
-const encoder = new TemporalEncoder({
-  slices: 5,        // Split into 5 temporal slices
-  threshold: 3      // Need 3 to reconstruct
+const encoder = new TemporalMeshEncoder({
+  nodeId: 'my-node',
+  meshPosition: [0, 0, 0],
 });
 
 // Encode data for temporal transmission
-const slices = encoder.encode(data);
+const { streamId, slices, metadata } = encoder.encode(data, {
+  sliceSize: 1024,
+  sliceIntervalNs: /* spacing between slice sends */,
+});
 
 // Slices are sent at different times
 for (const slice of slices) {
-  await sendWithDelay(slice, slice.timestamp);
+  await sendWithDelay(slice);
 }
 
-// Reconstruct from received slices
-const reconstructed = encoder.decode(receivedSlices);</code></pre>
+// Receiving side
+encoder.initReceive({ streamId, ...metadata });
+encoder.receiveSlice(serializedSlice);
+const reconstructed = encoder.decode(streamId);</code></pre>
+                </div>
+            </section>
+
+            <!-- MKC -->
+            <section class="mb-12">
+                <h2 class="text-2xl font-bold mb-4 flex items-center gap-2">
+                    <svg class="doc-icon inline-icon" aria-hidden="true"><use href="#icon-chip"/></svg> MKC — Math Kernel Complex (NPU)
+                </h2>
+                <p class="text-mountain-300 mb-6">
+                    Always-on structured mathematics on the AMD XDNA NPU: hashing, GF(2⁸)/GF(4) field ops,
+                    balanced-ternary F₃ arithmetic, AVOTH seals, and TRIBHUJ ternary attention — all routed
+                    through the persistent crystal tile layout with honest CPU fallback when the NPU is
+                    unavailable or declines a job.
+                </p>
+
+                <div class="bg-mountain-800 rounded-lg overflow-hidden">
+                    <pre class="p-4"><code class="language-javascript">import { isAvailable, sha3_256, avoth, crystal, CRYSTAL_TILES } from 'yakmesh/utils/mkc';
+
+// Probe NPU/bridge availability (honest: false → callers use CPU fallback)
+if (await isAvailable()) {
+  const digest = await sha3_256(data);      // Keccak-256 on the NPU
+  const seal   = await avoth(state, seal);  // AVOTH field seal
+
+  // Crystal: one dispatch across heterogeneous fixed-role tiles
+  const results = await crystal([
+    { svc: 'aes',    rec: b64Record },      // AES-256 tile
+    { svc: 'tribh',  rec: b64Record },      // TRIBHUJ tile
+    { svc: 'mkc',    rec: b64Record },      // scripted VM tile
+  ]);
+  console.log(CRYSTAL_TILES);               // tile → service map
+}</code></pre>
                 </div>
             </section>
 
@@ -979,7 +1015,7 @@ const reconstructed = encoder.decode(receivedSlices);</code></pre>
   signDual, 
   verifyDual,
   generateDualSignatureKeyPairs 
-} from 'yakmesh/oracle/dual-signature';
+} from 'yakmesh/security/crypto-config';
 
 // Generate both ML-DSA and SLH-DSA keypairs
 const { mlDsa, slhDsa } = await generateDualSignatureKeyPairs();

@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMax slice">
+  <defs>
+    <linearGradient id="sevaGlow" x1="50%" y1="0%" x2="50%" y2="100%">
+      <stop offset="0%" stop-color="#059669" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#101a16" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="offeringLight" cx="50%" cy="30%" r="40%">
+      <stop offset="0%" stop-color="#34d399" stop-opacity="0.4"/>
+      <stop offset="50%" stop-color="#059669" stop-opacity="0.2"/>
+      <stop offset="100%" stop-color="#101a16" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="particleGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#6ee7b7" stop-opacity="0.6"/>
+      <stop offset="100%" stop-color="#059669" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <!-- MOUNTAIN BACKDROP -->
+  <polygon points="0,620 280,300 560,580 0,1080" fill="#1a2a22" opacity="0.35"/>
+  <polygon points="1450,650 1700,280 1920,550 1920,1080 1400,1080" fill="#1a2a22" opacity="0.35"/>
+  <!-- Central glow -->
+  <ellipse cx="960" cy="380" rx="420" ry="300" fill="url(#sevaGlow)"/>
+  <!-- OFFERING HANDS -->
+  <!-- Left hand -->
+  <path d="M 880,520 Q 870,480 890,450 Q 900,430 920,420 L 930,430 Q 915,445 910,460 Q 905,490 915,520 Z" fill="#047857" opacity="0.35" stroke="#34d399" stroke-width="1" stroke-opacity="0.3"/>
+  <!-- Right hand -->
+  <path d="M 1040,520 Q 1050,480 1030,450 Q 1020,430 1000,420 L 990,430 Q 1005,445 1010,460 Q 1015,490 1005,520 Z" fill="#047857" opacity="0.35" stroke="#34d399" stroke-width="1" stroke-opacity="0.3"/>
+  <!-- Cupped palms -->
+  <path d="M 915,520 Q 960,540 1005,520 Q 1000,530 960,535 Q 920,530 915,520" fill="#059669" opacity="0.25"/>
+  <!-- LIGHT OFFERING rising from hands -->
+  <ellipse cx="960" cy="380" rx="40" ry="60" fill="url(#offeringLight)"/>
+  <!-- Rising compute particles -->
+  <circle cx="960" cy="340" r="4" fill="url(#particleGlow)"/>
+  <circle cx="940" cy="300" r="3" fill="url(#particleGlow)"/>
+  <circle cx="980" cy="290" r="3" fill="url(#particleGlow)"/>
+  <circle cx="950" cy="260" r="2.5" fill="url(#particleGlow)"/>
+  <circle cx="975" cy="240" r="2" fill="url(#particleGlow)"/>
+  <circle cx="960" cy="210" r="2" fill="url(#particleGlow)"/>
+  <!-- MESH CONNECTIONS spreading outward -->
+  <!-- Left connections -->
+  <line x1="880" y1="460" x2="600" y2="500" stroke="#34d399" stroke-width="1" opacity="0.2"/>
+  <line x1="880" y1="480" x2="500" y2="560" stroke="#34d399" stroke-width="1" opacity="0.15"/>
+  <line x1="880" y1="440" x2="650" y2="380" stroke="#34d399" stroke-width="1" opacity="0.15"/>
+  <!-- Right connections -->
+  <line x1="1040" y1="460" x2="1320" y2="500" stroke="#34d399" stroke-width="1" opacity="0.2"/>
+  <line x1="1040" y1="480" x2="1420" y2="560" stroke="#34d399" stroke-width="1" opacity="0.15"/>
+  <line x1="1040" y1="440" x2="1270" y2="380" stroke="#34d399" stroke-width="1" opacity="0.15"/>
+  <!-- Peer nodes -->
+  <circle cx="600" cy="500" r="6" fill="#34d399" opacity="0.25"/>
+  <circle cx="500" cy="560" r="5" fill="#34d399" opacity="0.2"/>
+  <circle cx="650" cy="380" r="5" fill="#34d399" opacity="0.2"/>
+  <circle cx="1320" cy="500" r="6" fill="#34d399" opacity="0.25"/>
+  <circle cx="1420" cy="560" r="5" fill="#34d399" opacity="0.2"/>
+  <circle cx="1270" cy="380" r="5" fill="#34d399" opacity="0.2"/>
+  <!-- Model slot labels -->
+  <text x="600" y="530" fill="#34d399" opacity="0.2" font-size="10" font-family="monospace" text-anchor="middle">NPU</text>
+  <text x="1320" y="530" fill="#34d399" opacity="0.2" font-size="10" font-family="monospace" text-anchor="middle">GPU</text>
+  <text x="960" y="190" fill="#6ee7b7" opacity="0.2" font-size="12" font-family="monospace" text-anchor="middle">INFERENCE</text>
+  <!-- GROUND -->
+  <polygon points="0,920 350,890 700,930 960,900 1200,940 1500,895 1920,920 1920,1080 0,1080" fill="#101a16" opacity="0.75"/>
+</svg>

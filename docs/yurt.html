@@ -781,7 +781,7 @@
         </div>
       </div>
       <p class="text-xl text-mountain-300 mb-4">Decentralized room discovery for YakApp chat rooms</p>
-      <span class="inline-block text-xs theme-badge px-2 py-1 rounded mb-8">v3.5.4</span>
+      <span class="inline-block text-xs theme-badge px-2 py-1 rounded mb-8">v3.5.10</span>
 
       <!-- Philosophy Quote -->
       <div class="theme-callout border-l-4 rounded-r-xl p-6 mb-8 italic text-mountain-200">
@@ -835,7 +835,7 @@
         <p class="text-sm text-mountain-400">With invite attestation for private rooms</p>
       </div>
 
-      <pre class="bg-mountain-950 rounded-xl p-4 overflow-x-auto mb-8"><code class="language-javascript">import { YurtLink } from 'yakmesh/mesh/yurt.js';
+      <pre class="bg-mountain-950 rounded-xl p-4 overflow-x-auto mb-8"><code class="language-javascript">import { YurtLink } from 'yakmesh/mesh/yurt';
 
 // Parse any yak:// link
 const link = YurtLink.parse('yak://qrl-node.theqrl.org:8787/qrl-official');
@@ -926,7 +926,7 @@ const httpsUrl = YurtLink.toHttpsGateway(uri);
         and can be propagated via gossip or accessed directly.
       </p>
 
-      <pre class="bg-mountain-950 rounded-xl p-4 overflow-x-auto mb-8"><code class="language-javascript">import { YurtEntry, YURT_CONFIG } from 'yakmesh/mesh/yurt.js';
+      <pre class="bg-mountain-950 rounded-xl p-4 overflow-x-auto mb-8"><code class="language-javascript">import { YurtEntry, YURT_CONFIG } from 'yakmesh/mesh/yurt';
 
 // Create a room entry
 const entry = new YurtEntry({
@@ -999,7 +999,7 @@ const inviteLink = entry.toInviteUri(attestation);
         indexing by tags/host, and automatic cleanup of expired entries.
       </p>
 
-      <pre class="bg-mountain-950 rounded-xl p-4 overflow-x-auto mb-8"><code class="language-javascript">import { YurtDirectory } from 'yakmesh/mesh/yurt.js';
+      <pre class="bg-mountain-950 rounded-xl p-4 overflow-x-auto mb-8"><code class="language-javascript">import { YurtDirectory } from 'yakmesh/mesh/yurt';
 
 const directory = new YurtDirectory();
 
@@ -1034,7 +1034,7 @@ directory.cleanup();</code></pre>
         Entries expire after 7 days without refresh, preventing stale listings.
       </p>
 
-      <pre class="bg-mountain-950 rounded-xl p-4 overflow-x-auto mb-8"><code class="language-javascript">import { YurtGossip, YurtDirectory } from 'yakmesh/mesh/yurt.js';
+      <pre class="bg-mountain-950 rounded-xl p-4 overflow-x-auto mb-8"><code class="language-javascript">import { YurtGossip, YurtDirectory } from 'yakmesh/mesh/yurt';
 
 const directory = new YurtDirectory();
 const gossip = new YurtGossip(identity, directory, mesh);
@@ -1103,7 +1103,7 @@ gossip.stop();</code></pre>
         <code>YurtHub</code> combines directory, gossip, and GUMBA integration into one convenient interface.
       </p>
 
-      <pre class="bg-mountain-950 rounded-xl p-4 overflow-x-auto mb-8"><code class="language-javascript">import { YurtHub } from 'yakmesh/mesh/yurt.js';
+      <pre class="bg-mountain-950 rounded-xl p-4 overflow-x-auto mb-8"><code class="language-javascript">import { YurtHub } from 'yakmesh/mesh/yurt';
 
 const hub = new YurtHub(identity, gumbaHub, mesh, options);
 hub.start();
@@ -1138,8 +1138,8 @@ const inviteLink = hub.getJoinLink('private-room', { invite: attestation });</co
         <h3 class="font-bold mb-4 theme-accent">Setting Up the QRL Community Room</h3>
 
         <pre class="bg-mountain-950 rounded-xl p-4 overflow-x-auto mb-6"><code class="language-javascript">// On the QRL server (qrl-node.theqrl.org)
-import { YurtHub, YurtEntry } from 'yakmesh/mesh/yurt.js';
-import { GumbaHub } from 'yakmesh/mesh/gumba.js';
+import { YurtHub, YurtEntry } from 'yakmesh/mesh/yurt';
+import { GumbaHub } from 'yakmesh/mesh/gumba';
 
 // Create the GUMBA bundle for the room
 const gumbaHub = new GumbaHub(identity, annex);

@@ -186,7 +186,7 @@ npm install yakmesh
 ```
 
 ```javascript
-import { TemporalMeshEncoder } from 'yakmesh/mesh/temporal-encoder.js';
+import { TemporalMeshEncoder } from 'yakmesh/mesh/temporal-encoder';
 
 const encoder = new TemporalMeshEncoder();
 const { streamId, slices, metadata } = encoder.encode('Hello TME!');

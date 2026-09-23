@@ -733,7 +733,7 @@
       </div>
       <p class="text-xl text-mountain-300 mb-4">Oscillator-based mesh synchronization that couples MANI
         clocks, dynamically adjusts connection capacity, and offloads compute to Worker threads.</p>
-      <span class="inline-block text-xs theme-badge px-2 py-1 rounded mb-8">v3.5.4 &bull; Layer 16.5</span>
+      <span class="inline-block text-xs theme-badge px-2 py-1 rounded mb-8">v3.5.10 &bull; Layer 16.5</span>
 
       <div class="feature-box">
         <h2>The Guide Who Keeps Pace</h2>
@@ -1025,13 +1025,9 @@ if (peerCount &gt; WORKER_THRESHOLD) {
                 <td class="p-3"><code class="theme-accent">GET /api/aguwa</code></td>
                 <td class="p-3 text-mountain-400">Phase coupling status: order parameter, peer phases, capacity, Worker state</td>
               </tr>
-              <tr class="border-b border-mountain-700">
-                <td class="p-3"><code class="theme-accent">GET /api/aguwa/phases</code></td>
-                <td class="p-3 text-mountain-400">Raw PeerPhaseBuffer dump (all peer slots)</td>
-              </tr>
               <tr>
-                <td class="p-3"><code class="theme-accent">GET /api/aguwa/capacity</code></td>
-                <td class="p-3 text-mountain-400">Dynamic capacity calculation breakdown</td>
+                <td class="p-3"><code class="theme-accent">GET /time/aguwa</code></td>
+                <td class="p-3 text-mountain-400">Phase-aware timestamp + scheduling hints</td>
               </tr>
             </tbody>
           </table>

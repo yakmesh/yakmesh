@@ -822,35 +822,33 @@
         
         <div class="module-card rounded-xl p-6 mb-4">
           <h3 class="text-lg font-semibold mb-3">Basic Checksum</h3>
-          <pre class="bg-mountain-900 rounded-lg p-4 overflow-x-auto"><code class="language-javascript">import { computeYpc27, verifyYpc27 } from 'yakmesh/oracle/ypc27';
+          <pre class="bg-mountain-900 rounded-lg p-4 overflow-x-auto"><code class="language-javascript">import { ypc27, YPC27Checksum } from 'yakmesh/oracle/ypc27';
 
 // Compute checksum for any data
-const data = { message: 'Hello, YAKMESH!' };
-const checksum = computeYpc27(data);
-// → { trits: Int8Array(27), base64: 'YXBj...', hex: 'abc123...' }
+const data = new TextEncoder().encode('Hello, YAKMESH!');
+const checksum = ypc27(data);          // Poly27 — 27-trit field element
+// → digestBytes() / digestHex() / digestWire() for transport
 
 // Verify checksum
-const isValid = verifyYpc27(data, checksum);
+const isValid = YPC27Checksum.verify(data, checksum);
 // → true</code></pre>
         </div>
 
         <div class="module-card rounded-xl p-6 mb-4">
           <h3 class="text-lg font-semibold mb-3">Domain-Separated Checksums</h3>
-          <pre class="bg-mountain-900 rounded-lg p-4 overflow-x-auto"><code class="language-javascript">import { 
-  createStupaChecksum,
-  createNakpakChecksum,
-  createKhataChecksum 
-} from 'yakmesh/oracle/packet-checksum';
+          <pre class="bg-mountain-900 rounded-lg p-4 overflow-x-auto"><code class="language-javascript">import { PacketChecksum, PROTOCOL_DOMAIN } from 'yakmesh/oracle/packet-checksum';
 
 // Same data, different domain → different checksums
 const data = { content: 'test' };
 
-const stupaChecksum = createStupaChecksum(data);
-const nakpakChecksum = createNakpakChecksum(data);
-const khataChecksum = createKhataChecksum(data);
+const stupa = new PacketChecksum(PROTOCOL_DOMAIN.STUPA, myNodeId);
+const nakpak = new PacketChecksum(PROTOCOL_DOMAIN.NAKPAK, myNodeId);
 
-// All three are different! (domain separation)
-console.log(stupaChecksum !== nakpakChecksum); // true</code></pre>
+const stupaChecksum = stupa.compute(data);
+const nakpakChecksum = nakpak.compute(data);
+
+// Domain separation — same bytes, different field elements
+console.log(stupaChecksum.equals(nakpakChecksum)); // false</code></pre>
         </div>
 
         <div class="module-card rounded-xl p-6">
@@ -875,9 +873,9 @@ if (!valid) {
           <svg class="doc-icon inline-icon" aria-hidden="true"><use href="#icon-scroll"/></svg> Wire Format
         </h2>
         <div class="bg-mountain-800 rounded-xl p-6 border border-mountain-700">
-          <p class="mb-4">YPC-27 checksums use a versioned wire format:</p>
+          <p class="mb-4">YPC-27 checksums use a versioned wire format. Two encodings are in use: <code class="bg-mountain-800 px-1 rounded">v1</code> (int8-packed trits, packet-checksum fields) and <code class="bg-mountain-800 px-1 rounded">v2</code> (compact 5-trits-per-byte, <code class="bg-mountain-800 px-1 rounded">digestWire()</code> / <code class="bg-mountain-800 px-1 rounded">wrapWithChecksum</code>):</p>
           <pre class="bg-mountain-900 rounded-lg p-4 text-center text-xl">
-<span class="text-cyan-400">YPC27</span>:<span class="text-green-400">v1</span>:<span class="text-yellow-400">&lt;base64-encoded-trits&gt;</span></pre>
+<span class="text-cyan-400">YPC27</span>:<span class="text-green-400">v1|v2</span>:<span class="text-yellow-400">&lt;base64-encoded-trits&gt;</span></pre>
           <table class="checksum-table mt-6">
             <thead>
               <tr>
@@ -893,9 +891,9 @@ if (!valid) {
                 <td><code>YPC27</code></td>
               </tr>
               <tr>
-                <td><code>v1</code></td>
-                <td>Version (for future algorithm updates)</td>
-                <td><code>v1</code></td>
+                <td><code>v1|v2</code></td>
+                <td>Encoding version — v1 int8-packed, v2 5-trits/byte compact</td>
+                <td><code>v2</code></td>
               </tr>
               <tr>
                 <td><code>&lt;trits&gt;</code></td>
@@ -1001,25 +999,21 @@ if (!valid) {
             </thead>
             <tbody>
               <tr>
-                <td><code>computeYpc27(data)</code></td>
-                <td>Compute 27-trit checksum for any data</td>
+                <td><code>ypc27(data)</code></td>
+                <td>Compute 27-trit checksum for any data (returns Poly27)</td>
               </tr>
               <tr>
-                <td><code>verifyYpc27(data, checksum)</code></td>
+                <td><code>YPC27Checksum.verify(data, expected)</code></td>
                 <td>Verify checksum matches data</td>
               </tr>
               <tr>
-                <td><code>tritsToBase64(trits)</code></td>
-                <td>Convert trit array to Base64 string</td>
-              </tr>
-              <tr>
-                <td><code>base64ToTrits(b64)</code></td>
-                <td>Convert Base64 string to trit array</td>
+                <td><code>tritsToBytes(trits)</code> / <code>bytesToTrits(bytes)</code></td>
+                <td>Trit array ↔ byte conversion</td>
               </tr>
             </tbody>
           </table>
           
-          <h3 class="text-lg font-semibold mb-4 mt-8">oracle/packet-checksum.js</h3>
+          <h3 class="text-lg font-semibold mb-4 mt-8">oracle/ypc27.js helpers &amp; oracle/packet-checksum.js</h3>
           <table class="checksum-table">
             <thead>
               <tr>
@@ -1037,16 +1031,8 @@ if (!valid) {
                 <td>Unwrap and verify checksum</td>
               </tr>
               <tr>
-                <td><code>createStupaChecksum(msg)</code></td>
-                <td>STUPA-domain checksum</td>
-              </tr>
-              <tr>
-                <td><code>createNakpakChecksum(pkt)</code></td>
-                <td>NAKPAK-domain checksum</td>
-              </tr>
-              <tr>
-                <td><code>createKhataChecksum(msg)</code></td>
-                <td>KHATA-domain checksum</td>
+                <td><code>PacketChecksum</code> + <code>PROTOCOL_DOMAIN</code></td>
+                <td>Per-domain checksum engines (STUPA, NAKPAK, KHATA, MANTRA, SHERPA, ANNEX, LAMA, KARMA, MANI)</td>
               </tr>
             </tbody>
           </table>

@@ -709,7 +709,7 @@
                 <div>
                     <div class="flex items-center gap-3">
                         <h1 class="text-4xl font-bold">CLI Commands</h1>
-                        <span class="theme-badge text-xs px-2 py-1 rounded-full">v3.5.4</span>
+                        <span class="theme-badge text-xs px-2 py-1 rounded-full">v3.5.10</span>
                     </div>
                     <p class="theme-accent">Command-line interface for YAKMESH nodes</p>
                 </div>
@@ -930,21 +930,27 @@ yakmesh start --daemon</code></pre>
                 </p>
 
                 <h4 class="font-semibold mb-3">Example Output</h4>
-                <pre class="language-json"><code>{
-  "nodeId": "pq-7f3a2b1e-c4d8-4a2f-9b1c-e5f6a7b8c9d0",
-  "name": "himalaya-node-1",
-  "network": "factor-primitive-bose",
-  "networkId": "pq-EqU8",
-  "version": "2.5.0",
-  "algorithm": "ML-DSA-65",
-  "endpoints": {
-    "http": "http://localhost:3080",
-    "ws": "ws://localhost:9001"
-  },
-  "capabilities": ["SHERPA", "NAKPAK", "GEO_PROOF"],
-  "region": "asia-south",
-  "uptime": 9252
-}</code></pre>
+                <pre class="language-bash"><code>🦬 Node Information:
+
+  Identity:
+    Node ID:      node-walk-forest-infinity-pq-xwEL
+    Name:         himalaya-node-1
+    Region:       local
+    Algorithm:    ML-DSA-65 (NIST Level 3)
+    Created:      2026-09-21T15:01:22.000Z
+
+  Capabilities:
+    • SHERPA
+    • NAKPAK
+    • GEO_PROOF
+
+  Replication:
+    Log entries:  12
+    Peer states:  1
+    Tables:       dokos, attestations
+
+  Public Key (ML-DSA-65):
+    8f3a2b1ec4d8a2f9b1ce5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b...</code></pre>
             </div>
 
             <!-- join a mesh -->

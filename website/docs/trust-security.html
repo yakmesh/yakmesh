@@ -733,7 +733,7 @@
           <h1 class="text-4xl font-bold">SURAKSHA <span class="text-xl text-mountain-400">सुरक्षा</span></h1>
           <p class="theme-accent">Security Model — Mathematical Trust, No Simulation</p>
         </div>
-        <span class="theme-badge text-xs px-2 py-1 rounded-full ml-auto">v3.5.4</span>
+        <span class="theme-badge text-xs px-2 py-1 rounded-full ml-auto">v3.5.10</span>
       </div>
       <p class="text-xl text-mountain-300 mb-8">
         YAKMESH's comprehensive security stack: hardware attestation, KARMA trust tiers, Sybil defense, and the strike
@@ -818,7 +818,7 @@
 const profile = new TrustProfile({ dokoId: nodeId });
 
 // Get node's current tier
-const tier = await profile.evaluateTier();
+const tier = profile.calculateTier();
 console.log(tier);                    // "sathi"
 console.log(TIER_WEIGHT[tier]);       // 1.5
 
@@ -865,17 +865,16 @@ if (TIER_WEIGHT[tier] >= TIER_WEIGHT[KARMA_TIER.PATHIK]) {
         </div>
 
         <div class="bg-mountain-800 rounded-lg overflow-hidden">
-          <pre class="p-4"><code class="language-javascript">import { HardwareAttestor } from 'yakmesh/security/hardware-attestation';
+          <pre class="p-4"><code class="language-javascript">import { HardwareAttestation } from 'yakmesh/security/hardware-attestation';
 
-const attestor = new HardwareAttestor();
+// Challenge a peer to prove real silicon — static API
+const challenge = HardwareAttestation.createChallenge();
+const response = await HardwareAttestation.respondToChallenge(
+  challenge, privateKey, dokoId);
 
-// Challenge a peer to prove real silicon
-const challenge = attestor.createChallenge();
-const response = await peer.respondToChallenge(challenge);
-
-// Verify timing proves real AES-NI
-const result = attestor.verifyResponse(response);
-if (result.isRealSilicon) {
+// Verify timing + signature proves real AES-NI
+const result = HardwareAttestation.verifyResponse(response, challenge, peerPublicKey);
+if (result.valid) {
   console.log('Verified real hardware');
 } else {
   console.log('Likely VM or emulation');
@@ -1029,7 +1028,7 @@ if (result.isRealSilicon) {
           </svg> SANGHA &mdash; Collective Attestation Layer
         </h2>
         <p class="text-mountain-300 mb-4">
-          <a href="sangha.html" class="text-red-400 hover:text-red-300">SANGHA</a> (v3.5.4) provides continuous
+          <a href="sangha.html" class="text-red-400 hover:text-red-300">SANGHA</a> (v3.5.10) provides continuous
           collective attestation
           across all internal components. Six subsystems form a synapse mesh with 15 bidirectional channels.
         </p>

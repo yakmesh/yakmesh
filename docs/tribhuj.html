@@ -1035,19 +1035,20 @@ TritArray.consensus([arr1, arr2, arr3]); // Majority vote per trit</code></pre>
               See <a href="sakshi.html" class="text-red-400 underline">SAKSHI</a> for how actual consensus works.
             </p>
           </div>
-          <pre class="bg-mountain-900 rounded-lg p-4 overflow-x-auto"><code class="language-javascript">import { weightedAverage } from 'yakmesh/oracle/tribhuj';
+          <pre class="bg-mountain-900 rounded-lg p-4 overflow-x-auto"><code class="language-javascript">import { calculatePathBalance, TritState } from 'yakmesh/oracle/tribhuj';
 
-// Averaging multiple sensor readings (example: temperature trends)
-const readings = [
-  { vote: Trit.POS, weight: 1.0 },   // Sensor A: "rising"
-  { vote: Trit.ZERO, weight: 0.5 },  // Sensor B: "stable" (lower confidence)
-  { vote: Trit.POS, weight: 1.0 },   // Sensor C: "rising"
-];
-const trend = weightedAverage(readings);  // Weighted toward POS
+// Balanced-ternary fusion: combine weighted link qualities
+// toward a POSITIVE / NEUTRAL / NEGATIVE verdict
+const balance = calculatePathBalance([
+  { trit: TritState.POSITIVE, weight: 1.0 },   // Sensor A: "rising"
+  { trit: TritState.NEUTRAL,  weight: 0.5 },   // Sensor B: "stable" (lower confidence)
+  { trit: TritState.POSITIVE, weight: 1.0 },   // Sensor C: "rising"
+]);
+// → weighted toward POSITIVE
 
-// For cryptographic operations, use SAKSHI instead:
+// For cryptographic agreement, use SAKSHI instead:
 import { checkMathematicalAgreement } from 'yakmesh/security/sakshi';
-// Returns AGREED | PENDING | DISAGREED (never votes)</code></pre>
+// Returns AGREE | RECOMPUTE_AND_VERIFY (never votes)</code></pre>
         </div>
       </section>
 

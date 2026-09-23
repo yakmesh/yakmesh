@@ -703,7 +703,7 @@
         </div>
       </div>
       <p class="text-xl text-mountain-300 mb-4">View content without copying it. The host remains sovereign.</p>
-      <span class="inline-block text-xs theme-badge px-2 py-1 rounded mb-8">v3.5.4</span>
+      <span class="inline-block text-xs theme-badge px-2 py-1 rounded mb-8">v3.5.10</span>
 
       <!-- Philosophy -->
       <section class="callout theme-callout" id="philosophy">
@@ -780,7 +780,7 @@ DARSHAN MODEL (novel):
         <h3 class="text-xl font-semibold mt-6 mb-2 theme-accent">DarshanContent</h3>
         <p>Metadata describing streamable content (never the content itself):</p>
         <pre><code class="language-javascript">
-import { DarshanContent } from 'yakmesh/mesh/darshan.js';
+import { DarshanContent } from 'yakmesh/mesh/darshan';
 
 const content = new DarshanContent({
   hostNodeId: myNode.id,
@@ -796,7 +796,7 @@ const content = new DarshanContent({
         <h3 class="text-xl font-semibold mt-6 mb-2 theme-accent">DarshanGateway</h3>
         <p>Host-side server that controls access and streams content:</p>
         <pre><code class="language-javascript">
-import { DarshanGateway } from 'yakmesh/mesh/darshan.js';
+import { DarshanGateway } from 'yakmesh/mesh/darshan';
 
 const gateway = new DarshanGateway(identity, {
   fileReader: myFileReader,
@@ -819,7 +819,7 @@ gateway.on('stream:started', ({ streamId, viewerId }) => {
         <h3 class="text-xl font-semibold mt-6 mb-2 theme-accent">DarshanViewer</h3>
         <p>Client-side viewer that requests and displays content:</p>
         <pre><code class="language-javascript">
-import { DarshanViewer } from 'yakmesh/mesh/darshan.js';
+import { DarshanViewer } from 'yakmesh/mesh/darshan';
 
 const viewer = new DarshanViewer(identity, {
   sendMessage: mesh.send,  // Mesh transport
@@ -841,7 +841,7 @@ viewer.resume(stream.streamId);
         <h3 class="text-xl font-semibold mt-6 mb-2 theme-accent">DarshanMount</h3>
         <p>Virtual filesystem mount for OS integration:</p>
         <pre><code class="language-javascript">
-import { DarshanMount } from 'yakmesh/mesh/darshan.js';
+import { DarshanMount } from 'yakmesh/mesh/darshan';
 
 const mount = new DarshanMount({
   mountPoint: '/yak',
@@ -864,7 +864,7 @@ mount.addContent('alice-node', aliceVideo, '/yak/alice/film.mp4');
         <h2><svg class="doc-icon inline-icon" width="24" height="24" aria-hidden="true"><use href="#icon-scroll"/></svg> Proof of Viewing</h2>
         <p>DARSHAN generates cryptographic proof that viewing occurred without copying:</p>
         <pre><code class="language-javascript">
-import { DarshanAttestation } from 'yakmesh/mesh/darshan.js';
+import { DarshanAttestation } from 'yakmesh/mesh/darshan';
 
 // Generated after viewing completes
 const attestation = new DarshanAttestation({
@@ -977,10 +977,10 @@ const chunk = new DarshanChunk({
       <section class="mt-8 callout theme-callout" id="configuration">
         <h2><svg class="doc-icon inline-icon" aria-hidden="true"><use href="#icon-gear"/></svg> Configuration</h2>
         <pre><code class="language-javascript">
-import { DarshanConfig } from 'yakmesh/mesh/darshan.js';
+import { DARSHAN_CONFIG } from 'yakmesh/mesh/darshan';
 
 // Full configuration options
-const config = new DarshanConfig({
+const config = { ...DARSHAN_CONFIG,
   // Streaming settings
   defaultChunkSize: 1048576,       // 1MB chunks
   maxConcurrentStreams: 10,        // Per gateway

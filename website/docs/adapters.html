@@ -709,7 +709,7 @@
 
             <h2 class="text-2xl font-bold mb-4">BaseAdapter Interface</h2>
             <p class="text-mountain-300 mb-4">All adapters extend the <code class="theme-accent">BaseAdapter</code> class:</p>
-            <pre class="language-javascript rounded-lg mb-8"><code>import { BaseAdapter } from '@yakmesh/core/adapters';
+            <pre class="language-javascript rounded-lg mb-8"><code>import { BaseAdapter } from 'yakmesh/adapters/base-adapter';
 
 class MyAdapter extends BaseAdapter {
   constructor(config) {
@@ -777,7 +777,7 @@ class MyAdapter extends BaseAdapter {
             </div>
 
             <h2 class="text-2xl font-bold mb-4">Registering Your Adapter</h2>
-            <pre class="language-javascript rounded-lg mb-8"><code>import { YAKMESHNode } from '@yakmesh/core';
+            <pre class="language-javascript rounded-lg mb-8"><code>import { YakmeshNode } from 'yakmesh';
 import { MyAdapter } from './my-adapter.js';
 
 const node = new YAKMESHNode();
@@ -791,7 +791,7 @@ node.registerAdapter(new MyAdapter({
 await node.start();</code></pre>
 
             <h2 class="text-2xl font-bold mb-4">Example: SQLite Adapter</h2>
-            <pre class="language-javascript rounded-lg mb-8"><code>import { BaseAdapter } from '@yakmesh/core/adapters';
+            <pre class="language-javascript rounded-lg mb-8"><code>import { BaseAdapter } from 'yakmesh/adapters/base-adapter';
 import initSqlJs from 'sql.js';
 
 class SQLiteAdapter extends BaseAdapter {
@@ -838,7 +838,7 @@ class SQLiteAdapter extends BaseAdapter {
             </p>
             
             <h3 class="text-xl font-semibold mb-3">ContentAdapter Interface</h3>
-            <pre class="language-javascript rounded-lg mb-6"><code>import { ContentAdapter, CONTENT_CAPABILITIES } from '@yakmesh/adapters/content-adapter';
+            <pre class="language-javascript rounded-lg mb-6"><code>import { ContentAdapter, CONTENT_CAPABILITIES } from 'yakmesh/adapters/content-adapter';
 
 class MyContentAdapter extends ContentAdapter {
   constructor(config) {
@@ -907,7 +907,7 @@ class MyContentAdapter extends ContentAdapter {
             </p>
             
             <h3 class="text-xl font-semibold mb-3">ChatModAdapter Interface</h3>
-            <pre class="language-javascript rounded-lg mb-6"><code>import { ChatModAdapter, ChatModManifest, CHAT_MOD_CAPABILITIES } from '@yakmesh/adapters/chat-mod-adapter';
+            <pre class="language-javascript rounded-lg mb-6"><code>import { ChatModAdapter, ChatModManifest, CHAT_MOD_CAPABILITIES } from 'yakmesh/adapters/chat-mod-adapter';
 
 class MyChatMod extends ChatModAdapter {
   constructor() {
@@ -960,7 +960,7 @@ class MyChatMod extends ChatModAdapter {
                 It serves the Modern Literal Version Bible via DARSHAN and adds <code>/bible</code>, <code>/verse</code> commands to KATHA.
             </p>
             
-            <pre class="language-javascript rounded-lg mb-6"><code>import { MLVBibleAdapter } from '@yakmesh/adapters/adapter-mlv-bible';
+            <pre class="language-javascript rounded-lg mb-6"><code>import { MLVBibleAdapter } from 'yakmesh/adapters/adapter-mlv-bible';
 
 // Create and initialize
 const mlv = new MLVBibleAdapter({
