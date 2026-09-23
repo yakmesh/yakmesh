@@ -4980,7 +4980,7 @@ export class YakmeshNode {
     // ── Claim ledger: witnessed contribution claims + epoch attestation ──
     // Read-only view of an epoch's witnessed claims, their verification
     // verdicts, the Merkle claim root, and the k-of-m attestation set.
-    app.get('/api/claims/epoch/:epoch', (req, res) => {
+    app.get('/api/claims/epoch/:epoch', async (req, res) => {
       const epoch = parseInt(req.params.epoch, 10);
       if (!Number.isInteger(epoch)) {
         return res.status(400).json({ error: 'epoch must be an integer' });
@@ -4990,7 +4990,7 @@ export class YakmeshNode {
         epoch,
         count: claims.length,
         claims,
-        claimRoot: this.claimLedger?.epochClaimRoot(epoch) || null,
+        claimRoot: await this.claimLedger?.epochClaimRoot(epoch) || null,
         attestedSet: this.attestationGossip?.attestedSet(epoch) || [],
       });
     });

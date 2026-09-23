@@ -41,6 +41,7 @@ import { createLogger } from '../utils/logger.js';
 import { verifySignature } from '../identity/node-key.js';
 import { npuProofClaim, hwProofClaim } from './contribution.js';
 import { isAvailable as bridgeAvailable } from '../utils/avoth-bridge.js';
+import { sha3_256Batch as mkcSha3Batch } from '../utils/mkc.js';
 
 const log = createLogger('mesh:claim-ledger');
 
@@ -379,31 +380,56 @@ export class ClaimLedger extends EventEmitter {
   }
 
   /**
+   * Batch sha3-256 for the leaf/tree levels — MKC KECCAK/KECU64 kernel
+   * when the pq-bridge is up (bit-exact vs noble, verified against
+   * hashlib.sha3_256), local noble fallback otherwise. The root is
+   * identical either way; `device` reports which path computed it.
+   */
+  async _sha3Batch(bufs) {
+    if (bufs.length > 0 && await bridgeAvailable()) {
+      try {
+        const r = await mkcSha3Batch(bufs);
+        this._lastRootDevice = r.device;
+        return r.digests.map(d => Buffer.from(d));
+      } catch { /* bridge raced down — fall through to local */ }
+    }
+    this._lastRootDevice = 'cpu-local';
+    return bufs.map(b => Buffer.from(sha3_256(b)));
+  }
+
+  /**
    * Binary Merkle root over an epoch's witnessed claim set:
    * leaf = SHA3-256(canonical claim), sorted by (nodeId, leaf bytes),
    * internal = SHA3-256(left ‖ right), odd node promoted un-hashed.
    * Returns null for an empty/absent epoch — no attestation of nothing.
    */
-  epochClaimRoot(epoch) {
+  async epochClaimRoot(epoch) {
     const bucket = this.epochs.get(epoch);
     if (!bucket || bucket.size === 0) return null;
 
-    const leaves = [...bucket.values()]
-      .map(c => ({ nodeId: c.nodeId, leaf: Buffer.from(sha3_256(ClaimLedger.claimLeafBytes(c))) }))
+    const claims = [...bucket.values()];
+    const leafBytes = claims.map(c => ClaimLedger.claimLeafBytes(c));
+    const digests = await this._sha3Batch(leafBytes);
+    const leaves = claims
+      .map((c, i) => ({ nodeId: c.nodeId, leaf: digests[i] }))
       .sort((a, b) => a.nodeId.localeCompare(b.nodeId) || Buffer.compare(a.leaf, b.leaf))
       .map(e => e.leaf);
 
     let level = leaves;
     while (level.length > 1) {
-      const next = [];
+      const pairs = [];
       for (let i = 0; i < level.length; i += 2) {
-        next.push(i + 1 < level.length
-          ? Buffer.from(sha3_256(Buffer.concat([level[i], level[i + 1]])))
-          : level[i]); // odd promoted
+        if (i + 1 < level.length) pairs.push(Buffer.concat([level[i], level[i + 1]]));
+      }
+      const hashed = await this._sha3Batch(pairs);
+      const next = [];
+      let hi = 0;
+      for (let i = 0; i < level.length; i += 2) {
+        next.push(i + 1 < level.length ? hashed[hi++] : level[i]); // odd promoted
       }
       level = next;
     }
-    return { root: level[0].toString('hex'), claims: leaves.length, epoch };
+    return { root: level[0].toString('hex'), claims: leaves.length, epoch, device: this._lastRootDevice };
   }
 
   /**
@@ -415,7 +441,7 @@ export class ClaimLedger extends EventEmitter {
    * 'attestationConflict', never silently resolved.
    */
   async attestEpoch(epoch) {
-    const r = this.epochClaimRoot(epoch);
+    const r = await this.epochClaimRoot(epoch);
     if (!r) return null;
 
     if (!await this._bridgeGate('epoch attestation', epoch)) return null;
