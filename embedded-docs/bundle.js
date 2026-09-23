@@ -6,7 +6,7 @@
  * Regenerate with: npm run build:docs
  * Source: website/docs/
  * 
- * @generated 2026-09-23T23:03:46.875Z
+ * @generated 2026-09-23T23:06:39.795Z
  * @module embedded-docs/bundle
  */
 
@@ -14,7 +14,7 @@
  * Master hash of the entire documentation bundle.
  * Computed as: SHA3-256(sorted individual file hashes joined)
  */
-export const BUNDLE_HASH = '174b48f1694272ba9dfe370e83f8f8b41010a967c01e99ee9c503b926dc3ff72';
+export const BUNDLE_HASH = 'ba961b289d8b696c3b83119266f6f4af1b76cce2c074963cf82ac5fe4e22fc53';
 
 /**
  * Version of the documentation bundle.
@@ -25,7 +25,7 @@ export const BUNDLE_VERSION = '3.5.10';
 /**
  * Build timestamp (ISO 8601)
  */
-export const BUNDLE_BUILT_AT = '2026-09-23T23:03:46.875Z';
+export const BUNDLE_BUILT_AT = '2026-09-23T23:06:39.795Z';
 
 /**
  * Index of all files in the documentation bundle.
@@ -454,8 +454,8 @@ export const FILE_INDEX = {
     "contentType": "text/html; charset=utf-8"
   },
   "mesh.html": {
-    "hash": "1d0b24d0d4d61bbf28769aedc6544da038d0312f8f886a92c2d2917d28c25c64",
-    "size": 73669,
+    "hash": "2545f38e9fb8216a5b988eac78dda2e7d461131e4ff2c7891b0565120e4b0077",
+    "size": 73679,
     "contentType": "text/html; charset=utf-8"
   },
   "nakpak.html": {
@@ -589,8 +589,8 @@ export const FILE_INDEX = {
     "contentType": "text/html; charset=utf-8"
   },
   "trust-security.html": {
-    "hash": "1b2bd3672fda3894270873447d2eec95ef5f13fb5d36b0d95c10d172027f456d",
-    "size": 61580,
+    "hash": "b8fcc89b192a883fb409322fc27fe5552dcb61fc4e0644a787461c7635cf3bfc",
+    "size": 61581,
     "contentType": "text/html; charset=utf-8"
   },
   "tutorials/backup-recovery.html": {
