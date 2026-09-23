@@ -6,7 +6,7 @@
  * Regenerate with: npm run build:docs
  * Source: website/docs/
  * 
- * @generated 2026-09-23T21:50:28.311Z
+ * @generated 2026-09-23T22:18:02.798Z
  * @module embedded-docs/bundle
  */
 
@@ -14,7 +14,7 @@
  * Master hash of the entire documentation bundle.
  * Computed as: SHA3-256(sorted individual file hashes joined)
  */
-export const BUNDLE_HASH = 'ca3dc9713a4cc67734ea478df29342ce58cd49c8f60fe0c70d4a155e90d128c5';
+export const BUNDLE_HASH = '62288a557a652e9eca2ad37c5354203a2b34392b200f74bf2205920d0c42bddf';
 
 /**
  * Version of the documentation bundle.
@@ -25,7 +25,7 @@ export const BUNDLE_VERSION = '3.5.10';
 /**
  * Build timestamp (ISO 8601)
  */
-export const BUNDLE_BUILT_AT = '2026-09-23T21:50:28.311Z';
+export const BUNDLE_BUILT_AT = '2026-09-23T22:18:02.798Z';
 
 /**
  * Index of all files in the documentation bundle.
@@ -59,8 +59,8 @@ export const FILE_INDEX = {
     "contentType": "text/html; charset=utf-8"
   },
   "advanced-systems.html": {
-    "hash": "90afc16a58790a0bf56bdaa7e7622bdcd6b381e286b464bb5e3661a6d2af8eca",
-    "size": 51342,
+    "hash": "7c6ea71c282e8de0756d1984a0778d19be34dd33f866c7ecfdcd7dc0b347eab4",
+    "size": 51341,
     "contentType": "text/html; charset=utf-8"
   },
   "aguwa.html": {
@@ -344,7 +344,7 @@ export const FILE_INDEX = {
     "contentType": "text/html; charset=utf-8"
   },
   "darbar.html": {
-    "hash": "717adb17afb7ba2dc7a9f9387c029509f05f70bae79b1dad86816f916420be98",
+    "hash": "7b8322462ec97e62d668d1745f4b4e6c97f8954bbc4f2b6b8d613fb29fb9542e",
     "size": 51981,
     "contentType": "text/html; charset=utf-8"
   },
@@ -354,7 +354,7 @@ export const FILE_INDEX = {
     "contentType": "text/html; charset=utf-8"
   },
   "dharma.html": {
-    "hash": "90631bebc15ac602ff1e688277c791f2154559ee8a27d8ca2ca993586286e6e8",
+    "hash": "aad2d3c13d5d5eaaf6c12294e3a74eea8acff605a2a2a883ce71e733319bb1a3",
     "size": 46817,
     "contentType": "text/html; charset=utf-8"
   },
@@ -424,7 +424,7 @@ export const FILE_INDEX = {
     "contentType": "text/html; charset=utf-8"
   },
   "karma.html": {
-    "hash": "0853b8f1b780a778dd08adb42b407cc05159e82febec3880c2ad7bb75f97062c",
+    "hash": "3ff8341b4c98fc2c810a394a33e1da121dea38e85f0c305d39a016afd394b518",
     "size": 51274,
     "contentType": "text/html; charset=utf-8"
   },
@@ -474,7 +474,7 @@ export const FILE_INDEX = {
     "contentType": "application/json"
   },
   "prahari.html": {
-    "hash": "2ba269ce5e2416cdefdd090342928dd6c3780c94f5aac73887b8229034afece5",
+    "hash": "cf5479f720fdadcaeae9632bc27b11dd903c7e5299c942676aa105f8d3415287",
     "size": 63089,
     "contentType": "text/html; charset=utf-8"
   },
@@ -514,8 +514,8 @@ export const FILE_INDEX = {
     "contentType": "text/html; charset=utf-8"
   },
   "sakshi.html": {
-    "hash": "10008906095e182315ae42ee6ff95013ec90936315ce36dcd4909e3ecf5fbf85",
-    "size": 65266,
+    "hash": "b8d2bc9acebc87a9cf0980af127cf037a43c984dc8196bc6ee4b1f8122c594c2",
+    "size": 65264,
     "contentType": "text/html; charset=utf-8"
   },
   "samuha.html": {
@@ -529,7 +529,7 @@ export const FILE_INDEX = {
     "contentType": "text/html; charset=utf-8"
   },
   "seva.html": {
-    "hash": "055bf8cbe2c2e2f31f5833cf788d2f06380fd9abe8ffbbe652c24ca8effcbab4",
+    "hash": "b47bbbc93e48bdfdfbc75d82b9d2fd58f9c475ebcb5af5f5d1209e2f5a6ff37e",
     "size": 44803,
     "contentType": "text/html; charset=utf-8"
   },
@@ -574,7 +574,7 @@ export const FILE_INDEX = {
     "contentType": "text/html; charset=utf-8"
   },
   "tivra.html": {
-    "hash": "99f44bf6b64098a5f2ee9045813c9b59983be3cc393f9a5e60e2c98b1382e592",
+    "hash": "cfc9c92c3e2e4b4d4d64487f325e0bf1eda0e5a9d66b55b715799aada6337628",
     "size": 56693,
     "contentType": "text/html; charset=utf-8"
   },
@@ -584,8 +584,8 @@ export const FILE_INDEX = {
     "contentType": "text/html; charset=utf-8"
   },
   "tribhuj.html": {
-    "hash": "edc908b2a2d4ee3819e5497b944a73e5fa6af1d771742652aee1e4a7c31ba6d9",
-    "size": 63754,
+    "hash": "1d05c2d7fd59bb4741f01f0fe77fafc1bb2547889ef75589f44020f9d5136121",
+    "size": 64051,
     "contentType": "text/html; charset=utf-8"
   },
   "trust-security.html": {
@@ -694,8 +694,8 @@ export const FILE_INDEX = {
     "contentType": "text/html; charset=utf-8"
   },
   "ypc27.html": {
-    "hash": "1083313fddd0dcc1168a43a0f3c54125a627cff046e34d14a778a0cc45393cf1",
-    "size": 50748,
+    "hash": "b0ccefa7bccaa17f8bb91b90ac43b2015c1e5dbfd5db20161477730827f7b33f",
+    "size": 51091,
     "contentType": "text/html; charset=utf-8"
   },
   "yurt.html": {
