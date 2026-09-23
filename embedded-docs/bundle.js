@@ -6,7 +6,7 @@
  * Regenerate with: npm run build:docs
  * Source: website/docs/
  * 
- * @generated 2026-09-23T23:06:39.795Z
+ * @generated 2026-09-23T23:07:03.991Z
  * @module embedded-docs/bundle
  */
 
@@ -14,7 +14,7 @@
  * Master hash of the entire documentation bundle.
  * Computed as: SHA3-256(sorted individual file hashes joined)
  */
-export const BUNDLE_HASH = 'ba961b289d8b696c3b83119266f6f4af1b76cce2c074963cf82ac5fe4e22fc53';
+export const BUNDLE_HASH = '0143b4218cc903563211b40743bbf8b37eadfce67cb0419091e5daa2b85b9cef';
 
 /**
  * Version of the documentation bundle.
@@ -25,7 +25,7 @@ export const BUNDLE_VERSION = '3.5.10';
 /**
  * Build timestamp (ISO 8601)
  */
-export const BUNDLE_BUILT_AT = '2026-09-23T23:06:39.795Z';
+export const BUNDLE_BUILT_AT = '2026-09-23T23:07:03.991Z';
 
 /**
  * Index of all files in the documentation bundle.
@@ -704,7 +704,7 @@ export const FILE_INDEX = {
     "contentType": "text/html; charset=utf-8"
   },
   "yurt.html": {
-    "hash": "dae6db6fa9a11f24eddeebe852d7c9fd51f545e145a5fb101ba2f4af6d3f9bb5",
+    "hash": "ee64764e1f36dcc6190d2116d30d6c4405a706da89cf28a40f601a1a3c346d87",
     "size": 54033,
     "contentType": "text/html; charset=utf-8"
   }
