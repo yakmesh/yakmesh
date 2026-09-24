@@ -297,7 +297,13 @@ function restoreRollback(rollbackDir) {
 let logStream = null;
 function getLog() {
   if (!logStream) {
-    try { logStream = createWriteStream(join(DATA, 'supervisor.log'), { flags: 'a' }); } catch {}
+    try {
+      mkdirSync(DATA, { recursive: true });
+      logStream = createWriteStream(join(DATA, 'supervisor.log'), { flags: 'a' });
+      // ENOENT/EACCES surface as an async 'error' event, not a throw —
+      // an unhandled error event would crash the supervisor.
+      logStream.on('error', () => { logStream = null; });
+    } catch { }
   }
   return logStream;
 }
