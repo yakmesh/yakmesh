@@ -27,8 +27,8 @@
  */
 
 import { spawn, execSync } from 'node:child_process';
+import { zipEntries, applyUpgradePackage, restoreRollback } from '../utils/in-place-upgrade.js';
 import { existsSync, readFileSync, writeFileSync, rmSync, mkdirSync, copyFileSync, readdirSync, statSync, unlinkSync, renameSync, createWriteStream, fstatSync, openSync, closeSync, chmodSync } from 'node:fs';
-import { inflateRawSync } from 'node:zlib';
 import { createHash } from 'node:crypto';
 import { join, dirname, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -73,135 +73,8 @@ function cudaLibPathFix() {
 cudaLibPathFix();
 
 // ---------------------------------------------------------------
-// Minimal ZIP reader — central directory only (deflate + stored)
+// Swap machinery — shared with `yakmesh upgrade` (utils/in-place-upgrade.js)
 // ---------------------------------------------------------------
-function* zipEntries(buf) {
-  // End Of Central Directory record
-  let eocd = -1;
-  for (let i = buf.length - 22; i >= 0 && i >= buf.length - 66000; i--) {
-    if (buf.readUInt32LE(i) === 0x06054b50) { eocd = i; break; }
-  }
-  if (eocd < 0) throw new Error('not a zip file (no EOCD)');
-  const count = buf.readUInt16LE(eocd + 10);
-  let p = buf.readUInt32LE(eocd + 16);
-
-  for (let i = 0; i < count; i++) {
-    if (buf.readUInt32LE(p) !== 0x02014b50) throw new Error('bad central dir entry');
-    const method = buf.readUInt16LE(p + 10);
-    const compSize = buf.readUInt32LE(p + 20);
-    const nameLen = buf.readUInt16LE(p + 28);
-    const extraLen = buf.readUInt16LE(p + 30);
-    const commentLen = buf.readUInt16LE(p + 32);
-    const localOff = buf.readUInt32LE(p + 42);
-    const name = buf.subarray(p + 46, p + 46 + nameLen).toString('utf8');
-
-    // Local header: name/extra lengths can differ — re-read them
-    const lNameLen = buf.readUInt16LE(localOff + 26);
-    const lExtraLen = buf.readUInt16LE(localOff + 28);
-    const dataOff = localOff + 30 + lNameLen + lExtraLen;
-    const comp = buf.subarray(dataOff, dataOff + compSize);
-
-    let data;
-    if (method === 0) data = Buffer.from(comp);
-    else if (method === 8) data = inflateRawSync(comp);
-    else throw new Error(`unsupported zip method ${method} for ${name}`);
-
-    yield { name, data };
-    p += 46 + nameLen + extraLen + commentLen;
-  }
-}
-
-// ---------------------------------------------------------------
-// Swap machinery
-// ---------------------------------------------------------------
-function* walk(dir, base = dir) {
-  for (const e of readdirSync(dir, { withFileTypes: true })) {
-    const p = join(dir, e.name);
-    const rel = relative(base, p).replace(/\\/g, '/');
-    const top = rel.split('/')[0];
-    if (e.isDirectory()) {
-      if (EXCLUDE_DIRS.has(top)) continue;
-      yield* walk(p, base);
-    } else {
-      yield { abs: p, rel };
-    }
-  }
-}
-
-// ---------------------------------------------------------------
-// Leftover quarantine — files deleted between versions must not survive
-// the swap. The oracle hashes every source file on disk into the network
-// fingerprint, so one leftover .js silently forks the node onto a
-// different network (observed live: archive/security/tls-binding.js).
-// The package's data/manifest.json declares the exact hashed set;
-// matching disk to that set makes the fingerprint deterministic.
-// Scan rules mirror oracle/validation-oracle-hardened.js #walkDirectory —
-// keep in sync or quarantine and fingerprint will diverge.
-// ---------------------------------------------------------------
-const HASH_EXTS = new Set(['.js', '.mjs', '.cjs', '.json', '.ts', '.tsx']);
-const HASH_EXCLUDE_DIRS = new Set([
-  'node_modules', '.git', '.github', 'data', 'database', 'logs', 'models',
-  '.vscode', 'coverage', 'dist', 'build', 'tests', 'test-nodes',
-  'deploy-packages', 'deploy', 'scripts', 'docs', 'website', 'marketing',
-  'announcements', 'assets', 'types', 'shortcuts', 'memory-bank', 'yakbot',
-  'hostinger', 'cli', 'dashboard', 'templates', 'examples',
-]);
-const HASH_EXCLUDE_FILES = new Set([
-  'package-lock.json', '.env', '.env.local', 'vitest.config.js',
-  'knowledge-base.js', 'update-docs-nav.cjs', 'convert-tests.cjs',
-]);
-const HASH_EXCLUDE_PREFIXES = ['test-', 'audit-', 'verify-'];
-
-function* hashableFiles(dir, base = dir) {
-  for (const e of readdirSync(dir, { withFileTypes: true })) {
-    const p = join(dir, e.name);
-    const rel = relative(base, p).replace(/\\/g, '/');
-    if (e.isDirectory()) {
-      if (HASH_EXCLUDE_DIRS.has(e.name)) continue;
-      if (e.name.startsWith('data-') || e.name.startsWith('data_')) continue;
-      yield* hashableFiles(p, base);
-    } else {
-      if (HASH_EXCLUDE_FILES.has(e.name)) continue;
-      if (HASH_EXCLUDE_PREFIXES.some(x => e.name.startsWith(x))) continue;
-      if (/\.(test|spec)\.(js|mjs|cjs)$/.test(e.name)) continue;
-      const ext = e.name.slice(e.name.lastIndexOf('.'));
-      if (!HASH_EXTS.has(ext)) continue;
-      yield { abs: p, rel };
-    }
-  }
-}
-
-function quarantineLeftovers(rollbackDir) {
-  // Canonical hashed set: the new package's manifest file list. Fallback:
-  // the zip's own entry names (covers manifest-less packages).
-  let canonical = null;
-  try {
-    const m = JSON.parse(readFileSync(join(DATA, 'manifest.json'), 'utf8'));
-    if (Array.isArray(m?.files)) {
-      canonical = new Set(m.files.map(f => String(f).replace(/\\/g, '/')));
-    }
-  } catch { }
-  if (!canonical) return 0; // no declared set — nothing safe to remove
-
-  const qdir = join(DATA, `update-quarantine-${Date.now()}`);
-  const moved = [];
-  for (const { abs, rel } of hashableFiles(ROOT)) {
-    if (canonical.has(rel)) continue;
-    const dest = join(qdir, rel);
-    mkdirSync(dirname(dest), { recursive: true });
-    try { chmodSync(abs, 0o644); } catch { } // FileGuardian may hold it read-only
-    renameSync(abs, dest);
-    moved.push(rel);
-    console.log(`[yakmesh-run] quarantined leftover ${rel}`);
-  }
-  // Record for rollback: a failed child restores quarantined files too.
-  if (moved.length && rollbackDir && existsSync(rollbackDir)) {
-    writeFileSync(join(rollbackDir, 'quarantined-files.json'),
-      JSON.stringify({ qdir, files: moved }));
-  }
-  return moved.length;
-}
-
 function applyPendingUpdate() {
   const pkg = readFileSync(PKG);
   const sha = createHash('sha256').update(pkg).digest('hex');
@@ -213,79 +86,11 @@ function applyPendingUpdate() {
     }
   }
 
-  const rollbackDir = join(DATA, `rollback-${Date.now()}`);
-  const added = [];
-  let overlaid = 0;
-
-  for (const { name, data } of zipEntries(pkg)) {
-    const rel = name.replace(/\\/g, '/');
-    const top = rel.split('/')[0];
-    // data/manifest.json is build metadata, not runtime state — it must ride
-    // the update or the node boots into a perpetual "upgrade detected" state.
-    const isManifest = rel === 'data/manifest.json';
-    if ((EXCLUDE_DIRS.has(top) && !isManifest) || rel.endsWith('/')) continue;
-
-    const dest = join(ROOT, rel);
-    if (!dest.startsWith(ROOT)) continue; // zip-slip guard
-
-    if (existsSync(dest)) {
-      const rb = join(rollbackDir, rel);
-      mkdirSync(dirname(rb), { recursive: true });
-      copyFileSync(dest, rb);
-    } else {
-      added.push(rel);
-    }
-    mkdirSync(dirname(dest), { recursive: true });
-    // FileGuardian re-baselines runtime files to read-only — unlock the
-    // target before overwrite or the whole swap dies with EACCES.
-    try { chmodSync(dest, 0o644); } catch { }
-    writeFileSync(dest, data);
-    overlaid++;
-  }
-
-  // Track files the update ADDED so rollback can remove them — restoring
-  // backups alone leaves new files behind and silently poisons the hash.
-  if (added.length && existsSync(rollbackDir)) {
-    writeFileSync(join(rollbackDir, 'added-files.json'), JSON.stringify(added));
-  }
-
-  const quarantined = quarantineLeftovers(rollbackDir);
-  console.log(`[yakmesh-run] update applied: ${overlaid} files${quarantined ? `, ${quarantined} leftover(s) quarantined` : ''}, sha256 ${sha.slice(0, 16)}…, rollback → ${relative(ROOT, rollbackDir)}`);
-  return { rollbackDir: existsSync(rollbackDir) ? rollbackDir : null };
-}
-
-function restoreRollback(rollbackDir) {
-  if (!rollbackDir || !existsSync(rollbackDir)) return;
-  let restored = 0;
-  const addedList = join(rollbackDir, 'added-files.json');
-  if (existsSync(addedList)) {
-    try {
-      for (const rel of JSON.parse(readFileSync(addedList, 'utf8'))) {
-        const p = join(ROOT, rel);
-        if (p.startsWith(ROOT) && existsSync(p)) unlinkSync(p);
-      }
-    } catch {}
-  }
-  const qList = join(rollbackDir, 'quarantined-files.json');
-  if (existsSync(qList)) {
-    try {
-      const { qdir, files } = JSON.parse(readFileSync(qList, 'utf8'));
-      for (const rel of files) {
-        const src = join(qdir, rel);
-        const dst = join(ROOT, rel);
-        if (dst.startsWith(ROOT) && existsSync(src)) {
-          mkdirSync(dirname(dst), { recursive: true });
-          renameSync(src, dst);
-        }
-      }
-    } catch {}
-  }
-  for (const { abs, rel } of walk(rollbackDir)) {
-    if (rel === 'added-files.json') continue;
-    copyFileSync(abs, join(ROOT, rel));
-    restored++;
-  }
-  console.error(`[yakmesh-run] child died after swap — restored ${restored} files from rollback`);
+  const { overlaid, quarantined, rollbackDir } = applyUpgradePackage(
+    zipEntries(pkg),
+    { root: ROOT, dataDir: DATA, log: (m) => console.log(`[yakmesh-run] ${m}`) });
+  console.log(`[yakmesh-run] update applied: ${overlaid} files${quarantined ? `, ${quarantined} leftover(s) quarantined` : ''}, sha256 ${sha.slice(0, 16)}…, rollback → ${rollbackDir ? relative(ROOT, rollbackDir) : 'none'}`);
+  return { rollbackDir };
 }
 
 // ---------------------------------------------------------------
@@ -469,7 +274,7 @@ for (;;) {
   // depend on them).
   if (lastRollback && Date.now() - swapAt < BOOT_GRACE_MS) {
     console.error('[yakmesh-run] child died within grace of swap — restoring rollback');
-    restoreRollback(lastRollback);
+    restoreRollback(lastRollback, ROOT);
     rmSync(MARKER, { force: true });
     rmSync(STAGING, { recursive: true, force: true });
     process.exit(1);
@@ -486,7 +291,7 @@ for (;;) {
     try {
       // A swap whose child died inside the grace window → restore + bail.
       if (lastRollback && Date.now() - swapAt < BOOT_GRACE_MS) {
-        restoreRollback(lastRollback);
+        restoreRollback(lastRollback, ROOT);
         rmSync(MARKER, { force: true });
         rmSync(STAGING, { recursive: true, force: true });
         process.exit(1);

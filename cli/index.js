@@ -233,6 +233,89 @@ program
     console.log('');
   });
 
+// ===== UPGRADE COMMAND =====
+program
+  .command('upgrade')
+  .description('Apply an upgrade package in place — overlays code, preserves data/ + personal setup')
+  .argument('<package>', 'Path to upgrade package (.zip ACT package or .tgz npm tarball)')
+  .option('--dry-run', 'Show what would be overlaid without applying')
+  .action(async (pkgPath, options) => {
+    showBanner();
+    const { zipEntries, applyUpgradePackage, walk } = await import('../utils/in-place-upgrade.js');
+    const { execSync } = await import('node:child_process');
+    const { rmSync } = await import('node:fs');
+
+    const ROOT = join(__dirname, '..');
+    const DATA = join(ROOT, 'data');
+    const src = resolve(pkgPath);
+
+    if (!existsSync(src)) {
+      console.log(chalk.red(`✗ Package not found: ${pkgPath}`));
+      process.exit(1);
+    }
+
+    console.log(chalk.yellow('Yakmesh in-place upgrade\n'));
+    console.log(chalk.gray(`  Package: ${src}`));
+    console.log(chalk.gray(`  Install: ${ROOT}`));
+    console.log(chalk.gray('  data/, node_modules/, models/, .git/ are never touched —\n  identity, KARMA, keys, and your setup ride through.\n'));
+
+    // Build the entry list {name, data} — zip natively, tgz via system tar
+    let entries;
+    let extractDir = null;
+    if (/\.(zip)$/i.test(src)) {
+      entries = [...zipEntries(readFileSync(src))];
+    } else if (/\.(tgz|tar\.gz|tar)$/i.test(src)) {
+      extractDir = join(DATA, `upgrade-extract-${Date.now()}`);
+      mkdirSync(extractDir, { recursive: true });
+      try {
+        execSync(`tar -xf "${src}" -C "${extractDir}"`, { stdio: ['ignore', 'pipe', 'pipe'] });
+      } catch (e) {
+        console.log(chalk.red('✗ Could not extract tarball (need system tar/bsdtar)'));
+        process.exit(1);
+      }
+      // npm tarballs wrap everything in package/ — strip it
+      let base = extractDir;
+      if (existsSync(join(base, 'package', 'package.json'))) base = join(base, 'package');
+      entries = [...walk(base)].map(({ abs, rel }) => ({ name: rel, data: readFileSync(abs) }));
+    } else {
+      console.log(chalk.red('✗ Unrecognized package format — expected .zip or .tgz'));
+      process.exit(1);
+    }
+
+    if (!entries.length) {
+      console.log(chalk.red('✗ Package contained no applicable files'));
+      process.exit(1);
+    }
+    console.log(chalk.gray(`  ${entries.length} package entries`));
+
+    if (options.dryRun) {
+      const { EXCLUDE_DIRS } = await import('../utils/in-place-upgrade.js');
+      for (const { name } of entries) {
+        const top = name.replace(/\\/g, '/').split('/')[0];
+        console.log(chalk.gray(`    ${EXCLUDE_DIRS.has(top) ? 'skip' : ' →  '} ${name}`));
+      }
+      console.log(chalk.cyan('\nDry run — nothing applied.'));
+      return;
+    }
+
+    console.log(chalk.yellow('\n⚠ Stop the node before upgrading if it is running.\n'));
+
+    const { overlaid, added, quarantined, rollbackDir } = applyUpgradePackage(entries, {
+      root: ROOT,
+      dataDir: DATA,
+      log: (m) => console.log(chalk.gray(`  ${m}`)),
+    });
+
+    if (extractDir) { try { rmSync(extractDir, { recursive: true, force: true }); } catch {} }
+
+    console.log(chalk.green(`\n✓ Applied: ${overlaid} files overlaid`));
+    if (added.length) console.log(chalk.green(`✓ Added: ${added.length} new files`));
+    if (quarantined) console.log(chalk.yellow(`⚠ Quarantined: ${quarantined} leftover file(s) not in new manifest`));
+    if (rollbackDir) console.log(chalk.gray(`  Rollback: ${rollbackDir}`));
+    console.log(chalk.gray('\nStart the node to run the new code. Upgrade grace may hold'));
+    console.log(chalk.gray('manifest-mismatched files for review on first boot — expected.\n'));
+  });
+
 // ===== START COMMAND =====
 program
   .command('start')
