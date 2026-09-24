@@ -888,6 +888,9 @@ yakmesh start --daemon</code></pre>
                     your personal setup ride through untouched. Every overwritten file is backed up to
                     <code>data/rollback-&lt;ts&gt;/</code>, and files deleted between versions are quarantined
                     so the codebase fingerprint stays exact. Uses the same engine as ACT self-updates.
+                    The same flow is on the dashboard (⬆️ Updates card): stage a package with
+                    <code>POST /api/update/stage</code>, apply with <code>POST /api/update/apply</code> —
+                    loopback only.
                 </p>
 
                 <h4 class="font-semibold mb-3">Options</h4>

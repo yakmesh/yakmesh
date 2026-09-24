@@ -36,7 +36,8 @@ import crypto from 'node:crypto';
 import readline from 'node:readline';
 import { NetworkIdentity } from '../oracle/network-identity.js';
 import { UpdateTransfer } from '../utils/update-transfer.js';
-import { existsSync, readFileSync, statSync, writeFileSync } from 'fs';
+import { zipEntries, zipStore, walk as walkUpgradeFiles } from '../utils/in-place-upgrade.js';
+import { existsSync, readFileSync, statSync, writeFileSync, rmSync, mkdirSync } from 'fs';
 import { mkdir } from 'node:fs/promises';
 import { join } from 'path';
 import { networkInterfaces } from 'os';
@@ -4929,10 +4930,32 @@ export class YakmeshNode {
     // network. Loopback-only: the operator is the authority.
 
     app.get('/api/update', (req, res) => {
+      // Surface a manually-staged package (dashboard upload) alongside
+      // mesh-announced offers — the dashboard needs one status view.
+      let stagedPackage = null;
+      try {
+        const stagedZip = join(import.meta.dirname, '..', 'data', 'pending-update', 'package.zip');
+        if (existsSync(stagedZip)) {
+          const offerPath = join(import.meta.dirname, '..', 'data', 'pending-update', 'offer.json');
+          const offer = existsSync(offerPath) ? JSON.parse(readFileSync(offerPath, 'utf8')) : {};
+          stagedPackage = {
+            sha256: offer.packageSha256 || crypto.createHash('sha256').update(readFileSync(stagedZip)).digest('hex'),
+            size: statSync(stagedZip).size,
+            source: offer.source || 'unknown',
+            stagedAt: offer.stagedAt || null,
+          };
+        }
+      } catch { }
+      let version = null;
+      try {
+        version = JSON.parse(readFileSync(join(import.meta.dirname, '..', 'package.json'), 'utf8')).version;
+      } catch { }
       res.json({
+        version,
         pendingOffer: this._pendingUpgradeOffer || null,
         accepted: !!this._acceptedUpgrade,
         pendingACT: this._pendingACTProposal || null,
+        stagedPackage,
         trustedAnnouncers: this.config.updates?.trustedAnnouncers || [],
         autoConsent: process.env.YAKMESH_ACT_AUTO_CONSENT === 'true',
       });
@@ -5038,6 +5061,95 @@ export class YakmeshNode {
         this._consentACT(this._pendingACTProposal.targetEpoch, 'reject');
       }
       res.json({ declined: had });
+    });
+
+    // ── Manual upgrade — stage a downloaded package from the dashboard ──
+    // Accepts raw bytes: .zip (ACT package) staged directly, or .tgz
+    // (npm tarball) normalized into the same package.zip format.
+    // data/, node_modules/, models/, .git/ are never touched by the swap —
+    // identity and personal setup ride through.
+    app.post('/api/update/stage',
+      express.raw({ type: () => true, limit: '64mb' }),
+      async (req, res) => {
+        if (!isLoopback(req)) return res.status(403).json({ error: 'loopback only' });
+        const body = req.body;
+        if (!Buffer.isBuffer(body) || !body.length) {
+          return res.status(400).json({ error: 'raw package bytes required' });
+        }
+        const pendingDir = join(import.meta.dirname, '..', 'data', 'pending-update');
+        try {
+          let zipBuf;
+          if (body.length >= 2 && body[0] === 0x1f && body[1] === 0x8b) {
+            // gzip → treat as .tgz: extract via system tar, normalize to zip
+            const extractDir = join(pendingDir, `extract-${Date.now()}`);
+            mkdirSync(extractDir, { recursive: true });
+            const tmpTgz = join(extractDir, 'pkg.tgz');
+            writeFileSync(tmpTgz, body);
+            const { execSync } = await import('node:child_process');
+            execSync(`tar -xzf "${tmpTgz}" -C "${extractDir}"`, { stdio: ['ignore', 'pipe', 'pipe'] });
+            let base = extractDir;
+            if (existsSync(join(base, 'package', 'package.json'))) base = join(base, 'package');
+            const entries = [...walkUpgradeFiles(base)]
+              .map(({ abs, rel }) => ({ name: rel, data: readFileSync(abs) }));
+            if (!entries.length) throw new Error('tarball contained no files');
+            zipBuf = zipStore(entries);
+            rmSync(extractDir, { recursive: true, force: true });
+          } else {
+            // Validate it's really a zip with real entries
+            zipBuf = body;
+            if (![...zipEntries(zipBuf)].length) throw new Error('zip has no entries');
+          }
+          // Sanity: a yakmesh package carries package.json
+          const names = new Set([...zipEntries(zipBuf)].map(e => e.name.replace(/\\/g, '/')));
+          if (!names.has('package.json')) {
+            return res.status(400).json({ error: 'not a yakmesh package (no package.json)' });
+          }
+          mkdirSync(pendingDir, { recursive: true });
+          writeFileSync(join(pendingDir, 'package.zip'), zipBuf);
+          const sha256 = crypto.createHash('sha256').update(zipBuf).digest('hex');
+          writeFileSync(join(pendingDir, 'offer.json'), JSON.stringify({
+            packageSha256: sha256,
+            size: zipBuf.length,
+            source: 'manual-upload',
+            stagedAt: new Date().toISOString(),
+          }, null, 2));
+          log.warn('UPDATE: manual package staged via dashboard', {
+            sha256: sha256.slice(0, 12), size: zipBuf.length, files: names.size,
+          });
+          res.json({ staged: true, sha256, size: zipBuf.length, files: names.size });
+        } catch (err) {
+          res.status(400).json({ error: `stage failed: ${err.message}` });
+        }
+      });
+
+    // Apply a staged package: write the act-restart marker and exit —
+    // the supervisor (yakmesh-run.js) performs the swap on respawn.
+    // data/ is preserved by the apply engine; rollback lands in data/.
+    app.post('/api/update/apply', async (req, res) => {
+      if (!isLoopback(req)) return res.status(403).json({ error: 'loopback only' });
+      const stagedZip = join(import.meta.dirname, '..', 'data', 'pending-update', 'package.zip');
+      if (!existsSync(stagedZip)) {
+        return res.status(404).json({ error: 'no staged package — POST /api/update/stage first' });
+      }
+      const sha256 = crypto.createHash('sha256').update(readFileSync(stagedZip)).digest('hex');
+      const markerPath = join(import.meta.dirname, '..', 'data', 'act-restart.json');
+      writeFileSync(markerPath, JSON.stringify({
+        actVersion: 1,
+        manual: true,
+        stagedSha256: sha256,
+        executedAt: new Date().toISOString(),
+      }, null, 2));
+      res.json({
+        applying: true, sha256,
+        note: 'Node stopping — relaunch via yakmesh-run / the supervisor applies the swap.',
+      });
+      log.warn('UPDATE: manual apply — marker written, exiting for supervisor swap', {
+        sha256: sha256.slice(0, 12),
+      });
+      setTimeout(async () => {
+        await this.stop().catch(() => { });
+        process.exit(0);
+      }, 500);
     });
 
     // ── Claim ledger: witnessed contribution claims + epoch attestation ──

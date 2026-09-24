@@ -513,6 +513,35 @@
       </div>
     </div>
 
+    <!-- Updates -->
+    <div class="card" id="updates-card">
+      <div class="card-title">⬆️ Updates</div>
+      <div id="updates-panel">
+        <p style="color: var(--text-muted); margin-bottom: 12px; font-size: 0.85em;">
+          In-place upgrade — overlays new code, keeps <code>data/</code> (identity, KARMA, keys, your
+          setup) untouched. Rollback lands in <code>data/rollback-*/</code>.
+        </p>
+        <div id="update-status" style="font-size: 0.85em; margin-bottom: 12px;">
+          <span style="color: var(--text-muted);">Current: <span id="update-version">—</span></span>
+          <div id="update-state" style="margin-top: 6px; color: var(--text-muted);"></div>
+        </div>
+        <div style="margin-bottom: 10px;">
+          <label style="font-size: 0.8em; color: var(--text-muted);">Upgrade package (.zip or .tgz):</label>
+          <input type="file" id="update-package" accept=".zip,.tgz,.tar.gz"
+            style="width: 100%; padding: 6px 10px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-family: inherit; margin-top: 4px;" />
+        </div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button onclick="stageUpdatePackage()"
+            style="padding: 8px 16px; background: var(--bg-secondary); color: var(--text); border: 1px solid var(--border); border-radius: 6px; cursor: pointer;">Stage
+            Package</button>
+          <button id="update-apply-btn" onclick="applyStagedUpdate()" disabled
+            style="padding: 8px 16px; background: var(--accent); color: #fff; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; opacity: 0.5;">Apply
+            &amp; Restart</button>
+        </div>
+        <div id="update-result" style="margin-top: 8px; font-size: 0.85em; font-weight: 600;"></div>
+      </div>
+    </div>
+
     <!-- Mesh Profile -->
     <div class="card" id="mesh-profile-card">
       <div class="card-title">👤 Mesh Profile</div>
@@ -1117,6 +1146,7 @@
 
         // Bookmarks are low-frequency — polled by auto-refresh cycle, not every refresh
         await refreshBookmarks();
+        await refreshUpdateStatus();
       } catch (e) {
         console.error('Refresh failed:', e);
       }
@@ -1486,6 +1516,91 @@
         refreshInterval = null;
       }
     });
+
+    // ── Updates — in-place package upgrade (phpBB-style) ──
+    async function refreshUpdateStatus() {
+      const stateEl = document.getElementById('update-state');
+      const applyBtn = document.getElementById('update-apply-btn');
+      if (!stateEl) return;
+      try {
+        const res = await fetch(`${nodeUrl}/api/update`);
+        if (!res.ok) return;
+        const u = await res.json();
+        document.getElementById('update-version').textContent = u.version || '—';
+        let lines = [];
+        if (u.pendingOffer) {
+          lines.push(`<span style="color: var(--accent);">📡 Mesh offer pending — ` +
+            `accept via POST /api/update/accept</span>`);
+        }
+        if (u.stagedPackage) {
+          lines.push(`<span style="color: var(--accent);">📦 Staged: ` +
+            `${u.stagedPackage.sha256.slice(0, 16)}… (${(u.stagedPackage.size / 1024 / 1024).toFixed(1)} MB, ` +
+            `${u.stagedPackage.source})</span>`);
+        }
+        if (!lines.length) lines.push('No pending update.');
+        stateEl.innerHTML = lines.join('<br>');
+        applyBtn.disabled = !u.stagedPackage;
+        applyBtn.style.opacity = u.stagedPackage ? '1' : '0.5';
+      } catch { }
+    }
+
+    async function stageUpdatePackage() {
+      const fileInput = document.getElementById('update-package');
+      const resultEl = document.getElementById('update-result');
+      if (!fileInput.files.length) {
+        resultEl.style.color = '#e74c3c';
+        resultEl.textContent = 'Choose a package file first.';
+        return;
+      }
+      const file = fileInput.files[0];
+      resultEl.style.color = 'var(--text-muted)';
+      resultEl.textContent = `Staging ${file.name}…`;
+      try {
+        const buf = await file.arrayBuffer();
+        const res = await fetch(`${nodeUrl}/api/update/stage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/octet-stream' },
+          body: buf,
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          resultEl.style.color = '#e74c3c';
+          resultEl.textContent = 'Stage failed: ' + (data.error || res.statusText);
+          return;
+        }
+        resultEl.style.color = 'var(--accent)';
+        resultEl.textContent = `Staged ${data.files} files (${(data.size / 1024 / 1024).toFixed(1)} MB). ` +
+          `Click "Apply & Restart" — the supervisor swaps code on restart; data/ is preserved.`;
+        await refreshUpdateStatus();
+      } catch (e) {
+        resultEl.style.color = '#e74c3c';
+        resultEl.textContent = 'Stage failed: ' + e.message;
+      }
+    }
+
+    async function applyStagedUpdate() {
+      const resultEl = document.getElementById('update-result');
+      if (!confirm('Apply the staged package and restart the node?\n\n' +
+        'The supervisor performs the in-place swap. data/ (identity, KARMA, keys) is preserved; ' +
+        'overwritten files are backed up under data/rollback-*/')) return;
+      resultEl.style.color = 'var(--text-muted)';
+      resultEl.textContent = 'Applying — node is restarting…';
+      try {
+        const res = await fetch(`${nodeUrl}/api/update/apply`, { method: 'POST' });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          resultEl.style.color = '#e74c3c';
+          resultEl.textContent = 'Apply failed: ' + (data.error || res.statusText);
+          return;
+        }
+        resultEl.style.color = 'var(--accent)';
+        resultEl.textContent = 'Restarting for the swap — reconnect when the node is back.';
+      } catch {
+        // Expected: the node exits mid-request on some setups.
+        resultEl.style.color = 'var(--accent)';
+        resultEl.textContent = 'Node restarting for the swap — reconnect when it is back.';
+      }
+    }
 
     // ── Identity Backup Functions ──
     let lastBackupData = null; // Stored for copy/download
