@@ -2973,6 +2973,7 @@ export class YakmeshNode {
       hardware: {
         npu: accel.HW.amdNpu,
         npuTops: accel.HW.amdNpuTops,
+        npuGen: accel.HW.amdNpuGen,   // xdna1|xdna2 — xclbins don't cross gens
         gpu: accel.HW.nvGpu || accel.HW.amdGpu,
       },
       availableSlots,

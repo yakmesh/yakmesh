@@ -120,6 +120,8 @@ export const HW = Object.seal({
   // AMD NPU (XDNA)
   amdNpu: false,
   amdNpuTops: 0,
+  amdNpuGen: null,     // 'xdna1' (aie2, Hawk/Phoenix) | 'xdna2' (aie2p, Strix)
+                       // xclbins are NOT portable across generations
 
   // Combined compute budget
   totalTops: 0,        // GPU + NPU combined INT8 TOPS
@@ -540,9 +542,14 @@ function _probeAmdNpu() {
       if (dev?.Status === 'OK') {
         HW.amdNpu = true;
         log.debug(`  NPU detected (PnP): ${dev.FriendlyName}`);
-        // Assign TOPS rating by CPU model
+        // Generation from PCI device ID — xclbins are arch-locked
+        const devId = (dev.InstanceId || '').match(/DEV_(1502|17F0|17F1)/i)?.[1]?.toLowerCase();
+        HW.amdNpuGen = devId === '1502' ? 'xdna1' : devId ? 'xdna2' : null;
+        // Assign TOPS rating by generation + CPU model
         const model = HW.cpuModel.toLowerCase();
-        if (model.includes('8700') || model.includes('8600')) {
+        if (HW.amdNpuGen === 'xdna2') {
+          HW.amdNpuTops = 50;
+        } else if (model.includes('8700') || model.includes('8600')) {
           HW.amdNpuTops = 16;
         } else if (model.includes('7840') || model.includes('7940')) {
           HW.amdNpuTops = 10;
@@ -566,7 +573,13 @@ function _probeAmdNpu() {
  */
 function _probeAmdNpuLinux() {
   const PCI_DIR = '/sys/bus/pci/devices';
-  const TOPS_BY_DEVID = { '0x1502': 16, '0x17f0': 50, '0x17f1': 50 };
+  // device id → { tops, generation } — 1502 = Phoenix/Hawk (XDNA1/aie2),
+  // 17f0/17f1 = Strix (XDNA2/aie2p). xclbins do not cross generations.
+  const DEV_BY_ID = {
+    '0x1502': { tops: 16, gen: 'xdna1' },
+    '0x17f0': { tops: 50, gen: 'xdna2' },
+    '0x17f1': { tops: 50, gen: 'xdna2' },
+  };
 
   try {
     if (!existsSync(PCI_DIR)) return;
@@ -578,8 +591,8 @@ function _probeAmdNpuLinux() {
         device = readFileSync(join(PCI_DIR, dev, 'device'), 'utf8').trim();
       } catch { continue; }
 
-      const tops = TOPS_BY_DEVID[device];
-      if (!tops) continue;
+      const info = DEV_BY_ID[device];
+      if (!info) continue;
 
       // Silicon found — require the accel char device to be bound before
       // claiming a usable NPU (driver loaded + device operational).
@@ -587,8 +600,9 @@ function _probeAmdNpuLinux() {
         readdirSync('/dev/accel').some((f) => /^accel\d/.test(f));
       if (accelBound) {
         HW.amdNpu = true;
-        HW.amdNpuTops = tops;
-        log.debug(`  NPU detected (PCI ${dev}, id ${device}): ${tops} TOPS via /dev/accel`);
+        HW.amdNpuTops = info.tops;
+        HW.amdNpuGen = info.gen;
+        log.debug(`  NPU detected (PCI ${dev}, id ${device}, ${info.gen}): ${info.tops} TOPS via /dev/accel`);
       } else {
         log.debug(`  NPU silicon at PCI ${dev} (id ${device}) but no /dev/accel device — driver not bound, not claiming`);
       }
@@ -2602,6 +2616,7 @@ export function getStatus() {
       } : null,
       npu: HW.amdNpu ? {
         tops: HW.amdNpuTops,
+        gen: HW.amdNpuGen || undefined,   // 'xdna1'|'xdna2' — arch for kernel routing
       } : null,
       totalTops: HW.totalTops,
     },
@@ -2641,6 +2656,7 @@ export function getCapabilities() {
     amdGpuFp16Tflops: HW.amdGpuFp16Tflops || undefined,
     amdNpu: HW.amdNpu,
     amdNpuTops: HW.amdNpuTops || undefined,
+    amdNpuGen: HW.amdNpuGen || undefined,
     totalTops: HW.totalTops,
     onnxProviders: HW.onnxProviders.length ? HW.onnxProviders : undefined,
   };
