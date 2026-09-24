@@ -114,6 +114,8 @@ export const HW = Object.seal({
   amdGpu: false,
   amdGpuName: '',
   amdGpuVRAM: 0,       // MiB
+  amdGpuFp32Tflops: 0, // honest FP32 throughput — RDNA has no tensor cores,
+  amdGpuFp16Tflops: 0, // but FP16/vector math is real capacity (WebGPU/DML)
 
   // AMD NPU (XDNA)
   amdNpu: false,
@@ -211,7 +213,7 @@ export async function probe() {
   if (HW.shaNI) caps.push('SHA-NI');
   if (HW.gfni) caps.push('GFNI');
   if (HW.nvGpu) caps.push(`GPU:${HW.nvGpuName}(${HW.nvGpuTops}T)`);
-  if (HW.amdGpu) caps.push(`GPU:${HW.amdGpuName}(detected)`);
+  if (HW.amdGpu) caps.push(`GPU:${HW.amdGpuName}(${HW.amdGpuFp16Tflops || '?'}TF16)`);
   if (HW.amdNpu) caps.push(`NPU:${HW.amdNpuTops}T`);
   if (HW.totalTops > 0) caps.push(`TOTAL:${HW.totalTops}TOPS`);
   if (HW.onnxRuntime) caps.push(`ONNX:[${HW.onnxProviders.join(',')}]`);
@@ -389,9 +391,43 @@ function _probeNvidiaGpu() {
 }
 
 /**
+ * AMD GPU FP16/FP32 throughput lookup (TFLOPS, not TOPS — no tensor cores).
+ * Keys are matched as substrings of the adapter name.
+ */
+const AMD_GPU_TFLOPS = [
+  [/7900\s*XTX/i, { fp32: 61.4, fp16: 122.8 }],
+  [/7900\s*XT/i,  { fp32: 51.6, fp16: 103.2 }],
+  [/7800\s*XT/i,  { fp32: 37.3, fp16: 74.6 }],
+  [/7700\s*XT/i,  { fp32: 28.3, fp16: 56.6 }],
+  [/7600/i,       { fp32: 21.5, fp16: 43.0 }],
+  [/6950\s*XT|6900\s*XT/i, { fp32: 23.0, fp16: 46.1 }],
+  [/6800\s*XT/i,  { fp32: 20.7, fp16: 41.5 }],
+  [/6800/i,       { fp32: 16.2, fp16: 32.4 }],
+  [/6750\s*XT|6700\s*XT/i, { fp32: 13.2, fp16: 26.4 }],
+  [/6700/i,       { fp32: 11.3, fp16: 22.6 }],
+  [/6650\s*XT|6600\s*XT/i, { fp32: 9.0, fp16: 17.9 }],
+  [/6600/i,       { fp32: 7.3, fp16: 14.6 }],
+  [/5700\s*XT/i,  { fp32: 9.75, fp16: 19.5 }],
+  [/5700/i,       { fp32: 7.95, fp16: 15.9 }],
+  [/5600\s*XT/i,  { fp32: 7.2, fp16: 14.4 }],
+  [/5500\s*XT/i,  { fp32: 5.2, fp16: 10.5 }],
+  [/Vega\s*64/i,  { fp32: 12.7, fp16: 25.3 }],
+  [/Vega\s*56/i,  { fp32: 10.5, fp16: 21.0 }],
+  [/RX\s*590|RX\s*580|RX\s*570|RX\s*480/i, { fp32: 6.2, fp16: 12.4 }],
+];
+
+function _amdGpuTflops(name) {
+  for (const [re, t] of AMD_GPU_TFLOPS) {
+    if (re.test(name)) return t;
+  }
+  return null;
+}
+
+/**
  * Detect AMD discrete GPU (RX/Radeon).
- * Detection only — RDNA has no tensor cores and no CUDA, so no TOPS is
- * claimed. DirectML can still execute ONNX on it under Windows.
+ * RDNA/GCN have no tensor cores and no CUDA — no TOPS is claimed.
+ * But FP32/FP16 vector throughput is real capacity: DirectML (Windows)
+ * and WebGPU (Vulkan/DX12, cross-vendor) can both execute on it.
  */
 function _probeAmdGpu() {
   if (os.platform() === 'win32') {
@@ -413,6 +449,8 @@ function _probeAmdGpu() {
 
       HW.amdGpu = true;
       HW.amdGpuName = dev.Name;
+      const tf = _amdGpuTflops(dev.Name);
+      if (tf) { HW.amdGpuFp32Tflops = tf.fp32; HW.amdGpuFp16Tflops = tf.fp16; }
 
       // VRAM via registry qwMemorySize (64-bit, no 4GB clamp)
       try {
@@ -459,7 +497,9 @@ function _probeAmdGpu() {
           const vram = readFileSync(join(drm, card, 'device', 'mem_info_vram_total'), 'utf8').trim();
           HW.amdGpuVRAM = Math.round(parseInt(vram, 10) / 1048576) || 0;
         } catch { /* optional */ }
-        log.debug(`  AMD GPU detected: ${HW.amdGpuName} (${HW.amdGpuVRAM} MiB)`);
+        const tf = _amdGpuTflops(HW.amdGpuName);
+        if (tf) { HW.amdGpuFp32Tflops = tf.fp32; HW.amdGpuFp16Tflops = tf.fp16; }
+        log.debug(`  AMD GPU detected: ${HW.amdGpuName} (${HW.amdGpuVRAM} MiB, ${HW.amdGpuFp16Tflops} FP16 TFLOPS)`);
         return;
       }
     } catch {
@@ -1085,8 +1125,9 @@ class InferenceEngine {
     try {
       this._ort = await import('onnxruntime-node');
 
-      // Provider priority: NPU (DirectML) > GPU (CUDA) > CPU
-      // ONNX Runtime 1.24+ uses short names: 'dml', 'cuda', 'cpu'
+      // Provider priority: NPU (DirectML) > CUDA > DirectML (AMD GPU) >
+      // WebGPU (any Vulkan/DX12 GPU — the non-tensor-core path) > CPU
+      // ONNX Runtime 1.24+ uses short names: 'dml', 'cuda', 'webgpu', 'cpu'
       const providers = HW.onnxProviders;
       if (providers.includes('dml') && HW.amdNpu) {
         this._preferredProvider = 'dml';
@@ -1094,6 +1135,16 @@ class InferenceEngine {
       } else if (providers.includes('cuda') && HW.nvGpu) {
         this._preferredProvider = 'cuda';
         log.info(`Inference engine: NVIDIA GPU (${HW.nvGpuName}, ${HW.nvGpuTops}T) via CUDA`);
+      } else if (providers.includes('dml') && HW.amdGpu) {
+        this._preferredProvider = 'dml';
+        log.info(`Inference engine: AMD GPU (${HW.amdGpuName}, ${HW.amdGpuFp16Tflops} TF16) via DirectML`);
+      } else if (providers.includes('webgpu') && (HW.amdGpu || HW.nvGpu)) {
+        // WebGPU EP — vendor-neutral, rides Vulkan/DX12. The real path for
+        // non-tensor-core GPUs (RDNA, older Polaris) and CUDA-less NVIDIA.
+        this._preferredProvider = 'webgpu';
+        const gpuName = HW.amdGpu ? HW.amdGpuName : HW.nvGpuName;
+        const rate = HW.amdGpu ? `${HW.amdGpuFp16Tflops} TF16` : `${HW.nvGpuTops}T`;
+        log.info(`Inference engine: ${gpuName} (${rate}) via WebGPU`);
       } else if (providers.includes('dml')) {
         this._preferredProvider = 'dml';
         log.info(`Inference engine: DirectML (${HW.totalTops}T available)`);
@@ -1175,9 +1226,10 @@ class InferenceEngine {
       const results = await session.run(feeds);
 
       // Track NPU/GPU hits
-      if (this._preferredProvider === 'dml') {
+      if (this._preferredProvider === 'dml' && HW.amdNpu) {
         telemetry.inferNpuHits++;
-      } else if (this._preferredProvider === 'cuda') {
+      } else if (this._preferredProvider === 'cuda' || this._preferredProvider === 'webgpu' ||
+                 (this._preferredProvider === 'dml' && !HW.amdNpu)) {
         telemetry.inferGpuHits++;
       }
 
@@ -1651,21 +1703,25 @@ class ComputeScheduler {
   async initialize() {
     if (this._initialized) return;
 
-    // GPU queue — capacity scaled from TOPS
-    const gpuTops = HW.nvGpuTops || 0;
+    // GPU queue — capacity scaled from compute rating: INT8 TOPS for
+    // tensor-core NVIDIA, FP16 TFLOPS for non-tensor GPUs (RX/Radeon).
+    // WebGPU/DirectML execute real work on the latter — no tensor needed.
+    const gpuRate = HW.nvGpuTops || HW.amdGpuFp16Tflops || 0;
     const npuTops = HW.amdNpuTops || 0;
+    const hasGpu = HW.nvGpu || HW.amdGpu;
 
-    const gpuCapacity = gpuTops > 0 ? Math.max(32, Math.ceil(gpuTops * 2)) : 0;
+    const gpuCapacity = gpuRate > 0 ? Math.max(32, Math.ceil(gpuRate * 2)) : 0;
     const npuCapacity = npuTops > 0 ? Math.max(16, Math.ceil(npuTops * 2)) : 0;
     const cpuCapacity = Math.max(64, HW.threads * 4);
 
     // Create queues for available devices
-    if (gpuTops > 0 && HW.nvGpu) {
+    if (gpuRate > 0 && hasGpu) {
       this._queues[Device.GPU] = new BoundedPriorityQueue(Device.GPU, gpuCapacity);
       this._breakers[Device.GPU] = new CircuitBreaker(Device.GPU);
       this._activeJobs[Device.GPU] = new Set();
       this._avgLatency[Device.GPU] = 0;
-      log.info(`Scheduler: GPU queue initialized — capacity ${gpuCapacity} (${gpuTops}T)`);
+      const unit = HW.nvGpu ? `${gpuRate}T` : `${gpuRate} TF16`;
+      log.info(`Scheduler: GPU queue initialized — capacity ${gpuCapacity} (${unit})`);
     }
 
     if (npuTops > 0 && HW.amdNpu) {
@@ -2008,7 +2064,7 @@ class ComputeScheduler {
 
     // Max concurrent jobs per device
     const maxConcurrent = device === Device.GPU
-      ? Math.max(4, Math.ceil((HW.nvGpuTops || 1) / 10))
+      ? Math.max(4, Math.ceil((HW.nvGpuTops || HW.amdGpuFp16Tflops || 1) / 10))
       : device === Device.NPU
         ? Math.max(2, Math.ceil((HW.amdNpuTops || 1) / 4))
         : HW.threads || 4;
@@ -2169,7 +2225,7 @@ class ComputeScheduler {
 
       // Is this device idle?
       const maxConcurrent = device === Device.GPU
-        ? Math.max(4, Math.ceil((HW.nvGpuTops || 1) / 10))
+        ? Math.max(4, Math.ceil((HW.nvGpuTops || HW.amdGpuFp16Tflops || 1) / 10))
         : device === Device.NPU
           ? Math.max(2, Math.ceil((HW.amdNpuTops || 1) / 4))
           : HW.threads || 4;
@@ -2239,7 +2295,7 @@ class ComputeScheduler {
       npuCircuitOpen: this._breakers[Device.NPU]?.state === 'open',
       burstRate10ms: this._getBurstRate(10),
       burstRate100ms: this._getBurstRate(100),
-      gpuTops: HW.nvGpuTops || 0,
+      gpuTops: HW.nvGpuTops || HW.amdGpuFp16Tflops || 0,
       npuTops: HW.amdNpuTops || 0,
     };
   }
@@ -2532,9 +2588,18 @@ export function getStatus() {
         name: HW.amdGpuName,
         vram: HW.amdGpuVRAM ? `${HW.amdGpuVRAM} MiB` : undefined,
         vendor: 'amd',
-        tops: 0,  // RDNA: no tensor cores — detection only, honest zero
+        tops: 0,  // no tensor cores — honest zero
+        fp32Tflops: HW.amdGpuFp32Tflops || undefined,
+        fp16Tflops: HW.amdGpuFp16Tflops || undefined,
+        executor: HW.onnxProviders.includes('dml') ? 'directml'
+          : HW.onnxProviders.includes('webgpu') ? 'webgpu' : 'none',
       } : null,
-      amdGpu: HW.amdGpu ? { name: HW.amdGpuName, vramMiB: HW.amdGpuVRAM } : null,
+      amdGpu: HW.amdGpu ? {
+        name: HW.amdGpuName,
+        vramMiB: HW.amdGpuVRAM,
+        fp32Tflops: HW.amdGpuFp32Tflops || undefined,
+        fp16Tflops: HW.amdGpuFp16Tflops || undefined,
+      } : null,
       npu: HW.amdNpu ? {
         tops: HW.amdNpuTops,
       } : null,
@@ -2573,6 +2638,7 @@ export function getCapabilities() {
     nvGpuTops: HW.nvGpuTops || undefined,
     amdGpu: HW.amdGpu || undefined,
     amdGpuName: HW.amdGpuName || undefined,
+    amdGpuFp16Tflops: HW.amdGpuFp16Tflops || undefined,
     amdNpu: HW.amdNpu,
     amdNpuTops: HW.amdNpuTops || undefined,
     totalTops: HW.totalTops,
