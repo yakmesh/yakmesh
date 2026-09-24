@@ -424,6 +424,38 @@
       </div>
     </div>
 
+    <!-- Compute Triad (v3.5.x) -->
+    <div class="card">
+      <div class="card-title">⚡ Compute Triad</div>
+      <div id="accel-status">
+        <div class="empty-state">Connect to view hardware acceleration</div>
+      </div>
+    </div>
+
+    <!-- Mesh Consensus — AGUWA/AVOTH (v3.x) -->
+    <div class="card">
+      <div class="card-title">🕸️ Mesh Consensus</div>
+      <div id="consensus-status">
+        <div class="empty-state">Connect to view AGUWA/AVOTH state</div>
+      </div>
+    </div>
+
+    <!-- KARMA Trust (v3.x) -->
+    <div class="card">
+      <div class="card-title">🏅 KARMA</div>
+      <div id="karma-status">
+        <div class="empty-state">Connect to view KARMA trust</div>
+      </div>
+    </div>
+
+    <!-- SEVA Shared Compute (v3.x) -->
+    <div class="card">
+      <div class="card-title">🧮 SEVA Compute</div>
+      <div id="seva-status">
+        <div class="empty-state">Connect to view SEVA slots</div>
+      </div>
+    </div>
+
     <!-- Identity Backup — Mnemonic Recovery (localhost-only) -->
     <div class="card" id="identity-backup-card">
       <div class="card-title">🛡️ Identity Backup</div>
@@ -918,6 +950,8 @@
       if (node) {
         document.getElementById('node-identity').innerHTML = `
           <div class="node-id">${node.nodeId}</div>
+          ${node.persistentId ? `<div style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--frost); word-break: break-all;" title="Persistent identity — survives upgrades & nodeId rotation">persistentId: ${node.persistentId}</div>` : ''}
+          ${node.seedReset ? `<div style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--amber, #f0a030); word-break: break-all;" title="A foreign or corrupt seed was quarantined and a fresh hardware-bound identity was minted">⚠ identity reset (${node.seedReset.reason}) — new persistentId minted</div>` : ''}
           <div style="margin-top: 1rem; color: var(--text-dim)">
             <div>Name: ${node.name}</div>
             <div>Region: ${node.region}</div>
@@ -1046,6 +1080,92 @@
               <a href="yak://doko" style="color: var(--mountain);">🔐 yak://doko</a>
             </div>
             <div style="margin-top: 0.75rem; font-style: italic; font-size: 0.75rem;">"Decentralized On-chain Key Ownership"</div>
+          </div>
+        `;
+      }
+
+      // Compute Triad (accel.getStatus)
+      if (metrics?.accel) {
+        const a = metrics.accel;
+        const hw = a.hardware || {};
+        const acc = a.acceleration || {};
+        const tel = a.telemetry || {};
+        document.getElementById('accel-status').innerHTML = `
+          <div style="color: var(--text-dim); font-size: 0.85rem;">
+            <div style="margin-bottom: 0.5rem;">
+              <span style="color: var(--frost)">CPU:</span>
+              <span style="color: var(--text)">${hw.cpu || 'unknown'} (${hw.threads || '?'} threads)</span>
+            </div>
+            ${hw.gpu ? `<div>GPU: <span style="color: var(--success)">${hw.gpu.name} · ${hw.gpu.vram} · ${hw.gpu.tops ?? '—'} TOPS</span></div>` : '<div>GPU: <span style="color: var(--text-dim)">none detected</span></div>'}
+            ${hw.npu ? `<div>NPU: <span style="color: var(--success)">AMD XDNA · ${hw.npu.tops ?? '—'} TOPS</span></div>` : '<div>NPU: <span style="color: var(--text-dim)">none detected</span></div>'}
+            <div style="margin-top: 0.5rem;">Total: <span style="color: var(--accent); font-weight: 600;">${hw.totalTops ?? '—'} TOPS</span></div>
+            <div style="margin-top: 0.75rem; padding-top: 0.5rem; border-top: 1px solid var(--border);">
+              <div>SHA-3: <span style="color: var(--text)">${acc.sha3 || '—'}</span></div>
+              <div>PQ crypto: <span style="color: var(--text)">${acc.pqCrypto || '—'}</span></div>
+              <div>Batch verify: <span style="color: var(--text)">${acc.batchVerify || '—'}</span></div>
+              <div>ONNX inference: <span style="color: var(--accent)">${acc.inference || '—'}</span></div>
+            </div>
+            ${tel.inferGpuHits !== undefined || tel.inferCpuHits !== undefined ? `
+            <div style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-dim);">
+              Inference hits — GPU: ${tel.inferGpuHits ?? 0} · CPU: ${tel.inferCpuHits ?? 0}${tel.inferNpuHits !== undefined ? ` · NPU: ${tel.inferNpuHits}` : ''}
+            </div>` : ''}
+          </div>
+        `;
+      }
+
+      // Mesh Consensus — AGUWA order parameter + AVOTH bridge
+      if (metrics?.aguwa || metrics?.avoth) {
+        const ag = metrics.aguwa || {};
+        const av = metrics.avoth || {};
+        const op = typeof ag.orderParameter === 'number' ? ag.orderParameter : null;
+        const opColor = op === null ? 'var(--text-dim)' : op > 0.66 ? 'var(--success)' : op > 0.33 ? 'var(--warning)' : 'var(--error)';
+        document.getElementById('consensus-status').innerHTML = `
+          <div style="color: var(--text-dim); font-size: 0.85rem;">
+            <div style="margin-bottom: 0.5rem;">
+              <span style="color: var(--frost)">AGUWA order:</span>
+              <span style="color: ${opColor}; font-weight: 600;">${op === null ? '—' : op.toFixed(3)}</span>
+            </div>
+            <div>Epoch: <span style="color: var(--text)">${ag.epoch ?? '—'}</span> · ACT buffer: <span style="color: var(--text)">${ag.actEpochBuffer ?? '—'}</span></div>
+            ${ag.pendingACT ? `<div style="margin-top: 0.5rem; color: var(--warning);">⏳ ACT transition pending → epoch ${ag.pendingACT.targetEpoch ?? '?'}</div>` : ''}
+            <div style="margin-top: 0.75rem; padding-top: 0.5rem; border-top: 1px solid var(--border);">
+              <div>AVOTH bridge: <span style="color: ${av.available ? 'var(--success)' : 'var(--text-dim)'}">${av.available ? 'available' : 'offline'}</span></div>
+              <div>Supervisor: <span style="color: ${metrics.supervised ? 'var(--success)' : 'var(--warning)'}">${metrics.supervised ? 'yakmesh-run' : 'unsupervised (bare node)'}</span></div>
+            </div>
+          </div>
+        `;
+      }
+
+      // KARMA trust model
+      if (metrics?.karma) {
+        const k = metrics.karma;
+        const lvl = k.nodesByLevel || {};
+        document.getElementById('karma-status').innerHTML = `
+          <div style="color: var(--text-dim); font-size: 0.85rem;">
+            <div style="margin-bottom: 0.5rem;">
+              <span style="color: var(--frost)">Tracked nodes:</span>
+              <span style="color: var(--accent); font-weight: 600;">${k.totalNodes ?? 0}</span>
+            </div>
+            ${Object.entries(lvl).map(([name, n]) => `<div>${name}: <span style="color: var(--text)">${n}</span></div>`).join('')}
+            <div style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-dim);">
+              Assessments: ${k.assessmentsPerformed ?? 0} · Promotions: ${k.promotions ?? 0} · Demotions: ${k.demotions ?? 0}
+            </div>
+          </div>
+        `;
+      }
+
+      // SEVA shared compute
+      if (metrics?.seva) {
+        const s = metrics.seva;
+        document.getElementById('seva-status').innerHTML = `
+          <div style="color: var(--text-dim); font-size: 0.85rem;">
+            <div style="margin-bottom: 0.5rem;">
+              <span style="color: var(--frost)">Status:</span>
+              <span style="color: ${s.enabled ? 'var(--success)' : 'var(--text-dim)'}">${s.enabled ? 'serving compute' : 'disabled'}</span>
+            </div>
+            <div>Active jobs: <span style="color: var(--text)">${s.activeJobs ?? 0} / ${s.maxConcurrent ?? '—'}</span></div>
+            <div>Total served: <span style="color: var(--accent)">${s.totalServed ?? 0}</span></div>
+            <div>Capable peers: <span style="color: var(--text)">${s.knownPeers ?? 0}</span></div>
+            ${s.hardware ? `<div style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-dim);">Hardware: ${s.hardware.npu ? `NPU ${s.hardware.npuTops || ''} TOPS` : 'no NPU'} · ${s.hardware.gpu ? 'GPU' : 'no GPU'}</div>` : ''}
           </div>
         `;
       }

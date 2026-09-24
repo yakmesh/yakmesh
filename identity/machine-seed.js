@@ -73,7 +73,7 @@ const log = createLogger('identity:machine-seed');
 
 import { sha3_256 } from '../utils/accel.js';
 import { bytesToHex, hexToBytes } from '@noble/hashes/utils.js';
-import { readFileSync, writeFileSync, existsSync, mkdirSync, chmodSync, realpathSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, chmodSync, realpathSync, renameSync } from 'fs';
 import { join, resolve } from 'path';
 import { createCipheriv, createDecipheriv, scryptSync, randomBytes } from 'crypto';
 import { hostname, platform, cpus } from 'os';
@@ -467,6 +467,7 @@ export class MachineSeed {
     this.migrationChain = [];  // History of (oracleHash, pubKeyHash) pairs
     this.sstFamilies = null;   // SST family analysis
     this.created = false;      // True if seed was just generated (first run)
+    this.seedReset = null;     // Set when an unusable seed was quarantined + reminted
   }
 
   /**
@@ -594,13 +595,36 @@ export class MachineSeed {
 
       return true;
     } catch (e) {
-      if (e.message.includes('YPC-27')) throw e; // Re-throw integrity failures
-
-      log.error('Failed to load machine seed', { error: e.message });
-      throw new Error(
-        `Cannot load machine seed: ${e.message}. ` +
-        'Wrong machine? Seed file is encrypted to the machine that created it.'
+      // An unusable seed can never become this machine's identity — a seed
+      // that fails to decrypt was minted on different hardware (or a different
+      // resolved dataDir), and a seed that fails its YPC-27 checksum is
+      // tampered or corrupt. Either way: quarantine the file (preserved for
+      // forensics / mnemonic recovery, never deleted) and mint a fresh
+      // hardware-bound identity. No foreign seed can be injected — it simply
+      // fails to decrypt and is replaced. The OLD persistentId is
+      // unrecoverable by design; only a mnemonic restore can bring it back.
+      const reason = e.message.includes('YPC-27') ? 'integrity-failed' : 'undecryptable';
+      const quarantinePath = this.seedPath.replace(
+        /\.json$/, `.invalid-${reason}-${Date.now()}.json`
       );
+      try {
+        renameSync(this.seedPath, quarantinePath);
+      } catch (qe) {
+        log.error('Could not quarantine bad seed file', { error: qe.message });
+      }
+
+      if (reason === 'integrity-failed') {
+        log.error('🚨 YPC-27 SEED INTEGRITY CHECK FAILED — seed file tampered or corrupt.');
+        log.error(`Quarantined to ${quarantinePath}. Minting a fresh hardware-bound identity.`);
+        log.error('The previous persistentId is NOT recoverable without the mnemonic backup.');
+      } else {
+        log.warn('Machine seed cannot be decrypted on this hardware', { error: e.message });
+        log.warn(`Foreign or relocated seed quarantined to ${quarantinePath}`);
+        log.warn('Minting a fresh hardware-bound identity — a new persistentId will be assigned.');
+      }
+
+      this.seedReset = { reason, quarantinedTo: quarantinePath, at: new Date().toISOString() };
+      return this._generateNew();
     }
   }
 
@@ -962,6 +986,14 @@ export class MachineSeed {
    */
   isFirstRun() {
     return this.created;
+  }
+
+  /**
+   * Get info about an automatic identity reset, if one occurred this boot.
+   * @returns {{ reason: string, quarantinedTo: string, at: string } | null}
+   */
+  getResetInfo() {
+    return this.seedReset;
   }
 }
 

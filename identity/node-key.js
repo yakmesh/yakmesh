@@ -352,6 +352,17 @@ export class NodeIdentity {
     // ─── Layer 2: Machine Seed (unique, hardware-bound) ───
     await this.machineSeed.init();
 
+    // If an unusable seed was quarantined + reminted, surface it — the
+    // persistentId changed and any prior reputation must be re-earned.
+    const resetInfo = this.machineSeed.getResetInfo();
+    if (resetInfo) {
+      log.warn('═══════════════════════════════════════════════════════════');
+      log.warn(`IDENTITY RESET — prior seed was ${resetInfo.reason}`);
+      log.warn(`Quarantined: ${resetInfo.quarantinedTo}`);
+      log.warn('A fresh hardware-bound persistentId will be assigned.');
+      log.warn('═══════════════════════════════════════════════════════════');
+    }
+
     // ─── Legacy migration: detect old encrypted-private-key format ───
     if (existsSync(this.keyPath)) {
       const oldData = JSON.parse(readFileSync(this.keyPath, 'utf8'));
@@ -466,6 +477,7 @@ export class NodeIdentity {
       backupAlgorithm: this.identity.backupAlgorithm || null,
       nistLevel: this.identity.nistLevel,
       capabilities: this.identity.capabilities,
+      seedReset: this.machineSeed.getResetInfo(),
       createdAt: this.identity.createdAt,
     };
   }

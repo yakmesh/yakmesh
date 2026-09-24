@@ -26,7 +26,7 @@
 
 import { Command } from 'commander';
 import chalk from 'chalk';
-import { existsSync, mkdirSync, writeFileSync, readFileSync, cpSync, readdirSync } from 'fs';
+import { existsSync, mkdirSync, writeFileSync, readFileSync, cpSync, readdirSync, renameSync } from 'fs';
 import { join, resolve } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -233,24 +233,167 @@ program
     console.log('');
   });
 
+// ===== IDENTITY COMMAND GROUP =====
+const identityCmd = program
+  .command('identity')
+  .description('Inspect or reset this node\'s hardware-bound identity');
+
+identityCmd
+  .command('show')
+  .description('Show persistentId and seed state')
+  .option('-t, --to <dir>', 'Data directory', './data')
+  .action((options) => {
+    showBanner();
+    const dataDir = resolve(options.to);
+    const seedPath = join(dataDir, 'machine-seed.json');
+    const keyPath = join(dataDir, 'node-key.json');
+    const pid = readPersistentId(dataDir);
+
+    console.log(chalk.yellow('Node identity\n'));
+    console.log(chalk.gray(`  Data dir:     ${dataDir}`));
+    console.log(chalk.gray(`  persistentId: ${pid || '(none)'}`));
+    console.log(chalk.gray(`  Seed file:    ${existsSync(seedPath) ? 'present (hardware-encrypted)' : 'absent — will mint on next start'}`));
+    console.log(chalk.gray(`  Public key:   ${existsSync(keyPath) ? 'present' : 'absent — will derive on next start'}`));
+
+    // Quarantined seeds (auto-recovery or manual reset leftovers)
+    if (existsSync(dataDir)) {
+      const quarantined = readdirSync(dataDir)
+        .filter(f => /^machine-seed\.(invalid|reset)-.*\.json$/.test(f));
+      if (quarantined.length) {
+        console.log(chalk.gray(`\n  Quarantined seeds:`));
+        for (const f of quarantined) console.log(chalk.gray(`    ${f}`));
+      }
+    }
+    console.log('');
+  });
+
+identityCmd
+  .command('reset')
+  .description('Quarantine the current identity so a fresh hardware-bound one is minted on next start')
+  .option('-t, --to <dir>', 'Data directory', './data')
+  .option('-f, --force', 'Skip confirmation prompt')
+  .action(async (options) => {
+    showBanner();
+    const { createInterface } = await import('node:readline');
+    const dataDir = resolve(options.to);
+    const seedPath = join(dataDir, 'machine-seed.json');
+    const keyPath = join(dataDir, 'node-key.json');
+    const pid = readPersistentId(dataDir);
+
+    console.log(chalk.yellow('Reset node identity\n'));
+    if (!existsSync(seedPath) && !existsSync(keyPath)) {
+      console.log(chalk.gray('  No identity files found — nothing to reset.'));
+      console.log(chalk.gray('  A fresh identity is minted on next start anyway.\n'));
+      return;
+    }
+
+    console.log(chalk.gray(`  Data dir:     ${dataDir}`));
+    console.log(chalk.gray(`  persistentId: ${pid || '(unknown)'}`));
+    console.log(chalk.yellow('\n  This identity\'s persistentId and KARMA reputation will be LOST.'));
+    console.log(chalk.gray('  Files are quarantined (renamed), never deleted.'));
+    console.log(chalk.gray('  To keep this identity on new hardware, restore from the 33-word'));
+    console.log(chalk.gray('  mnemonic instead (dashboard → Identity Backup).\n'));
+
+    if (!options.force) {
+      if (!process.stdin.isTTY) {
+        console.log(chalk.red('✗ Non-interactive shell — pass --force to confirm.\n'));
+        process.exit(1);
+      }
+      const rl = createInterface({ input: process.stdin, output: process.stdout });
+      const a = await new Promise(r => rl.question('  Reset identity? [y/N] ', r));
+      rl.close();
+      if (!a.trim().toLowerCase().startsWith('y')) {
+        console.log(chalk.gray('  Aborted — identity untouched.\n'));
+        return;
+      }
+    }
+
+    const ts = Date.now();
+    let moved = 0;
+    for (const p of [seedPath, keyPath]) {
+      if (!existsSync(p)) continue;
+      const q = p.replace(/\.json$/, `.reset-${ts}.json`);
+      try {
+        renameSync(p, q);
+        moved++;
+        console.log(chalk.gray(`  ${p.split(/[\\/]/).pop()} → ${q.split(/[\\/]/).pop()}`));
+      } catch (e) {
+        console.log(chalk.red(`  ✗ could not quarantine ${p}: ${e.message}`));
+      }
+    }
+
+    if (moved) {
+      console.log(chalk.green(`\n✓ Identity reset (${moved} file(s) quarantined)`));
+      console.log(chalk.gray('  Next start mints a fresh hardware-bound persistentId.'));
+      console.log(chalk.gray('  Restore the old identity via mnemonic if you have it.\n'));
+    } else {
+      console.log(chalk.red('\n✗ No files could be quarantined.\n'));
+      process.exit(1);
+    }
+  });
+
 // ===== UPGRADE COMMAND =====
 program
   .command('upgrade')
   .description('Apply an upgrade package in place — overlays code, preserves data/ + personal setup')
-  .argument('<package>', 'Path to upgrade package (.zip ACT package or .tgz npm tarball)')
+  .argument('[package]', 'Path to upgrade package (.zip/.tgz) — auto-detected in the install dir, or a file picker opens if omitted')
   .option('--dry-run', 'Show what would be overlaid without applying')
+  .option('-y, --yes', 'Accept defaults non-interactively (apply/restart yes, auto-start no)')
   .action(async (pkgPath, options) => {
     showBanner();
-    const { zipEntries, applyUpgradePackage, walk } = await import('../utils/in-place-upgrade.js');
-    const { execSync } = await import('node:child_process');
-    const { rmSync } = await import('node:fs');
+    const { zipEntries, applyUpgradePackage, walk, EXCLUDE_DIRS } = await import('../utils/in-place-upgrade.js');
+    const { execSync, spawn } = await import('node:child_process');
+    const { rmSync, readdirSync, statSync } = await import('node:fs');
+    const { createInterface } = await import('node:readline');
 
     const ROOT = join(__dirname, '..');
     const DATA = join(ROOT, 'data');
-    const src = resolve(pkgPath);
+    const HTTP_PORT = parseInt(process.env.YAKMESH_HTTP_PORT || '3080', 10);
+    const API = `http://127.0.0.1:${HTTP_PORT}`;
+
+    const ask = async (q, defYes = true) => {
+      if (options.yes) return defYes;
+      if (!process.stdin.isTTY) return defYes;
+      const rl = createInterface({ input: process.stdin, output: process.stdout });
+      const a = await new Promise(r => rl.question(`${q} ${defYes ? '[Y/n]' : '[y/N]'} `, r));
+      rl.close();
+      const v = a.trim().toLowerCase();
+      return v === '' ? defYes : v.startsWith('y');
+    };
+
+    // ── Resolve the package: arg → dir scan → native file picker ──
+    let src = pkgPath ? resolve(pkgPath) : null;
+    if (!src) {
+      const candidates = readdirSync(ROOT)
+        .filter(f => /\.(tgz|tar\.gz|zip)$/i.test(f) && /yakmesh|update|upgrade/i.test(f))
+        .map(f => ({ f, m: statSync(join(ROOT, f)).mtimeMs }))
+        .sort((a, b) => b.m - a.m);
+      if (candidates.length) {
+        src = join(ROOT, candidates[0].f);
+        console.log(chalk.gray(`  Found upgrade package in install dir: ${candidates[0].f}`));
+      } else {
+        // No package in directory — open the native file picker
+        console.log(chalk.gray('  No upgrade package in the install dir — opening file picker…'));
+        try {
+          if (process.platform === 'linux') {
+            src = execSync(`zenity --file-selection --title="Select yakmesh upgrade package" 2>/dev/null`, { encoding: 'utf8' }).trim();
+          } else if (process.platform === 'win32') {
+            src = execSync(
+              'powershell -NoProfile -Command "Add-Type -AssemblyName System.Windows.Forms; $d=New-Object System.Windows.Forms.OpenFileDialog; $d.Filter=\'Upgrade packages (*.zip;*.tgz)|*.zip;*.tgz|All files|*.*\'; if($d.ShowDialog() -eq \'OK\'){$d.FileName}"',
+              { encoding: 'utf8' }).trim();
+          } else if (process.platform === 'darwin') {
+            src = execSync(`osascript -e 'POSIX path of (choose file with prompt "Select yakmesh upgrade package")'`, { encoding: 'utf8' }).trim();
+          }
+        } catch { src = null; }
+        if (!src) {
+          console.log(chalk.red('✗ No package selected. Pass a path: yakmesh upgrade <package.zip|package.tgz>'));
+          process.exit(1);
+        }
+      }
+    }
 
     if (!existsSync(src)) {
-      console.log(chalk.red(`✗ Package not found: ${pkgPath}`));
+      console.log(chalk.red(`✗ Package not found: ${src}`));
       process.exit(1);
     }
 
@@ -259,61 +402,137 @@ program
     console.log(chalk.gray(`  Install: ${ROOT}`));
     console.log(chalk.gray('  data/, node_modules/, models/, .git/ are never touched —\n  identity, KARMA, keys, and your setup ride through.\n'));
 
+    // ── Detect a running node + whether it is supervised ──
+    let nodeState = null;
+    try {
+      const res = await fetch(`${API}/api/update`, { signal: AbortSignal.timeout(2000) });
+      if (res.ok) nodeState = await res.json();
+    } catch { }
+
     // Build the entry list {name, data} — zip natively, tgz via system tar
-    let entries;
+    let entries = null;
     let extractDir = null;
-    if (/\.(zip)$/i.test(src)) {
-      entries = [...zipEntries(readFileSync(src))];
-    } else if (/\.(tgz|tar\.gz|tar)$/i.test(src)) {
-      extractDir = join(DATA, `upgrade-extract-${Date.now()}`);
-      mkdirSync(extractDir, { recursive: true });
-      try {
-        execSync(`tar -xf "${src}" -C "${extractDir}"`, { stdio: ['ignore', 'pipe', 'pipe'] });
-      } catch (e) {
-        console.log(chalk.red('✗ Could not extract tarball (need system tar/bsdtar)'));
+    const loadEntries = () => {
+      if (entries) return entries;
+      if (/\.zip$/i.test(src)) {
+        entries = [...zipEntries(readFileSync(src))];
+      } else if (/\.(tgz|tar\.gz|tar)$/i.test(src)) {
+        extractDir = join(DATA, `upgrade-extract-${Date.now()}`);
+        mkdirSync(extractDir, { recursive: true });
+        try {
+          execSync(`tar -xf "${src}" -C "${extractDir}"`, { stdio: ['ignore', 'pipe', 'pipe'] });
+        } catch {
+          rmSync(extractDir, { recursive: true, force: true });
+          console.log(chalk.red('✗ Could not extract tarball (need system tar/bsdtar)'));
+          process.exit(1);
+        }
+        let base = extractDir;
+        if (existsSync(join(base, 'package', 'package.json'))) base = join(base, 'package');
+        entries = [...walk(base)].map(({ abs, rel }) => ({ name: rel, data: readFileSync(abs) }));
+      } else {
+        console.log(chalk.red('✗ Unrecognized package format — expected .zip or .tgz'));
         process.exit(1);
       }
-      // npm tarballs wrap everything in package/ — strip it
-      let base = extractDir;
-      if (existsSync(join(base, 'package', 'package.json'))) base = join(base, 'package');
-      entries = [...walk(base)].map(({ abs, rel }) => ({ name: rel, data: readFileSync(abs) }));
-    } else {
-      console.log(chalk.red('✗ Unrecognized package format — expected .zip or .tgz'));
-      process.exit(1);
+      return entries;
+    };
+    const cleanup = () => { if (extractDir) { try { rmSync(extractDir, { recursive: true, force: true }); } catch { } } };
+
+    // ══ Path A: node is RUNNING under the supervisor ══
+    // Stage through the live API (tgz→zip normalization included), then
+    // offer to apply — the node writes the marker and exits; yakmesh-run
+    // performs the swap on respawn.
+    if (nodeState && nodeState.supervised) {
+      console.log(chalk.gray('  Node is running under yakmesh-run — staging via the update API.'));
+      const res = await fetch(`${API}/api/update/stage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/octet-stream' },
+        body: readFileSync(src),
+      });
+      const staged = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        console.log(chalk.red(`✗ Stage failed: ${staged.error || res.statusText}`));
+        process.exit(1);
+      }
+      console.log(chalk.green(`✓ Staged ${staged.files} files (${(staged.size / 1024 / 1024).toFixed(1)} MB), sha256 ${staged.sha256.slice(0, 16)}…`));
+      if (await ask('\nApply now? The node will restart and the supervisor performs the swap.')) {
+        const ar = await fetch(`${API}/api/update/apply`, { method: 'POST' }).catch(() => null);
+        console.log(chalk.green('✓ Apply signaled — node restarting; supervisor swaps the code.'));
+        console.log(chalk.gray('  Watch it come back: tail -f data/supervisor.log\n'));
+      } else {
+        console.log(chalk.gray('\nStaged only. Apply later via the dashboard Updates card or'));
+        console.log(chalk.gray(`  curl -X POST ${API}/api/update/apply\n`));
+      }
+      return;
     }
 
+    // ══ Path B: node is RUNNING but NOT supervised ══
+    // Overlaying code under a live unsupervised process is unsafe — offer
+    // to stage for the next yakmesh-run launch, or quit so the user can
+    // stop the node and re-run (which then applies in place immediately).
+    if (nodeState && !nodeState.supervised) {
+      console.log(chalk.yellow('  ⚠ Node is running WITHOUT the supervisor (node server/index.js).'));
+      console.log(chalk.gray('    Applying code under a live process is unsafe.\n'));
+      const stageOnly = await ask('Stage the package for the next `yakmesh-run` restart instead? (n = quit so you can stop the node and re-run)', true);
+      if (stageOnly) {
+        const res = await fetch(`${API}/api/update/stage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/octet-stream' },
+          body: readFileSync(src),
+        });
+        const staged = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          console.log(chalk.red(`✗ Stage failed: ${staged.error || res.statusText}`));
+          process.exit(1);
+        }
+        console.log(chalk.green(`✓ Staged ${staged.files} files — relaunch via \`node scripts/yakmesh-run.js\` to apply.`));
+      } else {
+        console.log(chalk.gray('\nStop the node, then re-run `yakmesh upgrade` — it will apply in place.'));
+      }
+      return;
+    }
+
+    // ══ Path C: node NOT running — direct in-place apply ══
+    loadEntries();
     if (!entries.length) {
+      cleanup();
       console.log(chalk.red('✗ Package contained no applicable files'));
       process.exit(1);
     }
-    console.log(chalk.gray(`  ${entries.length} package entries`));
+    console.log(chalk.gray(`  ${entries.length} package entries\n`));
 
     if (options.dryRun) {
-      const { EXCLUDE_DIRS } = await import('../utils/in-place-upgrade.js');
       for (const { name } of entries) {
         const top = name.replace(/\\/g, '/').split('/')[0];
         console.log(chalk.gray(`    ${EXCLUDE_DIRS.has(top) ? 'skip' : ' →  '} ${name}`));
       }
       console.log(chalk.cyan('\nDry run — nothing applied.'));
+      cleanup();
       return;
     }
-
-    console.log(chalk.yellow('\n⚠ Stop the node before upgrading if it is running.\n'));
 
     const { overlaid, added, quarantined, rollbackDir } = applyUpgradePackage(entries, {
       root: ROOT,
       dataDir: DATA,
       log: (m) => console.log(chalk.gray(`  ${m}`)),
     });
-
-    if (extractDir) { try { rmSync(extractDir, { recursive: true, force: true }); } catch {} }
+    cleanup();
 
     console.log(chalk.green(`\n✓ Applied: ${overlaid} files overlaid`));
     if (added.length) console.log(chalk.green(`✓ Added: ${added.length} new files`));
     if (quarantined) console.log(chalk.yellow(`⚠ Quarantined: ${quarantined} leftover file(s) not in new manifest`));
     if (rollbackDir) console.log(chalk.gray(`  Rollback: ${rollbackDir}`));
-    console.log(chalk.gray('\nStart the node to run the new code. Upgrade grace may hold'));
-    console.log(chalk.gray('manifest-mismatched files for review on first boot — expected.\n'));
+
+    // Requirements met — offer to launch under the supervisor so the node
+    // (and its update machinery) runs in the designed mode.
+    if (await ask('\nStart yakmesh under the supervisor now?', true)) {
+      const child = spawn(process.execPath, [join(ROOT, 'scripts', 'yakmesh-run.js')], {
+        cwd: ROOT, detached: true, stdio: 'ignore',
+      });
+      child.unref();
+      console.log(chalk.green('✓ yakmesh-run launched in the background — logs: data/supervisor.log\n'));
+    } else {
+      console.log(chalk.gray('\nStart when ready: node scripts/yakmesh-run.js\n'));
+    }
   });
 
 // ===== START COMMAND =====

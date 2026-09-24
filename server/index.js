@@ -43,6 +43,7 @@ import { join } from 'path';
 import { networkInterfaces } from 'os';
 import WebSocket, { WebSocketServer } from 'ws';
 import { createLogger } from '../utils/logger.js';
+const PKG_VERSION = JSON.parse(readFileSync(join(import.meta.dirname, '..', 'package.json'), 'utf8')).version;
 import * as accel from '../utils/accel.js';
 import { startPipeServer, getPipePath, upgradePipeAntiCheat, isPipeServerRunning } from '../utils/scheduler-pipe.js';
 import * as prahari from '../security/prahari.js';
@@ -288,6 +289,10 @@ const DEFAULT_CONFIG = {
       syncInterval: 5000,
     },
   },
+  seva: {
+    enabled: true,
+    maxConcurrent: 10,
+  },
 };
 
 /**
@@ -352,6 +357,12 @@ async function loadConfig() {
       .split(',')
       .map(s => s.trim())
       .filter(Boolean);
+  }
+
+  // SEVA shared-compute kill switch (enabled by default — set to 0/off to disable)
+  if (process.env.YAKMESH_SEVA !== undefined) {
+    const v = process.env.YAKMESH_SEVA.toLowerCase();
+    config.seva = { ...config.seva, enabled: !(v === '0' || v === 'off' || v === 'false') };
   }
 
   if (process.env.YAKMESH_RELAY_PEERS) {
@@ -3952,7 +3963,14 @@ export class YakmeshNode {
 
       // Build lightweight metrics (mirrors /metrics endpoint)
       const oracleInfo = this.oracle ? (() => {
-        const integrity = this.oracle.verifySelfIntegrity();
+        let integrity;
+        try {
+          integrity = this.oracle.verifySelfIntegrity();
+        } catch (err) {
+          // INTEGRITY VIOLATION — report it, don't 500 the route. A dev
+          // tree with uncommitted edits legitimately trips the seal.
+          return { status: 'compromised', valid: false, error: err.message };
+        }
         return {
           status: integrity.valid ? 'healthy' : 'compromised',
           valid: integrity.valid,
@@ -4013,6 +4031,38 @@ export class YakmeshNode {
         dokoInfo = { status: 'uninitialized', types: Object.keys(DOKOTypes) };
       }
 
+      // Compute Triad — measured hardware + acceleration state (3.5.x)
+      let accelInfo = null;
+      try { accelInfo = accel.getStatus(); } catch { }
+
+      // SEVA shared compute — loaded model slots + served work
+      let sevaInfo = null;
+      try { sevaInfo = this.seva?.getStats?.() || null; } catch { }
+
+      // AGUWA mesh consensus — order parameter + ACT coordination state
+      let aguwaInfo = null;
+      try {
+        aguwaInfo = {
+          orderParameter: aguwa.orderParameter(),
+          actEpochBuffer: aguwa.getACTEpochBuffer?.() ?? null,
+          epoch: avothBridge.currentEpoch?.() ?? null,
+          pendingACT: this._pendingACTProposal || null,
+        };
+      } catch { }
+
+      // AVOTH bridge — pq-bridge hourglass availability
+      let avothInfo = null;
+      try {
+        avothInfo = {
+          available: avothBridge.lastKnownAvailable?.() ?? null,
+          epoch: avothBridge.currentEpoch?.() ?? null,
+        };
+      } catch { }
+
+      // KARMA trust model — self level + store summary
+      let karmaInfo = null;
+      try { karmaInfo = this.karmaModel?.getStats?.() || null; } catch { }
+
       return {
         node: this.identity.getPublicIdentity(),
         peers: this.mesh.getPeers(),
@@ -4020,7 +4070,7 @@ export class YakmeshNode {
           node: {
             id: this.identity?.identity?.nodeId || null,
             name: this.config?.node?.name || 'unknown',
-            version: '2.9.0',
+            version: PKG_VERSION,
             uptime,
             uptimeFormatted: formatUptime(uptime),
           },
@@ -4032,6 +4082,12 @@ export class YakmeshNode {
             namche: namcheInfo,
             doko: dokoInfo,
           },
+          accel: accelInfo,
+          seva: sevaInfo,
+          aguwa: aguwaInfo,
+          avoth: avothInfo,
+          karma: karmaInfo,
+          supervised: process.env.YAKMESH_SUPERVISED === '1',
         },
         gossip: this.gossip.getStats(),
         discovered: this.gossip.getKnownPeers(),
@@ -4956,6 +5012,7 @@ export class YakmeshNode {
         accepted: !!this._acceptedUpgrade,
         pendingACT: this._pendingACTProposal || null,
         stagedPackage,
+        supervised: process.env.YAKMESH_SUPERVISED === '1',
         trustedAnnouncers: this.config.updates?.trustedAnnouncers || [],
         autoConsent: process.env.YAKMESH_ACT_AUTO_CONSENT === 'true',
       });
@@ -5768,7 +5825,12 @@ export class YakmeshNode {
         return res.status(503).json({ error: 'Oracle not initialized' });
       }
 
-      const integrity = this.oracle.verifySelfIntegrity();
+      let integrity;
+      try {
+        integrity = this.oracle.verifySelfIntegrity();
+      } catch (err) {
+        integrity = { valid: false, error: err.message };
+      }
 
       // Use network identity fingerprint instead of raw hash
       const networkFingerprint = this.genesisNetwork?.fingerprint || 'not-initialized';
@@ -6173,7 +6235,13 @@ export class YakmeshNode {
       // Oracle status
       let oracleInfo = null;
       if (this.oracle) {
-        const integrity = this.oracle.verifySelfIntegrity();
+        let integrity;
+        try {
+          integrity = this.oracle.verifySelfIntegrity();
+        } catch (err) {
+          // INTEGRITY VIOLATION — surface as compromised, not a 500.
+          integrity = { valid: false, error: err.message };
+        }
         oracleInfo = {
           status: integrity.valid ? 'healthy' : 'compromised',
           valid: integrity.valid,
@@ -6229,11 +6297,32 @@ export class YakmeshNode {
         websiteInfo = { status: 'uninitialized' };
       }
 
+      // Same 3.5.x surfaces the WS snapshot carries — the dashboard REST
+      // refresh path reads metrics.accel/seva/aguwa/avoth/karma too.
+      let accelInfo = null, sevaInfo = null, aguwaInfo = null, avothInfo = null, karmaInfo = null;
+      try { accelInfo = accel.getStatus(); } catch { }
+      try { sevaInfo = this.seva?.getStats?.() || null; } catch { }
+      try {
+        aguwaInfo = {
+          orderParameter: aguwa.orderParameter(),
+          actEpochBuffer: aguwa.getACTEpochBuffer?.() ?? null,
+          epoch: avothBridge.currentEpoch?.() ?? null,
+          pendingACT: this._pendingACTProposal || null,
+        };
+      } catch { }
+      try {
+        avothInfo = {
+          available: avothBridge.lastKnownAvailable?.() ?? null,
+          epoch: avothBridge.currentEpoch?.() ?? null,
+        };
+      } catch { }
+      try { karmaInfo = this.karmaModel?.getStats?.() || null; } catch { }
+
       res.json({
         node: {
           id: this.identity?.identity?.nodeId || null,
           name: this.config?.node?.name || 'unknown',
-          version: '2.9.0',
+          version: PKG_VERSION,
           uptime,
           uptimeFormatted: formatUptime(uptime),
         },
@@ -6249,6 +6338,12 @@ export class YakmeshNode {
           peers: peerCount,
           gossip: gossipStats,
         },
+        accel: accelInfo,
+        seva: sevaInfo,
+        aguwa: aguwaInfo,
+        avoth: avothInfo,
+        karma: karmaInfo,
+        supervised: process.env.YAKMESH_SUPERVISED === '1',
         timestamp: new Date().toISOString(),
       });
     });
@@ -6531,7 +6626,12 @@ export class YakmeshNode {
 
     // Get comprehensive security status
     app.get('/security/status', (req, res) => {
-      const oracleIntegrity = this.oracle?.verifySelfIntegrity();
+      let oracleIntegrity = null;
+      try {
+        oracleIntegrity = this.oracle?.verifySelfIntegrity();
+      } catch (err) {
+        oracleIntegrity = { valid: false, error: err.message };
+      }
 
       res.json({
         namche: this.namcheGateway?.getStatus() || { status: 'uninitialized' },

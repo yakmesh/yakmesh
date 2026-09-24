@@ -978,6 +978,36 @@ export class NamcheGateway extends EventEmitter {
   }
 
   /**
+   * Dashboard/API status view — gate names + verification counters.
+   * Per-gate pass/fail is not tracked individually (verifications are
+   * all-or-nothing), so gateStatus reports the aggregate honestly.
+   */
+  getStatus() {
+    const s = this.getStats();
+    const gateCount = 7;
+    return {
+      status: 'active',
+      gateCount,
+      gates: [
+        'Structure Valid', 'Signature Valid', 'NodeID Match',
+        'Temporal Valid', 'Network Match', 'Not Revoked', 'Domains OK',
+      ],
+      // All seven gates are evaluated on every verification — they are
+      // enforced, not pending. Failures show in the counters, not a gate
+      // going "down".
+      gateStatus: Array(gateCount).fill('active'),
+      verifications: {
+        attempted: s.verificationsAttempted,
+        succeeded: s.verificationsSucceeded,
+        failed: s.verificationsFailed,
+      },
+      cacheSize: s.cacheSize,
+      revocations: s.revocationsCount,
+      revocationsProcessed: s.revocationsProcessed,
+    };
+  }
+
+  /**
    * Create a DOKO with trit commitment (dual-layer security).
    * 
    * This is the recommended way to create DOKOs for full defense-in-depth:

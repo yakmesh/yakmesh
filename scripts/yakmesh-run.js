@@ -243,7 +243,9 @@ function run() {
     const child = spawn(process.execPath, [join(ROOT, 'server', 'index.js'), ...process.argv.slice(2)], {
       cwd: ROOT,
       stdio: ['inherit', 'pipe', 'pipe'],
-      env: process.env,
+      // Marker so the node (and CLI/dashboard) can tell a supervised run —
+      // staged update swaps only complete under this supervisor.
+      env: { ...process.env, YAKMESH_SUPERVISED: '1' },
     });
     nodeChild = child;
     child.stdout?.on('data', (c) => tee(process.stdout, c));

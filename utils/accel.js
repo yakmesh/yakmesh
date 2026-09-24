@@ -58,6 +58,8 @@ import os from 'os';
 import { execSync } from 'child_process';
 import { Worker } from 'worker_threads';
 import { fileURLToPath } from 'url';
+import { existsSync, readdirSync, readFileSync } from 'fs';
+import { join } from 'path';
 
 const log = createLogger('utils:accel');
 
@@ -380,6 +382,7 @@ function _probeNvidiaGpu() {
  * On Windows, check for AMD IPU Device in Device Manager.
  */
 function _probeAmdNpu() {
+  if (os.platform() === 'linux') return _probeAmdNpuLinux();
   if (os.platform() !== 'win32') return;
 
   try {
@@ -420,6 +423,48 @@ function _probeAmdNpu() {
     }
   } catch {
     // PnP query failed — no claim (honest zero)
+  }
+}
+
+/**
+ * Detect AMD XDNA NPU on Linux.
+ * The amdxdna driver binds the IPU as a /dev/accel/accelN char device.
+ * PCI device IDs: 1502 = Phoenix/Hawk Point (XDNA1, ~16 TOPS),
+ * 17F0/17F1 = Strix (XDNA2, ~50 TOPS). Silicon without a bound driver
+ * is reported but never claimed — honest zero.
+ */
+function _probeAmdNpuLinux() {
+  const PCI_DIR = '/sys/bus/pci/devices';
+  const TOPS_BY_DEVID = { '0x1502': 16, '0x17f0': 50, '0x17f1': 50 };
+
+  try {
+    if (!existsSync(PCI_DIR)) return;
+    for (const dev of readdirSync(PCI_DIR)) {
+      let vendor, device;
+      try {
+        vendor = readFileSync(join(PCI_DIR, dev, 'vendor'), 'utf8').trim();
+        if (vendor !== '0x1022') continue;
+        device = readFileSync(join(PCI_DIR, dev, 'device'), 'utf8').trim();
+      } catch { continue; }
+
+      const tops = TOPS_BY_DEVID[device];
+      if (!tops) continue;
+
+      // Silicon found — require the accel char device to be bound before
+      // claiming a usable NPU (driver loaded + device operational).
+      const accelBound = existsSync('/dev/accel') &&
+        readdirSync('/dev/accel').some((f) => /^accel\d/.test(f));
+      if (accelBound) {
+        HW.amdNpu = true;
+        HW.amdNpuTops = tops;
+        log.debug(`  NPU detected (PCI ${dev}, id ${device}): ${tops} TOPS via /dev/accel`);
+      } else {
+        log.debug(`  NPU silicon at PCI ${dev} (id ${device}) but no /dev/accel device — driver not bound, not claiming`);
+      }
+      return;
+    }
+  } catch {
+    // sysfs unavailable — no claim (honest zero)
   }
 }
 
