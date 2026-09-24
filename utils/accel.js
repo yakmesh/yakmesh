@@ -2524,14 +2524,32 @@ export const scheduler = new ComputeScheduler();
  * @returns {{ hw: typeof HW, telemetry: Object }}
  */
 export async function initialize() {
-  await probe();
-  await batchVerify.initialize();
-  await inference.initialize();
-  await scheduler.initialize();
+  // Every stage is individually bounded — a wedged driver probe, hung
+  // sysfs read, or failed subsystem must degrade to CPU/pure-JS, never
+  // stall node boot. Failures are logged, not propagated.
+  const stage = async (name, fn) => {
+    try {
+      let timer;
+      await Promise.race([
+        fn(),
+        new Promise((_, rej) => {
+          timer = setTimeout(() => rej(new Error('detection timed out')), 15000);
+          if (timer.unref) timer.unref();
+        }),
+      ]).finally(() => clearTimeout(timer));
+    } catch (e) {
+      log.warn(`ACCEL: ${name} failed (${e.message}) — continuing degraded`);
+    }
+  };
+
+  await stage('hardware probe', probe);
+  await stage('batch-verify workers', () => batchVerify.initialize());
+  await stage('inference engine', () => inference.initialize());
+  await stage('scheduler', () => scheduler.initialize());
 
   // Pre-load native PQ if available
   if (HW.nativePQ) {
-    await _loadNativePQ();
+    await stage('native PQ', _loadNativePQ);
   }
 
   return { hw: HW, telemetry: getTelemetry() };
