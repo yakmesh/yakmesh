@@ -2943,8 +2943,8 @@ export class YakmeshNode {
 
     // Provider taxonomy — honest, best-first ordering
     const providers = ['cpu'];
-    if (accel.HW.nvGpu) providers.push('gpu');
-    if (accel.HW.amdNpu) providers.push('onnx-dml');
+    if (accel.HW.nvGpu || accel.HW.amdGpu) providers.push('gpu');
+    if (accel.HW.amdNpu || accel.HW.amdGpu) providers.push('onnx-dml');
     if (avothOk) providers.push('avoth-triad');
 
     // Deterministic job material for avoth-* slots — same bytes on every
@@ -2973,7 +2973,7 @@ export class YakmeshNode {
       hardware: {
         npu: accel.HW.amdNpu,
         npuTops: accel.HW.amdNpuTops,
-        gpu: accel.HW.nvGpu,
+        gpu: accel.HW.nvGpu || accel.HW.amdGpu,
       },
       availableSlots,
       maxConcurrent: cfg.maxConcurrent || 10,

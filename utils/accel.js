@@ -108,6 +108,13 @@ export const HW = Object.seal({
   nvDriverVersion: '',
   nvGpuTops: 0,        // INT8 Tensor Core TOPS
 
+  // AMD GPU (discrete — RX/Radeon). Detection only: RDNA has no tensor
+  // cores and no CUDA — TOPS stays 0, inference claim stays honest.
+  // DirectML can still execute ONNX on it under Windows.
+  amdGpu: false,
+  amdGpuName: '',
+  amdGpuVRAM: 0,       // MiB
+
   // AMD NPU (XDNA)
   amdNpu: false,
   amdNpuTops: 0,
@@ -179,6 +186,9 @@ export async function probe() {
   // ---- NVIDIA GPU ----
   _probeNvidiaGpu();
 
+  // ---- AMD GPU (discrete) ----
+  _probeAmdGpu();
+
   // ---- AMD NPU ----
   _probeAmdNpu();
 
@@ -201,6 +211,7 @@ export async function probe() {
   if (HW.shaNI) caps.push('SHA-NI');
   if (HW.gfni) caps.push('GFNI');
   if (HW.nvGpu) caps.push(`GPU:${HW.nvGpuName}(${HW.nvGpuTops}T)`);
+  if (HW.amdGpu) caps.push(`GPU:${HW.amdGpuName}(detected)`);
   if (HW.amdNpu) caps.push(`NPU:${HW.amdNpuTops}T`);
   if (HW.totalTops > 0) caps.push(`TOTAL:${HW.totalTops}TOPS`);
   if (HW.onnxRuntime) caps.push(`ONNX:[${HW.onnxProviders.join(',')}]`);
@@ -378,6 +389,86 @@ function _probeNvidiaGpu() {
 }
 
 /**
+ * Detect AMD discrete GPU (RX/Radeon).
+ * Detection only — RDNA has no tensor cores and no CUDA, so no TOPS is
+ * claimed. DirectML can still execute ONNX on it under Windows.
+ */
+function _probeAmdGpu() {
+  if (os.platform() === 'win32') {
+    try {
+      // Win32_VideoController.AdapterRAM is UInt32 — overflows above 4GB.
+      // qwMemorySize in the display-class registry key is the real 64-bit size.
+      const output = execSync(
+        'powershell -NoProfile -Command "Get-CimInstance Win32_VideoController | ' +
+        'Where-Object { $_.Name -match \'AMD|Radeon\' -and $_.Name -notmatch \'IPU\' } | ' +
+        'Select-Object Name,PNPDeviceID | ConvertTo-Json -Compress"',
+        { timeout: 8000, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }
+      ).trim();
+
+      if (!output) return;
+      const devs = JSON.parse(output);
+      const list = Array.isArray(devs) ? devs : [devs];
+      const dev = list.find((d) => /Radeon|RX\s?\d/i.test(d?.Name || '')) || list[0];
+      if (!dev?.Name) return;
+
+      HW.amdGpu = true;
+      HW.amdGpuName = dev.Name;
+
+      // VRAM via registry qwMemorySize (64-bit, no 4GB clamp)
+      try {
+        const instId = (dev.PNPDeviceID || '').replace(/\\/g, '\\\\');
+        const mem = execSync(
+          'powershell -NoProfile -Command "Get-ChildItem \'HKLM:\\SYSTEM\\ControlSet001\\Control\\Class\\{4d36e968-e325-11ce-bfc1-08002be10318}\' -ErrorAction SilentlyContinue | ' +
+          'Where-Object { $_.GetValue(\'MatchingDeviceId\') -eq \'' + instId + '\' } | ' +
+          'ForEach-Object { $_.GetValue(\'HardwareInformation.qwMemorySize\') }"',
+          { timeout: 8000, encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] }
+        ).trim();
+        const bytes = parseInt(mem, 10);
+        if (bytes > 0) HW.amdGpuVRAM = Math.round(bytes / 1048576);
+      } catch { /* VRAM optional */ }
+
+      log.debug(`  AMD GPU detected: ${HW.amdGpuName} (${HW.amdGpuVRAM} MiB)`);
+    } catch {
+      // WMI query failed — no claim
+    }
+    return;
+  }
+
+  if (os.platform() === 'linux') {
+    // DRM cards: vendor 0x1002 bound to a DRM device means a usable GPU.
+    try {
+      const drm = '/sys/class/drm';
+      if (!existsSync(drm)) return;
+      for (const card of readdirSync(drm)) {
+        if (!/^card\d+$/.test(card)) continue;
+        let vendor;
+        try {
+          vendor = readFileSync(join(drm, card, 'device', 'vendor'), 'utf8').trim();
+        } catch { continue; }
+        if (vendor !== '0x1002') continue;
+
+        HW.amdGpu = true;
+        // Name via lspci (best-effort); VRAM via sysfs mem_info_vram_total
+        try {
+          const out = execSync('lspci -nn', { timeout: 5000, encoding: 'utf8' });
+          const line = out.split('\n').find(l =>
+            /VGA|3D|Display/i.test(l) && /1002:/.test(l) && /AMD|ATI|Radeon/i.test(l));
+          HW.amdGpuName = line ? line.split(':').slice(2).join(':').replace(/\[1002:[0-9a-f]+\]/i, '').trim() : 'AMD GPU';
+        } catch { HW.amdGpuName = 'AMD GPU'; }
+        try {
+          const vram = readFileSync(join(drm, card, 'device', 'mem_info_vram_total'), 'utf8').trim();
+          HW.amdGpuVRAM = Math.round(parseInt(vram, 10) / 1048576) || 0;
+        } catch { /* optional */ }
+        log.debug(`  AMD GPU detected: ${HW.amdGpuName} (${HW.amdGpuVRAM} MiB)`);
+        return;
+      }
+    } catch {
+      // no claim
+    }
+  }
+}
+
+/**
  * Detect AMD XDNA NPU.
  * On Windows, check for AMD IPU Device in Device Manager.
  */
@@ -488,7 +579,8 @@ async function _probeOnnxRuntime() {
       // Infer from hardware
       const providers = ['cpu'];
       if (HW.nvGpu) providers.unshift('cuda');
-      if (HW.amdNpu) providers.unshift('dml');
+      // DirectML runs on AMD NPU *and* any DX12 GPU (RX 5700 included)
+      if (HW.amdNpu || HW.amdGpu) providers.unshift('dml');
       HW.onnxProviders = providers;
     }
   } catch {
@@ -2436,7 +2528,13 @@ export function getStatus() {
         compute: HW.nvComputeCap,
         cuda: HW.nvCudaVersion,
         tops: HW.nvGpuTops,
+      } : HW.amdGpu ? {
+        name: HW.amdGpuName,
+        vram: HW.amdGpuVRAM ? `${HW.amdGpuVRAM} MiB` : undefined,
+        vendor: 'amd',
+        tops: 0,  // RDNA: no tensor cores — detection only, honest zero
       } : null,
+      amdGpu: HW.amdGpu ? { name: HW.amdGpuName, vramMiB: HW.amdGpuVRAM } : null,
       npu: HW.amdNpu ? {
         tops: HW.amdNpuTops,
       } : null,
@@ -2473,6 +2571,8 @@ export function getCapabilities() {
     nvGpuName: HW.nvGpuName || undefined,
     nvGpuVRAM: HW.nvGpuVRAM || undefined,
     nvGpuTops: HW.nvGpuTops || undefined,
+    amdGpu: HW.amdGpu || undefined,
+    amdGpuName: HW.amdGpuName || undefined,
     amdNpu: HW.amdNpu,
     amdNpuTops: HW.amdNpuTops || undefined,
     totalTops: HW.totalTops,
