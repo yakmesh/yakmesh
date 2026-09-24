@@ -875,6 +875,63 @@ yakmesh start --daemon</code></pre>
    Dashboard: http://localhost:3080/dashboard</code></pre>
             </div>
 
+            <!-- yakmesh migrate -->
+            <div class="command-block p-6 mb-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <code class="text-xl theme-accent font-mono">yakmesh migrate</code>
+                    <span class="text-mountain-400 text-sm">Carry identity forward on upgrade</span>
+                </div>
+                <p class="text-mountain-300 mb-4">
+                    Copies identity and state (node key, machine seed, KARMA, manifest, content) from a
+                    previous install into the new one — the supported way to upgrade into a fresh directory
+                    instead of hand-linking <code>data/</code> with <code>mklink</code>/symlinks. Verifies the
+                    <code>persistentId</code> survives the copy.
+                </p>
+
+                <h4 class="font-semibold mb-3">Options</h4>
+                <table class="option-table mb-4">
+                    <thead>
+                        <tr>
+                            <th>Option</th>
+                            <th>Description</th>
+                            <th>Default</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-mountain-300">
+                        <tr>
+                            <td><code>&lt;source&gt;</code></td>
+                            <td>Previous install dir or its <code>data/</code> dir</td>
+                            <td>required</td>
+                        </tr>
+                        <tr>
+                            <td><code>--to</code></td>
+                            <td>Target data directory</td>
+                            <td>./data</td>
+                        </tr>
+                        <tr>
+                            <td><code>--force</code></td>
+                            <td>Overwrite existing identity in target</td>
+                            <td>false</td>
+                        </tr>
+                        <tr>
+                            <td><code>--dry-run</code></td>
+                            <td>List what would be copied without copying</td>
+                            <td>false</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <h4 class="font-semibold mb-3">Examples</h4>
+                <pre class="language-bash"><code># Upgrade: unpack new version, then carry identity forward
+yakmesh migrate ../yakmesh-3.5.9
+
+# Works on the data dir directly too
+yakmesh migrate C:\share\yakmesh-3.5.10-rc23\data --to .\data
+
+# Preview first
+yakmesh migrate ../old-node --dry-run</code></pre>
+            </div>
+
             <!-- yakmesh status -->
             <div class="command-block p-6 mb-6">
                 <div class="flex items-center gap-3 mb-4">

@@ -6,7 +6,7 @@
  * Regenerate with: npm run build:docs
  * Source: website/docs/
  * 
- * @generated 2026-09-23T23:07:03.991Z
+ * @generated 2026-09-24T00:08:20.351Z
  * @module embedded-docs/bundle
  */
 
@@ -14,7 +14,7 @@
  * Master hash of the entire documentation bundle.
  * Computed as: SHA3-256(sorted individual file hashes joined)
  */
-export const BUNDLE_HASH = '0143b4218cc903563211b40743bbf8b37eadfce67cb0419091e5daa2b85b9cef';
+export const BUNDLE_HASH = '012a6d8a8f2db5e939a0443737a9a61e39fdfbc972fdb70bdd65dcc567cc842d';
 
 /**
  * Version of the documentation bundle.
@@ -25,7 +25,7 @@ export const BUNDLE_VERSION = '3.5.10';
 /**
  * Build timestamp (ISO 8601)
  */
-export const BUNDLE_BUILT_AT = '2026-09-23T23:07:03.991Z';
+export const BUNDLE_BUILT_AT = '2026-09-24T00:08:20.351Z';
 
 /**
  * Index of all files in the documentation bundle.
@@ -334,8 +334,8 @@ export const FILE_INDEX = {
     "contentType": "text/html; charset=utf-8"
   },
   "cli.html": {
-    "hash": "bd52d894bdc4ba800a757ef6cd8e4a12ecc9ea56d2e1778198d03f220475162f",
-    "size": 66727,
+    "hash": "86bc2cd29542321296159c77a25f00e78249dd6e223260418cbc5fe1f825c3b5",
+    "size": 69361,
     "contentType": "text/html; charset=utf-8"
   },
   "configuration.html": {

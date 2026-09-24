@@ -26,7 +26,7 @@
 
 import { Command } from 'commander';
 import chalk from 'chalk';
-import { existsSync, mkdirSync, writeFileSync, readFileSync } from 'fs';
+import { existsSync, mkdirSync, writeFileSync, readFileSync, cpSync, readdirSync } from 'fs';
 import { join, resolve } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -131,6 +131,105 @@ export default {
     console.log(chalk.white('Next steps:'));
     console.log(chalk.gray('  1. Edit yakmesh.config.js to customize settings'));
     console.log(chalk.gray('  2. Run: npx yakmesh start'));
+    console.log('');
+  });
+
+// ===== MIGRATE COMMAND =====
+// Files that are runtime-volatile or machine-specific — never carried forward.
+const MIGRATE_SKIP = new Set([
+  'pending-update', 'packages', 'act-restart.json',
+  'supervisor.log', 'node.log', 'supervisor.log.old',
+]);
+
+function readPersistentId(dataDir) {
+  try {
+    const seed = JSON.parse(readFileSync(join(dataDir, 'machine-seed.json'), 'utf8'));
+    return seed.persistentId || null;
+  } catch {
+    return null;
+  }
+}
+
+program
+  .command('migrate')
+  .description('Carry identity + state forward from a previous install (replaces manual data-dir linking)')
+  .argument('<source>', 'Previous install dir or data dir (e.g. ../yakmesh-3.5.9 or .../data)')
+  .option('-t, --to <dir>', 'Target data directory', './data')
+  .option('-f, --force', 'Overwrite existing identity in target')
+  .option('--dry-run', 'Show what would be copied without copying')
+  .action(async (source, options) => {
+    showBanner();
+    console.log(chalk.yellow('Yakmesh identity migration\n'));
+
+    // Accept either the install root or the data dir itself
+    let srcDir = resolve(source);
+    if (existsSync(join(srcDir, 'data', 'machine-seed.json'))) {
+      srcDir = join(srcDir, 'data');
+    }
+    const dstDir = resolve(options.to);
+
+    if (!existsSync(srcDir)) {
+      console.log(chalk.red(`✗ Source not found: ${source}`));
+      process.exit(1);
+    }
+    if (!existsSync(join(srcDir, 'node-key.json')) && !existsSync(join(srcDir, 'machine-seed.json'))) {
+      console.log(chalk.red(`✗ No Yakmesh identity in ${srcDir}`));
+      console.log(chalk.gray('  Expected node-key.json or machine-seed.json'));
+      process.exit(1);
+    }
+
+    const srcPid = readPersistentId(srcDir);
+    const dstPid = readPersistentId(dstDir);
+
+    if (existsSync(join(dstDir, 'node-key.json')) && !options.force) {
+      console.log(chalk.red('✗ Target already has an identity (node-key.json exists)'));
+      console.log(chalk.gray(`  Target persistentId: ${dstPid || 'unknown'}`));
+      console.log(chalk.gray('  Use --force to overwrite (old identity will be lost)'));
+      process.exit(1);
+    }
+
+    // Collect entries to copy
+    const entries = readdirSync(srcDir, { withFileTypes: true })
+      .filter(e => !MIGRATE_SKIP.has(e.name));
+
+    console.log(chalk.gray(`  Source:      ${srcDir}`));
+    console.log(chalk.gray(`  Target:      ${dstDir}`));
+    console.log(chalk.gray(`  persistentId: ${srcPid || '(none found)'}`));
+    console.log(chalk.gray(`  Entries:     ${entries.length}`));
+
+    if (options.dryRun) {
+      for (const e of entries) console.log(chalk.gray(`    ${e.isDirectory() ? 'd' : '-'} ${e.name}`));
+      console.log(chalk.cyan('\nDry run — nothing copied.'));
+      return;
+    }
+
+    if (srcPid && dstPid && srcPid !== dstPid) {
+      console.log(chalk.yellow(`\n⚠ Target persistentId differs (${dstPid}) — it will be replaced.`));
+    }
+
+    mkdirSync(dstDir, { recursive: true });
+    let copied = 0, skipped = 0;
+    for (const e of entries) {
+      const s = join(srcDir, e.name), d = join(dstDir, e.name);
+      try {
+        cpSync(s, d, { recursive: true, errorOnExist: false, force: true });
+        copied++;
+      } catch (err) {
+        skipped++;
+        console.log(chalk.yellow(`  ⚠ skipped ${e.name}: ${err.message}`));
+      }
+    }
+
+    // Verify the carried identity
+    const newPid = readPersistentId(dstDir);
+    if (srcPid && newPid !== srcPid) {
+      console.log(chalk.red('\n✗ Verification failed: persistentId did not survive the copy'));
+      process.exit(1);
+    }
+
+    console.log(chalk.green(`\n✓ Migrated ${copied} entries${skipped ? ` (${skipped} skipped)` : ''}`));
+    if (newPid) console.log(chalk.green(`✓ persistentId verified: ${newPid}`));
+    console.log(chalk.gray('\nNote: upgrade-grace will hold any manifest-mismatched files for review on first boot — that is expected on an upgrade.'));
     console.log('');
   });
 
