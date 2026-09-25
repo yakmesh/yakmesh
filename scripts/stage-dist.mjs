@@ -50,7 +50,7 @@ for (const dir of ASSET_DIRS) {
 }
 
 // Oracle-invisible extras: not SOURCE_EXTENSIONS, or in EXCLUDE_FILES/EXCLUDE_DIRS
-for (const extra of ['package-lock.json', 'start-yakmesh.bat', 'start-yakmesh-silent.vbs', 'VIEW-YAKMESH-LOG.bat', 'STOP-YAKMESH.bat', 'README.md', 'LICENSE', 'CHANGELOG.md', 'utils/wintun.dll', 'utils/dna-spiral.wasm', 'utils/verify-worker.js', 'scripts/yakmesh-run.js', 'tools/npu-prover/START-PROVER.bat']) {
+for (const extra of ['package-lock.json', 'start-yakmesh.bat', 'start-yakmesh-silent.vbs', 'VIEW-YAKMESH-LOG.bat', 'STOP-YAKMESH.bat', 'README.md', 'LICENSE', 'CHANGELOG.md', 'utils/wintun.dll', 'utils/dna-spiral.wasm', 'utils/verify-worker.js', 'scripts/yakmesh-run.js', 'tools/npu-prover/START-PROVER.bat', 'tools/npu-prover/xrt/yak_xrt_shim.dll', 'tools/npu-prover/xrt/final.xclbin', 'tools/npu-prover/xrt/insts.bin']) {
     if (existsSync(join(repo, extra))) {
         mkdirSync(dirname(join(out, extra)), { recursive: true });
         copyFileSync(join(repo, extra), join(out, extra));

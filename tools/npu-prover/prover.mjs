@@ -5,9 +5,22 @@
  * Serves the same GET /npu/proof?n=<N>&nonce=<challenge> contract as
  * rust-embed (:9997). Backends, in honesty order:
  *
+ *   0. XRT-direct (xrt/final.xclbin + yak_xrt_shim.dll) — our own
+ *      IRON-compiled gemm64 bf16 kernel on the C++ register_xclbin path.
+ *      The C-API xclbin load is stubbed ('load_axlf: not supported') in
+ *      the Windows user-mode shim, same as Linux amdxdna — the shim DLL
+ *      wraps xrt::device::register_xclbin + hw_context + kernel. This is
+ *      the same xclbin bytes the Linux MLIR_AIE path executes, so claims
+ *      are byte-identical across OSes. Verified live on Hawk Point
+ *      (driver 32.0.203.314, XRT 2.19.0): 4096/4096 bf16 gemm match.
  *   1. VitisAI EP (Ryzen AI / onnxruntime_providers_vitisai.dll) — the
  *      native XDNA provider, tried under RyzenAI's own onnxruntime.dll
  *      first (provider bridge is version-locked), then under ours.
+ *      NOTE (verified 2026-09-25, RyzenAI 1.7.0 on Hawk Point): phx
+ *      support is vestigial — fp16 doesn't fuse, u16 QDQ fuses then
+ *      dies in to_xir_ops_pass (no u16 handler), u8 QDQ doesn't fuse
+ *      at all, and the default X2 target is Strix-only. Dead on XDNA1;
+ *      kept for Strix-class hosts where the EP still works.
  *   2. DML { device_filter: 'npu' } via the generic
  *      SessionOptionsAppendExecutionProvider — the DXCore/MCDM path.
  *      The NPU is a D3D12_GENERIC_ML adapter, NOT a DXGI display
@@ -36,7 +49,7 @@
  */
 import http from 'node:http';
 import { execSync, spawnSync } from 'node:child_process';
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -548,6 +561,86 @@ function findRyzenAI() {
 }
 const ryzenai = findRyzenAI();
 
+// ─── XRT-direct backend (yak_xrt_shim.dll → xrt_coreutil.dll → XDNA) ────────
+// The honesty top tier on Windows: our own IRON-compiled xclbin executed
+// through the C++ register_xclbin path — the same bytes the Linux
+// MLIR_AIE/rust-embed path runs, so a claim from either OS verifies
+// identically. Artifacts ship in tools/npu-prover/xrt/ (manifest-hashed):
+//   yak_xrt_shim.dll — C facade over xrt::device/hw_context/kernel/bo/run
+//   final.xclbin     — IRON-compiled gemm64 bf16 (MLIR_AIE kernel)
+//   insts.bin        — AIE2 instruction stream (opcode-3 dispatch contract)
+
+function findXrt() {
+  const shim = process.env.YAK_XRT_SHIM || join(HERE, 'xrt', 'yak_xrt_shim.dll');
+  const xclbin = process.env.YAK_XRT_XCLBIN || join(HERE, 'xrt', 'final.xclbin');
+  const insts = process.env.YAK_XRT_INSTS || join(HERE, 'xrt', 'insts.bin');
+  return [shim, xclbin, insts].every((p) => existsSync(p))
+    ? { shim, xclbin, insts } : null;
+}
+const xrtFiles = findXrt();
+
+class Xrt {
+  constructor(files) {
+    this.lib = koffi.load(files.shim);
+    this.err = this.lib.func('str yak_last_error()');
+    this.deviceOpen = this.lib.func('void *yak_device_open(uint32 index)');
+    this.kernelLoad = this.lib.func('void *yak_kernel_load(void *dev, str xclbin, str name)');
+    this.groupId = this.lib.func('int yak_kernel_group_id(void *kern, int arg)');
+    this.boAlloc = this.lib.func('void *yak_bo_alloc(void *dev, size_t n, int flag, int gid)');
+    this.boWrite = this.lib.func('int yak_bo_write(void *bo, void *src, size_t n, size_t off)');
+    this.boRead = this.lib.func('int yak_bo_read(void *bo, void *dst, size_t n, size_t off)');
+    this.boSyncTo = this.lib.func('int yak_bo_sync_to_device(void *bo)');
+    this.boSyncFrom = this.lib.func('int yak_bo_sync_from_device(void *bo)');
+    this.runKernel = this.lib.func('int yak_run_kernel(void *kern, uint32 opcode, void *instr, size_t ninstr, void **data, size_t ndata)');
+    this.dev = null; this.kern = null; this.bos = null;
+  }
+
+  lastError() { try { return this.err() || ''; } catch { return ''; } }
+
+  init(files) {
+    this.dev = this.deviceOpen(0);
+    if (!this.dev) throw new Error(`yak_device_open: ${this.lastError() || 'no device'}`);
+    this.kern = this.kernelLoad(this.dev, files.xclbin, 'MLIR_AIE');
+    if (!this.kern) throw new Error(`yak_kernel_load: ${this.lastError() || 'register_xclbin/context/kernel failed'}`);
+    const gidI = this.groupId(this.kern, 1);
+    const gidD = this.groupId(this.kern, 3);
+    const insts = readFileSync(files.insts);
+    const instr = this.boAlloc(this.dev, insts.length, 1, gidI);      // 1 = cacheable
+    const bos = [0, 1, 2].map(() => this.boAlloc(this.dev, ELEMS * 2, 2, gidD)); // 2 = host_only
+    if (!instr || bos.some((b) => !b)) throw new Error(`bo_alloc: ${this.lastError() || 'failed'}`);
+    this.boWrite(instr, insts, insts.length, 0);
+    this.boSyncTo(instr);
+    this.bos = { instr, a: bos[0], b: bos[1], c: bos[2] };
+    this.instrBytes = insts.length;
+    this.warm(); // one real dispatch — cascade out if it can't execute
+  }
+
+  warm() {
+    this.boWrite(this.bos.a, Buffer.alloc(ELEMS * 2), ELEMS * 2, 0);
+    this.boWrite(this.bos.b, Buffer.alloc(ELEMS * 2), ELEMS * 2, 0);
+    this.boWrite(this.bos.c, Buffer.alloc(ELEMS * 2), ELEMS * 2, 0);
+    this.boSyncTo(this.bos.a); this.boSyncTo(this.bos.b); this.boSyncTo(this.bos.c);
+    const rc = this.runKernel(this.kern, 3, this.bos.instr, this.instrBytes,
+      [this.bos.a, this.bos.b, this.bos.c], 3);
+    if (rc !== 0) throw new Error(`yak_run_kernel rc=${rc}: ${this.lastError()}`);
+    this.boSyncFrom(this.bos.c);
+  }
+
+  // One real gemm64 dispatch — bf16 bits in Uint16Array containers.
+  run(a16, b16) {
+    const { bos } = this;
+    this.boWrite(bos.a, Buffer.from(a16.buffer, a16.byteOffset, a16.byteLength), a16.byteLength, 0);
+    this.boWrite(bos.b, Buffer.from(b16.buffer, b16.byteOffset, b16.byteLength), b16.byteLength, 0);
+    this.boSyncTo(bos.a); this.boSyncTo(bos.b);
+    const rc = this.runKernel(this.kern, 3, bos.instr, this.instrBytes, [bos.a, bos.b, bos.c], 3);
+    if (rc !== 0) throw new Error(`yak_run_kernel rc=${rc}: ${this.lastError()}`);
+    this.boSyncFrom(bos.c);
+    const out = Buffer.alloc(ELEMS * 2);
+    this.boRead(bos.c, out, ELEMS * 2, 0);
+    return new Uint8Array(out.buffer, out.byteOffset, out.byteLength);
+  }
+}
+
 // ─── pure-JS fallback (honest floor tier) ────────────────────────────────────
 
 function jsGemm64(a16, b16, fromBits = f16to32, toBits = f32to16) {
@@ -567,9 +660,10 @@ function jsGemm64(a16, b16, fromBits = f16to32, toBits = f32to16) {
 
 // ─── session cascade ─────────────────────────────────────────────────────────
 
-let backend = null;       // 'vitis-npu' | 'dml-npu' | 'dml-gpu' | 'ort-cpu' | 'js-cpu'
+let backend = null;       // 'xrt-npu' | 'vitis-npu' | 'dml-npu' | 'dml-gpu' | 'ort-cpu' | 'js-cpu'
 let ort = null;
 let sess = null;
+let xrt = null;           // Xrt instance when backend === 'xrt-npu'
 let onnxType = 10;        // 10 = fp16, 4 = uint16/bf16 (QDQ), 2 = uint8 (QDQ), 1 = fp32
 let ortError = null;
 const orts = new Map();   // dllPath -> Ort (kept alive for process lifetime)
@@ -585,6 +679,17 @@ function vitisProbe() {
     const r = spawnSync(process.execPath, [SELF], {
       env: { ...process.env, PROVER_PROBE: 'vitis' },
       timeout: 180000, stdio: 'inherit',   // child's ORT/vaip logs reach prover.log
+    });
+    return r.status === 0;
+  } catch { return false; }
+}
+// Same crash-isolation for xrt: the shim catches C++ exceptions, but a
+// wedged driver/xclbin combo could fault natively — probe in a child first.
+function xrtProbe() {
+  try {
+    const r = spawnSync(process.execPath, [SELF], {
+      env: { ...process.env, PROVER_PROBE: 'xrt' },
+      timeout: 60000, stdio: 'inherit',
     });
     return r.status === 0;
   } catch { return false; }
@@ -614,6 +719,30 @@ async function initBackend() {
 
   // [label, dll|null=findOrtDll(), ep, provider_opts, model, onnx_type]
   const attempts = [];
+
+  // Tier 0 — XRT-direct on our own IRON xclbin. Shim Catches C++ errors
+  // itself; the child probe guards against native (driver-level) faults.
+  // Probe modes isolate their own tier only.
+  if (xrtFiles && (!PROBE || PROBE === 'xrt')) {
+    const xrtOk = PROBE === 'xrt' || xrtProbe();
+    if (xrtOk) {
+      log(`init: trying xrt-npu (shim=${xrtFiles.shim})`);
+      try {
+        const x = new Xrt(xrtFiles);
+        x.init(xrtFiles);
+        xrt = x;
+        backend = 'xrt-npu';
+        onnxType = 4; // uint16 containers carrying bf16 — same as QDQ plumbing
+        ortError = errs.length ? errs.join(' | ') : null;
+        return;
+      } catch (e) { errs.push(`xrt-npu: ${e.message}`); }
+    } else {
+      errs.push('xrt-npu: probe child crashed or timed out — skipping');
+    }
+  } else if (PROBE === 'xrt') {
+    errs.push('xrt-npu: xrt/ artifacts missing (need yak_xrt_shim.dll + final.xclbin + insts.bin)');
+  }
+
   if (ryzenai?.cfg) {
     // Probe mode runs the vitis attempts itself; the parent probes first
     // because a native fault here kills the process (can't catch C++
@@ -641,7 +770,9 @@ async function initBackend() {
     ['ort-cpu', null, null, null, MODEL_FP32, 1],
   );
 
-  const wanted = PROBE === 'vitis' ? attempts.filter(([l]) => l === 'vitis-npu') : attempts;
+  const wanted = PROBE === 'vitis' ? attempts.filter(([l]) => l === 'vitis-npu')
+    : PROBE === 'xrt' ? []   // xrt was attempted inline above
+    : attempts;
   for (const [label, d, ep, opts, model, otype] of wanted) {
     const dllPath = d || dll;
     if (!dllPath) continue;
@@ -679,7 +810,8 @@ log(`init: probes done (${dxAdapters.length} dxcore adapters)`);
 // NPU's PCI id would overstate; NPU presence stays disclosed separately
 // via `adapter`/`adapters`/`device.pnp` regardless of executor.
 function execDevice() {
-  if (backend === 'vitis-npu' || backend === 'dml-npu') return device;
+  if (backend === 'xrt-npu' || backend === 'vitis-npu' || backend === 'dml-npu')
+    return backend === 'xrt-npu' ? { ...device, generation: 'windows/xrt' } : device;
   if (backend === 'dml-gpu') {
     const g = dxAdapters.find((a) => a.is_hardware && !a.is_npu)
       || dxAdapters.find((a) => a.is_hardware) || null;
@@ -724,6 +856,15 @@ async function runProof(n, nonce) {
       times.push((performance.now() - t0) * 1e6);
       outputDigests.add(fnv1a64(Buffer.from(lastOutput)));
     }
+  } else if (backend === 'xrt-npu') {
+    // Persistent BOs — write A/B, opcode-3 dispatch, read C. A and B are
+    // Uint16Array carrying bf16 bits (the kernel's native format).
+    for (let i = 0; i < n; i++) {
+      const t0 = performance.now();
+      lastOutput = xrt.run(A, B);
+      times.push((performance.now() - t0) * 1e6);
+      outputDigests.add(fnv1a64(Buffer.from(lastOutput)));
+    }
   } else {
     let tA, tB;
     if (onnxType === 1) {
@@ -757,7 +898,8 @@ async function runProof(n, nonce) {
     backend,
     adapter: npuAdapter || undefined,
     adapters: dxAdapters.length ? dxAdapters : undefined,
-    kernel: `${backend} gemm64 (${{ 1: 'fp32', 2: 'qdq-u8', 4: 'qdq-bf16' }[onnxType] || 'fp16'})`,
+    kernel: backend === 'xrt-npu' ? 'xrt-npu gemm64 (bf16)'
+      : `${backend} gemm64 (${{ 1: 'fp32', 2: 'qdq-u8', 4: 'qdq-bf16' }[onnxType] || 'fp16'})`,
     ort_version: ort?.version || undefined,
     n_dispatches: n,
     nonce,
@@ -797,7 +939,9 @@ const server = http.createServer(async (req, res) => {
     }
   } else if (url.pathname === '/health') {
     res.writeHead(200, { 'Content-Type': 'application/json' })
-      .end(JSON.stringify({ status: 'ok', backend, device, adapter: npuAdapter, ort_version: ort?.version, ort_error: ortError }));
+      .end(JSON.stringify({ status: 'ok', backend, device, adapter: npuAdapter,
+        ort_version: ort?.version, ort_error: ortError,
+        xrt_shim: xrt ? xrtFiles.shim : undefined }));
   } else {
     res.writeHead(404).end();
   }
