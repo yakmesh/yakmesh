@@ -37,7 +37,7 @@ import readline from 'node:readline';
 import { NetworkIdentity } from '../oracle/network-identity.js';
 import { UpdateTransfer } from '../utils/update-transfer.js';
 import { zipEntries, zipStore, walk as walkUpgradeFiles } from '../utils/in-place-upgrade.js';
-import { existsSync, readFileSync, statSync, writeFileSync, rmSync, mkdirSync } from 'fs';
+import { existsSync, readFileSync, statSync, writeFileSync, rmSync, mkdirSync, renameSync } from 'fs';
 import { mkdir } from 'node:fs/promises';
 import { join } from 'path';
 import { networkInterfaces } from 'os';
@@ -104,10 +104,22 @@ import {
 import { setTimeSourceConfig, getActiveConfig, getCurrentEpoch, getEpochStartTime } from '../oracle/phase-epoch.js';
 import { aguwa } from '../mesh/aguwa.js';
 import { PulseSync, PULSE_CONFIG } from '../mesh/pulse-sync.js';
-import { withContribution, setTimeTrustProvider, setProofProvider, createNpuProofProvider } from '../mesh/contribution.js';
+import { withContribution, setTimeTrustProvider, setProofProvider, createNpuProofProvider, setReceiptProvider } from '../mesh/contribution.js';
+import { signReceipt, verifyReceipt, receiptShapeError, MAX_RECEIPT_JSON_BYTES, MAX_RECEIPTS_PER_CLAIM } from '../mesh/work-receipt.js';
+import { selfAssertClaim, buildEquivocationEvidence, buildBadSealEvidence,
+         verifyAssertion, selfClaimRef, judgmentVerdictHash, VERDICT_MISMATCH,
+         JUDGMENT_QUORUM, buildJudgmentEvidence,
+         evidenceToSerdeJson } from '../mesh/epoch-assertion.js';
+import { keystoreSign, keystorePublicInfo } from '../utils/avoth-bridge.js';
+import * as mkc from '../utils/mkc.js';
 import { ClaimLedger } from '../mesh/claim-ledger.js';
 import { WitnessedTime, pulsePreimage } from '../oracle/witnessed-time.js';
 import { AttestationGossip } from '../mesh/attestation-gossip.js';
+import { wireEcho, expectedResult } from '../mesh/echo-challenge.js';
+import { EnvelopeController } from '../mesh/envelope-controller.js';
+import { AuditDuty } from '../mesh/audit-duty.js';
+import { ClaimDurability } from '../mesh/claim-durability.js';
+import * as capabilityBands from '../mesh/capability-bands.js';
 
 // v2.0 Security imports - NAMCHE and DOKO
 import NamcheGateway, {
@@ -371,6 +383,21 @@ async function loadConfig() {
       .split(',')
       .map(s => s.trim())
       .filter(Boolean);
+  }
+
+  // WAN rendezvous is core mesh function, not an option: with no explicit
+  // relay list, default to the SHERPA seeds' relay bridges so any node can
+  // reach the mesh without inbound ports. A node whose seed IS itself
+  // (the seed host) skips the self-dial.
+  if (!config.relayPeers?.length) {
+    const selfHosts = new Set(
+      [config.sherpa?.selfEndpoint, config.sherpa?.relayEndpoint]
+        .filter(Boolean)
+        .map(u => { try { return new URL(u).host; } catch { return null; } })
+        .filter(Boolean));
+    config.relayPeers = (config.sherpa?.seeds || [])
+      .map(s => `${String(s).replace(/\/+$/, '')}/mesh/relay.php`)
+      .filter(u => { try { return !selfHosts.has(new URL(u).host); } catch { return true; } });
   }
 
   // Caddy web server config (HTTPS/443 reverse proxy)
@@ -861,6 +888,12 @@ export class YakmeshNode {
         this.attestationGossip?.receive(data, origin);
       }
 
+      // Audit verdicts — foreign auditors' signed results count toward
+      // witnessed audit labor (ServiceAudit) and spread fraud evidence.
+      if (topic === 'audit:verdict') {
+        if (this.auditDuty?.recordVerdict(data)) this._watchJudgment(data);
+      }
+
       // Handle YAK-TUN route announcements (multi-hop vIP routing +
       // wire-B UDP endpoints). The sender's real IP comes from our
       // transport to them when connected; announces that arrive multi-hop
@@ -914,7 +947,28 @@ export class YakmeshNode {
       signFn: (data) => this.identity.sign(data),
       chainStateFile: join(this.config?.node?.dataDir || './data', 'pulse-chain.json'),
     });
-    this.claimLedger = new ClaimLedger({ nodeId: this.identity.identity.nodeId });
+    this.claimLedger = new ClaimLedger({
+      nodeId: this.identity.identity.nodeId,
+      dokoRegistry: this.dokoRegistry,
+    });
+    // Issuer receipts delivered to us, keyed epoch → jobId → receipt.
+    // Bounded and epoch-pruned; consumed by contributionMeshState via
+    // the receipt provider below.
+    this.receiptBook = new Map();
+    setReceiptProvider((epoch, nodeId, seal) => {
+      const bucket = this.receiptBook.get(epoch);
+      if (!bucket) return null;
+      const out = [];
+      for (const r of bucket.values()) {
+        if (r.workerNode === nodeId && Array.isArray(r.seal)
+            && r.seal.every((q, i) => q === seal[i])) out.push(r);
+      }
+      // Prune stale epochs — keep current and the one closing.
+      for (const e of this.receiptBook.keys()) {
+        if (e < epoch - 1) this.receiptBook.delete(e);
+      }
+      return out.length ? out : null;
+    });
     this.witnessedTime = new WitnessedTime({
       nodeId: this.identity.identity.nodeId,
       now: () => aguwa.now(),
@@ -933,21 +987,165 @@ export class YakmeshNode {
       }
     };
     this.claimLedger.on('sealFailure', claimEvidence('seal-failure'));
+    // A sealFailure whose subject self-asserted is self-incriminating:
+    // the signed assertion commits a leaf consensus can recompute the
+    // seal for — unframeable BadSeal evidence.
+    this.claimLedger.on('sealFailure', (ev) => {
+      if (ev.claimAssert && ev.leaf) this._collectSlashEvidence('badSeal', ev);
+    });
     this.claimLedger.on('proofForgery', claimEvidence('proof-forgery'));
     this.claimLedger.on('bindingConflict', claimEvidence('binding-conflict'));
     this.claimLedger.on('attestationConflict', claimEvidence('attestation-conflict'));
+    this.claimLedger.on('receiptForgery', claimEvidence('receipt-forgery'));
     this.attestationGossip = new AttestationGossip({
       nodeId: this.identity.identity.nodeId,
       publicKey: this.identity.identity.publicKey,
       sign: (data) => this.identity.sign(data),
       claimLedger: this.claimLedger,
+      // Canon (slashable) assertions are keystore-signed — the
+      // canonical node id derives from that key, not the gossip key.
+      canonicalNodeId: () => this._canonicalNodeId,
+      canonSign: keystoreSign,
+      canonPubkey: () => this._keystorePubkey,
     });
+    /** Evidence payloads ready for yakcoind to assemble as EvidenceTx —
+     *  each is a verified deterministic artifact (never fabricated). */
+    this.pendingSlashEvidence = [];
+    this.attestationGossip.on('attesterEquivocation', (ev) =>
+      this._collectSlashEvidence('equivocation', ev));
     // Two attesters reporting different seals for the same claim — evidence,
     // but ambiguous attribution (either witness could be lying), so log
     // rather than penalize.
     this.attestationGossip.on('sealConflict', (ev) =>
       log.error('PULSE seal-conflict evidence', {
         claim: ev.claimKey?.slice(0, 24), attester: ev.attester?.slice(0, 16),
+      }));
+    this.attestationGossip.on('claimEquivocation', (ev) =>
+      log.error('PULSE claim-equivocation evidence', {
+        claim: ev.claimKey?.slice(0, 24), attester: ev.attester?.slice(0, 16),
+      }));
+
+    // 4c. AUDIT DUTY — assigned spot-recompute of witnessed claims.
+    //     Assignment is drawn from the epoch's committed claim-set
+    //     root (unbiasable, deterministic across the witnessed set) —
+    //     auditors are picked, they don't volunteer. Sleeps/wakes on
+    //     witnessed activity: the epoch-close hook only plans audits
+    //     over claims carrying NONZERO jobRoots (real work committed),
+    //     so an empty job pipeline yields an empty plan — dormant by
+    //     construction, not by a flag. recompute dispatches on
+    //     spec.kind via the verifier registry — kinds we can't
+    //     execute abort the audit (auditor-side), never withhold
+    //     the claimer.
+    this.auditDuty = new AuditDuty({
+      nodeId: this.identity.identity.nodeId,
+      publicKey: this.identity.identity.publicKey,
+      sign: (data) => this.identity.sign(data),
+      send: (peerId, msg) => this.mesh.sendTo(peerId, msg),
+      verifiers: {
+        // Jobs are identity-bound — recompute against the CLAIMER's
+        // nodeId (never ours; that would manufacture false work-fraud).
+        // expectedResult dispatches both defined deterministic kinds:
+        //   sha3chain      {kind, nonce, rounds} — sequential chain
+        //   mkc-sha3batch  {kind, nonce, count}  — bit-exact fold in JS
+        sha3chain: {
+          recompute: async (spec, claimerId) => Buffer.from(
+            expectedResult({ type: 'sha3chain', rounds: spec.rounds },
+              spec.nonce, claimerId), 'hex'),
+        },
+        'mkc-sha3batch': {
+          recompute: async (spec, claimerId) => Buffer.from(
+            expectedResult({ type: 'mkc-sha3batch', count: spec.count },
+              spec.nonce, claimerId), 'hex'),
+        },
+      },
+      jobStore: null, // our own job material — populated when the job pipeline lands
+      // Keystore canon for mismatch verdicts — slashable judgments.
+      canonicalNodeId: () => this._canonicalNodeId,
+      canonSign: keystoreSign,
+      canonPubkey: () => this._keystorePubkey,
+    });
+    /** claimRef → Map(verdictHash → Map(auditorId → canon)) — bonded
+     *  witness quorum collection for Judgment evidence. */
+    this._judgmentWatch = new Map();
+    this.mesh.on('audit:request', (msg) => this.auditDuty.handleRequest(msg));
+    this.mesh.on('audit:reveal', (msg) => this.auditDuty.handleReveal(msg));
+    // Issuer receipts — a game authority attests OUR work; we hold it
+    // until the epoch claim commits it (jobRoot = AVOTH commitment).
+    this.mesh.on('claim:receipt', (msg) => this._handleClaimReceipt(msg));
+    this.auditDuty.on('resultFraud', claimEvidence('audit-result-fraud'));
+    // Verdicts ride gossip — audit labor is witnessed, not self-reported,
+    // and fraud evidence spreads with it.
+    this.auditDuty.on('verdict', (v) => {
+      this.gossip?.spreadRumor('audit:verdict', v);
+      this._watchJudgment(v); // our own verdict is a witness too
+    });
+    this.auditDuty.on('auditWithheld', (ev) =>
+      log.warn('PULSE audit withheld', {
+        claim: ev.claimRef?.slice(0, 24), claimer: ev.claimerId?.slice(0, 16),
+        reason: ev.reason,
+      }));
+
+    // 4d½. ECHO — latency cartography (probe/response) + peer-measured
+    //      compute challenges. Closes the self-measured-stopwatch gap:
+    //      the challenger's clock times the responder's work minus the
+    //      measured network median. Forgery-grade failures (bad sig,
+    //      wrong result, work mismatch) escalate to KARMA like
+    //      claim-ledger evidence; timing anomalies only log — load is
+    //      ambiguous, never proof.
+    // Capability bands — self-benchmark once (~150ms + a bridge batch)
+    // so we declare honest classes in every echo:result and hold peers
+    // to theirs. sha3chain measures the JS path; mkc-sha3batch goes
+    // through the integrated pq-bridge (bit-accurate CPU/GPU/NPU) so
+    // its band reflects silicon. Measured capability, never SKU names.
+    const ourBand = await capabilityBands.benchmark(2048, 3, this.identity.identity.nodeId);
+    log.info('ECHO capability bands measured', {
+      bands: ourBand.bands,
+      mkcDevice: ourBand.measured['mkc-sha3batch']?.device || 'bridge-down',
+    });
+    this.envelopeController = new EnvelopeController();
+    this.echoStack = wireEcho({
+      mesh: this.mesh,
+      nodeId: this.identity.identity.nodeId,
+      publicKey: this.identity.identity.publicKey,
+      sign: (data) => this.identity.sign(data),
+      bands: { hint: ourBand.bands, envelopeFor: capabilityBands.envelopeFor },
+      controller: this.envelopeController,
+      opts: { challengeIntervalMs: 120000 },
+    });
+    this.echoStack.challenger.on('failed', (ev) => {
+      log.error('ECHO challenge forgery-grade failure', {
+        peer: ev.peerId?.slice(0, 16), reason: ev.reason,
+      });
+      if (ev.peerId && ev.peerId !== this.identity.identity.nodeId) {
+        this.karmaModel?.recordDokoVerification(ev.peerId, {
+          passed: false, reason: `echo-challenge ${ev.reason}`,
+        });
+      }
+    });
+    this.echoStack.challenger.on('anomaly', (ev) =>
+      log.warn('ECHO conformance anomaly', {
+        peer: ev.peerId?.slice(0, 16), band: ev.band,
+        declared: ev.envelope?.band,
+        computeMs: Math.round(ev.computeNs / 1e6),
+      }));
+    this.echoStack.challenger.on('timeout', (ev) =>
+      log.debug('ECHO challenge timeout', { peer: ev.peerId?.slice(0, 16) }));
+
+    // 4d¾. Claim durability — at epoch close the witnessed claim set is
+    //      canonically encoded and TME-dispersed (each slice to ≤3
+    //      different peers), so the pay-per-share record survives a
+    //      witness going dark. Recovery: deterministic streamId +
+    //      TME_RECONSTRUCT + leaf cross-check against attested content.
+    this.claimDurability = new ClaimDurability({
+      nodeId: this.identity.identity.nodeId,
+      claimLedger: this.claimLedger,
+      encoder: this.tmeEncoder,
+      transport: this.tmeTransport,
+      attestGossip: this.attestationGossip,
+    });
+    this.claimDurability.on('recoveryAnomaly', (ev) =>
+      log.warn('claim-set recovery anomaly', {
+        epoch: ev.epoch, rejected: ev.rejected, unattested: ev.unattested,
       }));
 
     // 4e. KHATA trust tier — v2.4 networked trust (accumulate-only)
@@ -1248,6 +1446,128 @@ export class YakmeshNode {
    * Wires JHILKE state events to gossip propagation and listens for
    * first peer connection to trigger proposal if upgrade detected.
    */
+  /**
+   * Assemble a slashable evidence payload for a witnessed fraud event.
+   * The missing link consensus needs is the subject's hw_fingerprint
+   * (binds keystore pubkey → canonical AVOTH identity) — resolved via
+   * peer persistentId → DOKO extensions. Unresolvable → logged, never
+   * fabricated. yakcoind assembles the EvidenceTx; it owns the UTXO.
+   */
+  /**
+   * Judgment quorum watch — a 'mismatch' verdict carrying a valid
+   * keystore canon is a bonded witness to fraud. ≥JUDGMENT_QUORUM
+   * distinct auditors asserting the same verdict_hash on the same
+   * claim assemble a Judgment EvidenceTx payload.
+   */
+  _watchJudgment(v) {
+    if (v.verdict !== 'mismatch' || !v.canon || !v.epoch) return;
+    const canon = v.canon;
+    const claimerNode = v.claimRef?.split(':')[0];
+    if (!/^[0-9a-f]{64}$/.test(claimerNode || '')) return;
+    const canonRef = selfClaimRef(claimerNode, v.epoch);
+    const vhash = judgmentVerdictHash(canonRef, VERDICT_MISMATCH);
+    if (canon.claimRef !== canonRef || canon.value !== vhash) return;
+    if (!verifyAssertion(canon, canon.pubkey)) return;
+    // Cross-check canon.nodeId vs the auditor's own witnessed claim.
+    const witClaim = this.claimLedger?.epochs?.get(v.epoch)?.get(v.from);
+    if (witClaim && canon.nodeId !== witClaim.nodeId) return;
+
+    let byVerdict = this._judgmentWatch.get(v.claimRef);
+    if (!byVerdict) {
+      byVerdict = new Map();
+      this._judgmentWatch.set(v.claimRef, byVerdict);
+    }
+    let witnesses = byVerdict.get(vhash);
+    if (!witnesses) { witnesses = new Map(); byVerdict.set(vhash, witnesses); }
+    witnesses.set(v.from, canon);
+    if (this._judgmentWatch.size > 512) {
+      this._judgmentWatch.delete(this._judgmentWatch.keys().next().value);
+    }
+    if (witnesses.size >= JUDGMENT_QUORUM) {
+      this._collectSlashEvidence('judgment', {
+        claimerId: v.claimerId, epoch: v.epoch,
+        canonClaimRef: canonRef, verdictHash: vhash,
+        witnesses: [...witnesses.entries()]
+          .map(([auditorId, c]) => ({ auditorId, canon: c })),
+      });
+      this._judgmentWatch.delete(v.claimRef); // assembled once
+    }
+  }
+
+  _collectSlashEvidence(kind, ev) {
+    const subjectYakId = ev.attester || ev.yakmeshNodeId || ev.claimerId;
+    const peer = this.mesh?.peers?.get(subjectYakId);
+    // Primary: avothHw — the keystore fingerprint verified at handshake
+    // via the wormhole binding (recomputed, not merely claimed).
+    // Fallback: the subject's DOKO extensions (persistentId-resolved).
+    const pid = peer?.identity?.persistentId;
+    const fp = peer?.identity?.avothHw
+      || (pid ? this.dokoRegistry?.getByPersistentId?.(pid)?.extensions?.hw_fingerprint : null);
+    if (!fp) {
+      log.warn('slash evidence pending — subject hw_fingerprint unknown', {
+        kind, subject: subjectYakId?.slice(0, 24) });
+      return;
+    }
+    let payload = null;
+    if (kind === 'equivocation') {
+      payload = buildEquivocationEvidence({
+        hwFingerprint: fp, pubkey: ev.keystorePubkey,
+        assertA: ev.assertA, assertB: ev.assertB });
+    } else if (kind === 'badSeal') {
+      payload = buildBadSealEvidence({
+        hwFingerprint: fp, pubkey: ev.claimAssert.pubkey,
+        assertion: ev.claimAssert, leafBytes: Buffer.from(ev.leaf, 'hex') });
+    } else if (kind === 'judgment') {
+      // Subject keystore pubkey comes from the claim's own
+      // self-assertion — the identity proof rides the claim, never
+      // a supplied label.
+      const subjectPk = this.claimLedger?.epochs?.get(ev.epoch)
+        ?.get(subjectYakId)?.claimAssert?.pubkey;
+      // Witnesses need resolvable fingerprints too — avothHw is the
+      // wormhole-verified binding from handshake.
+      const witnesses = ev.witnesses
+        .map(w => ({
+          hwFingerprint: this.mesh?.peers?.get(w.auditorId)?.identity?.avothHw,
+          pubkey: w.canon.pubkey, assertion: w.canon }))
+        .filter(w => w.hwFingerprint);
+      if (!subjectPk || witnesses.length < JUDGMENT_QUORUM) {
+        log.warn('judgment evidence pending — subject pubkey or witness fp unknown', {
+          claimRef: ev.canonClaimRef?.slice(0, 16), resolved: witnesses.length });
+        return;
+      }
+      payload = buildJudgmentEvidence({
+        subjectHwFingerprint: fp, subjectPubkey: subjectPk,
+        claimEpoch: ev.epoch, claimRef: ev.canonClaimRef,
+        verdictHash: ev.verdictHash, witnesses });
+    }
+    if (!payload) return;
+    this.pendingSlashEvidence.push(payload);
+    if (this.pendingSlashEvidence.length > 256) this.pendingSlashEvidence.shift();
+    log.error('slash evidence assembled — pending EvidenceTx', {
+      kind, subject: subjectYakId?.slice(0, 24), epoch: ev.assertA?.epoch || ev.epoch });
+    this._dumpSlashEvidence(kind, payload);
+  }
+
+  /**
+   * Drop a verified evidence artifact for yakcoind's sweep —
+   * serde-shaped JSON in the shared runtime dir, tmp+rename atomic so
+   * the daemon never reads a torn file.
+   */
+  _dumpSlashEvidence(kind, payload) {
+    try {
+      const serde = evidenceToSerdeJson(payload);
+      if (!serde) return;
+      const dir = join(process.env.XDG_RUNTIME_DIR || '/tmp', 'yakmesh', 'evidence');
+      mkdirSync(dir, { recursive: true });
+      const name = `evidence-${Date.now()}-${kind}-${Math.random().toString(16).slice(2, 8)}`;
+      const tmp = join(dir, `.${name}.tmp`);
+      writeFileSync(tmp, JSON.stringify(serde));
+      renameSync(tmp, join(dir, `${name}.json`));
+    } catch (e) {
+      log.warn('slash evidence dump failed (queue still holds it)', { error: e.message });
+    }
+  }
+
   _initACT() {
     // Wire JHILKE ACT state events → gossip broadcast
     if (this.mesh?.jhilke) {
@@ -1439,7 +1759,7 @@ export class YakmeshNode {
       '╠══════════════════════════════════════════════════════════════╣',
       `║  From: ${String(offer.announcer || '?').padEnd(52)}║`,
       `║  Changelog: ${String(offer.changelog || '').slice(0, 47).padEnd(47)}║`,
-      `║  Signature: ${(offer.signatureValid === true ? 'VERIFIED' : offer.signatureValid === false ? 'INVALID' : 'unverifiable (no bridge)').padEnd(47)}║`,
+      `║  Signature: ${(offer.signatureValid === true ? 'VERIFIED' : offer.signatureValid === false ? 'INVALID' : 'unverifiable (bridge down)').padEnd(47)}║`,
       `║  Announcer: ${(offer.announcerPinned ? 'PINNED' : `KARMA trust ${offer.announcerTrust?.level ?? offer.announcerTrust}`).padEnd(47)}║`,
       '╠══════════════════════════════════════════════════════════════╣',
       '║  [Y] Accept — download new code, join new network            ║',
@@ -1637,6 +1957,7 @@ export class YakmeshNode {
     if (this._timeHeartbeatInterval) clearInterval(this._timeHeartbeatInterval);
     if (this._pulseHeartbeatInterval) clearInterval(this._pulseHeartbeatInterval);
     if (this._attestationInterval) clearInterval(this._attestationInterval);
+    this.echoStack?.stop();
     if (this._messageCountInterval) clearInterval(this._messageCountInterval);
     if (this._relayExpiryInterval) clearInterval(this._relayExpiryInterval);
     this.yakTun?.destroy();  // UDP underlay socket + wire-B timers
@@ -1999,6 +2320,20 @@ export class YakmeshNode {
         // the boundary while claim consumers observe one copy per epoch.
         const beatInEpoch = Math.floor(Date.now() / 1000) % PULSE_CLAIM_EPOCH_SECS;
         const meshState = beatInEpoch < PULSE_CLAIM_BEATS ? await withContribution({}) : {};
+        // Slashable self-assertion: keystore-sign the canonical epoch
+        // assertion committing our claim leaf — keystore key is what
+        // node_id derives from, so evidence can bind it. Bridge down →
+        // honest absence (no assertion), same posture as seal derive.
+        if (meshState.contribution) {
+          this._canonicalNodeId = meshState.contribution.nodeId;
+          const ks = await keystorePublicInfo();
+          this._keystorePubkey = ks?.publicKey || null;
+          const a = await selfAssertClaim(
+            meshState.contribution,
+            ClaimLedger.claimLeafBytes(meshState.contribution),
+            keystoreSign, this._keystorePubkey);
+          if (a) meshState.contribution.claimAssert = a;
+        }
         const heartbeat = this.pulseSync.createHeartbeat(meshState);
         this.gossip.spreadRumor('pulse:heartbeat', heartbeat);
       } catch (err) {
@@ -2106,6 +2441,78 @@ export class YakmeshNode {
   }
 
   /**
+   * The EpochClaim-shaped input set for yakcoin settlement — witnessed
+   * claims joined with distinct-attester counts, verified-evidence
+   * class, proof verdicts, and KARMA age from consecutive attested
+   * epochs. Every field is derived; nothing self-reported crosses.
+   * `audits` carries witnessed audit labor (distinct signed verdicts
+   * per auditor) for the ServiceAudit cap class — observed, never
+   * self-reported.
+   */
+  claimSettlementInputs(epoch) {
+    return {
+      claims: this.attestationGossip?.settlementInputs(epoch) || [],
+      audits: this.auditDuty?.auditLabor(epoch) || [],
+    };
+  }
+
+  /**
+   * claim:receipt intake — an issuer attests work WE did. Shape-check
+   * and signature-verify before holding; worker/epoch/seal binding is
+   * enforced at commit time by the receipt provider (only a receipt
+   * bound to OUR nodeId and OUR epoch seal can enter our claim).
+   */
+  _handleClaimReceipt(msg) {
+    const r = msg?.receipt;
+    if (!r) return;
+    if (JSON.stringify(r).length > MAX_RECEIPT_JSON_BYTES) return;
+    if (receiptShapeError(r)) {
+      log.warn('malformed claim:receipt', { from: msg?.from?.slice?.(0, 24) });
+      return;
+    }
+    const check = verifyReceipt(r, { dokoRegistry: this.dokoRegistry });
+    if (check.verdict === 'reject') {
+      log.warn('rejected claim:receipt', { reason: check.reason });
+      return;
+    }
+    let bucket = this.receiptBook.get(r.epoch);
+    if (!bucket) {
+      bucket = new Map();
+      this.receiptBook.set(r.epoch, bucket);
+    }
+    if (bucket.size < MAX_RECEIPTS_PER_CLAIM * 4) {
+      bucket.set(r.jobId, r);
+    }
+  }
+
+  /**
+   * Issuer side — sign a work receipt for a worker's attested result
+   * and deliver it directly. `worker` = {nodeId, epoch, seal} (the
+   * worker's claim binding — it must match their claim or the receipt
+   * is unclaimable). The issuer attests; settlement stays witnessed.
+   */
+  issueReceipt(worker, fields, targetPeerId) {
+    const receipt = signReceipt({
+      jobId: fields.jobId,
+      workerNode: worker.nodeId,
+      epoch: worker.epoch,
+      workerSeal: worker.seal,
+      workClass: fields.workClass,
+      resultHash: fields.resultHash,
+      feePaid: fields.feePaid ?? 0,
+    }, {
+      publicKey: this.identity.identity.publicKey,
+      secretKey: this.identity.identity.secretKey,
+      persistentId: this.identity.getPersistentId?.(),
+    });
+    if (!receipt) return null;
+    if (targetPeerId && this.mesh?.sendTo) {
+      this.mesh.sendTo(targetPeerId, { type: 'claim:receipt', receipt });
+    }
+    return receipt;
+  }
+
+  /**
    * WITNESSED-tier state: whether this node holds a verified k-of-m
    * stratum-1 pulse quorum, and the measured offset/bound if so.
    */
@@ -2129,9 +2536,13 @@ export class YakmeshNode {
       // vouch for the set — the batch excludes sealVerified === false.
       // Bridge unreachable → claims attest unverified (deferred to
       // settlement); this call never throws.
-      try { await this.claimLedger?.verifyEpochSeals(closedEpoch); }
-      catch (e) { log.warn('seal verification failed', { epoch: closedEpoch, error: e.message }); }
-      const batch = this.attestationGossip.buildBatch(closedEpoch);
+      try {
+        const sealHealth = await this.claimLedger?.verifyEpochSeals(closedEpoch);
+        if (sealHealth) {
+          this.envelopeController?.observeEpochHealth(sealHealth.valid, sealHealth.invalid);
+        }
+      } catch (e) { log.warn('seal verification failed', { epoch: closedEpoch, error: e.message }); }
+      const batch = await this.attestationGossip.buildBatch(closedEpoch);
       if (batch) {
         this.gossip.spreadRumor('claim:attest', batch);
         log.debug('claim attestations gossiped', { epoch: closedEpoch, items: batch.items.length });
@@ -2139,14 +2550,42 @@ export class YakmeshNode {
       // Hourglass-attest the witnessed claim-set Merkle root — one
       // signature per MANI epoch; a 409 means our witnessed set diverged
       // from the first attester's (surfaced as attestationConflict).
+      let att = null;
       try {
-        const att = await this.claimLedger?.attestEpoch(closedEpoch);
+        att = await this.claimLedger?.attestEpoch(closedEpoch);
         if (att && !att.conflict) {
           log.debug('epoch claim root hourglass-attested',
             { epoch: closedEpoch, root: att.claimRoot, claims: att.claims });
         }
       } catch (e) {
         log.warn('epoch attestation failed', { epoch: closedEpoch, error: e.message });
+      }
+      // Audit duty — activity-driven, not flag-driven. Only claims
+      // with nonzero jobRoots (real committed work) enter the plan;
+      // when the job pipeline is empty the plan is empty and the
+      // dispatcher sleeps. Eligible auditors = directly-connected
+      // peers (routable), excluding each claimer inside plan().
+      try {
+        const epochRoot = att?.claimRoot
+          ?? (await this.claimLedger?.epochClaimRoot(closedEpoch))?.root;
+        if (epochRoot) {
+          const realClaims = (this.claimLedger?.epochClaims(closedEpoch) || [])
+            .filter(c => c.jobRoot && c.jobRoot !== '0'.repeat(64));
+          if (realClaims.length) {
+            const eligible = [...(this.mesh.peers?.keys() || [])];
+            const issued = this.auditDuty?.issueAudits(epochRoot, closedEpoch, realClaims, eligible);
+            if (issued?.length) {
+              log.info('audit duties issued', { epoch: closedEpoch, audits: issued.length });
+            }
+          }
+        }
+      } catch (e) { log.warn('audit issue failed', { epoch: closedEpoch, error: e.message }); }
+      // Disperse the witnessed claim set via TME — the share record
+      // survives even if this node goes dark before settlement.
+      try {
+        this.claimDurability?.encodeEpoch(closedEpoch);
+      } catch (e) {
+        log.warn('claim-set dispersal failed', { epoch: closedEpoch, error: e.message });
       }
     }, 30_000);
     log.info('🖊️ Attestation gossip loop started (epoch-close batches)');
@@ -2941,11 +3380,33 @@ export class YakmeshNode {
       for (const slot of SEVA_CONFIG.avothSlots) availableSlots.add(slot);
     }
 
-    // Provider taxonomy — honest, best-first ordering
+    // Provider taxonomy — honest, best-first ordering. Covers the whole
+    // pipeline: native XRT/IRON kernels (mkc/crystal via pq-bridge),
+    // ONNX EPs, GPU class, CPU — not just onnx or cherry-picked ISA.
     const providers = ['cpu'];
-    if (accel.HW.nvGpu || accel.HW.amdGpu) providers.push('gpu');
-    if (accel.HW.amdNpu || accel.HW.amdGpu) providers.push('onnx-dml');
-    if (avothOk) providers.push('avoth-triad');
+    if (accel.HW.nvGpu) providers.push('gpu-cuda');
+    if (accel.HW.amdGpu) providers.push('gpu-amd');
+    for (const ep of accel.HW.onnxProviders) providers.push(`onnx-${ep}`);
+    if (avothOk) providers.push('avoth-triad', 'xrt-iron', 'mkc');
+    if (accel.HW.amdNpu) providers.push('xdna');
+
+    // MKC kernel family — bridge-resident NPU pipeline (XRT/IRON).
+    // The kernel list is the dispatch surface utils/mkc.js exposes;
+    // crystal roles are probed live (null → image not resident).
+    let mkcCap = null;
+    if (avothOk) {
+      let crystalRoles = null;
+      try { crystalRoles = (await mkc.crystalStatus())?.roles || null; } catch { /* image absent */ }
+      mkcCap = {
+        kernels: ['sha256', 'sha3', 'avoth', 'gf256', 'gf4', 'f3',
+                  'rsParity', 'aes', 'tribhuj', 'mkc', 'crystal'],
+        tiles: 16, crystalRoles,
+      };
+    }
+
+    // TIVRA provider profile — the structured accel.HW snapshot peers
+    // need for capability-aware dispatch + job qualification.
+    const tivra = { ...accel.tivraProfile(), mkc: mkcCap };
 
     // Deterministic job material for avoth-* slots — same bytes on every
     // node, so spot-verification is exact equality, not approximation.
@@ -2980,6 +3441,7 @@ export class YakmeshNode {
       maxConcurrent: cfg.maxConcurrent || 10,
       avoth: avothOk,
       providers,
+      tivra,
       executor: async (slot, params) => {
         if (!availableSlots.has(slot)) throw new Error(`no model for ${slot}`);
 
@@ -7116,21 +7578,24 @@ export class YakmeshNode {
           relayEndpoint: endpoint,
         };
 
-        try {
-          await this._registerWithRelay(candidate);
-          log.info(`RELAY: ✓ registered with ${endpoint}`);
-        } catch (err) {
-          log.warn(`RELAY: ${endpoint} registration failed — ${err.message}`);
-          // Retry after 30s (once) — relay peers may not be up yet
-          setTimeout(async () => {
-            try {
-              await this._registerWithRelay(candidate);
-              log.info(`RELAY: ✓ registered with ${endpoint} (retry)`);
-            } catch (e) {
-              log.warn(`RELAY: ${endpoint} retry failed — ${e.message}`);
-            }
-          }, 30000);
-        }
+        // The relay is the WAN lifeline — a transient upstream error
+        // (502/503/timeout) must not permanently orphan the node. Retry
+        // with backoff: 30s, 60s, 120s, then steady-state every 5 min.
+        // Loud for the first few attempts, debug-level thereafter.
+        let attempt = 0;
+        const tryRegister = async () => {
+          try {
+            await this._registerWithRelay(candidate);
+            log.info(`RELAY: ✓ registered with ${endpoint}${attempt ? ` (attempt ${attempt + 1})` : ''}`);
+          } catch (err) {
+            attempt++;
+            const delay = Math.min(300000, 30000 * 2 ** Math.min(attempt - 1, 3));
+            (attempt <= 3 ? log.warn : log.debug)(
+              `RELAY: ${endpoint} registration failed (attempt ${attempt}) — ${err.message}; retrying in ${delay / 1000}s`);
+            setTimeout(tryRegister, delay);
+          }
+        };
+        tryRegister();
       }
     }, 3000);
   }

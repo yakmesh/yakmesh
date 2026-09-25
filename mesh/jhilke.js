@@ -64,8 +64,10 @@ import { fibonacciRoot } from '../oracle/sst.js';
 import { aguwa } from './aguwa.js';
 
 // AVOTH bridge — epoch-sealed chirps (wormhole channel, pos 191).
-// Optional hardening: nodes without a pq-bridge send plain chirps;
-// presence of jseal in a message is the capability advertisement.
+// The pq-bridge is an integrated companion service (vendored client in
+// utils/, auto-launched by start-yakmesh.bat); a degraded boot with the
+// bridge unreachable sends plain chirps — presence of jseal in a
+// message is the capability advertisement.
 import * as avothBridge from '../utils/avoth-bridge.js';
 
 // Phase epoch — epoch boundaries for ACT coordination
@@ -131,7 +133,7 @@ export class JhilkeCoordinator extends EventEmitter {
       sealsSent: 0,
       sealsVerified: 0,
       sealsFailed: 0,
-      sealsUnverified: 0, // peer sent a seal but we have no bridge to check it
+      sealsUnverified: 0, // peer sent a seal but the bridge was unreachable
     };
 
     log.info('JHILKE coordinator initialized', {
@@ -343,8 +345,9 @@ export class JhilkeCoordinator extends EventEmitter {
       this.stats.chirpsVerified++;
 
       // Wormhole-sealed digest — epoch binding. Verified only when the
-      // peer sent one AND we have a bridge; absent seal = legacy peer
-      // (capability-negotiated: presence is the advertisement).
+      // peer sent one AND our bridge is reachable; absent seal = peer
+      // running degraded (capability-negotiated: presence is the
+      // advertisement).
       let sealed = 'none';
       if (message.jseal != null && typeof message.jsealEpoch === 'number') {
         sealed = await this._verifySeal(fromPeerId, result.tick, message.jseal, message.jsealEpoch)

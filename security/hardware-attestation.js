@@ -141,8 +141,9 @@ export function detectCPUFeatures() {
     cores: cpus.length,
     speed: cpu.speed || 0,
     
-    // Baseline AES-NI (set by timing test)
-    hasAESNI: false,
+    // Baseline AES-NI — CPU model table first (capability fact);
+    // callers OR in the timing evidence (jitter must not erase it).
+    hasAESNI: flags.aes,
     
     // Extended instruction sets
     hasVAES: flags.vaes,
@@ -342,8 +343,8 @@ export function determineCryptoTier(features, timing) {
   // Start with NONE
   let tier = CRYPTO_ACCELERATION_TIER.NONE;
   
-  // Check for AES-NI via timing
-  if (timing && timing.meanMs < 10 && timing.varianceRatio < 0.1) {
+  // Check for AES-NI — model-table capability or timing evidence
+  if (features.hasAESNI || timingShowsAESNI(timing)) {
     tier = CRYPTO_ACCELERATION_TIER.AES_NI;
   }
   
@@ -449,6 +450,19 @@ export async function measureAESPerformance(options = {}) {
 }
 
 /**
+ * AES-NI capability signal from a timing sample. Software AES-GCM cannot
+ * sustain the MIN_THROUGHPUT floor (~500 MB/s) — at that throughput the
+ * instruction is physically present even when scheduling jitter inflates
+ * variance (loaded hosts, Windows timing noise). The variance gate still
+ * applies to the anti-VM `issues` verdict; capability is separate.
+ */
+function timingShowsAESNI(timing) {
+  return !!timing && (
+    (timing.meanMs < 10 && timing.varianceRatio < 0.1) ||
+    timing.throughputMBps >= HARDWARE_THRESHOLDS.AES_1MB_MIN_THROUGHPUT_MBPS);
+}
+
+/**
  * Validate AES timing results against hardware thresholds
  */
 export function validateAESTiming(timing) {
@@ -473,7 +487,7 @@ export function validateAESTiming(timing) {
   return {
     valid: issues.length === 0,
     issues,
-    hasAESNI: timing.meanMs < 10 && timing.varianceRatio < 0.1,
+    hasAESNI: timingShowsAESNI(timing),
   };
 }
 
@@ -494,8 +508,8 @@ export class HardwareAttestation {
     const timing = await measureAESPerformance();
     const validation = validateAESTiming(timing);
     
-    // Update features based on timing test
-    features.hasAESNI = validation.hasAESNI;
+    // Timing evidence ORs in — never clobbers the model-table flag
+    features.hasAESNI = features.hasAESNI || validation.hasAESNI;
     
     // Extended detection for VAES/GFNI (optional, adds ~200ms)
     let extendedTiming = null;
@@ -613,7 +627,7 @@ export class HardwareAttestation {
     });
     
     const features = detectCPUFeatures();
-    features.hasAESNI = timing.meanMs < 10 && timing.varianceRatio < 0.1;
+    features.hasAESNI = features.hasAESNI || timingShowsAESNI(timing);
     
     const responseData = {
       version: '1.0',
@@ -750,7 +764,7 @@ export async function getCryptoCapabilitySummary() {
   const features = detectCPUFeatures();
   const timing = await measureAESPerformance({ iterations: 20 });
   const validation = validateAESTiming(timing);
-  features.hasAESNI = validation.hasAESNI;
+  features.hasAESNI = features.hasAESNI || validation.hasAESNI;
   
   const tierResult = determineCryptoTier(features, timing);
   

@@ -14,7 +14,7 @@
  * Usage: node scripts/stage-dist.mjs <outDir>
  */
 
-import { readFileSync, mkdirSync, copyFileSync, cpSync, existsSync, rmSync, chmodSync } from 'fs';
+import { readFileSync, readdirSync, mkdirSync, copyFileSync, cpSync, existsSync, rmSync, chmodSync } from 'fs';
 import { join, dirname } from 'path';
 import { execFileSync } from 'child_process';
 
@@ -50,12 +50,36 @@ for (const dir of ASSET_DIRS) {
 }
 
 // Oracle-invisible extras: not SOURCE_EXTENSIONS, or in EXCLUDE_FILES/EXCLUDE_DIRS
-for (const extra of ['package-lock.json', 'start-yakmesh.bat', 'start-yakmesh-silent.vbs', 'VIEW-YAKMESH-LOG.bat', 'STOP-YAKMESH.bat', 'README.md', 'LICENSE', 'CHANGELOG.md', 'utils/wintun.dll', 'utils/verify-worker.js', 'scripts/yakmesh-run.js']) {
+for (const extra of ['package-lock.json', 'start-yakmesh.bat', 'start-yakmesh-silent.vbs', 'VIEW-YAKMESH-LOG.bat', 'STOP-YAKMESH.bat', 'README.md', 'LICENSE', 'CHANGELOG.md', 'utils/wintun.dll', 'utils/dna-spiral.wasm', 'utils/verify-worker.js', 'scripts/yakmesh-run.js', 'tools/npu-prover/START-PROVER.bat']) {
     if (existsSync(join(repo, extra))) {
         mkdirSync(dirname(join(out, extra)), { recursive: true });
         copyFileSync(join(repo, extra), join(out, extra));
     }
 }
+
+// Attestation bundle — INTEGRAL to every package, not an optional extra.
+// yakmesh-run.js resolves yakos-pq-bridge[.exe] (exact name or dated
+// -YYYYMMDD) at the package root; the launcher provisions the hardware-bound
+// keystore via yakos-keystore[.exe]. The binaries live at the repo root as
+// untracked build artifacts (gitignored, oracle-invisible — .exe is not a
+// SOURCE_EXTENSION) and ride every staged dist. A package without them is a
+// package that cannot attest — that is a broken package, not a lite one.
+// Set YAKMESH_STAGE_NO_ATTEST=1 only for intentionally bridge-less builds.
+const attBins = readdirSync(repo)
+    .filter(f => /^yakos-(pq-bridge|keystore)(-\d+)?(\.exe)?$/.test(f));
+for (const f of attBins) {
+    copyFileSync(join(repo, f), join(out, f));
+}
+const haveBridge = attBins.some(f => f.startsWith('yakos-pq-bridge'));
+const haveKeystore = attBins.some(f => f.startsWith('yakos-keystore'));
+if ((!haveBridge || !haveKeystore) && process.env.YAKMESH_STAGE_NO_ATTEST !== '1') {
+    console.error('stage-dist: attestation bundle incomplete at repo root ' +
+        `(pq-bridge=${haveBridge ? 'yes' : 'MISSING'}, keystore=${haveKeystore ? 'yes' : 'MISSING'}). ` +
+        'Build/drop the binaries at the repo root, or set YAKMESH_STAGE_NO_ATTEST=1 ' +
+        'for a deliberately bridge-less package.');
+    process.exit(1);
+}
+if (attBins.length) console.log(`stage-dist: attestation bundle → ${attBins.join(', ')}`);
 
 mkdirSync(join(out, 'data'), { recursive: true });
 copyFileSync(join(repo, 'data', 'manifest.json'), join(out, 'data', 'manifest.json'));

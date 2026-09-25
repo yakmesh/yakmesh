@@ -219,6 +219,62 @@ async function ensureBridge() {
   spawnBridge();
 }
 
+// ── NPU execution prover — same adopt-or-spawn contract as the bridge.
+// Adopts whatever answers :9997 (rust-embed on YakOS Linux), else spawns
+// tools/npu-prover/prover.mjs when the package ships it. The prover's own
+// backend cascade degrades honestly (vitis → dml-npu → dml-gpu → ort-cpu →
+// js-cpu), so spawning it on NPU-less hosts still yields a true execution
+// proof — the backend label is part of the claim.
+const PROVER_URL = process.env.YAKOS_NPU_PROOF || 'http://127.0.0.1:9997';
+let proverChild = null;
+let proverWarned = false;
+
+async function proverHealthy() {
+  // rust-embed answers /npu/health; tools/npu-prover answers /health.
+  for (const ep of ['/health', '/npu/health']) {
+    try {
+      const res = await fetch(`${PROVER_URL}${ep}`, { signal: AbortSignal.timeout(1500) });
+      if (res.ok) return true;
+    } catch { }
+  }
+  return false;
+}
+
+function spawnProver() {
+  const script = join(ROOT, 'tools', 'npu-prover', 'prover.mjs');
+  if (!existsSync(script)) {
+    if (!proverWarned) {
+      proverWarned = true;
+      console.log('[yakmesh-run] npu-prover not in package — execution proofs idle');
+    }
+    return;
+  }
+  const child = spawn(process.execPath, [script], {
+    cwd: ROOT, stdio: ['ignore', 'pipe', 'pipe'], env: process.env, windowsHide: true,
+  });
+  proverChild = child;
+  console.log(`[yakmesh-run] npu-prover spawned (pid ${child.pid})`);
+  child.stdout?.on('data', (c) => tee(process.stdout, c));
+  child.stderr?.on('data', (c) => tee(process.stderr, c));
+  child.on('exit', (code) => {
+    if (proverChild === child) proverChild = null;
+    setTimeout(ensureProver, 10000);
+  });
+}
+
+async function ensureProver() {
+  if (process.env.YAKMESH_NO_PROVER === '1') return;
+  if (proverChild) return;
+  if (await proverHealthy()) {
+    if (!proverWarned) {
+      proverWarned = true;
+      console.log(`[yakmesh-run] npu prover reachable at ${PROVER_URL} — execution proofs enabled`);
+    }
+    return;
+  }
+  spawnProver();
+}
+
 // Bridge lifecycle is independent of the node child — it survives ACT
 // swaps (the package never contains it) and dies with the supervisor.
 // The node child dies with us too: an orphaned node keeps the WS port
@@ -226,6 +282,7 @@ async function ensureBridge() {
 let nodeChild = null;
 function killChildren() {
   try { bridgeChild?.kill(); } catch { }
+  try { proverChild?.kill(); } catch { }
   try { nodeChild?.kill(); } catch { }
 }
 process.on('exit', killChildren);
@@ -237,6 +294,9 @@ for (const sig of ['SIGINT', 'SIGTERM', 'SIGHUP']) {
 ensureBridge().catch(() => { });
 const _bridgeTimer = setInterval(() => ensureBridge().catch(() => { }), 30_000);
 _bridgeTimer.unref?.();
+ensureProver().catch(() => { });
+const _proverTimer = setInterval(() => ensureProver().catch(() => { }), 30_000);
+_proverTimer.unref?.();
 
 function run() {
   return new Promise((resolve) => {

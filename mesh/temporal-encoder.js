@@ -323,6 +323,7 @@ class TemporalMeshEncoder {
 
   encode(message, options = {}) {
     const stream = new TemporalStream({
+      streamId: options.streamId, // deterministic ids — callers may derive
       sliceSize: options.sliceSize || 1024,
       baseTimestamp: options.baseTimestamp,
       sliceIntervalNs: options.sliceIntervalNs,

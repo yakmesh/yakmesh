@@ -15,6 +15,13 @@
  *      (which indexes IDXGIFactory::EnumAdapters1). device_filter is
  *      only reachable via the generic provider-options API — hence the
  *      direct C-API binding.
+ *      NOTE (verified 2026-09-25, ORT 1.30.0): stock onnxruntime-node
+ *      Windows builds do NOT compile ENABLE_NPU_ADAPTER_ENUMERATION —
+ *      ParseFilter in dml_provider_factory.cc only matches 'npu'/'any'
+ *      inside that #ifdef, so this attempt always throws "Invalid
+ *      Filter provided for DirectML EP device selection." Kept in the
+ *      cascade because an ORT build with the flag flips it live; on
+ *      stock builds the real NPU path is tier 1 (VitisAI EP).
  *   3. DML { device_filter: 'gpu' } — honest GPU tier (iGPU/dGPU).
  *   4. ORT CPU EP — honest CPU tier.
  *   5. Pure-JS fp16 GEMM — honest 'js-cpu' floor when onnxruntime.dll
@@ -657,6 +664,27 @@ const dxAdapters = PROBE ? [] : enumDxCore();
 const npuAdapter = dxAdapters.find((a) => a.is_npu) || null;
 log(`init: probes done (${dxAdapters.length} dxcore adapters)`);
 
+// The proof's `device` must name the silicon that EXECUTED the kernel —
+// the claim says WHAT ran, not what exists. On non-NPU backends the PnP
+// NPU's PCI id would overstate; NPU presence stays disclosed separately
+// via `adapter`/`adapters`/`device.pnp` regardless of executor.
+function execDevice() {
+  if (backend === 'vitis-npu' || backend === 'dml-npu') return device;
+  if (backend === 'dml-gpu') {
+    const g = dxAdapters.find((a) => a.is_hardware && !a.is_npu)
+      || dxAdapters.find((a) => a.is_hardware) || null;
+    return {
+      generation: 'windows/onnxruntime',
+      pci: (g?.vendor_id && g?.device_id)
+        ? `${g.vendor_id}:${g.device_id}`.replace(/0x/gi, '').toLowerCase() : null,
+      pnp: null, name: g?.desc || 'DirectML GPU', luid: g?.luid || null,
+      npuPresent: device?.pci || null,
+    };
+  }
+  return { generation: backend === 'js-cpu' ? 'js/no-ort' : 'cpu',
+    pci: null, pnp: null, name: 'host CPU', npuPresent: device?.pci || null };
+}
+
 async function runProof(n, nonce) {
   const rng = xorshift64star(seedFromNonce(nonce));
   // onnxType 4 (uint16) carries bf16 bits — the QDQ model path.
@@ -713,7 +741,8 @@ async function runProof(n, nonce) {
   return {
     status: 'ok',
     proof_of: 'execution',
-    device,
+    device: execDevice(),
+    backend,
     adapter: npuAdapter || undefined,
     adapters: dxAdapters.length ? dxAdapters : undefined,
     kernel: `${backend} gemm64 (${{ 1: 'fp32', 4: 'qdq-bf16' }[onnxType] || 'fp16'})`,

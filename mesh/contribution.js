@@ -30,6 +30,10 @@
 
 import { readFileSync } from 'fs';
 import { join } from 'path';
+import { receiptsCommitment } from './work-receipt.js';
+import { createLogger } from '../utils/logger.js';
+
+const log = createLogger('mesh:contribution');
 
 const BRIDGE_URL = process.env.YAKOS_PQ_BRIDGE || 'http://127.0.0.1:9995';
 const NPU_PROOF_URL = process.env.YAKOS_NPU_PROOF || 'http://127.0.0.1:9997';
@@ -112,6 +116,14 @@ let hwProofProvider = null;
 
 export function setHwProofProvider(fn) {
   hwProofProvider = typeof fn === 'function' ? fn : null;
+}
+
+// Issuer receipts pending commitment — set by the server; returns the
+// receipts this node holds for the epoch (sync or Promise).
+let receiptProvider = null;
+
+export function setReceiptProvider(fn) {
+  receiptProvider = typeof fn === 'function' ? fn : null;
 }
 
 /**
@@ -295,6 +307,50 @@ export function currentEpoch(nowMs = Date.now()) {
 }
 
 /**
+ * Failure visibility for the claim pipeline. A broken seal/proof/signing
+ * path must surface in the log — silent claim loss is indistinguishable
+ * from an unattested node until someone audits the ledger. But a dead
+ * dependency must not spam: this runs once per 30s epoch, so a persist-
+ * ent failure logs its first occurrence, re-surfaces every 120 epochs
+ * (~hourly) with the consecutive count, and a later success logs the
+ * recovery. State is per-label so each sub-path reports independently.
+ */
+const failLog = new Map(); // label → { count, msg }
+
+function noteFail(label, epoch, err) {
+  const msg = err?.message || String(err);
+  const st = failLog.get(label) || { count: 0, msg: null };
+  st.count += 1;
+  if (st.count === 1 || msg !== st.msg) {
+    log.warn(`contribution ${label} failed`, { epoch, error: msg, consecutive: st.count });
+  } else if (st.count % 120 === 0) {
+    log.warn(`contribution ${label} still failing`, { epoch, error: msg, consecutive: st.count });
+  }
+  st.msg = msg;
+  failLog.set(label, st);
+}
+
+function noteOk(label, epoch) {
+  const st = failLog.get(label);
+  if (st?.count > 0) {
+    log.info(`contribution ${label} recovered`, { epoch, consecutive: st.count });
+    failLog.delete(label);
+  }
+}
+
+/** Sub-fetch with visibility — failure degrades to null, never silently. */
+async function tried(label, epoch, fn) {
+  try {
+    const v = await fn();
+    noteOk(label, epoch);
+    return v;
+  } catch (e) {
+    noteFail(label, epoch, e);
+    return null;
+  }
+}
+
+/**
  * Produce the meshState.contribution payload, or null when the node is
  * unattested (no pq-bridge). Safe to call every heartbeat — results are
  * cached per epoch so the seal stays constant within it.
@@ -308,24 +364,52 @@ export async function contributionMeshState(nowMs) {
   try {
     const { node_id, seal, real_silicon, silicon_drift } =
       await getJson(`/yakcoin/seal?epoch=${epoch}`);
+    noteOk('seal', epoch);
     const canAttestTime = timeTrustProvider ? !!timeTrustProvider() : false;
     // Execution proof is fetched once per epoch — the provider binds the
     // nonce to this epoch so the digest can't be replayed across epochs.
-    const npuProof = proofProvider ? await proofProvider(epoch).catch(() => null) : null;
+    const npuProof = proofProvider
+      ? await tried('npuProof', epoch, () => proofProvider(epoch))
+      : null;
     if (npuProof) {
       // Attestation failure omits the signature only — the unsigned proof
       // is still real execution evidence, just unattributed.
-      const attestation = await signNpuProof(epoch, node_id, npuProof).catch(() => null);
+      const attestation = await tried('npuProof-sign', epoch,
+        () => signNpuProof(epoch, node_id, npuProof));
       if (attestation) npuProof.attestation = attestation;
     }
-    const hwProof = hwProofProvider ? await hwProofProvider(epoch).catch(() => null) : null;
+    const hwProof = hwProofProvider
+      ? await tried('hwProof', epoch, () => hwProofProvider(epoch))
+      : null;
     if (hwProof) {
-      const attestation = await signHwProof(epoch, node_id, hwProof).catch(() => null);
+      const attestation = await tried('hwProof-sign', epoch,
+        () => signHwProof(epoch, node_id, hwProof));
       if (attestation) hwProof.attestation = attestation;
     }
     // Adopt yakcoind's work fields when its claim is present and its
     // identity+seal provably match ours — zeros stay honest otherwise.
     const work = yakcoindWorkFields(epoch, node_id, seal);
+    // Issuer receipts held for this epoch — committed via
+    // jobRoot = AVOTH(concat(canonical receipts)) and carried inline so
+    // witnesses can verify issuer_sig + worker/seal binding. When AVOTH
+    // can't produce the commitment the receipts are dropped honestly —
+    // a claim with a wrong commitment is fraud-shaped.
+    const held = receiptProvider
+      ? await tried('receipts', epoch, () => receiptProvider(epoch, node_id, seal))
+      : null;
+    let receiptWork = null;
+    if (Array.isArray(held) && held.length > 0) {
+      const commitment = receiptsCommitment(held);
+      if (commitment) {
+        const classes = new Set(held.map(r => r.workClass));
+        receiptWork = {
+          jobRoot: commitment,
+          receipts: held,
+          // Mixed work classes → UNSPECIFIED (strictest routing).
+          jobClass: classes.size === 1 ? [...classes][0] : 0,
+        };
+      }
+    }
     const payload = {
       version: 1,
       epoch,
@@ -333,10 +417,14 @@ export async function contributionMeshState(nowMs) {
       seal,                    // 4 quats — wormhole seal at AVOTH pos 191
       spongeRounds: work?.spongeRounds ?? 0, // PRAHARI feed not wired — honest zero
       shareCount: work?.shareCount ?? 0,     // mesh pool not live — honest zero
-      jobRoot: work?.jobRoot ?? '0'.repeat(64), // no completed work orders yet
-      entropyFlags: (canAttestTime ? 1 : 0) | (real_silicon ? 2 : 0),
+      jobRoot: receiptWork?.jobRoot ?? work?.jobRoot ?? '0'.repeat(64),
+      entropyFlags: (canAttestTime ? 1 : 0) | (real_silicon ? 2 : 0)
+        // Job-class tag (bits 2-5) — WorkClass enum from yakcoin-core;
+        // routes the claim to its verification protocol at audit time.
+        | (((receiptWork?.jobClass ?? work?.jobClass ?? 0) & 0x0f) << 2),
       siliconDrift: Number.isInteger(silicon_drift) ? silicon_drift : 0,
       ...(work ? { yakcoind: true } : {}),
+      ...(receiptWork ? { receipts: receiptWork.receipts } : {}),
       ...(work?.attestationBundle
           ? { attestationBundle: work.attestationBundle } : {}),
       ...(npuProof ? { npuProof } : {}),
@@ -344,7 +432,10 @@ export async function contributionMeshState(nowMs) {
     };
     cached = { epoch, payload };
     return payload;
-  } catch {
+  } catch (e) {
+    // No claim this epoch — the seal fetch or payload build failed.
+    // Logged, not silent: a node that stops claiming must explain itself.
+    noteFail('seal', epoch, e);
     cached = { epoch, payload: null };
     return null;
   }

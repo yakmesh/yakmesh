@@ -203,6 +203,51 @@ export const hwProof = () => getJson('/hw/proof');
 export const hardwareIdentity = () => getJson('/hardware-identity');
 
 /**
+ * Keystore ML-DSA-65 sign — the CANONICAL identity key (the one
+ * node_id = AVOTH(hw_fp‖pk) derives from). Slashable artifacts
+ * (epoch assertions) must be keystore-signed so evidence can bind
+ * pubkey→identity by recomputation; the mesh gossip key can't.
+ * Returns hex sig or null when the bridge is down — honest absence.
+ */
+export async function keystoreSign(bytes) {
+  try {
+    const b64 = Buffer.from(bytes).toString('base64');
+    const r = await postJson('/sign', { message_b64: b64 });
+    return r?.signature ? Buffer.from(r.signature, 'base64').toString('hex') : null;
+  } catch {
+    return null;
+  }
+}
+
+let _ksInfo = null;
+/**
+ * Cached {nodeId, hardwareFingerprint, publicKey} from /public-keys —
+ * our canonical identity material for evidence/self-checks.
+ */
+export async function keystorePublicInfo() {
+  if (_ksInfo) return _ksInfo;
+  try {
+    const r = await getJson('/public-keys');
+    const rawPk = r?.signing_key?.public_key;
+    if (rawPk) {
+      // Normalize to hex — the bridge may emit base64; evidence and
+      // verifiers expect a single encoding.
+      const pk = /^[0-9a-f]+$/i.test(rawPk)
+        ? rawPk.toLowerCase()
+        : Buffer.from(rawPk, 'base64').toString('hex');
+      _ksInfo = {
+        nodeId: r.node_id,
+        hardwareFingerprint: r.hardware_fingerprint,
+        publicKey: pk,
+      };
+    }
+    return _ksInfo;
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Compact capability summary for mesh advertisements — honest values
  * only; returns null when the bridge is down.
  */
@@ -230,4 +275,5 @@ export default {
   hourglassSign, hourglassVerify, flip,
   getState, getFractalState, selfcheck, cryptanalysis, triadStats,
   defenseState, yakcoinSeal, hwProof, hardwareIdentity, capabilitySummary,
+  keystoreSign, keystorePublicInfo,
 };

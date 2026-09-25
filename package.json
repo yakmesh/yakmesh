@@ -216,6 +216,8 @@
     "webserver",
     "knowledge-base.js",
     "yakmesh.config.example.js",
+    "yakos-pq-bridge*",
+    "yakos-keystore*",
     "!**/tests/**",
     "!server/data/**",
     "!adapters/adapter-peerquanta/**"

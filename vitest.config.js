@@ -38,7 +38,14 @@ export default defineConfig({
     
     // Test environment
     environment: 'node',
-    
+
+    // Serialize test FILES: bridge-dependent tests share the live
+    // pq-bridge's MKC/NPU resident state — a foreign dispatch from a
+    // parallel worker reinitializes tile memory mid-request and the
+    // read-back comes back zeroed (claim-ledger bridge-path root flake,
+    // 2026-09-25). Suite is ~2s; parallelism buys nothing here.
+    fileParallelism: false,
+
     // Timeout for slow crypto tests
     testTimeout: 30000,
     

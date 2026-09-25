@@ -96,3 +96,16 @@ models/seva/
 sbom.json
 mind.md
 data.windows-side/
+
+# Attestation bundle — yakos-pq-bridge / yakos-keystore binaries are build
+# artifacts dropped at the repo root and shipped inside every staged package
+# (stage-dist.mjs requires them). Never commit binaries.
+yakos-pq-bridge
+yakos-pq-bridge.exe
+yakos-pq-bridge-*
+yakos-keystore
+yakos-keystore.exe
+yakos-keystore-*
+
+# Runtime logs — supervisor tee output, never ship
+logs/

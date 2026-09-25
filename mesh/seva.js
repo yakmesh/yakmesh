@@ -161,6 +161,10 @@ export class SevaMeshHandler extends EventEmitter {
     // Provider taxonomy, best-first: 'xdna' (native IRON kernel) >
     // 'gpu' > 'onnx-dml' > 'cpu'. Reported for observability.
     this.providers = opts.providers || ['cpu'];
+    // TIVRA probe snapshot — honest accel.HW subset. A SHA-NI/AVX-512
+    // node is a fundamentally different peer for hash-class work than
+    // a plain CPU; without this the dispatch layer can't see it.
+    this.tivra = opts.tivra || null;
 
     // State
     this.activeJobs = 0;
@@ -259,6 +263,7 @@ export class SevaMeshHandler extends EventEmitter {
       },
       avoth: this.avoth,
       providers: this.providers,
+      tivra: this.tivra || undefined, // additive — older peers ignore it
       ts: Date.now(),
     };
 
@@ -288,6 +293,7 @@ export class SevaMeshHandler extends EventEmitter {
       accelerated: payload.capacity?.accelerated || false,
       avoth: payload.avoth || false,
       providers: payload.providers || [],
+      tivra: payload.tivra || null,
       lastSeen: Date.now(),
     });
 
@@ -372,8 +378,14 @@ export class SevaMeshHandler extends EventEmitter {
       // re-verifiable, so the preference is capability, not courtesy.
       if (SEVA_CONFIG.avothSlots.has(slot)) {
         if (cap.avoth) score += 150;
-        if (cap.providers?.includes('npu') || cap.providers?.includes('xdna')) score += 25;
-        else if (cap.providers?.includes('gpu')) score += 15;
+        // XRT/IRON native kernels (mkc/crystal) ARE the on-silicon
+        // AVOTH path — strongest qualifier short of the triad itself.
+        if (cap.tivra?.mkc) score += 30;
+        if (cap.providers?.includes('xdna') || cap.providers?.includes('xrt-iron')) score += 25;
+        else if (cap.providers?.some(p => p.startsWith('gpu'))) score += 15;
+        // TIVRA: SHA-NI / native SHA3 is the silicon fast-path for
+        // Keccak-class work — modest nudge, triad stays dominant.
+        if (cap.tivra?.cpu?.isa?.shaNI || cap.tivra?.cpu?.nativeSha3) score += 10;
       }
       if (cap.accelerated) score += 100;
       const loadRatio = (cap.capacity.currentLoad || 0) / (cap.capacity.maxConcurrent || 10);
@@ -612,6 +624,7 @@ export class SevaMeshHandler extends EventEmitter {
         npuTops: this.hardware.npuTops || 0,
         gpu: !!this.hardware.gpu,
       },
+      tivra: this.tivra,
     };
   }
 }

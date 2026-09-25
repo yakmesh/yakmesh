@@ -21,7 +21,7 @@
  * Contribution Reporter tests — entropyFlags bit0 (can_attest_time,
  * MANI tier ≥ PTP) and bit1 (real_silicon) plus siliconDrift
  * forwarding from the pq-bridge seal response. Honest-zeros contract:
- * no provider → bit0 stays 0; no bridge → no claim at all.
+ * no provider → bit0 stays 0; bridge unreachable → no claim at all.
  *
  * @module mesh/tests/contribution.test
  */

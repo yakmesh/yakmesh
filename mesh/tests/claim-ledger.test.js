@@ -13,8 +13,9 @@
  *
  * The bridge-availability probe is mocked so both paths are exercised
  * deterministically. With the probe on and a live pq-bridge the MKC
- * batch path runs for real (bit-exact by contract); with no bridge it
- * races down and falls back — the root must be identical either way.
+ * batch path runs for real (bit-exact by contract); with the probe
+ * mocked off (bridge unreachable — degraded state) it races down and
+ * falls back — the root must be identical either way.
  *
  * @module mesh/tests/claim-ledger.test
  */

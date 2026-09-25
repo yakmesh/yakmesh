@@ -42,7 +42,7 @@ import * as avothBridge from '../utils/avoth-bridge.js';
 /**
  * Verify a wormhole-sealed TME stream identity.
  * @returns {Promise<boolean|null>} false = forged origin (reject);
- *   true = verified; null = unverifiable here (no bridge) — accept.
+ *   true = verified; null = bridge unreachable (degraded) — accept.
  */
 async function verifyStreamSeal(streamId, metadata, senderNodeId) {
   if (!(await avothBridge.isAvailable())) return null;
@@ -110,32 +110,38 @@ export function wireTmeTransport({ mesh, encoder, nodeId, log: externalLog }) {
   mesh.on(MandalaMessageTypes.TME_SLICE, async (msg, _ws, senderNodeId) => {
     if (senderNodeId === nodeId) return; // skip own
     const { slice, metadata } = msg;
-    if (!slice) return;
+    if (!slice && !metadata) return;
 
     try {
-      // If we haven't seen this stream yet, init it from metadata
-      if (metadata && !encoder.inboundStreams?.has(slice.streamId)) {
+      // Metadata announces/inits a stream — metadata-only messages ARE
+      // the init path (dispatch sends {metadata, slice:null} to every
+      // peer; TME_RECONSTRUCT leads with metadata). Dropping them left
+      // the direct path unable to receive unless gossip had already
+      // delivered tme:metadata.
+      const streamId = metadata?.streamId ?? slice?.streamId;
+      if (metadata && streamId && !encoder.inboundStreams?.has(streamId)) {
         // Wormhole-sealed stream identity — verify the announced streamId
         // actually belongs to the claimed origin when a seal rides along.
         // Mismatch = forged origin claim → don't init the stream.
         if (metadata.streamSeal && metadata.sealEpoch != null) {
-          const ok = await verifyStreamSeal(slice.streamId, metadata, senderNodeId);
+          const ok = await verifyStreamSeal(streamId, metadata, senderNodeId);
           if (ok === false) {
             log.warn('TME transport: stream seal mismatch — rejected', {
-              stream: slice.streamId?.slice(0, 12),
+              stream: streamId?.slice(0, 12),
               claimedBy: metadata.sealedBy?.slice(0, 12),
               from: senderNodeId?.slice(0, 12),
             });
             return;
           }
         }
-        encoder.initReceive({ streamId: slice.streamId, ...metadata });
-        log.debug('TME transport: init stream from direct slice', {
-          stream: slice.streamId?.slice(0, 12),
+        encoder.initReceive({ ...metadata, streamId });
+        log.debug('TME transport: stream initialized', {
+          stream: streamId?.slice(0, 12),
           from: senderNodeId?.slice(0, 12),
         });
       }
 
+      if (!slice) return; // metadata-only → stream initialized
       const result = encoder.receiveSlice(slice);
       if (result.accepted) {
         log.debug('TME transport: slice accepted (direct)', {
@@ -282,10 +288,12 @@ export function wireTmeTransport({ mesh, encoder, nodeId, log: externalLog }) {
       return;
     }
 
-    // Send metadata first
+    // Send metadata first — includes streamId so the receiver can
+    // initialize before slices land (metadata-only init path).
     mesh.sendTo(senderNodeId, {
       type: MandalaMessageTypes.TME_SLICE,
       metadata: {
+        streamId,
         totalSlices: stream.totalSlices,
         sliceSize: stream.sliceSize,
         sliceIntervalNs: stream.sliceIntervalNs,
@@ -338,7 +346,7 @@ export function wireTmeTransport({ mesh, encoder, nodeId, log: externalLog }) {
     for (const peer of peers) {
       mesh.sendTo(peer.nodeId, {
         type: MandalaMessageTypes.TME_SLICE,
-        metadata,
+        metadata: { ...metadata, streamId },
         slice: null,
       });
     }

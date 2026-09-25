@@ -579,8 +579,13 @@ export class MandalaNetwork {
 
   /**
    * Send message to specific peer (WS or relay fallback)
+   * @param {string} nodeId
+   * @param {Object} message
+   * @param {Object} [opts] - {wire:'lifeline'} forces the secondary wire
+   *   when the peer has one (echo probes/challenges measure per-wire
+   *   RTT — YAKTUN primary and LAN lifeline have different physics).
    */
-  sendTo(nodeId, message) {
+  sendTo(nodeId, message, opts = {}) {
     const outbound = { ...message, timestamp: Date.now() };
     // Rumor-carrying gossip wrappers carry their own end-to-end authentication
     // (rumor.signature or data.signature for self-signed payloads), and the
@@ -608,6 +613,11 @@ export class MandalaNetwork {
       // whenever wire B is up.
       let sock = peer.ws;
       if (outbound.type === 'TUN_PACKET' && peer.wsVia === 'tun') {
+        sock = peer.lifelineWs;
+      }
+      // Caller-requested wire override (echo ranging measures both wires)
+      if (opts.wire === 'lifeline' &&
+          peer.lifelineWs?.readyState === WebSocket.OPEN) {
         sock = peer.lifelineWs;
       }
       if (sock && sock.readyState === WebSocket.OPEN) {

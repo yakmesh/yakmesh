@@ -1422,6 +1422,7 @@ export class DOKOStore {
     this.documents = new Map(); // dokoId -> DOKODocument
     this.byPublicKey = new Map(); // publicKeyHex -> dokoId
     this.byUserId = new Map(); // userId -> dokoId (for PeerQuanta)
+    this.byPersistentId = new Map(); // extensions.persistentId -> dokoId
   }
 
   /**
@@ -1444,6 +1445,11 @@ export class DOKOStore {
     // Index by userId if present (PeerQuanta integration)
     if (doc.claims?.userId) {
       this.byUserId.set(doc.claims.userId, doc.dokoId);
+    }
+    // Index by persistentId — the cross-build identity anchor. Keys
+    // and dokoIds rotate per build; the 162T persistentId does not.
+    if (doc.extensions?.persistentId) {
+      this.byPersistentId.set(doc.extensions.persistentId, doc.dokoId);
     }
 
     return { success: true, dokoId: doc.dokoId };
@@ -1473,6 +1479,15 @@ export class DOKOStore {
   }
 
   /**
+   * Get a DOKO by persistent machine ID — the identity that survives
+   * key rotation and code upgrades.
+   */
+  getByPersistentId(persistentId) {
+    const dokoId = this.byPersistentId.get(persistentId);
+    return dokoId ? this.documents.get(dokoId) : null;
+  }
+
+  /**
    * Remove a DOKO
    */
   remove(dokoId) {
@@ -1481,6 +1496,9 @@ export class DOKOStore {
       this.byPublicKey.delete(doc.publicKey);
       if (doc.claims?.userId) {
         this.byUserId.delete(doc.claims.userId);
+      }
+      if (doc.extensions?.persistentId) {
+        this.byPersistentId.delete(doc.extensions.persistentId);
       }
       this.documents.delete(dokoId);
       return true;

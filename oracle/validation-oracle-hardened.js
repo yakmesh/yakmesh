@@ -498,6 +498,10 @@ export class ValidationOracle {
       'dashboard',         // Web dashboard UI assets
       'templates',         // Template files
       'examples',          // Example files
+      'archive',           // Legacy code archive — not runtime
+      'data.windows-side', // Old Windows-side runtime data (test keys, caches)
+      'CONFIDENTIAL',      // Internal research artifacts — never shipped
+      'copilot-memories',  // AI agent notes
     ];
 
     // File extensions that ARE part of the codebase
@@ -514,6 +518,7 @@ export class ValidationOracle {
       '.env.local',
       'vitest.config.js',     // Test runner config
       'knowledge-base.js',    // Dev knowledge base
+      'ecosystem.config.json',// Per-host pm2 env — deployment config, not codebase
       'update-docs-nav.cjs',  // Dev script
       'convert-tests.cjs',    // Dev utility
     ];
@@ -550,8 +555,11 @@ export class ValidationOracle {
           if (EXCLUDE_FILES.includes(entry.name)) continue;
           // Skip test files (*.test.js, *.spec.js, etc.)
           if (/\.(test|spec)\.(js|mjs|cjs)$/.test(entry.name)) continue;
-          // Skip dev/test/audit prefix scripts
-          if (EXCLUDE_PREFIXES.some(p => entry.name.startsWith(p))) continue;
+          // Skip dev/test/audit prefix scripts — ROOT-LEVEL ONLY. Inside
+          // hashed dirs every file is runtime code; a prefix match there
+          // (mesh/audit-duty.js) must stay in the hash or deployed trees
+          // silently diverge from source.
+          if (dir === baseDir && EXCLUDE_PREFIXES.some(p => entry.name.startsWith(p))) continue;
 
           // Check extension
           const ext = entry.name.slice(entry.name.lastIndexOf('.'));

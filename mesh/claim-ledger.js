@@ -37,11 +37,15 @@
 
 import { EventEmitter } from 'events';
 import { sha3_256 } from '@noble/hashes/sha3.js';
+import { bytesToHex } from '@noble/hashes/utils.js';
 import { createLogger } from '../utils/logger.js';
 import { verifySignature } from '../identity/node-key.js';
 import { npuProofClaim, hwProofClaim } from './contribution.js';
 import { isAvailable as bridgeAvailable } from '../utils/avoth-bridge.js';
 import { sha3_256Batch as mkcSha3Batch } from '../utils/mkc.js';
+import { verifyClaimReceipts } from './work-receipt.js';
+import { verifyEpochSeal as wasmVerifySeal } from '../utils/dna-spiral.js';
+import { verifyAssertion, selfClaimRef } from './epoch-assertion.js';
 
 const log = createLogger('mesh:claim-ledger');
 
@@ -66,11 +70,40 @@ function validContributionShape(c) {
     && Number.isInteger(c.entropyFlags);
 }
 
+/**
+ * Job class tag — entropyFlags bits 2-5 (bits 0=canAttestTime,
+ * 1=real_silicon are taken; 6-7 spare). Values mirror yakcoin-core's
+ * WorkClass enum so the tag is wire-compatible end to end.
+ * The tag routes a claim to its verification PROTOCOL — it is a pool
+ * hint, not evidence: mis-tagging only harms the claimer (a fuzzy job
+ * tagged deterministic gets demanded bit-exactness it can't produce).
+ */
+export const JOB_CLASS = {
+  UNSPECIFIED: 0,   // untagged → treated as deterministic (strictest)
+  AVOTH: 1,         // bit-exact AVOTH/MKC work — anyone can audit
+  DETERMINISTIC: 2, // bit-exact recompute — anyone can audit
+  FUZZY: 3,         // inference-class — similarity consensus (deferred)
+  AUDIT: 4,         // audit-duty itself — witnessed records
+  STORAGE: 5,       // custody proofs — challenge-response, not recompute
+};
+
+/** Which classes the spot-recompute path can verify. */
+export const RECOMPUTE_CLASSES = new Set([
+  JOB_CLASS.UNSPECIFIED, JOB_CLASS.AVOTH, JOB_CLASS.DETERMINISTIC,
+]);
+
+export function jobClassOf(claim) {
+  return (claim.entropyFlags >> 2) & 0x0f;
+}
+
 export class ClaimLedger extends EventEmitter {
   constructor(options = {}) {
     super();
     this.nodeId = options.nodeId;            // our yakmesh nodeId (skip self)
     this.maxEpochs = options.maxEpochs || 64;
+    // DOKO registry for issuer-authority checks on receipt claims —
+    // absent → receipts top out at 'observe' (honest middle state).
+    this.dokoRegistry = options.dokoRegistry || null;
 
     /** @type {Map<string, Map<string, object>>} epoch → nodeId → claim */
     this.epochs = new Map();
@@ -109,9 +142,45 @@ export class ClaimLedger extends EventEmitter {
     if (!c) return; // unattested heartbeat — nothing to record
 
     if (!validContributionShape(c)) {
-      log.warn('malformed contribution claim', { from: hb.nodeId });
+      log.warn('malformed contribution claim', { from: hb.nodeId, claim: c });
       this.emit('malformed', { nodeId: hb.nodeId, claim: c });
       return;
+    }
+
+    // Issuer receipts: a claim carrying `receipts` commits them via
+    // jobRoot = AVOTH(concat(canonical encodings)). The whole set must
+    // verify — a receipt that fails signature/binding checks breaks
+    // the commitment and makes the claim fraud-shaped, so it does not
+    // enter the witnessed set at all.
+    let receiptVerification = null;
+    if (c.receipts !== undefined) {
+      receiptVerification = verifyClaimReceipts(c, {
+        dokoRegistry: this.dokoRegistry,
+      });
+      if (receiptVerification.verdict === 'reject') {
+        log.warn('claim receipts failed verification', {
+          from: hb.nodeId, epoch: c.epoch, reason: receiptVerification.reason,
+        });
+        this.emit('receiptForgery', {
+          nodeId: hb.nodeId, epoch: c.epoch,
+          reason: receiptVerification.reason, at: Date.now(),
+        });
+        return;
+      }
+    }
+
+    // Self-assertion (slashable object): a keystore-signed commitment
+    // to this exact leaf. Verify signature + field cross-checks; an
+    // invalid assertion is stripped (it's noise, not fraud evidence —
+    // the signature is under the subject's own key so forgery proves
+    // nothing about the subject).
+    if (c.claimAssert) {
+      const ok = verifyAssertion(c.claimAssert, c.claimAssert.pubkey)
+        && c.claimAssert.nodeId === c.nodeId
+        && c.claimAssert.epoch === c.epoch
+        && c.claimAssert.claimRef === selfClaimRef(c.nodeId, c.epoch)
+        && c.claimAssert.value === bytesToHex(sha3_256(ClaimLedger.claimLeafBytes(c)));
+      if (!ok) delete c.claimAssert;
     }
 
     this._checkBinding(hb.nodeId, c.nodeId);
@@ -139,6 +208,7 @@ export class ClaimLedger extends EventEmitter {
         witnessedAt: hb.timestamp,
         verified: opts.verified || 'unsigned',
         proofVerification,
+        receiptVerification,
         deviceClass: ClaimLedger._classifyDevice(c, proofVerification),
       });
       this.emit('claim', bucket.get(hb.nodeId));
@@ -188,7 +258,14 @@ export class ClaimLedger extends EventEmitter {
    */
   static _classifyDevice(c, verdicts) {
     const bad = (v) => v === 'forged' || v === 'malformed';
-    if (verdicts.npu === 'verified') return 'npu';
+    if (verdicts.npu === 'verified') {
+      // Executor truth is in the SIGNED kernel field — a verified proof
+      // that ran on GPU/CPU is real execution, but not NPU labor.
+      const k = String(c.npuProof?.kernel || '');
+      if (k.startsWith('dml-gpu')) return 'gpu';
+      if (k.startsWith('ort-cpu') || k.startsWith('js-cpu')) return 'cpu';
+      return 'npu';
+    }
     if (verdicts.hw === 'verified') return c.hwProof?.deviceClass || 'hw';
     if (c.npuProof) return bad(verdicts.npu) ? 'forged-npu' : 'claimed-npu';
     if (c.hwProof) {
@@ -251,6 +328,23 @@ export class ClaimLedger extends EventEmitter {
   }
 
   /**
+   * KARMA age for settlement — consecutive epochs ending at `epoch`
+   * (inclusive) in which the node has a witnessed claim. Derived from
+   * the epoch buckets themselves, never a stored counter: a gap in
+   * attested presence breaks the streak. Pure fact about the ledger —
+   * contested-identity policy (forks, binding conflicts) is applied by
+   * the settlement-input assembler, not here.
+   */
+  presenceStreak(yakmeshNodeId, epoch) {
+    let streak = 0;
+    for (let e = epoch; e > 0; e--) {
+      if (!this.epochs.get(e)?.has(yakmeshNodeId)) break;
+      streak++;
+    }
+    return streak;
+  }
+
+  /**
    * Bridge availability gate. Returns true when the pq-bridge is
    * reachable (probe cached ~15s in avoth-bridge). On the down/up
    * transitions we log once at warn/info; while down, calls return
@@ -278,21 +372,59 @@ export class ClaimLedger extends EventEmitter {
 
   /**
    * Cryptographic seal verification for an epoch's witnessed claims —
-   * upgrades the shape check to a real AVOTH recompute via the pq-bridge
-   * (/yakcoin/verify-claims, triad-dispatched: GPU bulk, NPU dot matrix,
-   * or CPU floor). One POST verifies the whole epoch.
+   * upgrades the shape check to a real AVOTH recompute. Primary path is
+   * the native dna-spiral wasm (same implementation the bridge runs,
+   * in-process, no network); the pq-bridge batch endpoint
+   * (/yakcoin/verify-claims, triad-dispatched) is the fallback for when
+   * the wasm module can't load.
    *
    * Verdicts are written back onto the witnessed claim records
    * (`sealVerified: true|false`) and failing claims are emitted as
    * 'sealFailure' evidence — a forged or transplanted seal is provable
-   * misconduct, not a shape error. Returns null when the bridge is
-   * unreachable (witnessing continues; verification defers to settlement).
+   * misconduct, not a shape error. Returns null when NEITHER verifier
+   * is reachable (witnessing continues; defers to settlement).
    */
   async verifyEpochSeals(epoch) {
     const bucket = this.epochs.get(epoch);
     if (!bucket || bucket.size === 0) return null;
 
     const entries = [...bucket.values()];
+
+    // Native path — one AVOTH recompute per claim, in-process.
+    const native = entries.map(c => wasmVerifySeal(c.nodeId, c.epoch, c.seal));
+    if (native.every(v => v !== null)) {
+      let invalid = 0;
+      entries.forEach((claim, i) => {
+        claim.sealVerified = native[i];
+        if (!native[i]) {
+          invalid++;
+          const evidence = {
+            yakmeshNodeId: claim.yakmeshNodeId,
+            nodeId: claim.nodeId,
+            epoch: claim.epoch,
+            seal: claim.seal,
+            // If the subject self-asserted (claimAssert), this is
+            // slashable BadSeal evidence — consensus recomputes the
+            // seal from the leaf the subject itself committed.
+            leaf: bytesToHex(ClaimLedger.claimLeafBytes(claim)),
+            claimAssert: claim.claimAssert || null,
+            at: Date.now(),
+          };
+          log.warn('SEAL FAILURE — forged or transplanted claim seal', evidence);
+          this.emit('sealFailure', evidence);
+        }
+      });
+      return {
+        epoch,
+        total: entries.length,
+        valid: entries.length - invalid,
+        invalid,
+        device: 'wasm-local',
+      };
+    }
+
+    // Fallback — the bridge's batch endpoint (was the only path before
+    // the wasm landed; kept for environments where the wasm can't load).
     const claims = entries.map(c => ({
       node_id: c.nodeId,
       epoch: c.epoch,

@@ -42,6 +42,7 @@ const EXCLUDE_DIRS = [
     'deploy-packages', 'deploy', 'scripts', 'docs', 'website', 'marketing',
     'announcements', 'assets', 'types', 'shortcuts', 'memory-bank', 'yakbot',
     'hostinger', 'cli', 'dashboard', 'templates', 'examples',
+    'archive', 'data.windows-side', 'CONFIDENTIAL', 'copilot-memories',
 ];
 
 const SOURCE_EXTENSIONS = ['.js', '.mjs', '.cjs', '.json', '.ts', '.tsx'];
@@ -49,6 +50,7 @@ const SOURCE_EXTENSIONS = ['.js', '.mjs', '.cjs', '.json', '.ts', '.tsx'];
 const EXCLUDE_FILES = [
     'package-lock.json', '.env', '.env.local', 'vitest.config.js',
     'knowledge-base.js', 'update-docs-nav.cjs', 'convert-tests.cjs',
+    'ecosystem.config.json',
 ];
 
 const EXCLUDE_PREFIXES = ['test-', 'audit-', 'verify-'];
@@ -77,7 +79,9 @@ function walkDirectory(dir, results, baseDir) {
         } else if (entry.isFile()) {
             if (EXCLUDE_FILES.includes(entry.name)) continue;
             if (/\.(test|spec)\.(js|mjs|cjs)$/.test(entry.name)) continue;
-            if (EXCLUDE_PREFIXES.some(p => entry.name.startsWith(p))) continue;
+            // Root-level only — prefix-matched files inside hashed dirs are
+            // runtime modules (mesh/audit-duty.js), not dev scripts.
+            if (dir === baseDir && EXCLUDE_PREFIXES.some(p => entry.name.startsWith(p))) continue;
             const ext = entry.name.slice(entry.name.lastIndexOf('.'));
             if (!SOURCE_EXTENSIONS.includes(ext)) continue;
             results.push(relativePath);

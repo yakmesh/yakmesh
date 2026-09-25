@@ -2680,6 +2680,54 @@ export function getCapabilities() {
   };
 }
 
+/**
+ * Structured provider profile — the full TIVRA surface for capability
+ * advertisement (SEVA `tivra` block). Grouped by execution layer so
+ * consumers can qualify jobs by what they actually need:
+ *   cpu.isa    — SHA-NI/AVX-512/VAES/GFNI fast paths
+ *   cpu.native — OpenSSL SHA3 + liboqs PQ backends
+ *   gpu.*      — CUDA tensor TOPS vs AMD FP16/FP32 (no tensor cores)
+ *   onnx.*     — runtime + EP list (Linux: cuda/cpu — DML is Windows)
+ *   npu.*      — XDNA generation + TOPS (xclbins don't cross gens)
+ * The bridge-resident kernel family (MKC/crystal) is merged in by the
+ * caller — it lives behind the pq-bridge, not the local probe.
+ */
+export function tivraProfile() {
+  return {
+    cpu: {
+      model: HW.cpuModel || null,
+      isa: {
+        shaNI: !!HW.shaNI,
+        avx512: !!HW.avx512,
+        vaes: !!HW.vaes,
+        gfni: !!HW.gfni,
+      },
+      nativeSha3: !!HW.nativeSha3,
+      nativePQ: HW.nativePQ ? (HW.nativePQBackend || 'native') : null,
+    },
+    gpu: {
+      cuda: !!HW.nvGpu,
+      name: HW.nvGpuName || null,
+      tensorTops: HW.nvGpuTops || 0,
+      computeCap: HW.nvComputeCap || null,
+      amd: !!HW.amdGpu,
+      amdName: HW.amdGpuName || null,
+      amdFp16Tflops: HW.amdGpuFp16Tflops || 0,
+      amdFp32Tflops: HW.amdGpuFp32Tflops || 0,
+    },
+    onnx: {
+      runtime: !!HW.onnxRuntime,
+      providers: [...HW.onnxProviders],
+    },
+    npu: {
+      xdna: !!HW.amdNpu,
+      gen: HW.amdNpuGen || null, // 'xdna1'|'xdna2' — xclbins don't cross
+      tops: HW.amdNpuTops || 0,
+    },
+    totalTops: HW.totalTops || 0,
+  };
+}
+
 // =============================================================================
 // CONVENIENCE RE-EXPORTS
 // =============================================================================
@@ -2711,5 +2759,6 @@ export default {
   resetTelemetry,
   getStatus,
   getCapabilities,
+  tivraProfile,
   HW,
 };
