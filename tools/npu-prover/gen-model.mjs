@@ -86,3 +86,25 @@ const model2 = Buffer.concat([varintField(1, 10), lenDelim(7, graph2), lenDelim(
 const out2 = join(dirname(fileURLToPath(import.meta.url)), 'gemm64-qdq.onnx');
 writeFileSync(out2, model2);
 console.log(`wrote ${out2} (${model2.length} bytes)`);
+
+// ─── QDQ uint8 variant (gemm64-qdq-u8.onnx) ──────────────────────────────────
+// Same topology, era-correct Phoenix dtype. vaip 1.7.0's to_xir has no u16
+// DequantizeLinear handler (fatal TODO) — u8 is the dtype the XDNA1 QDQ flow
+// was built around. s=fp32 1.0, z=u8 0; prover feeds {0,1} inputs so the
+// 64-lane dot product stays ≤64 — no output clipping at scale 1.
+const U8 = 2;
+const zU8 = init('z', U8, Buffer.from([0x00]));            // uint8 0
+const graph3 = Buffer.concat([
+  lenDelim(1, node2(['a', 's', 'z'], ['a_f'], 'DequantizeLinear')),
+  lenDelim(1, node2(['b', 's', 'z'], ['b_f'], 'DequantizeLinear')),
+  lenDelim(1, node2(['a_f', 'b_f'], ['m_f'], 'MatMul')),
+  lenDelim(1, node2(['m_f', 's', 'z'], ['out'], 'QuantizeLinear')),
+  str(2, 'yakmesh-gemm64-qdq-u8'),
+  lenDelim(5, sF32), lenDelim(5, zU8),
+  lenDelim(11, vi2('a', U8)), lenDelim(11, vi2('b', U8)),
+  lenDelim(12, vi2('out', U8)),
+]);
+const model3 = Buffer.concat([varintField(1, 10), lenDelim(7, graph3), lenDelim(8, varintField(2, 21))]);
+const out3 = join(dirname(fileURLToPath(import.meta.url)), 'gemm64-qdq-u8.onnx');
+writeFileSync(out3, model3);
+console.log(`wrote ${out3} (${model3.length} bytes)`);

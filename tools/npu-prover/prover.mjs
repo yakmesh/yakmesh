@@ -65,6 +65,14 @@ const MODEL_FP32 = Buffer.from(
 const MODEL_QDQ = Buffer.from(
   'CAo68QEKIAoBYQoBcwoBehIDYV9mIhBEZXF1YW50aXplTGluZWFyCiAKAWIKAXMKAXoSA2JfZiIQRGVxdWFudGl6ZUxpbmVhcgoXCgNhX2YKA2JfZhIDbV9mIgZNYXRNdWwKIAoDbV9mCgFzCgF6EgNvdXQiDlF1YW50aXplTGluZWFyEhd5YWttZXNoLWdlbW02NC1xZHEtYmYxNioLEAFCAXNKBAAAgD8qCRAEQgF6SgIAAFoTCgFhEg4KDAgEEggKAghACgIIQFoTCgFiEg4KDAgEEggKAghACgIIQGIVCgNvdXQSDgoMCAQSCAoCCEAKAghAQgIQFQ==',
   'base64');
+// QDQ uint8 MatMul — same topology, era-correct XDNA1 dtype. vaip 1.7.0's
+// to_xir has no u16 DequantizeLinear handler (fatal TODO on phx), so the
+// u16-as-bf16 pattern fuses then dies in serialization. u8 is the dtype the
+// Phoenix/Hawk Point QDQ flow was built around; scale fp32=1.0, zp u8=0, and
+// the prover feeds {0,1} inputs so out = sum ≤ 64 — no clipping.
+const MODEL_QDQ8 = Buffer.from(
+  'CAo67gEKIAoBYQoBcwoBehIDYV9mIhBEZXF1YW50aXplTGluZWFyCiAKAWIKAXMKAXoSA2JfZiIQRGVxdWFudGl6ZUxpbmVhcgoXCgNhX2YKA2JfZhIDbV9mIgZNYXRNdWwKIAoDbV9mCgFzCgF6EgNvdXQiDlF1YW50aXplTGluZWFyEhV5YWttZXNoLWdlbW02NC1xZHEtdTgqCxABQgFzSgQAAIA/KggQAkIBekoBAFoTCgFhEg4KDAgCEggKAghACgIIQFoTCgFiEg4KDAgCEggKAghACgIIQGIVCgNvdXQSDgoMCAISCAoCCEAKAghAQgIQFQ==',
+  'base64');
 const DIM = 64;
 const ELEMS = DIM * DIM;
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -452,7 +460,8 @@ class Ort {
 
   // One real dispatch — a backend that can't actually execute cascades out.
   warm(sess) {
-    const t = sess.onnxType === 1 ? new Float32Array(ELEMS) : new Uint16Array(ELEMS);
+    const t = sess.onnxType === 1 ? new Float32Array(ELEMS)
+      : sess.onnxType === 2 ? new Uint8Array(ELEMS) : new Uint16Array(ELEMS);
     const inA = this.makeTensor(t, sess.onnxType);
     const inB = this.makeTensor(t, sess.onnxType);
     try { this.run(sess, [inA, inB]); }
@@ -490,7 +499,7 @@ class Ort {
     this.chk(koffi.call(this.api[API.GetTensorMutableData], P.GetTensorData, outs[0], dCell), 'GetTensorData');
     const dataPtr = cellVal(dCell);
     // Copy BEFORE ReleaseValue — a view over OrtValue memory dangles once freed.
-    const bytes = new Uint8Array(ELEMS * (sess.onnxType === 1 ? 4 : 2));
+    const bytes = new Uint8Array(ELEMS * (sess.onnxType === 1 ? 4 : sess.onnxType === 2 ? 1 : 2));
     bytes.set(new Uint8Array(koffi.view(dataPtr, bytes.length)));
     if (process.env.PROVER_DEBUG) console.error('[dbg] run: copied, releasing output');
     koffi.call(this.api[API.ReleaseValue], P.ReleaseObj, outs[0]);
@@ -561,7 +570,7 @@ function jsGemm64(a16, b16, fromBits = f16to32, toBits = f32to16) {
 let backend = null;       // 'vitis-npu' | 'dml-npu' | 'dml-gpu' | 'ort-cpu' | 'js-cpu'
 let ort = null;
 let sess = null;
-let onnxType = 10;        // 10 = fp16, 4 = uint16/bf16 (QDQ), 1 = fp32
+let onnxType = 10;        // 10 = fp16, 4 = uint16/bf16 (QDQ), 2 = uint8 (QDQ), 1 = fp32
 let ortError = null;
 const orts = new Map();   // dllPath -> Ort (kept alive for process lifetime)
 
@@ -615,6 +624,7 @@ async function initBackend() {
       // target 'X1' (fuse_DPU xcompiler path); the config default X2 is
       // Strix. Try X1 first on both models, then the default target.
       attempts.push(['vitis-npu', ryzenai.dll, 'VitisAI', { config_file: ryzenai.cfg, target: 'X1' }, MODEL_FP16, 10]);
+      attempts.push(['vitis-npu', ryzenai.dll, 'VitisAI', { config_file: ryzenai.cfg, target: 'X1' }, MODEL_QDQ8, 2]);
       attempts.push(['vitis-npu', ryzenai.dll, 'VitisAI', { config_file: ryzenai.cfg, target: 'X1' }, MODEL_QDQ, 4]);
       attempts.push(['vitis-npu', ryzenai.dll, 'VitisAI', { config_file: ryzenai.cfg }, MODEL_QDQ, 4]);
       // Also try under our own ort dll — may work if bridge versions match.
@@ -688,10 +698,12 @@ function execDevice() {
 async function runProof(n, nonce) {
   const rng = xorshift64star(seedFromNonce(nonce));
   // onnxType 4 (uint16) carries bf16 bits — the QDQ model path.
-  const toBits = onnxType === 4 ? f32tobf16 : f32to16;
+  // onnxType 2 (uint8) is the real-quantized QDQ path: inputs quantized to
+  // {0,1} at scale 1 zp 0 — dot product ≤ 64, no output clipping.
+  const toBits = onnxType === 4 ? f32tobf16 : onnxType === 2 ? (v) => (v >= 0 ? 1 : 0) : f32to16;
   const fromBits = onnxType === 4 ? bf16to32 : f16to32;
-  const A = new Uint16Array(ELEMS);
-  const B = new Uint16Array(ELEMS);
+  const A = onnxType === 2 ? new Uint8Array(ELEMS) : new Uint16Array(ELEMS);
+  const B = onnxType === 2 ? new Uint8Array(ELEMS) : new Uint16Array(ELEMS);
   for (let i = 0; i < ELEMS; i++) {
     A[i] = toBits((Number(rng() % 4096n) / 1024) - 2);
     B[i] = toBits((Number(rng() % 4096n) / 1024) - 2);
@@ -745,7 +757,7 @@ async function runProof(n, nonce) {
     backend,
     adapter: npuAdapter || undefined,
     adapters: dxAdapters.length ? dxAdapters : undefined,
-    kernel: `${backend} gemm64 (${{ 1: 'fp32', 4: 'qdq-bf16' }[onnxType] || 'fp16'})`,
+    kernel: `${backend} gemm64 (${{ 1: 'fp32', 2: 'qdq-u8', 4: 'qdq-bf16' }[onnxType] || 'fp16'})`,
     ort_version: ort?.version || undefined,
     n_dispatches: n,
     nonce,
