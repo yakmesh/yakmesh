@@ -756,7 +756,7 @@ export function hexIdToAddress(hexId, locality = {}) {
  * not a build. Two nodes sharing a persistentId produce the same address
  * (detectable as a duplicate — see TernaryRoutingTable dedupe).
  *
- * @param {string} persistentId — "yak-" + 54 trits (T/0/1, ':'-separated)
+ * @param {string} persistentId — "yak-" + full 162T (T/0/1, ':'/'.'-separated)
  * @returns {TritAddress}
  */
 export function persistentIdToAddress(persistentId) {
@@ -765,28 +765,19 @@ export function persistentIdToAddress(persistentId) {
   }
   const body = persistentId.startsWith('yak-')
     ? persistentId.slice(4) : persistentId;
-  // Extract trit chars (T/0/1), ignoring ':' separators
+  // Extract trit chars (T/0/1), ignoring ':' and '.' separators — the
+  // full pid carries all 162 trits of its wormhole-sealed AVOTH digest;
+  // the address IS the identifier, nothing is fabricated.
   const trits = new Int8Array(TOTAL_TRITS);
   let n = 0;
   for (const ch of body) {
-    if (n >= TRITS_PER_TIER) break;
+    if (n >= TOTAL_TRITS) break;
     if (ch === 'T') trits[n++] = -1;
     else if (ch === '0') trits[n++] = 0;
     else if (ch === '1') trits[n++] = 1;
   }
-  if (n < TRITS_PER_TIER) {
-    throw new Error(`persistentId yields ${n} trits, need ${TRITS_PER_TIER}`);
-  }
-
-  // Deterministic expansion for ridge + base — stable per persistentId
-  const enc = new TextEncoder();
-  for (let tier = 1; tier < TIER_COUNT; tier++) {
-    const label = tier === 1 ? 'ridge' : 'base';
-    const hash = sha3_256(enc.encode(`${persistentId}:162t:${label}`));
-    const tierTrits = bytesToTrits(hash);
-    for (let i = 0; i < TRITS_PER_TIER; i++) {
-      trits[tier * TRITS_PER_TIER + i] = tierTrits[i];
-    }
+  if (n < TOTAL_TRITS) {
+    throw new Error(`persistentId yields ${n} trits, need ${TOTAL_TRITS}`);
   }
   return new TritAddress(trits);
 }

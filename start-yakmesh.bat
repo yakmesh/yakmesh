@@ -31,7 +31,8 @@ REM inside this package; resolve whichever name variant is present.
 set "KS_EXE=%~dp0yakos-keystore.exe"
 if not exist "%KS_EXE%" for %%F in ("%~dp0yakos-keystore-*.exe") do set "KS_EXE=%%~fF"
 set "BR_EXE=%~dp0yakos-pq-bridge.exe"
-if not exist "%BR_EXE%" for %%F in ("%~dp0yakos-pq-bridge-*.exe") do set "BR_EXE=%%~fF"
+REM dated-deploy: newest yakos-pq-bridge-YYYYMMDD wins (matches yakmesh-run.js)
+for %%F in ("%~dp0yakos-pq-bridge-*.exe") do set "BR_EXE=%%~fF"
 
 set "KS_DIR=%LOCALAPPDATA%\yakos"
 set "YAKOS_KEYSTORE_PATH=%KS_DIR%\keystore.json"

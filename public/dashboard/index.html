@@ -322,7 +322,7 @@
     <span class="logo">🦬</span>
     <div>
       <h1>YAKMESH™ Dashboard</h1>
-      <div class="subtitle">Post-Quantum Secure • Sturdy & Secure • v2.2.0</div>
+      <div class="subtitle">Post-Quantum Secure • Sturdy & Secure • <span id="dash-version">—</span></div>
     </div>
     <div style="margin-left: auto; display: flex; gap: 0.75rem; align-items: center;">
       <a href="yak://dashboard"
@@ -358,6 +358,14 @@
       <div class="card-title">🦬 Node Identity</div>
       <div id="node-identity">
         <div class="empty-state">Connect to a node to view identity</div>
+      </div>
+    </div>
+
+    <!-- Suite Apps — c2c instances registered on this network -->
+    <div class="card" id="apps-card">
+      <div class="card-title">🌌 Suite Apps</div>
+      <div id="apps-panel">
+        <div class="empty-state">Connect to view suite apps</div>
       </div>
     </div>
 
@@ -1240,6 +1248,81 @@
             </div>
           </li>
         `).join('');
+      }
+
+      // Suite apps + version (runs on both WS-push and HTTP-poll paths)
+      refreshApps(node, peerArr);
+    }
+
+    // ══════════════════════════════════════════════════════════════════
+    // SUITE APPS — registered c2c instances get a Play link (local entry
+    // resolves to the dashboard's own host; peers resolve via their ws
+    // endpoint host + advertised c2cPort). Header version comes from
+    // /api/update — never hardcode it again.
+    // ══════════════════════════════════════════════════════════════════
+
+    async function refreshApps(node, peers) {
+      const panel = document.getElementById('apps-panel');
+      if (!panel) return;
+      try {
+        const [srvRes, updRes] = await Promise.all([
+          fetch(`${nodeUrl}/servers`).catch(() => null),
+          fetch(`${nodeUrl}/api/update`).catch(() => null),
+        ]);
+
+        if (updRes && updRes.ok) {
+          const u = await updRes.json().catch(() => null);
+          if (u?.version) {
+            document.getElementById('dash-version').textContent = `v${u.version}`;
+          }
+        }
+
+        const list = srvRes && srvRes.ok
+          ? ((await srvRes.json().catch(() => null))?.servers?.servers || [])
+          : [];
+
+        const localHost = new URL(nodeUrl).hostname;
+        const peerHost = {};
+        for (const p of peers) {
+          try { peerHost[p.nodeId] = new URL(p.endpoint).hostname; } catch { }
+        }
+
+        const games = list.filter(s => s.c2cPort);
+        if (!games.length) {
+          panel.innerHTML = `
+            <div class="empty-state">No suite apps registered yet</div>
+            <div style="text-align:center; font-size:0.75rem; margin-top:0.5rem;">
+              <a href="/servers.html" target="_blank" style="color:var(--text-dim);">server directory →</a>
+            </div>`;
+          return;
+        }
+
+        panel.innerHTML = `
+          <ul class="peer-list">
+            ${games.map(s => {
+              const isLocal = node && s.nodeId === node.nodeId;
+              const h = isLocal ? localHost : peerHost[s.nodeId];
+              const url = h ? `http://${h}:${s.c2cPort}` : null;
+              const st = s.status || 'unknown';
+              const dot = st === 'online' ? 'var(--success)' : st === 'stale' ? 'var(--warning)' : 'var(--error)';
+              return `
+                <li class="peer-item" style="display:flex; align-items:center; gap:0.5rem;">
+                  <div class="peer-status" style="background:${dot}"></div>
+                  <div style="flex:1; min-width:0;">
+                    <div class="peer-name">🚀 Core to Cosmos${isLocal ? ' · this node' : ''}</div>
+                    <div class="peer-id">${s.nodeId.slice(0, 26)}… · ${st} · ${s.playerCount || 0}/${s.maxPlayers || '—'} players</div>
+                  </div>
+                  ${url ? `<a href="${url}" target="_blank" rel="noopener"
+                    style="color:#000; background:var(--accent); text-decoration:none; font-weight:700;
+                           font-size:0.8rem; padding:0.4rem 0.8rem; border-radius:4px; white-space:nowrap;">▶ Play</a>` : ''}
+                </li>`;
+            }).join('')}
+          </ul>
+          <div style="text-align:center; font-size:0.75rem; margin-top:0.5rem;">
+            <a href="/servers.html" target="_blank" style="color:var(--text-dim);">server directory →</a>
+          </div>`;
+      } catch (e) {
+        console.warn('apps refresh failed:', e);
       }
     }
 

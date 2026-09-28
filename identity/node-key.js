@@ -515,6 +515,16 @@ export class NodeIdentity {
   }
 
   /**
+   * The persistent identity — { persistentId, publicKey, sign }.
+   * The persistent key (seed-derived, oracleHash-invariant) signs
+   * personhood bindings only; the pid is publicly verifiable via
+   * the wormhole-sealed AVOTH derivation.
+   */
+  getPersistentIdentity() {
+    return this.machineSeed.getPersistentIdentity();
+  }
+
+  /**
    * Generate a migration proof that cryptographically links the current identity
    * to the previous identity on the migration chain.
    * 

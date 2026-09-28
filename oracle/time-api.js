@@ -46,7 +46,7 @@ import { createLogger } from '../utils/logger.js';
 const log = createLogger('time-api');
 
 const PORT = parseInt(process.env.YAKMESH_TIME_API_PORT || '3099', 10);
-const HOST = process.env.YAKMESH_TIME_API_HOST || '0.0.0.0';
+const HOST = process.env.YAKMESH_TIME_API_HOST || '127.0.0.1';
 
 // ============================================================
 // MA-902 MONITOR — cached telemetry from SNMP polling

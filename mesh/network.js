@@ -52,6 +52,7 @@ import { WebSocketServer, WebSocket } from 'ws';
 import { networkInterfaces } from 'os';
 import { ConnectionRateLimiter } from './rate-limiter.js';
 import { createLogger } from '../utils/logger.js';
+import { portCandidates, rememberPort } from '../utils/ports.js';
 
 // ANNEX - Autonomous Network Negotiated Encrypted eXchange
 // PQ-encrypted point-to-point communication between mesh peers
@@ -62,7 +63,7 @@ import { Annex, ChannelState } from './annex.js';
 import { JhilkeCoordinator } from './jhilke.js';
 
 // MessageValidator + SafeJsonParser — size limits, depth checks, proto pollution guard
-import MessageValidator, { SafeJsonParser } from './message-validator.js';
+import MessageValidator, { SafeJsonParser, SIZE_LIMITS } from './message-validator.js';
 
 // Hardware capabilities for HELLO/WELCOME peer exchange
 import { getCapabilities } from '../utils/accel.js';
@@ -226,7 +227,13 @@ export class MandalaNetwork {
 
     // Message validation — size limits, depth limits, proto pollution guard
     // This was implemented but never wired in. Now it gates ALL incoming WS messages.
-    this.messageValidator = new MessageValidator();
+    // maxStringLength = maxMessageSize: ANNEX collapses an entire outbound
+    // message into a single base64 `ciphertext` string, so a per-string cap
+    // below the message cap rejects legitimate large signed payloads (PQ-era
+    // claim:attest batches run ~100KB+ on the wire as hex material).
+    this.messageValidator = new MessageValidator({
+      limits: { maxStringLength: SIZE_LIMITS.maxMessageSize },
+    });
     this.safeJsonParser = new SafeJsonParser();
 
     this._setupDefaultHandlers();
@@ -237,15 +244,21 @@ export class MandalaNetwork {
    */
   async start() {
     const basePort = this.config.wsPort;
-    const maxRetries = this.config.portRetries;
+    const candidates = portCandidates('yakmesh-ws', basePort, {
+      probes: this.config.portRetries,
+      envPort: process.env.YAKMESH_WS_PORT ? parseInt(process.env.YAKMESH_WS_PORT, 10) : null,
+    });
 
-    for (let attempt = 0; attempt < maxRetries; attempt++) {
-      const port = basePort + attempt;
+    for (let attempt = 0; attempt < candidates.length; attempt++) {
+      const port = candidates[attempt];
       try {
         await this._tryBindPort(port);
         this.boundPort = port;
         if (attempt > 0) {
-          log.warn('Port was in use, bound to alternate', { originalPort: basePort, boundPort: port });
+          log.warn('Port was in use, bound to alternate', { originalPort: candidates[0], boundPort: port });
+        }
+        if (!rememberPort('yakmesh-ws', port)) {
+          log.warn('Could not record port in ~/.config/yakos/ports.json');
         }
         log.info('Mesh server listening', { url: `ws://localhost:${port}` });
 
@@ -271,9 +284,15 @@ export class MandalaNetwork {
           const peer = this.peers.get(msg.from);
           if (!peer) return;  // No peer = stale ANNEX session, skip
 
+          // Dispatch with the socket the frame ACTUALLY arrived on
+          // (msg.ws, threaded through ANNEX) — not peer.ws. Per-socket
+          // liveness (_lastRx/_lastPong) and PING replies depend on it:
+          // stamping the primary for lifeline-carried traffic would let a
+          // dead primary hide behind a live lifeline.
+          const arrivalWs = (msg.ws && msg.ws.readyState === WebSocket.OPEN) ? msg.ws : peer.ws;
           for (const handler of handlers) {
             try {
-              handler(payload, peer.ws, msg.from);
+              handler(payload, arrivalWs, msg.from);
             } catch (err) {
               log.warn('ANNEX→mesh handler error', { type: msgType, error: err.message });
             }
@@ -1490,6 +1509,7 @@ export class MandalaNetwork {
         endpoint: peerEndpoint,
         capabilities: msg.capabilities || null,
         lastSeen: Date.now(),
+        connectedAt: Date.now(),
         // Pinned ratchet keys from the verified handshake — used to verify
         // _tribhujSig messages. Only keys bound inside the PoP proof are trusted.
         tribhujKeys: {
@@ -1987,7 +2007,7 @@ export class MandalaNetwork {
 
       // Route ANNEX messages — extract envelope and pass correctly
       if (msg.annex && this.annex) {
-        this.annex._handleAnnexMessage(msg.annex, senderNodeId).catch(err => {
+        this.annex._handleAnnexMessage(msg.annex, senderNodeId, ws).catch(err => {
           log.warn('ANNEX message handling error', { error: err.message });
         });
       }
@@ -2168,7 +2188,30 @@ export class MandalaNetwork {
   _attachSecondWire(existingPeer, ws, nodeId) {
     const newIsTun = !!ws._viaTun;
     const curIsTun = existingPeer.wsVia === 'tun';
-    if (newIsTun === curIsTun) return false; // same wire → ordinary duplicate
+    if (newIsTun === curIsTun) {
+      // Same wire. A peer only dials this wire when ITS record lacks it —
+      // so a fresh verified same-wire HELLO means our held socket is
+      // split-brain or wedged (TCP can sit OPEN for ~15min while writes
+      // black-hole into a dead wire-B flow). If the held socket fails
+      // freshness/backlog checks, the live socket wins; else true dup.
+      const held = existingPeer.ws;
+      const staleAfter = this.config.pingInterval * 3;
+      const lastActivity = Math.max(
+        held._lastPong || 0, held._lastRx || 0, existingPeer.connectedAt || 0);
+      const heldHealthy = held.readyState === WebSocket.OPEN
+        && (Date.now() - lastActivity) < staleAfter
+        && (held.bufferedAmount || 0) < 1048576;
+      if (heldHealthy) return false; // genuinely alive duplicate
+      try { held.close(1000, 'Replaced by verified same-wire reconnect'); } catch { }
+      existingPeer.ws = ws;
+      ws._targetNodeId = nodeId;
+      log.info('Same-wire socket replaced — held socket stale or wedged', {
+        peer: peerTag(nodeId), wire: newIsTun ? 'tun' : 'lan',
+        heldRxAge: Date.now() - lastActivity,
+        heldBacklog: held.bufferedAmount || 0,
+      });
+      return true;
+    }
 
     if (newIsTun) {
       // Overlay promoted to primary; existing LAN socket becomes lifeline.

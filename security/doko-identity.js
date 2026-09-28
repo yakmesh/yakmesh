@@ -462,6 +462,27 @@ export class DOKOValidator {
     }
     results.checks.type = { valid: true, verdict: POSITIVE, reason: 'TYPE_VALID' };
 
+    // persistentId, if present, must be a well-formed 324T id in the
+    // right namespace: machine identities use 'yak-', service identities use
+    // 'yaks-'. A malformed or cross-namespace pid would otherwise poison the
+    // byPersistentId index with garbage or blur machine/service identity.
+    if (doc.extensions?.persistentId !== undefined) {
+      const pid = doc.extensions.persistentId;
+      const tier = '(?:[T01]{9}:){5}[T01]{9}';
+      const shape = new RegExp(`^(yak|yaks)-(?:${tier}\\.){5}${tier}$`).test(pid);
+      const nsOk = doc.type === DOKO_TYPES.SERVICE ? pid.startsWith('yaks-') : pid.startsWith('yak-');
+      if (!shape || !nsOk) {
+        results.valid = false;
+        results.verdict = NEGATIVE;
+        results.checks.persistentId = {
+          valid: false, verdict: NEGATIVE,
+          reason: !shape ? 'INVALID_PERSISTENT_ID_FORMAT' : 'PERSISTENT_ID_NAMESPACE_MISMATCH',
+        };
+        return results;
+      }
+      results.checks.persistentId = { valid: true, verdict: POSITIVE, reason: 'PERSISTENT_ID_VALID' };
+    }
+
     // Check expiration — NEUTRAL if skipped by options
     if (!options.allowExpired && doc.isExpired()) {
       results.valid = false;
@@ -1438,6 +1459,36 @@ export class DOKOStore {
     }
 
     const doc = doko instanceof DOKODocument ? doko : DOKODocument.fromJSON(doko);
+
+    // Persistent-id conflict — first claim wins. A pid is a self-signed
+    // claim (derivation from the machine seed is unprovable remotely),
+    // so a foreign doc must NEVER overwrite an existing mapping: a
+    // squatter doc would satisfy verifyReceipt's pubkey+pid match and
+    // mint 'accept' authority for their own receipts. Rotation of the
+    // same pid under a new key is legitimate only when (a) the caller
+    // is the local operator (options.local — self-registration on boot
+    // re-derives rotated keys), or (b) the new doc carries an
+    // endorsement signed by the PREVIOUS holder's key.
+    const pid = doc.extensions?.persistentId;
+    if (pid) {
+      const existingId = this.byPersistentId.get(pid);
+      if (existingId && existingId !== doc.dokoId) {
+        const existing = this.documents.get(existingId);
+        if (existing && existing.publicKey !== doc.publicKey) {
+          const rotated = options.local === true || (doc.endorsements || []).some(e =>
+            e.endorserPublicKey === existing.publicKey &&
+            e.targetDokoId === doc.dokoId &&
+            DOKOEndorsement.verify(e, doc).valid);
+          if (!rotated) {
+            return {
+              success: false,
+              error: 'PERSISTENT_ID_CONFLICT',
+              details: 'persistentId already bound to a different key — rotation needs an endorsement by the previous key (or local authority)',
+            };
+          }
+        }
+      }
+    }
 
     this.documents.set(doc.dokoId, doc);
     this.byPublicKey.set(doc.publicKey, doc.dokoId);

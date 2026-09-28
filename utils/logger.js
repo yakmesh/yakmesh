@@ -67,6 +67,40 @@ const colors = {
 // Global log level - can be changed at runtime
 let globalLevel = LOG_LEVELS.INFO;
 
+// Anti log-flood — token bucket per (level, namespace). A hot gossip
+// path (dedup, per-peer churn) can emit thousands of lines a second,
+// which starves the event loop AND fills the disk. Past the cap, lines
+// are counted and a single suppression summary is emitted per window —
+// the signal survives, the flood doesn't.
+const FLOOD_WINDOW_MS = 1000;
+const FLOOD_MAX = (() => {
+  const v = parseInt(process.env.YAKMESH_LOG_MAX_PER_SEC, 10);
+  return Number.isInteger(v) && v > 0 ? v : 100;
+})();
+const _floodState = new Map(); // `${level}:${namespace}` -> {win, allowed, suppressed}
+
+/** Returns true if this line may be emitted this window. */
+function floodGate(level, namespace) {
+  const now = Date.now();
+  const key = `${level}:${namespace}`;
+  let s = _floodState.get(key);
+  if (!s || now - s.win >= FLOOD_WINDOW_MS) {
+    if (s?.suppressed > 0) {
+      // One summary line per window — bypasses the gate on purpose.
+      console.log(`[${formatTimestamp()}] [${LEVEL_NAMES[level]}] [${namespace}] ` +
+        `log flood: suppressed ${s.suppressed} line(s) in the last ${FLOOD_WINDOW_MS}ms`);
+    }
+    s = { win: now, allowed: 0, suppressed: 0 };
+    _floodState.set(key, s);
+  }
+  if (s.allowed >= FLOOD_MAX) {
+    s.suppressed++;
+    return false;
+  }
+  s.allowed++;
+  return true;
+}
+
 // Parse level from string
 function parseLevel(level) {
   if (typeof level === 'number') return level;
@@ -141,6 +175,9 @@ export function createLogger(namespace) {
     
     // Check log level
     if (level > globalLevel) return;
+
+    // Rate limit — count and drop flood lines before formatting them.
+    if (!floodGate(level, namespace)) return;
     
     const timestamp = formatTimestamp();
     const formattedData = formatData(data);

@@ -18,10 +18,16 @@
 import { describe, test, expect } from 'vitest';
 import { AttestationGossip, claimLeafHash } from '../attestation-gossip.js';
 import { ClaimLedger } from '../claim-ledger.js';
+import { signAssertion, selfClaimRef } from '../epoch-assertion.js';
 import {
   generateKeyPair, generateNodeId, signMessage, setCodebaseHash,
 } from '../../identity/node-key.js';
-import { hexToBytes } from '@noble/hashes/utils.js';
+import { hexToBytes, bytesToHex } from '@noble/hashes/utils.js';
+import { sha3_256 } from '@noble/hashes/sha3.js';
+import { ml_dsa65 } from '@noble/post-quantum/ml-dsa.js';
+import {
+  persistentKeyPair, persistentIdFromPublicKey, pidBindString,
+} from '../../identity/machine-seed.js';
 
 setCodebaseHash('a'.repeat(64));
 
@@ -49,6 +55,23 @@ const item = (epoch, yakmeshNodeId, over = {}) => ({
   claimNodeId: 'ab'.repeat(32), seal: [0, 1, 2, 3], ...over,
 });
 
+// A canon assertion as buildBatch emits it — keystore-signed over the
+// canonical assertion bytes, node_id re-derivable from fp‖pk in the
+// same shape the Rust side verifies (AVOTH(fp‖pk)).
+const canonIdOf = (fpFill, kp) => bytesToHex(sha3_256(
+  Buffer.concat([Buffer.alloc(32, fpFill), hexToBytes(kp.publicKey)])));
+async function canonItem(att, epoch, yakmeshNodeId, leafHex,
+    { fpFill = att.kp.secretKey[0], claimNodeId = 'ab'.repeat(32) } = {}) {
+  const nodeId = canonIdOf(fpFill, att.kp);
+  const canon = await signAssertion({
+    nodeId, epoch,
+    claimRef: selfClaimRef(claimNodeId, epoch),
+    value: leafHex,
+    hwFingerprint: Buffer.alloc(32, fpFill).toString('hex'),
+  }, (b) => signMessage(b, att.kp.secretKey), att.kp.publicKey);
+  return item(epoch, yakmeshNodeId, { leaf: leafHex, canon });
+}
+
 const claim = (over = {}) => ({
   version: 1, epoch: NOW(), yakmeshNodeId: 'peer1', nodeId: 'ab'.repeat(32),
   seal: [0, 1, 2, 3], spongeRounds: 0, shareCount: 42,
@@ -68,6 +91,69 @@ function ledgerWith(claims, over = {}) {
 
 const gossip = (ledger) => new AttestationGossip({
   nodeId: 'us', publicKey: 'pk', sign: () => 'sig', claimLedger: ledger,
+});
+
+// ─── persistentId = the account (PEACH §14) ─────────────────────────
+
+describe('settlementInputs persistent_id', () => {
+  test('claim-carried pidBind triple rides the input; absent → omitted', () => {
+    const e = NOW();
+    const g = gossip(ledgerWith([
+      claim({ epoch: e, yakmeshNodeId: 'peerA',
+        pidBind: { persistentId: 'yak-aaa', persistentPubkey: 'pka',
+          persistentSig: 'siga' } }),
+      claim({ epoch: e, yakmeshNodeId: 'peerB' }),
+    ]));
+    const inputs = g.settlementInputs(e);
+    expect(inputs[0].persistent_id).toBe('yak-aaa');
+    expect(inputs[0].persistent_pubkey).toBe('pka');
+    expect(inputs[0].persistent_sig).toBe('siga');
+    expect(inputs[1].persistent_id).toBeUndefined();
+    expect(inputs[1].persistent_pubkey).toBeUndefined();
+  });
+
+  test('pid binding verifies through observe; forged triples stripped', () => {
+    const e = NOW();
+    const nodeId = 'ab'.repeat(32);
+    const kp = persistentKeyPair(new Uint8Array(32).fill(9));
+    const pid = persistentIdFromPublicKey(kp.publicKey);
+    expect(pid).toMatch(/^yak-/);
+    expect(pid.length).toBe(363); // full 324T — ~256-bit PQ preimage
+    const sigFor = (ep) => bytesToHex(ml_dsa65.sign(
+      new TextEncoder().encode(pidBindString(pid, nodeId, ep)),
+      kp.secretKey));
+    const hbFor = (pidBind) => ({
+      nodeId: 'peer9', sequence: 1, hash: 'h', timestamp: Date.now(),
+      meshState: { contribution: {
+        version: 1, epoch: e, nodeId, seal: [0, 1, 2, 3],
+        spongeRounds: 0, shareCount: 5, jobRoot: '0'.repeat(64),
+        entropyFlags: 0, siliconDrift: 0, pidBind,
+      } },
+    });
+    const pidBind = {
+      persistentId: pid, persistentPubkey: bytesToHex(kp.publicKey),
+      persistentSig: sigFor(e),
+    };
+    const l = new ClaimLedger({ nodeId: 'us' });
+    l.observe(hbFor(pidBind));
+    expect(l.epochClaims(e)[0].pidBind?.persistentId).toBe(pid);
+
+    // A binding signed for another epoch is forgery-shaped — stripped.
+    const l2 = new ClaimLedger({ nodeId: 'us' });
+    let forged = null;
+    l2.on('pidForgery', (ev) => { forged = ev; });
+    l2.observe(hbFor({ ...pidBind, persistentSig: sigFor(e + 1) }));
+    expect(l2.epochClaims(e)[0].pidBind).toBeUndefined();
+    expect(forged).toBeTruthy();
+
+    // And a well-formed pid that isn't THIS pubkey's sealed digest
+    // fails — a real 324T pid borrowed from another identity.
+    const l3 = new ClaimLedger({ nodeId: 'us' });
+    const alien = persistentIdFromPublicKey(
+      persistentKeyPair(new Uint8Array(32).fill(8)).publicKey);
+    l3.observe(hbFor({ ...pidBind, persistentId: alien }));
+    expect(l3.epochClaims(e)[0].pidBind).toBeUndefined();
+  });
 });
 
 // ─── presenceStreak (real ClaimLedger) ──────────────────────────────
@@ -108,14 +194,15 @@ describe('ClaimLedger.presenceStreak', () => {
 // ─── settlementInputs ───────────────────────────────────────────────
 
 describe('AttestationGossip.settlementInputs', () => {
-  test('assembles witnessed claims with attester counts', () => {
+  test('assembles witnessed claims with attester counts', async () => {
     const e = NOW();
     const c = claim({ epoch: e });
     const g = gossip(ledgerWith([c], { streaks: { [`peer1:${e}`]: 7 } }));
-    const it = item(e, 'peer1', { leaf: claimLeafHash(c) });
-    g.receive(signedBatch(A, e, [it]), null);
-    g.receive(signedBatch(B, e, [it]), null);
-    g.receive(signedBatch(C, e, [it]), null);
+    const leaf = claimLeafHash(c);
+    // Canon-carrying items — distinct hardware identities, real sigs.
+    g.receive(signedBatch(A, e, [await canonItem(A, e, 'peer1', leaf)]), null);
+    g.receive(signedBatch(B, e, [await canonItem(B, e, 'peer1', leaf)]), null);
+    g.receive(signedBatch(C, e, [await canonItem(C, e, 'peer1', leaf)]), null);
 
     const [in0] = g.settlementInputs(e);
     expect(in0.node_id).toBe(c.nodeId);
@@ -125,6 +212,28 @@ describe('AttestationGossip.settlementInputs', () => {
     expect(in0.karma_age).toBe(7);
     expect(in0.proof_state).toBeNull();
     expect(in0.class).toBe('Generic');
+    // Proof material rides the drop for Rust-side verification.
+    expect(in0.leaf).toBe(
+      bytesToHex(ClaimLedger.claimLeafBytes(c)));
+    expect(in0.attester_proofs).toHaveLength(3);
+    expect(in0.attester_proofs[0].hw_fingerprint).toMatch(/^[0-9a-f]{64}$/);
+    expect(in0.attester_proofs[0].claim_ref).toBe(
+      selfClaimRef(c.nodeId, e));
+  });
+
+  test('canon-less gossip attestations buy no quorum', async () => {
+    const e = NOW();
+    const c = claim({ epoch: e });
+    const g = gossip(ledgerWith([c]));
+    const it = item(e, 'peer1', { leaf: claimLeafHash(c) });
+    g.receive(signedBatch(A, e, [it]), null);
+    g.receive(signedBatch(B, e, [it]), null);
+    g.receive(signedBatch(C, e, [it]), null);
+    const [in0] = g.settlementInputs(e);
+    // No keystore-bound proof → no quorum weight, however many gossip
+    // identities attested. This is the dedupe guarantee.
+    expect(in0.attestations).toBe(0);
+    expect(in0.attester_proofs).toHaveLength(0);
   });
 
   test('unattested witnessed claims still enter with attestations 0', () => {
@@ -194,6 +303,26 @@ describe('AttestationGossip.settlementInputs', () => {
     expect(inputs[0].proof_state).toEqual({ attested: 'Npu' });
     expect(inputs[1].proof_state).toEqual({ attested: 'Gpu' });
     expect(inputs[2].proof_state).toEqual({ unsigned: 'Cpu' });
+  });
+
+  test('raw execution proofs ride the drop for in-process verification', () => {
+    const e = NOW();
+    const npuProof = { nonce: 'yakmesh-e1', consistent: true,
+      digests: { input: 'aa', output: 'bb' },
+      timingNs: { p50: 1 }, attestation: { claim: 'x' } };
+    const hwProof = { deviceClass: 'gpu', nonce: 'yakmesh-e1',
+      consistent: true, digests: { input: 'cc', output: 'dd' },
+      timingNs: {} };
+    const g = gossip(ledgerWith([
+      claim({ epoch: e, yakmeshNodeId: 'a', npuProof }),
+      claim({ epoch: e, yakmeshNodeId: 'b', hwProof }),
+      claim({ epoch: e, yakmeshNodeId: 'c' }),
+    ]));
+    const inputs = g.settlementInputs(e);
+    expect(inputs[0].npu_proof).toEqual(npuProof);
+    expect(inputs[1].hw_proof).toEqual(hwProof);
+    expect(inputs[2].npu_proof).toBeUndefined();
+    expect(inputs[2].hw_proof).toBeUndefined();
   });
 
   test('attested-but-unwitnessed claims never enter the input set', () => {

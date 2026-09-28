@@ -99,6 +99,34 @@ export function avothHash(data) {
   return n === 64 ? Buffer.from(out(ex).slice(0, 64)) : null;
 }
 
+/**
+ * Context seal — first 4 quats of AVOTH(context). Same derivation as
+ * yakcoin-crypto seal::derive (AVOTH → quats). Public tamper evidence,
+ * not a secret: anyone can recompute. → quat[4] or null.
+ */
+export function contextSeal(context) {
+  const ex = inst();
+  const b = typeof context === 'string' ? Buffer.from(context) : context;
+  if (!ex || b.length > INPUT_CAP) return null;
+  inp(ex).set(b);
+  const n = ex.exports.seal_from_context(b.length);
+  return n === 4 ? [...out(ex).slice(0, 4)] : null;
+}
+
+/**
+ * Wormhole-sealed AVOTH-256 — 4 quats ride position 191 through all 24
+ * rounds (read, never written): the digest is jointly bound to
+ * (data, seal). → Buffer(64), or null when unavailable/invalid seal.
+ */
+export function avothHashSealed(data, seal) {
+  const ex = inst();
+  if (!ex || data.length > INPUT_CAP || !Array.isArray(seal) || seal.length !== 4
+      || seal.some(q => q < 0 || q > 3)) return null;
+  inp(ex).set(data);
+  const n = ex.exports.avoth_hash_sealed(data.length, seal[0], seal[1], seal[2], seal[3]);
+  return n === 64 ? Buffer.from(out(ex).slice(0, 64)) : null;
+}
+
 /** True when the wasm module is loaded — diagnostic, not a gate. */
 export function isAvailable() {
   return inst() !== null;

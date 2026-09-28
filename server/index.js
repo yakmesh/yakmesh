@@ -37,12 +37,13 @@ import readline from 'node:readline';
 import { NetworkIdentity } from '../oracle/network-identity.js';
 import { UpdateTransfer } from '../utils/update-transfer.js';
 import { zipEntries, zipStore, walk as walkUpgradeFiles } from '../utils/in-place-upgrade.js';
-import { existsSync, readFileSync, statSync, writeFileSync, rmSync, mkdirSync, renameSync } from 'fs';
+import { existsSync, readFileSync, statSync, writeFileSync, rmSync, mkdirSync, renameSync, readdirSync } from 'fs';
 import { mkdir } from 'node:fs/promises';
 import { join } from 'path';
-import { networkInterfaces } from 'os';
+import { networkInterfaces, tmpdir } from 'os';
 import WebSocket, { WebSocketServer } from 'ws';
 import { createLogger } from '../utils/logger.js';
+import { portCandidates, rememberPort } from '../utils/ports.js';
 const PKG_VERSION = JSON.parse(readFileSync(join(import.meta.dirname, '..', 'package.json'), 'utf8')).version;
 import * as accel from '../utils/accel.js';
 import { startPipeServer, getPipePath, upgradePipeAntiCheat, isPipeServerRunning } from '../utils/scheduler-pipe.js';
@@ -60,6 +61,7 @@ import { YakmeshWebServer } from '../webserver/index.js';
 const log = createLogger('server:main');
 const peerTag = (id) => id?.split('-pq-').pop() || id?.slice?.(-8) || String(id);
 import { NodeIdentity } from '../identity/node-key.js';
+import { computeServicePersistentId } from '../identity/machine-seed.js';
 import { KeyResolver } from '../identity/key-resolver.js';
 import { MeshNetwork } from '../mesh/network.js';
 import { YakTun } from '../mesh/tun.js';
@@ -104,7 +106,7 @@ import {
 import { setTimeSourceConfig, getActiveConfig, getCurrentEpoch, getEpochStartTime } from '../oracle/phase-epoch.js';
 import { aguwa } from '../mesh/aguwa.js';
 import { PulseSync, PULSE_CONFIG } from '../mesh/pulse-sync.js';
-import { withContribution, setTimeTrustProvider, setProofProvider, createNpuProofProvider, setReceiptProvider } from '../mesh/contribution.js';
+import { withContribution, contributionMeshState, setTimeTrustProvider, setProofProvider, createNpuProofProvider, setReceiptProvider, setPersistentIdentityProvider } from '../mesh/contribution.js';
 import { signReceipt, verifyReceipt, receiptShapeError, MAX_RECEIPT_JSON_BYTES, MAX_RECEIPTS_PER_CLAIM } from '../mesh/work-receipt.js';
 import { selfAssertClaim, buildEquivocationEvidence, buildBadSealEvidence,
          verifyAssertion, selfClaimRef, judgmentVerdictHash, VERDICT_MISMATCH,
@@ -535,6 +537,9 @@ export class YakmeshNode {
       log.warn('   Node will continue but source files are not protected');
     }
 
+    // 0a. NOTE: hardware instance lock moved to step 2 — it keys on the
+    // seed-derived persistentId, which requires identity init first.
+
     // 0b. Initialize ACCEL — hardware-accelerated crypto & inference
     // Probes CPU SIMD (AVX-512/VAES/SHA-NI), NVIDIA GPU (CUDA), AMD NPU (XDNA/DirectML)
     // Must happen before any crypto operations so native paths are available
@@ -649,6 +654,15 @@ export class YakmeshNode {
     this.identity = new NodeIdentity(dbDir);
     await this.identity.init(this.config.node.name, this.config.node.region, this.oracle);
 
+    // 2a. HARDWARE INSTANCE LOCK — one node per physical machine.
+    // Every process on this box shares the machine seed, so a second
+    // node process derives the SAME persistentId — the 1:1 hardware-to-
+    // network bond, invariant across code upgrades (unlike canonical
+    // node_id, whose signing key rotates per build). Pid-lockfile keyed
+    // on it; a live pid holding it → this process exits.
+    // YAKMESH_ALLOW_MULTI=1 bypasses for the multi-process dev harness.
+    await this._acquireHardwareLock();
+
     // DOKO identity store — backs the /security/doko/* endpoints.
     // Persisted to <dbDir>/dokos.json; populated via creation APIs and
     // (future) KHATA DOKO announce.
@@ -657,7 +671,7 @@ export class YakmeshNode {
     if (existsSync(this._dokoStorePath)) {
       try {
         const dokos = JSON.parse(readFileSync(this._dokoStorePath, 'utf8'));
-        const res = this.dokoRegistry.import(dokos);
+        const res = this.dokoRegistry.import(dokos, { local: true });
         if (res.imported || res.failed) {
           log.info(`📋 DOKO registry: restored ${res.imported} DOKOs (${res.failed} rejected)`);
         }
@@ -686,7 +700,9 @@ export class YakmeshNode {
           },
         }
       );
-      const addRes = this.dokoRegistry.add(nodeDoko);
+      // Local self-registration — own pid, own key; rotation of the
+      // machine pid under a new key is legitimate by definition here.
+      const addRes = this.dokoRegistry.add(nodeDoko, { local: true });
       if (addRes.success) {
         this.selfDokoId = nodeDoko.dokoId;
         log.info(`📋 DOKO: node self-registered (${nodeDoko.dokoId.slice(0, 16)}…)`);
@@ -695,6 +711,40 @@ export class YakmeshNode {
       }
     } catch (e) {
       log.warn(`⚠️  DOKO self-registration failed: ${e.message}`);
+    }
+
+    // Work-issuer DOKO — the node's authority to sign claim:receipts for
+    // producers (c2c, Sonus Libre, FFPL…). A distinct service pid under
+    // the same key; verifyReceipt returns 'accept' only when the issuer
+    // is a Service-typed DOKO, so issuance without this entry settles as
+    // 'observe' — real signature, unproven authority, zero shares.
+    try {
+      const seed = this.identity.machineSeed?.getSeed?.();
+      if (seed) {
+        this.issuerServicePid = computeServicePersistentId(seed, 'work-issuer');
+        const issuerDoko = DOKOGenerator.fromKeyPair(
+          this.identity.identity.publicKey,
+          this.identity.identity.secretKey,
+          {
+            type: DOKOTypes.SERVICE,
+            claims: {
+              service: 'work-issuer',
+              nodeId: this.identity.identity.nodeId,
+              networkName: this.identity.identity.networkName,
+            },
+            extensions: { persistentId: this.issuerServicePid },
+          }
+        );
+        const addRes = this.dokoRegistry.add(issuerDoko, { local: true });
+        if (addRes.success) {
+          this.issuerDokoId = issuerDoko.dokoId;
+          log.info(`📋 DOKO: work-issuer registered (${issuerDoko.dokoId.slice(0, 16)}…)`);
+        } else {
+          log.warn(`⚠️  work-issuer DOKO rejected: ${addRes.error}`);
+        }
+      }
+    } catch (e) {
+      log.warn(`⚠️  work-issuer DOKO registration failed: ${e.message}`);
     }
 
     // 2b. Update codeProof and consensus with the initialized identity
@@ -712,6 +762,16 @@ export class YakmeshNode {
       codeHash: this.oracle?.selfHash,
       // JHILKE: Per-build nonce for bootstrap key + dialect strengthening
       buildNonce: this._buildNonce || null,
+      // Per-peer rate limits — env-overridable for local testnets where a
+      // loopback mesh generates WAN-impossible per-peer rates (every peer
+      // forwards all traffic through a handful of loopback links).
+      // Undefined fields fall through to ConnectionRateLimiter defaults.
+      rateLimiter: {
+        maxMessagesPerSecond: parseInt(process.env.YAKMESH_MAX_MSG_PER_SEC, 10) || undefined,
+        maxMessagesPerMinute: parseInt(process.env.YAKMESH_MAX_MSG_PER_MIN, 10) || undefined,
+        maxGossipPerSecond: parseInt(process.env.YAKMESH_MAX_GOSSIP_PER_SEC, 10) || undefined,
+        maxRumorsPerMinute: parseInt(process.env.YAKMESH_MAX_RUMORS_PER_MIN, 10) || undefined,
+      },
     });
 
     // Defensive: warn if buildNonce is missing — JHILKE bootstrap keys will
@@ -1007,6 +1067,7 @@ export class YakmeshNode {
       canonicalNodeId: () => this._canonicalNodeId,
       canonSign: keystoreSign,
       canonPubkey: () => this._keystorePubkey,
+      canonHwFp: () => this._keystoreHwFp,
     });
     /** Evidence payloads ready for yakcoind to assemble as EvidenceTx —
      *  each is a verified deterministic artifact (never fabricated). */
@@ -1288,6 +1349,24 @@ export class YakmeshNode {
     // 6. Start HTTP server
     await this._startHttpServer();
 
+    // 6a. YAKGATE — local web gateway for yakbrowse et al. Loopback-only
+    // forward proxy: browser traffic flows through the node (the mesh is
+    // the browser's security net), and YakMesh-Challenge responses get a
+    // signed PID attestation retry. See server/gate.js + CONFIDENTIAL spec.
+    try {
+      const { YakGate } = await import('./gate.js');
+      // pointer advertised to sites: selfEndpoint > env > bound local port
+      const authEndpoint = this.config.sherpa?.selfEndpoint
+        || process.env.YAKMESH_AUTH_ENDPOINT
+        || `http://127.0.0.1:${this.boundHttpPort || 3080}`;
+      this.gate = new YakGate({ port: parseInt(process.env.YAKMESH_GATE_PORT || '3089', 10),
+                                authEndpoint });
+      await this.gate.start();
+      log.info(`  GATE:       ✓ local web gateway at http://127.0.0.1:${this.gate.port}`);
+    } catch (e) {
+      log.warn(`  GATE:       unavailable (${e.message}) — node continues without it`);
+    }
+
     // 6b. Attach KOMM WebSocket upgrade paths to HTTP server
     this._initKommWebSocket();
 
@@ -1501,8 +1580,11 @@ export class YakmeshNode {
     // via the wormhole binding (recomputed, not merely claimed).
     // Fallback: the subject's DOKO extensions (persistentId-resolved).
     const pid = peer?.identity?.persistentId;
+    // hw_fingerprint fallback must come from a node-identity DOKO — a
+    // service doc (or a squatted pid) could self-assert any fp.
+    const pidDoc = pid ? this.dokoRegistry?.getByPersistentId?.(pid) : null;
     const fp = peer?.identity?.avothHw
-      || (pid ? this.dokoRegistry?.getByPersistentId?.(pid)?.extensions?.hw_fingerprint : null);
+      || (pidDoc?.type === DOKOTypes.NODE ? pidDoc.extensions?.hw_fingerprint : null);
     if (!fp) {
       log.warn('slash evidence pending — subject hw_fingerprint unknown', {
         kind, subject: subjectYakId?.slice(0, 24) });
@@ -1565,6 +1647,34 @@ export class YakmeshNode {
       renameSync(tmp, join(dir, `${name}.json`));
     } catch (e) {
       log.warn('slash evidence dump failed (queue still holds it)', { error: e.message });
+    }
+  }
+
+  /**
+   * Settlement handoff to yakcoind — the epoch's witnessed claim set in
+   * SettlementInput wire form (yakcoin settlement.rs). Written once the
+   * epoch's attestation window has frozen: claims witnessed during E,
+   * attestations collected during E+1, frozen at the E+2 boundary — the
+   * caller passes closedEpoch-1. Same tmp+rename transport as the
+   * evidence drop; yakcoind consumes files and renames them .done.
+   * Pruned at the 64-epoch claim horizon — these are settlement inputs,
+   * not archives; the durable payout record is yakcoind's output.
+   */
+  _dumpSettlementInputs(epoch) {
+    try {
+      const dir = join(process.env.XDG_RUNTIME_DIR || '/tmp', 'yakmesh', 'settlement');
+      mkdirSync(dir, { recursive: true });
+      const { claims, audits } = this.claimSettlementInputs(epoch);
+      const tmp = join(dir, `.epoch-${epoch}.tmp`);
+      writeFileSync(tmp, JSON.stringify({ epoch, claims, audits }));
+      renameSync(tmp, join(dir, `epoch-${epoch}.json`));
+      const floor = epoch - 64;
+      for (const f of readdirSync(dir)) {
+        const m = /^epoch-(\d+)\.json(?:\.done)?$/.exec(f);
+        if (m && parseInt(m[1], 10) < floor) rmSync(join(dir, f), { force: true });
+      }
+    } catch (e) {
+      log.warn('settlement drop failed', { epoch, error: e.message });
     }
   }
 
@@ -1787,7 +1897,8 @@ export class YakmeshNode {
         if (this._pendingACTProposal) {
           this._consentACT(this._pendingACTProposal.targetEpoch, 'accept');
         }
-        this._fetchAcceptedPackage().catch(() => { });
+        this._fetchAcceptedPackage().catch(err =>
+          log.error('UPDATE: package fetch failed', { error: err.message }));
         process.stdout.write('Update accepted — fetching package.\n');
       } else {
         this._pendingUpgradeOffer = null;
@@ -1973,6 +2084,16 @@ export class YakmeshNode {
       } catch (e) {
         log.warn(`⚠️  DOKO registry save failed: ${e.message}`);
       }
+    }
+
+    // Release the hardware instance lock — only if WE still hold it
+    // (a stale-takeover may have replaced the file under us).
+    if (this._hwLockPath) {
+      try {
+        if (parseInt(readFileSync(this._hwLockPath, 'utf8'), 10) === process.pid) {
+          rmSync(this._hwLockPath, { force: true });
+        }
+      } catch { /* lock file gone or unreadable — nothing to release */ }
     }
 
     await this.mesh?.stop();
@@ -2306,6 +2427,11 @@ export class YakmeshNode {
     // GEMM on real silicon; the nonce binds to the epoch so proofs can't
     // be replayed across epochs. Absent service/NPU → claim omits it.
     setProofProvider(createNpuProofProvider());
+    // Personhood binding — the persistent identity key (seed-derived,
+    // oracleHash-invariant) signs pid→nodeId→epoch into every claim.
+    // The pid is publicly derivable from the carried pubkey via
+    // wormhole-sealed AVOTH — verifiable by any peer, no lookup.
+    setPersistentIdentityProvider(() => this.identity.getPersistentIdentity());
     // Claim piggyback window — first N beats of each 30s epoch carry the
     // contribution claim; the rest carry heartbeat fields only.
     const PULSE_CLAIM_EPOCH_SECS = 30;
@@ -2328,6 +2454,7 @@ export class YakmeshNode {
           this._canonicalNodeId = meshState.contribution.nodeId;
           const ks = await keystorePublicInfo();
           this._keystorePubkey = ks?.publicKey || null;
+          this._keystoreHwFp = ks?.hardwareFingerprint || null;
           const a = await selfAssertClaim(
             meshState.contribution,
             ClaimLedger.claimLeafBytes(meshState.contribution),
@@ -2486,6 +2613,57 @@ export class YakmeshNode {
   }
 
   /**
+   * One node per hardware identity — pid-lockfile keyed on the
+   * keystore-derived canonical node_id. A second process on the same
+   * machine shares the keystore (same node_id) and is a farm shape:
+   * its attestations dedupe to nothing at settlement, but refusing
+   * startup keeps it out of the mesh entirely. Stale locks (dead pid)
+   * are reclaimed; YAKMESH_ALLOW_MULTI=1 opts out for local dev.
+   */
+  async _acquireHardwareLock() {
+    if (process.env.YAKMESH_ALLOW_MULTI === '1') return;
+    // Lock key = persistentId — seed-derived, identical for every
+    // process on this hardware, invariant across code upgrades.
+    // (node_id can't be used: it is AVOTH(hw_fp‖signing_key) and the
+    // signing key rotates per build, so different builds would miss
+    // each other's lock.)
+    const pid = this.identity?.getPersistentId?.();
+    if (!pid || typeof pid !== 'string') {
+      // No persistent identity → the node cannot claim anything anyway;
+      // refuse rather than run an unidentifiable instance.
+      throw new Error('hardware instance lock: persistentId unavailable — identity init failed');
+    }
+    const dir = join(process.env.XDG_RUNTIME_DIR || tmpdir(), 'yakmesh');
+    mkdirSync(dir, { recursive: true });
+    // Pid contains ':' separators — strip to trits for a safe filename.
+    const lockKey = pid.replace(/[^A-Za-z0-9]/g, '').slice(0, 40);
+    const lockPath = join(dir, `node-${lockKey}.lock`);
+    const claim = () => {
+      writeFileSync(lockPath, `${process.pid}\n`, { flag: 'wx' });
+      this._hwLockPath = lockPath;
+    };
+    try {
+      claim();
+    } catch (e) {
+      if (e.code !== 'EEXIST') throw e;
+      const holder = parseInt(readFileSync(lockPath, 'utf8'), 10);
+      let alive = false;
+      if (Number.isInteger(holder) && holder !== process.pid) {
+        try { process.kill(holder, 0); alive = true; }
+        catch (kErr) { alive = kErr.code === 'EPERM'; }
+      }
+      if (alive) {
+        throw new Error(`hardware identity already running as pid ${holder} — ` +
+          'one node per machine (YAKMESH_ALLOW_MULTI=1 overrides for dev)');
+      }
+      // Stale lock — the holder is gone; take it over.
+      rmSync(lockPath, { force: true });
+      claim();
+    }
+    log.info(`🔒 Hardware instance lock held (${pid.slice(0, 24)}…)`);
+  }
+
+  /**
    * Issuer side — sign a work receipt for a worker's attested result
    * and deliver it directly. `worker` = {nodeId, epoch, seal} (the
    * worker's claim binding — it must match their claim or the receipt
@@ -2503,11 +2681,21 @@ export class YakmeshNode {
     }, {
       publicKey: this.identity.identity.publicKey,
       secretKey: this.identity.identity.secretKey,
-      persistentId: this.identity.getPersistentId?.(),
+      // Issuer authority is the service DOKO's pid, not the machine pid —
+      // that's what verifyReceipt's 'accept' path resolves authority on.
+      persistentId: this.issuerServicePid || this.identity.getPersistentId?.(),
+      // Embed the authority DOKO — committed by the signature so every
+      // observer verifies the same credential (no registry divergence).
+      doko: this.issuerDokoId ? this.dokoRegistry?.get?.(this.issuerDokoId) : null,
     });
     if (!receipt) return null;
     if (targetPeerId && this.mesh?.sendTo) {
       this.mesh.sendTo(targetPeerId, { type: 'claim:receipt', receipt });
+    }
+    // Self-work: a receipt for OUR canonical id must land in our own
+    // receiptBook — sendTo only reaches peers, and we never dial ourselves.
+    if (worker.nodeId === this._canonicalNodeId) {
+      this._handleClaimReceipt({ receipt });
     }
     return receipt;
   }
@@ -2587,6 +2775,10 @@ export class YakmeshNode {
       } catch (e) {
         log.warn('claim-set dispersal failed', { epoch: closedEpoch, error: e.message });
       }
+      // Settlement handoff — the epoch whose attestation window froze
+      // at this boundary (C's attestations collect during C+1 and freeze
+      // at the C+2 boundary) drops its witnessed claim set for yakcoind.
+      if (closedEpoch > 0) this._dumpSettlementInputs(closedEpoch - 1);
     }, 30_000);
     log.info('🖊️ Attestation gossip loop started (epoch-close batches)');
   }
@@ -4986,6 +5178,19 @@ export class YakmeshNode {
       return ip === '127.0.0.1' || ip === '::1' || ip === '::ffff:127.0.0.1';
     };
 
+    // Stronger gate for mutating/admin routes: loopback socket AND a Host
+    // pinned to loopback. A DNS-rebinding drive-by page resolves to
+    // 127.0.0.1 but carries the attacker's hostname in Host — refusing
+    // non-loopback Host closes that hole without a token scheme.
+    const localAdmin = (req, res, next) => {
+      if (!isLoopback(req)) return res.status(403).json({ error: 'loopback only' });
+      const h = String(req.headers.host || '')
+        .replace(/:\d+$/, '').replace(/^\[|\]$/g, '').toLowerCase();
+      if (h !== '127.0.0.1' && h !== 'localhost' && h !== '::1')
+        return res.status(403).json({ error: 'admin routes require loopback Host' });
+      next();
+    };
+
     // General rate limit: 100 requests per minute per IP (remote only)
     const generalLimiter = rateLimit({
       windowMs: 60 * 1000,  // 1 minute
@@ -5328,6 +5533,34 @@ export class YakmeshNode {
       }
     });
 
+    // YAKAUTH — the pid ping. A site that issued YakMesh-Challenge calls
+    // here to attest: { nonce, host, session } → signed pid attestation.
+    // The nonce must have been observed flowing through this node's gate
+    // within 60s — binds attestation to real browsing, so remote parties
+    // cannot ping the node to harvest the pid for arbitrary challenges.
+    app.post('/api/yakauth/attest', writeLimiter, async (req, res) => {
+      try {
+        const { nonce, host, session } = req.body || {};
+        if (!nonce || !host || !session)
+          return res.status(400).json({ error: 'nonce, host, session required' });
+        if (!this.gate || !this.gate.consumeChallenge(String(nonce), String(host)))
+          return res.status(403).json({ error: 'no pending challenge for that nonce' });
+        const ts = Math.floor(Date.now() / 1000);
+        const message = `yakauth|${this.gate.persistentId()}|${host}|${nonce}|${session}|${ts}`;
+        const sig = await this.gate.pqSign(message);
+        res.json({
+          pid: this.gate.persistentId(),
+          nodeId: this.identity?.identity?.nodeId || null,
+          ts,
+          signature: sig.signature,
+          keyId: sig.key_id,
+          algorithm: sig.algorithm || 'ML-DSA-65',
+        });
+      } catch (e) {
+        res.status(502).json({ error: `attest failed: ${e.message}` });
+      }
+    });
+
     // Health check
     app.get('/health', (req, res) => {
       const wsPeers = this.mesh.getPeers();
@@ -5401,6 +5634,30 @@ export class YakmeshNode {
     });
     app.get('/api/peers', (req, res) => {
       res.json(this.mesh.getPeers());
+    });
+
+    // C2C Lighthouse server directory — the gossip-verified list of game
+    // servers on the mesh. Each entry carries the derived YAK-TUN virtual IP
+    // (sha256(nodeId) → 10.199.b0.b1, same function as mesh/tun.js) so any
+    // local client (chautari, yakbrowse) can resolve a server to a routable
+    // tunnel address without implementing the derivation itself.
+    app.get('/api/servers', (req, res) => {
+      if (!this.serverDirectory) {
+        return res.json({ servers: [], total: 0, serverTime: Date.now() });
+      }
+      const status = req.query.status || null;
+      const limit = parseInt(req.query.limit || '100', 10);
+      const directory = this.serverDirectory.getDirectory({ status, limit });
+      const servers = (directory.servers || directory).map((s) => {
+        const h = crypto.createHash('sha256').update(String(s.nodeId)).digest();
+        const tunnelIp = `10.199.${h[0]}.${h[1]}`;
+        return {
+          ...s,
+          tunnelIp,
+          url: s.c2cPort ? `http://${tunnelIp}:${s.c2cPort}` : null,
+        };
+      });
+      res.json({ servers, total: servers.length, stats: this.serverDirectory.getStats(), serverTime: Date.now() });
     });
 
     // SAMUHA admission-control status — utilization, verdict tallies,
@@ -5484,7 +5741,7 @@ export class YakmeshNode {
     // Announce a new network — landmark role. Signs the proposal with
     // the Hourglass OTS when the pq-bridge is up (unsigned announcements
     // are gossiped flagged; receivers weight them accordingly).
-    app.post('/api/update/announce', async (req, res) => {
+    app.post('/api/update/announce', localAdmin, async (req, res) => {
       if (!isLoopback(req)) return res.status(403).json({ error: 'loopback only' });
       const { newCodeHash, changelog, sourceUrl, effectiveTime, packagePath, actDelaySeconds, actInEpochs } = req.body || {};
       if (!newCodeHash || !changelog) {
@@ -5553,7 +5810,7 @@ export class YakmeshNode {
     // Operator opt-in — the human decision. Marks the offer accepted;
     // when the ACT epoch proposal arrives it is consented automatically
     // (the offer is the "what", the ACT proposal is the "when").
-    app.post('/api/update/accept', async (req, res) => {
+    app.post('/api/update/accept', localAdmin, async (req, res) => {
       if (!isLoopback(req)) return res.status(403).json({ error: 'loopback only' });
       if (!this._pendingUpgradeOffer) {
         return res.status(404).json({ error: 'no pending offer' });
@@ -5568,11 +5825,12 @@ export class YakmeshNode {
       }
       // Pull the package bytes from the announcer (verified end-to-end
       // against the signed packageSha256) — staged for restart-time swap.
-      this._fetchAcceptedPackage().catch(() => { });
+      this._fetchAcceptedPackage().catch(err =>
+        log.error('UPDATE: package fetch failed', { error: err.message }));
       res.json({ accepted: true, fetching: !!this._acceptedUpgrade.packageSha256 });
     });
 
-    app.post('/api/update/decline', async (req, res) => {
+    app.post('/api/update/decline', localAdmin, async (req, res) => {
       if (!isLoopback(req)) return res.status(403).json({ error: 'loopback only' });
       const had = !!this._pendingUpgradeOffer;
       this._pendingUpgradeOffer = null;
@@ -5589,7 +5847,7 @@ export class YakmeshNode {
     // data/, node_modules/, models/, .git/ are never touched by the swap —
     // identity and personal setup ride through.
     app.post('/api/update/stage',
-      express.raw({ type: () => true, limit: '64mb' }),
+      localAdmin, express.raw({ type: () => true, limit: '64mb' }),
       async (req, res) => {
         if (!isLoopback(req)) return res.status(403).json({ error: 'loopback only' });
         const body = req.body;
@@ -5606,7 +5864,20 @@ export class YakmeshNode {
             const tmpTgz = join(extractDir, 'pkg.tgz');
             writeFileSync(tmpTgz, body);
             const { execSync } = await import('node:child_process');
-            execSync(`tar -xzf "${tmpTgz}" -C "${extractDir}"`, { stdio: ['ignore', 'pipe', 'pipe'] });
+            // Validate members BEFORE extract: refuse traversal, absolute
+            // paths, and links (a symlink member + later file writes through
+            // it — classic tar escape). tar's own guards are a backstop,
+            // not the boundary.
+            const listing = execSync(`tar -tzf "${tmpTgz}"`,
+              { stdio: ['ignore', 'pipe', 'pipe'] }).toString().split('\n').filter(Boolean);
+            const types = execSync(`tar -tvzf "${tmpTgz}"`,
+              { stdio: ['ignore', 'pipe', 'pipe'] }).toString().split('\n');
+            if (types.some(l => /^[lh]/.test(l)))
+              throw new Error('tarball contains links — refusing extract');
+            if (listing.some(n => n.startsWith('/') || n.split('/').includes('..')))
+              throw new Error('tarball member escapes extract dir');
+            execSync(`tar -xzf "${tmpTgz}" -C "${extractDir}" --no-same-owner`,
+              { stdio: ['ignore', 'pipe', 'pipe'] });
             let base = extractDir;
             if (existsSync(join(base, 'package', 'package.json'))) base = join(base, 'package');
             const entries = [...walkUpgradeFiles(base)]
@@ -5645,7 +5916,7 @@ export class YakmeshNode {
     // Apply a staged package: write the act-restart marker and exit —
     // the supervisor (yakmesh-run.js) performs the swap on respawn.
     // data/ is preserved by the apply engine; rollback lands in data/.
-    app.post('/api/update/apply', async (req, res) => {
+    app.post('/api/update/apply', localAdmin, async (req, res) => {
       if (!isLoopback(req)) return res.status(403).json({ error: 'loopback only' });
       const stagedZip = join(import.meta.dirname, '..', 'data', 'pending-update', 'package.zip');
       if (!existsSync(stagedZip)) {
@@ -5693,7 +5964,7 @@ export class YakmeshNode {
     // Trigger seal verification + epoch-root attestation for a closed
     // epoch. Mutating — hourglass-signs the claim root via the keystore —
     // so loopback only, same gate as /api/update/accept.
-    app.post('/api/claims/epoch/:epoch/attest', async (req, res) => {
+    app.post('/api/claims/epoch/:epoch/attest', localAdmin, async (req, res) => {
       if (!isLoopback(req)) return res.status(403).json({ error: 'loopback only' });
       const epoch = parseInt(req.params.epoch, 10);
       if (!Number.isInteger(epoch)) {
@@ -5706,6 +5977,80 @@ export class YakmeshNode {
       } catch (err) {
         res.status(500).json({ error: err.message });
       }
+    });
+
+    // Producer link — a local producer (c2c, Sonus Libre, FFPL…) asks us
+    // to issue a work receipt bound to a worker's claim. Loopback only:
+    // issuance signs with THIS node's key — remote issuance would let
+    // callers mint attestations for arbitrary work. The receipt binds
+    // (workerNode, epoch, seal) — the worker's claim binding. Self-work
+    // (workerNode = our canonical id) lands in our own receiptBook.
+    app.post('/api/receipts/issue', localAdmin, async (req, res) => {
+      if (!isLoopback(req)) return res.status(403).json({ error: 'loopback only' });
+      const b = req.body || {};
+      // A receipt binds the epoch of the claim that will carry it — and
+      // claim payloads are built at that epoch's first heartbeat beat,
+      // so a receipt for the CURRENT epoch only lands if it predates the
+      // build. Default to the next epoch: the claim that can still
+      // carry it. Past epochs are already settled — reject them.
+      const curEpoch = Math.floor(Date.now() / 30000);
+      const epoch = Number.isInteger(b.epoch) ? b.epoch : curEpoch + 1;
+      if (epoch < curEpoch) {
+        return res.status(400).json({ error: 'epoch already closed — receipts bind a future claim' });
+      }
+      if (typeof b.workerNode !== 'string' || !/^[0-9a-f]{64}$/.test(b.workerNode)) {
+        return res.status(400).json({ error: 'workerNode must be 64 hex chars' });
+      }
+      if (!Number.isInteger(b.workClass) || b.workClass < 1 || b.workClass > 5) {
+        return res.status(400).json({ error: 'workClass must be 1-5' });
+      }
+      if (typeof b.resultHash !== 'string' || !/^[0-9a-f]{64}$/.test(b.resultHash)) {
+        return res.status(400).json({ error: 'resultHash must be 64 hex chars' });
+      }
+      // Resolve the worker's claim binding — our own seal from the live
+      // claim state (current epoch) or the keystore-derived seal for a
+      // future epoch (deterministic — the bridge serves any epoch); a
+      // foreign worker's seal comes from what we witnessed, which only
+      // exists for the live epoch.
+      let seal = null;
+      if (b.workerNode === this._canonicalNodeId) {
+        if (epoch === curEpoch) {
+          const state = await contributionMeshState(Date.now());
+          if (state?.epoch === epoch) seal = state.seal;
+        } else {
+          try {
+            const bridge = process.env.YAKOS_PQ_BRIDGE || 'http://127.0.0.1:9995';
+            const s = await fetch(`${bridge}/yakcoin/seal?epoch=${epoch}`,
+              { signal: AbortSignal.timeout(1500) }).then(r => r.json());
+            if (s?.node_id === b.workerNode && Array.isArray(s.seal)) seal = s.seal;
+          } catch { /* bridge down — seal unresolvable, 404 below */ }
+        }
+      } else {
+        if (epoch !== curEpoch) {
+          return res.status(400).json({ error: 'foreign worker claims only bind in their live epoch' });
+        }
+        const claim = this.claimLedger?.epochClaims(epoch)
+          ?.find(c => c.nodeId === b.workerNode);
+        seal = claim?.seal ?? null;
+      }
+      if (!seal) {
+        return res.status(404).json({
+          error: 'no witnessed claim for workerNode at epoch — cannot bind receipt',
+        });
+      }
+      const receipt = this.issueReceipt(
+        { nodeId: b.workerNode, epoch, seal },
+        {
+          jobId: /^[0-9a-f]{64}$/.test(b.jobId || '') ? b.jobId
+            : accel.bytesToHex(accel.sha3_256(`${b.workerNode}:${epoch}:${b.resultHash}:${Date.now()}`)),
+          workClass: b.workClass,
+          resultHash: b.resultHash,
+          feePaid: Number.isSafeInteger(b.feePaid) && b.feePaid >= 0 ? b.feePaid : 0,
+        },
+        typeof b.peerId === 'string' ? b.peerId : null,
+      );
+      if (!receipt) return res.status(500).json({ error: 'receipt signing failed' });
+      res.json({ ok: true, epoch, workerNode: b.workerNode, receipt });
     });
 
     // =========================================
@@ -6029,7 +6374,8 @@ export class YakmeshNode {
             this.mesh.emit(msg.type, msg, null, senderNodeId);
             // Route ANNEX messages arriving via relay
             if (msg.annex && this.mesh.annex) {
-              this.mesh.annex._handleAnnexMessage(msg.annex, senderNodeId).catch(() => { });
+              this.mesh.annex._handleAnnexMessage(msg.annex, senderNodeId).catch(err =>
+                log.warn('annex: relay message handling failed', { error: err.message }));
             }
             accepted++;
           } catch {
@@ -7151,6 +7497,19 @@ export class YakmeshNode {
       });
     });
 
+    // Export a full DOKO document by id — loopback only. KHATA announce
+    // and peer seeding need the signed document, not the summary; the
+    // doc is self-signed so export leaks nothing beyond the pubkey.
+    app.get('/security/doko/document/:id', (req, res) => {
+      if (!isLoopback(req)) return res.status(403).json({ error: 'loopback only' });
+      if (!this.dokoRegistry) {
+        return res.status(503).json({ error: 'DOKO registry not initialized' });
+      }
+      const doc = this.dokoRegistry.documents.get(req.params.id);
+      if (!doc) return res.status(404).json({ error: 'doko not found' });
+      res.json({ doko: doc.toJSON ? doc.toJSON() : doc });
+    });
+
     // Verify an identity
     // SECURITY: Peer auth — only known peers can request identity verification
     app.post('/security/doko/verify', writeLimiter, requirePeerAuth, (req, res) => {
@@ -7185,7 +7544,10 @@ export class YakmeshNode {
       if (!doko || typeof doko !== 'object') {
         return res.status(400).json({ error: 'Missing doko document' });
       }
-      const result = this.dokoRegistry.add(doko);
+      // Loopback = the local operator (trusted: seeding, tooling).
+      // Peer-authed registrations are strict — a foreign doc may not
+      // overwrite an existing persistentId binding (squat protection).
+      const result = this.dokoRegistry.add(doko, { local: isLoopback(req) });
       if (!result.success) {
         return res.status(422).json(result);
       }
@@ -7508,28 +7870,37 @@ export class YakmeshNode {
 
     return new Promise(async (resolve, reject) => {
       const basePort = this.config.network.httpPort;
-      const maxRetries = 10;
+      // Registry-aware candidates: remembered port first (consumers
+      // discovered it last run), then the preferred fallback range.
+      // Explicit YAKMESH_HTTP_PORT bypasses the registry (operator wins).
+      const candidates = portCandidates('yakmesh-http', basePort, {
+        probes: 10,
+        envPort: process.env.YAKMESH_HTTP_PORT ? parseInt(process.env.YAKMESH_HTTP_PORT, 10) : null,
+      });
 
-      for (let attempt = 0; attempt < maxRetries; attempt++) {
-        const port = basePort + attempt;
+      for (let attempt = 0; attempt < candidates.length; attempt++) {
+        const port = candidates[attempt];
         try {
           await this._tryHttpBind(app, port);
           this.boundHttpPort = port;
           if (attempt > 0) {
-            log.warn(`⚠️  Port ${basePort} was in use, HTTP bound to ${port} instead`);
+            log.warn(`⚠️  Port ${candidates[0]} was in use, HTTP bound to ${port} instead`);
           }
           log.info(`✓ HTTP server on http://localhost:${port}`);
+          if (!rememberPort('yakmesh-http', port)) {
+            log.warn('⚠️  Could not record port in ~/.config/yakos/ports.json');
+          }
           resolve();
           return;
         } catch (err) {
-          if (err.code === 'EADDRINUSE' && attempt < maxRetries - 1) {
+          if (err.code === 'EADDRINUSE' && attempt < candidates.length - 1) {
             continue;
           }
           reject(err);
           return;
         }
       }
-      reject(new Error(`Could not bind HTTP to any port in range ${basePort}-${basePort + maxRetries - 1}`));
+      reject(new Error(`Could not bind HTTP to any candidate port (${candidates.join(', ')})`));
     });
   }
 
@@ -7969,7 +8340,8 @@ export class YakmeshNode {
             this.mesh.emit(msg.type, msg, null, candidate.nodeId);
             // Route ANNEX messages arriving via relay
             if (msg.annex && this.mesh.annex) {
-              this.mesh.annex._handleAnnexMessage(msg.annex, candidate.nodeId).catch(() => { });
+              this.mesh.annex._handleAnnexMessage(msg.annex, candidate.nodeId).catch(err =>
+                log.warn('annex: relay message handling failed', { error: err.message }));
             }
           }
         } catch (e) {

@@ -126,6 +126,19 @@ export function setReceiptProvider(fn) {
   receiptProvider = typeof fn === 'function' ? fn : null;
 }
 
+// Persistent-identity provider — wired by the server; returns
+// { persistentId, publicKey, sign } from the machine seed. The claim
+// carries the personhood proof triple: pid (publicly derivable from
+// pubkey via wormhole-sealed AVOTH) + pubkey + a persistent-key
+// signature binding pid→nodeId→epoch. Unwired → the claim carries no
+// personhood anchor (honest absence — it still earns, it just has no
+// account continuity).
+let persistentIdentityProvider = null;
+
+export function setPersistentIdentityProvider(fn) {
+  persistentIdentityProvider = typeof fn === 'function' ? fn : null;
+}
+
 /**
  * Build an execution-proof provider for rust-embed's /npu/proof
  * (:9997). Runs a nonce-seeded GEMM on real silicon — the returned
@@ -410,6 +423,21 @@ export async function contributionMeshState(nowMs) {
         };
       }
     }
+    // Personhood binding — the persistent key (seed-derived, oracleHash-
+    // invariant) signs pid→nodeId→epoch. Anyone verifies: pid re-derives
+    // from the pubkey via wormhole-sealed AVOTH, the sig proves the
+    // personhood key endorsed THIS claim identity THIS epoch.
+    const pidBind = await tried('persistentId', epoch, () => {
+      if (!persistentIdentityProvider) return null;
+      const id = persistentIdentityProvider();
+      if (!id?.persistentId || !id?.publicKey || typeof id.sign !== 'function') return null;
+      return {
+        persistentId: id.persistentId,
+        persistentPubkey: id.publicKey,
+        persistentSig: id.sign(
+          `YAKMESH|PID-BIND|v1|${id.persistentId}|${node_id}|${epoch}`),
+      };
+    });
     const payload = {
       version: 1,
       epoch,
@@ -429,6 +457,7 @@ export async function contributionMeshState(nowMs) {
           ? { attestationBundle: work.attestationBundle } : {}),
       ...(npuProof ? { npuProof } : {}),
       ...(hwProof ? { hwProof } : {}),
+      ...(pidBind ? { pidBind } : {}),
     };
     cached = { epoch, payload };
     return payload;

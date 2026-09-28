@@ -40,6 +40,7 @@ import { sha3_256 } from '@noble/hashes/sha3.js';
 import { bytesToHex } from '@noble/hashes/utils.js';
 import { createLogger } from '../utils/logger.js';
 import { verifySignature } from '../identity/node-key.js';
+import { verifyPersistentBinding } from '../identity/machine-seed.js';
 import { npuProofClaim, hwProofClaim } from './contribution.js';
 import { isAvailable as bridgeAvailable } from '../utils/avoth-bridge.js';
 import { sha3_256Batch as mkcSha3Batch } from '../utils/mkc.js';
@@ -181,6 +182,23 @@ export class ClaimLedger extends EventEmitter {
         && c.claimAssert.claimRef === selfClaimRef(c.nodeId, c.epoch)
         && c.claimAssert.value === bytesToHex(sha3_256(ClaimLedger.claimLeafBytes(c)));
       if (!ok) delete c.claimAssert;
+    }
+
+    // Personhood binding: pid must re-derive from the carried persistent
+    // pubkey (wormhole-sealed AVOTH — public recompute) and the sig must
+    // verify pid→nodeId→epoch under that key. A bad binding is forgery
+    // evidence; the triple is stripped — the claim stands on its other
+    // evidence, it just has no proven account anchor.
+    if (c.pidBind) {
+      if (!verifyPersistentBinding(c.pidBind, c.nodeId, c.epoch)) {
+        log.error('CLAIM forged persistent-identity binding', {
+          from: hb.nodeId, epoch: c.epoch,
+        });
+        this.emit('pidForgery', {
+          nodeId: hb.nodeId, epoch: c.epoch, at: Date.now(),
+        });
+        delete c.pidBind;
+      }
     }
 
     this._checkBinding(hb.nodeId, c.nodeId);

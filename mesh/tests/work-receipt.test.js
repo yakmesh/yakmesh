@@ -43,7 +43,10 @@ const SEAL = [0, 1, 2, 3];
 const JOB_ID = 'cd'.repeat(32);
 const RESULT_HASH = 'ef'.repeat(32);
 
-const ISSUER_PID = 'yak-TT00TTT00:TTT00TTT0:0TTT00TTT';
+// Well-formed 324T service pid: six 54-trit tiers (6×9 colon groups),
+// dot-separated — 'yaks-' + 359 chars.
+const TIER = 'TT00TTT00:TTT00TTT0:0TTT00TTT:TT00TTT00:TTT00TTT0:0TTT00TTT';
+const ISSUER_PID = 'yaks-' + Array(6).fill(TIER).join('.');
 
 const serviceRegistry = {
   getByPersistentId: (pid) => pid === ISSUER_PID
@@ -172,8 +175,8 @@ describe('receipt commitment', () => {
     expect(receiptsCommitment([a, b])).not.toBe(receiptsCommitment([b, a]));
     expect(receiptsCommitment([])).toBeNull();
     expect(receiptsCommitment(Array(9).fill(a))).toBeNull();
-    // 146-byte fixed head + u8 len + persistentId tail
-    expect(encodeReceipt(a)).toHaveLength(146 + 1 + ISSUER_PID.length);
+    // 146-byte fixed head + u16 len + persistentId tail
+    expect(encodeReceipt(a)).toHaveLength(146 + 2 + ISSUER_PID.length);
   });
 });
 

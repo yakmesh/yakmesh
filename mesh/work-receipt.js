@@ -17,26 +17,33 @@
 //
 // Wire receipt:
 //   { version, jobId, issuerNode, issuerPubkey, workerNode, epoch,
-//     workClass, resultHash, feePaid, seal[4], issuerSig }
+//     workClass, resultHash, feePaid, seal[4], issuerPersistentId,
+//     issuerDoko?, issuerSig }
 //
 // Canonical signed encoding (issuerSig excluded):
 //   version u8 ‖ jobId[32] ‖ issuerNode[32] ‖ workerNode[32] ‖
 //   epoch u32LE ‖ workClass u8 ‖ resultHash[32] ‖ feePaid u64LE ‖ seal[4] ‖
-//   issuerPidLen u8 ‖ issuerPersistentId[len]
-//   — 146-byte fixed head + variable persistentId tail (~70B "yak-…").
+//   issuerPidLen u16LE ‖ issuerPersistentId[len] ‖ dokoContentHash[32]?
+//   — 146-byte fixed head + variable persistentId tail + optional 32B
+//   DOKO content-hash tail when the receipt embeds its authority doc.
 // issuerNode = sha3_256(issuerPubkey) proves THIS key signed; the
 // persistentId is the cross-build authority anchor — pubkeys rotate
 // per build (seed+oracle+codebase derivation), persistentId does not.
-// Verifiers check the DOKO binds pid → pubkey.
+// The embedded issuerDoko (service credential, "yaks-" pid) is committed
+// by the signature so every observer verifies the same document —
+// registry state is never consensus evidence.
 //
 // Rust-side type: yakcoin-core/src/claims.rs WorkReceipt — wire-align
 // its serializer when the coinbase path consumes receipts.
 // ═══════════════════════════════════════════════════════════════════════════════
 
 import { sha3_256 } from '@noble/hashes/sha3.js';
-import { bytesToHex } from '@noble/hashes/utils.js';
+import { bytesToHex, hexToBytes } from '@noble/hashes/utils.js';
 import { signMessage, verifySignature } from '../identity/node-key.js';
 import { avothHash } from '../utils/dna-spiral.js';
+import {
+  DOKODocument, DOKOValidator, DOKORevocation, DOKO_TYPES,
+} from '../security/doko-identity.js';
 import { createLogger } from '../utils/logger.js';
 
 const log = createLogger('mesh:work-receipt');
@@ -45,13 +52,17 @@ export const RECEIPT_VERSION = 1;
 export const MAX_RECEIPTS_PER_CLAIM = 8;
 export const CANONICAL_BYTES = 146;
 // Wire bound: canonical 146 + ML-DSA-65 sig (2420) + pubkey (1312) as
-// hex — a receipt object exceeding this is malformed, not big.
-export const MAX_RECEIPT_JSON_BYTES = 16 * 1024;
+// hex + embedded issuer DOKO (pubkey+sig hex + claims/extensions JSON).
+// A receipt object exceeding this is malformed, not big.
+export const MAX_RECEIPT_JSON_BYTES = 48 * 1024;
+// Bound on the embedded issuer DOKO document itself.
+export const MAX_DOKO_JSON_BYTES = 32 * 1024;
 
 const HEX64 = /^[0-9a-f]{64}$/;
-// 162T persistent machine id: "yak-" + ternary {T,0,1} groups.
-const PID_RE = /^yak-[T01:]{10,90}$/;
-export const MAX_PID_LEN = 96;
+// 162T persistent id: "yak-" (machine) or "yaks-" (service) + ternary
+// {T,0,1} groups.
+const PID_RE = /^yaks?-[T01:.]{359}$/;   // 'yak-'/'yaks-' + 324 trits + 35 separators
+export const MAX_PID_LEN = 364;
 
 function isQuatSeal(seal) {
   return Array.isArray(seal) && seal.length === 4
@@ -77,6 +88,15 @@ function payloadShapeError(r) {
   if (typeof r.issuerPersistentId !== 'string'
       || r.issuerPersistentId.length > MAX_PID_LEN
       || !PID_RE.test(r.issuerPersistentId)) return 'bad-issuerPersistentId';
+  // Embedded issuer DOKO — the authority credential rides the receipt so
+  // every observer verifies the SAME document (deterministic verdict);
+  // its content hash is committed inside the canonical encoding, so the
+  // doc cannot be swapped post-signing.
+  if (r.issuerDoko !== undefined
+      && (!r.issuerDoko || typeof r.issuerDoko !== 'object'
+          || JSON.stringify(r.issuerDoko).length > MAX_DOKO_JSON_BYTES)) {
+    return 'bad-issuerDoko';
+  }
   return null;
 }
 
@@ -100,7 +120,17 @@ export function receiptShapeError(r) {
 export function encodeReceipt(r) {
   if (payloadShapeError(r)) return null;
   const pid = Buffer.from(r.issuerPersistentId, 'utf8');
-  const buf = Buffer.alloc(CANONICAL_BYTES + 1 + pid.length);
+  // Optional embedded-DOKO commitment — the issuer's signature covers
+  // the DOKO content hash, so the authority credential is bound, not
+  // just carried.
+  let dokoHash = null;
+  if (r.issuerDoko) {
+    try {
+      dokoHash = Buffer.from(DOKODocument.fromJSON(r.issuerDoko).getContentHash(), 'hex');
+    } catch { return null; }
+    if (dokoHash.length !== 32) return null;
+  }
+  const buf = Buffer.alloc(CANONICAL_BYTES + 2 + pid.length + (dokoHash ? 32 : 0));
   let o = 0;
   buf.writeUInt8(r.version, o); o += 1;
   Buffer.from(r.jobId, 'hex').copy(buf, o); o += 32;
@@ -111,8 +141,9 @@ export function encodeReceipt(r) {
   Buffer.from(r.resultHash, 'hex').copy(buf, o); o += 32;
   buf.writeBigUInt64LE(BigInt(r.feePaid), o); o += 8;
   buf.set(r.seal, o); o += 4;
-  buf.writeUInt8(pid.length, o); o += 1;
-  pid.copy(buf, o);
+  buf.writeUInt16LE(pid.length, o); o += 2;
+  pid.copy(buf, o); o += pid.length;
+  if (dokoHash) { dokoHash.copy(buf, o); }
   return buf;
 }
 
@@ -135,7 +166,7 @@ export function receiptsCommitment(receipts) {
 
 /**
  * Issue a receipt — the authority side. `issuer` is an identity with
- * {publicKey, secretKey, persistentId} — the persistentId (162T
+ * {publicKey, secretKey, persistentId} — the persistentId (324T
  * "yak-…" machine id) is the cross-build authority anchor and goes
  * INSIDE the signed payload. issuerNode derives as
  * sha3_256(publicKey) — the Hash256 node-address convention.
@@ -157,6 +188,11 @@ export function signReceipt(fields, issuer) {
     feePaid: fields.feePaid ?? 0,
     seal: fields.workerSeal,
   };
+  // Embed the issuer's authority DOKO when supplied — committed by the
+  // signature so verifiers need no registry to reach 'accept'.
+  if (issuer.doko) {
+    r.issuerDoko = issuer.doko.toJSON ? issuer.doko.toJSON() : issuer.doko;
+  }
   const canonical = encodeReceipt(r);
   if (!canonical) return null;
   r.issuerSig = signMessage(canonical, issuer.secretKey);
@@ -203,19 +239,45 @@ export function verifyReceipt(r, ctx = {}) {
     return { verdict: 'reject', reason: 'seal-mismatch' };
   }
 
-  // Authority check — DOKO Service registration keyed on the
-  // persistentId (the cross-build anchor), with the presented pubkey
-  // required to match the DOKO's current key. A rotated key on the
-  // same machine keeps authority via an updated DOKO; a stolen
-  // persistentId fails because the pubkey won't match. Absence is the
-  // honest middle state: the receipt is real, the issuer's standing
-  // is not yet witnessed. Bond-gating lands with the bond build.
+  // Authority check — the issuer's Service DOKO. The embedded doc is
+  // authoritative when present: it is committed by the signature (and
+  // by jobRoot via the claim commitment), so every observer reaches the
+  // same verdict. A registry lookup is only the fallback for receipts
+  // that omit the doc — registry state is local and NOT consensus
+  // evidence, so two observers may legitimately disagree there.
+  // A rotated key on the same machine keeps authority via an updated
+  // DOKO; a stolen persistentId fails because the pubkey won't match.
+  // Absence is the honest middle state: the receipt is real, the
+  // issuer's standing is not yet witnessed. Bond-gating lands with the
+  // bond build.
+  let doko = null;
+  if (r.issuerDoko) {
+    try {
+      const doc = DOKODocument.fromJSON(r.issuerDoko);
+      if (DOKOValidator.validate(doc).valid) doko = doc;
+    } catch { /* malformed embedded doc — treated as no authority */ }
+    // The embedded doc is committed by the signature — it is the ONLY
+    // authority evidence considered. No registry fallback: a doc that
+    // fails validation must not be laundered through local state, and
+    // every observer must reach the same verdict.
+    if (doko && doko.type === DOKO_TYPES.SERVICE && !doko.revoked
+        && DOKORevocation.isRevoked(doko.dokoId)?.revoked !== true
+        && doko.publicKey === r.issuerPubkey
+        && doko.extensions?.persistentId === r.issuerPersistentId) {
+      return { verdict: 'accept', reason: 'service-doko-embedded' };
+    }
+    return { verdict: 'observe', reason: doko ? 'doko-binding-mismatch' : 'issuer-doko-invalid' };
+  }
+  // Fallback: receipts that omit the doc resolve authority via the local
+  // registry — non-deterministic across observers, so new receipts should
+  // always embed the DOKO.
   const registry = ctx.dokoRegistry;
   if (registry && typeof registry.getByPersistentId === 'function') {
     const doko = registry.getByPersistentId(r.issuerPersistentId)
       || (typeof registry.getByPublicKey === 'function'
         ? registry.getByPublicKey(r.issuerPubkey) : null);
-    if (doko && doko.type === 'service' && !doko.revoked
+    if (doko && doko.type === DOKO_TYPES.SERVICE && !doko.revoked
+        && DOKORevocation.isRevoked(doko.dokoId)?.revoked !== true
         && doko.publicKey === r.issuerPubkey
         && doko.extensions?.persistentId === r.issuerPersistentId) {
       return { verdict: 'accept', reason: 'service-doko' };

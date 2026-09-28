@@ -958,6 +958,11 @@ initBackend().catch((e) => {
     process.exit(backend === 'js-cpu' ? 1 : 0);
   }
   server.listen(PORT, '127.0.0.1', () => {
+    // Claim the bound port — yakos-verifyd aggregates ports.d/* into
+    // the merged registry and audits ownership (no claim = squatter).
+    import('../../utils/ports.js')
+      .then((p) => { if (!p.rememberPort('yakmesh-npu-prover', PORT)) log('warn: could not claim port in ports.d/'); })
+      .catch(() => { /* no registry on this host */ });
     log(`backend=${backend}${onnxType === 1 ? ' (fp32)' : ''} — listening on http://127.0.0.1:${PORT}/npu/proof`);
     log(`ort=${ort?.version || 'unavailable'}${ortError ? ' err=' + ortError : ''}`);
     log(`pnp: ${device.name || 'unidentified'} (${device.pnp || 'no pnp id'})`);

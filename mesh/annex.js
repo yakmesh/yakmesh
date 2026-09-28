@@ -901,7 +901,7 @@ export class Annex {
     // deferred message slots.
   }
 
-  async _handleAnnexMessage(envelope, origin) {
+  async _handleAnnexMessage(envelope, origin, ws = null) {
     try {
       // Verify ML-DSA-65 signature — MANDATORY for all ANNEX messages.
       // "Changes pass through math alone" — no key, no entry.
@@ -911,7 +911,7 @@ export class Annex {
         // Peer's public key isn't registered yet — their HELLO/WELCOME
         // may still be in flight. Defer the message and replay it once
         // the mesh emits 'peer-registered' for this sender.
-        this._deferMessage(envelope, origin);
+        this._deferMessage(envelope, origin, ws);
         return;
       }
 
@@ -931,7 +931,7 @@ export class Annex {
           break;
 
         case ANNEX_CONFIG.messageTypes.ENCRYPTED:
-          await this._handleEncrypted(envelope);
+          await this._handleEncrypted(envelope, ws);
           break;
 
         case ANNEX_CONFIG.messageTypes.CLOSE: {
@@ -1149,7 +1149,7 @@ export class Annex {
     if (t) { clearTimeout(t); this._rekeyTimers.delete(peerId); }
   }
 
-  async _handleEncrypted(envelope) {
+  async _handleEncrypted(envelope, ws = null) {
     let session = this.sessions.get(envelope.senderId);
     if (!session || !session.established) {
       log.warn('No session for encrypted message', { peerId: peerTag(envelope.senderId) });
@@ -1209,7 +1209,8 @@ export class Annex {
         return;
       }
 
-      // Dispatch to handlers
+      // Dispatch to handlers — ws is the socket the frame actually
+      // arrived on (dual-wire: may be the lifeline, not peer.ws).
       for (const handler of this.messageHandlers.values()) {
         try {
           await handler({
@@ -1217,6 +1218,7 @@ export class Annex {
             sessionId: envelope.sessionId,
             payload,
             timestamp: envelope.timestamp,
+            ws,
           });
         } catch (err) {
           log.error('Handler error', { error: err.message });
@@ -1243,7 +1245,7 @@ export class Annex {
             return;
           }
           for (const handler of this.messageHandlers.values()) {
-            try { await handler({ from: envelope.senderId, sessionId: envelope.sessionId, payload, timestamp: envelope.timestamp }); }
+            try { await handler({ from: envelope.senderId, sessionId: envelope.sessionId, payload, timestamp: envelope.timestamp, ws }); }
             catch (herr) { log.error('Handler error', { error: herr.message }); }
           }
           return;
@@ -1320,7 +1322,7 @@ export class Annex {
    * Replays automatically when 'peer-registered' fires, or discards
    * after _deferTimeoutMs (preventing memory leaks from spoofed senderIds).
    */
-  _deferMessage(envelope, origin) {
+  _deferMessage(envelope, origin, ws = null) {
     const senderId = envelope.senderId;
 
     // Already deferring a message from this sender — discard the older one
@@ -1366,7 +1368,7 @@ export class Annex {
       }
     }, this._deferTimeoutMs);
 
-    this._deferredMessages.set(senderId, { envelope, origin, timer, onRegistered });
+    this._deferredMessages.set(senderId, { envelope, origin, ws, timer, onRegistered });
     this.mesh.on('peer-registered', onRegistered);
   }
 
@@ -1387,7 +1389,7 @@ export class Annex {
     });
 
     // Re-enter the handler — this time _getPeerPublicKey should succeed
-    this._handleAnnexMessage(deferred.envelope, deferred.origin).catch(err => {
+    this._handleAnnexMessage(deferred.envelope, deferred.origin, deferred.ws).catch(err => {
       log.warn('Deferred ANNEX replay failed', { peerId: peerTag(senderId), error: err.message });
     });
   }

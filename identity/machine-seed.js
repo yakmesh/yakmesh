@@ -43,10 +43,10 @@
  * from machine-specific hardware markers (hostname, platform, dataDir).
  * An attacker who copies the seed file to another machine cannot decrypt it.
  * 
- * Additionally, a YPC-27 polynomial checksum seals the seed. The checksum
- * is computed over F₃²⁷ (the finite field of order 3²⁷ ≈ 7.6 trillion).
- * Forging a checksum requires breaking SHA3-256, which is the hash function
- * that maps input into the field. This detects both accidental corruption
+ * Additionally, a dual-position YPC-27² checksum seals the seed — quadratic
+ * forms over F₃²⁷ evaluated at the two SST root-9 positions (11, 23), for a
+ * combined 3⁵⁴ ≈ 2⁸⁵·⁶ space. Forging requires solving a multivariate
+ * quadratic system keyed by SHA3-256. This detects both accidental corruption
  * AND deliberate seed injection.
  * 
  * ═══════════════════════════════════════════════════════════════════════════════
@@ -79,9 +79,11 @@ import { createCipheriv, createDecipheriv, scryptSync, randomBytes } from 'crypt
 import { hostname, platform, cpus } from 'os';
 import { hkdf } from '@noble/hashes/hkdf.js';
 import { sha3_256 as _sha3 } from '@noble/hashes/sha3.js';
+import { ml_dsa65 } from '@noble/post-quantum/ml-dsa.js';
+import { contextSeal, avothHashSealed } from '../utils/dna-spiral.js';
 
 // YPC-27 polynomial integrity
-import { YPC27Checksum, Poly27, bytesToTrits, DEFAULT_SEED as YPC27_DEFAULT_SEED } from '../oracle/ypc27.js';
+import { YPC27Checksum, YPC27Power, Poly27, bytesToTrits, DEFAULT_SEED as YPC27_DEFAULT_SEED } from '../oracle/ypc27.js';
 
 // SST family analysis
 import { bytesToFamilyTrits, analyzeBytesFamilies } from '../oracle/sst.js';
@@ -103,11 +105,15 @@ const SEED_BYTES = 32;
 /** Seed file name */
 const SEED_FILENAME = 'machine-seed.json';
 
-/** Current seed file schema version — bumped for persistentId 162T */
-const SCHEMA_VERSION = 3;
+/** Current seed file schema version — bumped for persistentId 324T
+ *  (full 512-bit sealed digest → ~256-bit post-quantum preimage) */
+const SCHEMA_VERSION = 4;
 
 /** Persistent ID prefix */
 const PERSISTENT_ID_PREFIX = 'yak';
+// Service identities share the seed but live in a distinct namespace — a
+// 'yaks-' id must never be accepted where a machine identity is expected.
+const SERVICE_ID_PREFIX = 'yaks';
 
 
 // =============================================================================
@@ -195,31 +201,60 @@ function decryptSeed(enc, dataDir) {
 // =============================================================================
 
 /**
- * Compute YPC-27 polynomial checksum of the seed.
- * SHA3-hard: forging requires breaking SHA3-256, which maps input into F₃²⁷.
- * Collision resistance is ~2²¹·⁴ (birthday bound on 3²⁷ ≈ 2⁴²·⁸).
- * This is checksum-grade integrity, not cryptographic-grade — use ML-DSA
- * for signature-grade security.
+ * SST positions carrying the seed checksum — the two Fibonacci digital-root-9
+ * slots of the 24-position cycle (indices 11 and 23), one per half. Both are
+ * tier-3: the full 9-term quadratic (T² + cross products + self-powers) under
+ * two INDEPENDENT SST parameter sets (position-separated seeds + matrices).
+ * Output space: 3⁵⁴ ≈ 2⁸⁵·⁶ — the power-of-2 widening of the checksum itself.
+ */
+const SEED_CHECKSUM_POSITIONS = [11, 23];
+
+/**
+ * Compute the seed integrity checksum — YPC-27² (power-magnified, quadratic)
+ * evaluated at two tier-3 SST positions and concatenated.
+ *
+ * Quadratic forgery resistance: the single-position linear YPC-27 fold can be
+ * inverted algebraically from known input/output pairs; the quadratic form
+ * cannot — it requires solving a multivariate quadratic system over F₃²⁷.
+ * Combined space is 3⁵⁴ ≈ 2⁸⁵·⁶ (birthday ~2⁴²·⁸).
+ *
+ * This is checksum-grade integrity, not cryptographic-grade — AES-256-GCM
+ * already authenticates the ciphertext; this layer is the ternary
+ * second-factor for tamper detection. Use ML-DSA for signature-grade security.
  *
  * @param {Uint8Array} seed - Raw 32-byte seed
- * @returns {string} Hex-encoded YPC-27 checksum
+ * @returns {string} Hex-encoded dual-position YPC-27² checksum
  */
 function computeSeedChecksum(seed) {
-  const hasher = new YPC27Checksum(YPC27_DEFAULT_SEED);
-  hasher.update(seed);
-  return hasher.digestHex();
+  return Buffer.concat(
+    SEED_CHECKSUM_POSITIONS.map((position) => {
+      const hasher = new YPC27Power(position);
+      hasher.update(seed);
+      return Buffer.from(hasher.digestBytes());
+    }),
+  ).toString('hex');
 }
 
 /**
- * Verify YPC-27 checksum of a seed.
- * 
+ * Verify YPC-27² checksum of a seed.
+ *
  * @param {Uint8Array} seed - Raw seed bytes
- * @param {string} expectedHex - Expected YPC-27 checksum hex
+ * @param {string} expectedHex - Expected checksum hex
  * @returns {boolean}
  */
 function verifySeedChecksum(seed, expectedHex) {
-  const computed = computeSeedChecksum(seed);
-  return computed === expectedHex;
+  return computeSeedChecksum(seed) === expectedHex;
+}
+
+/**
+ * Legacy single-position linear YPC-27 verification.
+ * Accepted ONLY at the schema boundary (schemaVersion < 4) so existing seed
+ * files can migrate — never consulted for current-schema files.
+ */
+function verifySeedChecksumLegacy(seed, expectedHex) {
+  const hasher = new YPC27Checksum(YPC27_DEFAULT_SEED);
+  hasher.update(seed);
+  return hasher.digestHex() === expectedHex;
 }
 
 
@@ -281,37 +316,163 @@ export function deriveBackupSecret(seed, oracleHash, verPhrase) {
   return hkdf(_sha3, seed, salt, info, 72);
 }
 
+/**
+ * The persistent identity key — an ML-DSA-65 keypair derived from the
+ * seed ONLY (no oracleHash, no verPhrase). It survives codebase
+ * upgrades, node-key rotation, and hardware migration via mnemonic;
+ * it is the cryptographic personhood behind the persistentId.
+ *
+ * This key never signs routine traffic — it exists to prove pid
+ * bindings (pid → node_id → fp → epoch) that any peer can verify.
+ *
+ * @param {Uint8Array} seed - Raw 32-byte machine seed
+ * @returns {Uint8Array} 32-byte deterministic secret for ml_dsa65.keygen()
+ */
+export function derivePersistentSecret(seed) {
+  if (!seed || seed.length !== SEED_BYTES) {
+    throw new Error(`Machine seed must be ${SEED_BYTES} bytes, got ${seed?.length}`);
+  }
+  const salt = new TextEncoder().encode('yakmesh:persistent-identity:v3');
+  const info = new TextEncoder().encode('persistent-signing-key');
+  return hkdf(_sha3, seed, salt, info, 32);
+}
+
+/** ML-DSA-65 keypair for the persistent identity (in-memory only). */
+export function persistentKeyPair(seed) {
+  return ml_dsa65.keygen(derivePersistentSecret(seed));
+}
+
 
 // =============================================================================
 // MIGRATION CHAIN
 // =============================================================================
 
 /**
- * Compute persistent machine ID in 162T ternary format.
- * This ID is CONSTANT across all code upgrades — derived directly from seed.
- * 
- * Format: "yak-[summit-162T]" where summit is 54 trits (≈85.6 bits entropy)
- * Example: "yak-TT00TTT00:TTT00TTT0:0TTT00TTT:00TTT00TT:TT00TTT00:TTT00TTT0"
- * 
+ * Full-324T ternary address of a digest — an INJECTIVE base-3
+ * expansion of the whole 512-bit sealed AVOTH output (big-endian
+ * integer → 324 base-3 digits, most-significant first). 3^324 ≈
+ * 2^513.5 covers the digest with no aliasing — unlike the legacy
+ * byte%243 → 5-trits codec, no entropy is dropped and no two
+ * digests collide in the encoding.
+ *
+ * Security: ~513.5-bit classical preimage → ~256-bit post-quantum
+ * (Grover) — 256-bit quantum is the bar; 162T (~257 bits) could
+ * never reach it since Grover halves the space.
+ *
+ * The first 162 trits double as the routing address — the route is
+ * a verifiable PREFIX of the identity, not a fabrication.
+ *
+ * @param {Buffer|Uint8Array} digest - 64-byte sealed AVOTH output
+ * @returns {string} Full 324T address, six 54-trit tiers, each six
+ *   colon-grouped 9-trit sub-blocks, dots between tiers ('T' = -1)
+ */
+function digestToTritAddress(digest) {
+  let n = BigInt(`0x${Buffer.from(digest).toString('hex')}`);
+  const trits = new Array(324);
+  for (let i = 323; i >= 0; i--) {
+    const r = Number(n % 3n); n /= 3n;
+    trits[i] = r === 2 ? 'T' : String(r);
+  }
+  const out = [];
+  for (let i = 0; i < 324; i++) {
+    if (i > 0) out.push(i % 54 === 0 ? '.' : i % 9 === 0 ? ':' : '');
+    out.push(trits[i]);
+  }
+  return out.join('');
+}
+
+/**
+ * Derive the persistentId from the persistent public key — PUBLICLY
+ * VERIFIABLE via the AVOTH-191 wormhole seal:
+ *
+ *   seal   = first 4 quats of AVOTH("yakmesh:pid:v4:{pkHex}")   (public)
+ *   digest = AVOTH_sealed("YAKMESH|PID|v4|" ‖ pk, seal)         (pos-191 bound)
+ *   pid    = "yak-" ‖ 324T(digest)   — injective base-3, all 512 bits
+ *
+ * The seal rides position 191 read-never-written through all 24
+ * rounds, so the digest is structurally bound to the pid domain —
+ * given (pid, pubkey) anyone recomputes and compares. Possession of
+ * the persistent key then proves personhood via signature.
+ *
+ * @param {Uint8Array} publicKey - Persistent ML-DSA-65 public key
+ * @returns {string} "yak-<full 324T>" persistent identifier
+ */
+export function persistentIdFromPublicKey(publicKey) {
+  const pkHex = bytesToHex(publicKey);
+  const seal = contextSeal(`yakmesh:pid:v4:${pkHex}`);
+  if (!seal) throw new Error('AVOTH substrate unavailable — cannot derive persistentId');
+  const digest = avothHashSealed(
+    Buffer.concat([Buffer.from('YAKMESH|PID|v4|'), Buffer.from(publicKey)]), seal);
+  if (!digest) throw new Error('AVOTH sealed hash failed — cannot derive persistentId');
+  return `${PERSISTENT_ID_PREFIX}-${digestToTritAddress(digest)}`;
+}
+
+/**
+ * Compute persistent machine ID — the 324T ternary address of the
+ * persistent public key under the pid-domain wormhole seal (injective
+ * base-3 of the full 512-bit digest — ~256-bit post-quantum preimage).
+ * CONSTANT across all code upgrades, key rotations, and hardware
+ * migration (mnemonic → seed → same persistent key → same pid).
+ *
  * @param {Uint8Array} seed - Raw 32-byte machine seed
- * @returns {string} Persistent 162T identifier
+ * @returns {string} Persistent 324T identifier "yak-<324T>"
  */
 function computePersistentId(seed) {
-  // Domain-separate from other derivations — "persistent-machine-id" context
-  // v2 domain separator for 162T upgrade
-  const context = new TextEncoder().encode('yakmesh:persistent-machine-id:v2');
-  const combined = new Uint8Array(seed.length + context.length);
-  combined.set(seed);
-  combined.set(context, seed.length);
+  return persistentIdFromPublicKey(persistentKeyPair(seed).publicKey);
+}
 
-  const hash = sha3_256(combined);
-  const hex = bytesToHex(hash);
+/**
+ * The canonical personhood-binding payload the persistent key signs:
+ * pid → claim nodeId → epoch. Epoch binding makes the signature
+ * per-epoch — a captured binding can't be replayed into another claim.
+ */
+export function pidBindString(persistentId, nodeId, epoch) {
+  return `YAKMESH|PID-BIND|v1|${persistentId}|${nodeId}|${epoch}`;
+}
 
-  // Convert to 162T, extract summit tier for compact persistent ID
-  const tritAddr = TritAddress.fromHex(hex);
-  const summit = tritAddr.toString().split('.')[0];
+/**
+ * Verify a claim's personhood binding: { persistentId, persistentPubkey,
+ * persistentSig } over `YAKMESH|PID-BIND|v1|{pid}|{nodeId}|{epoch}`.
+ *
+ * Both legs must hold: the pid must RE-DERIVE from the carried pubkey
+ * (wormhole-sealed AVOTH — no lookup, no trust) and the signature must
+ * verify under that key. A claim carrying a broken binding has NO
+ * proven personhood — the triple is stripped, the claim itself stands
+ * on its other evidence.
+ */
+export function verifyPersistentBinding({ persistentId, persistentPubkey, persistentSig }, nodeId, epoch) {
+  try {
+    if (typeof persistentId !== 'string' || !persistentId.startsWith(`${PERSISTENT_ID_PREFIX}-`)
+        || typeof persistentPubkey !== 'string' || typeof persistentSig !== 'string') return false;
+    const pk = hexToBytes(persistentPubkey);
+    if (persistentIdFromPublicKey(pk) !== persistentId) return false;
+    return ml_dsa65.verify(hexToBytes(persistentSig),
+      new TextEncoder().encode(pidBindString(persistentId, nodeId, epoch)), pk);
+  } catch { return false; }
+}
 
-  return `${PERSISTENT_ID_PREFIX}-${summit}`;
+/**
+ * Compute a service persistent ID — a 324T identity for a named issuer
+ * authority hosted on this machine (e.g. a game's work-issuer DOKO).
+ * Anchored to the host's persistent public key so a service's identity
+ * inherits the machine's personhood; distinct 'yaks-' namespace so a
+ * service id is never accepted where a machine identity is expected.
+ *
+ * @param {Uint8Array} seed - Raw 32-byte machine seed
+ * @param {string} serviceName - Issuer scope, e.g. 'work-issuer'
+ * @returns {string} Persistent 324T identifier ('yaks-' namespace)
+ */
+export function computeServicePersistentId(seed, serviceName) {
+  const pk = persistentKeyPair(seed).publicKey;
+  const ctx = `yakmesh:service-id:v3:${serviceName}:${bytesToHex(pk)}`;
+  const seal = contextSeal(ctx);
+  if (!seal) throw new Error('AVOTH substrate unavailable — cannot derive service id');
+  const payload = Buffer.concat([
+    Buffer.from('YAKMESH|SERVICE-ID|v3|'), Buffer.from(serviceName),
+    Buffer.from('|'), Buffer.from(pk)]);
+  const digest = avothHashSealed(payload, seal);
+  if (!digest) throw new Error('AVOTH sealed hash failed — cannot derive service id');
+  return `${SERVICE_ID_PREFIX}-${digestToTritAddress(digest)}`;
 }
 
 /**
@@ -463,7 +624,8 @@ export class MachineSeed {
     this.dataDir = dataDir;
     this.seedPath = join(dataDir, SEED_FILENAME);
     this.seed = null;          // Raw seed (in memory only)
-    this.persistentId = null;  // 162T persistent identity (constant across upgrades)
+    this.persistentId = null;  // 324T persistent identity (constant across upgrades)
+    this.persistentKeys = null; // ML-DSA-65 persistent identity keypair (in-memory only)
     this.migrationChain = [];  // History of (oracleHash, pubKeyHash) pairs
     this.sstFamilies = null;   // SST family analysis
     this.created = false;      // True if seed was just generated (first run)
@@ -561,8 +723,14 @@ export class MachineSeed {
         this._reboundSeed = true;
       }
 
-      // Verify YPC-27 integrity checksum
-      if (!verifySeedChecksum(seed, data.ypc27Checksum)) {
+      // Verify YPC-27² integrity checksum. Files below SCHEMA_VERSION predate
+      // the quadratic seal — accept the legacy linear checksum exactly once,
+      // then re-seal under YPC-27² below. Current-schema files accept only
+      // the dual-position quadratic checksum.
+      const checksumOk = data.schemaVersion >= SCHEMA_VERSION
+        ? verifySeedChecksum(seed, data.ypc27Checksum)
+        : verifySeedChecksumLegacy(seed, data.ypc27Checksum);
+      if (!checksumOk) {
         log.error('🚨 YPC-27 SEED INTEGRITY CHECK FAILED — possible tampering!');
         log.error('Seed checksum does not match. The seed file may have been modified.');
         log.error('Refusing to use potentially compromised seed.');
@@ -573,15 +741,16 @@ export class MachineSeed {
       }
 
       this.seed = seed;
-      this.persistentId = computePersistentId(seed); // always re-derive (162T; old files' persistentId144T ignored)
+      this._bindPersistentIdentity(seed); // always re-derive (324T; stored pid ignored)
       this.migrationChain = data.migrationChain || [];
       this.sstFamilies = data.sstFamilies || analyzeSeedFamilies(seed);
       this.created = false;
 
-      // Schema migration: upgrade to v3 (162T persistent ID), or re-seal
-      // under the realpath-bound key after a legacy-binding fallback.
-      if (data.schemaVersion < 3 || !data.persistentId || this._reboundSeed) {
-        if (!this._reboundSeed) log.info('Migrating seed file to v3 (162T persistentId)');
+      // Schema migration: upgrade to v4 (324T persistent ID + YPC-27² seed
+      // seal), or re-seal under the realpath-bound key after a legacy-binding
+      // fallback.
+      if (data.schemaVersion < SCHEMA_VERSION || !data.persistentId || this._reboundSeed) {
+        if (!this._reboundSeed) log.info('Migrating seed file to v4 (324T persistentId, YPC-27² seal)');
         this._updateSeedFile();
         this._reboundSeed = false;
       }
@@ -642,8 +811,9 @@ export class MachineSeed {
     // Compute YPC-27 integrity checksum (SHA3-hard polynomial seal)
     const ypc27Checksum = computeSeedChecksum(seed);
 
-    // Compute persistent 162T identity (constant across all upgrades)
-    const persistentId = computePersistentId(seed);
+    // Compute persistent 324T identity (constant across all upgrades)
+    const persistentKeys = persistentKeyPair(seed);
+    const persistentId = persistentIdFromPublicKey(persistentKeys.publicKey);
 
     // Compute SST family analysis
     const sstFamilies = analyzeSeedFamilies(seed);
@@ -666,6 +836,7 @@ export class MachineSeed {
 
     this.seed = seed;
     this.persistentId = persistentId;
+    this.persistentKeys = persistentKeys;
     this.migrationChain = [];
     this.sstFamilies = sstFamilies;
     this.created = true;
@@ -895,7 +1066,8 @@ export class MachineSeed {
 
     // Verify YPC-27 integrity (the seed must produce a valid checksum)
     const ypc27Checksum = computeSeedChecksum(seed);
-    const persistentId = computePersistentId(seed);
+    const persistentKeys = persistentKeyPair(seed);
+    const persistentId = persistentIdFromPublicKey(persistentKeys.publicKey);
     const sstFamilies = analyzeSeedFamilies(seed);
 
     // Ensure data directory exists
@@ -938,6 +1110,7 @@ export class MachineSeed {
     const instance = new MachineSeed(dataDir);
     instance.seed = seed;
     instance.persistentId = persistentId;
+    instance.persistentKeys = persistentKeys;
     instance.migrationChain = [];
     instance.sstFamilies = sstFamilies;
     instance.created = false;
@@ -964,20 +1137,53 @@ export class MachineSeed {
   }
 
   /**
-   * Get the persistent 162T machine identity.
+   * Derive the persistent identity keypair + pid for a seed and bind
+   * them to this instance. Called wherever `this.seed` is assigned.
+   * @param {Uint8Array} seed
+   * @private
+   */
+  _bindPersistentIdentity(seed) {
+    this.persistentKeys = persistentKeyPair(seed);
+    this.persistentId = persistentIdFromPublicKey(this.persistentKeys.publicKey);
+  }
+
+  /**
+   * Get the persistent 324T machine identity.
    * This ID is CONSTANT across all code upgrades — it identifies the
-   * physical machine/node owner regardless of network version.
-   * 
-   * Format: "yak-[summit-162T]"
-   * Example: "yak-TT00TTT00:TTT00TTT0:0TTT00TTT:00TTT00TT:TT00TTT00:TTT00TTT0"
-   * 
-   * @returns {string} Persistent 162T identifier
+   * person (seed holder) regardless of network version, hardware, or
+   * current node key.
+   *
+   * Format: "yak-<full 324T>" — publicly verifiable: the pid is the
+   * injective base-3 expansion of the wormhole-sealed AVOTH digest of
+   * the persistent public key (~513-bit space → ~256-bit post-quantum).
+   *
+   * @returns {string} Persistent 324T identifier
    */
   getPersistentId() {
     if (!this.persistentId) {
       throw new Error('Machine seed not initialized. Call init() first.');
     }
     return this.persistentId;
+  }
+
+  /**
+   * The persistent identity — { persistentId, publicKey (hex),
+   * sign(message) }. The persistent key signs ONLY personhood
+   * bindings (pid → node_id → fp → epoch); never routine traffic.
+   * @returns {{ persistentId: string, publicKey: string, sign: (m: Uint8Array|string) => string }}
+   */
+  getPersistentIdentity() {
+    if (!this.persistentKeys) {
+      throw new Error('Machine seed not initialized. Call init() first.');
+    }
+    const sk = this.persistentKeys.secretKey;
+    return {
+      persistentId: this.persistentId,
+      publicKey: bytesToHex(this.persistentKeys.publicKey),
+      // ml_dsa65.sign takes (message, secretKey)
+      sign: (m) => bytesToHex(ml_dsa65.sign(
+        typeof m === 'string' ? new TextEncoder().encode(m) : m, sk)),
+    };
   }
 
   /**

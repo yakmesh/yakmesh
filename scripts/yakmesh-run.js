@@ -225,7 +225,10 @@ async function ensureBridge() {
 // backend cascade degrades honestly (vitis → dml-npu → dml-gpu → ort-cpu →
 // js-cpu), so spawning it on NPU-less hosts still yields a true execution
 // proof — the backend label is part of the claim.
-const PROVER_URL = process.env.YAKOS_NPU_PROOF || 'http://127.0.0.1:9997';
+// proverUrl is resolved at ensure time — the declared rust-embed service
+// owns the preferred port on YakOS; the :9997 literal is only the
+// unregistered fallback.
+let proverUrl = process.env.YAKOS_NPU_PROOF || 'http://127.0.0.1:9997';
 let proverChild = null;
 let proverWarned = false;
 
@@ -233,14 +236,14 @@ async function proverHealthy() {
   // rust-embed answers /npu/health; tools/npu-prover answers /health.
   for (const ep of ['/health', '/npu/health']) {
     try {
-      const res = await fetch(`${PROVER_URL}${ep}`, { signal: AbortSignal.timeout(1500) });
+      const res = await fetch(`${proverUrl}${ep}`, { signal: AbortSignal.timeout(1500) });
       if (res.ok) return true;
     } catch { }
   }
   return false;
 }
 
-function spawnProver() {
+function spawnProver(port) {
   const script = join(ROOT, 'tools', 'npu-prover', 'prover.mjs');
   if (!existsSync(script)) {
     if (!proverWarned) {
@@ -249,11 +252,13 @@ function spawnProver() {
     }
     return;
   }
-  const child = spawn(process.execPath, [script], {
+  const args = [script];
+  if (port) args.push('--port', String(port));
+  const child = spawn(process.execPath, args, {
     cwd: ROOT, stdio: ['ignore', 'pipe', 'pipe'], env: process.env, windowsHide: true,
   });
   proverChild = child;
-  console.log(`[yakmesh-run] npu-prover spawned (pid ${child.pid})`);
+  console.log(`[yakmesh-run] npu-prover spawned (pid ${child.pid}${port ? `, port ${port}` : ''})`);
   child.stdout?.on('data', (c) => tee(process.stdout, c));
   child.stderr?.on('data', (c) => tee(process.stderr, c));
   child.on('exit', (code) => {
@@ -268,11 +273,35 @@ async function ensureProver() {
   if (await proverHealthy()) {
     if (!proverWarned) {
       proverWarned = true;
-      console.log(`[yakmesh-run] npu prover reachable at ${PROVER_URL} — execution proofs enabled`);
+      console.log(`[yakmesh-run] npu prover reachable at ${proverUrl} — execution proofs enabled`);
     }
     return;
   }
-  spawnProver();
+  // Chronological ordering: on YakOS the declared rust-embed service owns
+  // the prover port. WAIT for it before spawning the bundled fallback —
+  // spawning on first-probe-fail squatted :9997 mid-boot and chain-shifted
+  // rust-embed→:9999, gpu-embed→:10000 (2026-09-28).
+  try {
+    const yakports = await import('../utils/ports.js');
+    const declared = yakports.servicePort('rust-embed', 9997);
+    proverUrl = `http://127.0.0.1:${declared}`;
+    const w = await yakports.waitServicePort('rust-embed', declared, { timeoutMs: 30000 });
+    if (w.ready) {
+      if (!proverWarned) {
+        proverWarned = true;
+        console.log(`[yakmesh-run] npu prover reachable at ${proverUrl} — execution proofs enabled`);
+      }
+      return;
+    }
+    console.log(`[yakmesh-run] rust-embed not answering after 30s — spawning bundled prover`);
+    // The fallback prover gets its OWN claimed port — never the declared
+    // service's. Registry name: yakmesh-npu-prover.
+    const port = yakports.portCandidates('yakmesh-npu-prover', 9978, { probes: 10 })[0] || 9978;
+    proverUrl = `http://127.0.0.1:${port}`;
+    spawnProver(port);
+    return;
+  } catch { /* no registry helper (shared hosting) — original behaviour */ }
+  spawnProver(null);
 }
 
 // Bridge lifecycle is independent of the node child — it survives ACT
