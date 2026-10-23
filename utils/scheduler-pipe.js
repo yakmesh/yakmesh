@@ -76,6 +76,7 @@ import net from 'node:net';
 import os from 'node:os';
 import { existsSync, unlinkSync } from 'node:fs';
 import { execFile } from 'node:child_process';
+import { pidBindString, verifyPersistentBinding } from '../identity/machine-seed.js';
 
 /** @type {import('./accel.js')} */
 let _accel = null;
@@ -338,6 +339,13 @@ async function _handleMessage(client, msg) {
             break;
         case 'SERVER_HEARTBEAT':
             _handleServerHeartbeat(client, msg);
+            break;
+        // ── Persistent-identity personhood bindings ──
+        case 'PID_BIND':
+            _handlePidBind(client, msg);
+            break;
+        case 'PID_VERIFY':
+            _handlePidVerify(client, msg);
             break;
         default:
             _send(client, { op: 'ERROR', id: msg.id || null, message: `Unknown op: ${msg.op}` });
@@ -892,6 +900,10 @@ function _handleServerHeartbeat(client, msg) {
         timeSource: msg.timeSource || 'system',
         realms: msg.realms || [],
         c2cPort: msg.c2cPort ?? null,
+        // ZONE-FEED session port — explicit when announced, else the
+        // c2cPort+1 convention; the directory carries it so clients
+        // never guess
+        feedPort: msg.feedPort ?? (msg.c2cPort != null ? msg.c2cPort + 1 : null),
         vip: msg.vip || {},
         communityPool: msg.communityPool ?? 0,
         timestamp: Date.now(),
@@ -905,6 +917,59 @@ function _handleServerHeartbeat(client, msg) {
 
     _send(client, { op: 'ACK', id: msg.id });
     _log.debug({ nodeId: heartbeat.nodeId, players: heartbeat.playerCount }, 'Server heartbeat broadcast');
+}
+
+/**
+ * PID_BIND — mint a personhood binding for a local app (game client).
+ * Signs YAKMESH|PID-BIND|v1|{pid}|{nodeId}|{epoch} with the persistent
+ * identity key — the pid's publicly-verifiable claim that this
+ * personhood lives on this node at this epoch. The persistent key
+ * signs ONLY bindings (never routine traffic); this op is its door.
+ *
+ * msg: { op:'PID_BIND', id, epoch? }  (epoch defaults to a day bucket —
+ * services pick finer grains if they want tighter freshness windows)
+ */
+function _handlePidBind(client, msg) {
+    if (!_identity) {
+        _send(client, { op: 'ERROR', id: msg.id, message: 'Identity not initialized' });
+        return;
+    }
+    try {
+        const pi = _identity.getPersistentIdentity();  // {persistentId, publicKey(hex), sign}
+        const nodeId = _identity.identity?.nodeId;
+        const epoch = Number.isFinite(msg.epoch)
+            ? Math.trunc(msg.epoch)
+            : Math.floor(Date.now() / 86400000);
+        const sig = pi.sign(pidBindString(pi.persistentId, nodeId, epoch));
+        _send(client, {
+            op: 'PID_BOUND', id: msg.id,
+            persistentId: pi.persistentId,
+            persistentPubkey: pi.publicKey,
+            persistentSig: sig,
+            nodeId, epoch,
+        });
+    } catch (err) {
+        _send(client, { op: 'ERROR', id: msg.id, message: `PID bind failed: ${err.message}` });
+    }
+}
+
+/**
+ * PID_VERIFY — verify a peer's personhood binding. Any node can check
+ * {persistentId, persistentPubkey, persistentSig} against the claimed
+ * nodeId+epoch — the pid re-derives from the pubkey (wormhole-sealed
+ * AVOTH, injective 324T — no registry lookup) and the signature
+ * verifies under it.
+ *
+ * msg: { op:'PID_VERIFY', id, persistentId, persistentPubkey,
+ *        persistentSig, nodeId, epoch }
+ */
+function _handlePidVerify(client, msg) {
+    const valid = verifyPersistentBinding({
+        persistentId: msg.persistentId,
+        persistentPubkey: msg.persistentPubkey,
+        persistentSig: msg.persistentSig,
+    }, msg.nodeId, msg.epoch);
+    _send(client, { op: 'PID_VERDICT', id: msg.id, valid });
 }
 
 export default { startPipeServer, stopPipeServer, isPipeServerRunning, getPipePath, getVisitorIdentities, upgradePipeAntiCheat };

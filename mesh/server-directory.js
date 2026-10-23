@@ -76,7 +76,10 @@ const OFFLINE_THRESHOLD = 0.3;
 export class ServerDirectory {
   /**
    * @type {Map<string, ServerEntry>}
-   * Keyed by nodeId — one entry per yakmesh-node (one C2C per node)
+   * Keyed `${nodeId}|${c2cPort}` — one entry per service. A node may
+   * host several game surfaces (legacy portal + native zonesvc during
+   * transitions); keying by port keeps them distinct entries that
+   * decay independently instead of flapping a shared slot.
    */
   #entries = new Map();
 
@@ -136,7 +139,8 @@ export class ServerDirectory {
     if (!nodeId) return;
 
     const now = Date.now();
-    const existing = this.#entries.get(nodeId);
+    const key = `${nodeId}|${data.c2cPort ?? ''}`;
+    const existing = this.#entries.get(key);
 
     if (existing) {
       // Update existing entry
@@ -150,6 +154,7 @@ export class ServerDirectory {
       existing.timeSource = data.timeSource || existing.timeSource;
       existing.realms = data.realms || existing.realms;
       existing.c2cPort = data.c2cPort ?? existing.c2cPort;
+      existing.feedPort = data.feedPort ?? existing.feedPort;
       existing.vip = data.vip || existing.vip;
       existing.communityPool = data.communityPool ?? existing.communityPool;
       existing.lastSeen = now;
@@ -174,6 +179,7 @@ export class ServerDirectory {
         timeSource: data.timeSource || 'system',
         realms: data.realms || [],
         c2cPort: data.c2cPort ?? null,
+        feedPort: data.feedPort ?? null,
         vip: data.vip || {},
         communityPool: data.communityPool ?? 0,
         firstSeen: now,
@@ -182,7 +188,7 @@ export class ServerDirectory {
         heartbeatCount: 1,
       };
 
-      this.#entries.set(nodeId, entry);
+      this.#entries.set(key, entry);
       log.info({ nodeId, nodeName: entry.nodeName }, 'New C2C server registered in directory');
     }
   }
@@ -214,6 +220,7 @@ export class ServerDirectory {
         timeSource: entry.timeSource,
         realms: entry.realms,
         c2cPort: entry.c2cPort,
+        feedPort: entry.feedPort,
         vip: entry.vip,
         communityPool: entry.communityPool,
         firstSeen: entry.firstSeen,
@@ -255,7 +262,18 @@ export class ServerDirectory {
    * @returns {Object|null}
    */
   getServer(nodeId) {
-    const entry = this.#entries.get(nodeId);
+    // bare nodeId → the freshest entry that node announces; a
+    // 'nodeId:port' form pins a specific service on a multi-service
+    // node (entries are keyed nodeId|c2cPort internally)
+    let entry = null;
+    if (String(nodeId).includes(':')) {
+      entry = this.#entries.get(String(nodeId).replace(':', '|'));
+    } else {
+      for (const e of this.#entries.values()) {
+        if (e.nodeId === nodeId &&
+            (!entry || e.lastSeen > entry.lastSeen)) entry = e;
+      }
+    }
     if (!entry) return null;
 
     return {
@@ -270,6 +288,7 @@ export class ServerDirectory {
       timeSource: entry.timeSource,
       realms: entry.realms,
       c2cPort: entry.c2cPort,
+      feedPort: entry.feedPort,
       vip: entry.vip,
       communityPool: entry.communityPool,
       firstSeen: entry.firstSeen,
@@ -409,6 +428,7 @@ export class ServerDirectory {
  * @property {string} timeSource — MANI trust level
  * @property {string[]} realms — active realm names
  * @property {number|null} c2cPort — C2C HTTP port
+ * @property {number|null} feedPort — ZONE-FEED session port (c2cPort+1 convention)
  * @property {Object} vip — VIP premium metadata (featured, badge, slots, highlight)
  * @property {number} communityPool — SC balance in community pool
  * @property {number} firstSeen — timestamp of first heartbeat
