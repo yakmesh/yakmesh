@@ -419,6 +419,13 @@ export function createYakaiEndpoints(app, adapter) {
 
     // POST /yakai/sign — sign a challenge with ML-DSA-65
     app.post('/yakai/sign', async (req, res) => {
+        // Local callers only — this endpoint signs arbitrary bytes with the
+        // node identity key. Mounted on the public mesh port it was an open
+        // ML-DSA oracle: any internet peer could mint this node's signatures.
+        const ip = req.socket?.remoteAddress;
+        if (ip !== '127.0.0.1' && ip !== '::1' && ip !== '::ffff:127.0.0.1') {
+            return res.status(403).json({ error: 'local only' });
+        }
         try {
             const { challenge } = req.body;
             if (!challenge) {

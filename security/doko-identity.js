@@ -320,14 +320,14 @@ export class DOKOGenerator {
    * Includes persistentId for cross-upgrade identity continuity
    * 
    * @param {Object} options
-   * @param {string} options.persistentId - 162T persistent machine identity
+   * @param {string} options.persistentId - 324T persistent machine identity
    * @param {string} options.nodeId - Current network-specific node ID
    * @param {string} options.networkName - Network name from oracle
    * @param {Uint8Array} [options.seed] - Optional deterministic seed
    */
   static generateNode(options = {}) {
     if (!options.persistentId) {
-      throw new Error('Node DOKO requires persistentId (162T persistent machine identity)');
+      throw new Error('Node DOKO requires persistentId (324T persistent machine identity)');
     }
     return DOKOGenerator.generate({
       ...options,
@@ -1460,11 +1460,12 @@ export class DOKOStore {
 
     const doc = doko instanceof DOKODocument ? doko : DOKODocument.fromJSON(doko);
 
-    // Persistent-id conflict — first claim wins. A pid is a self-signed
-    // claim (derivation from the machine seed is unprovable remotely),
-    // so a foreign doc must NEVER overwrite an existing mapping: a
-    // squatter doc would satisfy verifyReceipt's pubkey+pid match and
-    // mint 'accept' authority for their own receipts. Rotation of the
+    // Persistent-id conflict — first claim wins. A pid is publicly
+    // derivable from the persistent pubkey (wormhole-sealed AVOTH),
+    // but the DOKO's pid↔doc binding itself is asserted, so a foreign
+    // doc must NEVER overwrite an existing mapping: a squatter doc
+    // would satisfy verifyReceipt's pubkey+pid match and mint
+    // 'accept' authority for their own receipts. Rotation of the
     // same pid under a new key is legitimate only when (a) the caller
     // is the local operator (options.local — self-registration on boot
     // re-derives rotated keys), or (b) the new doc carries an
@@ -1498,7 +1499,7 @@ export class DOKOStore {
       this.byUserId.set(doc.claims.userId, doc.dokoId);
     }
     // Index by persistentId — the cross-build identity anchor. Keys
-    // and dokoIds rotate per build; the 162T persistentId does not.
+    // and dokoIds rotate per build; the 324T persistentId does not.
     if (doc.extensions?.persistentId) {
       this.byPersistentId.set(doc.extensions.persistentId, doc.dokoId);
     }

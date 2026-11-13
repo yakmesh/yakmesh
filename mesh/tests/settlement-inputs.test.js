@@ -221,6 +221,46 @@ describe('AttestationGossip.settlementInputs', () => {
       selfClaimRef(c.nodeId, e));
   });
 
+  test('batch attesterPidBind materializes per-proof; malformed dropped', async () => {
+    const e = NOW();
+    const c = claim({ epoch: e });
+    const g = gossip(ledgerWith([c]));
+    const leaf = claimLeafHash(c);
+    // The triple must be inside the batch BEFORE the signature.
+    const bA = {
+      v: 1, attester: A.nodeId, pubKey: A.kp.publicKey, epoch: e,
+      items: [await canonItem(A, e, 'peer1', leaf)],
+      evidence: { forks: [], conflicts: [] },
+      attesterPidBind: {
+        persistentId: 'yak-' + 'T01:'.repeat(5) + 'T01',
+        persistentPubkey: 'aa'.repeat(64),
+        persistentSig: 'bb'.repeat(64),
+      },
+    };
+    bA.sig = signMessage(
+      JSON.stringify({ ...bA, sig: undefined }), A.kp.secretKey);
+    // B's batch carries a malformed triple — pubkey missing.
+    const bB = {
+      v: 1, attester: B.nodeId, pubKey: B.kp.publicKey, epoch: e,
+      items: [await canonItem(B, e, 'peer1', leaf)],
+      evidence: { forks: [], conflicts: [] },
+      attesterPidBind: { persistentId: 'yak-' + 'T01:'.repeat(5) + 'T01' },
+    };
+    bB.sig = signMessage(
+      JSON.stringify({ ...bB, sig: undefined }), B.kp.secretKey);
+    g.receive(bA, null);
+    g.receive(bB, null);
+
+    const [in0] = g.settlementInputs(e);
+    expect(in0.attester_proofs).toHaveLength(2);
+    const pa = in0.attester_proofs.find(p => p.persistent_id);
+    const pb = in0.attester_proofs.find(p => !p.persistent_id);
+    expect(pa.persistent_pubkey).toBe('aa'.repeat(64));
+    expect(pa.persistent_sig).toBe('bb'.repeat(64));
+    expect(pb.persistent_pubkey).toBeUndefined();
+    expect(pb.persistent_sig).toBeUndefined();
+  });
+
   test('canon-less gossip attestations buy no quorum', async () => {
     const e = NOW();
     const c = claim({ epoch: e });

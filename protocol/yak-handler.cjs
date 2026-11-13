@@ -49,8 +49,10 @@ function yakToHttp(yakUrl, port) {
   if (!match) return `http://localhost:${port}/dashboard/`;
 
   const path = match[2];
-  const parts = path.split('/').filter(Boolean);
-  const host = parts[0].toLowerCase();
+  // Strip non-URL-safe chars — this URL is passed to a browser launcher.
+  const parts = path.split('/').filter(Boolean)
+    .map(s => s.replace(/[^a-zA-Z0-9._~%@-]/g, ''));
+  const host = (parts[0] || '').toLowerCase();
   const subPath = parts.length > 1 ? '/' + parts.slice(1).join('/') : '';
 
   // Check builtin routes
@@ -86,22 +88,15 @@ const httpUrl = yakToHttp(url, PORT);
 console.log(`🦬 YAK Protocol: ${url}`);
 console.log(`   → ${httpUrl}`);
 
-// Open in default browser
+// Open in default browser — execFile, never a shell: httpUrl carries
+// link-attacker-controlled segments; a shell here is remote code exec.
 const os = platform();
-let cmd;
+const { execFile } = require('child_process');
+const openSpec = os === 'win32'
+  ? { bin: 'cmd', args: ['/c', 'start', '', httpUrl] }
+  : { bin: os === 'darwin' ? 'open' : 'xdg-open', args: [httpUrl] };
 
-switch (os) {
-  case 'win32':
-    cmd = `start "" "${httpUrl}"`;
-    break;
-  case 'darwin':
-    cmd = `open "${httpUrl}"`;
-    break;
-  default:
-    cmd = `xdg-open "${httpUrl}"`;
-}
-
-exec(cmd, (error) => {
+execFile(openSpec.bin, openSpec.args, (error) => {
   if (error) {
     console.error('Failed to open browser:', error.message);
     process.exit(1);

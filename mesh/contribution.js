@@ -126,6 +126,17 @@ export function setReceiptProvider(fn) {
   receiptProvider = typeof fn === 'function' ? fn : null;
 }
 
+// Self-executed job provider — wired by the server to the JobStore's
+// commitFor. Called once per claim build, and ONLY when no receipt
+// commitment exists for the epoch: receipts ride the claim inline
+// (audit-exempt), so when they commit, pending jobs stay queued for
+// a receipt-free epoch rather than being shadowed.
+let jobProvider = null;
+
+export function setJobProvider(fn) {
+  jobProvider = typeof fn === 'function' ? fn : null;
+}
+
 // Persistent-identity provider — wired by the server; returns
 // { persistentId, publicKey, sign } from the machine seed. The claim
 // carries the personhood proof triple: pid (publicly derivable from
@@ -423,6 +434,16 @@ export async function contributionMeshState(nowMs) {
         };
       }
     }
+    // Self-executed jobs (JobStore deposits) — committed only when
+    // receipts didn't take this epoch. The provider's commitFor binds
+    // jobRoot = sha3_256(concat results) to claimRef nodeId:epoch, so
+    // audit-duty reveals verify end-to-end. Precedence over yakcoind's
+    // work fields: daemon fields stay adopted (spongeRounds/shareCount)
+    // but our explicit deposits win jobRoot — deposited material is
+    // claim intent, the daemon file is ambient.
+    const jobWork = !receiptWork && jobProvider
+      ? await tried('jobs', epoch, () => jobProvider(epoch, node_id, seal))
+      : null;
     // Personhood binding — the persistent key (seed-derived, oracleHash-
     // invariant) signs pid→nodeId→epoch. Anyone verifies: pid re-derives
     // from the pubkey via wormhole-sealed AVOTH, the sig proves the
@@ -445,11 +466,13 @@ export async function contributionMeshState(nowMs) {
       seal,                    // 4 quats — wormhole seal at AVOTH pos 191
       spongeRounds: work?.spongeRounds ?? 0, // PRAHARI feed not wired — honest zero
       shareCount: work?.shareCount ?? 0,     // mesh pool not live — honest zero
-      jobRoot: receiptWork?.jobRoot ?? work?.jobRoot ?? '0'.repeat(64),
+      jobRoot: receiptWork?.jobRoot ?? jobWork?.jobRoot
+        ?? work?.jobRoot ?? '0'.repeat(64),
       entropyFlags: (canAttestTime ? 1 : 0) | (real_silicon ? 2 : 0)
         // Job-class tag (bits 2-5) — WorkClass enum from yakcoin-core;
         // routes the claim to its verification protocol at audit time.
-        | (((receiptWork?.jobClass ?? work?.jobClass ?? 0) & 0x0f) << 2),
+        | (((receiptWork?.jobClass ?? jobWork?.jobClass
+            ?? work?.jobClass ?? 0) & 0x0f) << 2),
       siliconDrift: Number.isInteger(silicon_drift) ? silicon_drift : 0,
       ...(work ? { yakcoind: true } : {}),
       ...(receiptWork ? { receipts: receiptWork.receipts } : {}),

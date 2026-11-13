@@ -156,6 +156,11 @@ export class AttestationGossip extends EventEmitter {
     // Claims carry their own personhood proof (pidBind triple) — the
     // persistent key binds pid→nodeId→epoch, and pid re-derives from
     // the pubkey via wormhole-sealed AVOTH. No table lookup needed.
+    // Our OWN personhood signs the same way — attester proofs carry
+    // the pid triple so settlement keys witness karma on personhood
+    // (survives key rotation), not the per-build canon node id.
+    // () → {persistentId, publicKey, sign} or null when unwired.
+    this.persistentIdentity = opts.persistentIdentity || null;
     this.stats = { sent: 0, received: 0, dupes: 0, badSigs: 0, conflicts: 0 };
   }
 
@@ -187,6 +192,24 @@ export class AttestationGossip extends EventEmitter {
     // batch signature still covers every item either way.
     const canonId = this.canonicalNodeId?.();
     const canonFp = this.canonHwFp?.();
+    // Our personhood triple, bound pid→canonId→epoch — the bind is
+    // item-independent, so ONE signature covers every canon this
+    // batch. Rides at batch level inside the batch signature (≈11KB
+    // once, not per-canon); settlement re-verifies it per proof —
+    // pid re-derives from the pubkey, the persistent key's signature
+    // binds pid→wid→epoch. Absent → honest "unproven personhood".
+    let attesterPidBind = null;
+    try {
+      const id = this.persistentIdentity?.();
+      if (id?.persistentId && id?.publicKey && typeof id.sign === 'function' && canonId) {
+        attesterPidBind = {
+          persistentId: id.persistentId,
+          persistentPubkey: id.publicKey,
+          persistentSig: id.sign(
+            `YAKMESH|PID-BIND|v1|${id.persistentId}|${canonId}|${epoch}`),
+        };
+      }
+    } catch { /* identity unwired/uninitialized → honest absence */ }
     const items = [];
     for (const item of base) {
       if (this.canonSign && canonId && items.length < MAX_CANON_ITEMS) {
@@ -215,6 +238,9 @@ export class AttestationGossip extends EventEmitter {
       epoch,
       items,
       evidence: { forks, conflicts },
+      // Inside the batch signature — transport-authenticated AND
+      // self-verifying (the triple carries its own proof).
+      ...(attesterPidBind ? { attesterPidBind } : {}),
       sig: null,
     };
     batch.sig = this.sign(JSON.stringify({ ...batch, sig: undefined }));
@@ -319,7 +345,16 @@ export class AttestationGossip extends EventEmitter {
             assertA: prev.canon, assertB: item.canon,
           });
         }
-        entry.byAttester.set(batch.attester, { leaf: item.leaf, canon: item.canon });
+        // Attester personhood — batch-level triple bound
+        // pid→canonNodeId→epoch. Shape-checked here (pid/pubkey/sig
+        // present); settlement re-verifies the math — transport trust
+        // is delivery-only, never authority.
+        const pb = batch.attesterPidBind;
+        const pidBind = (pb
+          && typeof pb.persistentId === 'string' && pb.persistentId.startsWith('yak-')
+          && /^[0-9a-f]{64,}$/.test(pb.persistentPubkey || '')
+          && /^[0-9a-f]{64,}$/.test(pb.persistentSig || '')) ? pb : null;
+        entry.byAttester.set(batch.attester, { leaf: item.leaf, canon: item.canon, pidBind });
       }
 
       if (seen) {
@@ -498,6 +533,13 @@ export class AttestationGossip extends EventEmitter {
    *                  signature verifies in-process, attesters dedupe by
    *                  fingerprint. Proofs without a fingerprint could
    *                  never prove hardware distinctness — not emitted.
+   *                  May also carry the attester's personhood triple
+   *                  ({persistent_id, persistent_pubkey,
+   *                  persistent_sig} — the batch-level attesterPidBind
+   *                  materialized per-proof): settlement verifies it
+   *                  like the claimant's, deduping the PERSON across
+   *                  rotated keys and anchoring witness karma to the
+   *                  persistent id rather than the per-build canon id.
    *   receipts     — the claim's issuer receipts (snake_case wire),
    *                  each carrying issuer_doko_hash so the consumer
    *                  rebuilds the exact signed preimage. shares on the
@@ -560,7 +602,7 @@ export class AttestationGossip extends EventEmitter {
       const attester_proofs = [];
       const byAttester = this.foreignAssertions.get(key)?.byAttester;
       if (byAttester) {
-        for (const { canon } of byAttester.values()) {
+        for (const { canon, pidBind } of byAttester.values()) {
           if (!canon?.hwFingerprint || !canon?.pubkey) continue;
           attester_proofs.push({
             hw_fingerprint: canon.hwFingerprint,
@@ -570,6 +612,15 @@ export class AttestationGossip extends EventEmitter {
             claim_ref: canon.claimRef,
             value: canon.value,
             sig: canon.sig,
+            // The attester's personhood — settlement verifies the
+            // triple (pid re-derive + PID-BIND sig to THIS wid+epoch):
+            // proven pid dedupes the person across rotated keys and
+            // keys witness karma on the account, not the build key.
+            ...(pidBind ? {
+              persistent_id: pidBind.persistentId,
+              persistent_pubkey: pidBind.persistentPubkey,
+              persistent_sig: pidBind.persistentSig,
+            } : {}),
           });
         }
       }

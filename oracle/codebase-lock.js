@@ -61,6 +61,12 @@ const EXCLUDE_DIRS = new Set([
   'dist',
   'build',
   'test-nodes',  // Test data
+  // Local-only trees — present on some nodes, absent on others, never part
+  // of the deployed codebase contract. Hashing them lets a stray research
+  // or notes file silently fork the network fingerprint.
+  'CONFIDENTIAL',
+  'memory-bank',
+  'data.windows-side',
 ]);
 
 // File extensions to lock (source files)

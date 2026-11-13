@@ -38,6 +38,8 @@ import { NetworkIdentity } from '../oracle/network-identity.js';
 import { UpdateTransfer } from '../utils/update-transfer.js';
 import { zipEntries, zipStore, walk as walkUpgradeFiles } from '../utils/in-place-upgrade.js';
 import { existsSync, readFileSync, statSync, writeFileSync, rmSync, mkdirSync, renameSync, readdirSync } from 'fs';
+import { execFile } from 'child_process';
+import { promisify } from 'util';
 import { mkdir } from 'node:fs/promises';
 import { join } from 'path';
 import { networkInterfaces, tmpdir } from 'os';
@@ -106,7 +108,8 @@ import {
 import { setTimeSourceConfig, getActiveConfig, getCurrentEpoch, getEpochStartTime } from '../oracle/phase-epoch.js';
 import { aguwa } from '../mesh/aguwa.js';
 import { PulseSync, PULSE_CONFIG } from '../mesh/pulse-sync.js';
-import { withContribution, contributionMeshState, setTimeTrustProvider, setProofProvider, createNpuProofProvider, setReceiptProvider, setPersistentIdentityProvider } from '../mesh/contribution.js';
+import { withContribution, contributionMeshState, setTimeTrustProvider, setProofProvider, createNpuProofProvider, setReceiptProvider, setJobProvider, setPersistentIdentityProvider } from '../mesh/contribution.js';
+import { JobStore } from '../mesh/job-store.js';
 import { signReceipt, verifyReceipt, receiptShapeError, MAX_RECEIPT_JSON_BYTES, MAX_RECEIPTS_PER_CLAIM } from '../mesh/work-receipt.js';
 import { selfAssertClaim, buildEquivocationEvidence, buildBadSealEvidence,
          verifyAssertion, selfClaimRef, judgmentVerdictHash, VERDICT_MISMATCH,
@@ -1029,6 +1032,13 @@ export class YakmeshNode {
       }
       return out.length ? out : null;
     });
+    // Self-executed job material — producers deposit via
+    // /api/jobs/deposit; the contribution layer drains them into a
+    // committed batch at claim-build (jobRoot = sha3_256 of the
+    // concatenated results, bound to claimRef nodeId:epoch). Only
+    // consulted when no receipts committed this epoch.
+    this.jobStore = new JobStore();
+    setJobProvider((epoch, nodeId) => this.jobStore.commitFor(nodeId, epoch));
     this.witnessedTime = new WitnessedTime({
       nodeId: this.identity.identity.nodeId,
       now: () => aguwa.now(),
@@ -1068,6 +1078,10 @@ export class YakmeshNode {
       canonSign: keystoreSign,
       canonPubkey: () => this._keystorePubkey,
       canonHwFp: () => this._keystoreHwFp,
+      // Attester personhood — the same seed-derived identity the
+      // claim layer binds; our canon proofs carry the pid triple so
+      // witness karma accrues to the account across key rotation.
+      persistentIdentity: () => this.identity.getPersistentIdentity(),
     });
     /** Evidence payloads ready for yakcoind to assemble as EvidenceTx —
      *  each is a verified deterministic artifact (never fabricated). */
@@ -1097,29 +1111,77 @@ export class YakmeshNode {
     //     spec.kind via the verifier registry — kinds we can't
     //     execute abort the audit (auditor-side), never withhold
     //     the claimer.
+    // Deterministic-job verifier registry — spec.kind routes here.
+    // Kinds we can't execute abort the audit (auditor-side), never
+    // withhold the claimer.
+    const jobVerifiers = {
+      // Jobs are identity-bound — recompute against the CLAIMER's
+      // nodeId (never ours; that would manufacture false work-fraud).
+      // expectedResult dispatches both defined deterministic kinds:
+      //   sha3chain      {kind, nonce, rounds} — sequential chain
+      //   mkc-sha3batch  {kind, nonce, count}  — bit-exact fold in JS
+      sha3chain: {
+        recompute: async (spec, claimerId) => Buffer.from(
+          expectedResult({ type: 'sha3chain', rounds: spec.rounds },
+            spec.nonce, claimerId), 'hex'),
+      },
+      'mkc-sha3batch': {
+        recompute: async (spec, claimerId) => Buffer.from(
+          expectedResult({ type: 'mkc-sha3batch', count: spec.count },
+            spec.nonce, claimerId), 'hex'),
+      },
+    };
+    // Epoch batch — JobStore commits N deposits as one reveal:
+    // spec {kind:'job-batch', jobs:[spec…]}, result = concat(results).
+    // Recompute each member via this same registry, concatenate in
+    // order — byte-exact with the claimer's material.
+    jobVerifiers['job-batch'] = {
+      recompute: async (spec, claimerId) => {
+        if (!Array.isArray(spec.jobs)) throw new Error('bad batch spec');
+        const parts = [];
+        for (const js of spec.jobs) {
+          const v = jobVerifiers[js?.kind];
+          if (!v) throw new Error(`no-verifier:${js?.kind ?? 'none'}`);
+          parts.push(Buffer.from(await v.recompute(js, claimerId)));
+        }
+        return Buffer.concat(parts);
+      },
+    };
+    // zonegen — the c2c world generator (C2C-YAKCOIN-JOBS.md class P1).
+    // Seed-bound, not identity-bound: same spec → same bytes on any
+    // auditor. -job mode emits the exact result JSON the claimer
+    // deposited. Unregistered when the binary is absent (honest
+    // incapability — audits abort, they don't withhold).
+    const ZONEGEN_BIN = process.env.C2C_ZONEGEN_BIN
+      || `${process.env.HOME}/Desktop/YakOS/c2c/native/zonegen`;
+    if (existsSync(ZONEGEN_BIN)) {
+      const execFileP = promisify(execFile);
+      jobVerifiers['zonegen'] = {
+        recompute: async (spec) => {
+          const args = ['-job', '-seed', String(spec.seed),
+            '-biome', String(spec.biome ?? 'base'),
+            '-zone', String(spec.zone ?? 0),
+            '-depth', String(spec.depth ?? 0),
+            '-w', String(spec.w ?? 96), '-h', String(spec.h ?? 96)];
+          if (spec.season) args.push('-season', String(spec.season));
+          if (spec.loot?.count) {
+            args.push('-loot', String(spec.loot.count),
+              '-lootlvl', String(spec.loot.level ?? 1));
+            if (spec.loot.unique) args.push('-lootunique');
+          }
+          const { stdout } = await execFileP(ZONEGEN_BIN, args,
+            { encoding: 'buffer', maxBuffer: 8 * 1024 * 1024, timeout: 60000 });
+          return stdout;
+        },
+      };
+    }
     this.auditDuty = new AuditDuty({
       nodeId: this.identity.identity.nodeId,
       publicKey: this.identity.identity.publicKey,
       sign: (data) => this.identity.sign(data),
       send: (peerId, msg) => this.mesh.sendTo(peerId, msg),
-      verifiers: {
-        // Jobs are identity-bound — recompute against the CLAIMER's
-        // nodeId (never ours; that would manufacture false work-fraud).
-        // expectedResult dispatches both defined deterministic kinds:
-        //   sha3chain      {kind, nonce, rounds} — sequential chain
-        //   mkc-sha3batch  {kind, nonce, count}  — bit-exact fold in JS
-        sha3chain: {
-          recompute: async (spec, claimerId) => Buffer.from(
-            expectedResult({ type: 'sha3chain', rounds: spec.rounds },
-              spec.nonce, claimerId), 'hex'),
-        },
-        'mkc-sha3batch': {
-          recompute: async (spec, claimerId) => Buffer.from(
-            expectedResult({ type: 'mkc-sha3batch', count: spec.count },
-              spec.nonce, claimerId), 'hex'),
-        },
-      },
-      jobStore: null, // our own job material — populated when the job pipeline lands
+      verifiers: jobVerifiers,
+      jobStore: this.jobStore,
       // Keystore canon for mismatch verdicts — slashable judgments.
       canonicalNodeId: () => this._canonicalNodeId,
       canonSign: keystoreSign,
@@ -1666,7 +1728,15 @@ export class YakmeshNode {
       mkdirSync(dir, { recursive: true });
       const { claims, audits } = this.claimSettlementInputs(epoch);
       const tmp = join(dir, `.epoch-${epoch}.tmp`);
-      writeFileSync(tmp, JSON.stringify({ epoch, claims, audits }));
+      // producer_id — the keystore-bound canonical id of the node
+      // emitting this drop. Settlement pays ordering shares per
+      // eligible claim (order-units, not a percentage); absent → no
+      // ordering credit this epoch.
+      const producer_id = this._canonicalNodeId || null;
+      writeFileSync(tmp, JSON.stringify({
+        epoch, claims, audits,
+        ...(producer_id ? { producer_id } : {}),
+      }));
       renameSync(tmp, join(dir, `epoch-${epoch}.json`));
       const floor = epoch - 64;
       for (const f of readdirSync(dir)) {
@@ -5163,6 +5233,10 @@ export class YakmeshNode {
     // validate: { xForwardedForHeader: false } to avoid this class of attack.
     // If deployed behind a known proxy, configure trustedProxies explicitly.
 
+    // Job deposits legitimately carry up to ~2.5MB of hex result +
+    // spec (audit-bounded) — scoped parser before the global 1mb cap.
+    // Loopback+localAdmin anyway, so the wider limit stays internal.
+    app.use('/api/jobs/deposit', express.json({ limit: '4mb' }));
     app.use(express.json({ limit: '1mb' }));  // Limit payload size
 
     // =========================================
@@ -5625,7 +5699,12 @@ export class YakmeshNode {
 
     // Node info
     app.get('/node', (req, res) => {
-      res.json(this.identity.getPublicIdentity());
+      res.json({
+        ...this.identity.getPublicIdentity(),
+        // Keystore-bound canonical claim id — producers need it to
+        // compute identity-bound results (expectedResult(claimerId)).
+        canonicalNodeId: this._canonicalNodeId || null,
+      });
     });
 
     // Peers list — includes SAMUHA admission verdict + priority + connect time
@@ -6051,6 +6130,35 @@ export class YakmeshNode {
       );
       if (!receipt) return res.status(500).json({ error: 'receipt signing failed' });
       res.json({ ok: true, epoch, workerNode: b.workerNode, receipt });
+    });
+
+    // Producer job deposit — a completed deterministic job queues for
+    // the next committing claim (jobRoot = sha3_256 of concatenated
+    // results, bound to claimRef nodeId:epoch). Loopback only: deposits
+    // go straight into OUR claim's jobRoot, so a remote caller must
+    // never inject work we didn't do — that would be self-fraud.
+    app.post('/api/jobs/deposit', localAdmin, (req, res) => {
+      if (!isLoopback(req)) return res.status(403).json({ error: 'loopback only' });
+      const r = this.jobStore.deposit(req.body);
+      if (r.error) return res.status(400).json({ error: r.error });
+      res.json({ ok: true, jobId: r.jobId, pending: this.jobStore.pending.length });
+    });
+
+    // Job pipeline status — pending queue + committed reveals. The
+    // claimRef a committed batch answers for is derivable from it.
+    app.get('/api/jobs/status', (req, res) => {
+      const committed = [];
+      for (const [ref, c] of this.jobStore.committed) {
+        committed.push({ claimRef: ref, jobRoot: c.jobRoot,
+          jobs: c.jobIds?.length ?? 0 });
+      }
+      res.json({
+        pending: this.jobStore.pending.map(j => ({
+          jobId: j.jobId, kind: j.spec?.kind,
+          resultBytes: j.resultHex.length / 2, wallMs: j.wallMs,
+        })),
+        committed,
+      });
     });
 
     // =========================================

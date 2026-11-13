@@ -91,7 +91,7 @@ import { bytesToFamilyTrits, analyzeBytesFamilies } from '../oracle/sst.js';
 // iO derivation for domain separation + QUANTUM_WORDLIST for mnemonic backup
 import { deriveVerificationPhrase, QUANTUM_WORDLIST } from '../oracle/network-identity.js';
 
-// 162T ternary addressing for persistent machine identity
+// 324T persistent identity (162T routing prefix) for machine identity
 import { TritAddress, TOTAL_TRITS } from '../oracle/ternary-routing.js';
 
 

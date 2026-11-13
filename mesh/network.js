@@ -79,7 +79,7 @@ import { TribhujRatchet, GatewayAttestation } from '../identity/tribhuj-ratchet.
 import { generateNodeId, signatureToWire } from '../identity/node-key.js';
 import { hexToBytes, bytesToHex } from '@noble/hashes/utils.js';
 
-// 162T persistentId-directed delivery
+// persistentId-directed delivery — routes on the pid's 162T prefix
 import { persistentIdToAddress } from '../oracle/ternary-routing.js';
 
 // AVOTH wormhole seal — public seal riding all 24 rounds (AVOTH-SPEC §2.8)
@@ -663,7 +663,7 @@ export class MandalaNetwork {
   }
 
   /**
-   * Send a message to the machine holding a persistentId — the 162T
+   * Send a message to the machine holding a persistentId — the
    * directed-delivery primitive. Routes to a MACHINE, not a build:
    * the target's nodeId may rotate on upgrade; its persistentId won't.
    *

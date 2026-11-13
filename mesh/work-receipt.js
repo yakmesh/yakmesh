@@ -59,7 +59,7 @@ export const MAX_RECEIPT_JSON_BYTES = 48 * 1024;
 export const MAX_DOKO_JSON_BYTES = 32 * 1024;
 
 const HEX64 = /^[0-9a-f]{64}$/;
-// 162T persistent id: "yak-" (machine) or "yaks-" (service) + ternary
+// 324T persistent id: "yak-" (machine) or "yaks-" (service) + ternary
 // {T,0,1} groups.
 const PID_RE = /^yaks?-[T01:.]{359}$/;   // 'yak-'/'yaks-' + 324 trits + 35 separators
 export const MAX_PID_LEN = 364;
