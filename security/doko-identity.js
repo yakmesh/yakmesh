@@ -1598,9 +1598,15 @@ export class DOKOStore {
       byType[doc.type] = (byType[doc.type] || 0) + 1;
     }
 
+    let verified = 0;
+    for (const doc of this.documents.values()) {
+      if (doc.verified) verified++;
+    }
+
     return {
       total: this.documents.size,
       byType,
+      verified,
     };
   }
 

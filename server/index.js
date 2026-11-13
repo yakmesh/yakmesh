@@ -4748,10 +4748,17 @@ export class YakmeshNode {
         namcheInfo = { gates: GATE_NAMES, status: 'uninitialized', gateCount: 7 };
       }
 
-      // DOKO identity status
+      // DOKO identity status — dashboard contract (status/count/verified/
+      // types[]) over the raw stats (total/byType) which ride along.
       let dokoInfo = null;
       if (this.dokoRegistry) {
-        dokoInfo = this.dokoRegistry.getStats();
+        const stats = this.dokoRegistry.getStats();
+        dokoInfo = {
+          ...stats,
+          status: 'active',
+          count: stats.total,
+          types: Object.keys(stats.byType || {}).filter(t => stats.byType[t] > 0),
+        };
       } else {
         dokoInfo = { status: 'uninitialized', types: Object.keys(DOKOTypes) };
       }
@@ -7186,10 +7193,17 @@ export class YakmeshNode {
         };
       }
 
-      // DOKO identity status (v2.0)
+      // DOKO identity status (v2.0) — same dashboard contract as the
+      // WS snapshot: status/count/verified/types[] + raw stats fields.
       let dokoInfo = null;
       if (this.dokoRegistry) {
-        dokoInfo = this.dokoRegistry.getStats();
+        const stats = this.dokoRegistry.getStats();
+        dokoInfo = {
+          ...stats,
+          status: 'active',
+          count: stats.total,
+          types: Object.keys(stats.byType || {}).filter(t => stats.byType[t] > 0),
+        };
       } else {
         dokoInfo = {
           status: 'uninitialized',
