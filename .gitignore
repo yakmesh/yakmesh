@@ -21,6 +21,9 @@ Thumbs.db
 .vscode/
 .idea/
 
+# YakForge workspace index metadata (per-machine)
+.yakforge/
+
 # Environment
 .env
 .env.local
