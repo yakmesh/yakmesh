@@ -96,8 +96,24 @@ function cfEmbeddedV4(v6) {
 // Same classification as publicAddr, but returns the full candidate list so
 // CONNECT can fall through unroutable addresses in order (Happy-Eyeballs-lite):
 // v6-only names decode their embedded CF v4 as trailing candidates.
+// Results are cached ~60s per host: the gate resolves on every CONNECT while
+// real clients hold a resolver cache — a per-connection lookup penalty on
+// every subresource is a detectable proxy signature (and pure latency).
+const DNS_CACHE_TTL = 60000;
+const dnsCache = new Map(); // host -> { addrs, exp }  (classification at fill)
 async function publicAddrs(host) {
   const h = String(host).replace(/^\[|\]$/g, '');
+  const hit = dnsCache.get(h);
+  if (hit && hit.exp > Date.now()) return hit.addrs;
+  if (hit) dnsCache.delete(h);
+  const addrs = await publicAddrsResolve(h);
+  if (addrs.length) {
+    if (dnsCache.size > 512) dnsCache.clear(); // bound: hosts are few
+    dnsCache.set(h, { addrs, exp: Date.now() + DNS_CACHE_TTL });
+  }
+  return addrs;
+}
+async function publicAddrsResolve(h) {
   if (ALLOW_LAN) {
     try { return (await dns.lookup(h, { all: true })).map(a => a.address); }
     catch { return []; }
