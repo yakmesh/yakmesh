@@ -203,9 +203,21 @@ export class YakGate {
     });
     const tryPort = (i) => new Promise((resolve, reject) => {
       const port = candidates[i];
-      const server = http.createServer((req, res) => this._onRequest(req, res));
-      server.on('connect', (req, sock, head) => this._onConnect(req, sock, head));
-      server.on('clientError', (err, sock) => { try { sock.destroy(); } catch {} });
+      const httpSrv = http.createServer((req, res) => this._onRequest(req, res));
+      httpSrv.on('connect', (req, sock, head) => this._onConnect(req, sock, head));
+      httpSrv.on('clientError', (err, sock) => { try { sock.destroy(); } catch {} });
+      // One port, two dialects: first byte 0x05 is a SOCKS5 greeting, anything
+      // else is HTTP. SOCKS matters because clients (libsoup) refuse to
+      // advertise h2 through an HTTP-proxy CONNECT but happily tunnel h2
+      // through SOCKS — same raw tunnel, no crippled ALPN.
+      const server = net.createServer(sock => {
+        sock.once('data', first => {
+          sock.unshift(first);
+          if (first[0] === 0x05) this._onSocks(sock);
+          else httpSrv.emit('connection', sock);
+        });
+        sock.on('error', () => sock.destroy());
+      });
       server.once('error', (err) => {
         if (err.code === 'EADDRINUSE' && i + 1 < candidates.length)
           return tryPort(i + 1).then(resolve, reject);
@@ -223,6 +235,26 @@ export class YakGate {
 
   // ----------------------------------------------------------- CONNECT ----
 
+  // Walk the candidate list in order and hand the established upstream to
+  // onReady; calls onFail if every candidate dies. Shared by the HTTP
+  // CONNECT path and the SOCKS5 path — the tunnel itself is protocol-blind.
+  _dialThru(clientSock, head, port, addrs, onReady, onFail) {
+    let idx = 0;
+    const tryNext = () => {
+      if (idx >= addrs.length) { onFail(); return; }
+      const upstream = net.connect(port, addrs[idx++], () => {
+        upstream.removeListener('error', preErr);
+        upstream.on('error', () => { upstream.destroy(); clientSock.destroy(); });
+        onReady(upstream);
+      });
+      const preErr = () => { upstream.destroy(); tryNext(); };
+      upstream.on('error', preErr);
+      clientSock.on('error', () => upstream.destroy());
+      upstream.setTimeout(120000, () => upstream.destroy());
+    };
+    tryNext();
+  }
+
   async _onConnect(req, clientSock, head) {
     const m = /^([^:]+):(\d+)$/.exec(req.url || '');
     if (!m || !['443', '8443'].includes(m[2])) {
@@ -238,27 +270,94 @@ export class YakGate {
     if (!addrs.length) {
       clientSock.end('HTTP/1.1 403 Forbidden\r\n\r\n'); return;
     }
-    const port = parseInt(m[2], 10);
-    let idx = 0;
-    const fail = (sock) => { try {
-      clientSock.end('HTTP/1.1 502 Bad Gateway\r\n\r\n'); clientSock.destroy();
-      sock?.destroy();
-    } catch {} };
-    const tryNext = () => {
-      if (idx >= addrs.length) { fail(); return; }
-      const upstream = net.connect(port, addrs[idx++], () => {
+    this._dialThru(clientSock, head, parseInt(m[2], 10), addrs,
+      (upstream) => {
         clientSock.write('HTTP/1.1 200 Connection Established\r\n\r\n');
         if (head?.length) upstream.write(head);
         upstream.pipe(clientSock); clientSock.pipe(upstream);
-        upstream.removeListener('error', preErr);
-        upstream.on('error', () => fail(upstream));
-      });
-      const preErr = () => { upstream.destroy(); tryNext(); };
-      upstream.on('error', preErr);
-      clientSock.on('error', () => upstream.destroy());
-      upstream.setTimeout(120000, () => upstream.destroy());
+      },
+      () => { try {
+        clientSock.end('HTTP/1.1 502 Bad Gateway\r\n\r\n'); clientSock.destroy();
+      } catch {} });
+  }
+
+  // ------------------------------------------------------------ SOCKS5 ----
+
+  _socksReply(clientSock, rep) { // RFC 1928 reply codes
+    try { clientSock.end(Buffer.from(
+      [0x05, rep, 0x00, 0x01, 0, 0, 0, 0, 0, 0])); } catch {}
+  }
+
+  _onSocks(clientSock) {
+    // greeting: VER NMETHODS METHODS — accumulate until complete (localhost
+    // almost never splits, but a fragmented first segment is legal TCP)
+    const gb = [];
+    const onGreet = (chunk) => {
+      gb.push(chunk);
+      let gl = 0; for (const b of gb) gl += b.length;
+      if (gl < 2) return;
+      const g = Buffer.concat(gb);
+      const need = 2 + g[1];                     // VER NMETHODS + methods
+      if (gl < need) return;
+      if (g[0] !== 0x05) { clientSock.removeListener('data', onGreet); clientSock.destroy(); return; }
+      clientSock.removeListener('data', onGreet);
+      clientSock.write(Buffer.from([0x05, 0x00])); // NO AUTH
+      const rb = g.length > need ? [g.slice(need)] : [];
+      this._socksReq(clientSock, rb);
     };
-    tryNext();
+    clientSock.on('data', onGreet);
+    clientSock.on('error', () => clientSock.destroy());
+  }
+
+  _socksReq(clientSock, rb) {
+    const onReq = (chunk) => {
+      if (chunk?.length) rb.push(chunk);
+      let rl = 0; for (const b of rb) rl += b.length;
+      if (rl < 5) return;
+      const req = Buffer.concat(rb);
+      if (req[0] !== 0x05 || req[1] !== 0x01 || req[2] !== 0x00)
+        { clientSock.removeListener('data', onReq); this._socksReply(clientSock, 0x07); return; }
+      const atyp = req[3];
+      let total;
+      if (atyp === 0x01) total = 10;                    // v4: 4+4+2
+      else if (atyp === 0x03) total = 7 + req[4];       // dom: 4+1+len+2
+      else if (atyp === 0x04) total = 22;               // v6: 4+16+2
+      else { clientSock.removeListener('data', onReq); this._socksReply(clientSock, 0x08); return; }
+      if (rl < total) return;
+      clientSock.removeListener('data', onReq);
+      const tail = rl > total ? req.slice(total) : null; // pipelined TLS head
+      this._socksConnect(clientSock, req.slice(0, total), atyp, tail);
+    };
+    clientSock.on('data', onReq);
+    onReq();                                            // buffered leftovers
+  }
+
+  async _socksConnect(clientSock, req, atyp, tail) {
+    let host;
+    if (atyp === 0x01) host = [...req.slice(4, 8)].join('.');
+    else if (atyp === 0x03) host = req.slice(5, 5 + req[4]).toString('utf8');
+    else host = req.slice(4, 20).toString('hex').match(/.{4}/g).join(':');
+    const port = req.readUInt16BE(req.length - 2);
+    if (![80, 443, 8080, 8443].includes(port))
+      return this._socksReply(clientSock, 0x02); // not allowed by ruleset
+    let addrs = await publicAddrs(host).catch(() => []);
+    // v6 literal candidates: CF's embedded v4 rides along as a fallback
+    if (atyp === 0x04 && addrs.every(a => a.includes(':'))) {
+      const b = req.slice(4, 20);
+      if (b[0] === 0x26 && b[1] === 0x06 && b[2] === 0x47 && b[3] === 0x00
+          && b.slice(4, 12).every(x => x === 0))
+        addrs = [...addrs, [...b.slice(12, 16)].join('.')];
+    }
+    if (!addrs.length) return this._socksReply(clientSock, 0x05);
+    this._dialThru(clientSock, tail, port, addrs,
+      (upstream) => {
+        clientSock.write(
+          Buffer.from([0x05, 0x00, 0x00, 0x01, 0, 0, 0, 0, 0, 0]), () => {
+          if (tail?.length) upstream.write(tail);
+          upstream.pipe(clientSock); clientSock.pipe(upstream);
+        });
+      },
+      () => this._socksReply(clientSock, 0x04)); // host unreachable
   }
 
   // ---------------------------------------------------------- fetch mode --
