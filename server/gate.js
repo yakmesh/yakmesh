@@ -38,6 +38,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
 import { portCandidates, rememberPort } from '../utils/ports.js';
+import { GateMitm } from './gate-mitm.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const PQ_SIGN = 'http://127.0.0.1:9995/sign';
@@ -156,6 +157,7 @@ export class YakGate {
     this._pid = null;
     this._pidTried = false;
     this._challenges = new Map(); // nonce -> { host, at }  (60s attest window)
+    this._mitm = new GateMitm();  // env-gated: YAKGATE_MITM=all|host,host
   }
 
   /** True + consume if this nonce passed through the gate recently. */
@@ -270,7 +272,24 @@ export class YakGate {
     if (!addrs.length) {
       clientSock.end('HTTP/1.1 403 Forbidden\r\n\r\n'); return;
     }
-    this._dialThru(clientSock, head, parseInt(m[2], 10), addrs,
+    const port = parseInt(m[2], 10);
+    if (this._mitm.shouldMitm(m[1])) {
+      clientSock.write('HTTP/1.1 200 Connection Established\r\n\r\n');
+      clientSock.once('data', first => {
+        const head0 = head?.length ? Buffer.concat([head, first]) : first;
+        clientSock.pause();          // flowing socket would eat the replay
+        clientSock.unshift(head0);
+        this._mitm.attach(clientSock, m[1], port, addrs, () =>
+          this._dialThru(clientSock, null, port, addrs,
+            (upstream) => {              // client refused our CA — raw tunnel,
+              upstream.write(head0);     // replay the bytes we pre-read
+              upstream.pipe(clientSock); clientSock.pipe(upstream);
+            },
+            () => { try { clientSock.destroy(); } catch {} }));
+      });
+      return;
+    }
+    this._dialThru(clientSock, head, port, addrs,
       (upstream) => {
         clientSock.write('HTTP/1.1 200 Connection Established\r\n\r\n');
         if (head?.length) upstream.write(head);
@@ -349,6 +368,25 @@ export class YakGate {
         addrs = [...addrs, [...b.slice(12, 16)].join('.')];
     }
     if (!addrs.length) return this._socksReply(clientSock, 0x05);
+    if (this._mitm.shouldMitm(host)) {
+      clientSock.write(
+        Buffer.from([0x05, 0x00, 0x00, 0x01, 0, 0, 0, 0, 0, 0]));
+      const go = (first) => {
+        const head0 = tail?.length ? Buffer.concat([tail, first]) : first;
+        clientSock.pause();
+        clientSock.unshift(head0);
+        this._mitm.attach(clientSock, host, port, addrs, () =>
+          this._dialThru(clientSock, null, port, addrs,
+            (upstream) => {
+              upstream.write(head0);
+              upstream.pipe(clientSock); clientSock.pipe(upstream);
+            },
+            () => this._socksReply(clientSock, 0x04)));
+      };
+      if (tail?.length) go(Buffer.alloc(0));
+      else clientSock.once('data', go);
+      return;
+    }
     this._dialThru(clientSock, tail, port, addrs,
       (upstream) => {
         clientSock.write(
