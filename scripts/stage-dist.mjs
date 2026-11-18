@@ -14,7 +14,7 @@
  * Usage: node scripts/stage-dist.mjs <outDir>
  */
 
-import { readFileSync, readdirSync, mkdirSync, copyFileSync, cpSync, existsSync, rmSync, chmodSync } from 'fs';
+import { readFileSync, readdirSync, mkdirSync, copyFileSync, cpSync, existsSync, rmSync, chmodSync, statSync } from 'fs';
 import { join, dirname } from 'path';
 import { execFileSync } from 'child_process';
 
@@ -36,8 +36,10 @@ for (const f of manifest.files) {
     copyFileSync(join(repo, f), dst);
     // copyFileSync preserves the source mode — NTFS-mounted source files
     // are read-only (r-x), which makes the later asset-dir cpSync fail
-    // with EACCES when overwriting them. Force writable.
-    chmodSync(dst, 0o644);
+    // with EACCES when overwriting them. Force writable — but keep any
+    // exec bits: launchers like start-yakmesh.sh are invoked directly by
+    // systemd and a bare 0644 turns into 203/EXEC on boot.
+    chmodSync(dst, 0o644 | (statSync(join(repo, f)).mode & 0o111));
 }
 
 // Runtime asset dirs: contain unhashed files the node needs (web UI, schemas,

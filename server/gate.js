@@ -86,8 +86,12 @@ async function publicAddr(host) {
 const DROP_REQ = new Set([
   'proxy-connection', 'proxy-authorization', 'connection', 'keep-alive',
   'te', 'trailer', 'transfer-encoding', 'upgrade',
-  // strip ambient client identity — the gate speaks for the machine
-  'user-agent', 'accept-language', 'dnt', 'x-forwarded-for', 'via',
+  // strip network identity — the gate speaks for the machine.
+  // (user-agent/accept-language/dnt are NOT identity leaks: they are the
+  // browser's uniform fingerprint — dropping them turns a crowd-identity
+  // into a 1-of-1 beacon and trips challenge platforms that compare
+  // HTTP headers against what the JS engine reports.)
+  'x-forwarded-for', 'via',
 ]);
 const DROP_RES = new Set([
   'connection', 'keep-alive', 'transfer-encoding', 'upgrade', 'te', 'trailer',
@@ -214,7 +218,13 @@ export class YakGate {
     for (const [k, v] of Object.entries(req.headers))
       if (!DROP_REQ.has(k.toLowerCase())) headers[k] = v;
     headers['host'] = url.host; // canonicalize — never trust the client Host
-    headers['user-agent'] = 'YakBrowse/1.0 (yakgate)';
+    // Forward the client's real browser identity (already kept in `headers`
+    // above). Only non-browser callers get a baseline UA — and it must be a
+    // mainstream string: a custom UA is a unique fingerprint, not privacy.
+    if (!headers['user-agent'])
+        headers['user-agent'] = 'Mozilla/5.0 (X11; Linux x86_64) '
+            + 'AppleWebKit/605.1.15 (KHTML, like Gecko) '
+            + 'Version/18.4 Safari/605.1.15';
 
     await this._fetch(url, req.method, headers, req, res, false);
   }
