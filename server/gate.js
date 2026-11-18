@@ -82,6 +82,40 @@ async function publicAddr(host) {
   } catch { return null; } // fail-closed: unresolvable is unfetchable anyway
 }
 
+// Cloudflare encodes the IPv4 anycast of a service in the low 32 bits of its
+// AAAA answer under 2606:4700::/32 (2606:4700::6812:5f29 ≡ 104.18.95.41).
+// A v6-only hostname is unreachable from a v4-only host — the embedded v4
+// gives CONNECT a last-resort target when DNS offers no A records.
+function cfEmbeddedV4(v6) {
+  const m = /^2606:4700::([0-9a-f]{4}):([0-9a-f]{4})$/i.exec(v6);
+  if (!m) return null;
+  const h = m[1] + m[2];
+  return [0, 2, 4, 6].map(i => parseInt(h.slice(i, i + 2), 16)).join('.');
+}
+
+// Same classification as publicAddr, but returns the full candidate list so
+// CONNECT can fall through unroutable addresses in order (Happy-Eyeballs-lite):
+// v6-only names decode their embedded CF v4 as trailing candidates.
+async function publicAddrs(host) {
+  const h = String(host).replace(/^\[|\]$/g, '');
+  if (ALLOW_LAN) {
+    try { return (await dns.lookup(h, { all: true })).map(a => a.address); }
+    catch { return []; }
+  }
+  if (isPrivateHost(h)) return [];
+  if (net.isIP(h)) return [h];
+  try {
+    const addrs = await dns.lookup(h, { all: true });
+    if (!addrs.length || addrs.some(a => isPrivateHost(a.address))) return [];
+    const list = addrs.map(a => a.address);
+    if (list.every(a => a.includes(':'))) {
+      const v4 = list.map(cfEmbeddedV4).filter(Boolean);
+      return [...list, ...v4]; // real v6 first; embedded v4 as fallback
+    }
+    return list;
+  } catch { return []; } // fail-closed: unresolvable is unfetchable anyway
+}
+
 // Hop-by-hop and identity-scrubbed headers — never forwarded upstream.
 const DROP_REQ = new Set([
   'proxy-connection', 'proxy-authorization', 'connection', 'keep-alive',
@@ -179,23 +213,36 @@ export class YakGate {
       clientSock.end('HTTP/1.1 405 Method Not Allowed\r\n\r\n');
       return;
     }
-    // resolve now: refuses private targets and pins the tunnel to the checked
-    // address — no rebind window. TLS SNI still carries the hostname.
-    const addr = await publicAddr(m[1]).catch(() => null);
-    if (!addr) {
+    // resolve now: refuses private targets and pins the tunnel to checked
+    // addresses — no rebind window. TLS SNI still carries the hostname.
+    // Candidates are tried in order: a dead first answer (v6 on a v4-only
+    // host, unroutable anycast) must not kill the tunnel — browsers fall
+    // through addresses, a proxy that doesn't is detectably broken.
+    const addrs = await publicAddrs(m[1]).catch(() => []);
+    if (!addrs.length) {
       clientSock.end('HTTP/1.1 403 Forbidden\r\n\r\n'); return;
     }
-    const upstream = net.connect(parseInt(m[2], 10), addr, () => {
-      clientSock.write('HTTP/1.1 200 Connection Established\r\n\r\n');
-      if (head?.length) upstream.write(head);
-      upstream.pipe(clientSock); clientSock.pipe(upstream);
-    });
-    const fail = () => { try {
+    const port = parseInt(m[2], 10);
+    let idx = 0;
+    const fail = (sock) => { try {
       clientSock.end('HTTP/1.1 502 Bad Gateway\r\n\r\n'); clientSock.destroy();
-      upstream.destroy();
+      sock?.destroy();
     } catch {} };
-    upstream.on('error', fail); clientSock.on('error', fail);
-    upstream.setTimeout(120000, () => upstream.destroy());
+    const tryNext = () => {
+      if (idx >= addrs.length) { fail(); return; }
+      const upstream = net.connect(port, addrs[idx++], () => {
+        clientSock.write('HTTP/1.1 200 Connection Established\r\n\r\n');
+        if (head?.length) upstream.write(head);
+        upstream.pipe(clientSock); clientSock.pipe(upstream);
+        upstream.removeListener('error', preErr);
+        upstream.on('error', () => fail(upstream));
+      });
+      const preErr = () => { upstream.destroy(); tryNext(); };
+      upstream.on('error', preErr);
+      clientSock.on('error', () => upstream.destroy());
+      upstream.setTimeout(120000, () => upstream.destroy());
+    };
+    tryNext();
   }
 
   // ---------------------------------------------------------- fetch mode --
