@@ -1,4 +1,43 @@
-## [3.5.10] — Unreleased
+## [3.5.12] — 2026-11-19
+
+### Added
+- **YAKGATE SOCKS5 front** — `:3089` now sniffs the first byte: `0x05`
+  starts an RFC 1928 no-auth CONNECT handshake, anything else stays the
+  HTTP proxy. Clients whose HTTP stacks suppress h2 through CONNECT
+  (libsoup < 3.6) tunnel h2 through SOCKS — same SSRF-checked upstream.
+- **Opt-in TLS boundary termination** (`YAKGATE_MITM=all|host,list`) —
+  per-install CA in `data/gate-mitm/` mints per-host certs; the browser
+  terminates TLS at the gate and the gate speaks upstream with a uniform
+  Node h2 client (browser-shaped ClientHello + Chrome SETTINGS values).
+  Handshake refusal falls back to the raw tunnel; mint failure degrades
+  to tunnel rather than faulting the node.
+- **`GET /gate/ca`** — the node declares its gate CA signed by its
+  persistent identity (ML-DSA-65): clients can anchor trust in the mesh
+  node itself rather than an OS trust store.
+
+### Fixed
+- CONNECT tunnels now walk the full resolved address list (previously
+  first-answer-only → `ENETUNREACH` meant instant 502) and decode
+  Cloudflare's `2606:4700::/32` embedded-IPv4 convention so v6-only
+  hostnames stay reachable on v4-only links; resolved candidates cache
+  for 60s.
+- Gate forwards the client's `user-agent`/`accept-language`/`dnt` and
+  only stamps a mainstream baseline UA when none is supplied.
+- `stage-dist` preserves source executable bits on manifest files —
+  deployed `.sh` entry points no longer lose `+x` on every staging run.
+
+Also in this release: attestation pipeline + package integrity reporting,
+job pipeline (deposits → epoch claims → byte-exact audit), lighthouse
+per-service directory + persistent-id personhood ops, port orchestration
+reliability pass, xrt-npu prover tier (IRON xclbin via yak_xrt_shim),
+qdq-u8 VitisAI attempt for XDNA1, DOKO dashboard field-name fix,
+deployment rules doc (supervisor is the only supported run path).
+
+## [3.5.11] — 2026-09-23
+
+- Ship supervisor + ops dirs in package; bound accel detection.
+
+## [3.5.10] — 2026-09-23
 
 ### Added
 - KeyResolver + NamcheGateway activation — both existed fully built but
