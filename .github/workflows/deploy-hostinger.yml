@@ -17,7 +17,9 @@ jobs:
           port: 65002
           username: u170268362
           key: ${{ secrets.HOSTINGER_SSH_KEY }}
+          debug: true
           script: |
+            set -x
             export PATH="$HOME/.nvm/versions/node/v20.20.0/bin:$PATH"
 
             # Bootstrap the git checkout when absent — first-run path.
