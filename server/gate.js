@@ -32,6 +32,7 @@
 
 import http from 'node:http';
 import net from 'node:net';
+import crypto from 'node:crypto';
 import dns from 'node:dns/promises';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -400,7 +401,33 @@ export class YakGate {
 
   // ---------------------------------------------------------- fetch mode --
 
+  // ---- local endpoints (non-proxy paths) ---------------------------------
+
+  // /gate/ca — the node DECLARES its gate CA, signed by its persistent
+  // identity. Clients anchor trust in the node, not in an OS trust store:
+  //   mesh node (PQ-signed declaration) -> gate CA -> minted host certs.
+  async _serveCaDecl(res) {
+    try {
+      const pem = this._mitm.ca().cert.toString('utf8');
+      const b64 = pem.replace(/-----[A-Z ]+-----|\s+/g, '');
+      const fp = crypto.createHash('sha256')
+        .update(Buffer.from(b64, 'base64')).digest('hex');
+      const pid = this.persistentId();
+      const ts = Date.now();
+      let sig = null;
+      try { sig = await this.pqSign(`yakgate-ca|${fp}|${pid}|${ts}`); } catch {}
+      res.writeHead(200, { 'content-type': 'application/json' });
+      res.end(JSON.stringify({
+        caPem: pem, sha256: fp, persistentId: pid, ts,
+        signature: sig?.signature || null,
+        keyId: sig?.key_id || null,
+        algorithm: sig?.algorithm || null,
+      }));
+    } catch (e) { res.writeHead(500); res.end(String(e)); }
+  }
+
   async _onRequest(req, res) {
+    if (req.url === '/gate/ca') return this._serveCaDecl(res);
     let url;
     try { url = new URL(req.url); } catch {
       res.writeHead(400); res.end('yakgate: proxy-form (absolute URI) only'); return;
