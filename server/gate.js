@@ -102,6 +102,9 @@ function cfEmbeddedV4(v6) {
 // real clients hold a resolver cache — a per-connection lookup penalty on
 // every subresource is a detectable proxy signature (and pure latency).
 const DNS_CACHE_TTL = 60000;
+// per-attempt CONNECT budget — longer than a healthy SYN/ACK, shorter than
+// a browser's own patience. A dead candidate advances the walk, not the hang.
+const DIAL_ATTEMPT_MS = 10000;
 const dnsCache = new Map(); // host -> { addrs, exp }  (classification at fill)
 async function publicAddrs(host) {
   const h = String(host).replace(/^\[|\]$/g, '');
@@ -247,13 +250,18 @@ export class YakGate {
       if (idx >= addrs.length) { onFail(); return; }
       const upstream = net.connect(port, addrs[idx++], () => {
         upstream.removeListener('error', preErr);
+        upstream.removeListener('timeout', preErr);
+        upstream.setTimeout(120000, () => upstream.destroy());
         upstream.on('error', () => { upstream.destroy(); clientSock.destroy(); });
         onReady(upstream);
       });
+      // a blackholed candidate never emits 'error' — SYN retries run to the
+      // kernel's patience (~2min) while CONNECTs pile up behind it. Bound the
+      // attempt and walk on; on a lossy link the next answer often lands.
       const preErr = () => { upstream.destroy(); tryNext(); };
       upstream.on('error', preErr);
+      upstream.setTimeout(DIAL_ATTEMPT_MS, preErr);
       clientSock.on('error', () => upstream.destroy());
-      upstream.setTimeout(120000, () => upstream.destroy());
     };
     tryNext();
   }
@@ -408,7 +416,7 @@ export class YakGate {
   //   mesh node (PQ-signed declaration) -> gate CA -> minted host certs.
   async _serveCaDecl(res) {
     try {
-      const pem = this._mitm.ca().cert.toString('utf8');
+      const pem = (await this._mitm.ca()).cert.toString('utf8');
       const b64 = pem.replace(/-----[A-Z ]+-----|\s+/g, '');
       const fp = crypto.createHash('sha256')
         .update(Buffer.from(b64, 'base64')).digest('hex');

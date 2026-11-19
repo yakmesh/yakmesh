@@ -28,7 +28,7 @@
  *   - Plaintext exists only in-process; nothing is logged.
  */
 
-import { spawnSync } from 'node:child_process';
+import { spawn } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import tls from 'node:tls';
@@ -50,11 +50,20 @@ const DROP_RES = new Set([
   'proxy-authenticate', 'proxy-authorization',
 ]);
 
-const sh = (args, input) => {
-  const r = spawnSync('openssl', args, { timeout: 15000, input });
-  if (r.status !== 0) throw new Error('openssl ' + args[0] + ': ' + (r.stderr || '').toString().trim());
-  return r.stdout;
-};
+// async spawn — spawnSync here would stall the whole event loop (every
+// proxied request on the box) for the duration of the mint.
+const sh = (args, input) => new Promise((resolve, reject) => {
+  const p = spawn('openssl', args, { timeout: 15000 });
+  const out = [], err = [];
+  p.stdout.on('data', d => out.push(d));
+  p.stderr.on('data', d => err.push(d));
+  p.on('error', reject);
+  p.on('close', code => code === 0
+    ? resolve(Buffer.concat(out))
+    : reject(new Error('openssl ' + args[0] + ': ' + Buffer.concat(err).toString().trim())));
+  if (input) p.stdin.write(input);
+  p.stdin.end();
+});
 
 export class GateMitm {
   constructor() {
@@ -87,12 +96,12 @@ export class GateMitm {
 
   // ---- CA + minted certs --------------------------------------------------
 
-  ca() {
+  async ca() {
     if (this._ca) return this._ca;
     const keyPath = join(DIR, 'ca.key'), crtPath = join(DIR, 'ca.crt');
     if (!existsSync(keyPath) || !existsSync(crtPath)) {
       mkdirSync(DIR, { recursive: true, mode: 0o700 });
-      sh(['req', '-x509', '-newkey', 'rsa:2048', '-sha256', '-days', '3650', '-nodes',
+      await sh(['req', '-x509', '-newkey', 'rsa:2048', '-sha256', '-days', '3650', '-nodes',
           '-keyout', keyPath, '-out', crtPath,
           '-subj', '/CN=YakGate Local CA/O=YakMesh',
           '-addext', 'basicConstraints=critical,CA:TRUE',
@@ -102,12 +111,12 @@ export class GateMitm {
     return this._ca;
   }
 
-  caCertPath() { this.ca(); return join(DIR, 'ca.crt'); }
+  async caCertPath() { await this.ca(); return join(DIR, 'ca.crt'); }
 
-  _ctxFor(host) {
+  async _ctxFor(host) {
     let ctx = this._ctx.get(host);
     if (ctx) return ctx;
-    const ca = this.ca();
+    const ca = await this.ca();
     const mint = join(DIR, 'mint');
     mkdirSync(mint, { recursive: true, mode: 0o700 });
     const safe = host.replace(/[^a-z0-9.-]/gi, '_');
@@ -115,7 +124,7 @@ export class GateMitm {
     const csrPath = join(mint, safe + '.csr');
     const crtPath = join(mint, safe + '.crt');
     if (!existsSync(crtPath)) {
-      sh(['req', '-newkey', 'rsa:2048', '-nodes',
+      await sh(['req', '-newkey', 'rsa:2048', '-nodes',
           '-keyout', keyPath, '-out', csrPath, '-subj', '/CN=' + host]);
       const extPath = join(mint, safe + '.ext');
       writeFileSync(extPath,
@@ -123,7 +132,7 @@ export class GateMitm {
         'basicConstraints=critical,CA:FALSE\n' +
         'keyUsage=critical,digitalSignature,keyEncipherment\n' +
         'extendedKeyUsage=serverAuth\n');
-      sh(['x509', '-req', '-in', csrPath,
+      await sh(['x509', '-req', '-in', csrPath,
           '-CA', join(DIR, 'ca.crt'), '-CAkey', join(DIR, 'ca.key'),
           '-CAcreateserial', '-days', '825', '-sha256',
           '-extfile', extPath, '-out', crtPath]);
@@ -132,7 +141,7 @@ export class GateMitm {
     // key-matching walk the wrong cert (x509 key values mismatch).
     ctx = { key: readFileSync(keyPath),
             cert: Buffer.concat([readFileSync(crtPath),
-                                 Buffer.from('\n'), this.ca().cert]) };
+                                 Buffer.from('\n'), ca.cert]) };
     this._ctx.set(host, ctx);
     return ctx;
   }
@@ -145,16 +154,17 @@ export class GateMitm {
    * tls.Server minting `host`'s cert; if the client aborts the handshake
    * (untrusted CA), `fallback()` replays `head` into a raw tunnel.
    */
-  attach(clientSock, host, port, addrs, fallback) {
+  async attach(clientSock, host, port, addrs, fallback) {
     let fell = false;
-    const fail = () => {
+    const fail = (why) => {
       if (fell) return; fell = true;
+      // a silent fallback hides real breakage — degrade, but say why
+      console.warn('[gate-mitm] ' + host + ' → raw tunnel: ' + (why || '?'));
       try { clientSock.removeAllListeners('error'); } catch {}
       fallback();
     };
-    const keyCert = (() => { try { return this._ctxFor(host); }
-                             catch { fail(); return null; } })();
-    if (fell) return;
+    const keyCert = await this._ctxFor(host).catch(() => null);
+    if (!keyCert || fell) { fail('mint'); return; }
     // pass key/cert (not a prebuilt SecureContext): Node applies its
     // sigalgs/cipher defaults only when it builds the context itself — a
     // raw SecureContext on OpenSSL 3 negotiates zero sigalgs → alert 40.
@@ -164,15 +174,15 @@ export class GateMitm {
         key: keyCert.key, cert: keyCert.cert,
         ALPNProtocols: ['http/1.1'], // browser side is localhost — h1 is plenty
       });
-    } catch { fail(); return; }   // broken mint → raw tunnel, never a crash
-    srv.on('tlsClientError', fail);
+    } catch { fail('tlsserver'); return; }   // broken mint → raw tunnel, never a crash
+    srv.on('tlsClientError', e => fail('tlsClient ' + (e && e.message)));
     srv.on('secureConnection', s => {
       s.yakHost = host.toLowerCase(); s.yakPort = port; s.yakAddrs = addrs;
       s.on('error', () => s.destroy());
       this._inner.emit('connection', s);
     });
     srv.emit('connection', clientSock);
-    clientSock.once('error', fail);
+    clientSock.once('error', e => fail('sock ' + (e && e.message)));
   }
 
   // ---- upstream: our TLS, our h2 ------------------------------------------
