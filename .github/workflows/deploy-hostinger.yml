@@ -8,7 +8,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    
+
     steps:
       - name: Deploy to Hostinger via SSH
         uses: appleboy/ssh-action@v1.0.3
@@ -18,28 +18,46 @@ jobs:
           username: u170268362
           key: ${{ secrets.HOSTINGER_SSH_KEY }}
           script: |
+            export PATH="$HOME/.nvm/versions/node/v20.20.0/bin:$PATH"
+
+            # Bootstrap the git checkout when absent — first-run path.
+            if [ ! -d "$HOME/yakmesh-node/.git" ]; then
+              git clone --depth 50 https://github.com/yakmesh/yakmesh.git "$HOME/yakmesh-node"
+            fi
+
             cd ~/yakmesh-node
             git stash 2>/dev/null || true
             git fetch origin main
             git reset --hard origin/main
             npm install --production
-            
-            # Restart PM2 services if running
-            if command -v pm2 &> /dev/null; then
-              pm2 restart yakmesh 2>/dev/null || echo "PM2 service not configured"
-            fi
-            
+
+            # Re-register pm2 with the shared-host env contract —
+            # envs live in pm2's process table (survives git reset).
+            # Node binds the default :3080 — php-bridge files forward
+            # there (beacon/health/relay). Self/relay endpoints are the
+            # public identity the node advertises to seeds + peers.
+            pm2 delete yakmesh 2>/dev/null || true
+            env YAKMESH_SELF_ENDPOINT=https://yakmesh.dev \
+                YAKMESH_RELAY_ENDPOINT=https://yakmesh.dev/mesh/relay \
+                pm2 start ecosystem.config.json
+            pm2 save
+
+            sleep 5
+            curl -sf --max-time 5 http://127.0.0.1:3080/api/health \
+              && echo "HEALTH OK" \
+              || echo "HEALTH PENDING (check logs/yakmesh-out.log)"
+
             echo "✅ Deployed to Hostinger successfully"
 
   deploy-website:
     runs-on: ubuntu-latest
     needs: deploy
     if: github.event_name == 'workflow_dispatch'
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      
+
       - name: Deploy website to yakmesh.dev
         uses: appleboy/ssh-action@v1.0.3
         with:
