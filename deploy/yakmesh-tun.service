@@ -1,0 +1,18 @@
+[Unit]
+# Replays the last successful yak0 provisioning at boot — the persistent
+# TUN survives process restarts but not reboots, and yakmesh must never
+# require an interactive sudo at service start.
+Description=Yakmesh yak0 TUN provisioning replay
+After=network-pre.target
+Before=network.target
+Wants=network-pre.target
+ConditionFileNotEmpty=/etc/yakmesh/tun.env
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+EnvironmentFile=/etc/yakmesh/tun.env
+ExecStart=/usr/lib/yakmesh/tools/yaktun-provision.sh ${YAKTUN_USER} ${YAKTUN_VIP4} ${YAKTUN_VIP6} ${YAKTUN_IFACE}
+
+[Install]
+WantedBy=multi-user.target

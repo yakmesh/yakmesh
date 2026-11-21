@@ -604,12 +604,45 @@ export class YakTun {
         const fs = await import('fs');
         const koffi = (await import('koffi')).default;
         const user = os.userInfo().username;
+        const provision = new URL('../tools/yaktun-provision.sh', import.meta.url).pathname;
 
-        // Create the persistent tun if absent (needs CAP_NET_ADMIN → sudo -n).
-        // Failure is non-fatal: the device may already exist.
-        try {
-            await execAsync(`sudo -n ip tuntap add dev ${this.iface} mode tun user ${user}`);
-        } catch { /* exists or no sudo — attach attempt decides honestly */ }
+        // ── Ensure the persistent tun exists and is ours ───────────
+        // `ip -d tuntap show` rows name the owning uid; TUNSETIFF only
+        // attaches to a tun owned by our euid (or under CAP_NET_ADMIN).
+        // Probing first turns the old blanket catch into honest classes.
+        const show = await execAsync('ip -d tuntap show 2>/dev/null')
+            .catch(() => ({ stdout: '' }));
+        const row = (show.stdout || '').split('\n')
+            .find(l => l.startsWith(`${this.iface}:`));
+        const ownerUid = row
+            ? Number((row.match(/user (\d+)/) || [])[1] ?? -1)
+            : null;
+        const euid = process.getuid?.() ?? -1;
+
+        if (!row) {
+            // No device — try the scoped provision helper (installers can
+            // sudoers-authorize JUST this script), then legacy broad sudo.
+            let lastErr = '';
+            let created = false;
+            for (const cmd of [
+                `sudo -n ${provision} ${user} ${this.virtualIp} ${this.virtualIpv6} ${this.iface}`,
+                `sudo -n ip tuntap add dev ${this.iface} mode tun user ${user}`,
+            ]) {
+                const r = await execAsync(cmd).then(() => null).catch(e => e);
+                if (!r) { created = true; break; }
+                lastErr = (r.stderr || r.message || '').trim();
+                if (/password/i.test(lastErr)) break; // no NOPASSWD — second try is pointless
+            }
+            if (!created) {
+                throw new Error(
+                    `YAK-TUN needs a persistent ${this.iface} tun — none exists and ` +
+                    `creation failed (${lastErr || 'no error detail'}). One-time fix: ` +
+                    `sudo ${provision} ${user} ${this.virtualIp} ${this.virtualIpv6} ${this.iface} ` +
+                    `(deploy/yakmesh-tun.service makes it reboot-persistent).`);
+            }
+        } else if (ownerUid !== null && ownerUid !== euid && euid !== 0) {
+            console.warn(`[YAK-TUN] ${this.iface} is owned by uid ${ownerUid}; we run as ${euid} — attach will likely fail`);
+        }
 
         const TUNSETIFF = 0x400454ca;
         const IFF_TUN = 0x0001, IFF_NO_PI = 0x1000;
@@ -622,21 +655,31 @@ export class YakTun {
         ifr.writeUInt16LE(IFF_TUN | IFF_NO_PI, 16);
         if (ioctl(this.tunFd, TUNSETIFF, ifr) < 0) {
             fs.closeSync(this.tunFd);
-            throw new Error(`TUNSETIFF ${this.iface} failed — device missing or not ours`);
+            // Existence/ownership probed above — this is a real attach fault.
+            throw new Error(
+                `TUNSETIFF ${this.iface} attach failed ` +
+                `(device ${row ? 'exists' : 'absent'}` +
+                `${ownerUid !== null ? `, owner uid ${ownerUid}` : ''}, euid ${euid})`);
         }
         this.fs = fs;
 
-        // Bind addresses + bring up (sudo -n; failures warn, not fatal).
-        // Flush first so stale addresses from prior nodeIds don't linger.
-        try {
-            await execAsync(`sudo -n ip addr flush dev ${this.iface}`).catch(() => {});
-            await execAsync(`sudo -n ip -6 addr flush dev ${this.iface}`).catch(() => {});
-            await execAsync(`sudo -n ip addr replace ${this.virtualIp}/16 dev ${this.iface}`);
-            await execAsync(`sudo -n ip -6 addr replace ${this.virtualIpv6}/64 dev ${this.iface}`).catch(() => {});
-            await execAsync(`sudo -n ip link set dev ${this.iface} up`);
-        } catch (err) {
-            console.warn(`[YAK-TUN] Address binding incomplete: ${err.message}`);
-        }
+        // Bind addresses + bring up. Flush first so stale addresses from
+        // prior nodeIds don't linger; every failure reports real stderr.
+        const bind = async (cmd, required = false) => {
+            const r = await execAsync(cmd).then(() => null).catch(e => e);
+            if (!r) return true;
+            if (required)
+                console.warn(`[YAK-TUN] \`${cmd}\` → ${(r.stderr || r.message || '').trim()}`);
+            return false;
+        };
+        await bind(`sudo -n ip addr flush dev ${this.iface}`);
+        await bind(`sudo -n ip -6 addr flush dev ${this.iface}`);
+        await bind(`sudo -n ip addr replace ${this.virtualIp}/16 dev ${this.iface}`, true);
+        await bind(`sudo -n ip -6 addr replace ${this.virtualIpv6}/64 dev ${this.iface}`);
+        await bind(`sudo -n ip link set dev ${this.iface} up`, true);
+        // Mesh-subnet on-link guard: redundant under the managed /16 but
+        // repairs hand-provisioned /32 layouts (the tester workaround).
+        await bind(`sudo -n ip route replace 10.199.0.0/16 dev ${this.iface}`);
 
         this.active = true;
         console.log(`[YAK-TUN] 🟢 Online (linux). ${this.virtualIp} / ${this.virtualIpv6} on ${this.iface}`);
