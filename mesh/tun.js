@@ -685,6 +685,8 @@ export class YakTun {
         // Mesh-subnet on-link guard: redundant under the managed /16 but
         // repairs hand-provisioned /32 layouts (the tester workaround).
         await bind(`sudo -n ip route replace 10.199.0.0/16 dev ${this.iface}`);
+        // v6 symmetric: every node VIP lives under fd99:199::/48.
+        await bind(`sudo -n ip -6 route replace fd99:199::/48 dev ${this.iface}`);
 
         this.active = true;
         console.log(`[YAK-TUN] 🟢 Online (linux). ${this.virtualIp} / ${this.virtualIpv6} on ${this.iface}`);

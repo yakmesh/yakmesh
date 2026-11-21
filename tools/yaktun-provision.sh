@@ -13,6 +13,7 @@
 #   2. replace <vip4>/16 + <vip6>/64 on <iface>, link up
 #   3. ip route replace 10.199.0.0/16 dev <iface>  (mesh subnet on-link;
 #      peer VIPs need no per-peer host routes under the /16 layout)
+#      + fd99:199::/48 symmetric guard for the derived v6 VIP space
 #   4. writes /etc/yakmesh/tun.env so yakmesh-tun.service can replay
 #      this exact provisioning at boot.
 #
@@ -45,6 +46,7 @@ ip addr replace "$VIP4/16" dev "$IFACE"
 ip -6 addr replace "$VIP6/64" dev "$IFACE"
 ip link set dev "$IFACE" up
 ip route replace 10.199.0.0/16 dev "$IFACE"
+ip -6 route replace fd99:199::/48 dev "$IFACE"
 
 mkdir -p /etc/yakmesh
 printf 'YAKTUN_USER=%s\nYAKTUN_VIP4=%s\nYAKTUN_VIP6=%s\nYAKTUN_IFACE=%s\n' \
