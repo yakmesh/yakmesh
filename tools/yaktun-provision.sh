@@ -37,7 +37,7 @@ case "$IFACE" in
     *) echo "yaktun-provision: refusing iface '$IFACE' (must match yak*)" >&2; exit 2 ;;
 esac
 
-ip -d tuntap show | grep -q "^${IFACE}:" \
+ip -d tuntap show 2>/dev/null | grep -q "^${IFACE}:" \
     || ip tuntap add dev "$IFACE" mode tun user "$OWNER"
 
 ip addr flush dev "$IFACE" 2>/dev/null || true
