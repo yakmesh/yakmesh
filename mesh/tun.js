@@ -604,7 +604,10 @@ export class YakTun {
         const fs = await import('fs');
         const koffi = (await import('koffi')).default;
         const user = os.userInfo().username;
-        const provision = new URL('../tools/yaktun-provision.sh', import.meta.url).pathname;
+        // fileURLToPath, not URL.pathname — %20 under spaced checkouts.
+        const { fileURLToPath } = await import('url');
+        const provision = fileURLToPath(
+            new URL('../tools/yaktun-provision.sh', import.meta.url));
 
         // ── Ensure the persistent tun exists and is ours ───────────
         // `ip -d tuntap show` rows name the owning uid; TUNSETIFF only
@@ -625,11 +628,13 @@ export class YakTun {
             let lastErr = '';
             let created = false;
             for (const cmd of [
-                `sudo -n ${provision} ${user} ${this.virtualIp} ${this.virtualIpv6} ${this.iface}`,
-                `sudo -n ip tuntap add dev ${this.iface} mode tun user ${user}`,
+                `sudo -n "${provision}" "${user}" ${this.virtualIp} ${this.virtualIpv6} ${this.iface}`,
+                `sudo -n ip tuntap add dev ${this.iface} mode tun user "${user}"`,
             ]) {
                 const r = await execAsync(cmd).then(() => null).catch(e => e);
-                if (!r) { created = true; break; }
+                // EEXIST = another process won the probe→create race —
+                // the device now exists either way; attach decides.
+                if (!r || /file exists/i.test(r.stderr || '')) { created = true; break; }
                 lastErr = (r.stderr || r.message || '').trim();
                 if (/password/i.test(lastErr)) break; // no NOPASSWD — second try is pointless
             }
@@ -658,7 +663,7 @@ export class YakTun {
             // Existence/ownership probed above — this is a real attach fault.
             throw new Error(
                 `TUNSETIFF ${this.iface} attach failed ` +
-                `(device ${row ? 'exists' : 'absent'}` +
+                `(device ${row ? 'pre-existing' : 'just-created'}` +
                 `${ownerUid !== null ? `, owner uid ${ownerUid}` : ''}, euid ${euid})`);
         }
         this.fs = fs;
