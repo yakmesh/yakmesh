@@ -12,6 +12,7 @@ ConditionFileNotEmpty=/etc/yakmesh/tun.env
 Type=oneshot
 RemainAfterExit=yes
 EnvironmentFile=/etc/yakmesh/tun.env
+Environment=YAKTUN_REPLAY=1
 ExecStart=/usr/lib/yakmesh/tools/yaktun-provision.sh ${YAKTUN_USER} ${YAKTUN_VIP4} ${YAKTUN_VIP6} ${YAKTUN_IFACE}
 
 [Install]

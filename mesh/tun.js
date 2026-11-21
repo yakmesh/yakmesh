@@ -257,7 +257,15 @@ export class YakTun {
             d = JSON.parse(Buffer.concat([
                 dec.update(blob.subarray(12, blob.length - 16)), dec.final(),
             ]).toString('utf8'));
-        } catch { this.stats.udpDrops++; return; } // foreign build — noise
+        } catch {
+            // foreign build or dialect drift — undecryptable beacons are
+            // silent by design, but a sustained stream means a real peer
+            // is invisible to us (the 2996-vs-1ad3 split cost a session).
+            this.stats.udpDrops++;
+            if (this.stats.udpDrops === 8 || this.stats.udpDrops % 64 === 0)
+                console.warn(`[YAK-TUN] ${this.stats.udpDrops} undecryptable beacons dropped — if a peer should be here, check codebase drift (dialect mismatch splits the mesh silently)`);
+            return;
+        }
         if (d?.op !== 'discover' || !d.nodeId) return;
         const selfId = this._selfNodeId || this.mesh?.identity?.identity?.nodeId;
         if (d.nodeId === selfId) return; // own broadcast

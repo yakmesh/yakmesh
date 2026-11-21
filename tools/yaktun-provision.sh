@@ -42,8 +42,15 @@ ip -d tuntap show 2>/dev/null | grep -q "^${IFACE}:" \
 
 ip addr flush dev "$IFACE" 2>/dev/null || true
 ip -6 addr flush dev "$IFACE" 2>/dev/null || true
-ip addr replace "$VIP4/16" dev "$IFACE"
-ip -6 addr replace "$VIP6/64" dev "$IFACE"
+if [ "${YAKTUN_REPLAY:-0}" = "1" ]; then
+    # Boot replay: stored VIPs go stale when nodeId re-derives per boot —
+    # the node rebinds its derived VIP on attach regardless. Skip the
+    # bind so 'ip addr' never shows an address the node won't claim.
+    echo "yaktun-provision: replay mode — iface only; node re-derives VIP on attach"
+else
+    ip addr replace "$VIP4/16" dev "$IFACE"
+    ip -6 addr replace "$VIP6/64" dev "$IFACE"
+fi
 ip link set dev "$IFACE" up
 ip route replace 10.199.0.0/16 dev "$IFACE"
 ip -6 route replace fd99:199::/48 dev "$IFACE"
