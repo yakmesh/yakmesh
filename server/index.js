@@ -2830,7 +2830,18 @@ export class YakmeshNode {
           const realClaims = (this.claimLedger?.epochClaims(closedEpoch) || [])
             .filter(c => c.jobRoot && c.jobRoot !== '0'.repeat(64));
           if (realClaims.length) {
-            const eligible = [...(this.mesh.peers?.keys() || [])];
+            // Eligible auditors = witnessed epoch participants + self —
+            // built from the SAME committed claim set epochRoot covers,
+            // so every node computes the identical pool and the identical
+            // plan. Drawing from the local peer table (what this replaced)
+            // made assignments diverge per node. Under YAK-TUN every
+            // member is routable via virtual IP, so "directly-connected"
+            // is no longer needed for reachability.
+            const eligible = [...new Set([
+              this.identity.identity.nodeId,
+              ...(this.claimLedger?.epochClaims(closedEpoch) || [])
+                .map(c => c.yakmeshNodeId || c.nodeId),
+            ])];
             const issued = this.auditDuty?.issueAudits(epochRoot, closedEpoch, realClaims, eligible);
             if (issued?.length) {
               log.info('audit duties issued', { epoch: closedEpoch, audits: issued.length });
