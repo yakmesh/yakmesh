@@ -1,0 +1,169 @@
+#!/bin/bash
+# yakgate-browser — point third-party browsers at the YakMesh gate proxy
+# (127.0.0.1:3089, loopback-only) and, for MITM testing, install the
+# node's declared gate CA into real trust stores.
+#
+# Two tiers:
+#   transparent  — just proxy. No CA needed; the CONNECT tunnel is E2E.
+#                  yakgate-browser launch <browser>
+#   mitm         — node runs YAKGATE_MITM=all|host,host; the gate mints
+#                  per-host certs under its local CA → install that CA.
+#                  yakgate-browser ca <browser|system|nss-dir>
+#
+# Trust is node-anchored, same as yakbrowse: the CA comes from
+# http://127.0.0.1:3089/gate/ca — a JSON declaration PQ-signed by the
+# node's persistent identity (caPem, sha256, persistentId, signature).
+# We verify sha256(ca.der) == declared fingerprint before installing.
+set -uo pipefail
+
+GATE=${YAKMESH_GATE_PORT:-3089}
+CA_URL="http://127.0.0.1:$GATE/gate/ca"
+NICK="yakgate CA (yakmesh node)"
+WORKDIR=$(mktemp -d)
+trap 'rm -rf "$WORKDIR"' EXIT
+
+die() { echo "yakgate-browser: $*" >&2; exit 1; }
+have() { command -v "$1" >/dev/null 2>&1; }
+
+# ── fetch + verify the declared CA ──────────────────────────────────────
+fetch_ca() {
+    have curl || die "curl required"
+    local j
+    j=$(curl -sf --max-time 5 "$CA_URL") || die "gate unreachable at $CA_URL — is the yakmesh node running?"
+    # node ships with yakmesh — use it for the JSON parse when present
+    if have node; then
+        CA_JSON=$j node -e '
+            const j = JSON.parse(process.env.CA_JSON);
+            if (!j.caPem || !j.sha256) throw new Error("bad /gate/ca payload");
+            require("fs").writeFileSync(process.argv[1], j.caPem);
+            console.log(j.sha256); console.log(j.persistentId || "");
+            console.log(j.signature ? "pq-signed" : "unsigned");
+        ' "$WORKDIR/ca.pem" > "$WORKDIR/meta" || die "could not parse /gate/ca"
+    else
+        # jq fallback
+        have jq || die "node or jq required to parse /gate/ca"
+        echo "$j" | jq -r '.caPem' > "$WORKDIR/ca.pem" || die "no caPem"
+        { echo "$j" | jq -r '.sha256'; echo "$j" | jq -r '.persistentId // ""';
+          [ "$(echo "$j" | jq -r '.signature')" != "null" ] && echo pq-signed || echo unsigned; } > "$WORKDIR/meta"
+    fi
+    mapfile -t M < "$WORKDIR/meta"
+    DECLARED_FP=${M[0]}; NODE_ID=${M[1]}; SIG=${M[2]}
+    local der_fp
+    der_fp=$(openssl x509 -in "$WORKDIR/ca.pem" -outform der 2>/dev/null | sha256sum | cut -d' ' -f1)
+    [ "$der_fp" = "$DECLARED_FP" ] || die "CA fingerprint mismatch — refusing (declared $DECLARED_FP, computed $der_fp)"
+    echo "gate CA verified:"
+    echo "  sha256  $DECLARED_FP"
+    echo "  node    ${NODE_ID:-unknown}   declaration: $SIG"
+}
+
+# ── trust stores ────────────────────────────────────────────────────────
+need_certutil() { have certutil || die "certutil required — apt install libnss3-tools"; }
+
+nss_install() {
+    local db=$1
+    mkdir -p "$db"
+    [ -f "$db/cert9.db" ] || certutil -d "sql:$db" -N --empty-password >/dev/null 2>&1
+    certutil -d "sql:$db" -A -t "C,," -n "$NICK" -i "$WORKDIR/ca.pem" && \
+        echo "  CA → $db"
+}
+
+nss_remove() {
+    certutil -d "sql:$1" -D -n "$NICK" 2>/dev/null && echo "  removed from $1"
+}
+
+cmd_ca() {
+    local what=${1:-chromium}
+    fetch_ca
+    case "$what" in
+        chromium|chrome|vivaldi|edge|brave|nss)
+            need_certutil
+            nss_install "$HOME/.pki/nssdb"   # shared NSS db — all chromium-family pick it up
+            ;;
+        firefox)
+            need_certutil
+            local found=0 d
+            for d in "$HOME"/.mozilla/firefox/*.default* "$HOME"/.mozilla/firefox/*.default-*; do
+                [ -d "$d" ] || continue
+                nss_install "$d"; found=1
+            done
+            [ $found -eq 0 ] && echo "  no firefox profiles found — launch firefox once, re-run"
+            ;;
+        system)
+            echo "  needs sudo for /usr/local/share/ca-certificates + update-ca-certificates"
+            sudo install -m644 "$WORKDIR/ca.pem" /usr/local/share/ca-certificates/yakgate-ca.crt && \
+                sudo update-ca-certificates && \
+                echo "  CA → system store (curl, epiphany, gio apps)"
+            ;;
+        */*)
+            need_certutil
+            nss_install "$what" ;;   # explicit nss db dir
+        *) die "unknown target: $what (chromium|firefox|system|<nss-db-dir>)" ;;
+    esac
+    echo
+    echo "removal: yakgate-browser remove-ca $what"
+}
+
+cmd_remove_ca() {
+    local what=${1:-chromium}
+    case "$what" in
+        chromium|chrome|vivaldi|edge|brave|nss) nss_remove "$HOME/.pki/nssdb" ;;
+        firefox) for d in "$HOME"/.mozilla/firefox/*.default*; do [ -d "$d" ] && nss_remove "$d"; done ;;
+        system)  sudo rm -f /usr/local/share/ca-certificates/yakgate-ca.crt && sudo update-ca-certificates ;;
+        */*)     nss_remove "$what" ;;
+    esac
+}
+
+# ── launch lines ────────────────────────────────────────────────────────
+cmd_launch() {
+    local b=${1:-}
+    case "$b" in
+        chromium|google-chrome|vivaldi|microsoft-edge|brave|chrome)
+            echo "$b --proxy-server=\"http://127.0.0.1:$GATE\" --user-data-dir=/tmp/yakgate-prof"
+            echo "  (separate profile recommended — your main profile stays untouched)" ;;
+        firefox)
+            echo "firefox --new-instance --profile /tmp/yakgate-ffprof"
+            echo "  then Settings → Network → Manual: HTTP+SSL proxy 127.0.0.1:$GATE,"
+            echo "  or drop a user.js in that profile:"
+            echo "    user_pref(\"network.proxy.type\", 1);"
+            echo "    user_pref(\"network.proxy.http\", \"127.0.0.1\");"
+            echo "    user_pref(\"network.proxy.http_port\", $GATE);"
+            echo "    user_pref(\"network.proxy.ssl\", \"127.0.0.1\");"
+            echo "    user_pref(\"network.proxy.ssl_port\", $GATE);" ;;
+        curl|cli)
+            echo "http_proxy=http://127.0.0.1:$GATE https_proxy=http://127.0.0.1:$GATE curl -v https://example.com" ;;
+        *)  echo "usage: yakgate-browser launch <chromium|vivaldi|edge|brave|firefox|curl>"; exit 1 ;;
+    esac
+}
+
+cmd_verify() {
+    echo "─ through the gate (any site):"
+    echo "  curl --proxy http://127.0.0.1:$GATE -sI https://example.com | head -3"
+    echo "─ MITM check (only when node runs YAKGATE_MITM):"
+    echo "  openssl s_client -proxy 127.0.0.1:$GATE -connect example.com:443 -servername example.com </dev/null 2>/dev/null | openssl x509 -noout -issuer"
+    echo "  issuer = the gate CA → MITM active; issuer = a public CA → plain tunnel"
+}
+
+case "${1:-help}" in
+    ca)        cmd_ca "${2:-chromium}" ;;
+    remove-ca) cmd_remove_ca "${2:-chromium}" ;;
+    launch)    cmd_launch "${2:-}" ;;
+    verify)    cmd_verify ;;
+    *) cat <<EOF
+yakgate-browser — third-party browsers ↔ the yakmesh gate proxy (127.0.0.1:$GATE)
+
+  launch <browser>   print the proxy launch command (no CA needed for the
+                     transparent tunnel — CONNECT preserves E2E TLS)
+  ca <target>        fetch the node's declared CA from /gate/ca, verify the
+                     sha256, install it — needed only for YAKGATE_MITM testing
+                     targets: chromium (shared nssdb), firefox (all profiles),
+                             system (sudo), or an explicit nss db dir
+  remove-ca <target> drop the CA again
+  verify             curl/openssl one-liners to prove the path
+
+node side (not the browser): MITM is opt-in —
+  YAKGATE_MITM=all              every host gets bumped
+  YAKGATE_MITM=host1,host2      only those hosts (suffix match)
+unset → pure tunnel, nothing is inspected.
+EOF
+        ;;
+esac
