@@ -74,13 +74,53 @@ export class GateMitm {
     this._ca = null;
     this._ctx = new Map();      // host -> SecureContext (minted cert)
     this._sess = new Map();     // origin key -> http2.ClientHttp2Session
-    // one inner http.Server, fed every client-facing TLSSocket
-    this._inner = http.createServer((req, res) => this._relay(req, res));
-    this._inner.on('upgrade', (req, sock) => {
-      // WebSocket-over-MITM needs an h1 upstream relay (WS can't ride h2).
-      // Scaffold: refuse the upgrade rather than hang the client.
-      try { sock.destroy(); } catch {}
+    // two inner servers, the TLSSocket routed by negotiated ALPN.
+    // libsoup advertises h2-ONLY through SOCKS tunnels — an h1-only ALPN
+    // list sends every client to the raw-tunnel fallback (client
+    // fingerprint upstream → challenge loops). allowHTTP1-compat was
+    // rejected: its inner h1 server crashes on upgrade requests fed
+    // through emit(connection) (shouldUpgradeCallback).
+    this._inner1 = http.createServer((req, res) => this._relay(req, res));
+    this._inner1.on('upgrade', (req, sock, head) => {
+      // WebSocket-over-MITM: WS can't ride the upstream h2 session — relay
+      // it over a dedicated h1 TLS connection. The upgrade response is
+      // passed through verbatim, then both directions raw-pipe. Turnstile's
+      // proof channel (brunhild.challenges.cloudflare.com) lives here —
+      // without this leg every managed challenge degrades to a re-challenge
+      // loop.
+      const host = String(req.headers.host || '').split(':')[0];
+      const port = req.socket.yakPort || 443;
+      const addrs = req.socket.yakAddrs || [];
+      if (!host || host.toLowerCase() !== req.socket.yakHost || !addrs.length)
+        { try { sock.destroy(); } catch {} return; }
+      const up = tls.connect({ host: addrs[0], port, servername: host });
+      const drop = () => { try { sock.destroy(); } catch {}; try { up.destroy(); } catch {} };
+      up.on('secureConnect', () => {
+        const lines = [`${req.method} ${req.url} HTTP/1.1`];
+        for (let i = 0; i < req.rawHeaders.length; i += 2)
+          lines.push(`${req.rawHeaders[i]}: ${req.rawHeaders[i + 1]}`);
+        up.write(lines.join('\r\n') + '\r\n\r\n');
+        let done = false; const buf = [];
+        const onHead = (c) => {
+          buf.push(c);
+          const t = Buffer.concat(buf);
+          const eoh = t.indexOf('\r\n\r\n');
+          if (eoh < 0) return;
+          up.removeListener('data', onHead);
+          if (done) return; done = true;
+          // pass the upgrade response through verbatim (101 or refusal —
+          // honesty beats a hand-built 101 that lies about the outcome)
+          sock.write(t.slice(0, eoh + 4));
+          const rest = t.slice(eoh + 4);
+          if (rest.length) up.unshift(rest);
+          if (head?.length) up.write(head);
+          sock.pipe(up); up.pipe(sock);
+        };
+        up.on('data', onHead);
+      });
+      up.on('error', drop); sock.on('error', drop);
     });
+    this._inner2 = http2.createServer((req, res) => this._relay(req, res));
   }
 
   get enabled() { return this.all || this.hosts.size > 0; }
@@ -172,14 +212,18 @@ export class GateMitm {
     try {
       srv = tls.createServer({
         key: keyCert.key, cert: keyCert.cert,
-        ALPNProtocols: ['http/1.1'], // browser side is localhost — h1 is plenty
+        // h2 must be offered: SOCKS-tunneled clients advertise h2-only;
+        // h1-only ALPN = no_application_protocol → raw tunnel → client
+        // fingerprint reaches the edge (the challenge-loop regression).
+        ALPNProtocols: ['h2', 'http/1.1'],
       });
     } catch { fail('tlsserver'); return; }   // broken mint → raw tunnel, never a crash
     srv.on('tlsClientError', e => fail('tlsClient ' + (e && e.message)));
     srv.on('secureConnection', s => {
       s.yakHost = host.toLowerCase(); s.yakPort = port; s.yakAddrs = addrs;
       s.on('error', () => s.destroy());
-      this._inner.emit('connection', s);
+      (s.alpnProtocol === 'h2' ? this._inner2 : this._inner1)
+        .emit('connection', s);
     });
     srv.emit('connection', clientSock);
     clientSock.once('error', e => fail('sock ' + (e && e.message)));
@@ -228,7 +272,10 @@ export class GateMitm {
   }
 
   _relay(req, res) {
-    const host = (req.headers.host || '').split(':')[0];
+    // compat mode: h1 requests expose host/url; h2 requests expose
+    // :authority/:path pseudo-headers — normalize both.
+    const host = String(req.headers.host || req.headers[':authority'] || '')
+      .split(':')[0];
     // a request naming a different Host than the CONNECT target never got
     // SSRF-vetted — refuse it rather than smuggle it upstream.
     if (!host || host.toLowerCase() !== req.socket.yakHost)
@@ -236,16 +283,26 @@ export class GateMitm {
     const sess = this._session(host, req.socket.yakPort || 443,
                                req.socket.yakAddrs || []);
     const port = req.socket.yakPort || 443;
-    const hdrs = { ':method': req.method, ':path': req.url, ':scheme': 'https', ':authority': host + (port === 443 ? '' : ':' + port) };
+    const hdrs = { ':method': req.method, ':path': req.url,
+      ':scheme': 'https',
+      ':authority': host + (port === 443 ? '' : ':' + port) };
     for (const [k, v] of Object.entries(req.headers))
-      if (!DROP_REQ.has(k)) hdrs[k] = v;
+      if (!k.startsWith(':') && !DROP_REQ.has(k)) hdrs[k] = v;
     const up = sess.request(hdrs);
     up.on('response', h => {
-      const rh = {};
-      for (const k in h) if (!k.startsWith(':') && !DROP_RES.has(k)) rh[k] = h[k];
-      res.writeHead(h[':status'], rh);
+      // 'response' can re-fire (1xx, trailers racing the error path) and a
+      // second writeHead is an uncaught throw that takes the whole node down.
+      if (res.destroyed || res.headersSent || res.writableEnded) return;
+      const st = h[':status'];
+      if (st >= 100 && st < 200) return;   // informational — h1 has no home for it
+      try {
+        const rh = {};
+        for (const k in h) if (!k.startsWith(':') && !DROP_RES.has(k)) rh[k] = h[k];
+        res.writeHead(st, rh);
+      } catch {}
     });
     up.on('error', () => { try { res.destroy(); } catch {} });
+    res.on('error', () => { try { up.destroy(); } catch {} });
     up.pipe(res);
     req.pipe(up);
   }
