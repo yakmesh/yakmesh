@@ -79,13 +79,14 @@ const log = createLogger('mani:time-source');
  * @param {number} timeout - Timeout in ms (default 5000)
  * @returns {string|null} - Command output or null on failure
  */
-function execSilent(command, timeout = 5000) {
+function execSilent(command, opts = {}) {
   try {
     return execSync(command, {
       encoding: 'utf8',
-      timeout,
+      timeout: 5000,
       stdio: ['pipe', 'pipe', 'pipe'], // Capture all streams, don't inherit
       windowsHide: true, // Hide window on Windows
+      ...opts, // callers pass execSync-style options ({encoding, timeout})
     });
   } catch (e) {
     // Silently return null - command not available or failed
