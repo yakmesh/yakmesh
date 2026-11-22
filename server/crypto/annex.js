@@ -35,9 +35,9 @@
  */
 
 import { randomBytes, createCipheriv, createDecipheriv, createHash } from 'crypto';
-import { ml_kem768 } from '@noble/post-quantum/ml-kem.js';
-import { sha3_256 } from '@noble/hashes/sha3.js';
-import { bytesToHex, hexToBytes } from '@noble/hashes/utils.js';
+import { mlKem768Encapsulate, sha3_256 } from '../../utils/accel.js';
+import { aesGcm, aesGcmVerify } from '../../utils/mkc.js';
+import { bytesToHex, hexToBytes, utf8ToBytes } from '@noble/hashes/utils.js';
 
 // Configuration (must match client)
 const ANNEX_CONFIG = {
@@ -46,6 +46,23 @@ const ANNEX_CONFIG = {
   sessionTimeout: 3600000,      // 1 hour session lifetime
   maxMessagesPerKey: 50000,     // Force re-handshake after N messages
 };
+
+/**
+ * MKC bridge preference: AES-256-GCM runs on-silicon via the pq-bridge
+ * (:9995) whenever reachable — node:crypto (AES-NI) is the fallback only.
+ * Honest-device rule: a refused/unreachable bridge yields null, never a
+ * faked device claim.
+ */
+let _mkcDownUntil = 0;
+async function tryMkc(work) {
+  if (Date.now() < _mkcDownUntil) return null;
+  try {
+    return await work();
+  } catch {
+    _mkcDownUntil = Date.now() + 60000; // retry the bridge after cooldown
+    return null;
+  }
+}
 
 /**
  * ServerAnnexSession - Server-side encrypted session with a browser client
@@ -61,7 +78,7 @@ export class ServerAnnexSession {
     
     // Sequence counters for replay protection
     this.sendSequence = 0;
-    this.recvSequence = 0;
+    this.recvSequence = -1; // first valid client sequence is 0
     this.messageCount = 0;
     
     // State
@@ -101,7 +118,7 @@ export class ServerAnnexSession {
     
     // Generate new shared secret from client's new public key
     const publicKey = hexToBytes(publicKeyHex);
-    const { sharedSecret, cipherText } = ml_kem768.encapsulate(publicKey);
+    const { sharedSecret, cipherText } = mlKem768Encapsulate(publicKey);
     
     // Derive fresh AES-256 key
     this.encryptionKey = this._deriveKey(sharedSecret);
@@ -112,7 +129,7 @@ export class ServerAnnexSession {
     
     // Reset counters but preserve session identity
     this.sendSequence = 0;
-    this.recvSequence = 0;
+    this.recvSequence = -1;
     this.messageCount = 0;
     this.createdAt = Date.now();
     this.lastActivity = Date.now();
@@ -130,7 +147,7 @@ export class ServerAnnexSession {
     const publicKey = hexToBytes(publicKeyHex);
     
     // Server encapsulates - generates random shared secret + ciphertext
-    const { sharedSecret, cipherText } = ml_kem768.encapsulate(publicKey);
+    const { sharedSecret, cipherText } = mlKem768Encapsulate(publicKey);
     
     // Derive AES-256 key from shared secret
     this.encryptionKey = this._deriveKey(sharedSecret);
@@ -168,48 +185,53 @@ export class ServerAnnexSession {
   /**
    * Encrypt data for transmission to client
    * Returns { nonce, ciphertext, authTag, sequence } as hex strings
+   * AES-GCM prefers the MKC silicon path; encrypts are chained so
+   * sequence order is preserved across concurrent callers (the
+   * receiver's replay guard requires strictly increasing sequences).
    */
   encrypt(plaintext) {
     if (!this.established || !this.encryptionKey) {
       throw new Error('Session not established');
     }
-    
+
     const nonce = randomBytes(ANNEX_CONFIG.nonceSize);
-    
-    // Encode plaintext
     const data = typeof plaintext === 'string'
       ? Buffer.from(plaintext)
       : Buffer.from(JSON.stringify(plaintext));
-    
-    // AAD for GCM authentication
     const aadString = `${this.sessionId}:${this.sendSequence}`;
-    
-    // Create cipher with AAD
-    const cipher = createCipheriv('aes-256-gcm', this.encryptionKey, nonce);
-    cipher.setAAD(Buffer.from(aadString));
-    
-    // Encrypt
-    const ciphertext = Buffer.concat([cipher.update(data), cipher.final()]);
-    const authTag = cipher.getAuthTag();
-    
     const sequence = this.sendSequence;
     this.sendSequence++;
     this.messageCount++;
     this.lastActivity = Date.now();
-    
-    return {
+
+    const work = async () => {
+      const sealed = await tryMkc(() =>
+        aesGcm(this.encryptionKey, nonce, data, utf8ToBytes(aadString)));
+      if (sealed) {
+        return { ciphertext: Buffer.from(sealed.ct), authTag: Buffer.from(sealed.tag) };
+      }
+      const cipher = createCipheriv('aes-256-gcm', this.encryptionKey, nonce);
+      cipher.setAAD(Buffer.from(aadString));
+      return {
+        ciphertext: Buffer.concat([cipher.update(data), cipher.final()]),
+        authTag: cipher.getAuthTag(),
+      };
+    };
+
+    this._encChain = (this._encChain || Promise.resolve()).then(work);
+    return this._encChain.then(({ ciphertext, authTag }) => ({
       nonce: bytesToHex(nonce),
       ciphertext: bytesToHex(ciphertext),
       authTag: bytesToHex(authTag),
       sequence,
-    };
+    }));
   }
   
   /**
    * Decrypt received data from client
    * Returns plaintext string (JSON)
    */
-  decrypt(encryptedData) {
+  async decrypt(encryptedData) {
     if (!this.established || !this.encryptionKey) {
       throw new Error('Session not established');
     }
@@ -224,14 +246,21 @@ export class ServerAnnexSession {
     const nonceBuffer = Buffer.from(hexToBytes(nonce));
     const ciphertextBuffer = Buffer.from(hexToBytes(ciphertext));
     const authTagBuffer = Buffer.from(hexToBytes(authTag));
+    const aadString = `${this.sessionId}:${sequence}`;
     
-    // Create decipher with AAD
-    const decipher = createDecipheriv('aes-256-gcm', this.encryptionKey, nonceBuffer);
-    decipher.setAAD(Buffer.from(`${this.sessionId}:${sequence}`));
-    decipher.setAuthTag(authTagBuffer);
-    
-    // Decrypt
-    const plaintext = Buffer.concat([decipher.update(ciphertextBuffer), decipher.final()]);
+    let plaintext;
+    const opened = await tryMkc(() =>
+      aesGcmVerify(this.encryptionKey, nonceBuffer, ciphertextBuffer,
+                   authTagBuffer, utf8ToBytes(aadString)));
+    if (opened) {
+      if (!opened.ok) throw new Error('GCM tag verification failed');
+      plaintext = Buffer.from(opened.pt);
+    } else {
+      const decipher = createDecipheriv('aes-256-gcm', this.encryptionKey, nonceBuffer);
+      decipher.setAAD(Buffer.from(aadString));
+      decipher.setAuthTag(authTagBuffer);
+      plaintext = Buffer.concat([decipher.update(ciphertextBuffer), decipher.final()]);
+    }
     
     this.recvSequence = sequence;
     this.messageCount++;
@@ -261,6 +290,7 @@ export const ANNEX_HANDSHAKE_TYPE = {
   ERROR: 'annex:error',
   REKEY: 'annex:rekey',       // Server -> Client: session needs rekeying
   REKEY_ACK: 'annex:rekey_ack', // Client -> Server: new public key for rekey
+  REKEYED: 'annex:rekeyed',   // Server -> Client: new encapsulation ciphertext
 };
 
 export default ServerAnnexSession;

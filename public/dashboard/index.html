@@ -315,6 +315,7 @@
       accent-color: var(--accent);
     }
   </style>
+  <script src="/js/annex-client.js"></script>
 </head>
 
 <body>
@@ -325,6 +326,11 @@
       <div class="subtitle">Post-Quantum Secure • Sturdy & Secure • <span id="dash-version">—</span></div>
     </div>
     <div style="margin-left: auto; display: flex; gap: 0.75rem; align-items: center;">
+      <a href="/docs/" target="_blank"
+        style="color: var(--mountain); text-decoration: none; font-size: 0.85rem; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 4px; transition: all 0.2s;"
+        onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+        📚 Docs
+      </a>
       <a href="yak://dashboard"
         style="color: var(--mountain); text-decoration: none; font-size: 0.85rem; padding: 0.5rem 0.75rem; border: 1px solid var(--border); border-radius: 4px; transition: all 0.2s;"
         onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
@@ -346,7 +352,7 @@
     </div>
     <div class="auto-refresh" style="margin-left: 0.5rem;">
       <input type="checkbox" id="annex-toggle">
-      <label for="annex-toggle">ANNEX 🔒</label>
+      <label for="annex-toggle" title="ANNEX (Autonomous Network Negotiated eXchange): seals this dashboard's channel to the node with ML-KEM-768 post-quantum key exchange + AES-256-GCM. Auto-enabled for remote nodes; localhost is already private.">ANNEX 🔒</label>
     </div>
     <div id="ws-status" style="font-size: 0.75rem; color: var(--text-dim); margin-left: 0.75rem; white-space: nowrap;">—
     </div>
@@ -787,6 +793,8 @@
 
     // ── ANNEX state (ML-KEM-768 PQ encryption) ──
     let annexEnabled = false;
+    let annexSession = null; // AnnexClient session while ANNEX is negotiating/active
+    let annexActive = false; // true ONLY after the ML-KEM handshake completes
     // ANNEX handshake is handled by the server; we just need to send PUBLIC_KEY
     // For localhost default is OFF; for remote default is ON
     function isRemoteNode() {
@@ -883,6 +891,10 @@
       const host = new URL(nodeUrl).host;
       const wsUrl = `${wsProto}://${host}/komm/ws`;
 
+      // Fresh connection — tear down any prior ANNEX session
+      if (annexSession) { annexSession.destroy(); annexSession = null; }
+      annexActive = false;
+
       setWsStatus('Connecting…', 'var(--warning)');
 
       try {
@@ -893,14 +905,89 @@
         return;
       }
 
+      // Sealed-or-plaintext send — after the handshake everything is sealed
+      const kommSend = (obj) => {
+        if (!kommWs || kommWs.readyState !== WebSocket.OPEN) return;
+        if (annexActive && annexSession) {
+          kommWs.send(annexSession.encryptMessage(obj));
+        } else {
+          kommWs.send(JSON.stringify(obj));
+        }
+      };
+      const subscribeDashboard = () => kommSend({ type: 'dashboard:subscribe' });
+
+      // Dispatches one parsed KOMM message (plaintext or ANNEX-decrypted)
+      const handleKommMessage = (msg) => {
+        // ── ANNEX control plane ──
+        if (msg.type === 'annex:encapsulated' && annexSession) {
+          try {
+            annexSession.handleEncapsulated(msg);
+            annexActive = true;
+            setWsStatus('Live (ANNEX 🔒)', 'var(--success)');
+            subscribeDashboard();
+          } catch (e) {
+            console.warn('ANNEX handshake failed:', e);
+            annexActive = false;
+            setWsStatus('Live (WebSocket — ANNEX failed)', 'var(--warning)');
+            subscribeDashboard();
+          }
+          return;
+        }
+        if (msg.type === 'annex:rekey' && annexSession) {
+          try { kommWs.send(JSON.stringify(annexSession.rekeyAck())); } catch {}
+          return;
+        }
+        if (msg.type === 'annex:rekeyed' && annexSession) {
+          try { annexSession.handleRekeyed(msg); } catch (e) { console.warn('ANNEX rekey failed:', e); }
+          return;
+        }
+        if (msg.type === 'annex:encrypted' && annexSession) {
+          let inner;
+          try { inner = JSON.parse(annexSession.decrypt(msg.payload)); }
+          catch (e) { console.warn('ANNEX decrypt failed:', e); return; }
+          handleKommMessage(inner);
+          return;
+        }
+        if (msg.type === 'annex:error') {
+          console.warn('ANNEX error from node:', msg.error);
+          return;
+        }
+
+        // ── data plane ──
+        if (msg.type === 'welcome') {
+          console.log(`KOMM welcome from ${msg.nodeId}, capabilities: ${msg.capabilities}`);
+          return;
+        }
+        if (msg.type === 'dashboard:update' && msg.data) {
+          applyDashboardData(msg.data);
+          return;
+        }
+      };
+
       kommWs.onopen = () => {
         wsConnected = true;
         wsReconnectDelay = 3000; // reset backoff
-        setWsStatus(annexEnabled ? 'Live (ANNEX 🔒)' : 'Live (WebSocket)', 'var(--success)');
 
-        // Subscribe to dashboard updates
-        kommWs.send(JSON.stringify({ type: 'dashboard:subscribe' }));
-
+        if (annexEnabled && window.AnnexClient?.AnnexClientSession) {
+          // Real ML-KEM-768 handshake — 🔒 label only when it completes
+          annexSession = new AnnexClient.AnnexClientSession({ clientId: 'dashboard' });
+          setWsStatus('ANNEX negotiating…', 'var(--warning)');
+          kommWs.send(JSON.stringify(annexSession.handshake()));
+          // Fallback: if the handshake stalls, subscribe plaintext but stay honest
+          setTimeout(() => {
+            if (!annexActive && kommWs && kommWs.readyState === WebSocket.OPEN) {
+              setWsStatus('Live (WebSocket — ANNEX timed out)', 'var(--warning)');
+              subscribeDashboard();
+            }
+          }, 4000);
+        } else {
+          if (annexEnabled) {
+            setWsStatus('Live (WebSocket — ANNEX lib unavailable)', 'var(--warning)');
+          } else {
+            setWsStatus('Live (WebSocket)', 'var(--success)');
+          }
+          subscribeDashboard();
+        }
         // Switch auto-refresh to slow fallback (30 s) while WS is live
         startAutoRefresh();
       };
@@ -908,18 +995,7 @@
       kommWs.onmessage = (event) => {
         try {
           const msg = JSON.parse(event.data);
-
-          if (msg.type === 'welcome') {
-            console.log(`KOMM welcome from ${msg.nodeId}, capabilities: ${msg.capabilities}`);
-            return;
-          }
-
-          if (msg.type === 'dashboard:update' && msg.data) {
-            applyDashboardData(msg.data);
-            return;
-          }
-
-          // Ignore other KOMM messages (katha, vani, yurt, etc.)
+          handleKommMessage(msg);
         } catch (e) {
           console.warn('KOMM message parse error:', e);
         }
@@ -928,6 +1004,8 @@
       kommWs.onclose = () => {
         wsConnected = false;
         kommWs = null;
+        if (annexSession) { annexSession.destroy(); annexSession = null; }
+        annexActive = false;
         setWsStatus('Disconnected', 'var(--error)');
 
         // Switch auto-refresh back to fast polling
@@ -1193,7 +1271,7 @@
             <div>Unique Sites: <span style="color: var(--text)">${website.uniqueSites || website.domains || 0}</span></div>
             <div>Files Served: <span style="color: var(--text)">${website.filesServed || 0}</span></div>
             <div>Bytes Served: <span style="color: var(--text)">${formatBytes(website.bytesServed || 0)}</span></div>
-            ${website.status === 'active' ? `
+            ${website.status === 'active' && (website.websites || 0) > 0 ? `
               <div style="margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid var(--border);">
                 <div style="font-weight: 600; color: var(--frost); margin-bottom: 0.5rem;">Quick Links:</div>
                 <div><a href="/site/" target="_blank" style="color: var(--accent);">📂 View Site (HTTP)</a></div>

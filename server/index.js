@@ -4559,13 +4559,16 @@ export class YakmeshNode {
       if (ws.readyState !== 1) return; // OPEN
       const session = kommAnnexSessions.get(ws);
       if (session && !session.isExpired()) {
-        try {
-          const encrypted = session.encrypt(typeof data === 'string' ? data : JSON.stringify(data));
-          ws.send(JSON.stringify({ type: ANNEX_HANDSHAKE_TYPE.ENCRYPTED, payload: encrypted }));
-        } catch {
-          // Encryption failed — drop message (no plaintext fallback)
-          log.warn('KOMM ANNEX encrypt failed — message dropped');
-        }
+        session.encrypt(typeof data === 'string' ? data : JSON.stringify(data))
+          .then((encrypted) => {
+            if (ws.readyState === 1) {
+              ws.send(JSON.stringify({ type: ANNEX_HANDSHAKE_TYPE.ENCRYPTED, payload: encrypted }));
+            }
+          })
+          .catch(() => {
+            // Encryption failed — drop message (no plaintext fallback)
+            log.warn('KOMM ANNEX encrypt failed — message dropped');
+          });
       } else {
         // No ANNEX session yet — send plaintext (only during handshake/migration)
         ws.send(typeof data === 'string' ? data : JSON.stringify(data));
@@ -4627,26 +4630,41 @@ export class YakmeshNode {
           // ── ANNEX handshake layer (before any application logic) ──
           if (msg.type === ANNEX_HANDSHAKE_TYPE.PUBLIC_KEY) {
             const session = new ServerAnnexSession({
-              localId: peerTag(this.identity.identity.nodeId),
-              remoteId: msg.clientId || 'komm-client',
-            });
-            const result = session.handlePublicKey(msg.publicKey);
-            kommAnnexSessions.set(ws, session);
-            ws.send(JSON.stringify({
-              type: ANNEX_HANDSHAKE_TYPE.ENCAPSULATED,
-              ciphertext: result.ciphertext,
-              serverId: peerTag(this.identity.identity.nodeId),
               sessionId: msg.sessionId,
-            }));
-            log.debug('📡 KOMM ANNEX handshake complete (ML-KEM-768)');
+              clientId: msg.clientId || 'komm-client',
+              serverId: peerTag(this.identity.identity.nodeId),
+            });
+            session.handlePublicKey(msg.publicKey).then((ciphertext) => {
+              kommAnnexSessions.set(ws, session);
+              ws.send(JSON.stringify({
+                type: ANNEX_HANDSHAKE_TYPE.ENCAPSULATED,
+                ciphertext,
+                serverId: peerTag(this.identity.identity.nodeId),
+                sessionId: msg.sessionId,
+              }));
+              log.debug('📡 KOMM ANNEX handshake complete (ML-KEM-768)');
+            }).catch((err) => {
+              log.warn({ err: err?.message }, 'KOMM ANNEX handshake failed');
+              session.destroy();
+            });
             return;
           }
 
-          if (msg.type === 'annex:rekey_ack') {
+          if (msg.type === ANNEX_HANDSHAKE_TYPE.REKEY_ACK) {
             const session = kommAnnexSessions.get(ws);
             if (session) {
-              session.rekey(msg.publicKey);
-              log.debug('📡 KOMM ANNEX rekeyed');
+              session.rekey(msg.publicKey).then((ciphertext) => {
+                // ML-KEM ciphertext is safe over plaintext — client needs it
+                // to decapsulate the new key it just offered.
+                ws.send(JSON.stringify({
+                  type: ANNEX_HANDSHAKE_TYPE.REKEYED,
+                  ciphertext,
+                  sessionId: session.sessionId,
+                }));
+                log.debug('📡 KOMM ANNEX rekeyed');
+              }).catch((err) => {
+                log.warn({ err: err?.message }, 'KOMM ANNEX rekey failed');
+              });
             }
             return;
           }
@@ -4654,13 +4672,16 @@ export class YakmeshNode {
           if (msg.type === ANNEX_HANDSHAKE_TYPE.ENCRYPTED) {
             const session = kommAnnexSessions.get(ws);
             if (!session) return;
-            const plaintext = session.decrypt(msg.payload);
-            const decrypted = JSON.parse(plaintext);
-            // Check if rekey needed
-            if (session.isNearingExpiry()) {
-              secureSend(ws, { type: 'annex:rekey', reason: 'threshold' });
-            }
-            this._handleKommWsMessage(decrypted, ws, secureSend);
+            session.decrypt(msg.payload).then((plaintext) => {
+              const decrypted = JSON.parse(plaintext);
+              // Check if rekey needed
+              if (session.isNearingExpiry()) {
+                secureSend(ws, { type: 'annex:rekey', reason: 'threshold' });
+              }
+              this._handleKommWsMessage(decrypted, ws, secureSend);
+            }).catch(() => {
+              secureSend(ws, { error: 'Invalid message' });
+            });
             return;
           }
 
@@ -4718,7 +4739,7 @@ export class YakmeshNode {
       })() : null;
 
       const websiteInfo = this.websiteAdapter ? {
-        status: 'active',
+        status: this.websiteAdapter.manifests.size > 0 ? 'active' : 'empty',
         websites: this.websiteAdapter.manifests.size,
         uniqueSites: this.websiteAdapter.domains.size || 1,
         domains: this.websiteAdapter.domains.size,
@@ -5614,15 +5635,9 @@ export class YakmeshNode {
       serveDocsFile(file, res);
     });
 
-    // Serve dashboard — falls through to public/dashboard/index.html via static mount
+    // Serve dashboard — single canonical copy at public/dashboard/index.html
     app.get('/dashboard', (req, res) => {
-      const dashboardPath = join(import.meta.dirname, '..', 'public', 'dashboard', 'index.html');
-      if (existsSync(dashboardPath)) {
-        res.sendFile(dashboardPath);
-      } else {
-        // Fallback to legacy location
-        res.sendFile('dashboard/index.html', { root: import.meta.dirname + '/..' });
-      }
+      res.sendFile('dashboard/index.html', { root: join(import.meta.dirname, '..', 'public') });
     });
 
     // YAKAUTH — the pid ping. A site that issued YakMesh-Challenge calls

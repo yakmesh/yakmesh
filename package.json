@@ -131,22 +131,24 @@
     "prerelease": "npm run audit && npm run test:all"
   },
   "dependencies": {
+    "@noble/ciphers": "^2.4.0",
     "@noble/hashes": "^2.0.0",
     "@noble/post-quantum": "^0.5.4",
+    "chalk": "^5.3.0",
+    "commander": "^12.0.0",
     "dns-packet": "^5.6.1",
     "express": "^4.18.2",
     "express-rate-limit": "^8.2.1",
     "koffi": "^2.15.2",
     "onnxruntime-node": "^1.29.0",
     "sql.js": "^1.10.0",
-    "ws": "^8.16.0",
-    "commander": "^12.0.0",
-    "chalk": "^5.3.0"
+    "ws": "^8.16.0"
   },
   "optionalDependencies": {
     "net-snmp": "^3.26.1"
   },
   "devDependencies": {
+    "esbuild": "^0.28.2",
     "nodemon": "^3.0.0",
     "vitest": "^4.0.18"
   },
