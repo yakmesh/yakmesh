@@ -957,7 +957,7 @@ export class MachineSeed {
     if (password && typeof password === 'string' && password.length > 0) {
       // Derive encryption key from password (NOT the hardware key)
       const salt = randomBytes(16);
-      const key = scryptSync(password, salt, 32, { N: 2 ** 17, r: 8, p: 1 });
+      const key = scryptSync(password, salt, 32, { N: 2 ** 17, r: 8, p: 1, maxmem: 256 * 1024 * 1024 });
       const nonce = randomBytes(12);
       const cipher = createCipheriv('aes-256-gcm', key, nonce);
       const plaintext = words.join(' ');
@@ -1035,7 +1035,7 @@ export class MachineSeed {
       throw new Error('Invalid encrypted mnemonic format');
     }
 
-    const key = scryptSync(password, Buffer.from(saltHex, 'hex'), 32, { N: 2 ** 17, r: 8, p: 1 });
+    const key = scryptSync(password, Buffer.from(saltHex, 'hex'), 32, { N: 2 ** 17, r: 8, p: 1, maxmem: 256 * 1024 * 1024 });
     const decipher = createDecipheriv(
       'aes-256-gcm',
       key,
