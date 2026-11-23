@@ -545,6 +545,15 @@ export class YakTun {
      * Requires administrative privileges to invoke OS-level drivers (WireGuard wintun).
      */
     async init(nodeIdOverride) {
+        // Operator opt-out: YAKTUN=0/off — the node runs every other
+        // transport (WS uplinks, UDP underlay, LAN discovery) and simply
+        // never claims a VIP. Honest state, not a failure.
+        if (/^(0|off|false|no)$/i.test(process.env.YAKTUN || '')) {
+            this.disabledReason = 'disabled via YAKTUN=off';
+            console.log('[YAK-TUN] disabled via YAKTUN=off — running LAN/underlay transports only');
+            this.active = false;
+            return false;
+        }
         console.log(`[YAK-TUN] Initializing virtual interface: ${this.iface}`);
         try {
             const isWin = os.platform() === 'win32';
@@ -597,6 +606,7 @@ export class YakTun {
             return true;
         } catch (err) {
             console.warn(`[YAK-TUN ERROR] Interface initialization skipped: ${err.message}`);
+            this.disabledReason = err.message;
             this.active = false;
             return false;
         }
@@ -614,8 +624,22 @@ export class YakTun {
         const user = os.userInfo().username;
         // fileURLToPath, not URL.pathname — %20 under spaced checkouts.
         const { fileURLToPath } = await import('url');
-        const provision = fileURLToPath(
+        // Provisioner candidates, root-owned first: sudoers only authorizes
+        // the system paths — a script inside a user-writable checkout must
+        // never be NOPASSWD-executable (that's a trivial priv-esc). The
+        // local copy remains for dev boxes under broad sudoers.
+        const localProvision = fileURLToPath(
             new URL('../tools/yaktun-provision.sh', import.meta.url));
+        const provisionCandidates = [
+            '/usr/lib/yakmesh/tools/yaktun-provision.sh',
+            '/usr/lib/node_modules/yakmesh/tools/yaktun-provision.sh',
+            '/usr/local/lib/node_modules/yakmesh/tools/yaktun-provision.sh',
+            localProvision,
+        ];
+        let provision = localProvision;
+        for (const p of provisionCandidates) {
+            if (fs.existsSync(p)) { provision = p; break; }
+        }
 
         // ── Ensure the persistent tun exists and is ours ───────────
         // `ip -d tuntap show` rows name the owning uid; TUNSETIFF only

@@ -1,0 +1,20 @@
+# yakmesh YAK-TUN: the unprivileged node self-provisions its overlay VIP
+# at attach time (mesh/tun.js → `sudo -n .../yaktun-provision.sh`).
+# Scoped to ONE script whose argv it validates itself (vip4 must be
+# 10.199.*, iface must match yak*) — no raw ip/netlink access is granted.
+#
+# Install:  cp deploy/sudoers-yakmesh-tun /etc/sudoers.d/yakmesh-tun && chmod 440 /etc/sudoers.d/yakmesh-tun
+# Path note: adjust to wherever the package is installed if not /usr/lib/yakmesh.
+ALL ALL=(root) NOPASSWD: /usr/lib/yakmesh/tools/yaktun-provision.sh
+# npm/node_modules install layouts:
+ALL ALL=(root) NOPASSWD: /usr/lib/node_modules/yakmesh/tools/yaktun-provision.sh
+ALL ALL=(root) NOPASSWD: /usr/local/lib/node_modules/yakmesh/tools/yaktun-provision.sh
+#
+# Alternative for SYSTEM-service deployments (no sudo at all): give the
+# node service the capability directly — ambient caps propagate to exec'd
+# children, so `ip` runs privileged without sudo:
+#   [Service]
+#   AmbientCapabilities=CAP_NET_ADMIN
+#   CapabilityBoundingSet=CAP_NET_ADMIN
+# NOTE: AmbientCapabilities is rejected on --user units; user-level nodes
+# (systemctl --user) MUST use this sudoers file instead.

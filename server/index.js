@@ -3610,7 +3610,10 @@ export class YakmeshNode {
       announce();
       this.mesh.on?.('peer-registered', announce);
     } else {
-      log.warn('🌐 YAK-TUN offline — L3 tunnel inactive (Windows needs admin for the Wintun adapter; Linux needs a persistent /dev/net/tun device)');
+      const why = this.yakTun.disabledReason || 'interface init returned false';
+      log.warn(`🌐 YAK-TUN offline — L3 tunnel inactive (${why}). ` +
+        `Mesh still runs on WS uplinks + UDP underlay/LAN discovery; ` +
+        `to silence this notice set YAKTUN=off`);
     }
 
     // Route incoming TUN_PACKET messages from the mesh directly back into OS
@@ -5709,6 +5712,7 @@ export class YakmeshNode {
         },
         yaktun: this.yakTun ? {
           active: !!this.yakTun.active,
+          reason: this.yakTun.active ? null : (this.yakTun.disabledReason || null),
           vIp: this.yakTun.virtualIp || null,
           vIp6: this.yakTun.virtualIpv6 || null,
           underlay: this.yakTun.underlayStatus ? this.yakTun.underlayStatus() : null,
