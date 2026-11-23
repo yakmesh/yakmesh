@@ -676,25 +676,50 @@ export class YakTun {
         }
         this.fs = fs;
 
-        // Bind addresses + bring up. Flush first so stale addresses from
-        // prior nodeIds don't linger; every failure reports real stderr.
-        const bind = async (cmd, required = false) => {
-            const r = await execAsync(cmd).then(() => null).catch(e => e);
-            if (!r) return true;
-            if (required)
-                console.warn(`[YAK-TUN] \`${cmd}\` → ${(r.stderr || r.message || '').trim()}`);
-            return false;
+        // Bind addresses + bring up. Preferred path: the scoped
+        // provisioner — installers can sudoers-authorize JUST this script,
+        // and it performs the same addr/link/route ops idempotently.
+        // Direct `sudo -n ip` cmds only work under broad sudoers; either
+        // way we VERIFY the VIP landed before reporting active.
+        const hasVip = async () => {
+            const o = await execAsync(`ip -4 addr show dev ${this.iface}`)
+                .then(r => r.stdout || '').catch(() => '');
+            return o.includes(`${this.virtualIp}/`);
         };
-        await bind(`sudo -n ip addr flush dev ${this.iface}`);
-        await bind(`sudo -n ip -6 addr flush dev ${this.iface}`);
-        await bind(`sudo -n ip addr replace ${this.virtualIp}/16 dev ${this.iface}`, true);
-        await bind(`sudo -n ip -6 addr replace ${this.virtualIpv6}/64 dev ${this.iface}`);
-        await bind(`sudo -n ip link set dev ${this.iface} up`, true);
-        // Mesh-subnet on-link guard: redundant under the managed /16 but
-        // repairs hand-provisioned /32 layouts (the tester workaround).
-        await bind(`sudo -n ip route replace 10.199.0.0/16 dev ${this.iface}`);
-        // v6 symmetric: every node VIP lives under fd99:199::/48.
-        await bind(`sudo -n ip -6 route replace fd99:199::/48 dev ${this.iface}`);
+        const pv = await execAsync(
+            `sudo -n "${provision}" "${user}" ${this.virtualIp} ${this.virtualIpv6} ${this.iface}`)
+            .then(() => null).catch(e => e);
+        let bound = !pv && await hasVip();
+        if (!bound) {
+            const bind = async (cmd) => {
+                const r = await execAsync(cmd).then(() => null).catch(e => e);
+                if (!r) return true;
+                console.warn(`[YAK-TUN] \`${cmd}\` → ${(r.stderr || r.message || '').trim()}`);
+                return false;
+            };
+            // Flush first so stale addresses from prior nodeIds don't
+            // linger; every failure reports real stderr.
+            await bind(`sudo -n ip addr flush dev ${this.iface}`);
+            await bind(`sudo -n ip -6 addr flush dev ${this.iface}`);
+            await bind(`sudo -n ip addr replace ${this.virtualIp}/16 dev ${this.iface}`);
+            await bind(`sudo -n ip -6 addr replace ${this.virtualIpv6}/64 dev ${this.iface}`);
+            await bind(`sudo -n ip link set dev ${this.iface} up`);
+            // Mesh-subnet on-link guard: redundant under the managed /16
+            // but repairs hand-provisioned /32 layouts (the tester
+            // workaround). v6 symmetric under fd99:199::/48.
+            await bind(`sudo -n ip route replace 10.199.0.0/16 dev ${this.iface}`);
+            await bind(`sudo -n ip -6 route replace fd99:199::/48 dev ${this.iface}`);
+            bound = await hasVip();
+        }
+        if (!bound) {
+            fs.closeSync(this.tunFd);
+            throw new Error(
+                `YAK-TUN attached ${this.iface} but ${this.virtualIp} never ` +
+                `landed — provisioner and direct ip binds both failed. ` +
+                `One-time fix: sudo "${provision}" "${user}" ${this.virtualIp} ` +
+                `${this.virtualIpv6} ${this.iface} (or sudoers-authorize ` +
+                `the script: /etc/sudoers.d/yakmesh-tun)`);
+        }
 
         this.active = true;
         console.log(`[YAK-TUN] 🟢 Online (linux). ${this.virtualIp} / ${this.virtualIpv6} on ${this.iface}`);
